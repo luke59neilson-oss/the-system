@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0 done; M1.1-M1.5, M1.13, M2.1-M2.3, MS.1-MS.5 done
-**Next item:** MS.6 Preview release
+**Status:** in progress: M0 done; M1.1-M1.5, M1.13, M2.1-M2.3, MS.1-MS.6 done
+**Next item:** MS.A Milestone acceptance and review (then push `main` to `release`)
 **Blockers:** none
 
 ## Run log
@@ -103,4 +103,17 @@ next item, blockers. -->
 - How to try it: `npm run build && node apps/server/dist/main.js`, open the printed GM link; "View as" bar for player perspectives and Table view; "Load demo campaign" in the GM header. Desktop: `npm run desktop:smoke` or `npm run build -w @the-system/desktop && npx electron apps/desktop` after fetching the Electron binary (see apps/desktop/README.md).
 - Open `wip/*` branches: none unfinished (`wip/MS.5` is merged).
 - Next: MS.6 Preview release (electron-builder; release workflow on push to `release`), then MS.A.
+- Blockers: none.
+
+### Run 01ce3e89 · 2026-10-21 19:06–19:47 UTC
+- Preflight: `add_repo` not offered in this session; repo already cloned (detached HEAD; reset `main` to `origin/main`), fetch worked. Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md; latest CI run on main green (ea3c9fd, the MS.5 merge).
+- Finished: MS.6 Preview release (reviewed by Sonnet in 2 rounds; see REVIEW-LOG.md). Built on `wip/MS.6`, fast-forwarded into main once clean. electron-builder config, `.github/workflows/release.yml` (push to `release` publishes `preview-<date>`; push to `release-dry-run` builds and checks only), packaged-app smoke `npm run package:smoke -w @the-system/desktop` (D55).
+- Acceptance: Release run 39663632813 on `release-dry-run` at b88418e green — Windows installer + portable, macOS universal dmg (ad-hoc signed, on `macos-15-intel`), Linux AppImage; each packaged app launched and connected in CI. The AppImage also built and launched under `xvfb-run` locally. No Release published yet: MS.A pushes `main` to `release`.
+- Tests: 326 unit/integration tests (27 files), 10 e2e, plus the packaged smoke (Linux/Windows/macOS in the release workflow). Engine untouched; line coverage 99.15% (floor 90%).
+- CI: green on every `wip/MS.6` push; b88418e pushed to main at the end of the run (the next run checks it first).
+- Reviews: 1 item, 2 rounds, 0 High; Mediums fixed or resolved by the green dry run.
+- Environment notes: macOS arm64 runners did not pick up jobs (capacity; jobs cancelled after ~15 min) → Intel runner. The release-dry-run branch now exists on the remote and is meant to be reused. Each mac run costs ~2–3 min of 10× macOS minutes.
+- Open `wip/*` branches: none unfinished (`wip/MS.6` is merged).
+- Next: MS.A Milestone acceptance and review (reviewer `fable`), then `git push origin main:release`.
 - Blockers: none.

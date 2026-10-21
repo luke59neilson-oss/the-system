@@ -129,7 +129,7 @@ the full ones.
 - [x] **MS.5 Desktop wrapper (preview).** Pulls M10.1 forward: double-click
   starts the server and opens the GM window with the GM key injected; join
   URL + QR shown; data in the OS app-data folder.
-- [ ] **MS.6 Preview release.** Pulls M10.2 forward: the release workflow
+- [x] **MS.6 Preview release.** Pulls M10.2 forward: the release workflow
   builds Windows (portable exe + installer), macOS (dmg, unsigned) and Linux
   (AppImage) on push to the `release` branch and publishes a GitHub Release
   named `preview-<date>`.
