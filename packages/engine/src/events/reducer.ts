@@ -6,13 +6,12 @@ import {
   poolMax,
   type Character,
 } from '../character';
-import { aboveLevelBonus, gainXp } from '../progression';
+import { gainXp, shareBonus } from '../progression';
 import { parseRulesConfig, type RulesConfig } from '../rules';
-import { raceLevel } from '../character';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes (snapshots, M2.1). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 1;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 2;
 
 /** Plain, serializable campaign state: a pure fold over the effective events. */
 export interface CampaignState {
@@ -138,11 +137,7 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       let next = state;
       for (const { characterId, share } of shares) {
         const character = characterOf(state, event, characterId);
-        const fraction =
-          enemyLevel === null
-            ? 0
-            : aboveLevelBonus(state.rules, raceLevel(state.rules, character), enemyLevel);
-        const bonus = Math.floor(Number((share * fraction).toFixed(9)));
+        const bonus = shareBonus(state.rules, character, share, enemyLevel);
         const { character: leveled } = rule(event, () =>
           gainXp(state.rules, character, track, share + bonus),
         );

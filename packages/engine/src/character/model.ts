@@ -112,6 +112,7 @@ export function createCharacter(rules: RulesConfig, input: NewCharacter): Charac
       if (!statIds.includes(statId))
         throw new CharacterRuleError(`Unknown stat "${statId}" in class weights`);
       if (!Number.isInteger(weight) || weight < 0 || weight > 1000) {
+        // Same bound as progression MAX_WEIGHT.
         throw new CharacterRuleError(
           `Class weight for ${statId} must be a whole number from 0 to 1000`,
         );

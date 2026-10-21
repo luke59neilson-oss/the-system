@@ -104,6 +104,9 @@ export function authorize(
 
 function awardPayload(command: Extract<Command, { type: 'xp.award' }>) {
   const { participants } = command;
+  if (participants.some((p) => p.share !== undefined && p.weight !== undefined)) {
+    throw new EventRejectedError('A participant has both a share and a weight; give one');
+  }
   const manual = participants.filter((p) => p.share !== undefined).length;
   let shares: { characterId: string; share: number }[];
   if (manual === participants.length) {

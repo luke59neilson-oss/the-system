@@ -13,6 +13,9 @@ export type XpTrack = 'class' | 'profession';
 
 const isWhole = (n: number) => Number.isInteger(n) && n >= 0;
 
+/** Largest split weight; keeps amount × weight exact in doubles (amounts are ≤ 1e8). */
+export const MAX_WEIGHT = 1000;
+
 /**
  * Splits an integer amount by integer weights with the largest-remainder
  * method: the parts always sum to `amount`. Ties go to the earlier entry.
@@ -20,7 +23,9 @@ const isWhole = (n: number) => Number.isInteger(n) && n >= 0;
 export function largestRemainderSplit(amount: number, weights: readonly number[]): number[] {
   if (!isWhole(amount)) throw new CharacterRuleError('Amount must be a whole number ≥ 0');
   if (weights.length === 0) throw new CharacterRuleError('Nothing to split between');
-  if (!weights.every(isWhole)) throw new CharacterRuleError('Weights must be whole numbers ≥ 0');
+  if (!weights.every((w) => isWhole(w) && w <= MAX_WEIGHT)) {
+    throw new CharacterRuleError(`Weights must be whole numbers from 0 to ${MAX_WEIGHT}`);
+  }
   const total = weights.reduce((a, b) => a + b, 0);
   if (total === 0) throw new CharacterRuleError('At least one weight must be above 0');
   const parts = weights.map((w) => Math.floor((amount * w) / total));
@@ -36,7 +41,40 @@ export function largestRemainderSplit(amount: number, weights: readonly number[]
 }
 
 /**
- * Distributes `points` class-spread points by the class weights, cumulatively:
+ * Replaces a character's class weights (evolution reshape, M1.10) and resets
+ * the spread totals, so the new weights govern from here on instead of
+ * paying back the old weights' history (D35).
+ */
+export function reshapeClassWeights(
+  rules: RulesConfig,
+  character: Character,
+  weights: Readonly<Record<string, number>>,
+): Character {
+  const ids = rules.stats.list.map((s) => s.id);
+  const next: Record<string, number> = {};
+  const totals: Record<string, number> = {};
+  for (const id of ids) {
+    next[id] = 0;
+    totals[id] = 0;
+  }
+  for (const [id, w] of Object.entries(weights)) {
+    if (!ids.includes(id)) throw new CharacterRuleError(`Unknown stat "${id}" in class weights`);
+    if (!isWhole(w) || w > MAX_WEIGHT) {
+      throw new CharacterRuleError(
+        `Class weight for ${id} must be a whole number from 0 to ${MAX_WEIGHT}`,
+      );
+    }
+    next[id] = w;
+  }
+  if (Object.values(next).every((w) => w === 0)) {
+    throw new CharacterRuleError('Class weights must give at least one stat a weight above 0');
+  }
+  return { ...character, classWeights: next, classSpreadTotals: totals };
+}
+
+/**
+ * Distributes `points` class-spread points by the class weights, cumulatively
+ * (a "highest deficit" method, not per-level largest remainder; D35):
  * each point goes to the stat furthest below its weighted share of all spread
  * so far (ties to stat order). The level's points sum exactly, and over many
  * levels every stat stays within one point of its exact share, so equal
@@ -101,6 +139,18 @@ export function aboveLevelBonus(
   return Math.min(aboveLevelBonusCap, Number((aboveLevelBonusPerLevel * diff).toFixed(9)));
 }
 
+/** Whole above-level bonus XP on top of a share (floored, float noise removed). */
+export function shareBonus(
+  rules: RulesConfig,
+  character: Character,
+  share: number,
+  enemyLevel: number | null | undefined,
+): number {
+  if (enemyLevel === null || enemyLevel === undefined) return 0;
+  const fraction = aboveLevelBonus(rules, raceLevel(rules, character), enemyLevel);
+  return Math.floor(Number((share * fraction).toFixed(9)));
+}
+
 export interface XpShare {
   readonly characterId: string;
   /** Part of the award (shares sum to the award). */
@@ -137,14 +187,10 @@ export function splitXp(
       : undefined;
     if (!character) throw new CharacterRuleError(`Unknown character "${p.characterId}"`);
     const share = shares[i] as number;
-    const fraction =
-      input.enemyLevel === undefined
-        ? 0
-        : aboveLevelBonus(rules, raceLevel(rules, character), input.enemyLevel);
     return {
       characterId: p.characterId,
       share,
-      bonus: Math.floor(Number((share * fraction).toFixed(9))),
+      bonus: shareBonus(rules, character, share, input.enemyLevel),
     };
   });
 }

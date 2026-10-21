@@ -9,6 +9,7 @@ import {
   grantProfession,
   largestRemainderSplit,
   raceLevel,
+  reshapeClassWeights,
   splitXp,
   statBudgetTotal,
   xpForLevels,
@@ -42,6 +43,11 @@ function evolveIfReady(c: Character): Character {
   out = gainXp(rules, out, 'class', 0).character;
   return out.profession === null ? out : gainXp(rules, out, 'profession', 0).character;
 }
+
+const pick = (c: Character) => ({
+  classWeights: c.classWeights,
+  classSpreadTotals: c.classSpreadTotals,
+});
 
 describe('largestRemainderSplit', () => {
   it('splits evenly and gives remainders to the earliest largest remainders', () => {
@@ -82,6 +88,8 @@ describe('largestRemainderSplit', () => {
     expect(() => largestRemainderSplit(5, [])).toThrow('Nothing to split');
     expect(() => largestRemainderSplit(5, [0, 0])).toThrow('above 0');
     expect(() => largestRemainderSplit(5, [1, -1])).toThrow('Weights');
+    expect(() => largestRemainderSplit(1e8, [1001, 1])).toThrow('0 to 1000');
+    expect(largestRemainderSplit(1e8, [1000, 1, 1])).toEqual([99800399, 99801, 99800]);
   });
 });
 
@@ -137,6 +145,29 @@ describe('classSpread', () => {
         ).toBeLessThan(1);
       }
     }
+  });
+
+  it('pins the highest-deficit rule where it differs from per-level largest remainder (D35)', () => {
+    const ids = ['a', 'b', 'c', 'd', 'e'];
+    const weights = { a: 8, b: 9, c: 1, d: 8, e: 5 };
+    const none = { a: 0, b: 0, c: 0, d: 0, e: 0 };
+    expect(classSpread(weights, none, ids, 16)).toEqual({ a: 4, b: 5, c: 1, d: 4, e: 2 });
+    expect(largestRemainderSplit(16, [8, 9, 1, 8, 5])).toEqual([4, 5, 0, 4, 3]);
+    // Ties go to the earlier stat in rules order.
+    expect(classSpread({ a: 1, b: 1 }, { a: 0, b: 0 }, ['a', 'b'], 1)).toEqual({ a: 1, b: 0 });
+  });
+
+  it('reshaping weights resets the totals so the new weights govern at once', () => {
+    let c = gainXp(rules, fresh({ strength: 1 }), 'class', 400).character;
+    expect(c.stats['strength']).toBe(26);
+    c = reshapeClassWeights(rules, { ...c, grade: 'F' }, { strength: 1, agility: 1 });
+    expect(Object.values(c.classSpreadTotals).every((t) => t === 0)).toBe(true);
+    const next = gainXp(rules, c, 'class', 2 * 150).character;
+    expect(next.stats['strength']).toBe(26 + 5);
+    expect(next.stats['agility']).toBe(10 + 5);
+    expect(() => reshapeClassWeights(rules, c, { luck: 1 })).toThrow('Unknown stat');
+    expect(() => reshapeClassWeights(rules, c, { agility: 1001 })).toThrow('0 to 1000');
+    expect(() => reshapeClassWeights(rules, c, {})).toThrow('at least one stat');
   });
 
   it('rejects all-zero weights and bad point counts', () => {
@@ -195,6 +226,16 @@ describe('gainXp', () => {
     ]);
     expect(character.freePointBatches.map((b) => b.points)).toEqual([4, 4, 4, 4, 4]);
     expect(statBudgetTotal(character) - statBudgetTotal(base)).toBe(10 * 8 + 5 * 4);
+    // Per stat, with weights agility 3 : perception 1 (80 spread points).
+    const weighted = gainXp(
+      rules,
+      { ...base, ...pick(fresh({ agility: 3, perception: 1 })) },
+      'class',
+      2500,
+    ).character;
+    expect(weighted.stats['agility']).toBe(10 + 60);
+    expect(weighted.stats['perception']).toBe(10 + 20);
+    expect(weighted.stats['strength']).toBe(10);
     // Profession levels raise race level (and free points) but grant no spread.
     const prof = gainXp(rules, character, 'profession', 2 * 250);
     expect(prof.character.professionLevel).toBe(12);
@@ -355,8 +396,36 @@ describe('xp.award command and event', () => {
     });
     const prof = execute(base, award([{ characterId: 'a' }], { track: 'profession' }), ctx);
     expect(prof).toMatchObject({ ok: false, error: expect.stringContaining('has no profession') });
+    const both = execute(base, award([{ characterId: 'a', share: 300, weight: 2 }]), ctx);
+    expect(both).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('both a share and a weight'),
+    });
     const zero = execute(base, award([{ characterId: 'a', weight: 0 }]), ctx);
     expect(zero).toMatchObject({ ok: false, error: 'At least one weight must be above 0' });
+  });
+
+  it('rejects a whole profession award when one participant has no profession', () => {
+    const base = run(setup());
+    const state = base.state;
+    if (!state) throw new Error('no state');
+    const a = state.characters['a'] as Character;
+    const withProf: typeof base = {
+      ...base,
+      state: {
+        ...state,
+        characters: { ...state.characters, a: { ...a, grade: 'E', profession: 'Smith' } },
+      },
+    };
+    const result = execute(
+      withProf,
+      award([{ characterId: 'a' }, { characterId: 'b' }], { track: 'profession' }),
+      testContext('z'),
+    );
+    expect(result).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('B has no profession'),
+    });
   });
 
   it('applies the above-level bonus on apply and undo removes the whole award', () => {
