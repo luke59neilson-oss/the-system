@@ -1,7 +1,7 @@
 import type { GradeRules, RulesConfig } from '../rules';
 
 /** Bumped when the serialized character shape changes; M1.3 upcasts old states. */
-export const CHARACTER_SCHEMA_VERSION = 1;
+export const CHARACTER_SCHEMA_VERSION = 2;
 
 /** Skill as held by a character (the full skill system arrives in M1.9). */
 export interface CharacterSkill {
@@ -34,6 +34,10 @@ export interface Character {
   readonly grade: string;
   /** XP held toward the next level per track; beyond the grade cap it banks (M1.4). */
   readonly xp: Readonly<{ class: number; profession: number }>;
+  /** Class stat weights by stat id (integers); class spread follows them (DESIGN §4). */
+  readonly classWeights: Readonly<Record<string, number>>;
+  /** Class spread points received so far per stat; drives the cumulative split (M1.4). */
+  readonly classSpreadTotals: Readonly<Record<string, number>>;
   /** Base stat values by stat id (before titles and items, M1.6/M1.7). */
   readonly stats: Readonly<Record<string, number>>;
   /** Current pool values by pool id; maxima are derived. */
@@ -49,6 +53,8 @@ export interface NewCharacter {
   className: string;
   race?: string | undefined;
   classSkills: readonly { name: string; rarity: string }[];
+  /** Stat weights of the starting class; equal weights when omitted. */
+  classWeights?: Readonly<Record<string, number>> | undefined;
 }
 
 export class CharacterRuleError extends Error {}
@@ -98,6 +104,27 @@ export function createCharacter(rules: RulesConfig, input: NewCharacter): Charac
     return { name: skillName, rarity: skill.rarity, kind: 'class', nickname: null };
   });
 
+  const statIds = rules.stats.list.map((s) => s.id);
+  const classWeights: Record<string, number> = {};
+  for (const statId of statIds) classWeights[statId] = input.classWeights ? 0 : 1;
+  if (input.classWeights) {
+    for (const [statId, weight] of Object.entries(input.classWeights)) {
+      if (!statIds.includes(statId))
+        throw new CharacterRuleError(`Unknown stat "${statId}" in class weights`);
+      if (!Number.isInteger(weight) || weight < 0 || weight > 1000) {
+        throw new CharacterRuleError(
+          `Class weight for ${statId} must be a whole number from 0 to 1000`,
+        );
+      }
+      classWeights[statId] = weight;
+    }
+    if (Object.values(classWeights).every((w) => w === 0)) {
+      throw new CharacterRuleError('Class weights must give at least one stat a weight above 0');
+    }
+  }
+  const classSpreadTotals: Record<string, number> = {};
+  for (const statId of statIds) classSpreadTotals[statId] = 0;
+
   const stats: Record<string, number> = {};
   for (const stat of rules.stats.list) stats[stat.id] = rules.stats.startingValue;
   const pools: Record<string, number> = {};
@@ -114,6 +141,8 @@ export function createCharacter(rules: RulesConfig, input: NewCharacter): Charac
     professionLevel: 0,
     grade: firstGrade.id,
     xp: { class: 0, profession: 0 },
+    classWeights,
+    classSpreadTotals,
     stats,
     pools,
     freePointBatches: [],

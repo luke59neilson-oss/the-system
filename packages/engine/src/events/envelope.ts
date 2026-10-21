@@ -33,6 +33,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     className: nonBlank,
     race: nonBlank.optional(),
     classSkills: z.array(z.strictObject({ name: nonBlank, rarity: z.string().min(1) })),
+    /** Optional since M1.4 (absent = equal weights), so v1 payloads stay valid. */
+    classWeights: statValues.optional(),
   }),
   'character.renamed': z.strictObject({ characterId: recordId, name: nonBlank }),
   'character.professionGranted': z.strictObject({ characterId: recordId, profession: nonBlank }),
@@ -43,6 +45,21 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   }),
   /** GM override of base stats (audited sheet edit, M4.5); pools re-clamp. */
   'character.statsSet': z.strictObject({ characterId: recordId, stats: statValues }),
+  /**
+   * GM XP award (DESIGN §5). `shares` are the parts of `amount` per
+   * participant and must sum to it; each one's above-level bonus is derived
+   * from `enemyLevel` on apply, and level-ups follow from the rules.
+   */
+  'xp.awarded': z.strictObject({
+    track: z.enum(['class', 'profession']),
+    amount: z.number().int().nonnegative().max(100_000_000),
+    shares: z
+      .array(z.strictObject({ characterId: recordId, share: z.number().int().nonnegative() }))
+      .min(1),
+    enemyLevel: z.number().int().nonnegative().max(10_000).nullable(),
+    /** Free text for the session log ("Pale hunter pack"). */
+    reason: z.string().trim().max(200),
+  }),
   /** Compensating event: the target stops counting, as if it had never happened. */
   'event.undone': z.strictObject({ eventId: recordId }),
 } as const;
@@ -60,6 +77,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'character.professionGranted': 1,
   'character.poolsSet': 1,
   'character.statsSet': 1,
+  'xp.awarded': 1,
   'event.undone': 1,
 };
 

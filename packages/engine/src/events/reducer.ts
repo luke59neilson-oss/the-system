@@ -6,7 +6,9 @@ import {
   poolMax,
   type Character,
 } from '../character';
+import { aboveLevelBonus, gainXp } from '../progression';
 import { parseRulesConfig, type RulesConfig } from '../rules';
+import { raceLevel } from '../character';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
 /** Bumped when the serialized campaign state shape changes (snapshots, M2.1). */
@@ -126,6 +128,27 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
         stats: merged,
         pools: rule(event, () => clampPools(state.rules, merged, character.pools)),
       });
+    }
+    case 'xp.awarded': {
+      const { track, amount, shares, enemyLevel } = event.payload;
+      const ids = shares.map((s) => s.characterId);
+      if (new Set(ids).size !== ids.length) fail(event, 'a participant is listed twice');
+      const sum = shares.reduce((a, s) => a + s.share, 0);
+      if (sum !== amount) fail(event, `shares sum to ${sum}, not the award of ${amount}`);
+      let next = state;
+      for (const { characterId, share } of shares) {
+        const character = characterOf(state, event, characterId);
+        const fraction =
+          enemyLevel === null
+            ? 0
+            : aboveLevelBonus(state.rules, raceLevel(state.rules, character), enemyLevel);
+        const bonus = Math.floor(Number((share * fraction).toFixed(9)));
+        const { character: leveled } = rule(event, () =>
+          gainXp(state.rules, character, track, share + bonus),
+        );
+        next = withCharacter(next, leveled);
+      }
+      return next;
     }
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');

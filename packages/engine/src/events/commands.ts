@@ -7,6 +7,8 @@ import {
   type DomainEvent,
   type EventType,
 } from './envelope';
+import { CharacterRuleError } from '../character';
+import { largestRemainderSplit } from '../progression';
 import { appendEvent, type Campaign } from './log';
 
 /**
@@ -23,11 +25,29 @@ export type Command =
       className: string;
       race?: string | undefined;
       classSkills: readonly { name: string; rarity: string }[];
+      classWeights?: Readonly<Record<string, number>> | undefined;
     }
   | { type: 'character.rename'; characterId: string; name: string }
   | { type: 'character.grantProfession'; characterId: string; profession: string }
   | { type: 'character.setPools'; characterId: string; pools: Readonly<Record<string, number>> }
   | { type: 'character.setStats'; characterId: string; stats: Readonly<Record<string, number>> }
+  | {
+      type: 'xp.award';
+      track: 'class' | 'profession';
+      amount: number;
+      /**
+       * Participants in order. Give every one a `share` to set the split by
+       * hand (shares must sum to the amount), or optional `weight`s for a
+       * largest-remainder split (even by default).
+       */
+      participants: readonly {
+        characterId: string;
+        weight?: number | undefined;
+        share?: number | undefined;
+      }[];
+      enemyLevel?: number | null | undefined;
+      reason?: string | undefined;
+    }
   | { type: 'event.undo'; eventId: string };
 
 /** Everything impure is injected: who acts, when, and how ids are made. */
@@ -49,6 +69,11 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('character.grantProfession') }),
   z.object({ type: z.literal('character.setPools'), pools: anyRecord }),
   z.object({ type: z.literal('character.setStats'), stats: anyRecord }),
+  z.object({
+    type: z.literal('xp.award'),
+    amount: z.number(),
+    participants: z.array(z.object({ characterId: z.string() })).min(1),
+  }),
   z.object({ type: z.literal('event.undo') }),
 ]);
 
@@ -77,6 +102,38 @@ export function authorize(
   return null;
 }
 
+function awardPayload(command: Extract<Command, { type: 'xp.award' }>) {
+  const { participants } = command;
+  const manual = participants.filter((p) => p.share !== undefined).length;
+  let shares: { characterId: string; share: number }[];
+  if (manual === participants.length) {
+    shares = participants.map((p) => ({ characterId: p.characterId, share: p.share as number }));
+  } else if (manual > 0) {
+    throw new EventRejectedError('Give every participant a share, or none');
+  } else {
+    try {
+      const parts = largestRemainderSplit(
+        command.amount,
+        participants.map((p) => p.weight ?? 1),
+      );
+      shares = participants.map((p, i) => ({
+        characterId: p.characterId,
+        share: parts[i] as number,
+      }));
+    } catch (error) {
+      if (error instanceof CharacterRuleError) throw new EventRejectedError(error.message);
+      throw error;
+    }
+  }
+  return {
+    track: command.track,
+    amount: command.amount,
+    shares,
+    enemyLevel: command.enemyLevel ?? null,
+    reason: command.reason ?? '',
+  };
+}
+
 export type CommandResult =
   { ok: true; campaign: Campaign; events: DomainEvent[] } | { ok: false; error: string };
 
@@ -92,6 +149,7 @@ function toEvent(command: Command, ctx: CommandContext): { type: EventType; payl
         classSkills: command.classSkills,
       };
       if (command.race !== undefined) payload['race'] = command.race;
+      if (command.classWeights !== undefined) payload['classWeights'] = command.classWeights;
       return { type: 'character.created', payload };
     }
     case 'character.rename':
@@ -114,6 +172,8 @@ function toEvent(command: Command, ctx: CommandContext): { type: EventType; payl
         type: 'character.statsSet',
         payload: { characterId: command.characterId, stats: command.stats },
       };
+    case 'xp.award':
+      return { type: 'xp.awarded', payload: awardPayload(command) };
     case 'event.undo':
       return { type: 'event.undone', payload: { eventId: command.eventId } };
   }

@@ -343,7 +343,7 @@
   },
   "characters": {
     "jake": {
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "id": "jake",
       "name": "Jake",
       "race": "Human",
@@ -355,6 +355,28 @@
       "xp": {
         "class": 0,
         "profession": 0
+      },
+      "classWeights": {
+        "strength": 1,
+        "agility": 1,
+        "endurance": 1,
+        "vitality": 1,
+        "toughness": 1,
+        "wisdom": 1,
+        "intelligence": 1,
+        "perception": 1,
+        "willpower": 1
+      },
+      "classSpreadTotals": {
+        "strength": 0,
+        "agility": 0,
+        "endurance": 0,
+        "vitality": 0,
+        "toughness": 0,
+        "wisdom": 0,
+        "intelligence": 0,
+        "perception": 0,
+        "willpower": 0
       },
       "stats": {
         "strength": 10,
@@ -402,7 +424,7 @@
       ]
     },
     "casper": {
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "id": "casper",
       "name": "Casper",
       "race": "Human",
@@ -414,6 +436,28 @@
       "xp": {
         "class": 0,
         "profession": 0
+      },
+      "classWeights": {
+        "strength": 1,
+        "agility": 1,
+        "endurance": 1,
+        "vitality": 1,
+        "toughness": 1,
+        "wisdom": 1,
+        "intelligence": 1,
+        "perception": 1,
+        "willpower": 1
+      },
+      "classSpreadTotals": {
+        "strength": 0,
+        "agility": 0,
+        "endurance": 0,
+        "vitality": 0,
+        "toughness": 0,
+        "wisdom": 0,
+        "intelligence": 0,
+        "perception": 0,
+        "willpower": 0
       },
       "stats": {
         "strength": 10,
@@ -461,7 +505,7 @@
       ]
     },
     "miranda": {
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "id": "miranda",
       "name": "Miranda",
       "race": "Human",
@@ -473,6 +517,28 @@
       "xp": {
         "class": 0,
         "profession": 0
+      },
+      "classWeights": {
+        "strength": 1,
+        "agility": 1,
+        "endurance": 1,
+        "vitality": 1,
+        "toughness": 1,
+        "wisdom": 1,
+        "intelligence": 1,
+        "perception": 1,
+        "willpower": 1
+      },
+      "classSpreadTotals": {
+        "strength": 0,
+        "agility": 0,
+        "endurance": 0,
+        "vitality": 0,
+        "toughness": 0,
+        "wisdom": 0,
+        "intelligence": 0,
+        "perception": 0,
+        "willpower": 0
       },
       "stats": {
         "strength": 10,

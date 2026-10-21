@@ -288,6 +288,16 @@ describe('undo', () => {
       'character.statsSet',
       { type: 'character.setStats', characterId: 'jake', stats: { vitality: 30 } },
     ],
+    [
+      'xp.awarded',
+      {
+        type: 'xp.award',
+        track: 'class',
+        amount: 450,
+        enemyLevel: 3,
+        participants: [{ characterId: 'jake' }],
+      },
+    ],
   ];
 
   it.each(cases)('undoing the latest %s restores the previous state', (_type, command) => {
@@ -650,6 +660,21 @@ describe('property: replay equals incremental state', () => {
     }
     if (roll < 0.65) {
       return { type: 'character.grantProfession', characterId: someId(), profession: 'Smith' };
+    }
+    if (roll < 0.8) {
+      const count = 1 + Math.floor(rand() * 3);
+      const manual = rand() < 0.3;
+      const amount = Math.floor(rand() * 900);
+      return {
+        type: 'xp.award',
+        track: rand() < 0.9 ? 'class' : 'profession',
+        amount,
+        enemyLevel: rand() < 0.3 ? Math.floor(rand() * 10) : null,
+        participants: Array.from({ length: count }, (_, i) => ({
+          characterId: someId(),
+          ...(manual ? { share: i === 0 ? amount : 0 } : { weight: 1 + Math.floor(rand() * 3) }),
+        })),
+      };
     }
     const targets = c.events.map((e) => e.id);
     return { type: 'event.undo', eventId: rand() < 0.95 ? pick(targets) : 'missing' };

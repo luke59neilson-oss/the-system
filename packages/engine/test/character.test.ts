@@ -46,7 +46,9 @@ describe('createCharacter', () => {
       [],
       [],
     ]);
-    expect(c.schemaVersion).toBe(1);
+    expect(c.schemaVersion).toBe(2);
+    expect(Object.values(c.classWeights)).toEqual(Array(9).fill(1));
+    expect(Object.values(c.classSpreadTotals)).toEqual(Array(9).fill(0));
   });
 
   it('adds Identify (Common) as a race skill after the 3 class skills', () => {
