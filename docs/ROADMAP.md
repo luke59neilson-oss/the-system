@@ -16,6 +16,10 @@ Work top to bottom. An item is checked only when its acceptance criteria pass
   and gets the `fable` review.
 - No GM-only data in any player-bound WebSocket frame or HTTP response
   (canary test from M2.2 on).
+- From MS on, each `Mx.A` item ends by pushing `main` to the `release`
+  branch so Luke gets a fresh preview build after every milestone.
+- Work order is the order of this file, not the numbering: M0 → M1.1–M1.5 →
+  M1.13 → M2.1–M2.3 → MS → M1.6 onward.
 
 ---
 
@@ -67,6 +71,67 @@ Work top to bottom. An item is checked only when its acceptance criteria pass
 - [ ] **M1.5 Free points.** Per-level batches assigned once then locked; GM
   override. *Accept:* reassigning a locked batch is rejected; the next level
   grants a new unlocked batch; override is undoable.
+- [ ] **M1.13 Player projection.** (built early; extend it with every later feature) Player view: own sheet in full; party
+  limited (name, race/class, levels, pool bars); hidden quests/stability
+  removed; Identify text resolved to the viewer's tier; GM notes and others'
+  private notes excluded. *Accept:* canary strings seeded into every GM-only
+  field never appear in any projection across 1,000 random states (fixed
+  seed).
+
+## M2 — Server and sync
+
+- [ ] **M2.1 Persistence.** Append-only JSONL event log + snapshots in a data
+  directory; fsync; tolerant of a torn last line; backup at session end;
+  campaign export/import with secrets (tokens) stripped. *Accept:* restart
+  keeps state; torn-line test; export→import round trip identical; no secret
+  in exports.
+- [ ] **M2.2 Live protocol and authority.** Zod-typed messages. Clients join
+  as a character (no password) or as GM (GM key required, injected by the
+  desktop app; never in join URL/QR). Origin check on WS upgrade; GM HTTP
+  routes deny by default. Players may only act on their own character (free
+  points now; nicknames, notes, gifts/trades, practice submissions, montage
+  focus and Identify as those features land). Server pushes filtered updates and notifications;
+  reconnect resumes without gaps. *Accept:* GM + 2 player clients; canary test
+  over every player WS frame and HTTP body; GM command without key rejected;
+  cross-character action rejected; reconnect test; address/origin checks unit
+  tested as pure functions (incl. `::ffff:192.168.1.5`).
+- [ ] **M2.3 Join helper.** LAN IPv4 list, join URL, QR SVG. *Accept:* unit
+  tests; QR decodes to the URL.
+
+## MS — Walking skeleton and first preview build
+
+A thin end-to-end slice so Luke can run the app early and watch GM changes
+land on player screens. Later milestones replace these minimal screens with
+the full ones.
+
+- [ ] **MS.1 Minimal GM screen.** Create a character from one built-in
+  starter class; award XP with the even split; send a System broadcast.
+- [ ] **MS.2 Minimal player screen.** DESIGN §9 core rows (name, race, class,
+  levels, pools, nine stats in tenths, free points) and the live DING feed.
+- [ ] **MS.3 Perspective switcher.** In the GM app, a "View as" bar:
+  [GM] [each character] [Table view]. Character views and the Table view's
+  panes are real player clients (no GM key, player projection only), so what
+  Luke sees is exactly what that player sees. Table view shows the GM console
+  plus up to 4 player panes side by side, all live. Also works from any
+  browser on the host at `http://localhost:30333`.
+  *Accept:* e2e: in Table view, the GM awards XP and every affected player
+  pane shows the DING within 1 s; the canary test passes on every pane.
+- [ ] **MS.4 Demo campaign.** GM menu "Load demo campaign": 4 characters at
+  different grades (G, F, E, D) with skills, titles, items and a quest with
+  World Stability, for trying things out. Never mixes into a real campaign.
+- [ ] **MS.5 Desktop wrapper (preview).** Pulls M10.1 forward: double-click
+  starts the server and opens the GM window with the GM key injected; join
+  URL + QR shown; data in the OS app-data folder.
+- [ ] **MS.6 Preview release.** Pulls M10.2 forward: the release workflow
+  builds Windows (portable exe + installer), macOS (dmg, unsigned) and Linux
+  (AppImage) on push to the `release` branch and publishes a GitHub Release
+  named `preview-<date>`.
+  *Accept:* latest release workflow run is green with all artifacts.
+- [ ] **MS.A Milestone acceptance and review.** Then push `main` to
+  `release` so Luke gets the first build.
+
+## M1 (continued) — Rules engine
+
 - [ ] **M1.6 Titles and bonuses.** Flat and percentage bonuses, percentage
   cap, documented order (base → flat → percent → cap). *Accept:* stacking and
   cap tests.
@@ -102,36 +167,13 @@ Work top to bottom. An item is checked only when its acceptance criteria pass
 - [ ] **M1.12 Quests and World Stability.** Quest text, timers, day counter,
   stability rules (action tag → delta), clamp 0–100, manual nudge, visibility
   flag. *Accept:* rule, clamp and visibility tests.
-- [ ] **M1.13 Player projection.** Player view: own sheet in full; party
-  limited (name, race/class, levels, pool bars); hidden quests/stability
-  removed; Identify text resolved to the viewer's tier; GM notes and others'
-  private notes excluded. *Accept:* canary strings seeded into every GM-only
-  field never appear in any projection across 1,000 random states (fixed
-  seed).
 - [ ] **M1.14 Campaign simulation.** 40 sessions, 4 characters, ~6 levels per
   session, random valid play (fixed seed). *Accept:* DESIGN check values; 29
   selections each; evolutions at thresholds; invariants hold; coverage ≥ 90%.
 - [ ] **M1.A Milestone acceptance and review.**
 
-## M2 — Server and sync
+## M2 (continued) — Server and sync
 
-- [ ] **M2.1 Persistence.** Append-only JSONL event log + snapshots in a data
-  directory; fsync; tolerant of a torn last line; backup at session end;
-  campaign export/import with secrets (tokens) stripped. *Accept:* restart
-  keeps state; torn-line test; export→import round trip identical; no secret
-  in exports.
-- [ ] **M2.2 Live protocol and authority.** Zod-typed messages. Clients join
-  as a character (no password) or as GM (GM key required, injected by the
-  desktop app; never in join URL/QR). Origin check on WS upgrade; GM HTTP
-  routes deny by default. Players may only act on their own character (free
-  points, nicknames, notes, gifts/trades, practice submissions, montage
-  focus, Identify). Server pushes filtered updates and notifications;
-  reconnect resumes without gaps. *Accept:* GM + 2 player clients; canary test
-  over every player WS frame and HTTP body; GM command without key rejected;
-  cross-character action rejected; reconnect test; address/origin checks unit
-  tested as pure functions (incl. `::ffff:192.168.1.5`).
-- [ ] **M2.3 Join helper.** LAN IPv4 list, join URL, QR SVG. *Accept:* unit
-  tests; QR decodes to the URL.
 - [ ] **M2.4 Session log autosave.** Running log (DESIGN §7 "Logging for
   Claude") written to the exports folder every 5 minutes and on shutdown.
   *Accept:* file appears and grows during a scripted session; contains no
@@ -257,12 +299,12 @@ Work top to bottom. An item is checked only when its acceptance criteria pass
 
 ## M10 — Desktop app (double-click)
 
-- [ ] **M10.1 Electron wrapper.** Double-click starts the server and opens
+- [ ] **M10.1 Electron wrapper (final).** Builds on MS.5. Double-click starts the server and opens
   the GM console with the GM key injected; shows join URL + QR; data in the
   OS app-data folder; single instance; backup on quit; Windows firewall help.
   *Accept:* launches under `xvfb-run` in the workspace; `/health` responds;
   GM window connects with the key; a plain browser client cannot act as GM.
-- [ ] **M10.2 Packaging and releases.** electron-builder: Windows NSIS + portable,
+- [ ] **M10.2 Packaging and releases (final).** Builds on MS.6. electron-builder: Windows NSIS + portable,
   macOS dmg (unsigned), Linux AppImage. A release workflow runs on push to
   the `release` branch (tags cannot be pushed from build sessions) and
   creates the GitHub Release itself. *Accept:* AppImage builds and launches

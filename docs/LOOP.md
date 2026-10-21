@@ -113,8 +113,10 @@ should weigh in on also go in `docs/QUESTIONS.md` with the default you used.
    items finished, test counts, engine coverage, review summary, open `wip/*`
    branches, next item, blockers. Update the header lines (Status, Next item,
    Blockers).
-2. Delete `docs/LOCK.json`, commit `chore: release run lock`, push.
-3. When every box is checked (none provisional) and M11.5 is clean, write
+2. If this run checked an `Mx.A` box from MS onward, publish a preview build:
+   `git push origin main:release` (the release workflow does the rest).
+3. Delete `docs/LOCK.json`, commit `chore: release run lock`, push.
+4. When every box is checked (none provisional) and M11.5 is clean, write
    `docs/DONE.md`: what was built, how to install and run it, known gaps.
 
 ## Hard rules
