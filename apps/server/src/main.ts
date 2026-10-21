@@ -1,7 +1,9 @@
+import { networkInterfaces } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ENGINE_API_VERSION } from '@the-system/engine';
 import { ConfigError, resolveOptions } from './config';
+import { joinUrls } from './lan';
 import { createServer } from './server';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -17,6 +19,8 @@ async function main(): Promise<void> {
   console.log(
     `The System server listening on http://${options.host}:${port} (engine API v${ENGINE_API_VERSION})`,
   );
+  console.log('Players join at:');
+  for (const url of joinUrls(options.host, port, networkInterfaces())) console.log(`  ${url}`);
 
   const shutdown = (): void => {
     void app.close().then(() => process.exit(0));

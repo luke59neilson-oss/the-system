@@ -1,7 +1,9 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import fastifyStatic from '@fastify/static';
+import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { helloMessage } from './protocol';
 
 export interface CreateServerOptions {
   webRoot: string;
@@ -17,7 +19,23 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     throw new Error(`Web build not found at ${webRoot}. Run "npm run build" first.`);
   }
 
+  await app.register(fastifyWebsocket, { options: { maxPayload: 1024 * 1024 } });
   await app.register(fastifyStatic, { root: webRoot, index: ['index.html'] });
+
+  // Only /ws may be upgraded; refuse other upgrades before the handshake.
+  // (M2.2 adds the Origin check here.)
+  app.addHook('onRequest', async (request, reply) => {
+    const isUpgrade = (request.headers.upgrade ?? '').toLowerCase() === 'websocket';
+    if (isUpgrade && (request.url.split('?')[0] ?? '') !== WS_PATH) {
+      await reply.code(404).send({ error: 'Not found' });
+    }
+  });
+
+  app.get('/health', () => ({ status: 'ok' }));
+
+  app.get(WS_PATH, { websocket: true }, (socket) => {
+    socket.send(JSON.stringify(helloMessage()));
+  });
 
   // Browser navigations to client-side routes get the app shell; anything else
   // (missing assets, API, health, WebSocket paths) stays a 404.
@@ -33,6 +51,8 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
 
   return app;
 }
+
+export const WS_PATH = '/ws';
 
 const RESERVED_PREFIXES = ['/api', '/health', '/ws'];
 

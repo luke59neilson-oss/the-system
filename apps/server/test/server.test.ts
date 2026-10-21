@@ -49,12 +49,19 @@ describe('createServer', () => {
   it('404s missing assets, non-page requests and server-owned paths', async () => {
     expect((await app.inject({ url: '/missing.js' })).statusCode).toBe(404);
     expect((await app.inject({ url: '/sheet/abc' })).statusCode).toBe(404);
-    for (const url of ['/api', '/api/nope', '/health', '/ws', '/ws/x?y=1']) {
+    for (const url of ['/api', '/api/nope', '/health/x', '/ws/x?y=1']) {
       expect((await app.inject({ url, headers: html })).statusCode, url).toBe(404);
     }
     expect(
       (await app.inject({ method: 'POST', url: '/sheet/abc', headers: html })).statusCode,
     ).toBe(404);
+  });
+
+  it('answers /health and refuses a plain GET on /ws', async () => {
+    expect((await app.inject({ url: '/health', headers: html })).json()).toEqual({ status: 'ok' });
+    expect((await app.inject({ url: '/ws', headers: html })).statusCode).toBeGreaterThanOrEqual(
+      400,
+    );
   });
 
   it('fails clearly when the web build is missing', async () => {
