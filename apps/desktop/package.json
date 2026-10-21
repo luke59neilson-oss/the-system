@@ -1,0 +1,6 @@
+{
+  "name": "@the-system/desktop",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Electron wrapper for the GM console. Placeholder until M10."
+}

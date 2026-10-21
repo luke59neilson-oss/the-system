@@ -1,0 +1,17 @@
+{
+  "name": "@the-system/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.6",
+    "@the-system/engine": "*",
+    "fastify": "^5.12.7"
+  }
+}

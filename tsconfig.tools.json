@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": [
+    "e2e/**/*.ts",
+    "*.config.ts",
+    "apps/*/*.config.ts",
+    "scripts/**/*.ts",
+    "scripts/**/*.d.mts"
+  ]
+}
