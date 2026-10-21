@@ -166,7 +166,11 @@ export class LiveClient {
         return;
       }
       case 'error':
-        if (this.snapshot.status !== 'joined') {
+        // The server drops a player whose character was removed (e.g. its creation undone).
+        if (
+          this.snapshot.status !== 'joined' ||
+          message.error === 'Your character no longer exists'
+        ) {
           // A refused join (bad key, unknown character) will not fix itself by retrying.
           this.update({ status: 'refused', error: message.error });
           socket.close();
