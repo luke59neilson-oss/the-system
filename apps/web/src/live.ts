@@ -67,6 +67,9 @@ export class LiveClient {
   private nextRequest = 0;
   /** 0 on first join: the server resends this run's notifications, so a fresh page still has its DINGs. */
   private lastSeq = 0;
+  /** Joined at least once on this page: only then can a gap mean this page missed something. */
+  private everJoined = false;
+  private rejoining = false;
   private closed = false;
   private retry: ReturnType<typeof setTimeout> | null = null;
   private readonly join: JoinAs;
@@ -139,10 +142,12 @@ export class LiveClient {
           this.join.role === 'gm'
             ? { type: 'join', role: 'gm', gmKey: this.join.gmKey }
             : { type: 'join', role: 'player', characterId: this.join.characterId };
+        this.rejoining = this.everJoined;
         socket.send(JSON.stringify({ ...join, lastSeq: this.lastSeq }));
         return;
       }
       case 'joined':
+        this.everJoined = true;
         this.update({ status: 'joined', error: null, seq: message.seq });
         return;
       case 'state':
@@ -157,10 +162,13 @@ export class LiveClient {
         const known = new Set(this.snapshot.notifications.map(keyOf));
         const fresh = message.items.filter((n) => !known.has(keyOf(n)));
         for (const n of message.items) this.lastSeq = Math.max(this.lastSeq, n.seq);
-        if (fresh.length || message.gap) {
+        // On a first join a gap only means the server started after older events;
+        // after a reconnect it means this page really missed notifications.
+        const missed = message.gap && this.rejoining;
+        if (fresh.length || missed) {
           this.update({
             notifications: [...this.snapshot.notifications, ...fresh],
-            gap: this.snapshot.gap || message.gap,
+            gap: this.snapshot.gap || missed,
           });
         }
         return;

@@ -171,7 +171,7 @@ function Feed({ live, view }: { live: LiveSnapshot; view: PlayerView }) {
         <h2 id="dings">Notifications</h2>
         {live.gap && (
           <p className="muted" data-testid="gap">
-            Older notifications are not available (the System restarted); your sheet is up to date.
+            Some notifications were missed while you were disconnected; your sheet is up to date.
           </p>
         )}
         {dings.length === 0 ? (
