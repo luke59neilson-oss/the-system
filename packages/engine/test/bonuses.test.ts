@@ -56,6 +56,10 @@ describe('effective stats', () => {
       percentApplied: 0.2,
       capped: false,
       value: 144,
+      contributions: [
+        { sourceId: 'title-A', kind: 'title', name: 'A', flat: 20, percent: 0.1 },
+        { sourceId: 'title-B', kind: 'title', name: 'B', flat: 0, percent: 0.1 },
+      ],
     });
   });
 
@@ -113,6 +117,22 @@ describe('effective stats', () => {
     ]);
     expect(out['endurance']).toBe(0);
     expect(out['willpower']).toBe(5);
+  });
+
+  it('caps the net sum, so a penalty offsets over-cap stacking', () => {
+    const out = effectiveStats(rules, base({ strength: 100 }), [
+      title('Boon', [{ stat: 'strength', percent: 0.4 }]),
+      title('Curse', [{ stat: 'strength', percent: -0.2 }]),
+    ]);
+    expect(out['strength']).toBe(120);
+  });
+
+  it('summed penalties at or below -100% floor the stat at 0', () => {
+    const out = effectiveStats(rules, base({ strength: 100 }), [
+      title('A', [{ stat: 'strength', percent: -0.6 }]),
+      title('B', [{ stat: 'strength', percent: -0.6 }]),
+    ]);
+    expect(out['strength']).toBe(0);
   });
 
   it('works the same for items as for titles', () => {
@@ -174,6 +194,15 @@ describe('bonus validation', () => {
   ])('rejects %j', (bonuses, message) => {
     expect(() => effectiveStats(rules, base(), [title('Bad', bonuses)])).toThrow(BonusRuleError);
     expect(() => effectiveStats(rules, base(), [title('Bad', bonuses)])).toThrow(message);
+  });
+
+  it('rejects the same source twice (no double stacking)', () => {
+    const a = title('A', [{ stat: 'strength', flat: 1 }]);
+    expect(() => effectiveStats(rules, base(), [a, a])).toThrow(/given twice/);
+  });
+
+  it('rejects a fractional base stat (stats are whole stat units)', () => {
+    expect(() => effectiveStats(rules, base({ agility: 10.4 }), [])).toThrow(/whole number/);
   });
 
   it('rejects a missing or non-numeric base stat', () => {

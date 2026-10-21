@@ -12,6 +12,8 @@ import type { RulesConfig } from '../rules';
  *                 then applied once: (base + Σ flat) × (1 + capped Σ percent)
  * The result is rounded half away from zero to whole stat units (tenths on
  * screen) and never drops below 0. Percentages never compound with each other.
+ * The cap applies to the net sum, so a penalty offsets over-cap stacking
+ * (+40% and −20% → +20%). A source id may appear once (no double stacking).
  */
 
 /** One stat's bonus from one source. `flat` is in stat units (10 = 1.0 on screen). */
@@ -29,6 +31,15 @@ export interface BonusSource {
   readonly bonuses: readonly StatBonus[];
 }
 
+/** What one source added to one stat (for the player's System text). */
+export interface BonusContribution {
+  readonly sourceId: string;
+  readonly kind: BonusSource['kind'];
+  readonly name: string;
+  readonly flat: number;
+  readonly percent: number;
+}
+
 export interface StatBreakdown {
   readonly base: number;
   /** Σ flat bonuses. */
@@ -41,6 +52,8 @@ export interface StatBreakdown {
   readonly capped: boolean;
   /** Effective stat in stat units. */
   readonly value: number;
+  /** Each source that touched this stat, in the order given. */
+  readonly contributions: readonly BonusContribution[];
 }
 
 export class BonusRuleError extends Error {}
@@ -75,28 +88,56 @@ export function statBreakdown(
   base: Readonly<Record<string, number>>,
   sources: readonly BonusSource[],
 ): Record<string, StatBreakdown> {
-  for (const source of sources) validateBonusSource(rules, source);
+  const seen = new Set<string>();
+  for (const source of sources) {
+    if (seen.has(source.id)) throw new BonusRuleError(`Bonus source "${source.id}" given twice`);
+    seen.add(source.id);
+    validateBonusSource(rules, source);
+  }
   const cap = rules.bonuses.percentCapPerStat;
   const out: Record<string, StatBreakdown> = {};
   for (const { id } of rules.stats.list) {
     const own = base[id];
-    if (own === undefined || !Number.isFinite(own)) {
-      throw new BonusRuleError(`Stat "${id}" is missing or not a number`);
+    if (own === undefined || !Number.isSafeInteger(own)) {
+      throw new BonusRuleError(`Stat "${id}" is missing or not a whole number`);
     }
     let flat = 0;
     let percent = 0;
+    const contributions: BonusContribution[] = [];
     for (const source of sources) {
+      let f = 0;
+      let p = 0;
+      let touched = false;
       for (const b of source.bonuses) {
         if (b.stat !== id) continue;
-        flat += b.flat ?? 0;
-        percent += b.percent ?? 0;
+        touched = true;
+        f += b.flat ?? 0;
+        p += b.percent ?? 0;
       }
+      if (!touched) continue;
+      flat += f;
+      percent += p;
+      contributions.push({
+        sourceId: source.id,
+        kind: source.kind,
+        name: source.name,
+        flat: f,
+        percent: p,
+      });
     }
     // Snap float noise (0.1 + 0.2 = 0.30000000000000004) to millionths.
     percent = Math.round(percent * 1e6) / 1e6;
     const percentApplied = Math.max(-1, Math.min(cap, percent));
     const value = Math.max(0, roundHalfAway((own + flat) * (1 + percentApplied)));
-    out[id] = { base: own, flat, percent, percentApplied, capped: percent > cap, value };
+    out[id] = {
+      base: own,
+      flat,
+      percent,
+      percentApplied,
+      capped: percent > cap,
+      value,
+      contributions,
+    };
   }
   return out;
 }

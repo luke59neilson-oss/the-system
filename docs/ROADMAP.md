@@ -139,7 +139,7 @@ the full ones.
 
 ## M1 (continued) — Rules engine
 
-- [ ] **M1.6 Titles and bonuses.** Flat and percentage bonuses, percentage
+- [x] **M1.6 Titles and bonuses.** Flat and percentage bonuses, percentage
   cap, documented order (base → flat → percent → cap). *Accept:* stacking and
   cap tests.
 - [ ] **M1.7 Items and economy.** Item definitions (rarity, effects), rarity
