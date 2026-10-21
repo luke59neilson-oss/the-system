@@ -26,3 +26,6 @@ answer under any question and the next run will follow it.
    `the-system-campaign`) and a token in the app's settings. Default: export
    to a folder only.
    Answer:
+9. **Starting World Stability?** DESIGN gives the 0–100 range but no start.
+   Default: 100 (the world starts healthy and the infection drags it down).
+   Answer:

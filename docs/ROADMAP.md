@@ -35,11 +35,11 @@ Work top to bottom. An item is checked only when its acceptance criteria pass
   *Accept:* clean clone → `npm ci && npm run check && npm run build` succeed;
   `npm run e2e` runs `e2e/M0.1.spec.ts`, which loads the web app through the
   server on a random port.
-- [ ] **M0.2 CI.** GitHub Actions on push/PR (ubuntu): install, check, build,
+- [x] **M0.2 CI.** GitHub Actions on push/PR (ubuntu): install, check, build,
   e2e (CI installs its own Chromium). `paths-ignore: docs/**` so lock and
   progress commits don't trigger runs. No desktop builds.
   *Accept:* latest completed run on main is green.
-- [ ] **M0.3 LAN server skeleton.** Fastify serves the web build and a
+- [x] **M0.3 LAN server skeleton.** Fastify serves the web build and a
   WebSocket at `/ws`; binds `0.0.0.0`, default port 30333 (configurable);
   `/health`; logs LAN IPv4 join URLs on start.
   *Accept:* integration test on a random port: `/health` 200; a WS client
@@ -47,7 +47,7 @@ Work top to bottom. An item is checked only when its acceptance criteria pass
 
 ## M1 — Rules engine (`packages/engine`, pure, deterministic)
 
-- [ ] **M1.1 Rules config.** Zod schema with every DESIGN default, a
+- [x] **M1.1 Rules config.** Zod schema with every DESIGN default, a
   `configVersion`, and migration hook. *Accept:* defaults parse; invalid
   configs give readable errors; snapshot of defaults.
 - [ ] **M1.2 Character model.** Stats, tracks, grade, derived pools, tenths
