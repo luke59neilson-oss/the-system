@@ -189,6 +189,17 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
         pools: rule(event, () => clampPools(state.rules, stats, character.pools)),
       });
     }
+    case 'system.broadcast': {
+      const ids = event.payload.characterIds;
+      if (ids !== null) {
+        if (new Set(ids).size !== ids.length) fail(event, 'a recipient is listed twice');
+        for (const id of ids) characterOf(state, event, id);
+      } else if (state.characterOrder.length === 0) {
+        fail(event, 'there is no one to broadcast to yet');
+      }
+      // A message, not a change: state is untouched (the hub turns it into notifications).
+      return state;
+    }
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');
   }

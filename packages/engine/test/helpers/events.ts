@@ -77,6 +77,13 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
       classSkills: rand() < 0.9 ? kit : kit.slice(0, 1),
     };
   }
+  if (roll >= 0.25 && roll < 0.3) {
+    return {
+      type: 'system.broadcast',
+      text: pick(['The world is dying.', ' ', 'Day 3 begins.']),
+      characterIds: rand() < 0.4 ? null : [someId(), ...(rand() < 0.1 ? [someId()] : [])],
+    };
+  }
   if (roll < 0.3)
     return { type: 'character.rename', characterId: someId(), name: pick(['A', 'B', '']) };
   if (roll < 0.45) {

@@ -301,6 +301,35 @@ describe('live protocol and authority', () => {
     old.send({ type: 'join', role: 'player', characterId: 'casper', lastSeq: 0 });
     expect(await old.waitFor((m) => m.type === 'notifications')).toMatchObject({ gap: false });
 
+    // Broadcasts: one to Jake alone reaches only Jake; one to all reaches both.
+    const jakeAt = jake.frames.length;
+    const casperAt = back.frames.length;
+    const whisper = `CANARY-jake-skill whisper for Jake only`;
+    expect(
+      (await gm.command({ type: 'system.broadcast', text: whisper, characterIds: ['jake'] })).ok,
+    ).toBe(true);
+    const whisperFrame = await jake.waitFor((m) => m.type === 'notifications', jakeAt);
+    expect(whisperFrame.items).toEqual([
+      expect.objectContaining({
+        notification: { kind: 'broadcast', characterId: 'jake', text: whisper },
+      }),
+    ]);
+    expect((await gm.command({ type: 'system.broadcast', text: 'Day 2 dawns.' })).ok).toBe(true);
+    for (const [client, at, id] of [
+      [jake, jakeAt, 'jake'],
+      [back, casperAt, 'casper'],
+    ] as const) {
+      const frame = await client.waitFor(
+        (m) => m.type === 'notifications' && JSON.stringify(m).includes('Day 2 dawns.'),
+        at,
+      );
+      expect(frame.items).toEqual([
+        expect.objectContaining({
+          notification: { kind: 'broadcast', characterId: id, text: 'Day 2 dawns.' },
+        }),
+      ]);
+    }
+
     // Canary: no player frame or public HTTP body carries GM-only or others' data.
     const check = (frames: string[], owner: string | null, label: string) => {
       const text = frames.join('\n');

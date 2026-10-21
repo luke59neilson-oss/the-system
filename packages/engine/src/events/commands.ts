@@ -61,6 +61,12 @@ export type Command =
       /** null unassigns the batch and unlocks it. */
       allocation: Readonly<Record<string, number>> | null;
     }
+  | {
+      type: 'system.broadcast';
+      text: string;
+      /** Recipients; omitted or null = every character. */
+      characterIds?: readonly string[] | null | undefined;
+    }
   | { type: 'event.undo'; eventId: string };
 
 /** Everything impure is injected: who acts, when, and how ids are made. */
@@ -89,6 +95,7 @@ const commandSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('freePoints.assign'), allocation: anyRecord }),
   z.object({ type: z.literal('freePoints.override'), allocation: anyRecord.nullable() }),
+  z.object({ type: z.literal('system.broadcast'), text: z.string() }),
   z.object({ type: z.literal('event.undo') }),
 ]);
 
@@ -211,6 +218,11 @@ function toEvent(command: Command, ctx: CommandContext): { type: EventType; payl
           raceLevel: command.raceLevel,
           allocation: command.allocation,
         },
+      };
+    case 'system.broadcast':
+      return {
+        type: 'system.broadcast',
+        payload: { text: command.text, characterIds: command.characterIds ?? null },
       };
     case 'event.undo':
       return { type: 'event.undone', payload: { eventId: command.eventId } };

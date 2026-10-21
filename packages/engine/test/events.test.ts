@@ -14,6 +14,7 @@ import {
   type Campaign,
   type Character,
   type Command,
+  type CommandContext,
   type DomainEvent,
 } from '../src';
 import {
@@ -284,6 +285,70 @@ describe('commands and the reducer', () => {
   });
 });
 
+describe('system.broadcast', () => {
+  it('records a trimmed message to everyone or to listed characters, changing no state', () => {
+    const before = base();
+    const all = run(
+      [{ type: 'system.broadcast', text: '  The world is dying.  ' }],
+      testContext('a'),
+      before,
+    );
+    expect(last(all)).toMatchObject({
+      type: 'system.broadcast',
+      payload: { text: 'The world is dying.', characterIds: null },
+    });
+    expect(all.state).toEqual(before.state);
+    const one = run(
+      [{ type: 'system.broadcast', text: 'Only you', characterIds: ['jake'] }],
+      testContext('a'),
+      before,
+    );
+    expect(last(one).payload).toEqual({ text: 'Only you', characterIds: ['jake'] });
+  });
+
+  it('rejects blank or overlong text, unknown or repeated recipients, an empty list, and players', () => {
+    const c = base();
+    expect(reject(c, { type: 'system.broadcast', text: '   ' })).toMatch('must not be blank');
+    expect(reject(c, { type: 'system.broadcast', text: 'x'.repeat(2001) })).toMatch('2000');
+    expect(reject(c, { type: 'system.broadcast', text: 'a', characterIds: ['ghost'] })).toMatch(
+      'unknown character "ghost"',
+    );
+    expect(
+      reject(c, { type: 'system.broadcast', text: 'a', characterIds: ['jake', 'jake'] }),
+    ).toMatch('listed twice');
+    expect(reject(c, { type: 'system.broadcast', text: 'a', characterIds: [] })).toMatch(
+      'characterIds',
+    );
+    const player: CommandContext = {
+      ...testContext('p'),
+      actor: { role: 'player', characterId: 'jake' },
+    };
+    const result = execute(
+      c,
+      { type: 'system.broadcast', text: 'a', characterIds: ['jake'] },
+      player,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it('cannot broadcast to everyone before any character exists', () => {
+    const c = run([{ type: 'campaign.create', name: 'W', rules: rawRules() }]);
+    expect(reject(c, { type: 'system.broadcast', text: 'Hello?' })).toMatch('no one to broadcast');
+  });
+
+  it('pins a recipient: undoing their creation is refused while the broadcast stands', () => {
+    const c = run(
+      [
+        { ...jake, id: 'kim', name: 'Kim' },
+        { type: 'system.broadcast', text: 'Kim!', characterIds: ['kim'] },
+      ],
+      testContext('a'),
+      base(),
+    );
+    expect(reject(c, { type: 'event.undo', eventId: 'a1' })).toMatch('cannot undo a1');
+  });
+});
+
 describe('undo', () => {
   const undoLatest = (c: Campaign) =>
     run([{ type: 'event.undo', eventId: last(c).id }], testContext('u'), c);
@@ -319,6 +384,19 @@ describe('undo', () => {
       type: 'event.undone',
       payload: { eventId: last(after).id },
     });
+    expect(undone.undone).toEqual({ [last(after).id]: last(undone).id });
+  });
+
+  it('undoing a broadcast keeps state and removes the event from the effective log', () => {
+    const before = base();
+    const after = run(
+      [{ type: 'system.broadcast', text: 'Hi', characterIds: null }],
+      testContext('a'),
+      before,
+    );
+    expect(after.state).toEqual(before.state);
+    const undone = undoLatest(after);
+    expect(undone.state).toEqual(before.state);
     expect(undone.undone).toEqual({ [last(after).id]: last(undone).id });
   });
 

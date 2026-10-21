@@ -72,6 +72,20 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     raceLevel: z.number().int().positive(),
     allocation: statValues.nullable(),
   }),
+  /**
+   * GM System broadcast (DESIGN §7 "GM broadcasts"; ROADMAP MS.1/M4.7): a
+   * System-style message to the listed characters, or to everyone when
+   * `characterIds` is null. Changes no state; players receive it as a
+   * notification addressed to their own character only.
+   */
+  'system.broadcast': z.strictObject({
+    text: z
+      .string()
+      .trim()
+      .min(1, 'must not be blank')
+      .refine((t) => t.length <= 2000, 'must be at most 2000 characters'),
+    characterIds: z.array(recordId).min(1).nullable(),
+  }),
   /** Compensating event: the target stops counting, as if it had never happened. */
   'event.undone': z.strictObject({ eventId: recordId }),
 } as const;
@@ -92,6 +106,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'xp.awarded': 1,
   'freePoints.assigned': 1,
   'freePoints.overridden': 1,
+  'system.broadcast': 1,
   'event.undone': 1,
 };
 

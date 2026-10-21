@@ -155,10 +155,12 @@ export class LiveHub {
         if (this.history[i]?.eventId === target) this.history.splice(i, 1);
       }
     }
-    const fresh = notificationsFor(before, this.store.campaign.state).map((notification) => ({
-      seq: this.seq,
-      notification,
-    }));
+    const fresh = notificationsFor(before, this.store.campaign.state, event).map(
+      (notification) => ({
+        seq: this.seq,
+        notification,
+      }),
+    );
     if (event) this.history.push(...fresh.map((n) => ({ ...n, eventId: event.id })));
     const cap = this.options.notificationHistory ?? 5000;
     if (this.history.length > cap) {

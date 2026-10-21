@@ -1,4 +1,4 @@
-import { raceLevel, type CampaignState } from '@the-system/engine';
+import { raceLevel, type CampaignState, type DomainEvent } from '@the-system/engine';
 
 /**
  * Notifications derived from a state change (DESIGN §9 "DING!"). Only gains
@@ -22,14 +22,28 @@ export type Notification =
       readonly kind: 'freePoints';
       readonly characterId: string;
       readonly unassigned: number;
+    }
+  | {
+      /** A GM System broadcast, one per recipient (a player only ever sees their own). */
+      readonly kind: 'broadcast';
+      readonly characterId: string;
+      readonly text: string;
     };
 
 export function notificationsFor(
   before: CampaignState | null,
   after: CampaignState | null,
+  /** The event that caused the change; messages (broadcasts) notify from it. */
+  event?: DomainEvent,
 ): Notification[] {
   if (after === null) return [];
   const out: Notification[] = [];
+  if (event?.type === 'system.broadcast') {
+    const recipients = event.payload.characterIds ?? after.characterOrder;
+    for (const characterId of recipients) {
+      out.push({ kind: 'broadcast', characterId, text: event.payload.text });
+    }
+  }
   for (const id of after.characterOrder) {
     const now = after.characters[id];
     const was = before?.characters[id];
