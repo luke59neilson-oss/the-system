@@ -51,6 +51,8 @@ export class LiveHub {
   private readonly history: (SeqNotification & { eventId: string })[] = [];
   /** Event seq when this hub started: older notifications are not in memory. */
   private readonly startSeq: number;
+  /** Highest seq whose notifications were dropped by the history cap. */
+  private trimmedThrough = -1;
   private readonly store: CampaignStore;
   private readonly options: HubOptions;
 
@@ -159,7 +161,10 @@ export class LiveHub {
     }));
     if (event) this.history.push(...fresh.map((n) => ({ ...n, eventId: event.id })));
     const cap = this.options.notificationHistory ?? 5000;
-    if (this.history.length > cap) this.history.splice(0, this.history.length - cap);
+    if (this.history.length > cap) {
+      const dropped = this.history.splice(0, this.history.length - cap);
+      this.trimmedThrough = Math.max(this.trimmedThrough, ...dropped.map((n) => n.seq));
+    }
     for (const other of this.clients) {
       if (other.role.role === 'none') continue;
       try {
@@ -206,11 +211,7 @@ export class LiveHub {
    */
   private sendMissed(client: Client, lastSeq: number | undefined): void {
     if (lastSeq === undefined || client.role.role === 'none') return;
-    const oldest = this.history[0];
-    const covered =
-      lastSeq >= this.startSeq &&
-      (this.history.length < (this.options.notificationHistory ?? 5000) ||
-        (oldest !== undefined && lastSeq >= oldest.seq));
+    const covered = lastSeq >= this.startSeq && lastSeq >= this.trimmedThrough;
     const missed = this.filter(
       client.role,
       this.history.filter((n) => n.seq > lastSeq),
