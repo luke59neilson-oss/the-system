@@ -104,11 +104,14 @@ test('a player picks a character and watches the GM’s changes land live', asyn
 
   await player.screenshot({ path: path.join(shots, 'player-1366x768.png') });
 
-  // Reloading keeps the messages (they live in the view, not only in the feed).
+  // Reloading keeps the messages (they live in the view) and this run's DINGs
+  // (the server resends them on join), with no "missed" warning.
   await player.reload();
   await expect(player.getByTestId('messages')).toHaveText(
     'The world is dying. Find what is killing it.',
   );
+  await expect(player.getByTestId('dings').getByRole('listitem')).toHaveCount(2);
+  await expect(player.getByTestId('gap')).toHaveCount(0);
 
   // Canary: nothing GM-only or meant for Miranda reached Jake's browser.
   const all = frames.join('\n');
@@ -124,6 +127,8 @@ test('a player picks a character and watches the GM’s changes land live', asyn
   await phone.getByRole('link', { name: /Miranda/ }).click();
   await expect(phone.getByTestId('name')).toHaveText('Miranda');
   await expect(phone.getByTestId('messages')).toContainText(WHISPER);
+  // A player who joins after the award still sees their own DINGs, not Jake's.
+  await expect(phone.getByTestId('dings').getByRole('listitem')).toHaveCount(2);
   const width = await phone.locator('html').evaluate((el) => el.scrollWidth);
   expect(width).toBeLessThanOrEqual(390);
   await phone.screenshot({ path: path.join(shots, 'player-390x844.png'), fullPage: true });

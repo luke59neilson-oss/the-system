@@ -169,6 +169,11 @@ function Feed({ live, view }: { live: LiveSnapshot; view: PlayerView }) {
     <div className="feeds">
       <section className="window feed" aria-labelledby="dings">
         <h2 id="dings">Notifications</h2>
+        {live.gap && (
+          <p className="muted" data-testid="gap">
+            Older notifications are not available (the System restarted); your sheet is up to date.
+          </p>
+        )}
         {dings.length === 0 ? (
           <p className="muted">Level-ups appear here as they happen.</p>
         ) : (

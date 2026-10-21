@@ -43,6 +43,8 @@ export interface LiveSnapshot {
   state: CampaignState | null;
   view: PlayerView | null;
   notifications: SeqNotification[];
+  /** The server could not resend everything since our last seq (restart or history cap). */
+  gap: boolean;
 }
 
 export type CommandResult = { ok: true } | { ok: false; error: string };
@@ -58,11 +60,13 @@ export class LiveClient {
     state: null,
     view: null,
     notifications: [],
+    gap: false,
   };
   private readonly listeners = new Set<(s: LiveSnapshot) => void>();
   private readonly pending = new Map<string, (r: CommandResult) => void>();
   private nextRequest = 0;
-  private lastSeq: number | undefined;
+  /** 0 on first join: the server resends this run's notifications, so a fresh page still has its DINGs. */
+  private lastSeq = 0;
   private closed = false;
   private retry: ReturnType<typeof setTimeout> | null = null;
   private readonly join: JoinAs;
@@ -135,9 +139,7 @@ export class LiveClient {
           this.join.role === 'gm'
             ? { type: 'join', role: 'gm', gmKey: this.join.gmKey }
             : { type: 'join', role: 'player', characterId: this.join.characterId };
-        socket.send(
-          JSON.stringify(this.lastSeq === undefined ? join : { ...join, lastSeq: this.lastSeq }),
-        );
+        socket.send(JSON.stringify({ ...join, lastSeq: this.lastSeq }));
         return;
       }
       case 'joined':
@@ -154,8 +156,12 @@ export class LiveClient {
       case 'notifications': {
         const known = new Set(this.snapshot.notifications.map(keyOf));
         const fresh = message.items.filter((n) => !known.has(keyOf(n)));
-        if (fresh.length) {
-          this.update({ notifications: [...this.snapshot.notifications, ...fresh] });
+        for (const n of message.items) this.lastSeq = Math.max(this.lastSeq, n.seq);
+        if (fresh.length || message.gap) {
+          this.update({
+            notifications: [...this.snapshot.notifications, ...fresh],
+            gap: this.snapshot.gap || message.gap,
+          });
         }
         return;
       }
