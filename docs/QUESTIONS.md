@@ -64,3 +64,9 @@ answer under any question and the next run will follow it.
     to the GM leaves play). Default: unlimited. Alternative: a GM stash
     inventory that GM trades draw from.
     Answer:
+17. **Journal privacy on disk.** The GM screen never shows a player's
+    unshared journal entry, but the campaign files and backup export on the
+    host laptop contain them (a restore needs them). Default: accept that.
+    Alternative: players' journals stored encrypted with a per-player
+    passphrase (lost passphrase = lost journal).
+    Answer:

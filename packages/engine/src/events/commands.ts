@@ -121,6 +121,39 @@ export type Command =
       tradeId: string;
       characterId: string | null;
     }
+  | {
+      type: 'practice.log';
+      characterId: string;
+      action: string;
+      skills?: readonly string[] | undefined;
+      stat?: string | null | undefined;
+      tags?: readonly string[] | undefined;
+      /** Default: "player" for a player, "gm" for the GM. */
+      source?: 'gm' | 'player' | 'montage' | undefined;
+    }
+  | {
+      type: 'note.create';
+      /** Optional; a fresh id is generated when omitted. */
+      noteId?: string | undefined;
+      /** Author: the player's own character, or null for the GM. */
+      characterId: string | null;
+      kind: 'journal' | 'party' | 'gm';
+      title?: string | undefined;
+      body?: string | undefined;
+      tags?: readonly string[] | undefined;
+      /** Journal only (default false); party notes are always shared, GM notes never. */
+      shareable?: boolean | undefined;
+    }
+  | {
+      type: 'note.edit';
+      noteId: string;
+      characterId: string | null;
+      title?: string | undefined;
+      body?: string | undefined;
+      tags?: readonly string[] | undefined;
+      shareable?: boolean | undefined;
+    }
+  | { type: 'note.delete'; noteId: string; characterId: string | null }
   | { type: 'event.undo'; eventId: string };
 
 export interface StatBonusInput {
@@ -177,6 +210,10 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('trade.accept') }),
   z.object({ type: z.literal('trade.decline') }),
   z.object({ type: z.literal('trade.cancel') }),
+  z.object({ type: z.literal('practice.log') }),
+  z.object({ type: z.literal('note.create') }),
+  z.object({ type: z.literal('note.edit') }),
+  z.object({ type: z.literal('note.delete') }),
   z.object({ type: z.literal('event.undo') }),
 ]);
 
@@ -196,6 +233,10 @@ export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>([
   'trade.accept',
   'trade.decline',
   'trade.cancel',
+  'practice.log',
+  'note.create',
+  'note.edit',
+  'note.delete',
 ]);
 
 /** Returns why the actor may not issue the command, or null when allowed. */
@@ -393,6 +434,44 @@ function toEvent(command: Command, ctx: CommandContext): { type: EventType; payl
       )[command.type];
       return { type, payload: { tradeId: command.tradeId, characterId: command.characterId } };
     }
+    case 'practice.log':
+      return {
+        type: 'practice.logged',
+        payload: {
+          characterId: command.characterId,
+          action: command.action,
+          skills: command.skills ?? [],
+          stat: command.stat ?? null,
+          tags: command.tags ?? [],
+          source: command.source ?? (ctx.actor.role === 'player' ? 'player' : 'gm'),
+        },
+      };
+    case 'note.create':
+      return {
+        type: 'note.created',
+        payload: {
+          noteId: command.noteId ?? ctx.newId(),
+          characterId: command.characterId,
+          kind: command.kind,
+          title: command.title ?? '',
+          body: command.body ?? '',
+          tags: command.tags ?? [],
+          shareable: command.shareable ?? command.kind === 'party',
+        },
+      };
+    case 'note.edit': {
+      const { noteId, characterId, title, body, tags, shareable } = command;
+      // Undefined fields vanish in the event's JSON round trip (= unchanged).
+      return {
+        type: 'note.edited',
+        payload: { noteId, characterId, title, body, tags, shareable },
+      };
+    }
+    case 'note.delete':
+      return {
+        type: 'note.deleted',
+        payload: { noteId: command.noteId, characterId: command.characterId },
+      };
     case 'event.undo':
       return { type: 'event.undone', payload: { eventId: command.eventId } };
   }

@@ -47,3 +47,66 @@ describe('LiveHub', () => {
     store.close();
   });
 });
+
+describe('LiveHub notes privacy (M1.8)', () => {
+  it("never sends the GM a player's unshared journal entry, live or after sharing", () => {
+    dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-hub-'));
+    const store = CampaignStore.open('main', { dataDir, now: () => '2026-10-21T00:00:00.000Z' });
+    let n = 0;
+    const now = () => '2026-10-21T00:00:00.000Z';
+    const gm = { actor: { role: 'gm' as const }, sessionId: null, now, newId: () => `e${++n}` };
+    for (const command of [
+      { type: 'campaign.create', name: 'W', rules: JSON.parse(JSON.stringify(DEFAULT_RULES)) },
+      {
+        type: 'character.create',
+        id: 'jake',
+        name: 'Jake',
+        className: 'Archer',
+        classSkills: [
+          { name: 'Basic Archery', rarity: 'inferior' },
+          { name: 'Basic Stealth', rarity: 'inferior' },
+          { name: 'Archer’s Eye', rarity: 'common' },
+        ],
+      },
+    ] as const) {
+      const result = execute(store.campaign, command, gm);
+      if (!result.ok) throw new Error(result.error);
+      store.appendAll(result.events);
+    }
+    const hub = new LiveHub(store, { gmKey: 'k'.repeat(32), now, newId: () => `h${++n}` });
+    const toGm: string[] = [];
+    const gmConn = hub.connect((m) => toGm.push(JSON.stringify(m)));
+    gmConn.receive(JSON.stringify({ type: 'join', role: 'gm', gmKey: 'k'.repeat(32), lastSeq: 0 }));
+    const toJake: ServerMessage[] = [];
+    const jake = hub.connect((m) => toJake.push(m));
+    jake.receive(JSON.stringify({ type: 'join', role: 'player', characterId: 'jake' }));
+    const send = (requestId: string, command: unknown) =>
+      jake.receive(JSON.stringify({ type: 'command', requestId, command }));
+    send('r1', {
+      type: 'note.create',
+      noteId: 'n1',
+      characterId: 'jake',
+      kind: 'journal',
+      title: 'SECRET-TITLE',
+      body: 'SECRET-BODY',
+    });
+    expect(toJake.find((m) => m.type === 'result')).toMatchObject({ ok: true });
+    expect(toGm.some((m) => m.includes('SECRET'))).toBe(false);
+    expect(store.campaign.state?.notes['n1']?.body).toBe('SECRET-BODY');
+    // The GM cannot edit it into view either.
+    gmConn.receive(
+      JSON.stringify({
+        type: 'command',
+        requestId: 'g1',
+        command: { type: 'note.edit', noteId: 'n1', characterId: null, shareable: true },
+      }),
+    );
+    expect(toGm.some((m) => m.includes('SECRET'))).toBe(false);
+    // Once the player shares it, the GM gets it.
+    send('r2', { type: 'note.edit', noteId: 'n1', characterId: 'jake', shareable: true });
+    expect(toGm[toGm.length - 1]).toContain('SECRET-BODY');
+    gmConn.close();
+    jake.close();
+    store.close();
+  });
+});

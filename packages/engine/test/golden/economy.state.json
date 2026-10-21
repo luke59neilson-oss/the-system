@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -620,5 +620,8 @@
       "closedAt": "2026-10-28T18:00:17.000Z"
     }
   },
-  "tradeOrder": ["tr1", "tr2", "tr3"]
+  "tradeOrder": ["tr1", "tr2", "tr3"],
+  "practice": [],
+  "notes": {},
+  "noteOrder": []
 }

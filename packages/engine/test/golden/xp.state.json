@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "name": "XP golden",
   "rules": {
     "configVersion": 1,
@@ -661,5 +661,8 @@
   "itemOrder": [],
   "holdings": {},
   "trades": {},
-  "tradeOrder": []
+  "tradeOrder": [],
+  "practice": [],
+  "notes": {},
+  "noteOrder": []
 }

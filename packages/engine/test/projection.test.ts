@@ -309,6 +309,10 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
     );
     econ.trades = { t: { id: `${GM}-trade`, from: ids[0] ?? null, to: null } };
     econ.tradeOrder = [`${GM}-trade`];
+    // Practice and notes (M1.8): not projected yet either.
+    econ.practice = [{ id: 'pr', characterId: ids[0], action: `${GM}-practice`, skills: [] }];
+    econ.notes = { n: { id: 'n', kind: 'party', body: `${GM}-note` } };
+    econ.noteOrder = [`${GM}-noteorder`];
     return { state: s, owner, gm };
   }
 

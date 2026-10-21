@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -437,5 +437,8 @@
   "itemOrder": [],
   "holdings": {},
   "trades": {},
-  "tradeOrder": []
+  "tradeOrder": [],
+  "practice": [],
+  "notes": {},
+  "noteOrder": []
 }

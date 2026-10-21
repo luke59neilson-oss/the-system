@@ -806,6 +806,10 @@ describe('property: replay equals incremental state', () => {
       'trade.accept',
       'trade.decline',
       'trade.cancel',
+      'practice.log',
+      'note.create',
+      'note.edit',
+      'note.delete',
     ]) {
       expect(acceptedByType[type] ?? 0, `seed ${SEED}: accepted ${type}`).toBeGreaterThan(0);
     }

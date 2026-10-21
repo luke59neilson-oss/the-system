@@ -244,6 +244,10 @@ describe('free points', () => {
       'trade.accept': 'trade.accepted',
       'trade.decline': 'trade.declined',
       'trade.cancel': 'trade.cancelled',
+      'practice.log': 'practice.logged',
+      'note.create': 'note.created',
+      'note.edit': 'note.edited',
+      'note.delete': 'note.deleted',
     };
     expect([...PLAYER_COMMANDS].map((t) => past[t] ?? t)).toEqual([...PLAYER_EVENT_TYPES]);
   });

@@ -2,6 +2,7 @@ import {
   EventRejectedError,
   ProjectionError,
   execute,
+  projectForGm,
   projectForPlayer,
   type Actor,
   type Command,
@@ -179,11 +180,13 @@ export class LiveHub {
     }
   }
 
-  /** Current state for a GM, the projection for a player. */
+  /** The GM projection for a GM, the player projection for a player. */
   private sendSnapshot(client: Client): void {
     const role = client.role;
     if (role.role === 'gm') {
-      client.send({ type: 'state', seq: this.seq, state: this.store.campaign.state });
+      const state = this.store.campaign.state;
+      // The GM never receives journal entries a player has not shared (M1.8).
+      client.send({ type: 'state', seq: this.seq, state: state && projectForGm(state) });
       return;
     }
     if (role.role !== 'player') return;

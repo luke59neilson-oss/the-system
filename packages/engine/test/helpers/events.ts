@@ -68,6 +68,7 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
   const ids = c.state?.characterOrder ?? [];
   const someId = () => (ids.length && rand() < 0.95 ? pick(ids) : 'ghost');
   if (rand() < 0.35) return randomEconomyCommand(rand, c, pick, someId);
+  if (rand() < 0.15) return randomNotesCommand(rand, c, pick, someId);
   const roll = rand();
   if (roll < 0.15) {
     return {
@@ -223,11 +224,62 @@ function randomEconomyCommand(
       get: bundle(),
     };
   }
-  const trade = c.state?.trades[pick(tradeIds)];
-  const by = rand() < 0.7 ? (trade?.to ?? null) : (trade?.from ?? null);
+  // Mostly open trades, answered by the right party.
+  const open = tradeIds.filter((id) => c.state?.trades[id]?.status === 'open');
+  const trade = c.state?.trades[pick(open.length && rand() < 0.8 ? open : tradeIds)];
+  const type = pick(['trade.accept', 'trade.accept', 'trade.decline', 'trade.cancel'] as const);
+  const by = type === 'trade.cancel' ? (trade?.from ?? null) : (trade?.to ?? null);
   return {
-    type: pick(['trade.accept', 'trade.accept', 'trade.decline', 'trade.cancel'] as const),
+    type,
     tradeId: trade?.id ?? 'none',
     characterId: rand() < 0.9 ? by : someId(),
   };
+}
+
+/** Practice log and notes commands (M1.8). */
+function randomNotesCommand(
+  rand: () => number,
+  c: Campaign,
+  pick: <T>(items: readonly T[]) => T,
+  someId: () => string,
+): Command {
+  const roll = rand();
+  if (roll < 0.4) {
+    const characterId = someId();
+    const own = c.state?.characters[characterId]?.skills.map((s) => s.name) ?? [];
+    const skills = own.filter(() => rand() < 0.5);
+    return {
+      type: 'practice.log',
+      characterId,
+      action: pick(['Volley', 'Ambush', ' ', 'Sneak past']),
+      skills: rand() < 0.1 ? ['Fireball'] : skills,
+      stat: rand() < 0.4 ? pick(['agility', 'perception', 'luck']) : null,
+      ...(rand() < 0.2 ? { source: pick(['gm', 'player', 'montage'] as const) } : {}),
+    };
+  }
+  const noteIds = c.state?.noteOrder ?? [];
+  const author = () => (rand() < 0.4 ? null : someId());
+  if (roll < 0.7 || noteIds.length === 0) {
+    return {
+      type: 'note.create',
+      noteId: `n${Math.floor(rand() * 10)}`,
+      characterId: author(),
+      kind: pick(['journal', 'party', 'gm'] as const),
+      title: pick(['Day 1', '', 'Casper']),
+      body: pick(['Text', '', 'More text']),
+      ...(rand() < 0.5 ? { shareable: rand() < 0.5 } : {}),
+    };
+  }
+  const note = c.state?.notes[pick(noteIds)];
+  const by = rand() < 0.8 ? (note?.author ?? null) : author();
+  if (roll < 0.9) {
+    return {
+      type: 'note.edit',
+      noteId: note?.id ?? 'none',
+      characterId: by,
+      ...(rand() < 0.5 ? { body: pick(['Edited', '']) } : {}),
+      ...(rand() < 0.5 ? { shareable: rand() < 0.5 } : {}),
+    };
+  }
+  return { type: 'note.delete', noteId: note?.id ?? 'none', characterId: by };
 }

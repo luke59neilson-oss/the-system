@@ -20,12 +20,13 @@ import {
   type ItemDef,
   type Trade,
 } from '../economy';
+import { type Note, type PracticeEntry } from '../practice';
 import { gainXp, shareBonus } from '../progression';
 import { parseRulesConfig, type RulesConfig } from '../rules';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 4;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 5;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -58,6 +59,12 @@ export interface CampaignState {
   readonly trades: Readonly<Record<string, Trade>>;
   /** Trade ids in proposal order. */
   readonly tradeOrder: readonly string[];
+  /** Practice log in order (M1.8). */
+  readonly practice: readonly PracticeEntry[];
+  /** Notes by id; journal notes are private to their author (see `projectForGm`). */
+  readonly notes: Readonly<Record<string, Note>>;
+  /** Note ids in creation order. */
+  readonly noteOrder: readonly string[];
 }
 
 const hasOwn = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
@@ -160,6 +167,23 @@ function closeTrade(
   };
 }
 
+/**
+ * The author a note event acts as: a player acts as their own character, the
+ * GM as null (the GM cannot write as a character), the system not at all.
+ */
+function noteAuthor(
+  state: CampaignState,
+  event: DomainEvent,
+  claimed: string | null,
+): string | null {
+  const actor = event.actor;
+  if (actor.role === 'system') return fail(event, 'the system does not write notes');
+  const author = actor.role === 'player' ? actor.characterId : null;
+  if (claimed !== author) fail(event, 'notes are written as yourself');
+  if (author !== null) characterOf(state, event, author);
+  return author;
+}
+
 const partyName = (id: string | null) => (id === null ? 'the GM' : `"${id}"`);
 
 /**
@@ -184,6 +208,9 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       holdings: {},
       trades: {},
       tradeOrder: [],
+      practice: [],
+      notes: {},
+      noteOrder: [],
     };
   }
   if (state === null) return fail(event, 'the log must start with campaign.created');
@@ -479,6 +506,101 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
         trade.get,
       );
       return closeTrade(moved, event, trade, 'accepted');
+    }
+    case 'practice.logged': {
+      const { characterId, action, skills, stat, tags, source } = event.payload;
+      const character = characterOf(state, event, characterId);
+      if (event.actor.role === 'player' && source !== 'player') {
+        fail(event, 'players log practice with source "player"');
+      }
+      if (event.actor.role !== 'player' && source === 'player') {
+        fail(event, 'source "player" is for entries a player logs');
+      }
+      if (skills.length === 0 && stat === null) fail(event, 'name a skill or a stat');
+      if (new Set(skills).size !== skills.length) fail(event, 'a skill is listed twice');
+      const known = new Set(character.skills.map((s) => s.name));
+      for (const name of skills) {
+        if (!known.has(name)) fail(event, `${character.name} has no skill "${name}"`);
+      }
+      if (stat !== null)
+        checkKeys(
+          event,
+          [stat],
+          state.rules.stats.list.map((s) => s.id),
+          'stat',
+        );
+      const entry: PracticeEntry = {
+        id: event.id,
+        at: event.timestamp,
+        sessionId: event.sessionId,
+        characterId,
+        action,
+        skills: [...skills],
+        stat,
+        tags: [...tags],
+        source,
+      };
+      return { ...state, practice: [...state.practice, entry] };
+    }
+    case 'note.created': {
+      const { noteId, kind, title, body, tags, shareable } = event.payload;
+      const author = noteAuthor(state, event, event.payload.characterId);
+      if (hasOwn(state.notes, noteId)) fail(event, `note "${noteId}" already exists`);
+      if (kind === 'journal' && author === null) fail(event, 'only a player keeps a journal');
+      if (kind === 'gm' && author !== null) fail(event, 'only the GM writes GM notes');
+      if (kind !== 'journal' && shareable !== (kind === 'party')) {
+        fail(event, `${kind} notes are ${kind === 'party' ? 'always' : 'never'} shared`);
+      }
+      if (title === '' && body.trim() === '') fail(event, 'a note needs a title or text');
+      const note: Note = {
+        id: noteId,
+        kind,
+        author,
+        title,
+        body,
+        tags: [...tags],
+        shareable,
+        createdAt: event.timestamp,
+        updatedAt: event.timestamp,
+      };
+      return {
+        ...state,
+        notes: { ...state.notes, [noteId]: note },
+        noteOrder: [...state.noteOrder, noteId],
+      };
+    }
+    case 'note.edited':
+    case 'note.deleted': {
+      const { noteId } = event.payload;
+      const note = hasOwn(state.notes, noteId) ? state.notes[noteId] : undefined;
+      if (!note) return fail(event, `unknown note "${noteId}"`);
+      const by = noteAuthor(state, event, event.payload.characterId);
+      // Journal: its author only. Party: its author or the GM. GM notes: the GM.
+      const allowed =
+        note.kind === 'journal' ? by === note.author : by === null || by === note.author;
+      if (!allowed) fail(event, 'only the author can change this note');
+      if (event.type === 'note.deleted') {
+        const notes: Record<string, Note> = { ...state.notes };
+        delete notes[noteId];
+        return { ...state, notes, noteOrder: state.noteOrder.filter((id) => id !== noteId) };
+      }
+      const { title, body, tags, shareable } = event.payload;
+      if ([title, body, tags, shareable].every((v) => v === undefined)) {
+        fail(event, 'nothing to change');
+      }
+      if (shareable !== undefined && note.kind !== 'journal' && shareable !== note.shareable) {
+        fail(event, 'only journal entries can change who reads them');
+      }
+      const next: Note = {
+        ...note,
+        title: title ?? note.title,
+        body: body ?? note.body,
+        tags: tags === undefined ? note.tags : [...tags],
+        shareable: shareable ?? note.shareable,
+        updatedAt: event.timestamp,
+      };
+      if (next.title === '' && next.body.trim() === '') fail(event, 'a note needs a title or text');
+      return { ...state, notes: { ...state.notes, [noteId]: next } };
     }
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');

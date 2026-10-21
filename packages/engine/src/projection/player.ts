@@ -59,6 +59,13 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   holdings: 'owner',
   trades: 'owner',
   tradeOrder: 'gm',
+  // M1.8. Not projected yet (M3.10 notes, M3.x practice): players will get
+  // their own practice entries, their own journal and the party notes.
+  // Journal entries a player has not shared are hidden from the GM too
+  // (projectForGm).
+  practice: 'owner',
+  notes: 'owner',
+  noteOrder: 'owner',
 };
 
 /** The rules subset a player screen needs to draw the sheet (no GM tuning, no stability). */

@@ -159,6 +159,35 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   'trade.declined': tradeAction,
   /** The proposer withdraws an open offer. */
   'trade.cancelled': tradeAction,
+  /** A practice log entry (M1.8): who did what, with which skills and/or stat. */
+  'practice.logged': z.strictObject({
+    characterId: recordId,
+    action: nonBlank,
+    skills: z.array(nonBlank).max(10),
+    stat: recordId.nullable(),
+    tags: z.array(nonBlank).max(20),
+    source: z.enum(['gm', 'player', 'montage']),
+  }),
+  /** A note; `characterId` is the author as the actor acts (null = the GM). */
+  'note.created': z.strictObject({
+    noteId: recordId,
+    characterId: recordId.nullable(),
+    kind: z.enum(['journal', 'party', 'gm']),
+    title: z.string().trim().max(200),
+    body: z.string().max(20_000),
+    tags: z.array(nonBlank).max(20),
+    shareable: z.boolean(),
+  }),
+  /** Edits a note's text, tags or (journal) shareable flag; omitted fields stay. */
+  'note.edited': z.strictObject({
+    noteId: recordId,
+    characterId: recordId.nullable(),
+    title: z.string().trim().max(200).optional(),
+    body: z.string().max(20_000).optional(),
+    tags: z.array(nonBlank).max(20).optional(),
+    shareable: z.boolean().optional(),
+  }),
+  'note.deleted': z.strictObject({ noteId: recordId, characterId: recordId.nullable() }),
   /** Compensating event: the target stops counting, as if it had never happened. */
   'event.undone': z.strictObject({ eventId: recordId }),
 } as const;
@@ -190,6 +219,10 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'trade.accepted': 1,
   'trade.declined': 1,
   'trade.cancelled': 1,
+  'practice.logged': 1,
+  'note.created': 1,
+  'note.edited': 1,
+  'note.deleted': 1,
   'event.undone': 1,
 };
 
@@ -254,6 +287,10 @@ export const PLAYER_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   'trade.accepted',
   'trade.declined',
   'trade.cancelled',
+  'practice.logged',
+  'note.created',
+  'note.edited',
+  'note.deleted',
 ]);
 
 /** Throws when a player-recorded event is not one a player may cause. */
