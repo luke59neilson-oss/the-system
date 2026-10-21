@@ -208,6 +208,12 @@ export function offerSelection(
     if (names.has(lower(name))) throw new CharacterRuleError(`"${name}" is on the menu twice`);
     names.add(lower(name));
     checkFreeName(character, name, retired);
+    const taken = character.evolution?.options.some((o) =>
+      o.transforms.some((t) => lower(t.name) === lower(name) && lower(t.skill) !== lower(name)),
+    );
+    if (taken) {
+      throw new CharacterRuleError(`"${name}" is a skill name in the released evolution`);
+    }
     const rank = rarityIndex(rules, option.rarity);
     if (rank > ceiling) {
       throw new CharacterRuleError(
@@ -323,7 +329,7 @@ function checkOption(
     to.add(lower(name));
     // Renaming onto another transformed skill's old name is refused too (simpler to read).
     checkFreeName(character, name, retired, t.skill);
-    for (const menu of character.selections) {
+    for (const menu of lower(name) === lower(t.skill) ? [] : character.selections) {
       if (menu.chosen === null && menu.options.some((o) => lower(o.name) === lower(name))) {
         throw new CharacterRuleError(
           `"${name}" is on the pending level ${menu.level} menu; re-offer that menu or pick another name`,

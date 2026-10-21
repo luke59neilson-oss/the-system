@@ -857,3 +857,25 @@ describe('review fixes (M1.10 round 1)', () => {
     expect(reject(c, release('Volley', 'Skill 10b', 'uncommon'))).toMatch(/pending level 10 menu/);
   });
 });
+
+describe('review fixes (M1.10 round 2)', () => {
+  it('a menu may not offer a name a released evolution transforms into', () => {
+    let c = ok(ok(atGTop(), release(archery, 'Volley', 'common')), {
+      type: 'evolution.choose',
+      characterId: 'jake',
+      optionId: 'o1',
+    });
+    c = ok(c, award(10 * 150));
+    c = ok(c, release('Volley', 'Volley II', 'uncommon'));
+    expect(
+      reject(c, {
+        type: 'selection.offer',
+        characterId: 'jake',
+        level: 5,
+        options: [...menu(5, 'rare').slice(0, 2), { name: 'Volley II', rarity: 'common' }],
+      }),
+    ).toMatch(/released evolution/);
+    // A rarity-only transform keeps its own name.
+    ok(c, release('Volley', 'Volley', 'rare'));
+  });
+});

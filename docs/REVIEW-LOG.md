@@ -174,3 +174,13 @@
 - Round 1: H 0 · M 0 · L 6. Reviewer ran `npm run check` (exit 0) and coverage; judged the property test's explicit unreachable set (`character.professionGranted`, `skill.merged`) stricter than the old count check, not gamed.
   - L fixed: command-level paths for "no mark upgrade" / "cannot upgrade past Mythical" now tested; the per-grade merge limit tested across a grade change; a merged skill may no longer reuse an original's name (it would inherit the original's practice-log pair counts), with a test; merge result's lost nickname/Unique documented in D63.
   - L accepted: mark session ids are not checked against known sessions (sessions arrive in M4.3); nickname payload allows 200 chars while the rule caps at 60 (the reducer enforces 60). Carry-over for M1.10: skill transforms must rewrite or alias practice-log names.
+
+### 2026-10-21 · M1.10 Selections and evolutions · reviewer: sonnet (fresh context) · 2 rounds
+- Round 1 (fb2588c..e069e39): 0 High, 3 Medium, 4 Low. `npm run check` green; golden state diffs purely additive; authority and projection canary OK.
+  - M fixed: undoing an already-answered re-release/re-offer silently re-aimed the choice (positional option ids). Choices now carry the `releaseId`/`offerId` they answer; stale ids are refused, so such an undo is refused (D65).
+  - M fixed: banked profession XP and lagging-profession paths untested → full release→choose tests under both gates (repricing documented in D65).
+  - M fixed: selection pending across an evolution untested → test (keeps its own grade's ceiling, Q21); transforms may not take a name on a pending menu.
+  - L accepted: evolution option count reuses `menuSize.max` (D64); reshape validated pre-grade (not grade-dependent); case-only renames; `selectionSlots` recomputed per call (cheap).
+- Round 2 (e069e39..d409f6b): 0 High, 0 Medium, 5 Low.
+  - L fixed: a menu could offer a name a pending release transforms into; a rarity-only transform was refused when its own name was on a pending menu.
+  - L accepted: hand-edited logs may omit the optional ids (old "answer what is pending" behaviour); default id parameters used only by direct callers; v7 amended in place before the item was checked (nothing shipped).

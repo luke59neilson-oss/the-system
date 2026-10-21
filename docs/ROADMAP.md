@@ -158,7 +158,7 @@ the full ones.
   ceilings with banking, upgrades, merges (uses M1.8 counts; both ≥ Uncommon;
   one per grade; +1 rarity; originals consumed; marks reset). *Accept:* one
   test per rule incl. every rejection path.
-- [ ] **M1.10 Selections and evolutions.** Selections from class level at
+- [x] **M1.10 Selections and evolutions.** Selections from class level at
   DESIGN intervals with capstone flags; capstone menus must contain an option
   at the grade ceiling; profession options inside class menus. Evolution:
   available at grade top (`evolutionGate` config) → GM release → options →
