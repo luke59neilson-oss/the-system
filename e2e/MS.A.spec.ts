@@ -104,7 +104,20 @@ test('a first session on the walking skeleton, through a laptop restart', async 
   await gm.screenshot({ path: path.join(shots, 'gm-table-view-1366x768.png') });
   await bar.getByRole('button', { name: 'GM' }).click();
 
-  // The demo comes and goes without touching the real campaign.
+  // The GM link for another browser on this computer (the desktop app never
+  // prints its key): folded away, and it opens a working console.
+  const gmLink = gm.getByLabel('GM link');
+  await expect(gmLink).toBeHidden();
+  await gm.getByText('Open the GM console in another browser on this computer').click();
+  await expect(gmLink).toHaveValue(`${server.url}/gm#key=${GM_KEY}`);
+  await gm.screenshot({ path: path.join(shots, 'gm-link-1366x768.png') });
+  const second = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  await second.goto(await gmLink.inputValue());
+  await expect(second.getByTestId('connection')).toHaveText('Connected');
+  await expect(second.getByRole('cell', { name: 'Jake', exact: true })).toBeVisible();
+  await second.close();
+  await expect(phone.getByText(/GM link|GM console/)).toHaveCount(0);
+
   await gm.getByRole('button', { name: 'Load demo campaign' }).click();
   await expect(gm.getByTestId('demo-badge')).toBeVisible();
   await expect(phone.getByRole('alert')).toContainText('switched to another campaign');

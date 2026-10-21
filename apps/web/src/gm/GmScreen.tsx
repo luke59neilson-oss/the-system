@@ -40,8 +40,9 @@ export function GmScreen() {
         <section className="window" role="alert">
           <h2>GM key needed</h2>
           <p>
-            Open the GM console from the desktop app, or use the GM link printed in the server
-            terminal (it ends in <code>#key=…</code>).
+            Open the GM console from the desktop app (its “Players join” box has a GM link for other
+            browsers on this computer), or use the GM link printed in the server terminal (it ends
+            in <code>#key=…</code>).
           </p>
         </section>
       </main>

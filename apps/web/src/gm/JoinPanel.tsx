@@ -60,6 +60,45 @@ export function JoinPanel({ gmKey }: { gmKey: string }) {
           </div>
         </div>
       )}
+      <GmLink gmKey={gmKey} />
     </section>
+  );
+}
+
+/**
+ * The GM console's own link for another browser on this computer (MS.A).
+ * The desktop app never prints its key, so this is how Luke opens the console
+ * in Chrome or Safari next to the app window. Shown only on the GM screen,
+ * folded away, with a reminder that it unlocks the console.
+ */
+export function GmLink({ gmKey }: { gmKey: string }) {
+  const [copied, setCopied] = useState(false);
+  const link = `${window.location.origin}/gm#key=${encodeURIComponent(gmKey)}`;
+  return (
+    <details className="gm-link">
+      <summary>Open the GM console in another browser on this computer</summary>
+      <p className="muted">
+        This link unlocks the GM console. Keep it on this computer; never send it to players.
+      </p>
+      <div className="gm-link-row">
+        <input
+          readOnly
+          aria-label="GM link"
+          value={link}
+          onFocus={(e) => e.currentTarget.select()}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            navigator.clipboard.writeText(link).then(
+              () => setCopied(true),
+              () => setCopied(false),
+            );
+          }}
+        >
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+    </details>
   );
 }
