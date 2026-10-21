@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface JoinInfo {
   url: string;
@@ -73,6 +73,7 @@ export function JoinPanel({ gmKey }: { gmKey: string }) {
  */
 export function GmLink({ gmKey }: { gmKey: string }) {
   const [copied, setCopied] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const link = `${window.location.origin}/gm#key=${encodeURIComponent(gmKey)}`;
   return (
     <details className="gm-link">
@@ -82,6 +83,7 @@ export function GmLink({ gmKey }: { gmKey: string }) {
       </p>
       <div className="gm-link-row">
         <input
+          ref={inputRef}
           readOnly
           aria-label="GM link"
           value={link}
@@ -90,6 +92,8 @@ export function GmLink({ gmKey }: { gmKey: string }) {
         <button
           type="button"
           onClick={() => {
+            // Missing outside a secure context (a LAN-IP origin): select the text instead.
+            if (!('clipboard' in navigator)) return void inputRef.current?.select();
             navigator.clipboard.writeText(link).then(
               () => setCopied(true),
               () => setCopied(false),

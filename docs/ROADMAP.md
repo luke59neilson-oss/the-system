@@ -134,7 +134,7 @@ the full ones.
   (AppImage) on push to the `release` branch and publishes a GitHub Release
   named `preview-<date>`.
   *Accept:* latest release workflow run is green with all artifacts.
-- [ ] **MS.A Milestone acceptance and review.** Then push `main` to
+- [x] **MS.A Milestone acceptance and review.** Then push `main` to
   `release` so Luke gets the first build.
 
 ## M1 (continued) — Rules engine

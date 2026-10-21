@@ -50,3 +50,8 @@ answer under any question and the next run will follow it.
     weighted 3, Strength 2, others 1). Default: keep it until the class
     library (M4.2) lets you define your own. Want different starter classes?
     Answer:
+14. **Refill pools on level-up?** When a level raises max HP/MP/Stamina
+    (e.g. Endurance up → Stamina 100/110), current values stay where they
+    were. Default: no refill (the GM heals or rests the party). Alternative:
+    a level-up fills the pool (or adds the gained max).
+    Answer:
