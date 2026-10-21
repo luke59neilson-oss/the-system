@@ -153,6 +153,9 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       const batch = character.freePointBatches[index];
       if (!batch) return fail(event, `no free-point batch for race level ${raceLevel}`);
       const assigning = event.type === 'freePoints.assigned';
+      if (!assigning && allocation === null && batch.allocation === null) {
+        fail(event, `the race level ${raceLevel} points are not assigned`);
+      }
       if (assigning && batch.locked) {
         fail(event, `the race level ${raceLevel} points are already assigned and locked`);
       }

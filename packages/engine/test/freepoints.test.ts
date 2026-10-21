@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { execute, type Campaign, type Command } from '../src';
+import {
+  PLAYER_COMMANDS,
+  PLAYER_EVENT_TYPES,
+  appendEvent,
+  execute,
+  parseEvent,
+  replay,
+  type Campaign,
+  type Command,
+} from '../src';
 import { kit, rawRules, run, testContext } from './helpers/events';
 
 const setup: Command[] = [
@@ -194,5 +203,88 @@ describe('free points', () => {
       c,
     );
     expect(jake(ok)?.freePointBatches).toEqual([]);
+  });
+
+  it('enforces player authority on events in the log, not only in execute', () => {
+    const c = base();
+    const raw = (type: string, actor: object, payload: object) =>
+      parseEvent({
+        id: 'raw1',
+        type,
+        timestamp: '2026-10-21T12:00:00.000Z',
+        actor,
+        sessionId: null,
+        schemaVersion: 1,
+        payload,
+      });
+    const asJake = { role: 'player', characterId: 'jake' };
+    const override = raw('freePoints.overridden', asJake, {
+      characterId: 'jake',
+      raceLevel: 1,
+      allocation: null,
+    });
+    expect(() => appendEvent(c, override)).toThrow('players cannot cause this event');
+    const others = raw('freePoints.assigned', asJake, {
+      characterId: 'kim',
+      raceLevel: 1,
+      allocation: { strength: 2 },
+    });
+    expect(() => appendEvent(c, others)).toThrow('only act on their own character');
+    const undo = raw('event.undone', asJake, { eventId: 'e4' });
+    expect(() => appendEvent(c, undo)).toThrow('players cannot cause this event');
+    const stored = JSON.parse(JSON.stringify([...c.events, others])) as unknown[];
+    expect(() => replay(stored)).toThrow('only act on their own character');
+    // Player commands and player events stay in step.
+    expect([...PLAYER_COMMANDS].map((t) => t.replace('assign', 'assigned'))).toEqual([
+      ...PLAYER_EVENT_TYPES,
+    ]);
+  });
+
+  it('a player cannot undo, even their own assignment', () => {
+    const c = run([assign(1, { strength: 2 })], testContext('a'), base());
+    expect(execute(c, { type: 'event.undo', eventId: 'a1' }, player('jake'))).toMatchObject({
+      ok: false,
+      error: 'Not allowed: only the GM can event.undo',
+    });
+  });
+
+  it('undoing a player assignment under a later GM override leaves the override in force (D38)', () => {
+    const c = run(
+      [
+        assign(1, { strength: 2 }),
+        {
+          type: 'freePoints.override',
+          characterId: 'jake',
+          raceLevel: 1,
+          allocation: { vitality: 2 },
+        },
+        { type: 'event.undo', eventId: 'a1' },
+      ],
+      testContext('a'),
+      base(),
+    );
+    expect(jake(c)?.freePointBatches[0]).toMatchObject({
+      allocation: { vitality: 2 },
+      locked: true,
+    });
+    expect(jake(c)?.stats['strength']).toBe(jake(base())?.stats['strength']);
+    expect(replay(JSON.parse(JSON.stringify(c.events)) as unknown[])).toEqual(c);
+  });
+
+  it('rejects an empty allocation and unassigning a batch that is not assigned', () => {
+    expect(execute(base(), assign(1, {}), player('jake'))).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('assign exactly 2 points (got 0)'),
+    });
+    const unassign: Command = {
+      type: 'freePoints.override',
+      characterId: 'jake',
+      raceLevel: 1,
+      allocation: null,
+    };
+    expect(execute(base(), unassign, testContext('g'))).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('are not assigned'),
+    });
   });
 });

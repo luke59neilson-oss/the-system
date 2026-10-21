@@ -666,8 +666,9 @@ describe('property: replay equals incremental state', () => {
       const batches = character?.freePointBatches ?? [];
       const batch = batches.length ? pick(batches) : { raceLevel: 1, points: 2 };
       const allocation: Record<string, number> = {};
-      const extra = rand() < 0.1 ? 1 : 0;
-      allocation[pick(['strength', 'agility', 'luck'])] = batch.points + extra;
+      const extra = rand() < 0.05 ? 1 : 0;
+      allocation[rand() < 0.1 ? 'luck' : pick(['strength', 'agility', 'vitality'])] =
+        batch.points + extra;
       return rand() < 0.5
         ? {
             type: 'freePoints.assign',
@@ -709,16 +710,33 @@ describe('property: replay equals incremental state', () => {
     let undos = 0;
     let rejected = 0;
     let nonLatest = 0;
+    let lockedRejections = 0;
+    let playerAccepted = 0;
+    const acceptedByType: Record<string, number> = {};
     let dependent = 0;
     for (let step = 0; step < STEPS; step++) {
       const command = randomCommand(rand, c);
-      const result = execute(deepFreeze(c), command, ctx);
+      const asPlayer =
+        (command.type === 'freePoints.assign' || command.type === 'event.undo') && rand() < 0.5;
+      const actorCtx = asPlayer
+        ? {
+            ...ctx,
+            actor: {
+              role: 'player' as const,
+              characterId: 'characterId' in command ? command.characterId : 'c1',
+            },
+          }
+        : ctx;
+      const result = execute(deepFreeze(c), command, actorCtx);
       if (!result.ok) {
         rejected++;
+        if (result.error.includes('already assigned and locked')) lockedRejections++;
         if (command.type === 'event.undo' && result.error.includes('depends on it')) dependent++;
         continue;
       }
       accepted++;
+      acceptedByType[command.type] = (acceptedByType[command.type] ?? 0) + 1;
+      if (asPlayer) playerAccepted++;
       if (command.type === 'event.undo') {
         undos++;
         const latest = [...c.events].reverse().find((e) => e.type !== 'event.undone');
@@ -739,6 +757,11 @@ describe('property: replay equals incremental state', () => {
     expect(rejected, `seed ${SEED}`).toBeGreaterThan(20);
     expect(nonLatest, `seed ${SEED}: accepted non-latest undos`).toBeGreaterThan(5);
     expect(dependent, `seed ${SEED}: undos refused for a dependency`).toBeGreaterThan(0);
+    for (const type of ['freePoints.assign', 'freePoints.override', 'xp.award', 'event.undo']) {
+      expect(acceptedByType[type] ?? 0, `seed ${SEED}: accepted ${type}`).toBeGreaterThan(2);
+    }
+    expect(lockedRejections, `seed ${SEED}: locked-batch rejections`).toBeGreaterThan(0);
+    expect(playerAccepted, `seed ${SEED}: accepted player assignments`).toBeGreaterThan(0);
     expect(
       new Set(c.events.map((e) => e.type)).size,
       `seed ${SEED}: ${[...new Set(c.events.map((e) => e.type))].join(',')}`,

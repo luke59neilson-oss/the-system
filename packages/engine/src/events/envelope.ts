@@ -142,6 +142,31 @@ function issuesText(error: z.ZodError): string {
     .join('; ');
 }
 
+/**
+ * Event types a player actor may record, always about their own character.
+ * Mirrors PLAYER_COMMANDS; enforced on every path into the log (append and
+ * replay), not only in `execute`.
+ */
+export const PLAYER_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
+  'freePoints.assigned',
+]);
+
+/** Throws when a player-recorded event is not one a player may cause. */
+export function checkEventAuthority(event: DomainEvent): void {
+  if (event.actor.role !== 'player') return;
+  if (!PLAYER_EVENT_TYPES.has(event.type)) {
+    throw new EventRejectedError(
+      `Event ${event.id} (${event.type}): players cannot cause this event`,
+    );
+  }
+  const target = (event.payload as { characterId?: unknown }).characterId;
+  if (target !== event.actor.characterId) {
+    throw new EventRejectedError(
+      `Event ${event.id} (${event.type}): players may only act on their own character`,
+    );
+  }
+}
+
 /** True when any object in the JSON tree has an own "__proto__" key (zod records drop it). */
 function hasProtoKey(value: unknown): boolean {
   if (typeof value !== 'object' || value === null) return false;

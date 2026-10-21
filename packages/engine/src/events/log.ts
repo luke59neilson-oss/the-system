@@ -2,6 +2,7 @@ import {
   EVENT_SCHEMA_VERSIONS,
   EVENT_UPCASTERS,
   EventRejectedError,
+  checkEventAuthority,
   parseEvent,
   type DomainEvent,
   type EventUpcasters,
@@ -69,6 +70,7 @@ export function appendEvent(campaign: Campaign, event: DomainEvent): Campaign {
   if (campaign.events.some((e) => e.id === event.id)) {
     throw new EventRejectedError(`Event ${event.id}: duplicate event id`);
   }
+  checkEventAuthority(event);
   if (event.type !== 'event.undone') {
     return {
       ...campaign,
@@ -138,6 +140,7 @@ export function replay(rawEvents: readonly unknown[], options: ReplayOptions = {
   for (const raw of raws) {
     const event = parseEvent(raw, upcasters, versions);
     if (ids.has(event.id)) throw new EventRejectedError(`Event ${event.id}: duplicate event id`);
+    checkEventAuthority(event);
     if (event.type === 'event.undone') {
       const target = checkUndoTarget({ events, state: null, undone }, event);
       undone = { ...undone, [target.id]: event.id };
