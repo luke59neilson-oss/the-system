@@ -29,6 +29,7 @@ export type Command =
     }
   | { type: 'character.rename'; characterId: string; name: string }
   | { type: 'character.grantProfession'; characterId: string; profession: string }
+  | { type: 'title.award'; characterId: string; title: string }
   | { type: 'character.setPools'; characterId: string; pools: Readonly<Record<string, number>> }
   | { type: 'character.setStats'; characterId: string; stats: Readonly<Record<string, number>> }
   | {
@@ -293,6 +294,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('character.create'), classSkills: z.array(z.unknown()) }),
   z.object({ type: z.literal('character.rename') }),
   z.object({ type: z.literal('character.grantProfession') }),
+  z.object({ type: z.literal('title.award') }),
   z.object({ type: z.literal('character.setPools'), pools: anyRecord }),
   z.object({ type: z.literal('character.setStats'), stats: anyRecord }),
   z.object({
@@ -460,6 +462,11 @@ function toEvent(
       return {
         type: 'character.professionGranted',
         payload: { characterId: command.characterId, profession: command.profession },
+      };
+    case 'title.award':
+      return {
+        type: 'title.awarded',
+        payload: { characterId: command.characterId, title: command.title.trim() },
       };
     case 'character.setPools':
       return {

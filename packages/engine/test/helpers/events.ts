@@ -106,6 +106,13 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
       stats: { [pick(['vitality', 'wisdom', 'endurance', 'strength'])]: Math.floor(rand() * 60) },
     };
   }
+  if (roll < 0.62) {
+    return {
+      type: 'title.award',
+      characterId: someId(),
+      title: pick(['Forerunner', 'Rapid Spread', 'forerunner', ' ']),
+    };
+  }
   if (roll < 0.65) {
     return { type: 'character.grantProfession', characterId: someId(), profession: 'Smith' };
   }

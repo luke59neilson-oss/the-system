@@ -3,48 +3,138 @@ import {
   DEMO_BROADCASTS,
   DEMO_CAMPAIGN_NAME,
   DEMO_CHARACTERS,
+  DEMO_QUEST_TITLE,
   buildDemoEvents,
+  characterEffectiveStats,
+  poolMax,
   projectForPlayer,
   raceLevel,
   replay,
+  selectionSlots,
+  statBudgetTotal,
+  type CampaignState,
 } from '../src';
 
 const ctx = () => {
   let n = 0;
   return { now: () => '2026-10-21T00:00:00.000Z', newId: () => `id-${++n}` };
 };
+const demoState = (): CampaignState => {
+  const state = replay(buildDemoEvents(ctx())).state;
+  if (!state) throw new Error('no state');
+  return state;
+};
 
-describe('demo campaign (MS.4)', () => {
-  it('builds a party at different levels from ordinary GM commands', () => {
+describe('demo campaign (MS.4, M1.15)', () => {
+  it('builds the party from ordinary GM commands', () => {
     const events = buildDemoEvents(ctx());
     expect(events.every((e) => e.actor.role === 'gm')).toBe(true);
-    const state = replay(events).state;
-    expect(state?.name).toBe(DEMO_CAMPAIGN_NAME);
-    expect(state?.characterOrder).toEqual(DEMO_CHARACTERS.map((c) => c.id));
-    const levels = DEMO_CHARACTERS.map((c) => state?.characters[c.id]?.classLevel);
-    // Jake at the G-grade cap (4) with XP banked, then 3, 2 and 0.
-    expect(levels).toEqual([4, 3, 2, 0]);
-    expect(state?.characters['demo-jake']?.xp.class).toBe(50);
-    for (const c of DEMO_CHARACTERS) {
-      const ch = state?.characters[c.id];
-      expect(ch?.skills.map((s) => s.name)).toContain('Identify');
-      expect(ch?.skills.length).toBe(4);
-      if (state && ch) expect(raceLevel(state.rules, ch)).toBe(ch.classLevel);
+    const state = demoState();
+    expect(state.name).toBe(DEMO_CAMPAIGN_NAME);
+    expect(state.characterOrder).toEqual(DEMO_CHARACTERS.map((c) => c.id));
+    expect(state.broadcasts.map((b) => b.text)).toEqual(DEMO_BROADCASTS);
+  });
+
+  it('has a character at each of grades G, F, E and D, reached through evolutions', () => {
+    const state = demoState();
+    const rows = DEMO_CHARACTERS.map((d) => {
+      const c = state.characters[d.id];
+      if (!c) throw new Error(d.id);
+      return [c.grade, c.className, c.classLevel, c.profession, c.professionLevel];
+    });
+    expect(rows).toEqual([
+      ['D', 'Tempest Warden', 52, 'Alchemist', 50],
+      ['E', 'Storm Ranger', 22, 'Cook', 18],
+      ['F', 'Ranger', 7, null, 0],
+      ['G', 'Archer', 0, null, 0],
+    ]);
+    const jake = state.characters['demo-jake'];
+    if (!jake) throw new Error('jake');
+    expect(raceLevel(state.rules, jake)).toBe(51);
+    // The evolutions transformed the first class skill at each grade.
+    expect(jake.skills[0]).toMatchObject({ name: 'Expert Archery', rarity: 'rare' });
+    expect(state.characters['demo-casper']?.skills[0]).toMatchObject({ name: 'Archery' });
+    // DESIGN §4 budget: base 90 + G 24 + F 80 + E 35×12 + D (3 class × 12 + 2 race × 6).
+    // Rested: every pool full.
+    for (const pool of state.rules.pools) {
+      expect(jake.pools[pool.id], pool.id).toBe(poolMax(state.rules, jake.stats, pool.id));
     }
-    expect(state?.broadcasts.map((b) => b.text)).toEqual(DEMO_BROADCASTS);
+    expect(statBudgetTotal(jake)).toBe(90 + 24 + 80 + 35 * 12 + 3 * 12 + 2 * 6);
+  });
+
+  it('every reached selection has a menu; Jake and Miranda each have one left to pick', () => {
+    const state = demoState();
+    for (const d of DEMO_CHARACTERS) {
+      const c = state.characters[d.id];
+      if (!c) throw new Error(d.id);
+      const reached = selectionSlots(state.rules).filter((s) => s.level <= c.classLevel);
+      expect(
+        c.selections.map((s) => s.level),
+        d.id,
+      ).toEqual(reached.map((s) => s.level));
+      const open = c.selections.filter((s) => s.chosen === null).map((s) => s.level);
+      expect(open, d.id).toEqual(d.id === 'demo-jake' ? [50] : d.id === 'demo-miranda' ? [20] : []);
+    }
+    // The player sees their own open menu.
+    expect(projectForPlayer(state, 'demo-jake').me.selections.at(-1)?.chosen).toBeNull();
+  });
+
+  it('leaves the newest free-point batch for each levelled player to assign', () => {
+    const state = demoState();
+    for (const d of DEMO_CHARACTERS) {
+      const c = state.characters[d.id];
+      if (!c) throw new Error(d.id);
+      const open = c.freePointBatches.filter((b) => b.allocation === null);
+      expect(open.length, d.id).toBe(c.freePointBatches.length > 0 ? 1 : 0);
+      expect(c.freePointBatches.slice(0, -1).every((b) => b.locked)).toBe(true);
+    }
+  });
+
+  it('has titles and items; Jake wears gear that raises his effective stats', () => {
+    const state = demoState();
+    expect(state.characters['demo-jake']?.titles).toEqual(['Forerunner', 'Rapid Spread']);
+    expect(projectForPlayer(state, 'demo-jake').me.titles).toEqual(['Forerunner', 'Rapid Spread']);
+    expect(state.itemOrder).toEqual(['demo-ring-haste', 'demo-bow', 'demo-potion']);
+    const holdings = state.holdings['demo-jake'];
+    expect(holdings?.equipped).toEqual({ 'ring:0': 'demo-ring-haste', 'mainHand:0': 'demo-bow' });
+    expect(holdings?.inventory).toEqual({ 'demo-potion': 2 });
+    const jake = state.characters['demo-jake'];
+    if (!jake) throw new Error('jake');
+    const effective = characterEffectiveStats(state, 'demo-jake');
+    expect(effective['agility']).toBeGreaterThan(jake.stats['agility'] ?? 0);
+    expect(effective['perception']).toBe((jake.stats['perception'] ?? 0) + 3);
+  });
+
+  it('every player sees the tutorial quest with its World Stability gauge, never its rules', () => {
+    const state = demoState();
+    for (const d of DEMO_CHARACTERS) {
+      const view = projectForPlayer(state, d.id);
+      expect(view.quests).toEqual([
+        expect.objectContaining({
+          title: DEMO_QUEST_TITLE,
+          status: 'active',
+          daysLeft: 26,
+          stability: 100 - 3 * 5 + 2 * 2,
+        }),
+      ]);
+      const json = JSON.stringify(view);
+      expect(json).not.toContain('pale hunter');
+      expect(json).not.toContain('Demo: tutorial fights');
+    }
+  });
+
+  it('players never see another character’s open menu or the GM’s award reasons', () => {
+    const state = demoState();
+    const jakeMenu = state.characters['demo-jake']?.selections.at(-1)?.options ?? [];
+    expect(jakeMenu.length).toBeGreaterThan(0);
+    for (const d of DEMO_CHARACTERS.filter((c) => c.id !== 'demo-jake')) {
+      const json = JSON.stringify(projectForPlayer(state, d.id));
+      expect(json).not.toContain('Demo: brewing at camp');
+      for (const o of jakeMenu) expect(json, `${d.id} sees ${o.name}`).not.toContain(o.name);
+    }
   });
 
   it('is deterministic for a fixed clock and ids', () => {
     expect(buildDemoEvents(ctx())).toEqual(buildDemoEvents(ctx()));
-  });
-
-  it('keeps the GM-only award reason out of every player view', () => {
-    const state = replay(buildDemoEvents(ctx())).state;
-    if (!state) throw new Error('no state');
-    for (const c of DEMO_CHARACTERS) {
-      expect(JSON.stringify(projectForPlayer(state, c.id))).not.toContain(
-        'Demo campaign starting XP',
-      );
-    }
   });
 });

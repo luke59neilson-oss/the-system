@@ -66,6 +66,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   }),
   'character.renamed': z.strictObject({ characterId: recordId, name: nonBlank }),
   'character.professionGranted': z.strictObject({ characterId: recordId, profession: nonBlank }),
+  /** GM awards a title by name (M1.15; the title library, bonuses and System text are M6.4). */
+  'title.awarded': z.strictObject({ characterId: recordId, title: nonBlank.max(80) }),
   /** GM sets current pool values; each must be within 0..max (D31). */
   'character.poolsSet': z.strictObject({
     characterId: recordId,
@@ -345,6 +347,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'character.created': 1,
   'character.renamed': 1,
   'character.professionGranted': 1,
+  'title.awarded': 1,
   'character.poolsSet': 1,
   'character.statsSet': 1,
   'xp.awarded': 1,

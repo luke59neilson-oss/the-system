@@ -69,7 +69,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   await expect(gm.getByRole('heading', { name: /Demo: The Whale/ })).toBeVisible();
   await expect.poll(() => partyNames(gm)).toEqual(['Jake', 'Miranda', 'Casper', 'Sultan']);
   const levels = await gm.locator('[data-testid^="class-level-"]').allInnerTexts();
-  expect(levels).toEqual(['4', '3', '2', '0']);
+  expect(levels).toEqual(['52', '22', '7', '0']);
   // Nothing of the real campaign shows in the demo (party, feed).
   await expect(gm.getByText('Ada')).toHaveCount(0);
   await gm.screenshot({ path: path.join(shots, 'gm-demo-1366x768.png') });
@@ -85,7 +85,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
     /Sultan/,
   ]);
   await phone.getByRole('link', { name: /Jake/ }).click();
-  await expect(phone.getByTestId('class')).toHaveText('[Archer – lvl 4]');
+  await expect(phone.getByTestId('class')).toHaveText('[Tempest Warden – lvl 52]');
   await expect(phone.getByTestId('demo-badge')).toBeVisible();
   await expect(phone.getByTestId('messages')).toContainText('The world is dying.');
   await phone.screenshot({ path: path.join(shots, 'player-demo-390x844.png'), fullPage: true });
@@ -135,7 +135,9 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   // Loading the demo again keeps what the GM did there; the demo phone rejoins.
   await gm.getByRole('button', { name: 'Load demo campaign' }).click();
   await expect(gm.getByTestId('class-level-demo-sultan')).toHaveText('1');
-  await expect(phone.getByTestId('class')).toHaveText('[Archer – lvl 4]', { timeout: 8000 });
+  await expect(phone.getByTestId('class')).toHaveText('[Tempest Warden – lvl 52]', {
+    timeout: 8000,
+  });
   await gm.getByRole('button', { name: 'Back to my campaign' }).click();
   await expect.poll(() => partyNames(gm)).toEqual(['Ada']);
 

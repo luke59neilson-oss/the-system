@@ -260,6 +260,14 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
         rule(event, () => grantProfession(state.rules, character, event.payload.profession)),
       );
     }
+    case 'title.awarded': {
+      const character = characterOf(state, event, event.payload.characterId);
+      const title = event.payload.title.trim();
+      if (character.titles.some((t) => t.toLowerCase() === title.toLowerCase())) {
+        fail(event, `${character.name} already holds [${title}]`);
+      }
+      return withCharacter(state, { ...character, titles: [...character.titles, title] });
+    }
     case 'character.poolsSet': {
       const character = characterOf(state, event, event.payload.characterId);
       const { pools } = event.payload;

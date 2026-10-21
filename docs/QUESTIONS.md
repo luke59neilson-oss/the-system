@@ -99,3 +99,8 @@ answer under any question and the next run will follow it.
     §7 wording). Alternative: ⅓ per grade step. (The "multiplier" mode
     multiplies the whole stat value by the grade's factor.)
     Answer:
+23. **Can party members see each other's titles?** DESIGN §9 lists Titles
+    on the player's own status screen; it doesn't say whether the party sees
+    them. Default: owner only (titles may carry stat bonuses in M6.4).
+    Alternative: titles are public, like name, class and grade.
+    Answer:
