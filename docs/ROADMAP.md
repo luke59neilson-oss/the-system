@@ -250,9 +250,12 @@ the full ones.
 ## M5 — Skills and practice tools (GM)
 
 - [ ] **M5.1 Offer builder.** Per-character menu builder beside the practice
-  log; capstone check; profession options; send.
+  log; capstone check; profession options; send. Show due selections
+  (`dueSelections`) next to the M1.8 selection alert, which does not know
+  whether a selection was taken.
 - [ ] **M5.2 Evolution builder.** Options, warnings, transforms, spread
-  reshape; release.
+  reshape; release. Warn when a selection (esp. the capstone) is still
+  pending (Q21).
 - [ ] **M5.3 Marks review.** End-of-session queue; upgrade prompts.
 - [ ] **M5.4 Merges.** Alert, build, send.
 - [ ] **M5.5 Practice capture.** Quick-add with shortcut; end-of-scene

@@ -821,8 +821,16 @@ describe('property: replay equals incremental state', () => {
     expect(playerAccepted, `seed ${SEED}: accepted player assignments`).toBeGreaterThan(0);
     // Every event type but those random play cannot plausibly reach (each has
     // its own unit tests and golden log): a profession needs E-grade, a merge
-    // needs two Uncommon skills logged together three times.
-    const unreachable = new Set(['character.professionGranted', 'skill.merged']);
+    // needs two Uncommon skills logged together three times, selections and
+    // evolutions need a GM-built menu or release (evolution.test.ts).
+    const unreachable = new Set([
+      'character.professionGranted',
+      'skill.merged',
+      'selection.offered',
+      'selection.chosen',
+      'evolution.released',
+      'evolution.chosen',
+    ]);
     const seen = new Set(c.events.map((e) => e.type));
     expect(
       EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),

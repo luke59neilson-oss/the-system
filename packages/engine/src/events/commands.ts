@@ -165,6 +165,39 @@ export type Command =
     }
   | { type: 'skill.upgrade'; characterId: string; skill: string }
   | { type: 'skill.merge'; characterId: string; skills: readonly [string, string]; name: string }
+  | {
+      type: 'selection.offer';
+      characterId: string;
+      level: number;
+      options: readonly {
+        name: string;
+        rarity: string;
+        /** Default "class". */
+        kind?: 'class' | 'profession' | undefined;
+        description?: string | undefined;
+      }[];
+    }
+  | { type: 'selection.choose'; characterId: string; level: number; skill: string }
+  | {
+      type: 'evolution.release';
+      characterId: string;
+      options: readonly {
+        /** Optional; "o1", "o2"... by position when omitted. */
+        id?: string | undefined;
+        className: string;
+        description?: string | undefined;
+        transforms?: readonly { skill: string; name: string; rarity: string }[] | undefined;
+        classWeights?: Readonly<Record<string, number>> | null | undefined;
+      }[];
+      /** Offered at the profession unlock grade; default none. */
+      professions?: readonly string[] | undefined;
+    }
+  | {
+      type: 'evolution.choose';
+      characterId: string;
+      optionId: string;
+      profession?: string | null | undefined;
+    }
   | { type: 'event.undo'; eventId: string };
 
 export interface StatBonusInput {
@@ -230,6 +263,13 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('skill.awardMark') }),
   z.object({ type: z.literal('skill.upgrade') }),
   z.object({ type: z.literal('skill.merge'), skills: z.array(z.unknown()) }),
+  z.object({ type: z.literal('selection.offer'), options: z.array(z.unknown()) }),
+  z.object({ type: z.literal('selection.choose') }),
+  z.object({
+    type: z.literal('evolution.release'),
+    options: z.array(z.record(z.string(), z.unknown())),
+  }),
+  z.object({ type: z.literal('evolution.choose') }),
   z.object({ type: z.literal('event.undo') }),
 ]);
 
@@ -254,6 +294,8 @@ export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>([
   'note.edit',
   'note.delete',
   'skill.nickname',
+  'selection.choose',
+  'evolution.choose',
 ]);
 
 /** Returns why the actor may not issue the command, or null when allowed. */
@@ -520,6 +562,49 @@ function toEvent(command: Command, ctx: CommandContext): { type: EventType; payl
       return {
         type: 'skill.merged',
         payload: { characterId: command.characterId, skills: command.skills, name: command.name },
+      };
+    case 'selection.offer':
+      return {
+        type: 'selection.offered',
+        payload: {
+          characterId: command.characterId,
+          level: command.level,
+          options: command.options.map((o) => ({
+            name: o.name,
+            rarity: o.rarity,
+            kind: o.kind ?? 'class',
+            description: o.description ?? '',
+          })),
+        },
+      };
+    case 'selection.choose':
+      return {
+        type: 'selection.chosen',
+        payload: { characterId: command.characterId, level: command.level, skill: command.skill },
+      };
+    case 'evolution.release':
+      return {
+        type: 'evolution.released',
+        payload: {
+          characterId: command.characterId,
+          options: command.options.map((o, i) => ({
+            id: o.id ?? `o${i + 1}`,
+            className: o.className,
+            description: o.description ?? '',
+            transforms: o.transforms ?? [],
+            classWeights: o.classWeights ?? null,
+          })),
+          professions: command.professions ?? [],
+        },
+      };
+    case 'evolution.choose':
+      return {
+        type: 'evolution.chosen',
+        payload: {
+          characterId: command.characterId,
+          optionId: command.optionId,
+          profession: command.profession ?? null,
+        },
       };
     case 'event.undo':
       return { type: 'event.undone', payload: { eventId: command.eventId } };

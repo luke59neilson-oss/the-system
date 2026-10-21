@@ -1,7 +1,8 @@
+import type { PendingEvolution, SelectionRecord } from '../evolution/model';
 import type { GradeRules, RulesConfig } from '../rules';
 
 /** Bumped when the serialized character shape changes; M1.3 upcasts old states. */
-export const CHARACTER_SCHEMA_VERSION = 3;
+export const CHARACTER_SCHEMA_VERSION = 4;
 
 /** Skill as held by a character (the full skill system arrives in M1.9). */
 export interface CharacterSkill {
@@ -53,6 +54,10 @@ export interface Character {
   readonly skills: readonly CharacterSkill[];
   /** Merges done per grade id (DESIGN §6: max one per character per grade; M1.9). */
   readonly merges: Readonly<Record<string, number>>;
+  /** Selection menus offered by class level, with the pick once chosen (M1.10). */
+  readonly selections: readonly SelectionRecord[];
+  /** Evolution the GM has released and the player has not chosen yet (M1.10). */
+  readonly evolution: PendingEvolution | null;
 }
 
 export interface NewCharacter {
@@ -173,6 +178,8 @@ export function createCharacter(rules: RulesConfig, input: NewCharacter): Charac
     titles: [],
     skills: [...classSkills, newSkill(raceSkill.name, raceSkill.rarity, 'race')],
     merges: {},
+    selections: [],
+    evolution: null,
   };
 }
 

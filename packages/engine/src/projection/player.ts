@@ -1,5 +1,6 @@
 import { poolMax, raceLevel, type Character, type FreePointBatch } from '../character';
 import type { CampaignState } from '../events';
+import type { PendingEvolution, SelectionRecord, SkillOption } from '../evolution';
 import type { RulesConfig } from '../rules';
 
 /**
@@ -39,6 +40,10 @@ export const CHARACTER_FIELD_VISIBILITY: Readonly<Record<keyof Character, Visibi
   titles: 'owner',
   skills: 'owner',
   merges: 'owner',
+  // M1.10: the owner sees their own menus and released evolution options
+  // (M3.6 and M3.13 draw them); party members never do.
+  selections: 'owner',
+  evolution: 'owner',
 };
 
 /** Every campaign field, classified (`owner` is not used at this level). */
@@ -138,6 +143,10 @@ export interface OwnSheet {
   }[];
   /** Merges done per grade id. */
   readonly merges: Readonly<Record<string, number>>;
+  /** Selection menus offered to this character, with the pick once chosen (M1.10). */
+  readonly selections: readonly SelectionRecord[];
+  /** A released evolution waiting for this character's choice (M1.10). */
+  readonly evolution: PendingEvolution | null;
 }
 
 /** Another party member as the viewer sees them (D5). */
@@ -267,8 +276,38 @@ function ownSheet(rules: RulesConfig, c: Character): OwnSheet {
       c.merges,
       rules.grades.map((g) => g.id),
     ),
+    selections: c.selections.map((r) => ({
+      level: r.level,
+      options: r.options.map(copyOption),
+      chosen: r.chosen,
+    })),
+    evolution:
+      c.evolution === null
+        ? null
+        : {
+            toGrade: c.evolution.toGrade,
+            options: c.evolution.options.map((o) => ({
+              id: o.id,
+              className: o.className,
+              description: o.description,
+              transforms: o.transforms.map((t) => ({
+                skill: t.skill,
+                name: t.name,
+                rarity: t.rarity,
+              })),
+              classWeights: o.classWeights === null ? null : copyRecord(o.classWeights, statIds),
+            })),
+            professions: [...c.evolution.professions],
+          },
   };
 }
+
+const copyOption = (o: SkillOption): SkillOption => ({
+  name: o.name,
+  rarity: o.rarity,
+  kind: o.kind,
+  description: o.description,
+});
 
 function partyMember(rules: RulesConfig, c: Character): PartyMember {
   return {

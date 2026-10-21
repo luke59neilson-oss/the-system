@@ -80,3 +80,16 @@ answer under any question and the next run will follow it.
     Default: refused until the next evolution. Alternative: merges may
     exceed the ceiling by one step.
     Answer:
+20. **Must every evolution transform a skill?** DESIGN §6 says evolutions
+    transform 1–2 skills, so each released option must name at least one
+    transform (config `skills.evolutionTransforms`, min 1). A transform may
+    keep the name and only raise the rarity. Default: at least one. Set the
+    minimum to 0 in rules settings (M4.9) to allow plain evolutions.
+    Answer:
+21. **Capstone before evolving?** The capstone selection (levels 10, 45, …)
+    is meant to be "the last selection before each evolution", but nothing
+    stops the GM releasing the evolution before the capstone pick is made.
+    Default: allowed (the pick stays pending and keeps its own grade's
+    ceiling). Alternative: refuse to release an evolution while a selection
+    is pending.
+    Answer:

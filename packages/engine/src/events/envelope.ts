@@ -214,6 +214,53 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     skills: z.tuple([nonBlank, nonBlank]),
     name: nonBlank,
   }),
+  /** GM offers (or re-offers) the skill menu for a reached selection level (M1.10). */
+  'selection.offered': z.strictObject({
+    characterId: recordId,
+    level: z.number().int().positive().max(10_000),
+    options: z
+      .array(
+        z.strictObject({
+          name: nonBlank,
+          rarity: recordId,
+          kind: z.enum(['class', 'profession']),
+          description: z.string().trim().max(2000),
+        }),
+      )
+      .min(1)
+      .max(10),
+  }),
+  /** The player (or GM) picks one offered option; the skill is granted. */
+  'selection.chosen': z.strictObject({
+    characterId: recordId,
+    level: z.number().int().positive().max(10_000),
+    skill: nonBlank,
+  }),
+  /** GM releases an available evolution with its options (DESIGN §3 "held until released"). */
+  'evolution.released': z.strictObject({
+    characterId: recordId,
+    options: z
+      .array(
+        z.strictObject({
+          id: recordId,
+          className: nonBlank,
+          description: z.string().trim().max(2000),
+          transforms: z
+            .array(z.strictObject({ skill: nonBlank, name: nonBlank, rarity: recordId }))
+            .max(10),
+          classWeights: statValues.nullable(),
+        }),
+      )
+      .min(1)
+      .max(10),
+    professions: z.array(nonBlank).max(10),
+  }),
+  /** The player (or GM) chooses a released option (and an offered profession, if any). */
+  'evolution.chosen': z.strictObject({
+    characterId: recordId,
+    optionId: recordId,
+    profession: nonBlank.nullable(),
+  }),
   /** Compensating event: the target stops counting, as if it had never happened. */
   'event.undone': z.strictObject({ eventId: recordId }),
 } as const;
@@ -254,6 +301,10 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'skill.markAwarded': 1,
   'skill.upgraded': 1,
   'skill.merged': 1,
+  'selection.offered': 1,
+  'selection.chosen': 1,
+  'evolution.released': 1,
+  'evolution.chosen': 1,
   'event.undone': 1,
 };
 
@@ -323,6 +374,8 @@ export const PLAYER_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   'note.edited',
   'note.deleted',
   'skill.nicknamed',
+  'selection.chosen',
+  'evolution.chosen',
 ]);
 
 /** Throws when a player-recorded event is not one a player may cause. */

@@ -22,9 +22,7 @@ const dir = join(import.meta.dirname, '..', 'golden');
 const logs = readdirSync(dir).filter((f) => f.endsWith('.jsonl'));
 
 /** Event types no event sequence can reach yet, with the item that makes them reachable. */
-const NOT_YET_REACHABLE: Partial<Record<EventType, string>> = {
-  'character.professionGranted': 'M1.10 (evolution to E-grade)',
-};
+const NOT_YET_REACHABLE: Partial<Record<EventType, string>> = {};
 
 describe('golden event logs', () => {
   it('exist', () => {

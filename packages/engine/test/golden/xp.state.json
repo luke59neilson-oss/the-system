@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "name": "XP golden",
   "rules": {
     "configVersion": 1,
@@ -343,7 +343,7 @@
   },
   "characters": {
     "jake": {
-      "schemaVersion": 3,
+      "schemaVersion": 4,
       "id": "jake",
       "name": "Jake",
       "race": "Human",
@@ -459,10 +459,12 @@
           "markSessions": []
         }
       ],
-      "merges": {}
+      "merges": {},
+      "selections": [],
+      "evolution": null
     },
     "casper": {
-      "schemaVersion": 3,
+      "schemaVersion": 4,
       "id": "casper",
       "name": "Casper",
       "race": "Human",
@@ -578,10 +580,12 @@
           "markSessions": []
         }
       ],
-      "merges": {}
+      "merges": {},
+      "selections": [],
+      "evolution": null
     },
     "miranda": {
-      "schemaVersion": 3,
+      "schemaVersion": 4,
       "id": "miranda",
       "name": "Miranda",
       "race": "Human",
@@ -691,7 +695,9 @@
           "markSessions": []
         }
       ],
-      "merges": {}
+      "merges": {},
+      "selections": [],
+      "evolution": null
     }
   },
   "characterOrder": ["jake", "casper", "miranda"],

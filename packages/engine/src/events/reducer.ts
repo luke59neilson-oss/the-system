@@ -23,11 +23,18 @@ import {
 import { skillPairCounts, type Note, type PracticeEntry } from '../practice';
 import { awardMark, mergeSkills, setNickname, setUnique, upgradeSkill } from '../skills';
 import { gainXp, shareBonus } from '../progression';
+import {
+  chooseEvolution,
+  chooseSelection,
+  offerSelection,
+  releaseEvolution,
+  retiredSkillNames,
+} from '../evolution';
 import { parseRulesConfig, type RulesConfig } from '../rules';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 6;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 7;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -649,9 +656,65 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
         rule(event, () => mergeSkills(state.rules, character, first, second, name, joint)),
       );
     }
+    case 'selection.offered':
+    case 'selection.chosen': {
+      const { characterId, level } = event.payload;
+      const character = characterOf(state, event, characterId);
+      const retired = retiredFor(state, character);
+      return withCharacter(
+        state,
+        rule(event, () =>
+          event.type === 'selection.offered'
+            ? offerSelection(state.rules, character, level, event.payload.options, retired)
+            : chooseSelection(state.rules, character, level, event.payload.skill, retired),
+        ),
+      );
+    }
+    case 'evolution.released': {
+      const { characterId, options, professions } = event.payload;
+      const character = characterOf(state, event, characterId);
+      return withCharacter(
+        state,
+        rule(event, () =>
+          releaseEvolution(
+            state.rules,
+            character,
+            options,
+            professions,
+            retiredFor(state, character),
+          ),
+        ),
+      );
+    }
+    case 'evolution.chosen': {
+      const { characterId, optionId, profession } = event.payload;
+      const character = characterOf(state, event, characterId);
+      const result = rule(event, () =>
+        chooseEvolution(state.rules, character, optionId, profession, retiredFor(state, character)),
+      );
+      // Practice entries follow transformed skills, so pair counts carry over.
+      const renamed = new Map(result.renames);
+      const practice =
+        renamed.size === 0
+          ? state.practice
+          : state.practice.map((entry) =>
+              entry.characterId === characterId && entry.skills.some((n) => renamed.has(n))
+                ? { ...entry, skills: entry.skills.map((n) => renamed.get(n) ?? n) }
+                : entry,
+            );
+      return { ...withCharacter(state, result.character), practice };
+    }
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');
   }
+}
+
+/** Skill names the character's practice log still counts but that are no longer skills. */
+function retiredFor(state: CampaignState, character: Character): Set<string> {
+  return retiredSkillNames(
+    character,
+    state.practice.filter((e) => e.characterId === character.id).flatMap((e) => e.skills),
+  );
 }
 
 /** Builds a definition, dropping absent optional bonus fields (exact optional types). */
