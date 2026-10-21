@@ -29,6 +29,18 @@ October 2026.
   - Before a character has a profession, race level = class level.
   - Professions are first offered at the **E-grade evolution** and start at the
     character's current class level (the System credits what it already saw).
+  - **Class levels** grant the class spread; **race levels** grant free
+    points; **profession levels** grant no stats directly (they raise race
+    level and add profession skill options).
+  - **Grade** is the highest grade the character has evolved into. Class and
+    profession levels cannot pass the top level of the current grade
+    (4, 14, 49, 99, 149, 199, 240); extra XP banks.
+  - **Evolution becomes available** when race level reaches the top of the
+    current grade (config `evolutionGate: "race"`; alternative `"class"`, see
+    QUESTIONS). The GM releases it, the player chooses, and banked XP then
+    applies at the new grade.
+  - Skill selections trigger from **class level**. XP needed per level uses
+    the character's **current grade**. Level 240 is the campaign cap for now.
 - Every character starts with the race skill **Identify (Common)** and 3 class
   skills from their starting class.
 
@@ -68,7 +80,8 @@ blue-white tint and a heavier brushed texture so the change is visible.
 
 - Class spread follows the class's stat weights (largest-remainder rounding so
   the total is exact).
-- Free points: the player assigns them **once**, then they lock. The GM can
+- Free points: each level-up's free points are assigned **once**, then that
+  batch locks. Later level-ups grant new, unlocked points. The GM can
   override.
 - Each evolution may reshape the class spread toward stats the character used
   (GM chooses, guided by the practice log).
@@ -97,8 +110,8 @@ blue-white tint and a heavier brushed texture so the change is visible.
 - **Selections:** at the class levels in §3. Menu of 3–4 options, built by the
   GM (often from imported files Claude drafts) using the practice log. The
   level-up can happen mid-session; the choice can wait for downtime.
-- **Capstone:** the last selection before each evolution has a higher rarity
-  floor.
+- **Capstone:** the last selection before each evolution must include at
+  least one option at the grade's rarity ceiling.
 - **Profession options** appear inside class menus once a profession exists.
 - **Evolutions** transform 1–2 existing skills.
 - **Skill names:** the System gives the official name; the player may add a
@@ -154,7 +167,49 @@ turning point). GM confirms marks in the end-of-session review.
   weapon slots (main hand, off hand). Inventory, a configurable currency, and
   giving/trading between players and the GM.
 - **Notes:** player private journal, party shared notes, GM private notes;
-  tags linking notes to characters, NPCs, regions, quests; search.
+  tags linking notes to characters, NPCs, regions, quests; search. The GM
+  cannot read a private journal entry unless the player marks it shareable.
+- **Logging for Claude:** the app autosaves a running session log (practice
+  entries, notable events, shareable notes, XP, level-ups, quest and stability
+  changes) to the exports folder every few minutes and on quit, plus a full
+  report at session end. "Notable events" = level-ups, selections,
+  evolutions, titles, mark upgrades, merges, item transfers, GM broadcasts,
+  stability changes.
+- **GM security:** GM actions always require a GM key that the desktop app
+  injects into its own window. The key never appears in the join URL or QR.
+  The server checks Origin on WebSocket upgrade and denies GM HTTP routes by
+  default.
+
+## 9. Status screen (player sheet layout)
+
+Follows the books' status window, in this order; values update live.
+
+```
+Status
+Name: <name>
+Race: [Human (F) – lvl 12]
+Class: [<class name> – lvl 14]
+Profession: [<profession name> – lvl 10]      (row hidden before E-grade)
+Health Points (HP): 340/400
+Mana Points (MP): 210/210
+Stamina: 180/200
+Stats
+Strength 2.3 · Agility 3.1 · Endurance 2.0 · Vitality 4.0 · Toughness 1.8
+Wisdom 2.1 · Intelligence 1.4 · Perception 3.7 · Willpower 1.2
+Free points: 3   [Assign]
+Titles: [Forerunner], [Rapid Spread]
+Class Skills: [Name (Rarity)] …   (rarity-colored, nickname shown beside)
+Profession Skills: …
+Race Skills: [Identify (Common)]
+```
+
+- A framed "System window": translucent panel, thin glowing border, the grade
+  metal as the frame and accent, monospace-leaning headings, bracketed names.
+- Notifications use the books' wording: `*'DING!' Class: [Archer] has reached
+  level 5 - Stat points allocated, +3 free points*`.
+- Supported viewports: 1366×768 and 1920×1080 laptops; 390×844 phones must
+  remain usable (single column).
+- Theme check: silver and platinum accent colors differ by at least ΔE 10.
 
 ## 8. Tutorial (first content pack)
 

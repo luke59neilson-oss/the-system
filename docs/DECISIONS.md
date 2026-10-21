@@ -9,9 +9,12 @@ Newest at the bottom. Format: ID · date · decision · why.
 - D5 · 2026-10-21 · Players see their own sheet in full; the party view shows name, race/class, levels and pool bars only. · Luke's default answer; keeps per-player surprises intact.
 - D6 · 2026-10-21 · XP is a number per event; default split even across chosen participants, adjustable. XP per level by grade: G 100, F 150, E 250, D 400, C 650, B 1,000, A 1,500. · Luke wants numeric XP; the curve keeps numbers growing with grade. Configurable.
 - D7 · 2026-10-21 · One configurable currency, default name "Credits". · Luke wants money transfers; name to be confirmed.
-- D8 · 2026-10-21 · CI runs tests on push (ubuntu only). Windows/macOS/Linux desktop builds run only on tags or manual dispatch. · Private-repo Actions minutes are limited and Windows/macOS minutes count extra.
+- D8 · 2026-10-21 · CI runs tests on push (ubuntu only). Windows/macOS/Linux desktop builds run only on push to the `release` branch. · Private-repo Actions minutes are limited and Windows/macOS minutes count extra.
 - D9 · 2026-10-21 · No Claude API calls inside the app. The app exports session reports (and can optionally sync them to a GitHub repo); Claude-drafted content comes back as importable JSON. · Luke wants to carry notes to Claude and bring ideas back; no API key or cost in the app.
 - D10 · 2026-10-21 · Adversarial review: Sonnet reviews each item, Fable reviews each milestone, always a fresh context. · Luke asked for reviews by different models.
 - D11 · 2026-10-21 · Build installers for Windows, macOS and Linux. · Luke's laptop OS is not confirmed yet.
 - D12 · 2026-10-21 · Free points are assigned once and then locked; the GM can override. · Luke's rule.
 - D13 · 2026-10-21 · Grade themes are metallic: aluminum (dull), bronze (dull), copper, silver, gold, platinum (cool tint to separate it from silver), prismatic diamond. · Luke's choice; platinum tint added because silver and platinum look alike on screens.
+- D14 · 2026-10-21 · Roadmap revised after a Sonnet review: per-item e2e specs, milestone acceptance items, engine reordering, capped review rounds with model fallback, 90-minute lock with 35/60-minute timebox, GM key always required, canary leak tests, event versioning with a golden log. · Review findings, all High items adopted.
+- D15 · 2026-10-21 · Releases come from a workflow on push to the `release` branch, which creates the GitHub Release itself. · Build sessions cannot push tags, delete branches, or write via the GitHub API (verified).
+- D16 · 2026-10-21 · Free points lock per level-up batch, not once per character. · "Assign once" read literally would block every later level-up.

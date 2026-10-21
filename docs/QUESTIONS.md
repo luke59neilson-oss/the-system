@@ -15,7 +15,14 @@ answer under any question and the next run will follow it.
    Answer:
 5. **One-time stat bonus at each evolution?** Default: none.
    Answer:
-6. **Session reports to GitHub?** Needs a second private repo (e.g.
+6. **What opens an evolution?** Default: race level at the top of the grade,
+   which means a character who ignores their profession (from E-grade on)
+   can't evolve until it catches up. Alternative: class level alone opens it.
+   Answer:
+7. **Can the GM read players' private journals?** Default: no, only entries
+   the player marks shareable.
+   Answer:
+8. **Session reports to GitHub?** Needs a second private repo (e.g.
    `the-system-campaign`) and a token in the app's settings. Default: export
    to a folder only.
    Answer:
