@@ -36,3 +36,8 @@ answer under any question and the next run will follow it.
     share so far; totals stay exact and fair over time (D35). OK to update
     DESIGN §4 to say so?
     Answer:
+11. **Party pool bars: numbers or bars only?** Players see their own HP/MP/
+    Stamina as numbers. For other party members the default is a bar only
+    (a percentage), because max HP/MP/Stamina would reveal their Vitality,
+    Wisdom and Endurance (D39). Alternative: show "340/400" for everyone.
+    Answer:

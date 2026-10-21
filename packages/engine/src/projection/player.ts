@@ -252,20 +252,20 @@ function partyMember(rules: RulesConfig, c: Character): PartyMember {
  * unknown character so a stale client never falls back to more data.
  */
 export function projectForPlayer(state: CampaignState, characterId: string): PlayerView {
-  const own = Object.prototype.hasOwnProperty.call(state.characters, characterId)
+  const viewer = Object.prototype.hasOwnProperty.call(state.characters, characterId)
     ? state.characters[characterId]
     : undefined;
-  if (!own) throw new ProjectionError(`Unknown character "${characterId}"`);
+  if (!viewer) throw new ProjectionError(`Unknown character "${characterId}"`);
   const party: PartyMember[] = [];
   for (const id of state.characterOrder) {
     const other = state.characters[id];
     if (id !== characterId && other) party.push(partyMember(state.rules, other));
   }
   return {
-    viewerId: own.id,
+    viewerId: viewer.id,
     campaignName: state.name,
     rules: projectRules(state.rules),
-    me: ownSheet(state.rules, own),
+    me: ownSheet(state.rules, viewer),
     party,
   };
 }

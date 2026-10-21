@@ -71,7 +71,7 @@ Work top to bottom. An item is checked only when its acceptance criteria pass
 - [x] **M1.5 Free points.** Per-level batches assigned once then locked; GM
   override. *Accept:* reassigning a locked batch is rejected; the next level
   grants a new unlocked batch; override is undoable.
-- [ ] **M1.13 Player projection.** (built early; extend it with every later feature) Player view: own sheet in full; party
+- [x] **M1.13 Player projection.** (built early; extend it with every later feature) Player view: own sheet in full; party
   limited (name, race/class, levels, pool bars); hidden quests/stability
   removed; Identify text resolved to the viewer's tier; GM notes and others'
   private notes excluded. *Accept:* canary strings seeded into every GM-only
