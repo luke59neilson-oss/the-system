@@ -21,8 +21,12 @@ export function lanIPv4Addresses(interfaces: Interfaces): string[] {
  * IPv4 addresses (falling back to localhost when offline); otherwise the bound host.
  */
 export function joinUrls(host: string, port: number, interfaces: Interfaces): string[] {
-  const wildcard = host === '0.0.0.0' || host === '::' || host === '';
-  if (!wildcard) return [`http://${host.includes(':') ? `[${host}]` : host}:${port}`];
+  if (!isWildcardHost(host)) return [`http://${host.includes(':') ? `[${host}]` : host}:${port}`];
   const lan = lanIPv4Addresses(interfaces);
   return (lan.length > 0 ? lan : ['127.0.0.1']).map((ip) => `http://${ip}:${port}`);
+}
+
+/** True for bind hosts that listen on every interface. */
+export function isWildcardHost(host: string): boolean {
+  return host === '0.0.0.0' || host === '::' || host === '';
 }

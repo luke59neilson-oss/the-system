@@ -1,6 +1,6 @@
 import type { NetworkInterfaceInfo } from 'node:os';
 import QRCode from 'qrcode';
-import { joinUrls, lanIPv4Addresses } from './lan';
+import { isWildcardHost, joinUrls, lanIPv4Addresses } from './lan';
 
 /**
  * Join helper (ROADMAP M2.3): the addresses players can type or scan to reach
@@ -17,6 +17,8 @@ export interface JoinInfo {
   url: string;
   /** Standalone SVG QR code of `url`. */
   qrSvg: string;
+  /** Every join URL with its own QR, same order as `urls`, so the GM can pick another. */
+  options: { url: string; qrSvg: string }[];
 }
 
 /**
@@ -45,20 +47,31 @@ export function rankedLanAddresses(interfaces: Interfaces): string[] {
 
 /** Join URLs for a bind host and port, best address first. */
 export function rankedJoinUrls(host: string, port: number, interfaces: Interfaces): string[] {
-  const urls = joinUrls(host, port, interfaces);
-  const order = rankedLanAddresses(interfaces);
-  const rankOf = (url: string) => {
-    const i = order.findIndex((address) => url === `http://${address}:${port}`);
-    return i === -1 ? order.length : i;
-  };
-  return [...urls].sort((x, y) => rankOf(x) - rankOf(y));
+  // Rank the interfaces (not URL strings), then let joinUrls format them.
+  if (!isWildcardHost(host)) return joinUrls(host, port, interfaces);
+  const ranked = rankedLanAddresses(interfaces);
+  const ordered: Interfaces = { ranked: ranked.map((address) => ({ ...LAN_V4, address })) };
+  return joinUrls(host, port, ordered);
 }
+
+const LAN_V4: NetworkInterfaceInfo = {
+  address: '',
+  netmask: '255.255.255.0',
+  family: 'IPv4',
+  mac: '00:00:00:00:00:00',
+  internal: false,
+  cidr: null,
+};
 
 /** Everything the GM screen needs to show players how to join. */
 export function joinInfo(host: string, port: number, interfaces: Interfaces): JoinInfo {
   const urls = rankedJoinUrls(host, port, interfaces);
-  const url = urls[0] ?? `http://127.0.0.1:${port}`;
-  return { urls, url, qrSvg: qrSvg(url) };
+  const options = urls.map((url) => ({ url, qrSvg: qrSvg(url) }));
+  const first = options[0] ?? {
+    url: `http://127.0.0.1:${port}`,
+    qrSvg: qrSvg(`http://127.0.0.1:${port}`),
+  };
+  return { urls, url: first.url, qrSvg: first.qrSvg, options };
 }
 
 /**

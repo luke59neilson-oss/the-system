@@ -28,6 +28,13 @@ function decodeSvg(svg: string): string | null {
   const view = /viewBox="0 0 (\d+) (\d+)"/.exec(svg);
   if (!view) throw new Error('no viewBox');
   const size = Number(view[1]);
+  // Exactly one full-size white background and one black module path.
+  if (svg.match(/<rect /g)?.length !== 1 || svg.match(/<path /g)?.length !== 1) {
+    throw new Error('unexpected SVG shapes');
+  }
+  if (!svg.includes(`<rect width="${size}" height="${size}" fill="#fff"/>`)) {
+    throw new Error('background is not a full-size white rect');
+  }
   const d = /<path fill="#000" d="([^"]*)"/.exec(svg)?.[1] ?? '';
   const scale = 4;
   const px = size * scale;
@@ -105,6 +112,14 @@ describe('joinInfo', () => {
     expect(info.urls).toEqual(['http://192.168.1.5:30333', 'http://172.17.0.1:30333']);
     expect(info.url).toBe('http://192.168.1.5:30333');
     expect(decodeSvg(info.qrSvg)).toBe(info.url);
+    expect(info.options.map((o) => o.url)).toEqual(info.urls);
+    for (const option of info.options) expect(decodeSvg(option.qrSvg)).toBe(option.url);
+  });
+
+  it('keeps a specific bind host even when one LAN address exists', () => {
+    expect(joinInfo('10.1.1.1', 4000, { wlan0: [v4('192.168.1.5')] }).url).toBe(
+      'http://10.1.1.1:4000',
+    );
   });
 
   it('falls back to localhost when offline and uses a specific bind host as is', () => {
