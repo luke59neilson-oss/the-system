@@ -40,17 +40,31 @@ function openGmWindow(server: RunningApp): void {
   });
   gmWindow = win;
   // Closing the GM window quits the app and drops every player: ask first.
+  // The dialog is async: the server shares this process and must keep serving
+  // players while the question is open.
+  // Windows log-off or shutdown: never hold it up with a question.
+  win.on('session-end', () => {
+    quitting = true;
+  });
+  let asking = false;
   win.on('close', (event) => {
     if (quitting) return;
-    const choice = dialog.showMessageBoxSync(win, {
-      type: 'question',
-      buttons: ['Keep running', 'Quit The System'],
-      defaultId: 0,
-      cancelId: 0,
-      message: 'Quit The System?',
-      detail: 'Every player screen disconnects until you start it again.',
-    });
-    if (choice !== 1) event.preventDefault();
+    event.preventDefault();
+    if (asking) return;
+    asking = true;
+    void dialog
+      .showMessageBox(win, {
+        type: 'question',
+        buttons: ['Keep running', 'Quit The System'],
+        defaultId: 0,
+        cancelId: 0,
+        message: 'Quit The System?',
+        detail: 'Every player screen disconnects until you start it again.',
+      })
+      .then(({ response }) => {
+        asking = false;
+        if (response === 1) app.quit();
+      });
   });
   win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) =>
     callback(false),
@@ -88,6 +102,11 @@ async function start(): Promise<void> {
   }
   // For scripts and the smoke test; the key is never printed.
   console.log(`The System desktop ready on port ${running.port}`);
+  // Quit was asked for while starting: close what just started instead.
+  if (quitting) {
+    void running.close().finally(() => app.exit(0));
+    return;
+  }
   openGmWindow(running);
 }
 
@@ -95,6 +114,7 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => {
+    if (quitting) return;
     if (gmWindow) {
       if (gmWindow.isMinimized()) gmWindow.restore();
       gmWindow.focus();
@@ -104,7 +124,7 @@ if (!app.requestSingleInstanceLock()) {
   });
   app.on('window-all-closed', () => app.quit());
   app.on('activate', () => {
-    if (!gmWindow && running) openGmWindow(running);
+    if (!gmWindow && running && !quitting) openGmWindow(running);
   });
   app.on('before-quit', (event) => {
     if (quitting || !running) {
@@ -118,7 +138,15 @@ if (!app.requestSingleInstanceLock()) {
     void running.close().finally(() => app.quit());
   });
   void app.whenReady().then(() => {
-    if (app.isPackaged) Menu.setApplicationMenu(null);
+    if (app.isPackaged) {
+      // No View menu (DevTools/reload) in release builds; macOS keeps the app
+      // and Edit menus so Cmd+C/V/Q still work.
+      Menu.setApplicationMenu(
+        process.platform === 'darwin'
+          ? Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }])
+          : null,
+      );
+    }
     return start();
   });
 }
