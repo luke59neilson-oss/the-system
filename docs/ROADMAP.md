@@ -80,7 +80,7 @@ Work top to bottom. An item is checked only when its acceptance criteria pass
 
 ## M2 — Server and sync
 
-- [ ] **M2.1 Persistence.** Append-only JSONL event log + snapshots in a data
+- [x] **M2.1 Persistence.** Append-only JSONL event log + snapshots in a data
   directory; fsync; tolerant of a torn last line; backup at session end;
   campaign export/import with secrets (tokens) stripped. *Accept:* restart
   keeps state; torn-line test; export→import round trip identical; no secret
