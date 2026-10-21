@@ -10,3 +10,4 @@ playwright-report/
 data/
 .env
 .DS_Store
+apps/desktop/release/

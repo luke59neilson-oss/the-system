@@ -1,0 +1,122 @@
+name: Release
+
+# Desktop builds (ROADMAP MS.6, D8, D15, D55).
+# - Push to `release`: build Windows (installer + portable), macOS (dmg,
+#   unsigned, universal) and Linux (AppImage), smoke-test the Linux build, then
+#   publish a GitHub Release named `preview-<date>` (tag
+#   `preview-<date>-<run number>`; build sessions cannot push tags, the
+#   workflow creates it).
+# - Push to `release-dry-run`: the same builds and checks, no Release.
+on:
+  push:
+    branches: [release, release-dry-run]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CI: 'true'
+  # electron-builder downloads its own Electron zip; the npm package's binary is not needed.
+  ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+  CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+jobs:
+  build:
+    name: build (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+            files: apps/desktop/release/*.AppImage
+          - os: windows-latest
+            target: win
+            files: apps/desktop/release/*.exe
+          - os: macos-latest
+            target: mac
+            files: apps/desktop/release/*.dmg
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build web and server
+        run: npm run build
+      - name: Package desktop app
+        run: npm run package -w @the-system/desktop -- --${{ matrix.target }}
+      - name: Smoke-test the packaged Linux app
+        if: matrix.target == 'linux'
+        run: |
+          npx playwright install --with-deps chromium
+          THE_SYSTEM_PACKAGED_EXE="$PWD/apps/desktop/release/linux-unpacked/the-system" \
+            npm run package:smoke -w @the-system/desktop
+      - name: Smoke-test the AppImage itself
+        if: matrix.target == 'linux'
+        run: |
+          image=$(ls apps/desktop/release/*.AppImage)
+          data=$(mktemp -d)
+          THE_SYSTEM_PORT=30411 THE_SYSTEM_DATA_DIR="$data" APPIMAGE_EXTRACT_AND_RUN=1 \
+            xvfb-run -a "$image" --no-sandbox > "$data/log" 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:30411/health; then echo; ok=1; break; fi
+            sleep 1
+          done
+          pkill -f 'linux-x86_64.AppImage|appimage_extracted' || true
+          if [ -z "$ok" ]; then cat "$data/log"; exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.target }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+          retention-days: 14
+
+  collect:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Check every artifact is present
+        run: |
+          ls -la out
+          for pattern in '*-win-x64-setup.exe' '*-win-x64-portable.exe' '*-mac-universal.dmg' '*-linux-x86_64.AppImage'; do
+            count=$(find out -maxdepth 1 -name "$pattern" | wc -l)
+            if [ "$count" -ne 1 ]; then echo "expected one $pattern, found $count"; exit 1; fi
+          done
+      - name: Publish the preview release
+        if: github.ref == 'refs/heads/release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          day=$(date -u +%Y-%m-%d)
+          tag="preview-${day}-${GITHUB_RUN_NUMBER}"
+          gh release create "$tag" out/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "preview-${day}" \
+            --prerelease \
+            --notes "Preview build of The System from ${GITHUB_SHA::7}.
+
+          - Windows: TheSystem-*-win-x64-setup.exe (installer) or TheSystem-*-win-x64-portable.exe (no install). Unsigned: SmartScreen may warn; choose More info, Run anyway.
+          - macOS: TheSystem-*-mac-universal.dmg. Unsigned: right-click the app, Open, then Open again.
+          - Linux: TheSystem-*-linux-x86_64.AppImage. Make it executable, then run it.
+
+          Double-click starts the server and opens the GM console; players join at the URL or QR it shows."

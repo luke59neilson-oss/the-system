@@ -1,15 +1,21 @@
 {
   "name": "@the-system/desktop",
-  "version": "0.0.0",
+  "productName": "The System",
+  "desktopName": "the-system.desktop",
+  "version": "0.1.0",
   "private": true,
-  "description": "Electron wrapper: double-click starts the server and opens the GM console (MS.5).",
+  "description": "The System: run a LitRPG tabletop campaign on your LAN. Double-click starts the server and opens the GM console.",
+  "author": "The System contributors",
   "main": "./dist/main.cjs",
   "scripts": {
     "build": "node build.mjs",
     "start": "electron .",
-    "smoke": "xvfb-run -a playwright test -c playwright.config.ts"
+    "smoke": "xvfb-run -a playwright test -c playwright.config.ts",
+    "package": "node build.mjs && electron-builder --config electron-builder.yml --publish never",
+    "package:smoke": "xvfb-run -a playwright test -c playwright.packaged.config.ts"
   },
   "devDependencies": {
-    "electron": "45.0.0"
+    "electron": "45.0.0",
+    "electron-builder": "26.15.3"
   }
 }

@@ -105,6 +105,7 @@ export default tseslint.config(
       'coverage/**',
       'test-results/**',
       'playwright-report/**',
+      'apps/desktop/release/**',
     ],
   },
   {

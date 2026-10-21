@@ -1,0 +1,48 @@
+# electron-builder config for the desktop app (ROADMAP MS.6, D55).
+# Everything the main process needs is bundled into dist/main.cjs by build.mjs,
+# so no node_modules ship; the web build rides along as resources/web.
+appId: app.the-system.gm
+productName: The System
+copyright: The System contributors
+directories:
+  output: release
+  buildResources: build-resources
+files:
+  - dist/main.cjs
+  - package.json
+extraResources:
+  - from: ../web/dist
+    to: web
+    filter: ['**/*']
+asar: true
+npmRebuild: false
+nodeGypRebuild: false
+buildDependenciesFromSource: false
+publish: null
+artifactName: TheSystem-${version}-${os}-${arch}.${ext}
+win:
+  executableName: TheSystem
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+nsis:
+  artifactName: TheSystem-${version}-win-${arch}-setup.${ext}
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+portable:
+  artifactName: TheSystem-${version}-win-${arch}-portable.${ext}
+mac:
+  target:
+    - target: dmg
+      arch: [universal]
+  category: public.app-category.games
+  identity: null
+linux:
+  executableName: the-system
+  syncDesktopName: true
+  target:
+    - target: AppImage
+      arch: [x64]
+  category: Game
