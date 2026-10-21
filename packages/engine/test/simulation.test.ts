@@ -95,6 +95,8 @@ interface Tally {
   montages: number;
   professionPicks: number;
   deferredChoices: number;
+  banked: number;
+  plans: Record<string, number[]>;
 }
 
 function simulate(seed: number): { c: Campaign; tally: Tally } {
@@ -137,6 +139,8 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
     montages: 0,
     professionPicks: 0,
     deferredChoices: 0,
+    banked: 0,
+    plans: {},
   };
 
   let c = emptyCampaign();
@@ -226,7 +230,7 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
         const ceiling = rarityIdx(gradeById(slot.grade).rarityCeiling);
         const size = int(rules.skills.menuSize.min, rules.skills.menuSize.max);
         const options = Array.from({ length: size }, (_, i) => ({
-          name: `${NAMES[id]} Skill ${slot.level}${'abcd'[i]}`,
+          name: `${NAMES[id]} Skill L${slot.level}${'abcd'[i]}`,
           rarity: rarityIds[i === 0 && slot.capstone ? ceiling : int(0, ceiling)] as string,
           kind: (char(id).profession !== null && rand() < 0.3 ? 'profession' : 'class') as
             'class' | 'profession',
@@ -235,11 +239,30 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
         exec({ type: 'selection.offer', characterId: id, level: slot.level, options });
       }
       if (rand() < 0.75) chooseSelection(id, slot.level);
-      else tally.deferredChoices++;
+      else {
+        tally.deferredChoices++;
+        checkLeaks(c, `seed ${seed}, session ${sessionNo}, ${id} menu ${slot.level} pending`);
+      }
     }
   };
   /** Held evolution: GM releases (1–4 options), the player chooses. */
-  const evolve = (id: string, target: GradeRules) => {
+  const evolve = (id: string, target: GradeRules, bankLevels: number) => {
+    if (bankLevels > 0) {
+      // Held: more XP only banks, levels stay at the cap (DESIGN §3).
+      const held = char(id);
+      const amount = bankLevels * target.xpPerLevel - held.xp.class;
+      exec({
+        type: 'xp.award',
+        track: 'class',
+        amount,
+        participants: [{ characterId: id }],
+      });
+      const banked = char(id);
+      expect(banked.classLevel, `seed ${seed}: ${id} held at the cap`).toBe(held.classLevel);
+      expect(banked.professionLevel, `seed ${seed}: ${id} held`).toBe(held.professionLevel);
+      expect(banked.xp.class, `seed ${seed}: ${id} XP banks`).toBe(held.xp.class + amount);
+      tally.banked++;
+    }
     const before = char(id);
     const race = raceLevel(rules, before);
     const unlock = target.id === rules.tracks.professionUnlockGrade;
@@ -249,7 +272,7 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
       const count = int(rules.skills.evolutionTransforms.min, rules.skills.evolutionTransforms.max);
       const skills = shuffle(before.skills).slice(0, count);
       return {
-        className: `${before.className.split(' ')[0]} ${target.id}${i}`,
+        className: `${NAMES[id]}'s ${target.id}${i} class #${++uniq}#`,
         description: 'Evolve.',
         transforms: skills.map((s) => ({
           skill: s.name,
@@ -270,6 +293,7 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
     });
     const pending = char(id).evolution;
     if (!pending) throw new Error(`seed ${seed}: release left nothing pending`);
+    checkLeaks(c, `seed ${seed}, session ${sessionNo}, ${id} release pending`);
     const profession = unlock ? pick(pending.professions) : null;
     exec(
       {
@@ -284,9 +308,14 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
     if (profession !== null) tally.professionPicks++;
     const after = char(id);
     expect(after.grade, `seed ${seed}: ${id} evolved`).toBe(target.id);
+    expect(after.classLevel, `seed ${seed}: ${id} banked XP applies at the new grade`).toBe(
+      before.classLevel + bankLevels,
+    );
     if (unlock) {
-      expect(after.profession).toBe(profession);
-      expect(after.professionLevel, 'profession starts at the class level').toBe(before.classLevel);
+      expect(after.profession, `seed ${seed}: ${id}`).toBe(profession);
+      expect(after.professionLevel, `seed ${seed}: profession starts at the class level`).toBe(
+        before.classLevel,
+      );
     }
     tally.evolutions.push({ id, from: before.grade, to: target.id, race, session: sessionNo });
   };
@@ -300,15 +329,15 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
       seen[race] = statBudgetTotal(ch);
     }
   };
-  /** The track to raise next: the lower one (class on ties) that is below the target. */
+  /** A track to raise next (random, so the profession may lag or lead): one below the target. */
   const nextTrack = (ch: Character, target: number): XpTrack | null => {
     const tracks: XpTrack[] = ch.profession === null ? ['class'] : ['class', 'profession'];
     const level = (t: XpTrack) => (t === 'class' ? ch.classLevel : ch.professionLevel);
     const open = tracks.filter((t) => level(t) < Math.min(target, trackCap(rules, ch.grade)));
     if (open.length === 0) return null;
-    return open.reduce((a, b) => (level(b) < level(a) ? b : a));
+    return pick(open);
   };
-  const afterAward = (ids: readonly string[]) => {
+  const afterAward = (ids: readonly string[], targets: Record<string, number>) => {
     for (const id of ids) {
       assignFreePoints(id);
       recordCheck(id);
@@ -317,8 +346,9 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
       if (target) {
         // Held: XP only banks while the GM has not released it (DESIGN §3).
         const held = char(id);
-        expect(held.classLevel).toBe(trackCap(rules, held.grade));
-        evolve(id, target);
+        expect(held.classLevel, `seed ${seed}: ${id} held`).toBe(trackCap(rules, held.grade));
+        const room = Math.max(0, Math.min(2, (targets[id] as number) - held.classLevel));
+        evolve(id, target, rand() < 0.5 ? int(0, room) : 0);
         assignFreePoints(id);
         recordCheck(id);
         handleSelections(id);
@@ -328,10 +358,14 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
 
   /** One encounter: XP for some of the party still below their session target. */
   const encounter = (targets: Record<string, number>) => {
-    const behind = PARTY.filter((id) => nextTrack(char(id), targets[id] as number) !== null);
-    if (behind.length === 0) return false;
-    const track: XpTrack = pick(behind.map((id) => nextTrack(char(id), targets[id] as number)!));
-    const eligible = behind.filter((id) => nextTrack(char(id), targets[id] as number) === track);
+    const wants = new Map<string, XpTrack>();
+    for (const id of PARTY) {
+      const t = nextTrack(char(id), targets[id] as number);
+      if (t !== null) wants.set(id, t);
+    }
+    if (wants.size === 0) return false;
+    const track: XpTrack = pick([...wants.values()]);
+    const eligible = [...wants].filter(([, t]) => t === track).map(([id]) => id);
     const participants = shuffle(eligible).slice(0, int(1, eligible.length));
     const needs = participants.map((id) => {
       const ch = char(id);
@@ -363,7 +397,7 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
         reason: track === 'class' ? 'Beast lord' : 'Masterwork',
       });
     }
-    afterAward(participants);
+    afterAward(participants, targets);
     return true;
   };
 
@@ -484,21 +518,28 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
     }
   };
 
+  // Pacing plan per character: random levels per session in the DESIGN range,
+  // adding up to the campaign cap over the planned sessions (no catch-up).
+  const [lo, hi] = rules.campaign.typicalLevelsPerSessionRange;
+  for (const id of PARTY) {
+    const plan = Array.from({ length: SESSIONS }, () => rules.campaign.typicalLevelsPerSession);
+    for (let n = 0; n < 400; n++) {
+      const a = int(0, SESSIONS - 1);
+      const b = int(0, SESSIONS - 1);
+      if (a !== b && (plan[a] as number) < hi && (plan[b] as number) > lo) {
+        plan[a] = (plan[a] as number) + 1;
+        plan[b] = (plan[b] as number) - 1;
+      }
+    }
+    tally.plans[id] = plan;
+  }
   for (sessionNo = 1; sessionNo <= SESSIONS; sessionNo++) {
     session = `s${sessionNo}`;
     const start = Object.fromEntries(PARTY.map((id) => [id, raceLevel(rules, char(id))]));
     const targets: Record<string, number> = {};
     for (const id of PARTY) {
-      const race = start[id] as number;
-      const pace = rules.campaign.typicalLevelsPerSession;
-      const [lo, hi] = rules.campaign.typicalLevelsPerSessionRange;
       targets[id] =
-        sessionNo === SESSIONS
-          ? rules.campaign.levelCap
-          : Math.min(
-              rules.campaign.levelCap,
-              race + Math.max(lo, Math.min(hi, pace * sessionNo - race + int(-2, 2))),
-            );
+        (start[id] as number) + ((tally.plans[id] as number[])[sessionNo - 1] as number);
     }
     for (let guard = 0; guard < 500; guard++) {
       if (rand() < 0.35) sidePlay();
@@ -611,10 +652,17 @@ function checkInvariants(before: Campaign, after: Campaign, where: string): void
   }
 }
 
-/** Invariants at each session end: replay, projections. */
+/** Invariants at each session end: replay equals incremental state, then the leak checks. */
 function checkSession(c: Campaign, where: string): void {
   const replayed = replay(JSON.parse(JSON.stringify(c.events)) as unknown[]);
   expect(replayed.state, `${where}: replay equals incremental state`).toEqual(c.state);
+  const state = c.state;
+  if (!state) throw new Error(`${where}: no state`);
+  checkLeaks(c, where);
+}
+
+/** GM-only and other players' pending data never reach a player; private journals never reach the GM. */
+function checkLeaks(c: Campaign, where: string): void {
   const state = c.state;
   if (!state) throw new Error(`${where}: no state`);
   const gmJson = JSON.stringify(projectForGm(state));
@@ -653,42 +701,96 @@ function checkSession(c: Campaign, where: string): void {
   }
 }
 
+/** DESIGN §3–§5 tables as written, so the config the simulation reads is pinned to DESIGN. */
+const DESIGN_GRADES = [
+  // id, top level, class spread, free points, XP per level
+  ['G', 4, 4, 2, 100],
+  ['F', 14, 5, 3, 150],
+  ['E', 49, 8, 4, 250],
+  ['D', 99, 12, 6, 400],
+  ['C', 149, 18, 9, 650],
+  ['B', 199, 27, 13, 1000],
+  ['A', 240, 40, 20, 1500],
+] as const;
+
+/** First session (1-based) whose cumulative planned levels reach `level`. */
+const sessionReaching = (plan: readonly number[], level: number): number => {
+  let sum = 0;
+  for (const [i, n] of plan.entries()) {
+    sum += n;
+    if (sum >= level) return i + 1;
+  }
+  return Infinity;
+};
+
 describe('campaign simulation (ROADMAP M1.14)', () => {
-  const { c, tally } = simulate(SEED);
-  const state = c.state;
-  if (!state) throw new Error('no state');
+  let memo: ReturnType<typeof simulate> | null = null;
+  /** Runs once; a failure inside the run fails every test with the seed in its message. */
+  const sim = () => (memo ??= simulate(SEED));
+  const finalState = () => {
+    const state = sim().c.state;
+    if (!state) throw new Error(`seed ${SEED}: no state`);
+    return state;
+  };
+
+  it('the rules config the simulation reads matches the DESIGN tables', () => {
+    expect(
+      rules.grades.map((g) => [
+        g.id,
+        Math.min(g.topLevel, rules.campaign.levelCap),
+        g.classSpreadPerLevel,
+        g.freePointsPerRaceLevel,
+        g.xpPerLevel,
+      ]),
+    ).toEqual(DESIGN_GRADES);
+    expect(STARTING_TOTAL).toBe(90);
+    // DESIGN §3 "Reached by session" is the evolution threshold at the typical pace.
+    const pace = rules.campaign.typicalLevelsPerSession;
+    const thresholds: Record<string, number> = { E: 14, D: 49, C: 99, B: 149, A: 199 };
+    for (const [grade, by] of Object.entries(REACHED_BY)) {
+      expect(Math.ceil((thresholds[grade] as number) / pace), grade).toBe(by);
+    }
+  });
 
   it(`40 sessions, 4 characters reach level 240 (seed ${SEED})`, () => {
+    const state = finalState();
     for (const id of PARTY) {
       const ch = state.characters[id] as Character;
       expect(ch.grade, `seed ${SEED}: ${id}`).toBe('A');
-      expect(ch.classLevel).toBe(240);
-      expect(ch.professionLevel).toBe(240);
-      expect(raceLevel(rules, ch)).toBe(240);
-      expect(evolutionTarget(rules, ch)).toBeNull();
+      expect(ch.classLevel, `seed ${SEED}: ${id}`).toBe(240);
+      expect(ch.professionLevel, `seed ${SEED}: ${id}`).toBe(240);
+      expect(raceLevel(rules, ch), `seed ${SEED}: ${id}`).toBe(240);
+      expect(evolutionTarget(rules, ch), `seed ${SEED}: ${id}`).toBeNull();
     }
-    expect(tally.levelsPerSession).toHaveLength(SESSIONS);
+    expect(sim().tally.levelsPerSession, `seed ${SEED}`).toHaveLength(SESSIONS);
   });
 
-  it(`about 6 race levels per session, 4–8 each (seed ${SEED})`, () => {
+  it(`race levels per session follow a random 4–8 plan averaging 6 (seed ${SEED})`, () => {
+    const { tally } = sim();
     const [lo, hi] = rules.campaign.typicalLevelsPerSessionRange;
     for (const [i, row] of tally.levelsPerSession.entries()) {
-      for (const n of row) {
+      for (const [k, n] of row.entries()) {
+        const id = PARTY[k] as string;
+        expect(n, `seed ${SEED}, session ${i + 1}, ${id}`).toBe((tally.plans[id] as number[])[i]);
         expect(n, `seed ${SEED}, session ${i + 1}`).toBeGreaterThanOrEqual(lo);
         expect(n, `seed ${SEED}, session ${i + 1}`).toBeLessThanOrEqual(hi);
       }
     }
     const all = tally.levelsPerSession.flat();
-    expect(all.reduce((a, b) => a + b, 0) / all.length).toBe(6);
-    // Pacing isn't a lockstep: sessions vary.
-    expect(new Set(all).size, `seed ${SEED}`).toBeGreaterThanOrEqual(4);
+    // The plans are random, not lockstep: every value in the range shows up,
+    // and characters' paces differ.
+    expect(new Set(all), `seed ${SEED}`).toEqual(new Set([4, 5, 6, 7, 8]));
+    const plans = PARTY.map((id) => JSON.stringify(tally.plans[id]));
+    expect(new Set(plans).size, `seed ${SEED}`).toBe(PARTY.length);
   });
 
   it(`DESIGN §4 check values at every grade top (seed ${SEED})`, () => {
+    const { tally } = sim();
     for (const id of PARTY) expect(tally.checksSeen[id], `seed ${SEED}: ${id}`).toEqual(CHECKS);
   });
 
   it(`29 selections each, capstones at the grade ceiling (seed ${SEED})`, () => {
+    const state = finalState();
     const slots = selectionSlots(rules);
     expect(slots).toHaveLength(29);
     for (const id of PARTY) {
@@ -697,42 +799,48 @@ describe('campaign simulation (ROADMAP M1.14)', () => {
         ch.selections.map((s) => s.level),
         `seed ${SEED}: ${id}`,
       ).toEqual(slots.map((s) => s.level));
-      expect(ch.selections.every((s) => s.chosen !== null)).toBe(true);
+      expect(
+        ch.selections.every((s) => s.chosen !== null),
+        `seed ${SEED}: ${id}`,
+      ).toBe(true);
       for (const slot of slots.filter((s) => s.capstone)) {
         const menu = ch.selections.find((s) => s.level === slot.level);
         const ceiling = gradeById(slot.grade).rarityCeiling;
         expect(
           menu?.options.some((o) => o.rarity === ceiling),
-          `${id} capstone ${slot.level}`,
+          `seed ${SEED}: ${id} capstone ${slot.level}`,
         ).toBe(true);
       }
     }
-    expect(tally.deferredChoices, 'some picks waited for downtime').toBeGreaterThan(0);
+    expect(sim().tally.deferredChoices, `seed ${SEED}: picks waited for downtime`).toBeGreaterThan(
+      10,
+    );
   });
 
-  it(`evolutions at the thresholds, by the DESIGN §3 session (seed ${SEED})`, () => {
+  it(`evolutions at the thresholds, in the session the plan reaches them (seed ${SEED})`, () => {
+    const { tally } = sim();
     for (const id of PARTY) {
       const mine = tally.evolutions.filter((e) => e.id === id);
       expect(
         mine.map((e) => e.race),
         `seed ${SEED}: ${id}`,
       ).toEqual([4, 14, 49, 99, 149, 199]);
-      expect(mine.map((e) => e.to)).toEqual(['F', 'E', 'D', 'C', 'B', 'A']);
+      expect(
+        mine.map((e) => e.to),
+        `seed ${SEED}: ${id}`,
+      ).toEqual(['F', 'E', 'D', 'C', 'B', 'A']);
+      const plan = tally.plans[id] as number[];
       for (const e of mine) {
-        const by = REACHED_BY[e.to];
-        // "Reached by session" is a pacing target; random sessions may land one either side.
-        if (by !== undefined)
-          expect(
-            Math.abs(e.session - by),
-            `${id} ${e.to} in session ${e.session}`,
-          ).toBeLessThanOrEqual(1);
-        else expect(e.session).toBe(1);
+        expect(e.session, `seed ${SEED}: ${id} → ${e.to}`).toBe(sessionReaching(plan, e.race));
       }
     }
-    expect(tally.professionPicks).toBe(PARTY.length);
+    expect(tally.professionPicks, `seed ${SEED}`).toBe(PARTY.length);
+    expect(tally.banked, `seed ${SEED}: XP banked while held`).toBeGreaterThan(5);
   });
 
   it(`the whole run is valid play that exercises the systems (seed ${SEED})`, () => {
+    const { tally } = sim();
+    const state = finalState();
     for (const type of [
       'xp.award',
       'freePoints.assign',
@@ -750,11 +858,11 @@ describe('campaign simulation (ROADMAP M1.14)', () => {
     ]) {
       expect(tally.accepted[type] ?? 0, `seed ${SEED}: accepted ${type}`).toBeGreaterThan(0);
     }
-    expect(tally.upgrades).toBeGreaterThan(10);
-    expect(tally.merges).toBeGreaterThan(4);
-    expect(tally.montages).toBeGreaterThan(0);
-    expect(tally.playerCommands).toBeGreaterThan(1000);
-    expect(state.day).toBe(1 + 6 * SESSIONS);
-    expect(state.quests['tutorial']?.status).toBe('completed');
+    expect(tally.upgrades, `seed ${SEED}`).toBeGreaterThan(10);
+    expect(tally.merges, `seed ${SEED}`).toBeGreaterThan(8);
+    expect(tally.montages, `seed ${SEED}`).toBeGreaterThan(0);
+    expect(tally.playerCommands, `seed ${SEED}`).toBeGreaterThan(1000);
+    expect(state.day, `seed ${SEED}`).toBe(1 + 6 * SESSIONS);
+    expect(state.quests['tutorial']?.status, `seed ${SEED}`).toBe('completed');
   });
 });
