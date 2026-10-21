@@ -298,6 +298,20 @@ describe('invalid configs give readable errors', () => {
     ).toBe(true);
   });
 
+  it('says "is required" for a missing literal setting', () => {
+    expect(errorsFor((r) => delete r.xp.defaultSplit)).toEqual(['xp.defaultSplit: is required']);
+  });
+
+  it('rejects non-JSON input without throwing', () => {
+    const circular: Record<string, unknown> = { configVersion: 1 };
+    circular['self'] = circular;
+    expect(parseRulesConfig(circular)).toEqual({
+      ok: false,
+      errors: ['(root): rules config is not plain JSON data'],
+    });
+    expect(parseRulesConfig({ configVersion: 1, big: BigInt(1) }).ok).toBe(false);
+  });
+
   it('reports each duplicate once', () => {
     const errors = errorsFor((r) => {
       r.stats.list.push({ id: 'strength', name: 'A' }, { id: 'strength', name: 'B' });

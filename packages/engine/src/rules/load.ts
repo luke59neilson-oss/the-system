@@ -34,12 +34,21 @@ function describePath(path: readonly PropertyKey[], raw: unknown): string {
   return out === '' ? '(root)' : out;
 }
 
+function valueAt(raw: unknown, path: readonly PropertyKey[]): unknown {
+  let node = raw;
+  for (const part of path) {
+    if (typeof node !== 'object' || node === null) return undefined;
+    node = (node as Record<PropertyKey, unknown>)[part];
+  }
+  return node;
+}
+
 function formatIssues(issues: readonly z.core.$ZodIssue[], raw: unknown): string[] {
   const lines = issues.flatMap((issue) => {
     if (issue.code === 'unrecognized_keys') {
       return issue.keys.map((key) => `${describePath([...issue.path, key], raw)}: unknown setting`);
     }
-    const missing = issue.code === 'invalid_type' && /received undefined/.test(issue.message);
+    const missing = valueAt(raw, issue.path) === undefined;
     return [`${describePath(issue.path, raw)}: ${missing ? 'is required' : issue.message}`];
   });
   return [...new Set(lines)];
@@ -55,7 +64,12 @@ export function migrateRulesConfig(
     return { ok: false, errors: ['(root): rules config must be an object'] };
   }
   // Migrations get a private copy so they can never mutate the caller's object.
-  let current = JSON.parse(JSON.stringify(raw)) as Record<string, unknown>;
+  let current: Record<string, unknown>;
+  try {
+    current = JSON.parse(JSON.stringify(raw)) as Record<string, unknown>;
+  } catch {
+    return { ok: false, errors: ['(root): rules config is not plain JSON data'] };
+  }
   const version = current['configVersion'];
   if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) {
     return { ok: false, errors: ['configVersion: must be a positive integer'] };
