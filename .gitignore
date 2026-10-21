@@ -1,7 +1,12 @@
 node_modules/
 dist/
+build/
+out/
 coverage/
 test-results/
 playwright-report/
+.vite/
 *.log
+data/
+.env
 .DS_Store
