@@ -8,6 +8,7 @@
     "*.config.ts",
     "apps/*/*.config.ts",
     "scripts/**/*.ts",
-    "scripts/**/*.d.mts"
+    "scripts/**/*.d.mts",
+    "packages/engine/test/node/**/*.ts"
   ]
 }

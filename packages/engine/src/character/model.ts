@@ -47,7 +47,7 @@ export interface NewCharacter {
   id: string;
   name: string;
   className: string;
-  race?: string;
+  race?: string | undefined;
   classSkills: readonly { name: string; rarity: string }[];
 }
 

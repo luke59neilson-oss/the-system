@@ -9,3 +9,4 @@ export const ENGINE_API_VERSION = 0;
 
 export * from './rules';
 export * from './character';
+export * from './events';
