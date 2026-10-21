@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "npm run build -w @the-system/web && npm run build -w @the-system/server",
-    "typecheck": "tsc -p packages/engine && tsc -p apps/server && tsc -p apps/web && tsc -p tsconfig.tools.json",
+    "typecheck": "tsc -p packages/engine && tsc -p apps/server && tsc -p apps/web && tsc -p apps/desktop && tsc -p tsconfig.tools.json",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -20,7 +20,8 @@
     "test:coverage": "vitest run --coverage",
     "banned": "node scripts/check-banned.mjs",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run banned && npm run test",
-    "e2e": "npm run build && playwright test"
+    "e2e": "npm run build && playwright test",
+    "desktop:smoke": "npm run build && npm run build -w @the-system/desktop && npm run smoke -w @the-system/desktop"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

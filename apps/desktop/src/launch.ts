@@ -1,0 +1,59 @@
+import path from 'node:path';
+
+/**
+ * Pure helpers for the desktop wrapper (ROADMAP MS.5). Kept free of Electron
+ * so they unit-test in plain Node.
+ */
+
+export const DEFAULT_DESKTOP_PORT = 30333;
+
+/** The GM window's URL: the key rides in the fragment, never sent to the server (D48). */
+export function gmWindowUrl(port: number, gmKey: string): string {
+  return `http://localhost:${port}/gm#key=${encodeURIComponent(gmKey)}`;
+}
+
+/** Where the built web app lives: inside the app's resources when packaged, beside the repo otherwise. */
+export function webRootFor(isPackaged: boolean, resourcesPath: string, bundleDir: string): string {
+  return isPackaged
+    ? path.join(resourcesPath, 'web')
+    : path.resolve(bundleDir, '..', '..', 'web', 'dist');
+}
+
+/** Campaign data in the OS app-data folder (e.g. %APPDATA%/The System/data). */
+export function dataDirFor(userData: string): string {
+  return path.join(userData, 'data');
+}
+
+/**
+ * Port to listen on. THE_SYSTEM_PORT exists for tests and for a GM whose
+ * 30333 is taken; anything invalid falls back to the default.
+ */
+export function desktopPort(env: Readonly<Record<string, string | undefined>>): number {
+  const raw = env['THE_SYSTEM_PORT'];
+  if (raw === undefined || !/^\d+$/.test(raw)) return DEFAULT_DESKTOP_PORT;
+  const port = Number(raw);
+  return port <= 65535 ? port : DEFAULT_DESKTOP_PORT;
+}
+
+/** Only the local server's own pages may load in the GM window. */
+export function isOwnPage(url: string, port: number): boolean {
+  try {
+    const u = new URL(url);
+    return (
+      u.protocol === 'http:' &&
+      (u.hostname === 'localhost' || u.hostname === '127.0.0.1') &&
+      Number(u.port) === port
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Human message for a failed start (most often the port is taken). */
+export function startErrorMessage(error: unknown, port: number): string {
+  const code = (error as { code?: unknown } | null)?.code;
+  if (code === 'EADDRINUSE') {
+    return `Port ${port} is already in use. Is The System already running (maybe in a terminal)? Close it and try again.`;
+  }
+  return `The System could not start: ${error instanceof Error ? error.message : String(error)}`;
+}

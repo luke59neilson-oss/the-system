@@ -487,3 +487,23 @@ a {
   font-size: 0.85rem;
   color: #f0c878;
 }
+/* Join URL + QR (MS.5). */
+.join-body {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.join-qr {
+  width: 140px;
+  height: 140px;
+  background: #fff;
+  border-radius: 4px;
+}
+.join-url {
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  color: var(--text);
+  margin: 0 0 6px;
+  word-break: break-all;
+}

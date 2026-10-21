@@ -11,6 +11,7 @@ import { forgetGmKey, takeGmKey } from '../gmKey';
 import { LiveClient, type CommandResult, type LiveSnapshot } from '../live';
 import { CampaignSwitch } from './CampaignSwitch';
 import { feedRows } from './feed';
+import { JoinPanel } from './JoinPanel';
 import { resolvePerspective, type PartyMember, type Perspective } from './perspective';
 import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
 
@@ -119,6 +120,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
           <div className="gm-pane" hidden={view.kind === 'character'}>
             <div className="gm-grid">
               <Party state={state} />
+              <JoinPanel gmKey={gmKey} />
               <CreateCharacter client={client} />
               <AwardXp client={client} state={state} />
               <Broadcast client={client} state={state} />
