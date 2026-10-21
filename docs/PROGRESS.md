@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0 done; M1.1-M1.5, M1.13, M2.1-M2.3, MS.1, MS.2 done
-**Next item:** MS.3 Perspective switcher
+**Status:** in progress: M0 done; M1.1-M1.5, M1.13, M2.1-M2.3, MS.1-MS.5 done
+**Next item:** MS.6 Preview release
 **Blockers:** none
 
 ## Run log
@@ -90,4 +90,17 @@ next item, blockers. -->
 - How to try it: `npm run build && node apps/server/dist/main.js`, open the printed `http://localhost:30333/gm#key=…` link as GM and the join URL (`/`) as a player.
 - Open `wip/*` branches: none.
 - Next: MS.3 Perspective switcher, then MS.4–MS.6, MS.A.
+- Blockers: none.
+
+### Run 5f86c6b8 · 2026-10-21 18:06–18:51 UTC
+- Preflight: `add_repo` not offered in this session; repo already cloned (local `main` was stale; reset to `origin/main`), fetch worked. Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md; latest CI run on main green (87ee4b3).
+- Finished: MS.3 Perspective switcher, MS.4 Demo campaign (split, D53: titles, items, quest/stability and grades above G moved to new item M1.15), MS.5 Desktop wrapper (preview) — each reviewed by Sonnet in 2 rounds; see REVIEW-LOG.md. MS.5 was built on `wip/MS.5` and fast-forwarded into main once clean.
+- Tests: 326 unit/integration tests (27 files) incl. demo campaign build, campaign switch server tests, `startApp`, desktop launch helpers; 10 e2e (M0.1, MS.1–MS.5) with screenshots in `docs/screens/MS.3/`, `MS.4/`, `MS.5/`; desktop smoke (`npm run desktop:smoke`, Electron under xvfb) passes locally, not in CI by design (D54). Engine line coverage 99.15% (floor 90%).
+- CI: green on every code commit except 63823e9 (MS.3 e2e used `window` under the tools tsconfig; my push chain checked `echo`'s exit code again). Fixed in b13d4be three minutes later. ea3c9fd (MS.5 merge) was still running at the end of the run; the next run checks it first.
+- Reviews: 3 items, 6 rounds; 1 High (MS.3: the "keep panes mounted" fix had not applied; fixed and proven by a frame marker test); all Mediums fixed; accepted Lows logged.
+- New decisions D52–D54. New roadmap item M1.15 (demo campaign content).
+- How to try it: `npm run build && node apps/server/dist/main.js`, open the printed GM link; "View as" bar for player perspectives and Table view; "Load demo campaign" in the GM header. Desktop: `npm run desktop:smoke` or `npm run build -w @the-system/desktop && npx electron apps/desktop` after fetching the Electron binary (see apps/desktop/README.md).
+- Open `wip/*` branches: none unfinished (`wip/MS.5` is merged).
+- Next: MS.6 Preview release (electron-builder; release workflow on push to `release`), then MS.A.
 - Blockers: none.

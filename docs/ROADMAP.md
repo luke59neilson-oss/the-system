@@ -126,7 +126,7 @@ the full ones.
   text as a System message; M1.15 grows it to the full content.
   *Accept (MS.4):* e2e: load the demo, play in it, go back; the real
   campaign's party, log and export carry nothing of the demo.
-- [ ] **MS.5 Desktop wrapper (preview).** Pulls M10.1 forward: double-click
+- [x] **MS.5 Desktop wrapper (preview).** Pulls M10.1 forward: double-click
   starts the server and opens the GM window with the GM key injected; join
   URL + QR shown; data in the OS app-data folder.
 - [ ] **MS.6 Preview release.** Pulls M10.2 forward: the release workflow
