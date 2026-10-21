@@ -192,3 +192,8 @@
   - L fixed: clamped success ticks let a non-latest undo change what a later tick filled → overfilling ticks are refused; a failure tick must have amount 1.
   - L accepted: flat ⅓ whatever the grade gap (DESIGN wording; raised as Q22); `newClock` trims an already-trimmed name.
 - Round 2 (3767a2d..33da202): 0 High, 0 Medium, 4 Low (accepted: the stricter tick rule ships with the clocks themselves, so no stored log predates it; random generator now proposes more rejected ticks; Q22 open; the test's odds helper restates the spec).
+
+## 2026-10-21 · M1.12 Quests and World Stability · sonnet (fresh context, 1 round)
+- Round 1 (d550b0f..b939248): 0 High, 0 Medium, 5 Low. `npm run check` green; hidden quests, hidden gauges and tag rules never projected (canary extended); authority whitelist unchanged; engine pure.
+  - L fixed: action tags typed with capitals or spaces missed their rule → the command lower-cases and trims; nudging a closed quest (GM override) is now pinned by a test.
+  - L accepted: a quest's start day follows undone day advances (only days left change); `quests` labelled `owner` though it is projected through `PlayerQuest`; timers never auto-fail a quest (GM-driven, DESIGN §7).

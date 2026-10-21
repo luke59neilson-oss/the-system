@@ -67,7 +67,7 @@ describe('quests and World Stability (DESIGN §7)', () => {
 
   it('rules: action tag → delta × count, clamped to 0–100', () => {
     let c = ok(base(), tutorial());
-    c = ok(c, { type: 'stability.applyAction', questId: 'whale', tag: 'cleanse' });
+    c = ok(c, { type: 'stability.applyAction', questId: 'whale', tag: ' Cleanse ' });
     expect(quest(c).stability?.value).toBe(95);
     c = ok(c, {
       type: 'stability.applyAction',
@@ -157,6 +157,9 @@ describe('quests and World Stability (DESIGN §7)', () => {
       /is completed/,
     );
     expect(reject(c, { type: 'campaign.advanceDay', days: 0 })).toMatch(/days/);
+    // The GM's manual nudge still works on a closed quest (an override).
+    c = ok(c, { type: 'stability.nudge', questId: 'whale', delta: -10 });
+    expect(quest(c).stability?.value).toBe(90);
   });
 
   it('visibility: hidden quests and hidden gauges never reach players; the GM toggles them', () => {

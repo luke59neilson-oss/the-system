@@ -759,7 +759,8 @@ function toEvent(
         type: 'stability.actionApplied',
         payload: {
           questId: command.questId,
-          tag: command.tag,
+          // Rule tags are stored lower-case and trimmed (D67).
+          tag: command.tag.trim().toLowerCase(),
           count: command.count ?? 1,
           reason: command.reason ?? '',
         },

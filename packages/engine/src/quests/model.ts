@@ -79,7 +79,7 @@ export function applyAction(rules: RulesConfig, quest: Quest, tag: string, count
   return nudge(rules, quest, delta * count);
 }
 
-/** Moves a quest's stability by `delta` (clamped). */
+/** Moves a quest's stability by `delta` (clamped). The GM may nudge a closed quest too. */
 export function nudge(rules: RulesConfig, quest: Quest, delta: number): Quest {
   const stability = quest.stability;
   if (!stability) throw new CharacterRuleError(`[${quest.title}] has no World Stability`);

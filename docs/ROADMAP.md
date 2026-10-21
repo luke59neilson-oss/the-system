@@ -172,7 +172,7 @@ the full ones.
   grade-gap modes (none; per-grade multiplier on the stat value; lower-grade
   side ÷3); progress clocks; montage eligibility. *Accept:* 10,000-roll test
   within ±2% for 1:1, 2:1, 3:1, 10:1 in each mode; clock/montage tests.
-- [ ] **M1.12 Quests and World Stability.** Quest text, timers, day counter,
+- [x] **M1.12 Quests and World Stability.** Quest text, timers, day counter,
   stability rules (action tag → delta), clamp 0–100, manual nudge, visibility
   flag. *Accept:* rule, clamp and visibility tests.
 - [ ] **M1.14 Campaign simulation.** 40 sessions, 4 characters, ~6 levels per
