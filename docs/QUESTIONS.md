@@ -29,3 +29,10 @@ answer under any question and the next run will follow it.
 9. **Starting World Stability?** DESIGN gives the 0–100 range but no start.
    Default: 100 (the world starts healthy and the infection drags it down).
    Answer:
+10. **Class spread rounding.** DESIGN §4 says "largest-remainder rounding".
+    Applied per level, that always rounds toward the same stats (4 points
+    over 9 equal stats would always go to Strength–Vitality). Default: a
+    cumulative split that hands each point to the stat furthest below its
+    share so far; totals stay exact and fair over time (D35). OK to update
+    DESIGN §4 to say so?
+    Answer:

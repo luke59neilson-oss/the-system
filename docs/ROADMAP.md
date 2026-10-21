@@ -60,7 +60,7 @@ Work top to bottom. An item is checked only when its acceptance criteria pass
   (`packages/engine/test/golden/*.jsonl`) must replay in `check`.
   *Accept:* replay equals incremental state (property test, fixed seed); undo
   tests per event type; golden replay.
-- [ ] **M1.4 XP and leveling.** Class/profession XP; integer share splits
+- [x] **M1.4 XP and leveling.** Class/profession XP; integer share splits
   (largest remainder; shares always sum to the award); participant
   selection; above-level bonus; XP curve by current grade; class spread by
   class weights (largest remainder); free points per race level; race level

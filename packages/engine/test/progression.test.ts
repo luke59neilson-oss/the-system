@@ -94,6 +94,7 @@ describe('largestRemainderSplit', () => {
 });
 
 describe('classSpread', () => {
+  // Seed 77 stays under 1 point; the rule's general bound is about one point (D35).
   const even = Object.fromEntries(stats.map((s) => [s, 1]));
   const zero = Object.fromEntries(stats.map((s) => [s, 0]));
 

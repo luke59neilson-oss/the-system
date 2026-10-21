@@ -77,7 +77,7 @@ export function reshapeClassWeights(
  * (a "highest deficit" method, not per-level largest remainder; D35):
  * each point goes to the stat furthest below its weighted share of all spread
  * so far (ties to stat order). The level's points sum exactly, and over many
- * levels every stat stays within one point of its exact share, so equal
+ * levels every stat stays within about one point of its exact share, so equal
  * weights don't always favour the first stats.
  */
 export function classSpread(
