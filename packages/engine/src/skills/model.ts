@@ -190,8 +190,9 @@ export function mergeSkills(
   }
   const trimmed = name.trim();
   if (trimmed === '') throw new CharacterRuleError('The merged skill needs a name');
-  const others = character.skills.filter((_, i) => i !== ia && i !== ib);
-  if (others.some((s) => s.name.toLowerCase() === trimmed.toLowerCase())) {
+  // Names of the originals are refused too: practice-log pair counts are keyed
+  // by name, so a reused name would inherit the old skill's joint uses.
+  if (character.skills.some((s) => s.name.toLowerCase() === trimmed.toLowerCase())) {
     throw new CharacterRuleError(`${character.name} already has a skill "${trimmed}"`);
   }
   const merged = newSkill(trimmed, result.id, a.kind);

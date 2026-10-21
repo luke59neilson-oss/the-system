@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  awardMark,
   canUpgrade,
+  mergeSkills,
+  upgradeSkill,
   execute,
   marksToUpgrade,
   type Campaign,
@@ -186,11 +189,16 @@ describe('mastery marks', () => {
     );
   });
 
-  it('the top grantable rarity (Mythical; Divine is reserved) has no mark upgrade', () => {
+  it('the top grantable rarity (Mythical; Divine is reserved) can neither earn marks nor upgrade', () => {
     const rules = base().state?.rules ?? (null as never);
-    const top = { ...(skill(base(), archery) ?? (null as never)), rarity: 'mythical' };
+    const top = { ...(skill(base(), archery) ?? (null as never)), rarity: 'mythical', marks: 20 };
     expect(marksToUpgrade(rules, top)).toBeNull();
     expect(marksToUpgrade(rules, { ...top, rarity: 'legendary' })).toBe(15);
+    // An A-grade character (Mythical ceiling) holding a Mythical skill.
+    const jake = base().state?.characters['jake'] ?? (null as never);
+    const mythic = { ...jake, grade: 'A', skills: [top] };
+    expect(() => awardMark(rules, mythic, archery, 'x')).toThrow('has no mark upgrade');
+    expect(() => upgradeSkill(rules, mythic, archery)).toThrow('cannot be upgraded past Mythical');
   });
 });
 
@@ -270,9 +278,33 @@ describe('merges', () => {
     expect(reject(c, merge, player('jake'))).toContain('only the GM');
   });
 
-  it('originals are consumed: their marks and pair history do not carry over', () => {
+  it('originals are consumed: their marks do not carry over and their names cannot be reused', () => {
     const c = ok(ready(), merge);
     expect(reject(c, mark(archery, 'zz'))).toContain('no skill');
     expect(skill(c, 'Shadow Shot')?.marks).toBe(0);
+    // Reusing an original's name would inherit its practice-log pair counts.
+    expect(reject(ready(), { ...merge, name: archery } as Command)).toContain(
+      'already has a skill',
+    );
+    expect(reject(ready(), { ...merge, name: stealth.toUpperCase() } as Command)).toContain(
+      'already has a skill',
+    );
+  });
+
+  it('the merge limit is per grade: a new grade allows another merge', () => {
+    const c = ready();
+    const rules = c.state?.rules ?? (null as never);
+    const jake = c.state?.characters['jake'] ?? (null as never);
+    const once = mergeSkills(rules, jake, archery, stealth, 'Shadow Shot', 3);
+    const merged = {
+      ...once,
+      skills: once.skills.map((s) =>
+        s.name === eye || s.name === 'Identify' ? { ...s, rarity: 'uncommon' } : s,
+      ),
+    };
+    expect(() => mergeSkills(rules, merged, eye, 'Identify', 'X', 3)).toThrow('Already merged');
+    // At F-grade (as after an evolution, M1.10) the counter for F is fresh.
+    const atF = { ...merged, grade: 'F' };
+    expect(mergeSkills(rules, atF, eye, 'Identify', 'Far Sight', 3).merges).toEqual({ G: 1, F: 1 });
   });
 });

@@ -153,7 +153,7 @@ the full ones.
   counts, alerts (selection within 5 levels, merge at 3 joint uses). Notes:
   private journal, party notes, GM notes, tags, shareable flag, search.
   *Accept:* alert and pair-count tests; GM cannot read unshared private notes.
-- [ ] **M1.9 Skills.** Rarity ladder, Unique tag, nicknames, mastery marks
+- [x] **M1.9 Skills.** Rarity ladder, Unique tag, nicknames, mastery marks
   (one per skill per session; end-of-session review), thresholds, grade
   ceilings with banking, upgrades, merges (uses M1.8 counts; both ≥ Uncommon;
   one per grade; +1 rarity; originals consumed; marks reset). *Accept:* one
@@ -163,7 +163,8 @@ the full ones.
   at the grade ceiling; profession options inside class menus. Evolution:
   available at grade top (`evolutionGate` config) → GM release → options →
   choice → new grade, banked XP applied, optional spread reshape, skill
-  transforms; profession unlock at E starting at class level. *Accept:* 0→240
+  transforms (rewrite or alias practice-log skill names, M1.9 review);
+  profession unlock at E starting at class level. *Accept:* 0→240
   simulation yields exactly 29 selections, capstones at 10/45/90/140/190/240;
   levels freeze at caps and banked XP applies after evolution; evolution
   impossible without GM release; both gate modes tested.
