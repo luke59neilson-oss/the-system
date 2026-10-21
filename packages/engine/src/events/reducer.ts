@@ -145,6 +145,47 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       }
       return next;
     }
+    case 'freePoints.assigned':
+    case 'freePoints.overridden': {
+      const character = characterOf(state, event, event.payload.characterId);
+      const { raceLevel, allocation } = event.payload;
+      const index = character.freePointBatches.findIndex((b) => b.raceLevel === raceLevel);
+      const batch = character.freePointBatches[index];
+      if (!batch) return fail(event, `no free-point batch for race level ${raceLevel}`);
+      const assigning = event.type === 'freePoints.assigned';
+      if (assigning && batch.locked) {
+        fail(event, `the race level ${raceLevel} points are already assigned and locked`);
+      }
+      const statIds = state.rules.stats.list.map((s) => s.id);
+      const stats: Record<string, number> = { ...character.stats };
+      for (const [id, points] of Object.entries(batch.allocation ?? {})) {
+        stats[id] = (stats[id] ?? 0) - points;
+      }
+      if (allocation !== null) {
+        checkKeys(event, Object.keys(allocation), statIds, 'stat');
+        const sum = Object.values(allocation).reduce((a, b) => a + b, 0);
+        if (sum !== batch.points) {
+          fail(event, `assign exactly ${batch.points} points (got ${sum})`);
+        }
+        for (const [id, points] of Object.entries(allocation))
+          stats[id] = (stats[id] ?? 0) + points;
+      }
+      for (const [id, value] of Object.entries(stats)) {
+        if (value < 0) fail(event, `${id} would drop below 0`);
+      }
+      const batches = [...character.freePointBatches];
+      batches[index] = {
+        ...batch,
+        allocation: allocation === null ? null : { ...allocation },
+        locked: allocation !== null,
+      };
+      return withCharacter(state, {
+        ...character,
+        stats,
+        freePointBatches: batches,
+        pools: rule(event, () => clampPools(state.rules, stats, character.pools)),
+      });
+    }
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');
   }

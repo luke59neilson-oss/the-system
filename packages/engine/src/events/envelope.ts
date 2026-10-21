@@ -60,6 +60,18 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     /** Free text for the session log ("Pale hunter pack"). */
     reason: z.string().trim().max(200),
   }),
+  /** A player (or the GM) assigns one level-up's free points; the batch then locks (DESIGN §4). */
+  'freePoints.assigned': z.strictObject({
+    characterId: recordId,
+    raceLevel: z.number().int().positive(),
+    allocation: statValues,
+  }),
+  /** GM override of a batch: replace its allocation, or null to unassign and unlock it. */
+  'freePoints.overridden': z.strictObject({
+    characterId: recordId,
+    raceLevel: z.number().int().positive(),
+    allocation: statValues.nullable(),
+  }),
   /** Compensating event: the target stops counting, as if it had never happened. */
   'event.undone': z.strictObject({ eventId: recordId }),
 } as const;
@@ -78,6 +90,8 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'character.poolsSet': 1,
   'character.statsSet': 1,
   'xp.awarded': 1,
+  'freePoints.assigned': 1,
+  'freePoints.overridden': 1,
   'event.undone': 1,
 };
 

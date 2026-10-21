@@ -48,6 +48,19 @@ export type Command =
       enemyLevel?: number | null | undefined;
       reason?: string | undefined;
     }
+  | {
+      type: 'freePoints.assign';
+      characterId: string;
+      raceLevel: number;
+      allocation: Readonly<Record<string, number>>;
+    }
+  | {
+      type: 'freePoints.override';
+      characterId: string;
+      raceLevel: number;
+      /** null unassigns the batch and unlocks it. */
+      allocation: Readonly<Record<string, number>> | null;
+    }
   | { type: 'event.undo'; eventId: string };
 
 /** Everything impure is injected: who acts, when, and how ids are made. */
@@ -74,17 +87,21 @@ const commandSchema = z.discriminatedUnion('type', [
     amount: z.number(),
     participants: z.array(z.object({ characterId: z.string() })).min(1),
   }),
+  z.object({ type: z.literal('freePoints.assign'), allocation: anyRecord }),
+  z.object({ type: z.literal('freePoints.override'), allocation: anyRecord.nullable() }),
   z.object({ type: z.literal('event.undo') }),
 ]);
 
 export type CommandType = Command['type'];
 
 /**
- * Commands a player may issue, and only for their own character. Empty until
- * player actions land (free points M1.5, nicknames, notes, gifts...). Every
+ * Commands a player may issue, and only for their own character (free points
+ * now; nicknames, notes, gifts... as they land). Every
  * other command needs the GM or the system (M2.2 checks the GM key).
  */
-export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>();
+export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>([
+  'freePoints.assign',
+]);
 
 /** Returns why the actor may not issue the command, or null when allowed. */
 export function authorize(
@@ -177,6 +194,24 @@ function toEvent(command: Command, ctx: CommandContext): { type: EventType; payl
       };
     case 'xp.award':
       return { type: 'xp.awarded', payload: awardPayload(command) };
+    case 'freePoints.assign':
+      return {
+        type: 'freePoints.assigned',
+        payload: {
+          characterId: command.characterId,
+          raceLevel: command.raceLevel,
+          allocation: command.allocation,
+        },
+      };
+    case 'freePoints.override':
+      return {
+        type: 'freePoints.overridden',
+        payload: {
+          characterId: command.characterId,
+          raceLevel: command.raceLevel,
+          allocation: command.allocation,
+        },
+      };
     case 'event.undo':
       return { type: 'event.undone', payload: { eventId: command.eventId } };
   }

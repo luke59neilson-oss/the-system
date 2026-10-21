@@ -661,6 +661,27 @@ describe('property: replay equals incremental state', () => {
     if (roll < 0.65) {
       return { type: 'character.grantProfession', characterId: someId(), profession: 'Smith' };
     }
+    if (roll >= 0.8 && roll < 0.92) {
+      const character = c.state?.characters[someId()];
+      const batches = character?.freePointBatches ?? [];
+      const batch = batches.length ? pick(batches) : { raceLevel: 1, points: 2 };
+      const allocation: Record<string, number> = {};
+      const extra = rand() < 0.1 ? 1 : 0;
+      allocation[pick(['strength', 'agility', 'luck'])] = batch.points + extra;
+      return rand() < 0.5
+        ? {
+            type: 'freePoints.assign',
+            characterId: character?.id ?? 'ghost',
+            raceLevel: batch.raceLevel,
+            allocation,
+          }
+        : {
+            type: 'freePoints.override',
+            characterId: character?.id ?? 'ghost',
+            raceLevel: batch.raceLevel,
+            allocation: rand() < 0.3 ? null : allocation,
+          };
+    }
     if (roll < 0.8) {
       const count = 1 + Math.floor(rand() * 3);
       const manual = rand() < 0.3;
@@ -718,8 +739,9 @@ describe('property: replay equals incremental state', () => {
     expect(rejected, `seed ${SEED}`).toBeGreaterThan(20);
     expect(nonLatest, `seed ${SEED}: accepted non-latest undos`).toBeGreaterThan(5);
     expect(dependent, `seed ${SEED}: undos refused for a dependency`).toBeGreaterThan(0);
-    expect(new Set(c.events.map((e) => e.type)).size, `seed ${SEED}`).toBeGreaterThanOrEqual(
-      EVENT_TYPES.length - 1,
-    );
+    expect(
+      new Set(c.events.map((e) => e.type)).size,
+      `seed ${SEED}: ${[...new Set(c.events.map((e) => e.type))].join(',')}`,
+    ).toBeGreaterThanOrEqual(EVENT_TYPES.length - 1);
   });
 });
