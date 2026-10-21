@@ -47,65 +47,92 @@ test('GM creates a campaign and characters, awards XP, and broadcasts', async ({
   await page.getByRole('button', { name: 'Create campaign' }).click();
   await expect(page.getByRole('heading', { name: 'Tutorial: The Whale · Party' })).toBeVisible();
 
-  for (const name of ['Jake', 'Miranda']) {
+  const createCharacter = async (name: string) => {
     await page.getByLabel('Name', { exact: true }).fill(name);
     await expect(page.getByLabel('Starting class')).toHaveValue('archer');
     await page.getByRole('button', { name: 'Create character' }).click();
+  };
+  for (const name of ['Jake', 'Miranda']) {
+    await createCharacter(name);
     await expect(page.getByRole('cell', { name, exact: true })).toBeVisible();
   }
-  await expect(page.getByRole('cell', { name: '[Archer]' })).toHaveCount(2);
+  // Bad input is refused with the engine's reason, without the event id.
+  await createCharacter('   ');
+  await expect(page.getByRole('alert')).toHaveText('Name: must not be blank');
+  await createCharacter('Casper');
+  await expect(page.getByText('Character created')).toBeVisible();
+  await expect(page.getByRole('cell', { name: '[Archer]' })).toHaveCount(3);
 
-  // A player joins so we can see the broadcast arrive on a player socket.
   const characters = (await (await fetch(`${server.url}/api/characters`)).json()) as {
     id: string;
     name: string;
   }[];
-  const jakeId = characters.find((c) => c.name === 'Jake')?.id ?? '';
+  const idOf = (name: string) => characters.find((c) => c.name === name)?.id ?? '';
+  const wsUrl = `ws://${new URL(server.url).host}/ws`;
   const player = await page.context().newPage();
   await player.goto(server.url);
-  const received = player.evaluate(
-    ({ id, wsUrl }) =>
-      new Promise<string>((resolve, reject) => {
-        const ws = new WebSocket(wsUrl);
-        const timer = setTimeout(() => reject(new Error('no broadcast')), 10_000);
-        ws.onmessage = (event) => {
-          const m = JSON.parse(String(event.data)) as {
-            type: string;
-            items?: { notification: { kind: string; text?: string } }[];
+  /** Joins as a player over a real socket; resolves with the first broadcast and the latest view. */
+  const listen = (id: string, wantBroadcast: boolean) =>
+    player.evaluate(
+      ({ id, wsUrl, wantBroadcast }) =>
+        new Promise<{ broadcast: string | null; messages: string[] }>((resolve, reject) => {
+          const ws = new WebSocket(wsUrl);
+          const timer = setTimeout(() => reject(new Error(`nothing for ${id}`)), 10_000);
+          let broadcast: string | null = null;
+          ws.onmessage = (event) => {
+            const m = JSON.parse(String(event.data)) as {
+              type: string;
+              items?: { notification: { kind: string; text?: string } }[];
+              view?: { messages: { text: string }[] };
+            };
+            if (m.type === 'hello')
+              ws.send(JSON.stringify({ type: 'join', role: 'player', characterId: id }));
+            const hit = m.items?.find((i) => i.notification.kind === 'broadcast');
+            if (hit?.notification.text) broadcast = hit.notification.text;
+            if (m.view && (!wantBroadcast || broadcast !== null)) {
+              clearTimeout(timer);
+              ws.close();
+              resolve({ broadcast, messages: m.view.messages.map((x) => x.text) });
+            }
           };
-          if (m.type === 'hello')
-            ws.send(JSON.stringify({ type: 'join', role: 'player', characterId: id }));
-          const hit = m.items?.find((i) => i.notification.kind === 'broadcast');
-          if (hit?.notification.text) {
-            clearTimeout(timer);
-            resolve(hit.notification.text);
-          }
-        };
-      }),
-    { id: jakeId, wsUrl: `ws://${new URL(server.url).host}/ws` },
-  );
+        }),
+      { id, wsUrl, wantBroadcast },
+    );
+  const live = listen(idOf('Jake'), true);
 
-  // Even split preview, then the award levels both characters live.
+  // Even split preview, then the award levels every character live.
   await page.getByLabel('Amount').fill('301');
-  await expect(page.getByTestId(/^share-/)).toHaveText([' · 151 XP', ' · 150 XP']);
+  await expect(page.getByTestId(/^share-/)).toHaveText([' · 101 XP', ' · 100 XP', ' · 100 XP']);
   await page.getByLabel('Reason (GM only)').fill('Pale hunter pack');
   await page.getByRole('button', { name: 'Award XP' }).click();
   await expect(page.getByText('XP awarded')).toBeVisible();
   for (const c of characters) await expect(page.getByTestId(`class-level-${c.id}`)).toHaveText('1');
-  await expect(page.getByText("*'DING!' Class: [Archer] has reached level 1")).toHaveCount(2);
+  await expect(page.getByText("*'DING!' Class: [Archer] has reached level 1")).toHaveCount(3);
 
-  await page.getByLabel('Message').fill('The world is dying. Find what is killing it.');
+  const all = 'The world is dying. Find what is killing it.';
+  await page.getByLabel('Message').fill(all);
   await page.getByRole('button', { name: 'Send broadcast' }).click();
   await expect(page.getByText('Broadcast sent')).toBeVisible();
-  await expect(page.getByText('The world is dying. Find what is killing it.')).toHaveCount(2);
-  expect(await received).toBe('The world is dying. Find what is killing it.');
+  // One feed row for a broadcast to everyone.
+  await expect(page.getByRole('listitem').filter({ hasText: all })).toHaveText(`Everyone ${all}`);
+  expect((await live).broadcast).toBe(all);
 
-  // Bad input is refused with the engine's reason.
-  await page.getByLabel('Name', { exact: true }).fill('   ');
-  await page.getByRole('button', { name: 'Create character' }).click();
-  await expect(page.getByRole('alert')).toContainText('must not be blank');
+  // A whisper to Jake reaches Jake only, and stays in his view after reconnecting.
+  await page.getByLabel('Message').fill('You feel watched.');
+  await page.getByLabel('Recipients').selectOption({ label: 'Jake' });
+  await page.getByRole('button', { name: 'Send broadcast' }).click();
+  await expect(page.getByRole('listitem').filter({ hasText: 'You feel watched.' })).toHaveText(
+    'Jake You feel watched.',
+  );
+  expect((await listen(idOf('Jake'), false)).messages).toEqual([all, 'You feel watched.']);
+  expect((await listen(idOf('Miranda'), false)).messages).toEqual([all]);
 
-  await page.screenshot({ path: path.join(shots, 'gm-1366x768.png'), fullPage: true });
+  await page.getByLabel('Message').fill('Day 2 dawns over the Crown.');
+  await page.getByLabel('Recipients').selectOption('all');
+  await page.getByRole('button', { name: 'Send broadcast' }).click();
+  await expect(page.getByText('Broadcast sent')).toBeVisible();
+  await page.screenshot({ path: path.join(shots, 'gm-1366x768.png') });
+  await page.screenshot({ path: path.join(shots, 'gm-1366-full.png'), fullPage: true });
   await player.close();
   expect(errors).toEqual([]);
 });

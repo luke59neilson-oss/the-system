@@ -286,7 +286,7 @@ describe('commands and the reducer', () => {
 });
 
 describe('system.broadcast', () => {
-  it('records a trimmed message to everyone or to listed characters, changing no state', () => {
+  it('records a trimmed message to everyone or to listed characters in state.broadcasts', () => {
     const before = base();
     const all = run(
       [{ type: 'system.broadcast', text: '  The world is dying.  ' }],
@@ -297,7 +297,17 @@ describe('system.broadcast', () => {
       type: 'system.broadcast',
       payload: { text: 'The world is dying.', characterIds: null },
     });
-    expect(all.state).toEqual(before.state);
+    expect(all.state).toEqual({
+      ...before.state,
+      broadcasts: [
+        {
+          id: last(all).id,
+          at: last(all).timestamp,
+          text: 'The world is dying.',
+          characterIds: null,
+        },
+      ],
+    });
     const one = run(
       [{ type: 'system.broadcast', text: 'Only you', characterIds: ['jake'] }],
       testContext('a'),
@@ -387,14 +397,14 @@ describe('undo', () => {
     expect(undone.undone).toEqual({ [last(after).id]: last(undone).id });
   });
 
-  it('undoing a broadcast keeps state and removes the event from the effective log', () => {
+  it('undoing a broadcast removes it from state', () => {
     const before = base();
     const after = run(
       [{ type: 'system.broadcast', text: 'Hi', characterIds: null }],
       testContext('a'),
       before,
     );
-    expect(after.state).toEqual(before.state);
+    expect(after.state?.broadcasts).toHaveLength(1);
     const undone = undoLatest(after);
     expect(undone.state).toEqual(before.state);
     expect(undone.undone).toEqual({ [last(after).id]: last(undone).id });

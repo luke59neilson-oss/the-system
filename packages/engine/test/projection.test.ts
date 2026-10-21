@@ -94,7 +94,14 @@ describe('player projection', () => {
     } as unknown as CampaignState;
     const view = projectForPlayer(tampered, 'casper');
     expect(JSON.stringify(view)).not.toContain('secret');
-    expect(Object.keys(view).sort()).toEqual(['campaignName', 'me', 'party', 'rules', 'viewerId']);
+    expect(Object.keys(view).sort()).toEqual([
+      'campaignName',
+      'me',
+      'messages',
+      'party',
+      'rules',
+      'viewerId',
+    ]);
   });
 
   it('classifies every character and campaign field', () => {
@@ -266,6 +273,23 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
       }));
       owner.set(id, { strings, numbers });
     }
+    // Broadcasts: a whisper per character (owner-only text) and a GM-only extra key.
+    const ids = Object.keys(s.characters);
+    const whispers = ids.map((id) => {
+      const text = `OWNER-${id}-whisper`;
+      owner.get(id)?.strings.push(text);
+      return {
+        id: `w-${id}`,
+        at: '2026-10-21T12:00:00.000Z',
+        text,
+        characterIds: [id],
+        gmNote: `${GM}-broadcast`,
+      };
+    });
+    (s as Record<string, unknown>).broadcasts = [
+      ...s.broadcasts.map((b) => ({ ...b, gmNote: `${GM}-broadcast` })),
+      ...whispers,
+    ];
     return { state: s, owner, gm };
   }
 

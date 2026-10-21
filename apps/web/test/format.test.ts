@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { CampaignState } from '@the-system/engine';
 import { friendlyError, notificationText } from '../src/format';
+import { feedRows } from '../src/gm/feed';
 
 describe('notificationText', () => {
   it('uses the books wording for class and race level-ups', () => {
@@ -57,5 +59,38 @@ describe('friendlyError', () => {
       'Unknown character "x"',
     );
     expect(friendlyError('Not allowed: only the GM can x')).toBe('Not allowed: only the GM can x');
+  });
+});
+
+describe('feedRows', () => {
+  const state = {
+    characterOrder: ['j', 'm', 'c'],
+    characters: { j: { name: 'Jake' }, m: { name: 'Miranda' }, c: { name: 'Casper' } },
+  } as unknown as CampaignState;
+  const b = (seq: number, characterId: string, text: string) => ({
+    seq,
+    notification: { kind: 'broadcast' as const, characterId, text },
+  });
+
+  it('folds one broadcast to many into one row, newest first', () => {
+    const rows = feedRows(
+      [
+        b(3, 'j', 'All'),
+        b(3, 'm', 'All'),
+        b(3, 'c', 'All'),
+        b(4, 'j', 'Two'),
+        b(4, 'm', 'Two'),
+        b(5, 'c', 'One'),
+        { seq: 6, notification: { kind: 'freePoints', characterId: 'j', unassigned: 2 } },
+      ],
+      state,
+    );
+    expect(rows.map((r) => [r.who, r.text])).toEqual([
+      ['Jake', 'Free points waiting to be assigned: 2'],
+      ['Casper', 'One'],
+      ['Jake, Miranda', 'Two'],
+      ['Everyone', 'All'],
+    ]);
+    expect(new Set(rows.map((r) => r.key)).size).toBe(rows.length);
   });
 });

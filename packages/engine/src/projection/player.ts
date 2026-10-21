@@ -48,6 +48,8 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   rules: 'gm',
   characters: 'party',
   characterOrder: 'party',
+  // Each player gets only the broadcasts addressed to them, without the recipient list.
+  broadcasts: 'owner',
 };
 
 /** The rules subset a player screen needs to draw the sheet (no GM tuning, no stability). */
@@ -137,6 +139,15 @@ export interface PlayerView {
   readonly me: OwnSheet;
   /** Other characters in creation order. */
   readonly party: readonly PartyMember[];
+  /** System broadcasts addressed to this character (or everyone), oldest first. */
+  readonly messages: readonly PlayerMessage[];
+}
+
+/** A broadcast as one recipient sees it: never who else received it. */
+export interface PlayerMessage {
+  readonly id: string;
+  readonly at: string;
+  readonly text: string;
 }
 
 export class ProjectionError extends Error {}
@@ -267,5 +278,8 @@ export function projectForPlayer(state: CampaignState, characterId: string): Pla
     rules: projectRules(state.rules),
     me: ownSheet(state.rules, viewer),
     party,
+    messages: state.broadcasts
+      .filter((b) => b.characterIds === null || b.characterIds.includes(viewer.id))
+      .map((b) => ({ id: b.id, at: b.at, text: b.text })),
   };
 }

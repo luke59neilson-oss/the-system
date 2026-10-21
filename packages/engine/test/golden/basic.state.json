@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -586,5 +586,6 @@
       ]
     }
   },
-  "characterOrder": ["jake", "casper", "miranda"]
+  "characterOrder": ["jake", "casper", "miranda"],
+  "broadcasts": []
 }

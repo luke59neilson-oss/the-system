@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "name": "XP golden",
   "rules": {
     "configVersion": 1,
@@ -655,5 +655,6 @@
       ]
     }
   },
-  "characterOrder": ["jake", "casper", "miranda"]
+  "characterOrder": ["jake", "casper", "miranda"],
+  "broadcasts": []
 }

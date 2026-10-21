@@ -95,7 +95,11 @@ const commandSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('freePoints.assign'), allocation: anyRecord }),
   z.object({ type: z.literal('freePoints.override'), allocation: anyRecord.nullable() }),
-  z.object({ type: z.literal('system.broadcast'), text: z.string() }),
+  z.object({
+    type: z.literal('system.broadcast'),
+    text: z.string(),
+    characterIds: z.array(z.string()).nullable().optional(),
+  }),
   z.object({ type: z.literal('event.undo') }),
 ]);
 

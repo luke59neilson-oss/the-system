@@ -6,9 +6,10 @@ import {
   raceLevel,
   type CampaignState,
 } from '@the-system/engine';
-import { friendlyError, notificationText } from '../format';
+import { friendlyError } from '../format';
 import { forgetGmKey, takeGmKey } from '../gmKey';
 import { LiveClient, type CommandResult, type LiveSnapshot } from '../live';
+import { feedRows } from './feed';
 
 /**
  * Minimal GM screen (ROADMAP MS.1): create a campaign and characters from a
@@ -251,7 +252,7 @@ function AwardXp({ client, state }: { client: LiveClient; state: CampaignState }
   const ids = state.characterOrder.filter((id) => state.characters[id]);
   const chosen = ids.filter((id) => !excluded.has(id));
   const value = Number(amount);
-  const valid = amount !== '' && Number.isInteger(value) && value >= 0 && chosen.length > 0;
+  const valid = amount !== '' && Number.isInteger(value) && value > 0 && chosen.length > 0;
   const preview = valid
     ? largestRemainderSplit(
         value,
@@ -287,7 +288,7 @@ function AwardXp({ client, state }: { client: LiveClient; state: CampaignState }
         Amount
         <input
           type="number"
-          min={0}
+          min={1}
           step={1}
           inputMode="numeric"
           value={amount}
@@ -354,7 +355,7 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
       </label>
       <label>
         To
-        <select value={to} onChange={(e) => setTo(e.target.value)}>
+        <select aria-label="Recipients" value={to} onChange={(e) => setTo(e.target.value)}>
           <option value="all">Everyone</option>
           {state.characterOrder.map((id) => (
             <option key={id} value={id}>
@@ -372,20 +373,17 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
 }
 
 function Feed({ live, state }: { live: LiveSnapshot; state: CampaignState }) {
-  const items = [...live.notifications].reverse().slice(0, 50);
+  const rows = feedRows(live.notifications, state);
   return (
     <section className="window feed" aria-labelledby="feed">
       <h2 id="feed">System feed</h2>
-      {items.length === 0 ? (
+      {rows.length === 0 ? (
         <p className="muted">Level-ups and broadcasts appear here.</p>
       ) : (
         <ol>
-          {items.map((n, i) => (
-            <li key={`${n.seq}-${i}`}>
-              <span className="who">
-                {state.characters[n.notification.characterId]?.name ?? '—'}
-              </span>{' '}
-              {notificationText(n.notification)}
+          {rows.map((row) => (
+            <li key={row.key}>
+              <span className="who">{row.who}</span> {row.text}
             </li>
           ))}
         </ol>

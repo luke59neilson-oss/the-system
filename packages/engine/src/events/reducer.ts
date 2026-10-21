@@ -10,8 +10,19 @@ import { gainXp, shareBonus } from '../progression';
 import { parseRulesConfig, type RulesConfig } from '../rules';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 2;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 3;
+
+/** A System broadcast as kept in state, so players who missed it live still get it. */
+export interface BroadcastRecord {
+  /** Id of the `system.broadcast` event. */
+  readonly id: string;
+  /** Event timestamp (ISO-8601 UTC). */
+  readonly at: string;
+  readonly text: string;
+  /** Recipients; null = every character. */
+  readonly characterIds: readonly string[] | null;
+}
 
 /** Plain, serializable campaign state: a pure fold over the effective events. */
 export interface CampaignState {
@@ -21,6 +32,8 @@ export interface CampaignState {
   readonly characters: Readonly<Record<string, Character>>;
   /** Character ids in creation order (stable display order). */
   readonly characterOrder: readonly string[];
+  /** GM broadcasts in order (DESIGN §7); players see only those addressed to them. */
+  readonly broadcasts: readonly BroadcastRecord[];
 }
 
 const fail = (event: DomainEvent, reason: string): never => {
@@ -68,6 +81,7 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       rules: parsed.config,
       characters: {},
       characterOrder: [],
+      broadcasts: [],
     };
   }
   if (state === null) return fail(event, 'the log must start with campaign.created');
@@ -197,8 +211,18 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       } else if (state.characterOrder.length === 0) {
         fail(event, 'there is no one to broadcast to yet');
       }
-      // A message, not a change: state is untouched (the hub turns it into notifications).
-      return state;
+      return {
+        ...state,
+        broadcasts: [
+          ...state.broadcasts,
+          {
+            id: event.id,
+            at: event.timestamp,
+            text: event.payload.text,
+            characterIds: ids === null ? null : [...ids],
+          },
+        ],
+      };
     }
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');
