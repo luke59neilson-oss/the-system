@@ -13,3 +13,4 @@ export * from './progression';
 export * from './events';
 export * from './projection';
 export * from './content';
+export * from './bonuses';
