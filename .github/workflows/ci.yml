@@ -1,15 +1,19 @@
 name: CI
 
+# Runs on pushes to main and wip/* (what build sessions push) and on PRs into
+# main. Not on `release`: its commit was already tested on main (D8, D15).
 on:
   push:
-    branches: ['**']
+    branches: [main, 'wip/**']
     paths-ignore: ['docs/**']
   pull_request:
+    branches: [main]
     paths-ignore: ['docs/**']
 
+# Never cancel main runs: autonomous runs judge CI by the latest completed run on main.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -30,14 +34,16 @@ jobs:
           cache: npm
       - name: Install
         run: npm ci
-      - name: Check (typecheck, lint, format, banned patterns, unit tests)
-        run: npm run check
-      - name: Engine coverage
+      - name: Typecheck, lint, format, banned patterns
+        run: npm run typecheck && npm run lint && npm run format:check && npm run banned
+      - name: Unit tests with engine coverage
         run: npm run test:coverage
+      - name: Build
+        run: npm run build
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
-      - name: Build and e2e
-        run: npm run e2e
+      - name: E2E
+        run: npx playwright test
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
@@ -46,4 +52,5 @@ jobs:
           path: |
             playwright-report/
             test-results/
+          if-no-files-found: ignore
           retention-days: 7
