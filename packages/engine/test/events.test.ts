@@ -4,6 +4,7 @@ import {
   EVENT_TYPES,
   EventRejectedError,
   appendEvent,
+  authorize,
   applyEvent,
   emptyCampaign,
   execute,
@@ -485,6 +486,31 @@ describe('command boundary', () => {
     expect(execute(base(), rename, system).ok).toBe(true);
   });
 
+  it('limits players to listed commands on their own character', () => {
+    const rename: Command = { type: 'character.rename', characterId: 'jake', name: 'Jay' };
+    const allowed = new Set(['character.rename'] as const);
+    const me = { role: 'player' as const, characterId: 'jake' };
+    expect(authorize(rename, me, allowed)).toBeNull();
+    expect(authorize(rename, { role: 'player', characterId: 'kim' }, allowed)).toBe(
+      'players may only act on their own character',
+    );
+    expect(authorize({ type: 'event.undo', eventId: 'e2' }, me, new Set(['event.undo']))).toBe(
+      'players may only act on their own character',
+    );
+    const noId = { role: 'player' } as unknown as typeof me;
+    expect(
+      authorize({ ...rename, characterId: undefined } as unknown as Command, noId, allowed),
+    ).toBe('players may only act on their own character');
+    expect(authorize(rename, { role: 'gm' })).toBeNull();
+  });
+
+  it('rejects "__proto__" keys that schema records would silently drop', () => {
+    const pools = JSON.parse('{"__proto__":{"a":1}}') as Record<string, number>;
+    expect(reject(base(), { type: 'character.setPools', characterId: 'jake', pools })).toMatch(
+      '"__proto__" is not allowed',
+    );
+  });
+
   it('detaches stored events from the caller objects', () => {
     const rules = rawRules() as { campaign: { plannedSessions: number } };
     const c = run([{ type: 'campaign.create', name: 'W', rules }]);
@@ -525,7 +551,7 @@ describe('log-level upcasters', () => {
       if (ev.type !== 'character.bulkEdit') return [ev];
       const { characterId, name, hp } = ev.payload;
       return [
-        { ...ev, id: `${ev.id}.1`, type: 'character.renamed', payload: { characterId, name } },
+        { ...ev, type: 'character.renamed', payload: { characterId, name } },
         {
           ...ev,
           id: `${ev.id}.2`,
@@ -536,8 +562,27 @@ describe('log-level upcasters', () => {
     };
     const c = replay(raw, { rawUpcasters: [renameType, split] });
     expect(c.state?.characters['jake']).toMatchObject({ name: 'Jay B', pools: { hp: 5 } });
-    expect(c.events.map((e) => e.id)).toEqual(['e1', 'e2', 'old1', 'old2.1', 'old2.2']);
-    expect(() => replay(raw, { rawUpcasters: [() => []] })).toThrow('dropped an event');
+    expect(c.events.map((e) => e.id)).toEqual(['e1', 'e2', 'old1', 'old2', 'old2.2']);
+    expect(() => replay(raw, { rawUpcasters: [() => []] })).toThrow('a log upcaster dropped it');
+    // Undo targets still resolve through a split, and the upcaster is idempotent.
+    const undo = rawEvent({ id: 'u1', type: 'event.undone', payload: { eventId: 'old2' } });
+    const withUndo = replay([...raw, undo], { rawUpcasters: [renameType, split, split] });
+    expect(withUndo.undone).toEqual({ old2: 'u1' });
+    expect(withUndo.state?.characters['jake']?.name).toBe('Jay');
+  });
+
+  it('rejects an upcaster that changes the first id, and never lets it mutate the caller log', () => {
+    const raw = JSON.parse(JSON.stringify(base().events)) as unknown[];
+    const before = JSON.stringify(raw);
+    expect(() => replay(raw, { rawUpcasters: [(e) => [{ ...(e as object), id: 'new' }]] })).toThrow(
+      'must keep the original id',
+    );
+    const mutating = (e: unknown) => {
+      (e as { sessionId: string }).sessionId = 'hacked';
+      return [e];
+    };
+    expect(replay(raw, { rawUpcasters: [mutating] }).events[0]?.sessionId).toBe('hacked');
+    expect(JSON.stringify(raw)).toBe(before);
   });
 });
 
@@ -617,15 +662,22 @@ describe('property: replay equals incremental state', () => {
     let accepted = 0;
     let undos = 0;
     let rejected = 0;
+    let nonLatest = 0;
+    let dependent = 0;
     for (let step = 0; step < STEPS; step++) {
       const command = randomCommand(rand, c);
       const result = execute(deepFreeze(c), command, ctx);
       if (!result.ok) {
         rejected++;
+        if (command.type === 'event.undo' && result.error.includes('depends on it')) dependent++;
         continue;
       }
       accepted++;
-      if (command.type === 'event.undo') undos++;
+      if (command.type === 'event.undo') {
+        undos++;
+        const latest = [...c.events].reverse().find((e) => e.type !== 'event.undone');
+        if (latest?.id !== command.eventId) nonLatest++;
+      }
       c = result.campaign;
       {
         const replayed = replay(JSON.parse(JSON.stringify(c.events)) as unknown[]);
@@ -639,6 +691,8 @@ describe('property: replay equals incremental state', () => {
     expect(accepted, `seed ${SEED}`).toBeGreaterThan(100);
     expect(undos, `seed ${SEED}`).toBeGreaterThan(10);
     expect(rejected, `seed ${SEED}`).toBeGreaterThan(20);
+    expect(nonLatest, `seed ${SEED}: accepted non-latest undos`).toBeGreaterThan(5);
+    expect(dependent, `seed ${SEED}: undos refused for a dependency`).toBeGreaterThan(0);
     expect(new Set(c.events.map((e) => e.type)).size, `seed ${SEED}`).toBeGreaterThanOrEqual(
       EVENT_TYPES.length - 1,
     );

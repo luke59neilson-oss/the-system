@@ -1,7 +1,15 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { EVENT_TYPES, parseEventLines, replay, type EventType } from '../../src';
+import {
+  EVENT_TYPES,
+  appendEvent,
+  emptyCampaign,
+  parseEvent,
+  parseEventLines,
+  replay,
+  type EventType,
+} from '../../src';
 
 /**
  * Lives in test/node (typechecked with Node types, not the engine's pure
@@ -33,6 +41,11 @@ describe('golden event logs', () => {
     expect(replayed.events).toHaveLength(events.length);
     const undos = replayed.events.filter((e) => e.type === 'event.undone');
     expect(Object.keys(replayed.undone)).toHaveLength(undos.length);
+    const appended = events.reduce(
+      (c: ReturnType<typeof emptyCampaign>, raw) => appendEvent(c, parseEvent(raw)),
+      emptyCampaign(),
+    );
+    expect(appended).toEqual(replayed);
   });
 
   it('cover every reachable event type', () => {

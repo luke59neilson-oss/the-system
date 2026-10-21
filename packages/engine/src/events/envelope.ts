@@ -36,7 +36,7 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   }),
   'character.renamed': z.strictObject({ characterId: recordId, name: nonBlank }),
   'character.professionGranted': z.strictObject({ characterId: recordId, profession: nonBlank }),
-  /** GM sets current pool values; they clamp to 0..max. */
+  /** GM sets current pool values; each must be within 0..max (D31). */
   'character.poolsSet': z.strictObject({
     characterId: recordId,
     pools: z.record(z.string().min(1), z.number().int()),
@@ -110,6 +110,13 @@ function issuesText(error: z.ZodError): string {
     .join('; ');
 }
 
+/** True when any object in the JSON tree has an own "__proto__" key (zod records drop it). */
+function hasProtoKey(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false;
+  if (Object.prototype.hasOwnProperty.call(value, '__proto__')) return true;
+  return Object.values(value).some(hasProtoKey);
+}
+
 /**
  * Parses a stored event (any supported version): validates the envelope,
  * upcasts the payload to the current version, then validates the payload.
@@ -128,6 +135,8 @@ export function parseEvent(
   } catch {
     throw new EventRejectedError('Bad event: not plain JSON data');
   }
+  if (hasProtoKey(plain))
+    throw new EventRejectedError('Bad event: "__proto__" is not allowed as a key');
   const envelope = envelopeSchema.safeParse(plain);
   if (!envelope.success) throw new EventRejectedError(`Bad event: ${issuesText(envelope.error)}`);
   const { type, schemaVersion, id } = envelope.data;

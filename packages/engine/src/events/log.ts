@@ -38,12 +38,18 @@ function fold(events: readonly DomainEvent[]): CampaignState | null {
 }
 
 /** Checks that an undo may target `targetId` given the log so far (not the fold). */
+/** Latest-first lookup: undo targets are usually recent. */
+function findEvent(events: readonly DomainEvent[], id: string): DomainEvent | undefined {
+  for (let i = events.length - 1; i >= 0; i--) if (events[i]?.id === id) return events[i];
+  return undefined;
+}
+
 function checkUndoTarget(
   campaign: Campaign,
   undo: DomainEvent & { type: 'event.undone' },
 ): DomainEvent {
   const targetId = undo.payload.eventId;
-  const target = campaign.events.find((e) => e.id === targetId);
+  const target = findEvent(campaign.events, targetId);
   const reject = (reason: string): never => {
     throw new EventRejectedError(`Event ${undo.id} (event.undone): ${reason}`);
   };
@@ -87,12 +93,13 @@ export function appendEvent(campaign: Campaign, event: DomainEvent): Campaign {
 /**
  * Log-level upcast for changes a payload upcaster cannot express: renaming a
  * type, splitting one stored event into several, or changing the envelope.
- * Runs on each raw stored event before parsing; returns the events it becomes
- * (never an empty array: the audit log keeps every fact).
+ * Runs on a copy of each raw stored event before parsing, on every replay.
+ * Contract (enforced): it returns at least one event, and the first keeps the
+ * original id so undo targets still resolve. It must be idempotent, leaving
+ * events already in the new shape unchanged.
  */
 export type RawEventUpcaster = (raw: unknown) => unknown[];
 
-/** Built-in log-level upcasters, applied in order. Empty until a change needs one. */
 export const RAW_EVENT_UPCASTERS: readonly RawEventUpcaster[] = [];
 
 export interface ReplayOptions {
@@ -116,8 +123,15 @@ export function replay(rawEvents: readonly unknown[], options: ReplayOptions = {
   let raws: readonly unknown[] = rawEvents;
   for (const upcast of options.rawUpcasters ?? RAW_EVENT_UPCASTERS) {
     raws = raws.flatMap((raw) => {
-      const out = upcast(raw);
-      if (out.length === 0) throw new EventRejectedError('A log upcaster dropped an event');
+      const id = (raw as { id?: unknown } | null)?.id;
+      const out = upcast(JSON.parse(JSON.stringify(raw ?? null)) as unknown);
+      if (out.length === 0)
+        throw new EventRejectedError(`Event ${String(id)}: a log upcaster dropped it`);
+      if ((out[0] as { id?: unknown } | null)?.id !== id) {
+        throw new EventRejectedError(
+          `Event ${String(id)}: a log upcaster must keep the original id on the first event`,
+        );
+      }
       return out;
     });
   }

@@ -62,11 +62,18 @@ export type CommandType = Command['type'];
 export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>();
 
 /** Returns why the actor may not issue the command, or null when allowed. */
-export function authorize(command: Command, actor: Actor): string | null {
+export function authorize(
+  command: Command,
+  actor: Actor,
+  playerCommands: ReadonlySet<CommandType> = PLAYER_COMMANDS,
+): string | null {
   if (actor.role !== 'player') return null;
-  if (!PLAYER_COMMANDS.has(command.type)) return `only the GM can ${command.type}`;
+  if (!playerCommands.has(command.type)) return `only the GM can ${command.type}`;
   const target = 'characterId' in command ? command.characterId : undefined;
-  if (target !== actor.characterId) return 'players may only act on their own character';
+  const own = actor.characterId;
+  if (typeof target !== 'string' || typeof own !== 'string' || target !== own) {
+    return 'players may only act on their own character';
+  }
   return null;
 }
 
@@ -112,7 +119,10 @@ function toEvent(command: Command, ctx: CommandContext): { type: EventType; payl
   }
 }
 
-/** Validates a command, builds its event(s) and appends them. Never throws on bad input. */
+/**
+ * Validates a command, builds its event(s) and appends them. Never throws on a
+ * bad or unauthorised command; the context (actor, clock, ids) is trusted.
+ */
 export function execute(campaign: Campaign, command: Command, ctx: CommandContext): CommandResult {
   const shape = commandSchema.safeParse(command);
   if (!shape.success) {
