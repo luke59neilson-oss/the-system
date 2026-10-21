@@ -40,6 +40,50 @@ export function isAllowedOrigin(
   return parsed.host.toLowerCase() === host.trim().toLowerCase();
 }
 
+/**
+ * Host header check (defeats DNS rebinding: a rebound attacker domain arrives
+ * with its own name as Host). Allowed: localhost, IP literals, `*.local`
+ * mDNS names, and listed extra hosts. Port is ignored.
+ */
+export function isAllowedHost(
+  host: string | undefined,
+  extraHosts: readonly string[] = [],
+): boolean {
+  if (host === undefined) return false;
+  const value = host.trim().toLowerCase();
+  if (value === '') return false;
+  let name: string;
+  if (value.startsWith('[')) {
+    const end = value.indexOf(']');
+    if (end === -1) return false;
+    name = value.slice(1, end);
+    return /^[0-9a-f:.]+$/.test(name) && name.includes(':');
+  }
+  name = value.replace(/:\d+$/, '');
+  if (extraHosts.map((h) => h.toLowerCase()).includes(name)) return true;
+  if (name === 'localhost') return true;
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(name)) return name.split('.').every((n) => Number(n) <= 255);
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)*\.local$/.test(name);
+}
+
+/**
+ * Normalized request path for authorization: decoded, dot-segments resolved,
+ * query dropped. Returns null for anything unparseable or not origin-form
+ * (absolute-form URLs, `*`), which callers must refuse.
+ */
+export function authPath(url: string): string | null {
+  if (!url.startsWith('/')) return null;
+  try {
+    // Prefix the origin ourselves: `new URL('//x', base)` would read "x" as a host.
+    const pathname = new URL(`http://h${url}`).pathname;
+    const decoded = decodeURIComponent(pathname);
+    if (!decoded.startsWith('/')) return null;
+    return new URL(`http://h${decoded}`).pathname.replace(/\/{2,}/g, '/').toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
 /** A fresh GM key (256 random bits, hex). */
 export function newGmKey(): string {
   return randomBytes(32).toString('hex');

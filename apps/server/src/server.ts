@@ -5,7 +5,7 @@ import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { LiveHub, type HubOptions } from './hub';
 import { helloMessage } from './protocol';
-import { gmKeyMatches, isAllowedOrigin } from './security';
+import { authPath, gmKeyMatches, isAllowedHost, isAllowedOrigin } from './security';
 import type { CampaignStore } from './store';
 
 export interface CreateServerOptions {
@@ -15,6 +15,8 @@ export interface CreateServerOptions {
   live?: { store: CampaignStore } & HubOptions;
   /** Extra origins allowed to open the WebSocket (e.g. the Vite dev server). */
   allowedOrigins?: readonly string[];
+  /** Extra Host names accepted besides localhost, IP literals and *.local. */
+  allowedHosts?: readonly string[];
 }
 
 /** /api paths anyone on the LAN may read; every other /api path needs the GM key. */
@@ -37,9 +39,16 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   // Only /ws may be upgraded, and only from this server's own pages (or a
   // listed origin); refuse anything else before the handshake.
   app.addHook('onRequest', async (request, reply) => {
-    const pathname = request.url.split('?')[0] ?? '';
+    if (!isAllowedHost(request.headers.host, options.allowedHosts)) {
+      return reply.code(421).send({ error: 'Unknown host' });
+    }
+    // Authorize on a normalized path (decoded, dot-segments resolved) AND the
+    // matched route, so encodings like /%61pi cannot slip past the router.
+    const normalized = authPath(request.url);
+    if (normalized === null) return reply.code(400).send({ error: 'Bad request path' });
+    const route = (request.routeOptions.url ?? '').toLowerCase();
     const isUpgrade = (request.headers.upgrade ?? '').toLowerCase() === 'websocket';
-    if (isUpgrade && pathname !== WS_PATH) {
+    if (isUpgrade && (request.url.split('?')[0] ?? '') !== WS_PATH) {
       return reply.code(404).send({ error: 'Not found' });
     }
     if (
@@ -49,7 +58,9 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       return reply.code(403).send({ error: 'Origin not allowed' });
     }
     // GM HTTP routes deny by default: every /api path not listed public needs the key.
-    if (isReservedPath(pathname) && pathname.startsWith('/api') && !PUBLIC_API.has(pathname)) {
+    const isApi = (p: string) => p === '/api' || p.startsWith('/api/');
+    const isPublic = PUBLIC_API.has(normalized) && (route === '' || PUBLIC_API.has(route));
+    if ((isApi(normalized) || isApi(route)) && !isPublic) {
       const key = options.live?.gmKey ?? '';
       if (!gmKeyMatches(key, request.headers['x-gm-key'])) {
         return reply.code(403).send({ error: 'GM key required' });
@@ -74,7 +85,9 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
         connection.receive(raw.toString('utf8'));
       } catch (error) {
         app.log.error(error);
-        socket.send(JSON.stringify({ type: 'error', error: 'Server error' }));
+        if (socket.readyState === socket.OPEN) {
+          socket.send(JSON.stringify({ type: 'error', error: 'Server error' }));
+        }
       }
     });
     socket.on('close', () => connection.close());

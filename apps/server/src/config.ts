@@ -38,12 +38,16 @@ export function resolveOptions(
     }
     return value;
   };
+  const gmKey = env['GM_KEY'] || undefined;
+  if (gmKey !== undefined && (gmKey.length < 16 || gmKey.length > 1000)) {
+    throw new ConfigError('GM_KEY must be 16 to 1000 characters long');
+  }
   return {
     port: parsePort(flag('port') ?? env['PORT']),
     host: flag('host') ?? env['HOST'] ?? DEFAULT_HOST,
     webRoot: flag('web-root') ?? env['WEB_ROOT'] ?? defaultWebRoot,
     dataDir: flag('data-dir') ?? env['DATA_DIR'] ?? 'data',
     // Never a flag: command lines are visible to other local users.
-    gmKey: env['GM_KEY'] || undefined,
+    gmKey,
   };
 }

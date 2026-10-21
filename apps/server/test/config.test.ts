@@ -29,10 +29,12 @@ describe('resolveOptions', () => {
   });
   it('reads the data dir from a flag or env, and the GM key only from env', () => {
     expect(resolveOptions(['--data-dir', '/d'], { DATA_DIR: '/e' }, '/w').dataDir).toBe('/d');
-    expect(resolveOptions([], { DATA_DIR: '/e', GM_KEY: 'k' }, '/w')).toMatchObject({
+    const key = 'k'.repeat(32);
+    expect(resolveOptions([], { DATA_DIR: '/e', GM_KEY: key }, '/w')).toMatchObject({
       dataDir: '/e',
-      gmKey: 'k',
+      gmKey: key,
     });
+    expect(() => resolveOptions([], { GM_KEY: 'short' }, '/w')).toThrow(ConfigError);
     expect(resolveOptions(['--gm-key', 'x'], { GM_KEY: '' }, '/w').gmKey).toBeUndefined();
   });
   it('prefers flags over env', () => {

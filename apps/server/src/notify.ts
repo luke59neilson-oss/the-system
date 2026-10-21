@@ -1,7 +1,8 @@
 import { raceLevel, type CampaignState } from '@the-system/engine';
 
 /**
- * Notifications derived from a state change (DESIGN §9 "DING!"). Pure: compares
+ * Notifications derived from a state change (DESIGN §9 "DING!"). Only gains
+ * notify: an undo's level loss shows in the next view, not as a "DING". Pure: compares
  * each character before and after one event. Text is formatted by the client
  * from these facts and the rules, so wording stays in one place.
  */
@@ -33,7 +34,7 @@ export function notificationsFor(
     const now = after.characters[id];
     const was = before?.characters[id];
     if (!now || !was) continue;
-    if (now.classLevel !== was.classLevel) {
+    if (now.classLevel > was.classLevel) {
       out.push({
         kind: 'level',
         characterId: id,
@@ -44,7 +45,7 @@ export function notificationsFor(
         freePoints: 0,
       });
     }
-    if (now.profession !== null && now.professionLevel !== was.professionLevel) {
+    if (now.profession !== null && now.professionLevel > was.professionLevel) {
       out.push({
         kind: 'level',
         characterId: id,
@@ -57,7 +58,7 @@ export function notificationsFor(
     }
     const raceBefore = raceLevel(before?.rules ?? after.rules, was);
     const raceAfter = raceLevel(after.rules, now);
-    if (raceBefore !== raceAfter) {
+    if (raceAfter > raceBefore) {
       const granted = (c: typeof now) => c.freePointBatches.reduce((a, b) => a + b.points, 0);
       out.push({
         kind: 'level',

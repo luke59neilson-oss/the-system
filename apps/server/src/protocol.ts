@@ -36,7 +36,7 @@ export const clientMessageSchema = z.union([
   z.strictObject({
     type: z.literal('join'),
     role: z.literal('gm'),
-    gmKey: z.string().min(1).max(200),
+    gmKey: z.string().min(1).max(1000),
     lastSeq: seq.optional(),
   }),
   z.strictObject({
@@ -58,7 +58,12 @@ export type ServerMessage =
   | { type: 'joined'; role: 'gm' | 'player'; characterId: string | null; seq: number }
   | { type: 'view'; seq: number; view: PlayerView }
   | { type: 'state'; seq: number; state: CampaignState | null }
-  | { type: 'notifications'; items: readonly SeqNotification[] }
+  | {
+      type: 'notifications';
+      items: readonly SeqNotification[];
+      /** True when the server could not cover everything after the client's lastSeq. */
+      gap: boolean;
+    }
   | { type: 'result'; requestId: string; ok: true }
   | { type: 'result'; requestId: string; ok: false; error: string }
   | { type: 'error'; error: string };

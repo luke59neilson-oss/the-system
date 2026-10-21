@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  authPath,
+  isAllowedHost,
   gmKeyMatches,
   isAllowedOrigin,
   isLoopback,
@@ -67,5 +69,50 @@ describe('GM key', () => {
       expect(gmKeyMatches(key, bad)).toBe(false);
     }
     expect(gmKeyMatches('', '')).toBe(false);
+  });
+});
+
+describe('isAllowedHost (DNS rebinding)', () => {
+  it('allows localhost, IP literals and .local names', () => {
+    for (const h of [
+      'localhost:30333',
+      '127.0.0.1',
+      '192.168.1.5:30333',
+      '[::1]:30333',
+      'gm-laptop.local:30333',
+    ]) {
+      expect(isAllowedHost(h), h).toBe(true);
+    }
+    expect(isAllowedHost('table.example', ['table.example'])).toBe(true);
+  });
+  it('refuses domain names and junk', () => {
+    for (const h of [
+      undefined,
+      '',
+      'evil.example:30333',
+      'evil.example',
+      '999.1.1.1',
+      '[zz]',
+      '[::1',
+      'local',
+    ]) {
+      expect(isAllowedHost(h), String(h)).toBe(false);
+    }
+  });
+});
+
+describe('authPath', () => {
+  it('decodes and normalizes so encodings cannot hide /api', () => {
+    expect(authPath('/%61pi/gm/export')).toBe('/api/gm/export');
+    expect(authPath('/a%70i/gm/export?x=1')).toBe('/api/gm/export');
+    expect(authPath('/API/gm')).toBe('/api/gm');
+    expect(authPath('/x/../api/gm')).toBe('/api/gm');
+    expect(authPath('//api/gm')).toBe('/api/gm');
+    expect(authPath('/%2e%2e/api')).toBe('/api');
+  });
+  it('refuses absolute-form and undecodable paths', () => {
+    expect(authPath('http://x/api/gm/export')).toBeNull();
+    expect(authPath('*')).toBeNull();
+    expect(authPath('/%zz')).toBeNull();
   });
 });

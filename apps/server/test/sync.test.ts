@@ -14,6 +14,26 @@ import { CampaignStore } from '../src/store';
 const GM_CANARY = 'CANARY-GM-only';
 const GM_NUMBER = 987654321;
 
+let rawBase = '';
+/** Raw HTTP request (exact request-target, no client normalization). */
+function raw(
+  method: string,
+  target: string,
+  headers: Record<string, string> = {},
+): Promise<{ status: number; body: string }> {
+  const [host, port] = rawBase.split(':');
+  return new Promise((resolve, reject) => {
+    const req = request({ host, port: Number(port), method, path: target, agent: false, headers });
+    req.on('response', (res) => {
+      let body = '';
+      res.on('data', (c: Buffer) => (body += c.toString()));
+      res.on('end', () => resolve({ status: res.statusCode ?? 0, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
 class Client {
   readonly frames: string[] = [];
   private readonly ws: WebSocket;
@@ -117,6 +137,7 @@ describe('live protocol and authority', () => {
     });
     await app.listen({ port: 0, host: '127.0.0.1' });
     base = `127.0.0.1:${(app.server.address() as AddressInfo).port}`;
+    rawBase = base;
   });
 
   afterAll(async () => {
@@ -216,6 +237,23 @@ describe('live protocol and authority', () => {
     const denied = await fetch(`http://${base}/api/gm/export`);
     httpBodies.push(await denied.text());
     expect(denied.status).toBe(403);
+    // Encodings and request forms that could slip past a string check.
+    for (const [method, target] of [
+      ['GET', '/%61pi/gm/export'],
+      ['GET', '/a%70i/gm/export'],
+      ['HEAD', '/%61pi/gm/export'],
+      ['GET', `http://${base}/api/gm/export`],
+      ['GET', '//api/gm/export'],
+      ['GET', '/api/gm/export/'],
+    ] as const) {
+      const res = await raw(method, target);
+      httpBodies.push(res.body);
+      expect([400, 403, 404], `${method} ${target} → ${res.status}`).toContain(res.status);
+    }
+    const rebound = await raw('GET', '/api/characters', {
+      Host: `evil.example:${base.split(':')[1]}`,
+    });
+    expect(rebound.status).toBe(421);
     const allowed = await fetch(`http://${base}/api/gm/export`, { headers: { 'x-gm-key': gmKey } });
     expect(allowed.status).toBe(200);
     expect(((await allowed.json()) as { events: unknown[] }).events.length).toBe(
@@ -247,6 +285,22 @@ describe('live protocol and authority', () => {
     };
     expect(view.view.me.classLevel).toBe(store.campaign.state?.characters.casper?.classLevel);
 
+    // Undo: the undone award's notifications are not replayed on a later rejoin.
+    const award2Id = store.campaign.events[store.campaign.events.length - 1]?.id;
+    expect((await gm.command({ type: 'event.undo', eventId: award2Id })).ok).toBe(true);
+    const later = await connect();
+    later.send({ type: 'join', role: 'player', characterId: 'casper', lastSeq });
+    await later.waitFor((m) => m.type === 'view');
+    const replayed = later
+      .messages()
+      .filter((m) => m.type === 'notifications')
+      .flatMap((m) => m.items as { notification: { kind: string } }[]);
+    expect(replayed.filter((i) => i.notification.kind === 'level')).toEqual([]);
+    // A lastSeq inside this server's history is fully covered (no gap).
+    const old = await connect();
+    old.send({ type: 'join', role: 'player', characterId: 'casper', lastSeq: 0 });
+    expect(await old.waitFor((m) => m.type === 'notifications')).toMatchObject({ gap: false });
+
     // Canary: no player frame or public HTTP body carries GM-only or others' data.
     const check = (frames: string[], owner: string | null, label: string) => {
       const text = frames.join('\n');
@@ -261,6 +315,8 @@ describe('live protocol and authority', () => {
     check(casper.frames, 'casper', 'casper (before reconnect)');
     check(back.frames, 'casper', 'casper (after reconnect)');
     check(intruder.frames, null, 'intruder');
+    check(later.frames, 'casper', 'casper (after undo)');
+    check(old.frames, 'casper', 'casper (old seq)');
     check(httpBodies, null, 'http');
     // The GM does see everything.
     expect(gm.frames.join('\n')).toContain('CANARY-jake-skill');

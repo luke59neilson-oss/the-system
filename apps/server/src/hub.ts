@@ -48,13 +48,16 @@ interface Client {
 
 export class LiveHub {
   private readonly clients = new Set<Client>();
-  private readonly history: SeqNotification[] = [];
+  private readonly history: (SeqNotification & { eventId: string })[] = [];
+  /** Event seq when this hub started: older notifications are not in memory. */
+  private readonly startSeq: number;
   private readonly store: CampaignStore;
   private readonly options: HubOptions;
 
   constructor(store: CampaignStore, options: HubOptions) {
     this.store = store;
     this.options = options;
+    this.startSeq = store.campaign.events.length;
   }
 
   get seq(): number {
@@ -85,8 +88,13 @@ export class LiveHub {
         client.role = { role: 'gm' };
       } else {
         const state = this.store.campaign.state;
-        if (!state || !Object.prototype.hasOwnProperty.call(state.characters, message.characterId))
+        if (
+          !state ||
+          !Object.prototype.hasOwnProperty.call(state.characters, message.characterId)
+        ) {
+          client.role = { role: 'none' };
           return client.send({ type: 'error', error: 'No such character' });
+        }
         client.role = { role: 'player', characterId: message.characterId };
       }
       client.send({
@@ -95,8 +103,10 @@ export class LiveHub {
         characterId: client.role.role === 'player' ? client.role.characterId : null,
         seq: this.seq,
       });
-      this.sendSnapshot(client);
+      // Missed notifications first, then the view: a client that takes its
+      // lastSeq from the view can never skip a notification.
       this.sendMissed(client, message.lastSeq);
+      this.sendSnapshot(client);
       return;
     }
     // Commands.
@@ -112,41 +122,53 @@ export class LiveHub {
     const actor: Actor =
       role.role === 'gm' ? { role: 'gm' } : { role: 'player', characterId: role.characterId };
     const before = this.store.campaign.state;
-    const result = execute(this.store.campaign, message.command as unknown as Command, {
-      actor,
-      sessionId: this.options.sessionId ?? null,
-      now: this.options.now,
-      newId: this.options.newId,
-    });
-    if (!result.ok) {
-      return client.send({
-        type: 'result',
-        requestId: message.requestId,
-        ok: false,
-        error: result.error,
+    const fail = (error: string) =>
+      client.send({ type: 'result', requestId: message.requestId, ok: false, error });
+    let result: ReturnType<typeof execute>;
+    try {
+      result = execute(this.store.campaign, message.command as unknown as Command, {
+        actor,
+        sessionId: this.options.sessionId ?? null,
+        now: this.options.now,
+        newId: this.options.newId,
       });
+    } catch {
+      return fail('The command could not be run');
     }
+    if (!result.ok) return fail(result.error);
     try {
       this.store.appendAll(result.events);
     } catch (error) {
-      const text =
-        error instanceof EventRejectedError ? error.message : 'Could not save the change';
-      return client.send({ type: 'result', requestId: message.requestId, ok: false, error: text });
+      return fail(
+        error instanceof EventRejectedError ? error.message : 'Could not save the change',
+      );
     }
     client.send({ type: 'result', requestId: message.requestId, ok: true });
-    const startSeq = this.seq - result.events.length;
-    const fresh = notificationsFor(before, this.store.campaign.state).map((notification, i) => ({
-      seq: startSeq + 1 + Math.min(i, result.events.length - 1),
+    // Every command is one event (D44): its notifications share that event's seq.
+    const event = result.events[result.events.length - 1];
+    if (event?.type === 'event.undone') {
+      // An undone event's notifications must not be replayed on reconnect.
+      const target = event.payload.eventId;
+      for (let i = this.history.length - 1; i >= 0; i--) {
+        if (this.history[i]?.eventId === target) this.history.splice(i, 1);
+      }
+    }
+    const fresh = notificationsFor(before, this.store.campaign.state).map((notification) => ({
+      seq: this.seq,
       notification,
     }));
-    this.history.push(...fresh);
+    if (event) this.history.push(...fresh.map((n) => ({ ...n, eventId: event.id })));
     const cap = this.options.notificationHistory ?? 5000;
     if (this.history.length > cap) this.history.splice(0, this.history.length - cap);
     for (const other of this.clients) {
       if (other.role.role === 'none') continue;
-      this.sendSnapshot(other);
-      const mine = this.filter(other.role, fresh);
-      if (mine.length) other.send({ type: 'notifications', items: mine });
+      try {
+        const mine = this.filter(other.role, fresh);
+        if (mine.length) other.send({ type: 'notifications', items: mine, gap: false });
+        this.sendSnapshot(other);
+      } catch {
+        // One failing socket must not stop the others from updating.
+      }
     }
   }
 
@@ -171,18 +193,30 @@ export class LiveHub {
   }
 
   private filter(role: Role, items: readonly SeqNotification[]): SeqNotification[] {
-    if (role.role === 'gm') return [...items];
+    const strip = (n: SeqNotification) => ({ seq: n.seq, notification: n.notification });
+    if (role.role === 'gm') return items.map(strip);
     if (role.role !== 'player') return [];
-    return items.filter((n) => n.notification.characterId === role.characterId);
+    return items.filter((n) => n.notification.characterId === role.characterId).map(strip);
   }
 
-  /** Resends notifications after `lastSeq` (reconnect without gaps). */
+  /**
+   * Resends notifications after `lastSeq` (reconnect without gaps). `gap` is
+   * set when the history no longer reaches back that far (server restart or
+   * the history cap), so the client knows to rely on the view alone.
+   */
   private sendMissed(client: Client, lastSeq: number | undefined): void {
     if (lastSeq === undefined || client.role.role === 'none') return;
+    const oldest = this.history[0];
+    const covered =
+      lastSeq >= this.startSeq &&
+      (this.history.length < (this.options.notificationHistory ?? 5000) ||
+        (oldest !== undefined && lastSeq >= oldest.seq));
     const missed = this.filter(
       client.role,
       this.history.filter((n) => n.seq > lastSeq),
     );
-    if (missed.length) client.send({ type: 'notifications', items: missed });
+    if (missed.length || !covered) {
+      client.send({ type: 'notifications', items: missed, gap: !covered });
+    }
   }
 }
