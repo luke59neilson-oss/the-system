@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { ENGINE_NAME, type OwnSheet, type PlayerView } from '@the-system/engine';
 import { notificationText } from '../format';
+import { isHostBrowser, isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
 import { formatStatValue, rarityName, unassignedPoints } from './sheet';
 
@@ -29,6 +30,12 @@ export function PlayerHome() {
         {characters?.length === 0 && (
           <p className="muted">No characters yet. Your GM will create them.</p>
         )}
+        {isHostBrowser(window.location.hostname) && (
+          <p className="muted">
+            On the GM’s laptop? <a href="/gm">Open the GM console</a> (needs the GM link from the
+            desktop app or server terminal).
+          </p>
+        )}
         <ul className="choices">
           {characters?.map((c) => (
             <li key={c.id}>
@@ -51,10 +58,12 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
     () => client.current,
   );
   const view = live.view;
+  // Inside the GM app's "View as" frames (MS.3): same client, compact chrome.
+  const [pane] = useState(() => isPaneMode(window.location.search));
   return (
-    <main className="player">
+    <main className={pane ? 'player pane-mode' : 'player'}>
       <header className="gm-header">
-        <h1>The System</h1>
+        {pane ? <h1 className="sr-only">The System</h1> : <h1>The System</h1>}
         <span className={`status status-${live.status}`} data-testid="connection">
           {live.status === 'joined'
             ? 'Connected'
@@ -64,10 +73,13 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
                 ? 'Not connected'
                 : 'Connecting…'}
         </span>
-        <a className="muted" href="/">
-          Switch character
-        </a>
+        {!pane && (
+          <a className="muted" href="/">
+            Switch character
+          </a>
+        )}
       </header>
+      {pane && <LatestDing live={live} />}
       {(live.status === 'refused' || live.error) && (
         <p className="err" role="alert">
           {live.error}
@@ -199,5 +211,19 @@ function Feed({ live, view }: { live: LiveSnapshot; view: PlayerView }) {
         )}
       </section>
     </div>
+  );
+}
+
+/**
+ * Pane mode only: the newest DING pinned above the sheet, so the GM sees it
+ * land in a small Table-view pane without scrolling to the feed.
+ */
+function LatestDing({ live }: { live: LiveSnapshot }) {
+  const latest = live.notifications.filter((n) => n.notification.kind === 'level').at(-1);
+  if (!latest) return null;
+  return (
+    <p className="pane-latest" data-testid="latest-ding" aria-live="polite">
+      {notificationText(latest.notification)}
+    </p>
   );
 }

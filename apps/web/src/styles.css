@@ -263,3 +263,139 @@ a {
     flex-wrap: wrap;
   }
 }
+
+/* "View as" perspectives (MS.3). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.gm-header {
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.gm-header h1 {
+  margin-bottom: 0;
+}
+.view-as {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+.view-as-btn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid #3b5682;
+  padding: 4px 10px;
+}
+.view-as-btn.active {
+  background: var(--accent);
+  color: #0b0f17;
+  border-color: var(--accent);
+}
+.gm.perspective-table {
+  max-width: none;
+}
+.perspective-table .perspective-body {
+  display: grid;
+  grid-template-columns: minmax(360px, 2fr) minmax(0, 3fr);
+  gap: 14px;
+  height: calc(100vh - 80px);
+}
+.perspective-table .gm-pane {
+  overflow: auto;
+  padding: 2px;
+}
+.perspective-table .gm-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.table-panes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+.pane-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+}
+.pane-picker label {
+  margin: 0;
+}
+.pane-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+}
+.pane-grid.panes-1 {
+  grid-template-columns: minmax(0, 1fr);
+}
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.pane-title {
+  margin: 0;
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  text-transform: none;
+  background: rgba(90, 127, 184, 0.18);
+}
+.pane-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: var(--bg);
+}
+.single-pane {
+  height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+}
+.single-pane .pane {
+  flex: 1;
+}
+.player.pane-mode {
+  padding: 10px;
+}
+.pane-mode .gm-header {
+  margin-bottom: 8px;
+}
+@media (max-width: 900px) {
+  .perspective-table .perspective-body {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+  .pane-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: 70vh;
+  }
+}
+.pane-latest {
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: #fff;
+  text-shadow: 0 0 8px var(--glow);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: rgba(90, 127, 184, 0.18);
+}

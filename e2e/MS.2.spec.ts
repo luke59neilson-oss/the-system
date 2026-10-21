@@ -54,7 +54,7 @@ test('a player picks a character and watches the GM’s changes land live', asyn
   const { errors, frames } = watch(player);
   await player.goto(server.url);
   await expect(player.getByRole('heading', { name: 'Choose your character' })).toBeVisible();
-  await expect(player.getByRole('link')).toHaveText([/Jake/, /Miranda/]);
+  await expect(player.getByRole('list').getByRole('link')).toHaveText([/Jake/, /Miranda/]);
   await player.screenshot({ path: path.join(shots, 'join-1366x768.png') });
   await player.getByRole('link', { name: /Jake/ }).click();
 

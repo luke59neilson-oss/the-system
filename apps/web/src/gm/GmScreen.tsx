@@ -10,6 +10,8 @@ import { friendlyError } from '../format';
 import { forgetGmKey, takeGmKey } from '../gmKey';
 import { LiveClient, type CommandResult, type LiveSnapshot } from '../live';
 import { feedRows } from './feed';
+import { resolvePerspective, type PartyMember, type Perspective } from './perspective';
+import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
 
 /**
  * Minimal GM screen (ROADMAP MS.1): create a campaign and characters from a
@@ -53,9 +55,23 @@ function useLive(client: LiveClient): LiveSnapshot {
   );
 }
 
+function partyOf(state: CampaignState | null): PartyMember[] {
+  if (!state) return [];
+  return state.characterOrder.flatMap((id) => {
+    const c = state.characters[id];
+    return c ? [{ id, name: c.name }] : [];
+  });
+}
+
 function GmConsole({ client }: { client: LiveClient }) {
   const live = useLive(client);
   const state = live.state;
+  const [wanted, setWanted] = useState<Perspective>({ kind: 'gm' });
+  const [picked, setPicked] = useState<string[] | null>(null);
+  const party = useMemo(() => partyOf(state), [state]);
+  const view = resolvePerspective(wanted, party);
+  const viewed =
+    view.kind === 'character' ? party.find((m) => m.id === view.characterId) : undefined;
 
   if (live.status === 'refused') {
     return (
@@ -79,7 +95,7 @@ function GmConsole({ client }: { client: LiveClient }) {
   }
 
   return (
-    <main className="gm">
+    <main className={`gm perspective-${state ? view.kind : 'gm'}`}>
       <header className="gm-header">
         <h1>The System · GM</h1>
         <span className={`status status-${live.status}`} data-testid="connection">
@@ -89,15 +105,27 @@ function GmConsole({ client }: { client: LiveClient }) {
               ? 'Reconnecting…'
               : 'Connecting…'}
         </span>
+        {state && <PerspectiveBar party={party} current={view} onChange={setWanted} />}
       </header>
       {live.status === 'joined' && state === null && <CreateCampaign client={client} />}
       {state && (
-        <div className="gm-grid">
-          <Party state={state} />
-          <CreateCharacter client={client} />
-          <AwardXp client={client} state={state} />
-          <Broadcast client={client} state={state} />
-          <Feed live={live} state={state} />
+        <div className="perspective-body">
+          {/* Kept mounted while viewing as a character so half-filled GM forms survive. */}
+          <div className="gm-pane" hidden={view.kind === 'character'}>
+            <div className="gm-grid">
+              <Party state={state} />
+              <CreateCharacter client={client} />
+              <AwardXp client={client} state={state} />
+              <Broadcast client={client} state={state} />
+              <Feed live={live} state={state} />
+            </div>
+          </div>
+          {viewed && (
+            <div className="single-pane">
+              <PlayerPane key={viewed.id} member={viewed} />
+            </div>
+          )}
+          {view.kind === 'table' && <TablePanes party={party} picked={picked} onPick={setPicked} />}
         </div>
       )}
     </main>
