@@ -25,6 +25,14 @@ export function CampaignSwitch({ gmKey, stateName }: { gmKey: string; stateName:
   }, [gmKey, stateName]);
 
   const switchTo = async (wantDemo: boolean) => {
+    if (
+      wantDemo &&
+      !window.confirm(
+        'Load the demo campaign? Players in your campaign see a “switched campaign” notice until you come back.',
+      )
+    ) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {

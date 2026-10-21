@@ -35,6 +35,11 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
 }) => {
   const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const errors = watchErrors(gm);
+  const confirms: string[] = [];
+  gm.on('dialog', (d) => {
+    confirms.push(d.message());
+    void d.accept();
+  });
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('My Real Campaign');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
@@ -45,9 +50,21 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   await gm.getByRole('button', { name: 'Award XP' }).click();
   await expect(gm.getByTestId('demo-badge')).toHaveCount(0);
 
+  // A player of the real campaign is at the table.
+  const ada = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const adaErrors = watchErrors(ada);
+  await ada.goto(server.url);
+  await ada.getByRole('link', { name: /Ada/ }).click();
+  await expect(ada.getByTestId('class')).toHaveText('[Archer – lvl 1]');
+  await expect(ada.getByTestId('dings').getByRole('listitem')).toHaveCount(2);
+
   // Load the demo: a different campaign with four characters at different levels.
   await gm.getByRole('button', { name: 'Load demo campaign' }).click();
   await expect(gm.getByTestId('demo-badge')).toBeVisible();
+  expect(confirms).toHaveLength(1);
+  // Ada's screen says what happened (and shows nothing of the demo).
+  await expect(ada.getByRole('alert')).toContainText('switched to another campaign');
+  await expect(ada.getByTestId('status')).toHaveCount(0);
   await expect(gm.getByRole('heading', { name: /Demo: The Whale/ })).toBeVisible();
   await expect.poll(() => partyNames(gm)).toEqual(['Jake', 'Miranda', 'Casper', 'Sultan']);
   const levels = await gm.locator('[data-testid^="class-level-"]').allInnerTexts();
@@ -68,6 +85,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   ]);
   await phone.getByRole('link', { name: /Jake/ }).click();
   await expect(phone.getByTestId('class')).toHaveText('[Archer – lvl 4]');
+  await expect(phone.getByTestId('demo-badge')).toBeVisible();
   await expect(phone.getByTestId('messages')).toContainText('The world is dying.');
   await phone.screenshot({ path: path.join(shots, 'player-demo-390x844.png'), fullPage: true });
 
@@ -94,16 +112,27 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   expect(exported).not.toContain('demo-');
   expect(exported).not.toContain('Demo: The Whale');
 
-  // The demo phone was dropped with the switch and does not fall back to real data.
-  await expect(phone.getByRole('alert')).toHaveText('No such character');
+  // Ada's screen rejoins on its own with her sheet and DINGs, nothing of the demo.
+  await expect(ada.getByTestId('class')).toHaveText('[Archer – lvl 1]', { timeout: 8000 });
+  await expect(ada.getByTestId('demo-badge')).toHaveCount(0);
+  await expect(ada.getByTestId('dings').getByRole('listitem')).toHaveCount(2);
+  await expect(ada.getByTestId('messages')).toHaveCount(0);
+  // The GM feed still holds the real campaign's DINGs (one hub per campaign).
+  await expect(gm.getByRole('listitem').filter({ hasText: 'Ada' }).first()).toBeVisible();
+  await expect(gm.getByRole('listitem').filter({ hasText: 'Sultan' })).toHaveCount(0);
+  // The demo phone waits with a notice instead of falling back to real data.
+  await expect(phone.getByRole('alert')).toContainText('switched to another campaign');
+  await expect(phone.getByTestId('status')).toHaveCount(0);
 
-  // Loading the demo again keeps what the GM did there.
+  // Loading the demo again keeps what the GM did there; the demo phone rejoins.
   await gm.getByRole('button', { name: 'Load demo campaign' }).click();
   await expect(gm.getByTestId('class-level-demo-sultan')).toHaveText('1');
+  await expect(phone.getByTestId('class')).toHaveText('[Archer – lvl 4]', { timeout: 8000 });
   await gm.getByRole('button', { name: 'Back to my campaign' }).click();
   await expect.poll(() => partyNames(gm)).toEqual(['Ada']);
 
   expect(errors).toEqual([]);
   expect(phoneErrors).toEqual([]);
-  await Promise.all([gm.close(), phone.close()]);
+  expect(adaErrors).toEqual([]);
+  await Promise.all([gm.close(), phone.close(), ada.close()]);
 });

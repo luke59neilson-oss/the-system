@@ -52,8 +52,8 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   let active = options.live
     ? { store: options.live.store, hub: new LiveHub(options.live.store, options.live) }
     : null;
-  const opened = new Map<string, CampaignStore>();
-  if (options.live) opened.set(options.live.store.id, options.live.store);
+  const opened = new Map<string, { store: CampaignStore; hub: LiveHub }>();
+  if (active && options.live) opened.set(options.live.store.id, active);
   const sockets = new Set<{ close: (code: number, reason: string) => void }>();
 
   // Only /ws may be upgraded, and only from this server's own pages (or a
@@ -133,23 +133,47 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     }
     const id = body.demo ? DEMO_CAMPAIGN_ID : realId;
     if (id === active.store.id) return { id, demo: body.demo };
-    let store = opened.get(id);
-    if (!store) {
-      store = options.openCampaign(id);
-      opened.set(id, store);
+    let next = opened.get(id);
+    if (!next) {
+      let store: CampaignStore;
+      try {
+        store = options.openCampaign(id);
+      } catch (error) {
+        app.log.error(error);
+        return reply.code(409).send({
+          error: error instanceof Error ? error.message : 'Could not open that campaign',
+        });
+      }
+      // A fresh demo directory is seeded once (one write); later loads keep what the GM did.
+      if (body.demo && store.campaign.events.length === 0) {
+        try {
+          store.appendAll(buildDemoEvents({ now: live.now, newId: live.newId }));
+        } catch (error) {
+          store.close();
+          app.log.error(error);
+          return reply.code(500).send({ error: 'Could not build the demo campaign' });
+        }
+      }
+      // One hub per campaign for the server's life, so switching back keeps its
+      // in-memory notification history.
+      next = { store, hub: new LiveHub(store, live) };
+      opened.set(id, next);
     }
-    // A fresh demo directory is seeded once; later loads keep what the GM did in it.
-    if (body.demo && store.campaign.events.length === 0) {
-      store.appendAll(buildDemoEvents({ now: live.now, newId: live.newId }));
-    }
-    active = { store, hub: new LiveHub(store, live) };
+    active = next;
     for (const socket of [...sockets]) socket.close(1012, 'Campaign changed');
     sockets.clear();
     return { id, demo: body.demo };
   });
   app.addHook('onClose', () => {
     // The caller closes the store it passed in; close the ones opened here.
-    for (const [id, store] of opened) if (id !== realId) store.close();
+    for (const [id, { store }] of opened) {
+      if (id === realId) continue;
+      try {
+        store.close();
+      } catch (error) {
+        app.log.error(error);
+      }
+    }
   });
 
   // Join list: the only campaign data any LAN client may read over HTTP.

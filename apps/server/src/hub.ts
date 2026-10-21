@@ -70,7 +70,7 @@ export class LiveHub {
   connect(send: (message: ServerMessage) => void): Connection {
     const client: Client = { role: { role: 'none' }, send };
     this.clients.add(client);
-    send(helloMessage());
+    send(helloMessage(this.store.id));
     return {
       receive: (raw) => this.receive(client, raw),
       close: () => this.clients.delete(client),

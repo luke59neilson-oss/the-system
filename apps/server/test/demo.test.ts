@@ -117,6 +117,21 @@ describe('demo campaign switch', () => {
     expect(await names()).toEqual(['Ada']);
   });
 
+  it('names the campaign in every hello so clients can reset on a switch', async () => {
+    const hello = async () => {
+      const ws = new WebSocket(`ws://${base}/ws`);
+      const first = await new Promise<Record<string, unknown>>((resolve) =>
+        ws.addEventListener('message', (e) => resolve(JSON.parse(String(e.data)))),
+      );
+      ws.close();
+      return first;
+    };
+    expect(await hello()).toMatchObject({ type: 'hello', campaign: 'main' });
+    await gm('POST', { demo: true });
+    expect(await hello()).toMatchObject({ type: 'hello', campaign: DEMO_CAMPAIGN_ID });
+    await gm('POST', { demo: false });
+  });
+
   it('keeps the demo as the GM left it on a later load (seeded once)', async () => {
     await gm('POST', { demo: true });
     const first = await names();
@@ -125,5 +140,32 @@ describe('demo campaign switch', () => {
     expect(await names()).toEqual(first);
     expect(await (await gm('GET')).json()).toEqual({ id: DEMO_CAMPAIGN_ID, demo: true });
     await gm('POST', { demo: false });
+  });
+});
+
+describe('demo campaign switch without a campaign opener', () => {
+  it('answers 404', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'the-system-demo-none-'));
+    const dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-demo-none-data-'));
+    writeFileSync(path.join(dir, 'index.html'), '<!doctype html><title>shell</title>');
+    const store = CampaignStore.open('main', { dataDir, now: () => '2026-10-21T00:00:00.000Z' });
+    const app = await createServer({
+      webRoot: dir,
+      live: { store, gmKey: GM_KEY, now: () => '2026-10-21T00:00:00.000Z', newId: () => 'x' },
+    });
+    try {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/gm/campaign',
+        headers: { 'x-gm-key': GM_KEY, host: 'localhost' },
+        payload: { demo: true },
+      });
+      expect(res.statusCode).toBe(404);
+    } finally {
+      await app.close();
+      store.close();
+      rmSync(dir, { recursive: true, force: true });
+      rmSync(dataDir, { recursive: true, force: true });
+    }
   });
 });

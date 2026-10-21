@@ -25,7 +25,7 @@ export interface SeqNotification {
 }
 
 type ServerMessage =
-  | { type: 'hello'; protocol: number }
+  | { type: 'hello'; protocol: number; campaign?: string }
   | { type: 'joined'; role: 'gm' | 'player'; characterId: string | null; seq: number }
   | { type: 'view'; seq: number; view: PlayerView }
   | { type: 'state'; seq: number; state: CampaignState | null }
@@ -45,13 +45,15 @@ export interface LiveSnapshot {
   notifications: SeqNotification[];
   /** The server could not resend everything since our last seq (restart or history cap). */
   gap: boolean;
+  /** Campaign id the server says this connection serves (`demo` for the demo, MS.4). */
+  campaign: string | null;
 }
 
 export type CommandResult = { ok: true } | { ok: false; error: string };
 
 const RECONNECT_MS = 1000;
-/** Close code the server uses when the GM switches campaigns (1012 = service restart). */
-const CAMPAIGN_CHANGED = 1012;
+/** While the GM has another campaign open, a player keeps trying to rejoin at this pace. */
+const SWITCHED_RETRY_MS = 3000;
 
 export class LiveClient {
   private socket: WebSocket | null = null;
@@ -63,6 +65,7 @@ export class LiveClient {
     view: null,
     notifications: [],
     gap: false,
+    campaign: null,
   };
   private readonly listeners = new Set<(s: LiveSnapshot) => void>();
   private readonly pending = new Map<string, (r: CommandResult) => void>();
@@ -72,6 +75,8 @@ export class LiveClient {
   /** Joined at least once on this page: only then can a gap mean this page missed something. */
   private everJoined = false;
   private rejoining = false;
+  /** The campaign changed since this page last joined (MS.4 demo switch). */
+  private campaignChanged = false;
   private closed = false;
   private retry: ReturnType<typeof setTimeout> | null = null;
   private readonly join: JoinAs;
@@ -128,17 +133,16 @@ export class LiveClient {
       }
       this.handle(socket, message);
     });
-    socket.addEventListener('close', (event) => {
+    socket.addEventListener('close', () => {
       for (const resolve of this.pending.values()) resolve({ ok: false, error: 'Connection lost' });
       this.pending.clear();
-      if (event.code === CAMPAIGN_CHANGED) {
-        // The GM switched campaigns (real ↔ demo, MS.4): nothing from the old
-        // one may carry over, so rejoin as if this page were fresh.
-        this.lastSeq = 0;
-        this.everJoined = false;
-        this.update({ notifications: [], gap: false, state: null, view: null, seq: 0 });
+      if (this.closed) return;
+      if (this.snapshot.status === 'refused') {
+        // Our character is in the campaign the GM switched away from: wait for
+        // it to come back instead of giving up.
+        if (this.campaignChanged) this.retry = setTimeout(() => this.open(), SWITCHED_RETRY_MS);
+        return;
       }
-      if (this.closed || this.snapshot.status === 'refused') return;
       this.update({ status: 'offline' });
       this.retry = setTimeout(() => this.open(), RECONNECT_MS);
     });
@@ -147,6 +151,16 @@ export class LiveClient {
   private handle(socket: WebSocket, message: ServerMessage): void {
     switch (message.type) {
       case 'hello': {
+        const campaign = message.campaign ?? null;
+        if (this.snapshot.campaign !== null && campaign !== this.snapshot.campaign) {
+          // The GM switched campaigns (real ↔ demo, MS.4), maybe while we were
+          // offline: nothing from the other campaign may carry over.
+          this.lastSeq = 0;
+          this.everJoined = false;
+          this.campaignChanged = true;
+          this.update({ notifications: [], gap: false, state: null, view: null, seq: 0 });
+        }
+        if (campaign !== this.snapshot.campaign) this.update({ campaign });
         const join =
           this.join.role === 'gm'
             ? { type: 'join', role: 'gm', gmKey: this.join.gmKey }
@@ -157,6 +171,7 @@ export class LiveClient {
       }
       case 'joined':
         this.everJoined = true;
+        this.campaignChanged = false;
         this.update({ status: 'joined', error: null, seq: message.seq });
         return;
       case 'state':
@@ -194,8 +209,15 @@ export class LiveClient {
           this.snapshot.status !== 'joined' ||
           message.error === 'Your character no longer exists'
         ) {
-          // A refused join (bad key, unknown character) will not fix itself by retrying.
-          this.update({ status: 'refused', error: message.error });
+          // A refused join (bad key, unknown character) will not fix itself by
+          // retrying, unless the GM switched campaigns under us (retried on close).
+          const switched = this.campaignChanged && message.error === 'No such character';
+          this.update({
+            status: 'refused',
+            error: switched
+              ? 'The GM has switched to another campaign. This screen rejoins when they switch back.'
+              : message.error,
+          });
           socket.close();
         } else {
           this.update({ error: message.error });

@@ -79,6 +79,11 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
           </a>
         )}
       </header>
+      {live.campaign === 'demo' && (
+        <p className="demo-badge" data-testid="demo-badge">
+          Demo campaign: for trying the app out
+        </p>
+      )}
       {pane && <PaneLatest live={live} view={view} />}
       {(live.status === 'refused' || live.error) && (
         <p className="err" role="alert">

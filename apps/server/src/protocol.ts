@@ -11,14 +11,20 @@ export interface HelloMessage {
   protocol: number;
   server: 'the-system';
   engineApiVersion: number;
+  /**
+   * Which campaign this connection serves (MS.4: the real one or the demo).
+   * Clients reset what they hold when it changes. Omitted without a campaign.
+   */
+  campaign?: string;
 }
 
-export function helloMessage(): HelloMessage {
+export function helloMessage(campaign?: string): HelloMessage {
   return {
     type: 'hello',
     protocol: PROTOCOL_VERSION,
     server: 'the-system',
     engineApiVersion: ENGINE_API_VERSION,
+    ...(campaign === undefined ? {} : { campaign }),
   };
 }
 
