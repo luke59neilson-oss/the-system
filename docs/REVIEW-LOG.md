@@ -197,3 +197,18 @@
 - Round 1 (d550b0f..b939248): 0 High, 0 Medium, 5 Low. `npm run check` green; hidden quests, hidden gauges and tag rules never projected (canary extended); authority whitelist unchanged; engine pure.
   - L fixed: action tags typed with capitals or spaces missed their rule → the command lower-cases and trims; nudging a closed quest (GM override) is now pinned by a test.
   - L accepted: a quest's start day follows undone day advances (only days left change); `quests` labelled `owner` though it is projected through `PlayerQuest`; timers never auto-fail a quest (GM-driven, DESIGN §7).
+
+## 2026-10-21 · M1.14 Campaign simulation · sonnet (fresh context, 2 rounds)
+- Round 1 (e0ead5f..6b330d5): 3 High, 4 Medium, 5 Low. `npm run check` green, coverage 99.14%, no banned patterns, no engine bug found.
+  - H fixed: pacing came from a catch-up controller and the session-40 top-up, so "mean 6" was a tautology → each character gets a random per-session plan (4–8 each, summing to 240, built by random ±1 transfers with no catch-up). Gains must equal the plan, and each evolution must land in the session where the plan reaches its threshold. DESIGN "Reached by session" is checked as ceil(threshold / 6).
+  - H fixed: the pending-evolution leak check never ran (release and choose in one step) → `checkLeaks` runs while each release is pending, after each deferred menu, and at every session end. Names are unique and delimited.
+  - H fixed (partly accepted): leak coverage was narrow → mid-session checks added. Item fields are not checked here (economy isn't projected; the projection canary covers it).
+  - M fixed: XP was never banked while held → about half of evolutions bank 1–2 levels of XP first (levels unchanged, XP grows), then the test asserts the exact levels gained after the choice.
+  - M fixed: the profession track was always the lower one → the track is picked at random; the budget invariant still runs after every command.
+  - M fixed: some assertions had no seed, and a crash inside the run had no test attribution → the seed is in every message; the run is lazy and cached.
+  - M fixed: the budget invariant reads the same config as the engine → a test pins the config to the DESIGN §3–§5 tables.
+  - L fixed: thresholds tightened. L accepted: no undo or rejections in "valid play" (the M1.3 property test covers those).
+- Round 2 (6b330d5..f7fa131): 0 High, 1 Medium, 5 Low.
+  - M fixed: banking was class-only → profession XP is banked too once a profession exists, and the test asserts the other track is unchanged.
+  - L fixed: a simulation error is cached, so the remaining tests don't re-run it; the DESIGN pin covers selection interval and rarity ceiling; the montage now happens deterministically in session 2.
+  - L accepted: releases are never left pending across a session boundary (M1.10 tests cover pending states); with random pacing, "Reached by session" is checked arithmetically rather than through the run.

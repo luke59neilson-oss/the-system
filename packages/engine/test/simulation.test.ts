@@ -96,6 +96,7 @@ interface Tally {
   professionPicks: number;
   deferredChoices: number;
   banked: number;
+  bankedProfession: number;
   plans: Record<string, number[]>;
 }
 
@@ -140,6 +141,7 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
     professionPicks: 0,
     deferredChoices: 0,
     banked: 0,
+    bankedProfession: 0,
     plans: {},
   };
 
@@ -246,22 +248,25 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
     }
   };
   /** Held evolution: GM releases (1–4 options), the player chooses. */
-  const evolve = (id: string, target: GradeRules, bankLevels: number) => {
+  const evolve = (id: string, target: GradeRules, bankLevels: number, bankTrack: XpTrack) => {
     if (bankLevels > 0) {
       // Held: more XP only banks, levels stay at the cap (DESIGN §3).
       const held = char(id);
-      const amount = bankLevels * target.xpPerLevel - held.xp.class;
+      const amount = bankLevels * target.xpPerLevel - held.xp[bankTrack];
       exec({
         type: 'xp.award',
-        track: 'class',
+        track: bankTrack,
         amount,
         participants: [{ characterId: id }],
       });
       const banked = char(id);
       expect(banked.classLevel, `seed ${seed}: ${id} held at the cap`).toBe(held.classLevel);
       expect(banked.professionLevel, `seed ${seed}: ${id} held`).toBe(held.professionLevel);
-      expect(banked.xp.class, `seed ${seed}: ${id} XP banks`).toBe(held.xp.class + amount);
+      expect(banked.xp[bankTrack], `seed ${seed}: ${id} XP banks`).toBe(
+        held.xp[bankTrack] + amount,
+      );
       tally.banked++;
+      if (bankTrack === 'profession') tally.bankedProfession++;
     }
     const before = char(id);
     const race = raceLevel(rules, before);
@@ -308,9 +313,17 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
     if (profession !== null) tally.professionPicks++;
     const after = char(id);
     expect(after.grade, `seed ${seed}: ${id} evolved`).toBe(target.id);
-    expect(after.classLevel, `seed ${seed}: ${id} banked XP applies at the new grade`).toBe(
-      before.classLevel + bankLevels,
+    const gained = (ch: Character, t: XpTrack) =>
+      t === 'class'
+        ? ch.classLevel - before.classLevel
+        : ch.professionLevel - before.professionLevel;
+    expect(gained(after, bankTrack), `seed ${seed}: ${id} banked XP applies at the new grade`).toBe(
+      bankLevels,
     );
+    if (!unlock) {
+      const other: XpTrack = bankTrack === 'class' ? 'profession' : 'class';
+      expect(gained(after, other), `seed ${seed}: ${id} other track unchanged`).toBe(0);
+    }
     if (unlock) {
       expect(after.profession, `seed ${seed}: ${id}`).toBe(profession);
       expect(after.professionLevel, `seed ${seed}: profession starts at the class level`).toBe(
@@ -347,8 +360,11 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
         // Held: XP only banks while the GM has not released it (DESIGN §3).
         const held = char(id);
         expect(held.classLevel, `seed ${seed}: ${id} held`).toBe(trackCap(rules, held.grade));
-        const room = Math.max(0, Math.min(2, (targets[id] as number) - held.classLevel));
-        evolve(id, target, rand() < 0.5 ? int(0, room) : 0);
+        const bankTrack: XpTrack =
+          held.profession !== null && rand() < 0.5 ? 'profession' : 'class';
+        const level = bankTrack === 'class' ? held.classLevel : held.professionLevel;
+        const room = Math.max(0, Math.min(2, (targets[id] as number) - level));
+        evolve(id, target, rand() < 0.5 ? int(0, room) : 0, bankTrack);
         assignFreePoints(id);
         recordCheck(id);
         handleSelections(id);
@@ -454,7 +470,7 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
         exec({ type: 'clock.create', clockId: 'climb', name: 'Climb the Spout', segments: 6 });
       } else if (clock.filled >= clock.segments) {
         exec({ type: 'clock.remove', clockId: 'climb' });
-      } else if (montageAvailable(rules, clock) && rand() < 0.5) {
+      } else if (montageAvailable(rules, clock) && rand() < 0.8) {
         tally.montages++;
         exec({
           type: 'practice.log',
@@ -540,6 +556,27 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
     for (const id of PARTY) {
       targets[id] =
         (start[id] as number) + ((tally.plans[id] as number[])[sessionNo - 1] as number);
+    }
+    if (sessionNo === 2) {
+      // A half-filled clock with no failures offers a montage (DESIGN §7).
+      exec({
+        type: 'clock.create',
+        clockId: 'canyon',
+        name: 'Cross the Rake Canyons',
+        segments: 4,
+      });
+      exec({ type: 'clock.tick', clockId: 'canyon', result: 'success', amount: 2 });
+      const clock = c.state?.clocks['canyon'];
+      expect(clock && montageAvailable(rules, clock), `seed ${seed}: montage offered`).toBe(true);
+      tally.montages++;
+      exec({
+        type: 'practice.log',
+        characterId: 'casper',
+        action: 'Montage: rope bridge across the scar',
+        stat: 'agility',
+        source: 'montage',
+      });
+      exec({ type: 'clock.remove', clockId: 'canyon' });
     }
     for (let guard = 0; guard < 500; guard++) {
       if (rand() < 0.35) sidePlay();
@@ -703,14 +740,14 @@ function checkLeaks(c: Campaign, where: string): void {
 
 /** DESIGN §3–§5 tables as written, so the config the simulation reads is pinned to DESIGN. */
 const DESIGN_GRADES = [
-  // id, top level, class spread, free points, XP per level
-  ['G', 4, 4, 2, 100],
-  ['F', 14, 5, 3, 150],
-  ['E', 49, 8, 4, 250],
-  ['D', 99, 12, 6, 400],
-  ['C', 149, 18, 9, 650],
-  ['B', 199, 27, 13, 1000],
-  ['A', 240, 40, 20, 1500],
+  // id, top level, class spread, free points, XP per level, selection interval, rarity ceiling
+  ['G', 4, 4, 2, 100, null, 'rare'],
+  ['F', 14, 5, 3, 150, 5, 'rare'],
+  ['E', 49, 8, 4, 250, 5, 'epic'],
+  ['D', 99, 12, 6, 400, 10, 'ancient'],
+  ['C', 149, 18, 9, 650, 10, 'legendary'],
+  ['B', 199, 27, 13, 1000, 10, 'legendary'],
+  ['A', 240, 40, 20, 1500, 10, 'mythical'],
 ] as const;
 
 /** First session (1-based) whose cumulative planned levels reach `level`. */
@@ -724,9 +761,19 @@ const sessionReaching = (plan: readonly number[], level: number): number => {
 };
 
 describe('campaign simulation (ROADMAP M1.14)', () => {
-  let memo: ReturnType<typeof simulate> | null = null;
+  let memo: ReturnType<typeof simulate> | Error | null = null;
   /** Runs once; a failure inside the run fails every test with the seed in its message. */
-  const sim = () => (memo ??= simulate(SEED));
+  const sim = () => {
+    if (memo === null) {
+      try {
+        memo = simulate(SEED);
+      } catch (error) {
+        memo = error instanceof Error ? error : new Error(String(error));
+      }
+    }
+    if (memo instanceof Error) throw memo;
+    return memo;
+  };
   const finalState = () => {
     const state = sim().c.state;
     if (!state) throw new Error(`seed ${SEED}: no state`);
@@ -741,6 +788,8 @@ describe('campaign simulation (ROADMAP M1.14)', () => {
         g.classSpreadPerLevel,
         g.freePointsPerRaceLevel,
         g.xpPerLevel,
+        g.selectionInterval,
+        g.rarityCeiling,
       ]),
     ).toEqual(DESIGN_GRADES);
     expect(STARTING_TOTAL).toBe(90);
@@ -836,6 +885,7 @@ describe('campaign simulation (ROADMAP M1.14)', () => {
     }
     expect(tally.professionPicks, `seed ${SEED}`).toBe(PARTY.length);
     expect(tally.banked, `seed ${SEED}: XP banked while held`).toBeGreaterThan(5);
+    expect(tally.bankedProfession, `seed ${SEED}: profession XP banked`).toBeGreaterThan(1);
   });
 
   it(`the whole run is valid play that exercises the systems (seed ${SEED})`, () => {

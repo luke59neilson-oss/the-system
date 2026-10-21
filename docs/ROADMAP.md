@@ -175,7 +175,7 @@ the full ones.
 - [x] **M1.12 Quests and World Stability.** Quest text, timers, day counter,
   stability rules (action tag → delta), clamp 0–100, manual nudge, visibility
   flag. *Accept:* rule, clamp and visibility tests.
-- [ ] **M1.14 Campaign simulation.** 40 sessions, 4 characters, ~6 levels per
+- [x] **M1.14 Campaign simulation.** 40 sessions, 4 characters, ~6 levels per
   session, random valid play (fixed seed). *Accept:* DESIGN check values; 29
   selections each; evolutions at thresholds; invariants hold; coverage ≥ 90%.
 - [ ] **M1.15 Demo campaign content.** (from MS.4, D53) Extend the demo:
