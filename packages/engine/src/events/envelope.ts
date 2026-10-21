@@ -188,6 +188,32 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     shareable: z.boolean().optional(),
   }),
   'note.deleted': z.strictObject({ noteId: recordId, characterId: recordId.nullable() }),
+  /** A player (or the GM) nicknames a skill; null or blank clears it (M1.9). */
+  'skill.nicknamed': z.strictObject({
+    characterId: recordId,
+    skill: nonBlank,
+    nickname: z.string().max(200).nullable(),
+  }),
+  /** GM sets or clears a skill's Unique tag. */
+  'skill.uniqueSet': z.strictObject({
+    characterId: recordId,
+    skill: nonBlank,
+    unique: z.boolean(),
+  }),
+  /** GM confirms a mastery mark earned in a play session (end-of-session review). */
+  'skill.markAwarded': z.strictObject({
+    characterId: recordId,
+    skill: nonBlank,
+    session: recordId,
+  }),
+  /** GM applies a mark upgrade: one rarity up, marks reset. */
+  'skill.upgraded': z.strictObject({ characterId: recordId, skill: nonBlank }),
+  /** GM merges two skills logged together into a new one (originals consumed). */
+  'skill.merged': z.strictObject({
+    characterId: recordId,
+    skills: z.tuple([nonBlank, nonBlank]),
+    name: nonBlank,
+  }),
   /** Compensating event: the target stops counting, as if it had never happened. */
   'event.undone': z.strictObject({ eventId: recordId }),
 } as const;
@@ -223,6 +249,11 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'note.created': 1,
   'note.edited': 1,
   'note.deleted': 1,
+  'skill.nicknamed': 1,
+  'skill.uniqueSet': 1,
+  'skill.markAwarded': 1,
+  'skill.upgraded': 1,
+  'skill.merged': 1,
   'event.undone': 1,
 };
 
@@ -291,6 +322,7 @@ export const PLAYER_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   'note.created',
   'note.edited',
   'note.deleted',
+  'skill.nicknamed',
 ]);
 
 /** Throws when a player-recorded event is not one a player may cause. */

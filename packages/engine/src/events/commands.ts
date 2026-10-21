@@ -154,6 +154,17 @@ export type Command =
       shareable?: boolean | undefined;
     }
   | { type: 'note.delete'; noteId: string; characterId: string | null }
+  | { type: 'skill.nickname'; characterId: string; skill: string; nickname: string | null }
+  | { type: 'skill.setUnique'; characterId: string; skill: string; unique: boolean }
+  | {
+      type: 'skill.awardMark';
+      characterId: string;
+      skill: string;
+      /** Session the mark was earned in; defaults to the current session. */
+      session?: string | undefined;
+    }
+  | { type: 'skill.upgrade'; characterId: string; skill: string }
+  | { type: 'skill.merge'; characterId: string; skills: readonly [string, string]; name: string }
   | { type: 'event.undo'; eventId: string };
 
 export interface StatBonusInput {
@@ -214,6 +225,11 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('note.create') }),
   z.object({ type: z.literal('note.edit') }),
   z.object({ type: z.literal('note.delete') }),
+  z.object({ type: z.literal('skill.nickname') }),
+  z.object({ type: z.literal('skill.setUnique') }),
+  z.object({ type: z.literal('skill.awardMark') }),
+  z.object({ type: z.literal('skill.upgrade') }),
+  z.object({ type: z.literal('skill.merge'), skills: z.array(z.unknown()) }),
   z.object({ type: z.literal('event.undo') }),
 ]);
 
@@ -237,6 +253,7 @@ export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>([
   'note.create',
   'note.edit',
   'note.delete',
+  'skill.nickname',
 ]);
 
 /** Returns why the actor may not issue the command, or null when allowed. */
@@ -471,6 +488,38 @@ function toEvent(command: Command, ctx: CommandContext): { type: EventType; payl
       return {
         type: 'note.deleted',
         payload: { noteId: command.noteId, characterId: command.characterId },
+      };
+    case 'skill.nickname':
+      return {
+        type: 'skill.nicknamed',
+        payload: {
+          characterId: command.characterId,
+          skill: command.skill,
+          nickname: command.nickname,
+        },
+      };
+    case 'skill.setUnique':
+      return {
+        type: 'skill.uniqueSet',
+        payload: { characterId: command.characterId, skill: command.skill, unique: command.unique },
+      };
+    case 'skill.awardMark': {
+      const session = command.session ?? ctx.sessionId;
+      if (session === null) throw new EventRejectedError('A mark needs a play session');
+      return {
+        type: 'skill.markAwarded',
+        payload: { characterId: command.characterId, skill: command.skill, session },
+      };
+    }
+    case 'skill.upgrade':
+      return {
+        type: 'skill.upgraded',
+        payload: { characterId: command.characterId, skill: command.skill },
+      };
+    case 'skill.merge':
+      return {
+        type: 'skill.merged',
+        payload: { characterId: command.characterId, skills: command.skills, name: command.name },
       };
     case 'event.undo':
       return { type: 'event.undone', payload: { eventId: command.eventId } };

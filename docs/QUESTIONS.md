@@ -70,3 +70,13 @@ answer under any question and the next run will follow it.
     Alternative: players' journals stored encrypted with a per-player
     passphrase (lost passphrase = lost journal).
     Answer:
+18. **Marks past the threshold.** A skill at its grade ceiling banks marks
+    (e.g. 10 marks on a Rare skill that needs 8 for Epic). After the
+    evolution, the upgrade resets marks to 0, so the 2 extra are lost.
+    Default: lost. Alternative: carry the excess into the next rarity.
+    Answer:
+19. **Merging two at-ceiling skills.** A merge result above the grade's
+    rarity ceiling is refused (two Rare skills cannot merge at F-grade).
+    Default: refused until the next evolution. Alternative: merges may
+    exceed the ceiling by one step.
+    Answer:

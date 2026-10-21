@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -343,7 +343,7 @@
   },
   "characters": {
     "jake": {
-      "schemaVersion": 2,
+      "schemaVersion": 3,
       "id": "jake",
       "name": "Jake",
       "race": "Human",
@@ -401,30 +401,43 @@
           "name": "Basic Archery",
           "rarity": "inferior",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Basic Stealth",
           "rarity": "inferior",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Identify",
           "rarity": "common",
           "kind": "race",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         }
-      ]
+      ],
+      "merges": {}
     },
     "kim": {
-      "schemaVersion": 2,
+      "schemaVersion": 3,
       "id": "kim",
       "name": "Kim",
       "race": "Human",
@@ -482,27 +495,40 @@
           "name": "Basic Archery",
           "rarity": "inferior",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Basic Stealth",
           "rarity": "inferior",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Identify",
           "rarity": "common",
           "kind": "race",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         }
-      ]
+      ],
+      "merges": {}
     }
   },
   "characterOrder": ["jake", "kim"],

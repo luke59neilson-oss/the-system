@@ -810,15 +810,24 @@ describe('property: replay equals incremental state', () => {
       'note.create',
       'note.edit',
       'note.delete',
+      'skill.nickname',
+      'skill.setUnique',
+      'skill.awardMark',
+      'skill.upgrade',
     ]) {
       expect(acceptedByType[type] ?? 0, `seed ${SEED}: accepted ${type}`).toBeGreaterThan(0);
     }
     expect(lockedRejections, `seed ${SEED}: locked-batch rejections`).toBeGreaterThan(0);
     expect(playerAccepted, `seed ${SEED}: accepted player assignments`).toBeGreaterThan(0);
+    // Every event type but those random play cannot plausibly reach (each has
+    // its own unit tests and golden log): a profession needs E-grade, a merge
+    // needs two Uncommon skills logged together three times.
+    const unreachable = new Set(['character.professionGranted', 'skill.merged']);
+    const seen = new Set(c.events.map((e) => e.type));
     expect(
-      new Set(c.events.map((e) => e.type)).size,
-      `seed ${SEED}: ${[...new Set(c.events.map((e) => e.type))].join(',')}`,
-    ).toBeGreaterThanOrEqual(EVENT_TYPES.length - 1);
+      EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),
+      `seed ${SEED}`,
+    ).toEqual([]);
     // Every step replays the whole log (quadratic); slower under coverage.
   }, 60_000);
 });

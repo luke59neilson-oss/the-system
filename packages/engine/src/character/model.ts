@@ -1,7 +1,7 @@
 import type { GradeRules, RulesConfig } from '../rules';
 
 /** Bumped when the serialized character shape changes; M1.3 upcasts old states. */
-export const CHARACTER_SCHEMA_VERSION = 2;
+export const CHARACTER_SCHEMA_VERSION = 3;
 
 /** Skill as held by a character (the full skill system arrives in M1.9). */
 export interface CharacterSkill {
@@ -9,6 +9,12 @@ export interface CharacterSkill {
   readonly rarity: string;
   readonly kind: 'class' | 'profession' | 'race';
   readonly nickname: string | null;
+  /** One-of-a-kind skill (DESIGN §6 "Unique is a tag"). */
+  readonly unique: boolean;
+  /** Mastery marks toward the next upgrade (banked at the grade ceiling; M1.9). */
+  readonly marks: number;
+  /** Sessions this skill earned a mark in (DESIGN §6: one per skill per session). */
+  readonly markSessions: readonly string[];
 }
 
 /** One level-up's free points (DESIGN §4): assigned once, then locked (M1.5). */
@@ -45,6 +51,8 @@ export interface Character {
   readonly freePointBatches: readonly FreePointBatch[];
   readonly titles: readonly string[];
   readonly skills: readonly CharacterSkill[];
+  /** Merges done per grade id (DESIGN §6: max one per character per grade; M1.9). */
+  readonly merges: Readonly<Record<string, number>>;
 }
 
 export interface NewCharacter {
@@ -58,6 +66,21 @@ export interface NewCharacter {
 }
 
 export class CharacterRuleError extends Error {}
+
+/** A freshly granted skill: no nickname, not unique, no marks. */
+export const newSkill = (
+  name: string,
+  rarity: string,
+  kind: CharacterSkill['kind'],
+): CharacterSkill => ({
+  name,
+  rarity,
+  kind,
+  nickname: null,
+  unique: false,
+  marks: 0,
+  markSessions: [],
+});
 
 const required = (value: string, label: string): string => {
   const trimmed = value.trim();
@@ -101,7 +124,7 @@ export function createCharacter(rules: RulesConfig, input: NewCharacter): Charac
       throw new CharacterRuleError(`Duplicate skill "${skillName}"`);
     }
     names.add(skillName.toLowerCase());
-    return { name: skillName, rarity: skill.rarity, kind: 'class', nickname: null };
+    return newSkill(skillName, skill.rarity, 'class');
   });
 
   const statIds = rules.stats.list.map((s) => s.id);
@@ -148,10 +171,8 @@ export function createCharacter(rules: RulesConfig, input: NewCharacter): Charac
     pools,
     freePointBatches: [],
     titles: [],
-    skills: [
-      ...classSkills,
-      { name: raceSkill.name, rarity: raceSkill.rarity, kind: 'race', nickname: null },
-    ],
+    skills: [...classSkills, newSkill(raceSkill.name, raceSkill.rarity, 'race')],
+    merges: {},
   };
 }
 

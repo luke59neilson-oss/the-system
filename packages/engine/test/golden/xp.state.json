@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "name": "XP golden",
   "rules": {
     "configVersion": 1,
@@ -343,7 +343,7 @@
   },
   "characters": {
     "jake": {
-      "schemaVersion": 2,
+      "schemaVersion": 3,
       "id": "jake",
       "name": "Jake",
       "race": "Human",
@@ -426,30 +426,43 @@
           "name": "Basic Archery",
           "rarity": "inferior",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Basic Stealth",
           "rarity": "inferior",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Identify",
           "rarity": "common",
           "kind": "race",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         }
-      ]
+      ],
+      "merges": {}
     },
     "casper": {
-      "schemaVersion": 2,
+      "schemaVersion": 3,
       "id": "casper",
       "name": "Casper",
       "race": "Human",
@@ -532,30 +545,43 @@
           "name": "Basic Archery",
           "rarity": "inferior",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Basic Stealth",
           "rarity": "inferior",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Identify",
           "rarity": "common",
           "kind": "race",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         }
-      ]
+      ],
+      "merges": {}
     },
     "miranda": {
-      "schemaVersion": 2,
+      "schemaVersion": 3,
       "id": "miranda",
       "name": "Miranda",
       "race": "Human",
@@ -632,27 +658,40 @@
           "name": "Basic Archery",
           "rarity": "inferior",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Basic Stealth",
           "rarity": "inferior",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         },
         {
           "name": "Identify",
           "rarity": "common",
           "kind": "race",
-          "nickname": null
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": []
         }
-      ]
+      ],
+      "merges": {}
     }
   },
   "characterOrder": ["jake", "casper", "miranda"],

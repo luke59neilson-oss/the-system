@@ -16,3 +16,4 @@ export * from './content';
 export * from './bonuses';
 export * from './economy';
 export * from './practice';
+export * from './skills';

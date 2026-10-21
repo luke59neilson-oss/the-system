@@ -38,6 +38,7 @@ export const CHARACTER_FIELD_VISIBILITY: Readonly<Record<keyof Character, Visibi
   freePointBatches: 'owner',
   titles: 'owner',
   skills: 'owner',
+  merges: 'owner',
 };
 
 /** Every campaign field, classified (`owner` is not used at this level). */
@@ -130,7 +131,13 @@ export interface OwnSheet {
     readonly rarity: string;
     readonly kind: 'class' | 'profession' | 'race';
     readonly nickname: string | null;
+    readonly unique: boolean;
+    /** Mastery marks toward the next upgrade (M3.5 shows progress). */
+    readonly marks: number;
+    readonly markSessions: readonly string[];
   }[];
+  /** Merges done per grade id. */
+  readonly merges: Readonly<Record<string, number>>;
 }
 
 /** Another party member as the viewer sees them (D5). */
@@ -252,7 +259,14 @@ function ownSheet(rules: RulesConfig, c: Character): OwnSheet {
       rarity: s.rarity,
       kind: s.kind,
       nickname: s.nickname,
+      unique: s.unique,
+      marks: s.marks,
+      markSessions: [...s.markSessions],
     })),
+    merges: copyRecord(
+      c.merges,
+      rules.grades.map((g) => g.id),
+    ),
   };
 }
 

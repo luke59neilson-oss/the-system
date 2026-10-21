@@ -69,6 +69,7 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
   const someId = () => (ids.length && rand() < 0.95 ? pick(ids) : 'ghost');
   if (rand() < 0.35) return randomEconomyCommand(rand, c, pick, someId);
   if (rand() < 0.15) return randomNotesCommand(rand, c, pick, someId);
+  if (rand() < 0.12) return randomSkillCommand(rand, c, pick, someId);
   const roll = rand();
   if (roll < 0.15) {
     return {
@@ -282,4 +283,47 @@ function randomNotesCommand(
     };
   }
   return { type: 'note.delete', noteId: note?.id ?? 'none', characterId: by };
+}
+
+/** Skill commands (M1.9): nicknames, Unique, marks, upgrades, merges. */
+function randomSkillCommand(
+  rand: () => number,
+  c: Campaign,
+  pick: <T>(items: readonly T[]) => T,
+  someId: () => string,
+): Command {
+  const roll = rand();
+  // Marks and upgrades focus on one skill so upgrades are reachable.
+  const focus = roll >= 0.25 && roll < 0.95 && rand() < 0.7;
+  const first = c.state?.characterOrder[0];
+  const characterId = focus && first !== undefined ? first : someId();
+  const names = c.state?.characters[characterId]?.skills.map((s) => s.name) ?? [];
+  const someSkill = () =>
+    names.length && rand() < 0.95 ? (focus ? (names[0] as string) : pick(names)) : 'Fireball';
+  if (roll < 0.15) {
+    return {
+      type: 'skill.nickname',
+      characterId,
+      skill: someSkill(),
+      nickname: pick(['Jake Juice', null, '', 'Zap']),
+    };
+  }
+  if (roll < 0.25) {
+    return { type: 'skill.setUnique', characterId, skill: someSkill(), unique: rand() < 0.5 };
+  }
+  if (roll < 0.75) {
+    return {
+      type: 'skill.awardMark',
+      characterId,
+      skill: someSkill(),
+      session: `s${Math.floor(rand() * 8)}`,
+    };
+  }
+  if (roll < 0.95) return { type: 'skill.upgrade', characterId, skill: someSkill() };
+  return {
+    type: 'skill.merge',
+    characterId,
+    skills: [someSkill(), someSkill()],
+    name: pick(['Merged', 'Shadow Shot']),
+  };
 }

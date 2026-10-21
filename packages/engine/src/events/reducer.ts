@@ -20,13 +20,14 @@ import {
   type ItemDef,
   type Trade,
 } from '../economy';
-import { type Note, type PracticeEntry } from '../practice';
+import { skillPairCounts, type Note, type PracticeEntry } from '../practice';
+import { awardMark, mergeSkills, setNickname, setUnique, upgradeSkill } from '../skills';
 import { gainXp, shareBonus } from '../progression';
 import { parseRulesConfig, type RulesConfig } from '../rules';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 5;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 6;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -601,6 +602,52 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       };
       if (next.title === '' && next.body.trim() === '') fail(event, 'a note needs a title or text');
       return { ...state, notes: { ...state.notes, [noteId]: next } };
+    }
+    case 'skill.nicknamed': {
+      const { characterId, skill, nickname } = event.payload;
+      const character = characterOf(state, event, characterId);
+      return withCharacter(
+        state,
+        rule(event, () => setNickname(character, skill, nickname)),
+      );
+    }
+    case 'skill.uniqueSet': {
+      const { characterId, skill, unique } = event.payload;
+      const character = characterOf(state, event, characterId);
+      return withCharacter(
+        state,
+        rule(event, () => setUnique(character, skill, unique)),
+      );
+    }
+    case 'skill.markAwarded': {
+      const { characterId, skill, session } = event.payload;
+      const character = characterOf(state, event, characterId);
+      return withCharacter(
+        state,
+        rule(event, () => awardMark(state.rules, character, skill, session)),
+      );
+    }
+    case 'skill.upgraded': {
+      const { characterId, skill } = event.payload;
+      const character = characterOf(state, event, characterId);
+      return withCharacter(
+        state,
+        rule(event, () => upgradeSkill(state.rules, character, skill)),
+      );
+    }
+    case 'skill.merged': {
+      const { characterId, skills, name } = event.payload;
+      const [first, second] = skills;
+      const character = characterOf(state, event, characterId);
+      const [a, b] = first < second ? [first, second] : [second, first];
+      const joint =
+        skillPairCounts(state.practice, characterId).find(
+          (p) => p.skills[0] === a && p.skills[1] === b,
+        )?.count ?? 0;
+      return withCharacter(
+        state,
+        rule(event, () => mergeSkills(state.rules, character, first, second, name, joint)),
+      );
     }
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');

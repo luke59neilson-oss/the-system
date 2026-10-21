@@ -248,6 +248,7 @@ describe('free points', () => {
       'note.create': 'note.created',
       'note.edit': 'note.edited',
       'note.delete': 'note.deleted',
+      'skill.nickname': 'skill.nicknamed',
     };
     expect([...PLAYER_COMMANDS].map((t) => past[t] ?? t)).toEqual([...PLAYER_EVENT_TYPES]);
   });
