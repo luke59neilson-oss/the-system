@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0 and MS done; M1.1-M1.6, M1.13, M2.1-M2.3 done
-**Next item:** M1.7 Items and economy
+**Status:** in progress: M0 and MS done; M1.1-M1.9, M1.13, M2.1-M2.3 done
+**Next item:** M1.10 Selections and evolutions
 **Blockers:** first preview build not published: `git push origin main:release` was refused by this session's permission classifier ("Production Deploy"). Luke: push `main` to `release` yourself (or allow it) to get the preview-<date> Release.
 
 ## Run log
@@ -131,3 +131,15 @@ next item, blockers. -->
 - Open `wip/*` branches: none unfinished.
 - Next: M1.7 Items and economy (stopped at 26 min rather than start a large engine item that could not be reviewed within the timebox).
 - Blockers: preview release push needs Luke (see header).
+
+### Run ea91d71d · 2026-10-21 21:06–21:51 UTC
+- Preflight: `add_repo` not offered in this session; repo already cloned (detached HEAD; reset `main` to `origin/main`). Lock pushed to main (its first commit had a blank id, fixed with `od`; `xxd` is missing). `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md; latest CI run on main green (55918e5).
+- Finished: M1.7 Items and economy, M1.8 Practice log and notes, M1.9 Skills (each reviewed by Sonnet in 1 round, 0 High/Medium; Lows fixed or carried to later items; see REVIEW-LOG.md).
+- Engine: campaign state v6 (items, holdings, trades; practice log, notes; character v3 with skill marks and merges). The GM console now receives `projectForGm(state)` (unshared journal entries dropped). New golden logs `economy`, `practice`, `skills`; older golden states regenerated additively.
+- Tests: 429 unit/integration tests (31 files); property test now 1,200 fixed-seed steps over every event type except two named unreachable ones; projection canary covers items/holdings/trades/practice/notes. E2E MS.1, MS.2, MS.A re-run green (screens re-renders discarded). Engine line coverage 99.3% (floor 90%).
+- CI: green on every code commit through 5af1e38; 3ba5011 running at the end of the run.
+- New decisions D58–D63; new questions Q15–Q19 (bonuses and pools, GM stock, journal privacy on disk, excess marks, merges above the ceiling). Roadmap carry-overs added to M3.7, M3.10, M5.5, M1.10.
+- Open `wip/*` branches: none unfinished.
+- Next: M1.10 Selections and evolutions (stopped at 43 min: past the 35-minute start limit).
+- Blockers: preview release push still needs Luke (see header).
