@@ -140,9 +140,8 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
         store = options.openCampaign(id);
       } catch (error) {
         app.log.error(error);
-        return reply.code(409).send({
-          error: error instanceof Error ? error.message : 'Could not open that campaign',
-        });
+        // Details (paths, host names) stay in the server log.
+        return reply.code(409).send({ error: 'Could not open that campaign' });
       }
       // A fresh demo directory is seeded once (one write); later loads keep what the GM did.
       if (body.demo && store.campaign.events.length === 0) {

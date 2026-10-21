@@ -57,6 +57,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   await ada.getByRole('link', { name: /Ada/ }).click();
   await expect(ada.getByTestId('class')).toHaveText('[Archer – lvl 1]');
   await expect(ada.getByTestId('dings').getByRole('listitem')).toHaveCount(2);
+  const adaUrl = ada.url();
 
   // Load the demo: a different campaign with four characters at different levels.
   await gm.getByRole('button', { name: 'Load demo campaign' }).click();
@@ -97,6 +98,12 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   await gm.getByRole('button', { name: 'Award XP' }).click();
   await expect(gm.getByTestId('class-level-demo-sultan')).toHaveText('1');
 
+  // A player who (re)loads while the demo is open gets the notice too, and rejoins.
+  const late = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const lateErrors = watchErrors(late);
+  await late.goto(adaUrl);
+  await expect(late.getByRole('alert')).toContainText('switched to another campaign');
+
   // Back to the real campaign: Ada exactly as she was, no demo anywhere.
   await gm.getByRole('button', { name: 'Back to my campaign' }).click();
   await expect(gm.getByTestId('demo-badge')).toHaveCount(0);
@@ -112,6 +119,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   expect(exported).not.toContain('demo-');
   expect(exported).not.toContain('Demo: The Whale');
 
+  await expect(late.getByTestId('class')).toHaveText('[Archer – lvl 1]', { timeout: 8000 });
   // Ada's screen rejoins on its own with her sheet and DINGs, nothing of the demo.
   await expect(ada.getByTestId('class')).toHaveText('[Archer – lvl 1]', { timeout: 8000 });
   await expect(ada.getByTestId('demo-badge')).toHaveCount(0);
@@ -134,5 +142,6 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   expect(errors).toEqual([]);
   expect(phoneErrors).toEqual([]);
   expect(adaErrors).toEqual([]);
-  await Promise.all([gm.close(), phone.close(), ada.close()]);
+  expect(lateErrors).toEqual([]);
+  await Promise.all([gm.close(), phone.close(), ada.close(), late.close()]);
 });

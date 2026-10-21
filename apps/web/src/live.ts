@@ -1,4 +1,4 @@
-import type { CampaignState, PlayerView } from '@the-system/engine';
+import { DEMO_CHARACTERS, type CampaignState, type PlayerView } from '@the-system/engine';
 
 /**
  * Browser side of the live protocol (server: apps/server/src/protocol.ts).
@@ -148,6 +148,20 @@ export class LiveClient {
     });
   }
 
+  /**
+   * True when a refused player's character belongs to the campaign the GM
+   * switched away from: either this page saw the switch, or it (re)loaded
+   * while the other campaign was open (a built-in demo character on the real
+   * campaign, or a real one on the demo).
+   */
+  private otherCampaignOpen(): boolean {
+    if (this.join.role !== 'player') return false;
+    if (this.campaignChanged) return true;
+    const characterId = this.join.characterId;
+    const isDemoCharacter = DEMO_CHARACTERS.some((c) => c.id === characterId);
+    return (this.snapshot.campaign === 'demo') !== isDemoCharacter;
+  }
+
   private handle(socket: WebSocket, message: ServerMessage): void {
     switch (message.type) {
       case 'hello': {
@@ -211,7 +225,9 @@ export class LiveClient {
         ) {
           // A refused join (bad key, unknown character) will not fix itself by
           // retrying, unless the GM switched campaigns under us (retried on close).
-          const switched = this.campaignChanged && message.error === 'No such character';
+          const switched = message.error === 'No such character' && this.otherCampaignOpen();
+          // Keep retrying only while our character's campaign is away.
+          this.campaignChanged = switched;
           this.update({
             status: 'refused',
             error: switched
