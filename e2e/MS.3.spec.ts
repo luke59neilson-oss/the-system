@@ -144,13 +144,28 @@ test('the GM views the table as each player, live, with player-only data', async
   await expect(pane(gm, 'Miranda').getByTestId('latest-message')).toBeInViewport();
   await expect(pane(gm, 'Miranda').getByTestId('latest-message')).toContainText(WHISPER);
   await expect(pane(gm, 'Jake').getByTestId('messages')).toHaveCount(0);
+  await gm.locator('.gm-pane').evaluate((el) => el.scrollTo(0, 0));
   await gm.screenshot({ path: path.join(shots, 'table-view-1366x768.png') });
 
-  // Switching away and back keeps the Table panes connected with their history.
+  // Switching away and back keeps the very same Table pane frames (and sockets).
+  const marked = async (name: string, set: boolean) => {
+    const frame = await gm
+      .locator(`.table-side iframe[title="${name} (player view)"]`)
+      .elementHandle()
+      .then((h) => h?.contentFrame());
+    if (!frame) throw new Error(`No pane frame for ${name}`);
+    return frame.evaluate((doSet) => {
+      const w = window as unknown as { ms3Marker?: string };
+      if (doSet) w.ms3Marker = 'kept';
+      return w.ms3Marker ?? null;
+    }, set);
+  };
+  for (const name of PARTY.slice(0, 4)) await marked(name, true);
   await bar.getByRole('button', { name: 'Jake' }).click();
   await expect(pane(gm, 'Jake').getByTestId('dings')).toContainText(ding);
   await bar.getByRole('button', { name: 'Table view' }).click();
   await expect(gm.locator('iframe:visible')).toHaveCount(4);
+  for (const name of PARTY.slice(0, 4)) expect(await marked(name, false)).toBe('kept');
   for (const name of ['Jake', 'Miranda', 'Casper']) {
     await expect(pane(gm, name).getByTestId('dings').getByRole('listitem')).toHaveCount(2);
     await expect(pane(gm, name).getByTestId('connection')).toHaveText('Connected');

@@ -128,7 +128,11 @@ function GmConsole({ client }: { client: LiveClient }) {
               <PlayerPane key={viewed.id} member={viewed} />
             </div>
           )}
-          {view.kind === 'table' && <TablePanes party={party} picked={picked} onPick={setPicked} />}
+          {tableOpened && (
+            <div className="table-side" hidden={view.kind !== 'table'}>
+              <TablePanes party={party} picked={picked} onPick={setPicked} />
+            </div>
+          )}
         </div>
       )}
     </main>
