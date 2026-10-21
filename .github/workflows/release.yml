@@ -36,7 +36,9 @@ jobs:
             files: apps/desktop/release/*.AppImage
           - os: windows-latest
             target: win
-            files: apps/desktop/release/*.exe
+            files: |
+              apps/desktop/release/*-setup.exe
+              apps/desktop/release/*-portable.exe
           - os: macos-latest
             target: mac
             files: apps/desktop/release/*.dmg
@@ -63,6 +65,18 @@ jobs:
           npx playwright install --with-deps chromium
           THE_SYSTEM_PACKAGED_EXE="$PWD/apps/desktop/release/linux-unpacked/the-system" \
             npm run package:smoke -w @the-system/desktop
+      - name: Smoke-test the packaged Windows app
+        if: matrix.target == 'win'
+        run: |
+          THE_SYSTEM_PACKAGED_EXE="$PWD/apps/desktop/release/win-unpacked/TheSystem.exe" \
+            npx playwright test -c apps/desktop/playwright.packaged.config.ts
+      - name: Smoke-test the packaged macOS app
+        if: matrix.target == 'mac'
+        run: |
+          app="$PWD/apps/desktop/release/mac-universal/The System.app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          THE_SYSTEM_PACKAGED_EXE="$app/Contents/MacOS/The System" \
+            npx playwright test -c apps/desktop/playwright.packaged.config.ts
       - name: Smoke-test the AppImage itself
         if: matrix.target == 'linux'
         run: |
@@ -70,6 +84,7 @@ jobs:
           data=$(mktemp -d)
           THE_SYSTEM_PORT=30411 THE_SYSTEM_DATA_DIR="$data" APPIMAGE_EXTRACT_AND_RUN=1 \
             xvfb-run -a "$image" --no-sandbox > "$data/log" 2>&1 &
+          ok=''
           for i in $(seq 1 60); do
             if curl -sf http://127.0.0.1:30411/health; then echo; ok=1; break; fi
             sleep 1
@@ -97,6 +112,8 @@ jobs:
       - name: Check every artifact is present
         run: |
           ls -la out
+          total=$(find out -maxdepth 1 -type f | wc -l)
+          if [ "$total" -ne 4 ]; then echo "expected exactly 4 files, found $total"; exit 1; fi
           for pattern in '*-win-x64-setup.exe' '*-win-x64-portable.exe' '*-mac-universal.dmg' '*-linux-x86_64.AppImage'; do
             count=$(find out -maxdepth 1 -name "$pattern" | wc -l)
             if [ "$count" -ne 1 ]; then echo "expected one $pattern, found $count"; exit 1; fi
@@ -107,16 +124,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           day=$(date -u +%Y-%m-%d)
-          tag="preview-${day}-${GITHUB_RUN_NUMBER}"
+          # Unique per run and per re-run attempt; the title stays preview-<date>.
+          tag="preview-${day}-${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          notes=$(mktemp)
+          cat > "$notes" <<NOTES
+          Preview build of The System from ${GITHUB_SHA::7}.
+
+          - Windows: TheSystem-*-win-x64-setup.exe (installer) or TheSystem-*-win-x64-portable.exe (no install). Unsigned: if SmartScreen warns, choose More info, then Run anyway.
+          - macOS: TheSystem-*-mac-universal.dmg. Not notarized: right-click the app, choose Open, then Open again. If macOS still says it is damaged, run \`xattr -cr "/Applications/The System.app"\` in Terminal once.
+          - Linux: TheSystem-*-linux-x86_64.AppImage. Make it executable (chmod +x), then run it.
+
+          Double-click starts the server and opens the GM console; players join at the URL or QR code it shows.
+          NOTES
+          # Draft first, so a failed upload never leaves a half-filled public release.
           gh release create "$tag" out/* \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "preview-${day}" \
             --prerelease \
-            --notes "Preview build of The System from ${GITHUB_SHA::7}.
-
-          - Windows: TheSystem-*-win-x64-setup.exe (installer) or TheSystem-*-win-x64-portable.exe (no install). Unsigned: SmartScreen may warn; choose More info, Run anyway.
-          - macOS: TheSystem-*-mac-universal.dmg. Unsigned: right-click the app, Open, then Open again.
-          - Linux: TheSystem-*-linux-x86_64.AppImage. Make it executable, then run it.
-
-          Double-click starts the server and opens the GM console; players join at the URL or QR it shows."
+            --draft \
+            --notes-file "$notes"
+          gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft=false

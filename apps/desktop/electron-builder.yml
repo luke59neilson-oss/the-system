@@ -38,7 +38,9 @@ mac:
     - target: dmg
       arch: [universal]
   category: public.app-category.games
-  identity: null
+  # Ad-hoc signature (not notarized): a universal app with no signature at all
+  # is reported as damaged on Apple Silicon.
+  identity: '-'
 linux:
   executableName: the-system
   syncDesktopName: true
