@@ -207,6 +207,21 @@ export type Command =
       /** The release being answered; defaults to the one pending now. */
       releaseId?: string | undefined;
     }
+  | {
+      type: 'clock.create';
+      /** Optional; a fresh id is generated when omitted. */
+      clockId?: string | undefined;
+      name: string;
+      segments: number;
+    }
+  | {
+      type: 'clock.tick';
+      clockId: string;
+      result: 'success' | 'failure';
+      /** Segments a success fills (default 1). */
+      amount?: number | undefined;
+    }
+  | { type: 'clock.remove'; clockId: string }
   | { type: 'event.undo'; eventId: string };
 
 export interface StatBonusInput {
@@ -279,6 +294,9 @@ const commandSchema = z.discriminatedUnion('type', [
     options: z.array(z.record(z.string(), z.unknown())),
   }),
   z.object({ type: z.literal('evolution.choose') }),
+  z.object({ type: z.literal('clock.create') }),
+  z.object({ type: z.literal('clock.tick') }),
+  z.object({ type: z.literal('clock.remove') }),
   z.object({ type: z.literal('event.undo') }),
 ]);
 
@@ -638,6 +656,22 @@ function toEvent(
             command.releaseId ?? pendingOf(campaign, command.characterId)?.evolution?.releaseId,
         },
       };
+    case 'clock.create':
+      return {
+        type: 'clock.created',
+        payload: {
+          clockId: command.clockId ?? ctx.newId(),
+          name: command.name,
+          segments: command.segments,
+        },
+      };
+    case 'clock.tick':
+      return {
+        type: 'clock.ticked',
+        payload: { clockId: command.clockId, result: command.result, amount: command.amount ?? 1 },
+      };
+    case 'clock.remove':
+      return { type: 'clock.removed', payload: { clockId: command.clockId } };
     case 'event.undo':
       return { type: 'event.undone', payload: { eventId: command.eventId } };
   }

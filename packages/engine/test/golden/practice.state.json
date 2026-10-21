@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -623,5 +623,7 @@
       "updatedAt": "2026-11-04T18:00:12.000Z"
     }
   },
-  "noteOrder": ["j1", "j2", "p1", "g1"]
+  "noteOrder": ["j1", "j2", "p1", "g1"],
+  "clocks": {},
+  "clockOrder": []
 }

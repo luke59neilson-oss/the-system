@@ -67,6 +67,7 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
   const pick = <T>(items: readonly T[]): T => items[Math.floor(rand() * items.length)] as T;
   const ids = c.state?.characterOrder ?? [];
   const someId = () => (ids.length && rand() < 0.95 ? pick(ids) : 'ghost');
+  if (rand() < 0.04) return randomClockCommand(rand, c, pick);
   if (rand() < 0.35) return randomEconomyCommand(rand, c, pick, someId);
   if (rand() < 0.15) return randomNotesCommand(rand, c, pick, someId);
   if (rand() < 0.12) return randomSkillCommand(rand, c, pick, someId);
@@ -326,4 +327,31 @@ function randomSkillCommand(
     skills: [someSkill(), someSkill()],
     name: pick(['Merged', 'Shadow Shot']),
   };
+}
+
+function randomClockCommand(
+  rand: () => number,
+  c: Campaign,
+  pick: <T>(items: readonly T[]) => T,
+): Command {
+  const ids = c.state?.clockOrder ?? [];
+  const someClock = () => (ids.length && rand() < 0.9 ? pick(ids) : 'no-clock');
+  const roll = rand();
+  if (roll < 0.3) {
+    return {
+      type: 'clock.create',
+      clockId: `k${Math.floor(rand() * 6)}`,
+      name: pick(['Climb', 'Escape', ' ']),
+      segments: pick([4, 6, 8, 0]),
+    };
+  }
+  if (roll < 0.9) {
+    return {
+      type: 'clock.tick',
+      clockId: someClock(),
+      result: rand() < 0.75 ? 'success' : 'failure',
+      amount: pick([1, 1, 2, 3]),
+    };
+  }
+  return { type: 'clock.remove', clockId: someClock() };
 }

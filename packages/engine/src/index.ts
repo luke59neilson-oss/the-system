@@ -18,3 +18,4 @@ export * from './economy';
 export * from './practice';
 export * from './skills';
 export * from './evolution';
+export * from './resolution';

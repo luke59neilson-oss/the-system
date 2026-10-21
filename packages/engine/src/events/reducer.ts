@@ -30,11 +30,12 @@ import {
   releaseEvolution,
   retiredSkillNames,
 } from '../evolution';
+import { newClock, tickClock, type Clock } from '../resolution';
 import { parseRulesConfig, type RulesConfig } from '../rules';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 7;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 8;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -73,6 +74,10 @@ export interface CampaignState {
   readonly notes: Readonly<Record<string, Note>>;
   /** Note ids in creation order. */
   readonly noteOrder: readonly string[];
+  /** Progress clocks by id (M1.11). */
+  readonly clocks: Readonly<Record<string, Clock>>;
+  /** Clock ids in creation order. */
+  readonly clockOrder: readonly string[];
 }
 
 const hasOwn = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
@@ -219,6 +224,8 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       practice: [],
       notes: {},
       noteOrder: [],
+      clocks: {},
+      clockOrder: [],
     };
   }
   if (state === null) return fail(event, 'the log must start with campaign.created');
@@ -725,6 +732,31 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
                 : entry,
             );
       return { ...withCharacter(state, result.character), practice };
+    }
+    case 'clock.created': {
+      const { clockId, name, segments } = event.payload;
+      if (hasOwn(state.clocks, clockId)) fail(event, `clock "${clockId}" already exists`);
+      const clock = rule(event, () => newClock(clockId, name, segments, event.timestamp));
+      return {
+        ...state,
+        clocks: { ...state.clocks, [clockId]: clock },
+        clockOrder: [...state.clockOrder, clockId],
+      };
+    }
+    case 'clock.ticked':
+    case 'clock.removed': {
+      const { clockId } = event.payload;
+      const clock = hasOwn(state.clocks, clockId) ? state.clocks[clockId] : undefined;
+      if (!clock) return fail(event, `unknown clock "${clockId}"`);
+      if (event.type === 'clock.removed') {
+        const clocks: Record<string, Clock> = { ...state.clocks };
+        delete clocks[clockId];
+        return { ...state, clocks, clockOrder: state.clockOrder.filter((id) => id !== clockId) };
+      }
+      const ticked = rule(event, () =>
+        tickClock(clock, event.payload.result, event.payload.amount),
+      );
+      return { ...state, clocks: { ...state.clocks, [clockId]: ticked } };
     }
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');

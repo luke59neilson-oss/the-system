@@ -265,6 +265,19 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     /** The release chosen from (its event id); absent only in logs from before it existed. */
     releaseId: recordId.optional(),
   }),
+  /** GM starts a progress clock with N segments (M1.11, DESIGN §7). */
+  'clock.created': z.strictObject({
+    clockId: recordId,
+    name: nonBlank,
+    segments: z.number().int().min(1).max(24),
+  }),
+  /** Progress on a clock: a success fills `amount` segments; a failure is counted. */
+  'clock.ticked': z.strictObject({
+    clockId: recordId,
+    result: z.enum(['success', 'failure']),
+    amount: z.number().int().min(1).max(24),
+  }),
+  'clock.removed': z.strictObject({ clockId: recordId }),
   /** Compensating event: the target stops counting, as if it had never happened. */
   'event.undone': z.strictObject({ eventId: recordId }),
 } as const;
@@ -309,6 +322,9 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'selection.chosen': 1,
   'evolution.released': 1,
   'evolution.chosen': 1,
+  'clock.created': 1,
+  'clock.ticked': 1,
+  'clock.removed': 1,
   'event.undone': 1,
 };
 

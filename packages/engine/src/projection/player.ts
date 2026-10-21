@@ -72,6 +72,10 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   practice: 'owner',
   notes: 'owner',
   noteOrder: 'owner',
+  // M1.11. GM-only until the encounter panel (M7.3) decides which clocks the
+  // table sees.
+  clocks: 'gm',
+  clockOrder: 'gm',
 };
 
 /** The rules subset a player screen needs to draw the sheet (no GM tuning, no stability). */

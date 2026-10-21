@@ -814,6 +814,9 @@ describe('property: replay equals incremental state', () => {
       'skill.setUnique',
       'skill.awardMark',
       'skill.upgrade',
+      'clock.create',
+      'clock.tick',
+      'clock.remove',
     ]) {
       expect(acceptedByType[type] ?? 0, `seed ${SEED}: accepted ${type}`).toBeGreaterThan(0);
     }

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "name": "Golden: evolution",
   "rules": {
     "configVersion": 1,
@@ -586,5 +586,7 @@
     }
   ],
   "notes": {},
-  "noteOrder": []
+  "noteOrder": [],
+  "clocks": {},
+  "clockOrder": []
 }
