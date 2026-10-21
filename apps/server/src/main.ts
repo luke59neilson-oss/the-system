@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ENGINE_API_VERSION } from '@the-system/engine';
 import { ConfigError, resolveOptions } from './config';
-import { joinUrls } from './lan';
+import { joinInfo } from './join';
 import { newGmKey } from './security';
 import { createServer } from './server';
 import { CampaignStore } from './store';
@@ -21,7 +21,11 @@ async function main(): Promise<void> {
     now: () => new Date().toISOString(),
   });
   const gmKey = options.gmKey ?? newGmKey();
+  let boundPort: number | null = null;
   const app = await createServer({
+    // Re-read interfaces per request so joining a new wifi shows up without a restart.
+    joinInfo: () =>
+      boundPort === null ? null : joinInfo(options.host, boundPort, networkInterfaces()),
     webRoot: options.webRoot,
     live: { store, gmKey, now: () => new Date().toISOString(), newId: () => randomUUID() },
   });
@@ -31,8 +35,9 @@ async function main(): Promise<void> {
   console.log(
     `The System server listening on http://${options.host}:${port} (engine API v${ENGINE_API_VERSION})`,
   );
+  boundPort = port;
   console.log('Players join at:');
-  for (const url of joinUrls(options.host, port, networkInterfaces())) console.log(`  ${url}`);
+  for (const url of joinInfo(options.host, port, networkInterfaces()).urls) console.log(`  ${url}`);
   if (!options.gmKey) {
     // Local terminal only (never in a join URL or QR). The desktop app injects its own key.
     console.log(`GM key for this run (keep private): ${gmKey}`);

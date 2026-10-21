@@ -4,6 +4,7 @@ import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { LiveHub, type HubOptions } from './hub';
+import type { JoinInfo } from './join';
 import { helloMessage } from './protocol';
 import { authPath, gmKeyMatches, isAllowedHost, isAllowedOrigin } from './security';
 import type { CampaignStore } from './store';
@@ -17,6 +18,8 @@ export interface CreateServerOptions {
   allowedOrigins?: readonly string[];
   /** Extra Host names accepted besides localhost, IP literals and *.local. */
   allowedHosts?: readonly string[];
+  /** Join URLs and QR for the GM screen (GM-only route; null until listening). */
+  joinInfo?: () => JoinInfo | null;
 }
 
 /** /api paths anyone on the LAN may read; every other /api path needs the GM key. */
@@ -101,6 +104,14 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       const c = state.characters[id];
       return c ? [{ id: c.id, name: c.name, grade: c.grade }] : [];
     });
+  });
+
+  // Join URL + QR for the GM screen. GM-gated like every non-public /api path:
+  // players already have the URL, and the list reveals the host's interfaces.
+  app.get('/api/join', (_request, reply) => {
+    const info = options.joinInfo?.() ?? null;
+    if (!info) return reply.code(503).send({ error: 'Not listening yet' });
+    return info;
   });
 
   app.get('/api/gm/export', () => {
