@@ -212,3 +212,10 @@
   - M fixed: banking was class-only → profession XP is banked too once a profession exists, and the test asserts the other track is unchanged.
   - L fixed: a simulation error is cached, so the remaining tests don't re-run it; the DESIGN pin covers selection interval and rarity ceiling; the montage now happens deterministically in session 2.
   - L accepted: releases are never left pending across a session boundary (M1.10 tests cover pending states); with random pacing, "Reached by session" is checked arithmetically rather than through the run.
+
+## 2026-10-21 · M1.15 Demo campaign content · sonnet (fresh context, 2 rounds)
+- Round 1 (c213ecf..148ec52): 0 High, 1 Medium, 6 Low. `npm run check` and e2e MS.4 green. Players can't append or replay the title event; the golden log covers award and undo; no leaks (award reasons, tag rules, other players' menus, others' titles); the real campaign is untouched.
+  - M fixed (documented deferral): the player screen doesn't draw quests, items or menus yet → ROADMAP M3.6–M3.8 now require their e2e to show the demo's open menu, gear and stability gauge (D70).
+  - L fixed: a non-string title threw instead of being refused (trimming moved to the payload schema, with a test); the quest broadcast said 30 days at day 5; budget and pool checks now cover every demo character.
+  - L accepted: filler skill names and arbitrary picks until the M4 content library; Q23 (party sees titles?) open with an owner-only default.
+- Round 2 (148ec52..df5724a): 0 High, 0 Medium, 0 Low.

@@ -178,7 +178,7 @@ the full ones.
 - [x] **M1.14 Campaign simulation.** 40 sessions, 4 characters, ~6 levels per
   session, random valid play (fixed seed). *Accept:* DESIGN check values; 29
   selections each; evolutions at thresholds; invariants hold; coverage ≥ 90%.
-- [ ] **M1.15 Demo campaign content.** (from MS.4, D53) Extend the demo:
+- [x] **M1.15 Demo campaign content.** (from MS.4, D53) Extend the demo:
   characters at grades G, F, E and D (via evolutions), titles, items and a
   quest with World Stability. *Accept:* demo tests check each grade, a title,
   an item and a visible stability quest; the real campaign is untouched.
