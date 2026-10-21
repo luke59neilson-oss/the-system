@@ -124,7 +124,7 @@ test('a player picks a character and watches the GM’s changes land live', asyn
   await phone.getByRole('link', { name: /Miranda/ }).click();
   await expect(phone.getByTestId('name')).toHaveText('Miranda');
   await expect(phone.getByTestId('messages')).toContainText(WHISPER);
-  const width = await phone.evaluate(() => document.documentElement.scrollWidth);
+  const width = await phone.locator('html').evaluate((el) => el.scrollWidth);
   expect(width).toBeLessThanOrEqual(390);
   await phone.screenshot({ path: path.join(shots, 'player-390x844.png'), fullPage: true });
   expect(phoneWatch.errors).toEqual([]);
