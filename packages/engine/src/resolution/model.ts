@@ -122,18 +122,29 @@ export function newClock(id: string, name: string, segments: number, at: string)
 }
 
 /**
- * Records progress: `amount` segments filled on a success (never past full),
- * or one failure. A full clock takes no more ticks.
+ * Records progress: `amount` segments filled on a success (at most what is
+ * left), or one failure. A full clock takes no more ticks.
  */
 export function tickClock(clock: Clock, result: 'success' | 'failure', amount = 1): Clock {
   if (clock.filled >= clock.segments) {
     throw new CharacterRuleError(`[${clock.name}] is already complete`);
   }
-  if (result === 'failure') return { ...clock, failures: clock.failures + 1 };
   if (!Number.isInteger(amount) || amount < 1) {
     throw new CharacterRuleError('Fill at least one segment');
   }
-  return { ...clock, filled: Math.min(clock.segments, clock.filled + amount) };
+  if (result === 'failure') {
+    if (amount !== 1) throw new CharacterRuleError('A failure counts once');
+    return { ...clock, failures: clock.failures + 1 };
+  }
+  // Refused rather than clamped, so undoing an earlier tick never changes what
+  // a later one filled (D31).
+  const left = clock.segments - clock.filled;
+  if (amount > left) {
+    throw new CharacterRuleError(
+      `[${clock.name}] has only ${left} segment${left === 1 ? '' : 's'} left`,
+    );
+  }
+  return { ...clock, filled: clock.filled + amount };
 }
 
 export const clockComplete = (clock: Clock): boolean => clock.filled >= clock.segments;

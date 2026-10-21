@@ -68,26 +68,55 @@ describe('contest odds (DESIGN §7)', () => {
     expect(rollContest(rules, g(0), g(10), () => 0).success).toBe(false);
   });
 
-  it('10,000 rolls land within ±2% of the odds for 1:1, 2:1, 3:1, 10:1 in every mode (seed 20261111)', () => {
+  it('10,000 rolls land within ±1.5% of independently computed odds for 1:1, 2:1, 3:1, 10:1 in every mode, same grade and across grades both ways (seed 20261111)', () => {
     const SEED = 20261111;
     const rng = seededRandom(SEED);
+    const factor: Record<string, number> = { F: 3, D: 10, E: 5 };
+    // Odds written out from DESIGN §7, not from contestChance.
+    const odds = (mode: GradeGapMode, r: number, ga: string, gb: string): number => {
+      let a = 10 * r;
+      let b = 10;
+      if (mode === 'multiplier') {
+        a *= factor[ga] ?? 0;
+        b *= factor[gb] ?? 0;
+      }
+      if (mode === 'lowerGradeFraction' && ga !== gb) {
+        if ('GFEDCBA'.indexOf(ga) < 'GFEDCBA'.indexOf(gb)) a /= 3;
+        else b /= 3;
+      }
+      return a / (a + b);
+    };
+    let cases = 0;
     for (const mode of MODES) {
-      for (const [ratio, grades] of [
-        [1, ['E', 'E']],
-        [2, ['E', 'E']],
-        [3, ['F', 'D']],
-        [10, ['D', 'F']],
-      ] as const) {
-        const a = { value: 10 * ratio, grade: grades[0] };
-        const b = { value: 10, grade: grades[1] };
-        const expected = contestChance(rules, a, b, mode);
-        let wins = 0;
-        for (let i = 0; i < 10_000; i++) if (rollContest(rules, a, b, rng, mode).success) wins++;
-        expect(Math.abs(wins / 10_000 - expected), `seed ${SEED}, ${mode} ${ratio}:1`).toBeLessThan(
-          0.02,
-        );
+      for (const ratio of [1, 2, 3, 10]) {
+        for (const [ga, gb] of [
+          ['E', 'E'],
+          ['F', 'D'],
+          ['D', 'F'],
+        ] as const) {
+          const a = { value: 10 * ratio, grade: ga };
+          const b = { value: 10, grade: gb };
+          const expected = odds(mode, ratio, ga, gb);
+          expect(contestChance(rules, a, b, mode)).toBeCloseTo(expected, 12);
+          let wins = 0;
+          for (let i = 0; i < 10_000; i++) if (rollContest(rules, a, b, rng, mode).success) wins++;
+          expect(
+            Math.abs(wins / 10_000 - expected),
+            `seed ${SEED}, ${mode} ${ratio}:1 ${ga} vs ${gb}`,
+          ).toBeLessThan(0.015);
+          cases++;
+        }
       }
     }
+    expect(cases).toBe(36);
+    // Pinned literals for the plain ratios.
+    const e = (v: number) => ({ value: v, grade: 'E' });
+    expect([1, 2, 3, 10].map((r) => contestChance(rules, e(10 * r), e(10), 'none'))).toEqual([
+      0.5,
+      2 / 3,
+      0.75,
+      10 / 11,
+    ]);
   });
 });
 
@@ -98,7 +127,9 @@ describe('progress clocks and montage (DESIGN §7)', () => {
     c = tickClock(c, 'success', 3);
     c = tickClock(c, 'failure');
     expect(c).toMatchObject({ filled: 3, failures: 1 });
-    c = tickClock(c, 'success', 5);
+    expect(() => tickClock(c, 'success', 2)).toThrow(/only 1 segment left/);
+    expect(() => tickClock(c, 'failure', 2)).toThrow(/counts once/);
+    c = tickClock(c, 'success');
     expect(c.filled).toBe(4);
     expect(clockComplete(c)).toBe(true);
     expect(() => tickClock(c, 'success')).toThrow(/already complete/);

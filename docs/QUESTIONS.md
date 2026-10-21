@@ -93,3 +93,9 @@ answer under any question and the next run will follow it.
     ceiling). Alternative: refuse to release an evolution while a selection
     is pending.
     Answer:
+22. **Lower-grade ⅓: flat or per grade?** In the "lower-grade side ÷3"
+    grade-gap mode, an F-grade side against an A-grade side gets the same
+    ×⅓ as F against E. Default: flat ⅓ whenever the grades differ (DESIGN
+    §7 wording). Alternative: ⅓ per grade step. (The "multiplier" mode
+    multiplies the whole stat value by the grade's factor.)
+    Answer:
