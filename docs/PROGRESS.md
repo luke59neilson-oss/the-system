@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0 and MS done; M1.1-M1.9, M1.13, M2.1-M2.3 done
-**Next item:** M1.10 Selections and evolutions
+**Status:** in progress: M0 and MS done; M1.1-M1.13, M2.1-M2.3 done
+**Next item:** M1.14 Campaign simulation
 **Blockers:** first preview build not published: `git push origin main:release` was refused by this session's permission classifier ("Production Deploy"). Luke: push `main` to `release` yourself (or allow it) to get the preview-<date> Release.
 
 ## Run log
@@ -142,4 +142,16 @@ next item, blockers. -->
 - New decisions D58–D63; new questions Q15–Q19 (bonuses and pools, GM stock, journal privacy on disk, excess marks, merges above the ceiling). Roadmap carry-overs added to M3.7, M3.10, M5.5, M1.10.
 - Open `wip/*` branches: none unfinished.
 - Next: M1.10 Selections and evolutions (stopped at 43 min: past the 35-minute start limit).
+- Blockers: preview release push still needs Luke (see header).
+
+### Run 1e88e3c9 · 2026-10-21 22:07–22:46 UTC
+- Preflight: `add_repo` not offered in this session; repo already cloned (local `main` was a stale pre-rewrite history; reset to `origin/main`). Lock pushed to main (first commit had a blank id: `xxd` missing; fixed with `od`). `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md; latest CI run on main green (3ba5011).
+- Finished: M1.10 Selections and evolutions (2 rounds, 3 Medium fixed), M1.11 Resolution and clocks (2 rounds, 2 Medium fixed), M1.12 Quests and World Stability (1 round, 0 High/Medium). See REVIEW-LOG.md.
+- Engine: character v4 (selections, evolution); campaign state v9 (clocks; quests, World Stability, day counter). New modules `evolution`, `resolution`, `quests`. PlayerView gains the owner's menus/evolution options, `day` and visible `quests`. New golden logs `evolution`, `clocks`, `quests` (older `.state.json` regenerated additively); `character.professionGranted` is now covered by a golden log.
+- Tests: 475 unit/integration tests (35 files) incl. the 0→240 simulation (29 selections, capstones 10/45/90/140/190/240, six GM-released evolutions), 36-case 10,000-roll odds test (seed 20261111), projection canary extended to menus, evolutions, clocks, hidden quests and gauges. E2E MS.1–MS.5, MS.A green locally (screens re-renders discarded). Engine line coverage 99.07% (floor 90%).
+- CI: green on every code commit except d409f6b (E2E job; logs not downloadable from here; all 11 specs passed locally and the next commit d8368fc was green). b7a0cf6 running at the end of the run.
+- New decisions D64–D67; new questions Q20 (must every evolution transform a skill), Q21 (capstone before evolving), Q22 (flat ⅓ in the lower-grade mode). Roadmap notes added to M5.1, M5.2, M7.1.
+- Open `wip/*` branches: none unfinished.
+- Next: M1.14 Campaign simulation (stopped at 39 min: past the 35-minute start limit).
 - Blockers: preview release push still needs Luke (see header).
