@@ -168,7 +168,7 @@ the full ones.
   simulation yields exactly 29 selections, capstones at 10/45/90/140/190/240;
   levels freeze at caps and banked XP applies after evolution; evolution
   impossible without GM release; both gate modes tested.
-- [ ] **M1.11 Resolution and clocks.** Ratio odds with injectable RNG; three
+- [x] **M1.11 Resolution and clocks.** Ratio odds with injectable RNG; three
   grade-gap modes (none; per-grade multiplier on the stat value; lower-grade
   side ÷3); progress clocks; montage eligibility. *Accept:* 10,000-roll test
   within ±2% for 1:1, 2:1, 3:1, 10:1 in each mode; clock/montage tests.

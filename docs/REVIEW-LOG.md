@@ -184,3 +184,11 @@
 - Round 2 (e069e39..d409f6b): 0 High, 0 Medium, 5 Low.
   - L fixed: a menu could offer a name a pending release transforms into; a rarity-only transform was refused when its own name was on a pending menu.
   - L accepted: hand-edited logs may omit the optional ids (old "answer what is pending" behaviour); default id parameters used only by direct callers; v7 amended in place before the item was checked (nothing shipped).
+
+## 2026-10-21 · M1.11 Resolution and clocks · sonnet (fresh context, 2 rounds)
+- Round 1 (d8368fc..3767a2d): 0 High, 2 Medium, 4 Low. `npm run check` green; goldens additive (v8); clocks GM-only and canary-checked; property test reaches every clock command.
+  - M fixed: the ±2% test ran 1:1 and 2:1 only on equal grades and both cross-grade cases in one direction → 36 cases (3 modes × 4 ratios × E/E, F/D, D/F).
+  - M fixed: the test compared rolls with `contestChance` itself and a loose tolerance → odds written out independently, tolerance 0.015, plain ratios pinned as literals.
+  - L fixed: clamped success ticks let a non-latest undo change what a later tick filled → overfilling ticks are refused; a failure tick must have amount 1.
+  - L accepted: flat ⅓ whatever the grade gap (DESIGN wording; raised as Q22); `newClock` trims an already-trimmed name.
+- Round 2 (3767a2d..33da202): 0 High, 0 Medium, 4 Low (accepted: the stricter tick rule ships with the clocks themselves, so no stored log predates it; random generator now proposes more rejected ticks; Q22 open; the test's odds helper restates the spec).
