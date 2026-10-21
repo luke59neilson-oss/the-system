@@ -3,15 +3,18 @@ import {
   copyFileSync,
   existsSync,
   fsyncSync,
+  ftruncateSync,
+  fstatSync,
   mkdirSync,
   openSync,
   readFileSync,
   readdirSync,
   renameSync,
   rmSync,
-  truncateSync,
+  unlinkSync,
   writeSync,
 } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import {
   EventRejectedError,
@@ -31,11 +34,13 @@ import {
  * campaign under `<dataDir>/campaigns/<id>/`:
  *
  * - `events.jsonl`: the append-only event log, one event per line, fsynced
- *   after every append. A torn last line (power loss mid-write) is cut off on
- *   open; damage anywhere else stops the load.
+ *   after every write. A torn last line (power loss mid-write) is copied to
+ *   `events.jsonl.torn-<stamp>` and cut off on open; damage anywhere else
+ *   stops the load.
  * - `snapshot.json`: a cached fold, written atomically (temp file, fsync,
  *   rename) every `snapshotEvery` events and on close. Only a speed-up.
  * - `backups/<stamp>-<label>/`: copies made by `backup()` (session end).
+ * - `LOCK`: one writer per campaign; holds the owner's pid.
  *
  * Secrets (tokens, M9.4) never live here: they belong in the app's settings,
  * outside every campaign directory, so exports cannot carry them.
@@ -60,15 +65,19 @@ export interface StoreOptions {
   readonly now: () => string;
   /** Write a snapshot after this many appends since the last one. */
   readonly snapshotEvery?: number;
+  /** Whether a lock holder's pid is alive (injected for tests). */
+  readonly isAlive?: (pid: number) => boolean;
 }
 
 const CAMPAIGN_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
+/** Windows device names that cannot be directory names. */
+const RESERVED = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/;
 
 /** Validates a campaign directory name. */
 export function checkCampaignId(id: string): string {
-  if (!CAMPAIGN_ID.test(id)) {
+  if (!CAMPAIGN_ID.test(id) || RESERVED.test(id)) {
     throw new StoreError(
-      `Invalid campaign id "${id}": use 1-64 lowercase letters, digits and dashes`,
+      `Invalid campaign id "${id}": use 1-64 lowercase letters, digits and dashes (not a reserved name)`,
     );
   }
   return id;
@@ -79,55 +88,67 @@ export interface TornLogResult {
   readonly lines: unknown[];
   /** Byte length of the newline-terminated prefix; anything after it is the torn tail. */
   readonly goodBytes: number;
-  /** True when the text does not end at a line boundary. */
+  /** True when the data does not end at a line boundary. */
   readonly torn: boolean;
-  /** The unterminated last line when it is complete JSON (to re-write with its newline). */
-  readonly completeTail: string | null;
+  /** True when the unterminated last line is complete JSON (kept; needs its newline). */
+  readonly completeTail: boolean;
 }
 
+const NEWLINE = 0x0a;
+const BOM = [0xef, 0xbb, 0xbf];
+
 /**
- * Parses a JSONL log, tolerating a torn final line: an unterminated last line
- * is never trusted as written; if it is complete JSON it is kept (and repaired
- * with a newline), otherwise dropped. A bad line that ends in a newline is
- * real damage and throws. Pure (for unit tests).
+ * Parses a JSONL log at byte level (offsets stay exact whatever the bytes),
+ * tolerating a torn final line: an unterminated last line is kept when it is
+ * complete JSON and dropped otherwise. A bad line that ends in a newline is
+ * real damage and throws. A leading UTF-8 BOM is skipped. Pure.
  */
-export function parseLogText(text: string): TornLogResult {
+export function parseLogText(data: Buffer | string): TornLogResult {
+  const buf = typeof data === 'string' ? Buffer.from(data, 'utf8') : data;
   const lines: unknown[] = [];
-  let offset = 0;
+  let offset = BOM.every((b, i) => buf[i] === b) ? BOM.length : 0;
   let lineNo = 0;
-  while (offset < text.length) {
+  while (offset < buf.length) {
     lineNo++;
-    const end = text.indexOf('\n', offset);
+    const end = buf.indexOf(NEWLINE, offset);
+    const text = buf.toString('utf8', offset, end === -1 ? buf.length : end);
     if (end === -1) {
-      const tail = text.slice(offset);
-      const goodBytes = Buffer.byteLength(text.slice(0, offset), 'utf8');
       try {
-        lines.push(JSON.parse(tail));
-        return { lines, goodBytes, torn: true, completeTail: tail };
+        lines.push(JSON.parse(text));
+        return { lines, goodBytes: offset, torn: true, completeTail: true };
       } catch {
-        return { lines, goodBytes, torn: true, completeTail: null };
+        return { lines, goodBytes: offset, torn: true, completeTail: false };
       }
     }
-    const line = text.slice(offset, end);
-    if (line.trim() !== '') {
+    if (text.trim() !== '') {
       try {
-        lines.push(JSON.parse(line));
+        lines.push(JSON.parse(text));
       } catch {
         throw new StoreError(`Event log line ${lineNo} is damaged (not valid JSON)`);
       }
     }
     offset = end + 1;
   }
-  return { lines, goodBytes: Buffer.byteLength(text, 'utf8'), torn: false, completeTail: null };
+  return { lines, goodBytes: buf.length, torn: false, completeTail: false };
 }
 
 const stamp = (iso: string) => iso.replace(/[:.]/g, '-');
 
-function writeFileDurable(file: string, text: string): void {
-  const tmp = `${file}.tmp`;
+/** writeSync until every byte is written (it may write fewer). */
+function writeAll(fd: number, data: Buffer): void {
+  let done = 0;
+  while (done < data.length) {
+    const n = writeSync(fd, data, done, data.length - done);
+    if (n <= 0) throw new StoreError('Write made no progress');
+    done += n;
+  }
+}
+
+function writeFileDurable(file: string, data: Buffer | string): void {
+  const tmp = `${file}.tmp-${process.pid}`;
   const fd = openSync(tmp, 'w');
   try {
-    writeSync(fd, text);
+    writeAll(fd, typeof data === 'string' ? Buffer.from(data, 'utf8') : data);
     fsyncSync(fd);
   } finally {
     closeSync(fd);
@@ -136,31 +157,78 @@ function writeFileDurable(file: string, text: string): void {
   fsyncDir(path.dirname(file));
 }
 
+function fsyncFile(file: string): void {
+  const fd = openSync(file, 'r+');
+  try {
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
+}
+
 function fsyncDir(dir: string): void {
-  // Makes a rename or new file durable. Not supported on Windows; best effort there.
   let fd: number | undefined;
   try {
     fd = openSync(dir, 'r');
     fsyncSync(fd);
   } catch {
-    // Directory fsync is unavailable on some platforms (Windows).
+    // Directory fsync is unavailable on some platforms (Windows); best effort.
   } finally {
     if (fd !== undefined) closeSync(fd);
   }
+}
+
+function defaultIsAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === 'EPERM';
+  }
+}
+
+/** Takes the campaign's single-writer lock, replacing a lock whose owner is gone; returns its contents. */
+function takeLock(file: string, isAlive: (pid: number) => boolean): string {
+  const contents = `${process.pid} ${randomUUID()}`;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const fd = openSync(file, 'wx');
+      try {
+        writeAll(fd, Buffer.from(contents));
+        fsyncSync(fd);
+      } finally {
+        closeSync(fd);
+      }
+      return contents;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      const pid = Number(readFileSync(file, 'utf8').trim().split(' ')[0]);
+      if (Number.isInteger(pid) && pid > 0 && isAlive(pid)) {
+        throw new StoreError(`The campaign is already open (process ${pid})`);
+      }
+      unlinkSync(file); // Stale: its owner died without closing.
+    }
+  }
+  throw new StoreError('Could not take the campaign lock');
 }
 
 /** One open campaign: its state in memory, its log on disk. */
 export class CampaignStore {
   readonly id: string;
   readonly dir: string;
-  /** True when opening found and cut off a torn last line. */
-  readonly repairedTornLine: boolean;
+  /** Set when opening found a torn last line: where its bytes were saved. */
+  readonly tornCopy: string | null;
   /** True when opening started from the snapshot. */
   readonly loadedFromSnapshot: boolean;
   private campaignValue: Campaign;
   private fd: number | null;
+  /** Bytes of the log known to be whole lines; a failed write is cut back to it. */
+  private goodBytes: number;
+  /** Set when a failed write could not be undone; the store refuses further writes. */
+  private broken: string | null = null;
   private sinceSnapshot = 0;
   private readonly options: StoreOptions;
+  private readonly lock: string;
 
   private constructor(
     id: string,
@@ -168,14 +236,16 @@ export class CampaignStore {
     campaign: Campaign,
     fd: number,
     options: StoreOptions,
-    flags: { repaired: boolean; fromSnapshot: boolean },
+    flags: { tornCopy: string | null; fromSnapshot: boolean; lock: string },
   ) {
+    this.lock = flags.lock;
     this.id = id;
     this.dir = dir;
     this.campaignValue = campaign;
     this.fd = fd;
+    this.goodBytes = fstatSync(fd).size;
     this.options = options;
-    this.repairedTornLine = flags.repaired;
+    this.tornCopy = flags.tornCopy;
     this.loadedFromSnapshot = flags.fromSnapshot;
   }
 
@@ -188,71 +258,109 @@ export class CampaignStore {
     const dir = CampaignStore.campaignsDir(dataDir);
     if (!existsSync(dir)) return [];
     return readdirSync(dir, { withFileTypes: true })
-      .filter((d) => d.isDirectory() && CAMPAIGN_ID.test(d.name))
+      .filter((d) => d.isDirectory() && CAMPAIGN_ID.test(d.name) && !RESERVED.test(d.name))
       .map((d) => d.name)
       .sort();
   }
 
-  /** Opens (creating when missing) the campaign directory and loads its log. */
+  /**
+   * Opens the campaign (creating it when missing) and loads its log. The log
+   * is validated before any repair touches the file.
+   */
   static open(id: string, options: StoreOptions): CampaignStore {
     const dir = path.join(CampaignStore.campaignsDir(options.dataDir), checkCampaignId(id));
     mkdirSync(path.join(dir, 'backups'), { recursive: true });
-    const logFile = path.join(dir, 'events.jsonl');
-    const text = existsSync(logFile) ? readFileSync(logFile, 'utf8') : '';
-    const parsed = parseLogText(text);
-    if (parsed.torn) {
-      // Cut the torn bytes; a complete last event gets its missing newline back.
-      truncateSync(logFile, parsed.goodBytes);
-      if (parsed.completeTail !== null) {
-        const repair = openSync(logFile, 'a');
-        try {
-          writeSync(repair, `${parsed.completeTail}\n`);
-          fsyncSync(repair);
-        } finally {
-          closeSync(repair);
-        }
-      }
+    const lockFile = path.join(dir, 'LOCK');
+    const lock = takeLock(lockFile, options.isAlive ?? defaultIsAlive);
+    try {
+      return CampaignStore.load(id, dir, options, lock);
+    } catch (error) {
+      rmSync(lockFile, { force: true });
+      throw error;
     }
-    const snapshot = readSnapshot(path.join(dir, 'snapshot.json'));
+  }
+
+  private static load(id: string, dir: string, options: StoreOptions, lock: string): CampaignStore {
+    const logFile = path.join(dir, 'events.jsonl');
+    const data = existsSync(logFile) ? readFileSync(logFile) : Buffer.alloc(0);
+    const parsed = parseLogText(data);
     let loaded: { campaign: Campaign; usedSnapshot: boolean };
     try {
-      loaded = resume(snapshot, parsed.lines);
+      loaded = resume(readSnapshot(path.join(dir, 'snapshot.json')), parsed.lines);
     } catch (error) {
       if (error instanceof EventRejectedError) {
         throw new StoreError(`Campaign "${id}" cannot load: ${error.message}`);
       }
       throw error;
     }
-    const fd = openSync(logFile, 'a');
-    const store = new CampaignStore(id, dir, loaded.campaign, fd, options, {
-      repaired: parsed.torn,
+    let tornCopy: string | null = null;
+    const fd = openSync(logFile, existsSync(logFile) ? 'r+' : 'w+');
+    try {
+      if (parsed.torn) {
+        // Never delete campaign data: keep the torn bytes beside the log first.
+        tornCopy = `${logFile}.torn-${stamp(options.now())}`;
+        writeFileDurable(tornCopy, data.subarray(parsed.goodBytes));
+        if (parsed.completeTail) {
+          // The last event is whole; it only lacks its newline.
+          if (writeSync(fd, Buffer.from('\n'), 0, 1, data.length) !== 1) {
+            throw new StoreError('Could not repair the last event log line');
+          }
+        } else {
+          ftruncateSync(fd, parsed.goodBytes);
+        }
+        fsyncSync(fd);
+      }
+    } catch (error) {
+      closeSync(fd);
+      throw error;
+    }
+    closeSync(fd);
+    const appendFd = openSync(logFile, 'a');
+    return new CampaignStore(id, dir, loaded.campaign, appendFd, options, {
+      tornCopy,
       fromSnapshot: loaded.usedSnapshot,
+      lock,
     });
-    return store;
   }
 
   get campaign(): Campaign {
     return this.campaignValue;
   }
 
-  /**
-   * Appends one event: checked against the campaign, written and fsynced,
-   * then applied in memory. Throws EventRejectedError and writes nothing when
-   * the event does not apply.
-   */
+  /** Appends one event (see appendAll). */
   append(event: DomainEvent): Campaign {
-    const next = appendEvent(this.campaignValue, event);
-    this.writeLine(event);
-    this.campaignValue = next;
-    this.sinceSnapshot++;
-    if (this.sinceSnapshot >= (this.options.snapshotEvery ?? 100)) this.writeSnapshot();
-    return next;
+    return this.appendAll([event]);
   }
 
-  /** Appends several events (e.g. one command's result) in order. */
+  /**
+   * Appends one command's events atomically: all are checked against the
+   * campaign first, then written in one write and fsynced, then applied in
+   * memory. Throws EventRejectedError and writes nothing when any event does
+   * not apply. A failed write is cut back so the log stays whole.
+   */
   appendAll(events: readonly DomainEvent[]): Campaign {
-    for (const event of events) this.append(event);
-    return this.campaignValue;
+    const fd = this.requireWritable();
+    let next = this.campaignValue;
+    for (const event of events) next = appendEvent(next, event);
+    if (events.length === 0) return next;
+    const bytes = Buffer.from(events.map((e) => `${JSON.stringify(e)}\n`).join(''), 'utf8');
+    try {
+      writeAll(fd, bytes);
+      fsyncSync(fd);
+    } catch (error) {
+      try {
+        ftruncateSync(fd, this.goodBytes);
+        fsyncSync(fd);
+      } catch (undoError) {
+        this.broken = `a failed write could not be undone (${String(undoError)})`;
+      }
+      throw error;
+    }
+    this.goodBytes += bytes.length;
+    this.campaignValue = next;
+    this.sinceSnapshot += events.length;
+    if (this.sinceSnapshot >= (this.options.snapshotEvery ?? 100)) this.writeSnapshot();
+    return next;
   }
 
   /** Writes the snapshot now (atomic). */
@@ -264,18 +372,28 @@ export class CampaignStore {
     this.sinceSnapshot = 0;
   }
 
-  /** Copies the log and a fresh snapshot to `backups/<stamp>-<label>/`; returns that folder. */
+  /**
+   * Copies the log and a fresh snapshot to `backups/<stamp>-<label>/` (built
+   * in a temp folder, fsynced, then renamed into place); returns that folder.
+   */
   backup(label = 'session-end'): string {
     if (!/^[a-z0-9-]{1,40}$/.test(label)) throw new StoreError(`Invalid backup label "${label}"`);
-    this.requireOpen();
+    this.requireWritable();
     this.writeSnapshot();
-    const target = path.join(this.dir, 'backups', `${stamp(this.options.now())}-${label}`);
-    if (existsSync(target)) throw new StoreError(`Backup ${path.basename(target)} already exists`);
-    mkdirSync(target, { recursive: true });
+    const backups = path.join(this.dir, 'backups');
+    const name = `${stamp(this.options.now())}-${label}`;
+    const target = path.join(backups, name);
+    if (existsSync(target)) throw new StoreError(`Backup ${name} already exists`);
+    const staging = path.join(backups, `.tmp-${name}`);
+    rmSync(staging, { recursive: true, force: true });
+    mkdirSync(staging);
     for (const file of ['events.jsonl', 'snapshot.json']) {
-      copyFileSync(path.join(this.dir, file), path.join(target, file));
+      copyFileSync(path.join(this.dir, file), path.join(staging, file));
+      fsyncFile(path.join(staging, file));
     }
-    fsyncDir(target);
+    fsyncDir(staging);
+    renameSync(staging, target);
+    fsyncDir(backups);
     return target;
   }
 
@@ -290,23 +408,27 @@ export class CampaignStore {
     };
   }
 
-  /** Writes a snapshot and closes the log file. */
+  /**
+   * Writes a snapshot, closes the log and releases the lock. If another
+   * process took the lock over (this one was presumed dead), only closes.
+   */
   close(): void {
     if (this.fd === null) return;
-    this.writeSnapshot();
-    closeSync(this.fd);
-    this.fd = null;
+    const lockFile = path.join(this.dir, 'LOCK');
+    const owned = existsSync(lockFile) && readFileSync(lockFile, 'utf8') === this.lock;
+    try {
+      if (owned && this.broken === null) this.writeSnapshot();
+    } finally {
+      closeSync(this.fd);
+      this.fd = null;
+      if (owned) rmSync(lockFile, { force: true });
+    }
   }
 
-  private requireOpen(): number {
+  private requireWritable(): number {
     if (this.fd === null) throw new StoreError(`Campaign "${this.id}" is closed`);
+    if (this.broken !== null) throw new StoreError(`Campaign "${this.id}": ${this.broken}`);
     return this.fd;
-  }
-
-  private writeLine(event: DomainEvent): void {
-    const fd = this.requireOpen();
-    writeSync(fd, `${JSON.stringify(event)}\n`);
-    fsyncSync(fd);
   }
 }
 
@@ -315,13 +437,14 @@ function readSnapshot(file: string): Snapshot | null {
   try {
     return JSON.parse(readFileSync(file, 'utf8')) as Snapshot;
   } catch {
-    return null; // A damaged snapshot is only a lost speed-up.
+    return null; // A damaged snapshot is only a lost speed-up (resume checks its shape).
   }
 }
 
 /**
  * Imports an export as a new campaign `id`. The events are fully replayed
- * before anything is written; an existing campaign is never overwritten.
+ * and re-checked by append before anything is written; an existing campaign
+ * is never overwritten.
  */
 export function importCampaign(raw: unknown, id: string, options: StoreOptions): CampaignStore {
   const data = raw as Partial<CampaignExport> | null;
@@ -336,7 +459,6 @@ export function importCampaign(raw: unknown, id: string, options: StoreOptions):
   let campaign: Campaign;
   try {
     campaign = replay(data.events);
-    // Re-check by append so the imported log is exactly what appends would accept.
     let check = emptyCampaign();
     for (const event of campaign.events) check = appendEvent(check, parseEvent(event));
   } catch (error) {
@@ -345,9 +467,10 @@ export function importCampaign(raw: unknown, id: string, options: StoreOptions):
     }
     throw error;
   }
-  const dir = path.join(CampaignStore.campaignsDir(options.dataDir), id);
+  const root = CampaignStore.campaignsDir(options.dataDir);
+  const dir = path.join(root, id);
   if (existsSync(dir)) throw new StoreError(`Campaign "${id}" already exists`);
-  const staging = path.join(CampaignStore.campaignsDir(options.dataDir), `.import-${id}`);
+  const staging = path.join(root, `.import-${id}`);
   rmSync(staging, { recursive: true, force: true });
   mkdirSync(staging, { recursive: true });
   writeFileDurable(
@@ -355,6 +478,6 @@ export function importCampaign(raw: unknown, id: string, options: StoreOptions):
     campaign.events.map((e) => `${JSON.stringify(e)}\n`).join(''),
   );
   renameSync(staging, dir);
-  fsyncDir(CampaignStore.campaignsDir(options.dataDir));
+  fsyncDir(root);
   return CampaignStore.open(id, options);
 }

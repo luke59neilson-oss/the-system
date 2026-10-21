@@ -90,6 +90,9 @@ function play(store: CampaignStore, commands: Command[], ctx = context()) {
   return store.campaign;
 }
 
+/** Reopen after the owning process "died" (its lock is stale). */
+const afterCrash = () => ({ ...options, isAlive: () => false });
+
 const logFile = (id = 'main') => path.join(dataDir, 'campaigns', id, 'events.jsonl');
 
 describe('CampaignStore', () => {
@@ -109,11 +112,12 @@ describe('CampaignStore', () => {
     const store = CampaignStore.open('main', { ...options, snapshotEvery: 3 });
     const before = play(store, script);
     // No close(): the process "dies" with events after the last snapshot.
-    const reopened = CampaignStore.open('main', options);
+    expect(() => CampaignStore.open('main', options)).toThrow(/already open/);
+    const reopened = CampaignStore.open('main', afterCrash());
     expect(reopened.loadedFromSnapshot).toBe(true);
     expect(reopened.campaign).toEqual(before);
     rmSync(path.join(dataDir, 'campaigns', 'main', 'snapshot.json'));
-    const replayed = CampaignStore.open('main', options);
+    const replayed = CampaignStore.open('main', afterCrash());
     expect(replayed.loadedFromSnapshot).toBe(false);
     expect(replayed.campaign).toEqual(before);
     for (const s of [store, reopened, replayed]) s.close();
@@ -149,9 +153,12 @@ describe('CampaignStore', () => {
   it('cuts a torn last line and keeps working', () => {
     const store = CampaignStore.open('main', options);
     const before = play(store, script);
-    appendFileSync(logFile(), '{"id":"ev99","type":"character.ren');
-    const reopened = CampaignStore.open('main', options);
-    expect(reopened.repairedTornLine).toBe(true);
+    const torn = '{"id":"ev99","type":"character.ren';
+    appendFileSync(logFile(), torn);
+    const reopened = CampaignStore.open('main', afterCrash());
+    expect(reopened.tornCopy).not.toBeNull();
+    // The torn bytes are kept beside the log, never just deleted.
+    expect(readFileSync(reopened.tornCopy ?? '', 'utf8')).toBe(torn);
     expect(reopened.campaign).toEqual(before);
     expect(readFileSync(logFile(), 'utf8').endsWith('}\n')).toBe(true);
     play(
@@ -159,8 +166,9 @@ describe('CampaignStore', () => {
       [{ type: 'character.rename', characterId: 'jake', name: 'Jake T.' }],
       context('r'),
     );
+    reopened.close();
     const again = CampaignStore.open('main', options);
-    expect(again.repairedTornLine).toBe(false);
+    expect(again.tornCopy).toBeNull();
     expect(again.campaign.state?.characters.jake?.name).toBe('Jake T.');
     for (const s of [store, reopened, again]) s.close();
   });
@@ -170,8 +178,8 @@ describe('CampaignStore', () => {
     const before = play(store, script);
     const text = readFileSync(logFile(), 'utf8');
     writeFileSync(logFile(), text.slice(0, -1));
-    const reopened = CampaignStore.open('main', options);
-    expect(reopened.repairedTornLine).toBe(true);
+    const reopened = CampaignStore.open('main', afterCrash());
+    expect(reopened.tornCopy).not.toBeNull();
     expect(reopened.campaign).toEqual(before);
     expect(readFileSync(logFile(), 'utf8')).toBe(text);
     store.close();
@@ -199,6 +207,49 @@ describe('CampaignStore', () => {
     store.close();
   });
 
+  it('appends a command atomically: one rejected event writes none of them', () => {
+    const store = CampaignStore.open('main', options);
+    const before = play(store, script);
+    const size = readFileSync(logFile(), 'utf8').length;
+    const ctx = context('a');
+    const ok = execute(before, { type: 'character.rename', characterId: 'jake', name: 'J' }, ctx);
+    if (!ok.ok) throw new Error(ok.error);
+    const dup = { ...before.events[1], id: 'dup' } as (typeof before.events)[number];
+    expect(() => store.appendAll([...ok.events, dup])).toThrow(EventRejectedError);
+    expect(readFileSync(logFile(), 'utf8').length).toBe(size);
+    expect(store.campaign).toEqual(before);
+    store.close();
+  });
+
+  it('lets one process write a campaign at a time', () => {
+    const store = CampaignStore.open('main', options);
+    expect(() => CampaignStore.open('main', options)).toThrow(/already open/);
+    store.close();
+    const again = CampaignStore.open('main', options);
+    // A stale lock (owner gone) is taken over; the presumed-dead store then
+    // closes without touching the snapshot or the new owner's lock.
+    const takeover = CampaignStore.open('main', afterCrash());
+    again.close();
+    expect(existsSync(path.join(takeover.dir, 'LOCK'))).toBe(true);
+    takeover.close();
+    expect(existsSync(path.join(takeover.dir, 'LOCK'))).toBe(false);
+  });
+
+  it('falls back to replay for a garbled snapshot shape', () => {
+    const store = CampaignStore.open('main', options);
+    const before = play(store, script);
+    store.close();
+    const file = path.join(dataDir, 'campaigns', 'main', 'snapshot.json');
+    const snap = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
+    for (const bad of [{ ...snap, eventVersions: null }, { ...snap, undone: null }, 5, null]) {
+      writeFileSync(file, JSON.stringify(bad));
+      const s = CampaignStore.open('main', options);
+      expect(s.loadedFromSnapshot).toBe(false);
+      expect(s.campaign).toEqual(before);
+      s.close();
+    }
+  });
+
   it('backs up the log and a snapshot at session end', () => {
     const store = CampaignStore.open('main', options);
     play(store, script);
@@ -217,7 +268,7 @@ describe('CampaignStore', () => {
     CampaignStore.open('main', options).close();
     CampaignStore.open('demo', options).close();
     expect(CampaignStore.list(dataDir)).toEqual(['demo', 'main']);
-    for (const bad of ['', '../x', 'A', 'a/b', '.hidden', 'x'.repeat(65)]) {
+    for (const bad of ['', '../x', 'A', 'a/b', '.hidden', 'x'.repeat(65), 'con', 'nul', 'com1']) {
       expect(() => checkCampaignId(bad)).toThrow(StoreError);
     }
   });
@@ -249,7 +300,13 @@ describe('export and import', () => {
     const exported = store.exportCampaign();
     const json = JSON.stringify(exported);
     expect(json).not.toContain(TOKEN);
-    expect(json).not.toMatch(/token|secret|password|gmKey/i);
+    // No key anywhere in the export names a credential.
+    const keys: string[] = [];
+    JSON.parse(json, (key: string, value: unknown) => {
+      keys.push(key);
+      return value;
+    });
+    expect(keys.filter((k) => /token|secret|password|gmkey|apikey/i.test(k))).toEqual([]);
     expect(Object.keys(exported).sort()).toEqual([
       'campaignId',
       'events',
@@ -289,9 +346,9 @@ describe('parseLogText', () => {
       lines: [{ a: 1 }, { b: 2 }],
       goodBytes: 17,
       torn: false,
-      completeTail: null,
+      completeTail: false,
     });
-    expect(parseLogText('')).toEqual({ lines: [], goodBytes: 0, torn: false, completeTail: null });
+    expect(parseLogText('')).toEqual({ lines: [], goodBytes: 0, torn: false, completeTail: false });
   });
 
   it('reports a torn tail and its byte offset (multi-byte safe)', () => {
@@ -299,14 +356,27 @@ describe('parseLogText', () => {
       lines: [{ a: 'é' }],
       goodBytes: 11,
       torn: true,
-      completeTail: null,
+      completeTail: false,
     });
     expect(parseLogText('{"a":1}\n{"b":2}')).toEqual({
       lines: [{ a: 1 }, { b: 2 }],
       goodBytes: 8,
       torn: true,
-      completeTail: '{"b":2}',
+      completeTail: true,
     });
+  });
+
+  it('keeps exact byte offsets when a line holds invalid UTF-8, and skips a BOM', () => {
+    const data = Buffer.concat([
+      Buffer.from([0xef, 0xbb, 0xbf]),
+      Buffer.from('{"a":"'),
+      Buffer.from([0xe9]),
+      Buffer.from('"}\n{"b":'),
+    ]);
+    const result = parseLogText(data);
+    expect(result.lines).toHaveLength(1);
+    expect(result.torn).toBe(true);
+    expect(result.goodBytes).toBe(3 + 10);
   });
 
   it('throws on damage before the last line', () => {

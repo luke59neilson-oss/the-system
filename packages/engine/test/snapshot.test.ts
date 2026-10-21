@@ -54,6 +54,9 @@ describe('snapshots and resume', () => {
       { ...snap, stateSchemaVersion: 1 },
       { ...snap, eventVersions: { ...snap.eventVersions, extra: 1 } },
       { ...snap, undone: { e2: 'e9' } },
+      { ...snap, rawUpcasters: 1 },
+      { ...snap, eventVersions: null } as unknown as typeof snap,
+      5 as unknown as typeof snap,
       { ...snap, state: null },
       { ...empty, eventCount: 0, state: snap.state },
     ]) {
@@ -62,5 +65,13 @@ describe('snapshots and resume', () => {
       expect(campaign).toEqual(full);
     }
     expect(resume(empty, raw)).toEqual({ campaign: full, usedSnapshot: true });
+  });
+
+  it('replays in full when the tail does not apply on top of the snapshot body', () => {
+    const prefix = snapshotOf(run(commands.slice(0, 3)));
+    const wrongBody = { ...prefix, state: snapshotOf(run(commands.slice(0, 1))).state };
+    const { campaign, usedSnapshot } = resume(wrongBody, raw);
+    expect(usedSnapshot).toBe(false);
+    expect(campaign).toEqual(full);
   });
 });

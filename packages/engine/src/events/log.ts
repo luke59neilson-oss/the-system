@@ -173,21 +173,22 @@ export interface Snapshot {
   readonly stateSchemaVersion: number;
   /** Event schema versions the snapshot was folded with. */
   readonly eventVersions: Readonly<Record<string, number>>;
+  /** Number of log-level upcasters in force when it was folded (a new one invalidates it). */
+  readonly rawUpcasters: number;
   readonly eventCount: number;
   readonly lastEventId: string | null;
   readonly state: CampaignState | null;
   readonly undone: Readonly<Record<string, string>>;
 }
 
-export function snapshotOf(
-  campaign: Campaign,
-  versions: Readonly<Record<string, number>> = EVENT_SCHEMA_VERSIONS,
-): Snapshot {
+/** Snapshot of a campaign, recording the schema and upcasters it was folded under. */
+export function snapshotOf(campaign: Campaign, options: ReplayOptions = {}): Snapshot {
   return JSON.parse(
     JSON.stringify({
       format: SNAPSHOT_FORMAT_VERSION,
       stateSchemaVersion: campaign.state?.schemaVersion ?? CAMPAIGN_STATE_SCHEMA_VERSION,
-      eventVersions: versions,
+      eventVersions: options.versions ?? EVENT_SCHEMA_VERSIONS,
+      rawUpcasters: (options.rawUpcasters ?? RAW_EVENT_UPCASTERS).length,
       eventCount: campaign.events.length,
       lastEventId: campaign.events[campaign.events.length - 1]?.id ?? null,
       state: campaign.state,
@@ -207,7 +208,12 @@ function snapshotMismatch(
   events: readonly DomainEvent[],
   undone: Readonly<Record<string, string>>,
   versions: Readonly<Record<string, number>>,
+  rawUpcasters: number,
 ): string | null {
+  if (typeof snapshot !== 'object' || snapshot === null) return 'shape';
+  if (snapshot.rawUpcasters !== rawUpcasters) return 'log upcasters';
+  if (typeof snapshot.eventVersions !== 'object' || snapshot.eventVersions === null) return 'shape';
+  if (typeof snapshot.undone !== 'object' || snapshot.undone === null) return 'shape';
   if (snapshot.format !== SNAPSHOT_FORMAT_VERSION) return 'format';
   if (snapshot.stateSchemaVersion !== CAMPAIGN_STATE_SCHEMA_VERSION) return 'state schema';
   if (snapshot.state !== null && snapshot.state.schemaVersion !== CAMPAIGN_STATE_SCHEMA_VERSION)
@@ -238,19 +244,27 @@ export function resume(
   options: ReplayOptions = {},
 ): { campaign: Campaign; usedSnapshot: boolean } {
   const versions = options.versions ?? EVENT_SCHEMA_VERSIONS;
+  const rawCount = (options.rawUpcasters ?? RAW_EVENT_UPCASTERS).length;
   const { events, undone } = parseLog(rawEvents, options);
-  if (snapshot === null || snapshotMismatch(snapshot, events, undone, versions) !== null) {
-    return {
-      campaign: { events, state: fold(effectiveEvents(events, undone)), undone },
-      usedSnapshot: false,
-    };
-  }
+  const full = () => ({
+    campaign: { events, state: fold(effectiveEvents(events, undone)), undone },
+    usedSnapshot: false,
+  });
+  if (snapshot === null || snapshotMismatch(snapshot, events, undone, versions, rawCount) !== null)
+    return full();
   let campaign: Campaign = {
     events: events.slice(0, snapshot.eventCount),
     state: snapshot.state,
     undone: { ...snapshot.undone },
   };
-  for (const event of events.slice(snapshot.eventCount)) campaign = appendEvent(campaign, event);
+  try {
+    for (const event of events.slice(snapshot.eventCount)) campaign = appendEvent(campaign, event);
+  } catch (error) {
+    // A tail append can refuse what a full fold accepts (an event later undone
+    // in a hand-edited log, or a bad snapshot body): the replay decides.
+    if (error instanceof EventRejectedError) return full();
+    throw error;
+  }
   return { campaign, usedSnapshot: true };
 }
 
