@@ -95,7 +95,7 @@ Work top to bottom. An item is checked only when its acceptance criteria pass
   over every player WS frame and HTTP body; GM command without key rejected;
   cross-character action rejected; reconnect test; address/origin checks unit
   tested as pure functions (incl. `::ffff:192.168.1.5`).
-- [ ] **M2.3 Join helper.** LAN IPv4 list, join URL, QR SVG. *Accept:* unit
+- [x] **M2.3 Join helper.** LAN IPv4 list, join URL, QR SVG. *Accept:* unit
   tests; QR decodes to the URL.
 
 ## MS — Walking skeleton and first preview build
