@@ -11,3 +11,4 @@ export * from './rules';
 export * from './character';
 export * from './progression';
 export * from './events';
+export * from './projection';

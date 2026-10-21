@@ -16,7 +16,15 @@ import {
   type Command,
   type DomainEvent,
 } from '../src';
-import { deepFreeze, kit, rawRules, run, seededRandom, testContext } from './helpers/events';
+import {
+  deepFreeze,
+  kit,
+  randomCommand,
+  rawRules,
+  run,
+  seededRandom,
+  testContext,
+} from './helpers/events';
 
 const created: Command = { type: 'campaign.create', name: 'Whale', rules: rawRules() };
 const jake: Command = {
@@ -627,80 +635,6 @@ describe('replay', () => {
 describe('property: replay equals incremental state', () => {
   const SEED = 20261021;
   const STEPS = 400;
-
-  function randomCommand(rand: () => number, c: Campaign): Command {
-    const pick = <T>(items: readonly T[]): T => items[Math.floor(rand() * items.length)] as T;
-    const ids = c.state?.characterOrder ?? [];
-    const someId = () => (ids.length && rand() < 0.95 ? pick(ids) : 'ghost');
-    const roll = rand();
-    if (roll < 0.15) {
-      return {
-        type: 'character.create',
-        id: rand() < 0.9 ? `c${Math.floor(rand() * 12)}` : '',
-        name: pick(['Jake', 'Casper', 'Miranda', ' ', 'Neil']),
-        className: pick(['Archer', 'Warrior', 'Mage']),
-        classSkills: rand() < 0.9 ? kit : kit.slice(0, 1),
-      };
-    }
-    if (roll < 0.3)
-      return { type: 'character.rename', characterId: someId(), name: pick(['A', 'B', '']) };
-    if (roll < 0.45) {
-      return {
-        type: 'character.setPools',
-        characterId: someId(),
-        pools: { [pick(['hp', 'mp', 'stamina', 'luck'])]: Math.floor(rand() * 600) - 50 },
-      };
-    }
-    if (roll < 0.6) {
-      return {
-        type: 'character.setStats',
-        characterId: someId(),
-        stats: { [pick(['vitality', 'wisdom', 'endurance', 'strength'])]: Math.floor(rand() * 60) },
-      };
-    }
-    if (roll < 0.65) {
-      return { type: 'character.grantProfession', characterId: someId(), profession: 'Smith' };
-    }
-    if (roll >= 0.8 && roll < 0.92) {
-      const character = c.state?.characters[someId()];
-      const batches = character?.freePointBatches ?? [];
-      const batch = batches.length ? pick(batches) : { raceLevel: 1, points: 2 };
-      const allocation: Record<string, number> = {};
-      const extra = rand() < 0.05 ? 1 : 0;
-      allocation[rand() < 0.1 ? 'luck' : pick(['strength', 'agility', 'vitality'])] =
-        batch.points + extra;
-      return rand() < 0.5
-        ? {
-            type: 'freePoints.assign',
-            characterId: character?.id ?? 'ghost',
-            raceLevel: batch.raceLevel,
-            allocation,
-          }
-        : {
-            type: 'freePoints.override',
-            characterId: character?.id ?? 'ghost',
-            raceLevel: batch.raceLevel,
-            allocation: rand() < 0.3 ? null : allocation,
-          };
-    }
-    if (roll < 0.8) {
-      const count = 1 + Math.floor(rand() * 3);
-      const manual = rand() < 0.3;
-      const amount = Math.floor(rand() * 900);
-      return {
-        type: 'xp.award',
-        track: rand() < 0.9 ? 'class' : 'profession',
-        amount,
-        enemyLevel: rand() < 0.3 ? Math.floor(rand() * 10) : null,
-        participants: Array.from({ length: count }, (_, i) => ({
-          characterId: someId(),
-          ...(manual ? { share: i === 0 ? amount : 0 } : { weight: 1 + Math.floor(rand() * 3) }),
-        })),
-      };
-    }
-    const targets = c.events.map((e) => e.id);
-    return { type: 'event.undo', eventId: rand() < 0.95 ? pick(targets) : 'missing' };
-  }
 
   it(`holds over ${STEPS} random commands (seed ${SEED})`, () => {
     const rand = seededRandom(SEED);
