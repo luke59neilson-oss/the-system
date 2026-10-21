@@ -466,7 +466,8 @@ function toEvent(
     case 'title.award':
       return {
         type: 'title.awarded',
-        payload: { characterId: command.characterId, title: command.title.trim() },
+        // The payload schema trims and checks it; a non-string is refused there.
+        payload: { characterId: command.characterId, title: command.title },
       };
     case 'character.setPools':
       return {

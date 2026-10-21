@@ -35,6 +35,9 @@ describe('titles (M1.15 award; library and bonuses in M6.4)', () => {
     ]) {
       expect(execute(c, cmd, ctx).ok, JSON.stringify(cmd)).toBe(false);
     }
+    // A raw (unchecked) command with a non-string title is refused, not thrown.
+    const raw = { type: 'title.award', characterId: 'jake', title: 5 } as unknown as Command;
+    expect(execute(c, raw, ctx).ok).toBe(false);
     // Another character may hold the same title.
     expect(execute(c, award('Forerunner', 'kim'), ctx).ok).toBe(true);
   });

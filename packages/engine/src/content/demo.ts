@@ -70,7 +70,7 @@ export const DEMO_CHARACTERS: readonly DemoCharacter[] = [
 ];
 
 export const DEMO_BROADCASTS: readonly string[] = [
-  'The world is dying. Find what is killing it. Delve to the heart of the world and purge the infection. Time remaining: 30 days.',
+  'The world is dying. Find what is killing it. Delve to the heart of the world and purge the infection. Time remaining: 26 days.',
   'Welcome to the demo campaign. Nothing here touches your real campaign.',
 ];
 

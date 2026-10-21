@@ -54,12 +54,23 @@ describe('demo campaign (MS.4, M1.15)', () => {
     // The evolutions transformed the first class skill at each grade.
     expect(jake.skills[0]).toMatchObject({ name: 'Expert Archery', rarity: 'rare' });
     expect(state.characters['demo-casper']?.skills[0]).toMatchObject({ name: 'Archery' });
-    // DESIGN §4 budget: base 90 + G 24 + F 80 + E 35×12 + D (3 class × 12 + 2 race × 6).
-    // Rested: every pool full.
-    for (const pool of state.rules.pools) {
-      expect(jake.pools[pool.id], pool.id).toBe(poolMax(state.rules, jake.stats, pool.id));
+    // DESIGN §4 budget, each level at its grade: base 90, G 4×6 = 24, F 10×8 = 80,
+    // E 35×(8+4), then the class and race levels past each grade top.
+    const budgets: Record<string, number> = {
+      'demo-jake': 90 + 24 + 80 + 35 * 12 + 3 * 12 + 2 * 6,
+      'demo-miranda': 90 + 24 + 80 + 8 * 8 + 6 * 4,
+      'demo-casper': 90 + 24 + 3 * 5 + 3 * 3,
+      'demo-sultan': 90,
+    };
+    for (const d of DEMO_CHARACTERS) {
+      const c = state.characters[d.id];
+      if (!c) throw new Error(d.id);
+      expect(statBudgetTotal(c), d.id).toBe(budgets[d.id]);
+      // Rested: every pool full.
+      for (const pool of state.rules.pools) {
+        expect(c.pools[pool.id], `${d.id} ${pool.id}`).toBe(poolMax(state.rules, c.stats, pool.id));
+      }
     }
-    expect(statBudgetTotal(jake)).toBe(90 + 24 + 80 + 35 * 12 + 3 * 12 + 2 * 6);
   });
 
   it('every reached selection has a menu; Jake and Miranda each have one left to pick', () => {

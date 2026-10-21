@@ -204,11 +204,14 @@ the full ones.
 - [ ] **M3.5 Skill detail.** Rarity color, description, flavor, marks
   progress, nickname edit (official name always shown).
 - [ ] **M3.6 Skill selection.** Pending badge, offers side by side, choose.
+  The e2e uses the demo's open menu (Jake, level 50; D70).
 - [ ] **M3.7 Inventory, gifts, trades.** Equip; give items/currency to a
   character or the GM; propose/accept/decline trades; incoming notices.
   Project holdings, own trades and the definitions of held/offered items;
-  switch pool maxima and the stats block to effective stats (D60).
+  switch pool maxima and the stats block to effective stats (D60). The e2e
+  checks the demo's equipped ring and bow on Jake's screen (D70).
 - [ ] **M3.8 Quest log.** Text, days left, stability gauge when visible.
+  The e2e checks the demo quest's visible gauge (89) on a player screen (D70).
 - [ ] **M3.9 Identify.** Choose a known entity; show tier text.
 - [ ] **M3.10 Notes.** Private journal (markdown, shareable toggle), live
   party notes, tags, search. Project notes with `canReadNote` (own journal +
