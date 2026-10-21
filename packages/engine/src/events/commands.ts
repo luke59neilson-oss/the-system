@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import {
   EVENT_SCHEMA_VERSIONS,
   EventRejectedError,
@@ -37,6 +38,36 @@ export interface CommandContext {
   readonly now: () => string;
   /** Returns a fresh unique id. */
   readonly newId: () => string;
+}
+
+const anyRecord = z.record(z.string(), z.unknown());
+/** Shape check only; the event payload schemas and the reducer do the real validation. */
+const commandSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('campaign.create') }),
+  z.object({ type: z.literal('character.create'), classSkills: z.array(z.unknown()) }),
+  z.object({ type: z.literal('character.rename') }),
+  z.object({ type: z.literal('character.grantProfession') }),
+  z.object({ type: z.literal('character.setPools'), pools: anyRecord }),
+  z.object({ type: z.literal('character.setStats'), stats: anyRecord }),
+  z.object({ type: z.literal('event.undo') }),
+]);
+
+export type CommandType = Command['type'];
+
+/**
+ * Commands a player may issue, and only for their own character. Empty until
+ * player actions land (free points M1.5, nicknames, notes, gifts...). Every
+ * other command needs the GM or the system (M2.2 checks the GM key).
+ */
+export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>();
+
+/** Returns why the actor may not issue the command, or null when allowed. */
+export function authorize(command: Command, actor: Actor): string | null {
+  if (actor.role !== 'player') return null;
+  if (!PLAYER_COMMANDS.has(command.type)) return `only the GM can ${command.type}`;
+  const target = 'characterId' in command ? command.characterId : undefined;
+  if (target !== actor.characterId) return 'players may only act on their own character';
+  return null;
 }
 
 export type CommandResult =
@@ -83,6 +114,13 @@ function toEvent(command: Command, ctx: CommandContext): { type: EventType; payl
 
 /** Validates a command, builds its event(s) and appends them. Never throws on bad input. */
 export function execute(campaign: Campaign, command: Command, ctx: CommandContext): CommandResult {
+  const shape = commandSchema.safeParse(command);
+  if (!shape.success) {
+    const type = (command as { type?: unknown } | null)?.type;
+    return { ok: false, error: `Bad command${typeof type === 'string' ? ` "${type}"` : ''}` };
+  }
+  const denied = authorize(command, ctx.actor);
+  if (denied) return { ok: false, error: `Not allowed: ${denied}` };
   try {
     const { type, payload } = toEvent(command, ctx);
     const event = parseEvent({

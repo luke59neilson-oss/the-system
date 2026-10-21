@@ -3,6 +3,7 @@ import {
   clampPools,
   createCharacter,
   grantProfession,
+  poolMax,
   type Character,
 } from '../character';
 import { parseRulesConfig, type RulesConfig } from '../rules';
@@ -99,10 +100,15 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
         state.rules.pools.map((p) => p.id),
         'pool',
       );
-      const merged = { ...character.pools, ...pools };
+      // Out-of-range values are rejected, not clamped, so an undo that would
+      // change what a later pool set meant is refused (D31).
+      for (const [poolId, value] of Object.entries(pools)) {
+        const max = rule(event, () => poolMax(state.rules, character.stats, poolId));
+        if (value < 0 || value > max) fail(event, `${poolId} must be between 0 and ${max}`);
+      }
       return withCharacter(state, {
         ...character,
-        pools: rule(event, () => clampPools(state.rules, character.stats, merged)),
+        pools: { ...character.pools, ...pools },
       });
     }
     case 'character.statsSet': {

@@ -84,7 +84,19 @@ export function appendEvent(campaign: Campaign, event: DomainEvent): Campaign {
   return { events: [...campaign.events, event], state, undone };
 }
 
+/**
+ * Log-level upcast for changes a payload upcaster cannot express: renaming a
+ * type, splitting one stored event into several, or changing the envelope.
+ * Runs on each raw stored event before parsing; returns the events it becomes
+ * (never an empty array: the audit log keeps every fact).
+ */
+export type RawEventUpcaster = (raw: unknown) => unknown[];
+
+/** Built-in log-level upcasters, applied in order. Empty until a change needs one. */
+export const RAW_EVENT_UPCASTERS: readonly RawEventUpcaster[] = [];
+
 export interface ReplayOptions {
+  rawUpcasters?: readonly RawEventUpcaster[];
   upcasters?: EventUpcasters;
   versions?: Readonly<Record<string, number>>;
 }
@@ -101,7 +113,15 @@ export function replay(rawEvents: readonly unknown[], options: ReplayOptions = {
   const events: DomainEvent[] = [];
   const ids = new Set<string>();
   let undone: Record<string, string> = {};
-  for (const raw of rawEvents) {
+  let raws: readonly unknown[] = rawEvents;
+  for (const upcast of options.rawUpcasters ?? RAW_EVENT_UPCASTERS) {
+    raws = raws.flatMap((raw) => {
+      const out = upcast(raw);
+      if (out.length === 0) throw new EventRejectedError('A log upcaster dropped an event');
+      return out;
+    });
+  }
+  for (const raw of raws) {
     const event = parseEvent(raw, upcasters, versions);
     if (ids.has(event.id)) throw new EventRejectedError(`Event ${event.id}: duplicate event id`);
     if (event.type === 'event.undone') {

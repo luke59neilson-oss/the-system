@@ -28,7 +28,11 @@ describe('golden event logs', () => {
     const expected = JSON.parse(
       readFileSync(join(dir, file.replace(/\.jsonl$/, '.state.json')), 'utf8'),
     ) as unknown;
-    expect(replay(events).state).toEqual(expected);
+    const replayed = replay(events);
+    expect(replayed.state).toEqual(expected);
+    expect(replayed.events).toHaveLength(events.length);
+    const undos = replayed.events.filter((e) => e.type === 'event.undone');
+    expect(Object.keys(replayed.undone)).toHaveLength(undos.length);
   });
 
   it('cover every reachable event type', () => {

@@ -120,7 +120,15 @@ export function parseEvent(
   upcasters: EventUpcasters = EVENT_UPCASTERS,
   versions: Readonly<Record<string, number>> = EVENT_SCHEMA_VERSIONS,
 ): DomainEvent {
-  const envelope = envelopeSchema.safeParse(raw);
+  // A JSON round trip detaches the event from the caller's objects and proves
+  // it is plain data that survives the JSONL log.
+  let plain: unknown;
+  try {
+    plain = JSON.parse(JSON.stringify(raw ?? null)) as unknown;
+  } catch {
+    throw new EventRejectedError('Bad event: not plain JSON data');
+  }
+  const envelope = envelopeSchema.safeParse(plain);
   if (!envelope.success) throw new EventRejectedError(`Bad event: ${issuesText(envelope.error)}`);
   const { type, schemaVersion, id } = envelope.data;
   if (!isEventType(type)) throw new EventRejectedError(`Event ${id}: unknown type "${type}"`);

@@ -183,13 +183,19 @@ describe('commands and the reducer', () => {
         {
           type: 'character.setPools',
           characterId: 'jake',
-          pools: { hp: 40, mp: 500, stamina: -3 },
+          pools: { hp: 40, stamina: 0 },
         },
       ],
       testContext('a'),
       base(),
     );
     expect(pools.state?.characters['jake']?.pools).toEqual({ hp: 40, mp: 100, stamina: 0 });
+    expect(
+      reject(base(), { type: 'character.setPools', characterId: 'jake', pools: { mp: 101 } }),
+    ).toMatch('mp must be between 0 and 100');
+    expect(
+      reject(base(), { type: 'character.setPools', characterId: 'jake', pools: { hp: -1 } }),
+    ).toMatch('hp must be between 0 and 100');
     const stats = run(
       [{ type: 'character.setStats', characterId: 'jake', stats: { vitality: 5 } }],
       testContext('a'),
@@ -333,7 +339,7 @@ describe('undo', () => {
     expect(undone.state?.characters['jake']).toMatchObject({ name: 'Jake', pools: { hp: 7 } });
   });
 
-  it('later events re-apply against the undone state (stats then pools)', () => {
+  it('rejects an undo that would change what a later event meant (stats then pools)', () => {
     const c = run(
       [
         { type: 'character.setStats', characterId: 'jake', stats: { vitality: 50 } },
@@ -343,8 +349,33 @@ describe('undo', () => {
       base(),
     );
     expect(c.state?.characters['jake']?.pools['hp']).toBe(400);
-    const undone = run([{ type: 'event.undo', eventId: 'a1' }], testContext('u'), c);
-    expect(undone.state?.characters['jake']?.pools['hp']).toBe(100);
+    expect(reject(c, { type: 'event.undo', eventId: 'a1' })).toMatch(
+      /cannot undo a1 .*hp must be between 0 and 100/,
+    );
+  });
+
+  it('lowering a stat clamps current pools to the new maximum', () => {
+    const c = run(
+      [{ type: 'character.setStats', characterId: 'jake', stats: { vitality: 4 } }],
+      testContext('a'),
+      base(),
+    );
+    expect(c.state?.characters['jake']?.pools['hp']).toBe(40);
+  });
+
+  it('a character id can be reused once its creation is undone', () => {
+    const c = run(
+      [
+        { ...jake, id: 'kim', name: 'Kim' },
+        { type: 'event.undo', eventId: 'a1' },
+        { ...jake, id: 'kim', name: 'Kim Two' },
+      ],
+      testContext('a'),
+      base(),
+    );
+    expect(c.state?.characterOrder).toEqual(['jake', 'kim']);
+    expect(c.state?.characters['kim']?.name).toBe('Kim Two');
+    expect(replay(JSON.parse(JSON.stringify(c.events)) as unknown[])).toEqual(c);
   });
 
   it('rejects undoing a non-latest event when a later event depends on it', () => {
@@ -390,6 +421,25 @@ describe('undo', () => {
     expect(reject(c, { type: 'event.undo', eventId: 'zz' })).toMatch('no earlier event "zz"');
   });
 
+  it('replay accepts a hand-edited undo order that appends would refuse, with the same end state (D28)', () => {
+    const c = run(
+      [
+        { ...jake, id: 'kim', name: 'Kim' },
+        { type: 'character.rename', characterId: 'kim', name: 'Kimberly' },
+      ],
+      testContext('a'),
+      base(),
+    );
+    const raw = JSON.parse(JSON.stringify(c.events)) as unknown[];
+    const undo = (id: string, target: string) =>
+      rawEvent({ id, type: 'event.undone', payload: { eventId: target } });
+    // Appending u1 first is rejected (kim's rename depends on kim)...
+    expect(reject(c, { type: 'event.undo', eventId: 'a1' })).toMatch('cannot undo a1');
+    // ...but replay of that order folds only what still counts.
+    const replayed = replay([...raw, undo('u1', 'a1'), undo('u2', 'a2')]);
+    expect(replayed.state).toEqual(base().state);
+  });
+
   it('rejects in replay the same undo targets the log rejects', () => {
     const raw = JSON.parse(JSON.stringify(base().events)) as unknown[];
     const undo = (id: string, target: string) =>
@@ -400,6 +450,94 @@ describe('undo', () => {
     );
     expect(() => replay([...raw, undo('u1', 'e2'), undo('u2', 'e2')])).toThrow('already undone');
     expect(() => replay([...raw, undo('u1', 'e2'), undo('u2', 'u1')])).toThrow('cannot be undone');
+  });
+});
+
+describe('command boundary', () => {
+  it('returns an error instead of throwing on malformed commands', () => {
+    const ctx = testContext('x');
+    for (const bad of [
+      null,
+      undefined,
+      42,
+      {},
+      { type: 'bogus' },
+      { type: 'character.setPools' },
+    ]) {
+      const result = execute(base(), bad as unknown as Command, ctx);
+      expect(result.ok, JSON.stringify(bad)).toBe(false);
+    }
+    expect(execute(base(), { type: 'bogus' } as unknown as Command, ctx)).toEqual({
+      ok: false,
+      error: 'Bad command "bogus"',
+    });
+  });
+
+  it('lets only the GM or the system issue the current commands', () => {
+    const player = { ...testContext('p'), actor: { role: 'player' as const, characterId: 'jake' } };
+    const rename: Command = { type: 'character.rename', characterId: 'jake', name: 'Jay' };
+    expect(execute(base(), rename, player)).toEqual({
+      ok: false,
+      error: 'Not allowed: only the GM can character.rename',
+    });
+    expect(execute(base(), { type: 'event.undo', eventId: 'e2' }, player).ok).toBe(false);
+    const system = { ...testContext('s'), actor: { role: 'system' as const } };
+    expect(execute(base(), rename, system).ok).toBe(true);
+  });
+
+  it('detaches stored events from the caller objects', () => {
+    const rules = rawRules() as { campaign: { plannedSessions: number } };
+    const c = run([{ type: 'campaign.create', name: 'W', rules }]);
+    rules.campaign.plannedSessions = 1;
+    const stored = (c.events[0] as DomainEvent & { type: 'campaign.created' }).payload.rules;
+    expect((stored as typeof rules).campaign.plannedSessions).not.toBe(1);
+    expect(() => parseEvent(rawEvent({ payload: { characterId: 'jake', name: 1n } }))).toThrow(
+      'not plain JSON data',
+    );
+  });
+});
+
+describe('log-level upcasters', () => {
+  it('can rename a type and split one stored event into several', () => {
+    const raw = JSON.parse(JSON.stringify(base().events)) as unknown[];
+    raw.push(
+      rawEvent({
+        id: 'old1',
+        type: 'character.relabelled',
+        payload: { characterId: 'jake', name: 'Jay' },
+      }),
+      rawEvent({
+        id: 'old2',
+        type: 'character.bulkEdit',
+        payload: { characterId: 'jake', name: 'Jay B', hp: 5 },
+      }),
+    );
+    const renameType = (e: unknown) => {
+      const ev = e as { type: string };
+      return [ev.type === 'character.relabelled' ? { ...ev, type: 'character.renamed' } : ev];
+    };
+    const split = (e: unknown) => {
+      const ev = e as {
+        id: string;
+        type: string;
+        payload: { characterId: string; name: string; hp: number };
+      };
+      if (ev.type !== 'character.bulkEdit') return [ev];
+      const { characterId, name, hp } = ev.payload;
+      return [
+        { ...ev, id: `${ev.id}.1`, type: 'character.renamed', payload: { characterId, name } },
+        {
+          ...ev,
+          id: `${ev.id}.2`,
+          type: 'character.poolsSet',
+          payload: { characterId, pools: { hp } },
+        },
+      ];
+    };
+    const c = replay(raw, { rawUpcasters: [renameType, split] });
+    expect(c.state?.characters['jake']).toMatchObject({ name: 'Jay B', pools: { hp: 5 } });
+    expect(c.events.map((e) => e.id)).toEqual(['e1', 'e2', 'old1', 'old2.1', 'old2.2']);
+    expect(() => replay(raw, { rawUpcasters: [() => []] })).toThrow('dropped an event');
   });
 });
 
@@ -489,7 +627,7 @@ describe('property: replay equals incremental state', () => {
       accepted++;
       if (command.type === 'event.undo') undos++;
       c = result.campaign;
-      if (step % 25 === 0 || step === STEPS - 1) {
+      {
         const replayed = replay(JSON.parse(JSON.stringify(c.events)) as unknown[]);
         expect(replayed.state, `seed ${SEED}, step ${step}`).toEqual(c.state);
         expect(replayed.undone, `seed ${SEED}, step ${step}`).toEqual(c.undone);
