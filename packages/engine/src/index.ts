@@ -14,3 +14,4 @@ export * from './events';
 export * from './projection';
 export * from './content';
 export * from './bonuses';
+export * from './economy';

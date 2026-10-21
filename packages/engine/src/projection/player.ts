@@ -50,6 +50,15 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   characterOrder: 'party',
   // Each player gets only the broadcasts addressed to them, without the recipient list.
   broadcasts: 'owner',
+  // M1.7 economy. Not projected yet (M3.7 adds the player inventory view):
+  // the library may hold items the GM has not handed out, so players will get
+  // only the definitions of items they hold or are offered; holdings and
+  // trades only their own.
+  items: 'gm',
+  itemOrder: 'gm',
+  holdings: 'owner',
+  trades: 'owner',
+  tradeOrder: 'gm',
 };
 
 /** The rules subset a player screen needs to draw the sheet (no GM tuning, no stability). */

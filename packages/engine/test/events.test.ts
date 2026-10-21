@@ -3,6 +3,7 @@ import {
   EVENT_SCHEMA_VERSIONS,
   EVENT_TYPES,
   EventRejectedError,
+  PLAYER_COMMANDS,
   appendEvent,
   authorize,
   applyEvent,
@@ -722,7 +723,7 @@ describe('replay', () => {
 
 describe('property: replay equals incremental state', () => {
   const SEED = 20261021;
-  const STEPS = 400;
+  const STEPS = 1200;
 
   it(`holds over ${STEPS} random commands (seed ${SEED})`, () => {
     const rand = seededRandom(SEED);
@@ -739,13 +740,20 @@ describe('property: replay equals incremental state', () => {
     for (let step = 0; step < STEPS; step++) {
       const command = randomCommand(rand, c);
       const asPlayer =
-        (command.type === 'freePoints.assign' || command.type === 'event.undo') && rand() < 0.5;
+        (command.type === 'event.undo' ||
+          (PLAYER_COMMANDS.has(command.type) &&
+            'characterId' in command &&
+            typeof command.characterId === 'string')) &&
+        rand() < 0.5;
       const actorCtx = asPlayer
         ? {
             ...ctx,
             actor: {
               role: 'player' as const,
-              characterId: 'characterId' in command ? command.characterId : 'c1',
+              characterId:
+                'characterId' in command && typeof command.characterId === 'string'
+                  ? command.characterId
+                  : 'c1',
             },
           }
         : ctx;
@@ -779,8 +787,27 @@ describe('property: replay equals incremental state', () => {
     expect(rejected, `seed ${SEED}`).toBeGreaterThan(20);
     expect(nonLatest, `seed ${SEED}: accepted non-latest undos`).toBeGreaterThan(5);
     expect(dependent, `seed ${SEED}: undos refused for a dependency`).toBeGreaterThan(0);
-    for (const type of ['freePoints.assign', 'freePoints.override', 'xp.award', 'event.undo']) {
+    for (const type of [
+      'freePoints.assign',
+      'freePoints.override',
+      'xp.award',
+      'event.undo',
+      'item.define',
+      'holdings.adjust',
+      'item.equip',
+      'trade.propose',
+    ]) {
       expect(acceptedByType[type] ?? 0, `seed ${SEED}: accepted ${type}`).toBeGreaterThan(2);
+    }
+    for (const type of [
+      'item.edit',
+      'gift.give',
+      'item.unequip',
+      'trade.accept',
+      'trade.decline',
+      'trade.cancel',
+    ]) {
+      expect(acceptedByType[type] ?? 0, `seed ${SEED}: accepted ${type}`).toBeGreaterThan(0);
     }
     expect(lockedRejections, `seed ${SEED}: locked-batch rejections`).toBeGreaterThan(0);
     expect(playerAccepted, `seed ${SEED}: accepted player assignments`).toBeGreaterThan(0);
@@ -788,5 +815,6 @@ describe('property: replay equals incremental state', () => {
       new Set(c.events.map((e) => e.type)).size,
       `seed ${SEED}: ${[...new Set(c.events.map((e) => e.type))].join(',')}`,
     ).toBeGreaterThanOrEqual(EVENT_TYPES.length - 1);
-  });
+    // Every step replays the whole log (quadratic); slower under coverage.
+  }, 60_000);
 });

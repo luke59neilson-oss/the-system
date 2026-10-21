@@ -6,12 +6,26 @@ import {
   poolMax,
   type Character,
 } from '../character';
+import {
+  EMPTY_HOLDINGS,
+  EconomyRuleError,
+  applyBundle,
+  equip,
+  isEmptyBundle,
+  itemEffectiveStats,
+  unequip,
+  validateItemDef,
+  type Bundle,
+  type Holdings,
+  type ItemDef,
+  type Trade,
+} from '../economy';
 import { gainXp, shareBonus } from '../progression';
 import { parseRulesConfig, type RulesConfig } from '../rules';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 3;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 4;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -34,6 +48,25 @@ export interface CampaignState {
   readonly characterOrder: readonly string[];
   /** GM broadcasts in order (DESIGN §7); players see only those addressed to them. */
   readonly broadcasts: readonly BroadcastRecord[];
+  /** Item library by id (M1.7). */
+  readonly items: Readonly<Record<string, ItemDef>>;
+  /** Item ids in definition order. */
+  readonly itemOrder: readonly string[];
+  /** Currency, inventory and equipment per character id; absent = nothing held. */
+  readonly holdings: Readonly<Record<string, Holdings>>;
+  /** Every trade ever proposed, by id (closed ones keep their outcome). */
+  readonly trades: Readonly<Record<string, Trade>>;
+  /** Trade ids in proposal order. */
+  readonly tradeOrder: readonly string[];
+}
+
+const hasOwn = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
+
+/** A character's holdings (empty when they hold nothing yet). */
+export function holdingsOf(state: CampaignState, characterId: string): Holdings {
+  return hasOwn(state.holdings, characterId)
+    ? (state.holdings[characterId] ?? EMPTY_HOLDINGS)
+    : EMPTY_HOLDINGS;
 }
 
 const fail = (event: DomainEvent, reason: string): never => {
@@ -55,15 +88,79 @@ function checkKeys(event: DomainEvent, keys: string[], known: readonly string[],
   for (const key of keys) if (!known.includes(key)) fail(event, `unknown ${what} "${key}"`);
 }
 
-/** Runs a character rule, turning rule errors into event rejections. */
+/** Runs a character or economy rule, turning rule errors into event rejections. */
 function rule<T>(event: DomainEvent, run: () => T): T {
   try {
     return run();
   } catch (error) {
-    if (error instanceof CharacterRuleError) return fail(event, error.message);
+    if (error instanceof CharacterRuleError || error instanceof EconomyRuleError) {
+      return fail(event, error.message);
+    }
     throw error;
   }
 }
+
+function itemOf(state: CampaignState, event: DomainEvent, id: string): ItemDef {
+  const found = hasOwn(state.items, id) ? state.items[id] : undefined;
+  return found ?? fail(event, `unknown item "${id}"`);
+}
+
+function withHoldings(
+  state: CampaignState,
+  characterId: string,
+  holdings: Holdings,
+): CampaignState {
+  return { ...state, holdings: { ...state.holdings, [characterId]: holdings } };
+}
+
+/** Moves a bundle between parties (null = the GM: unlimited source, sink). Whole or nothing. */
+function transfer(
+  state: CampaignState,
+  event: DomainEvent,
+  from: string | null,
+  to: string | null,
+  bundle: Bundle,
+): CampaignState {
+  for (const itemId of Object.keys(bundle.items)) itemOf(state, event, itemId);
+  const currencyName = state.rules.economy.currencyName;
+  let next = state;
+  if (from !== null) {
+    characterOf(state, event, from);
+    const held = rule(event, () =>
+      applyBundle(holdingsOf(next, from), bundle, -1, state.items, currencyName),
+    );
+    next = withHoldings(next, from, held);
+  }
+  if (to !== null) {
+    characterOf(state, event, to);
+    const held = rule(event, () =>
+      applyBundle(holdingsOf(next, to), bundle, 1, state.items, currencyName),
+    );
+    next = withHoldings(next, to, held);
+  }
+  return next;
+}
+
+function openTrade(state: CampaignState, event: DomainEvent, tradeId: string): Trade {
+  const trade = hasOwn(state.trades, tradeId) ? state.trades[tradeId] : undefined;
+  if (!trade) return fail(event, `unknown trade "${tradeId}"`);
+  if (trade.status !== 'open') fail(event, `trade "${tradeId}" is already ${trade.status}`);
+  return trade;
+}
+
+function closeTrade(
+  state: CampaignState,
+  event: DomainEvent,
+  trade: Trade,
+  status: Trade['status'],
+): CampaignState {
+  return {
+    ...state,
+    trades: { ...state.trades, [trade.id]: { ...trade, status, closedAt: event.timestamp } },
+  };
+}
+
+const partyName = (id: string | null) => (id === null ? 'the GM' : `"${id}"`);
 
 /**
  * Applies one domain event (not `event.undone`; the log handles undo).
@@ -82,6 +179,11 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       characters: {},
       characterOrder: [],
       broadcasts: [],
+      items: {},
+      itemOrder: [],
+      holdings: {},
+      trades: {},
+      tradeOrder: [],
     };
   }
   if (state === null) return fail(event, 'the log must start with campaign.created');
@@ -224,7 +326,193 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
         ],
       };
     }
+    case 'item.defined': {
+      const { id, ...fields } = event.payload;
+      if (hasOwn(state.items, id)) fail(event, `item "${id}" already exists`);
+      const def = toItemDef(id, fields);
+      rule(event, () => validateItemDef(state.rules, def));
+      return {
+        ...state,
+        items: { ...state.items, [id]: def },
+        itemOrder: [...state.itemOrder, id],
+      };
+    }
+    case 'item.edited': {
+      const { itemId, ...changes } = event.payload;
+      const old = itemOf(state, event, itemId);
+      const def = toItemDef(itemId, {
+        name: changes.name ?? old.name,
+        rarity: changes.rarity ?? old.rarity,
+        description: changes.description ?? old.description,
+        slot: changes.slot === undefined ? old.slot : changes.slot,
+        bonuses: changes.bonuses ?? old.bonuses,
+      });
+      rule(event, () => validateItemDef(state.rules, def));
+      if (def.slot !== old.slot) {
+        for (const characterId of state.characterOrder) {
+          const worn = Object.entries(holdingsOf(state, characterId).equipped);
+          if (worn.some(([key, id]) => id === itemId && !key.startsWith(`${def.slot}:`))) {
+            fail(event, `[${old.name}] is equipped by "${characterId}"; unequip it first`);
+          }
+        }
+      }
+      return { ...state, items: { ...state.items, [itemId]: def } };
+    }
+    case 'holdings.adjusted': {
+      const { characterId, currency, items } = event.payload;
+      characterOf(state, event, characterId);
+      if (currency === 0 && Object.keys(items).length === 0) fail(event, 'nothing to adjust');
+      for (const itemId of Object.keys(items)) itemOf(state, event, itemId);
+      const plus: Bundle = {
+        currency: Math.max(0, currency),
+        items: Object.fromEntries(Object.entries(items).filter(([, n]) => n > 0)),
+      };
+      const minus: Bundle = {
+        currency: Math.max(0, -currency),
+        items: Object.fromEntries(
+          Object.entries(items)
+            .filter(([, n]) => n < 0)
+            .map(([k, n]) => [k, -n]),
+        ),
+      };
+      return transfer(
+        transfer(state, event, characterId, null, minus),
+        event,
+        null,
+        characterId,
+        plus,
+      );
+    }
+    case 'gift.given': {
+      const { characterId, to, bundle } = event.payload;
+      if (isEmptyBundle(bundle)) fail(event, 'a gift needs currency or items');
+      return transfer(state, event, characterId, to, bundle);
+    }
+    case 'item.equipped': {
+      const { characterId, itemId, slot, index } = event.payload;
+      characterOf(state, event, characterId);
+      const def = itemOf(state, event, itemId);
+      const held = rule(event, () =>
+        equip(state.rules, holdingsOf(state, characterId), def, slot, index),
+      );
+      return withHoldings(state, characterId, held);
+    }
+    case 'item.unequipped': {
+      const { characterId, slot, index } = event.payload;
+      characterOf(state, event, characterId);
+      const held = rule(event, () => unequip(holdingsOf(state, characterId), slot, index));
+      return withHoldings(state, characterId, held);
+    }
+    case 'trade.proposed': {
+      const { tradeId, characterId: from, to, give, get } = event.payload;
+      if (hasOwn(state.trades, tradeId)) fail(event, `trade "${tradeId}" already exists`);
+      if (isEmptyBundle(give) && isEmptyBundle(get)) fail(event, 'a trade needs something on it');
+      if (from !== null) characterOf(state, event, from);
+      if (to !== null) characterOf(state, event, to);
+      for (const itemId of [...Object.keys(give.items), ...Object.keys(get.items)]) {
+        itemOf(state, event, itemId);
+      }
+      // The proposer must hold what they offer now; it is checked again on accept.
+      if (from !== null) {
+        rule(event, () =>
+          applyBundle(
+            holdingsOf(state, from),
+            give,
+            -1,
+            state.items,
+            state.rules.economy.currencyName,
+          ),
+        );
+      }
+      const trade: Trade = {
+        id: tradeId,
+        from,
+        to,
+        give,
+        get,
+        status: 'open',
+        proposedAt: event.timestamp,
+        closedAt: null,
+      };
+      return {
+        ...state,
+        trades: { ...state.trades, [tradeId]: trade },
+        tradeOrder: [...state.tradeOrder, tradeId],
+      };
+    }
+    case 'trade.accepted':
+    case 'trade.declined':
+    case 'trade.cancelled': {
+      const trade = openTrade(state, event, event.payload.tradeId);
+      const by = event.payload.characterId;
+      const cancelling = event.type === 'trade.cancelled';
+      const expected = cancelling ? trade.from : trade.to;
+      if (by !== expected) {
+        fail(
+          event,
+          cancelling
+            ? `only ${partyName(trade.from)} can cancel this trade`
+            : `only ${partyName(trade.to)} can answer this trade`,
+        );
+      }
+      if (event.type !== 'trade.accepted') {
+        return closeTrade(state, event, trade, cancelling ? 'cancelled' : 'declined');
+      }
+      const moved = transfer(
+        transfer(state, event, trade.from, trade.to, trade.give),
+        event,
+        trade.to,
+        trade.from,
+        trade.get,
+      );
+      return closeTrade(moved, event, trade, 'accepted');
+    }
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');
   }
+}
+
+/** Builds a definition, dropping absent optional bonus fields (exact optional types). */
+function toItemDef(
+  id: string,
+  fields: {
+    name: string;
+    rarity: string;
+    description: string;
+    slot: string | null;
+    bonuses: readonly { stat: string; flat?: number | undefined; percent?: number | undefined }[];
+  },
+): ItemDef {
+  return {
+    id,
+    name: fields.name,
+    rarity: fields.rarity,
+    description: fields.description,
+    slot: fields.slot,
+    bonuses: fields.bonuses.map((b) => ({
+      stat: b.stat,
+      ...(b.flat === undefined ? {} : { flat: b.flat }),
+      ...(b.percent === undefined ? {} : { percent: b.percent }),
+    })),
+  };
+}
+
+/**
+ * A character's effective stats: base stats plus equipped item bonuses in the
+ * M1.6 order (titles join in M6.4). Pools and the screen switch to these in M3.7 (D58).
+ */
+export function characterEffectiveStats(
+  state: CampaignState,
+  characterId: string,
+): Record<string, number> {
+  const character = hasOwn(state.characters, characterId)
+    ? state.characters[characterId]
+    : undefined;
+  if (!character) throw new EconomyRuleError(`Unknown character "${characterId}"`);
+  return itemEffectiveStats(
+    state.rules,
+    character.stats,
+    holdingsOf(state, characterId),
+    state.items,
+  );
 }

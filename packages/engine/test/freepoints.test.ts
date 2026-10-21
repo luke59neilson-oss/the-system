@@ -235,9 +235,17 @@ describe('free points', () => {
     const stored = JSON.parse(JSON.stringify([...c.events, others])) as unknown[];
     expect(() => replay(stored)).toThrow('only act on their own character');
     // Player commands and player events stay in step.
-    expect([...PLAYER_COMMANDS].map((t) => t.replace('assign', 'assigned'))).toEqual([
-      ...PLAYER_EVENT_TYPES,
-    ]);
+    const past: Record<string, string> = {
+      'freePoints.assign': 'freePoints.assigned',
+      'gift.give': 'gift.given',
+      'item.equip': 'item.equipped',
+      'item.unequip': 'item.unequipped',
+      'trade.propose': 'trade.proposed',
+      'trade.accept': 'trade.accepted',
+      'trade.decline': 'trade.declined',
+      'trade.cancel': 'trade.cancelled',
+    };
+    expect([...PLAYER_COMMANDS].map((t) => past[t] ?? t)).toEqual([...PLAYER_EVENT_TYPES]);
   });
 
   it('a player cannot undo, even their own assignment', () => {

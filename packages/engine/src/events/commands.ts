@@ -67,7 +67,74 @@ export type Command =
       /** Recipients; omitted or null = every character. */
       characterIds?: readonly string[] | null | undefined;
     }
+  | {
+      type: 'item.define';
+      /** Optional; a fresh id is generated when omitted. */
+      id?: string | undefined;
+      name: string;
+      rarity: string;
+      description?: string | undefined;
+      slot?: string | null | undefined;
+      bonuses?: readonly StatBonusInput[] | undefined;
+    }
+  | {
+      type: 'item.edit';
+      itemId: string;
+      name?: string | undefined;
+      rarity?: string | undefined;
+      description?: string | undefined;
+      slot?: string | null | undefined;
+      bonuses?: readonly StatBonusInput[] | undefined;
+    }
+  | {
+      type: 'holdings.adjust';
+      characterId: string;
+      /** Signed: positive gives, negative takes. */
+      currency?: number | undefined;
+      items?: Readonly<Record<string, number>> | undefined;
+      reason?: string | undefined;
+    }
+  | {
+      type: 'gift.give';
+      /** Giver; null = the GM. */
+      characterId: string | null;
+      /** Recipient; null = the GM. */
+      to: string | null;
+      currency?: number | undefined;
+      items?: Readonly<Record<string, number>> | undefined;
+    }
+  | { type: 'item.equip'; characterId: string; itemId: string; slot: string; index?: number }
+  | { type: 'item.unequip'; characterId: string; slot: string; index?: number }
+  | {
+      type: 'trade.propose';
+      /** Optional; a fresh id is generated when omitted. */
+      tradeId?: string | undefined;
+      /** Proposer; null = the GM. */
+      characterId: string | null;
+      /** Counterparty; null = the GM. */
+      to: string | null;
+      give: BundleInput;
+      get: BundleInput;
+    }
+  | {
+      type: 'trade.accept' | 'trade.decline' | 'trade.cancel';
+      tradeId: string;
+      characterId: string | null;
+    }
   | { type: 'event.undo'; eventId: string };
+
+export interface StatBonusInput {
+  stat: string;
+  flat?: number | undefined;
+  percent?: number | undefined;
+}
+
+export interface BundleInput {
+  currency?: number | undefined;
+  items?: Readonly<Record<string, number>> | undefined;
+}
+
+const bundleOf = (b: BundleInput) => ({ currency: b.currency ?? 0, items: b.items ?? {} });
 
 /** Everything impure is injected: who acts, when, and how ids are made. */
 export interface CommandContext {
@@ -100,6 +167,16 @@ const commandSchema = z.discriminatedUnion('type', [
     text: z.string(),
     characterIds: z.array(z.string()).nullable().optional(),
   }),
+  z.object({ type: z.literal('item.define') }),
+  z.object({ type: z.literal('item.edit') }),
+  z.object({ type: z.literal('holdings.adjust') }),
+  z.object({ type: z.literal('gift.give') }),
+  z.object({ type: z.literal('item.equip') }),
+  z.object({ type: z.literal('item.unequip') }),
+  z.object({ type: z.literal('trade.propose'), give: anyRecord, get: anyRecord }),
+  z.object({ type: z.literal('trade.accept') }),
+  z.object({ type: z.literal('trade.decline') }),
+  z.object({ type: z.literal('trade.cancel') }),
   z.object({ type: z.literal('event.undo') }),
 ]);
 
@@ -112,6 +189,13 @@ export type CommandType = Command['type'];
  */
 export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>([
   'freePoints.assign',
+  'gift.give',
+  'item.equip',
+  'item.unequip',
+  'trade.propose',
+  'trade.accept',
+  'trade.decline',
+  'trade.cancel',
 ]);
 
 /** Returns why the actor may not issue the command, or null when allowed. */
@@ -228,6 +312,87 @@ function toEvent(command: Command, ctx: CommandContext): { type: EventType; payl
         type: 'system.broadcast',
         payload: { text: command.text, characterIds: command.characterIds ?? null },
       };
+    case 'item.define':
+      return {
+        type: 'item.defined',
+        payload: {
+          id: command.id ?? ctx.newId(),
+          name: command.name,
+          rarity: command.rarity,
+          description: command.description ?? '',
+          slot: command.slot ?? null,
+          bonuses: command.bonuses ?? [],
+        },
+      };
+    case 'item.edit': {
+      const { itemId, name, rarity, description, slot, bonuses } = command;
+      // Undefined fields vanish in the event's JSON round trip (= unchanged).
+      return {
+        type: 'item.edited',
+        payload: { itemId, name, rarity, description, slot, bonuses },
+      };
+    }
+    case 'holdings.adjust':
+      return {
+        type: 'holdings.adjusted',
+        payload: {
+          characterId: command.characterId,
+          currency: command.currency ?? 0,
+          items: command.items ?? {},
+          reason: command.reason ?? '',
+        },
+      };
+    case 'gift.give':
+      return {
+        type: 'gift.given',
+        payload: {
+          characterId: command.characterId,
+          to: command.to,
+          bundle: bundleOf(command),
+        },
+      };
+    case 'item.equip':
+      return {
+        type: 'item.equipped',
+        payload: {
+          characterId: command.characterId,
+          itemId: command.itemId,
+          slot: command.slot,
+          index: command.index ?? 0,
+        },
+      };
+    case 'item.unequip':
+      return {
+        type: 'item.unequipped',
+        payload: {
+          characterId: command.characterId,
+          slot: command.slot,
+          index: command.index ?? 0,
+        },
+      };
+    case 'trade.propose':
+      return {
+        type: 'trade.proposed',
+        payload: {
+          tradeId: command.tradeId ?? ctx.newId(),
+          characterId: command.characterId,
+          to: command.to,
+          give: bundleOf(command.give),
+          get: bundleOf(command.get),
+        },
+      };
+    case 'trade.accept':
+    case 'trade.decline':
+    case 'trade.cancel': {
+      const type = (
+        {
+          'trade.accept': 'trade.accepted',
+          'trade.decline': 'trade.declined',
+          'trade.cancel': 'trade.cancelled',
+        } as const
+      )[command.type];
+      return { type, payload: { tradeId: command.tradeId, characterId: command.characterId } };
+    }
     case 'event.undo':
       return { type: 'event.undone', payload: { eventId: command.eventId } };
   }

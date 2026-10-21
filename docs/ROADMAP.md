@@ -205,6 +205,8 @@ the full ones.
 - [ ] **M3.6 Skill selection.** Pending badge, offers side by side, choose.
 - [ ] **M3.7 Inventory, gifts, trades.** Equip; give items/currency to a
   character or the GM; propose/accept/decline trades; incoming notices.
+  Project holdings, own trades and the definitions of held/offered items;
+  switch pool maxima and the stats block to effective stats (D60).
 - [ ] **M3.8 Quest log.** Text, days left, stability gauge when visible.
 - [ ] **M3.9 Identify.** Choose a known entity; show tier text.
 - [ ] **M3.10 Notes.** Private journal (markdown, shareable toggle), live

@@ -67,6 +67,7 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
   const pick = <T>(items: readonly T[]): T => items[Math.floor(rand() * items.length)] as T;
   const ids = c.state?.characterOrder ?? [];
   const someId = () => (ids.length && rand() < 0.95 ? pick(ids) : 'ghost');
+  if (rand() < 0.35) return randomEconomyCommand(rand, c, pick, someId);
   const roll = rand();
   if (roll < 0.15) {
     return {
@@ -142,4 +143,91 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
   }
   const targets = c.events.map((e) => e.id);
   return { type: 'event.undo', eventId: rand() < 0.95 ? pick(targets) : 'missing' };
+}
+
+/** Economy commands (M1.7): item library, GM adjustments, gifts, equipment, trades. */
+function randomEconomyCommand(
+  rand: () => number,
+  c: Campaign,
+  pick: <T>(items: readonly T[]) => T,
+  someId: () => string,
+): Command {
+  const itemIds = c.state?.itemOrder ?? [];
+  const someItem = () => (itemIds.length && rand() < 0.95 ? pick(itemIds) : 'nothing');
+  const party = () => (rand() < 0.2 ? null : someId());
+  const bundle = () => ({
+    currency: rand() < 0.5 ? Math.floor(rand() * 40) : 0,
+    items: rand() < 0.6 ? { [someItem()]: 1 + Math.floor(rand() * 3) } : {},
+  });
+  const tradeIds = c.state?.tradeOrder ?? [];
+  const roll = rand();
+  if (roll < 0.1) {
+    return {
+      type: 'item.define',
+      id: `i${Math.floor(rand() * 6)}`,
+      name: pick(['Ring of Haste', 'Bow', ' ', 'Cloak', 'Bracer']),
+      rarity: pick(['common', 'rare', 'epic', 'common', 'divine', 'nope']),
+      slot: pick(['ring', 'mainHand', 'cloak', null, 'tail']),
+      bonuses:
+        rand() < 0.6
+          ? [{ stat: pick(['agility', 'luck', 'strength']), flat: 5, percent: 0.1 }]
+          : [],
+    };
+  }
+  if (roll < 0.14) {
+    return {
+      type: 'item.edit',
+      itemId: someItem(),
+      rarity: pick(['uncommon', 'epic', 'nope']),
+      ...(rand() < 0.3 ? { slot: pick(['ring', 'cloak', null]) } : {}),
+    };
+  }
+  if (roll < 0.3) {
+    return {
+      type: 'holdings.adjust',
+      characterId: someId(),
+      currency: Math.floor(rand() * 200) - 40,
+      items: rand() < 0.7 ? { [someItem()]: rand() < 0.8 ? 1 + Math.floor(rand() * 3) : -1 } : {},
+    };
+  }
+  if (roll < 0.38) return { type: 'gift.give', characterId: party(), to: party(), ...bundle() };
+  if (roll < 0.56) {
+    // Mostly something the character holds, in its own slot type.
+    const characterId = someId();
+    const held = Object.keys(c.state?.holdings[characterId]?.inventory ?? {});
+    const itemId = held.length && rand() < 0.8 ? pick(held) : someItem();
+    const slot = c.state?.items[itemId]?.slot ?? null;
+    return {
+      type: 'item.equip',
+      characterId,
+      itemId,
+      slot: slot !== null && rand() < 0.8 ? slot : pick(['ring', 'mainHand', 'cloak', 'tail']),
+      index: rand() < 0.8 ? 0 : Math.floor(rand() * 3),
+    };
+  }
+  if (roll < 0.7) {
+    const characterId = someId();
+    const worn = Object.keys(c.state?.holdings[characterId]?.equipped ?? {});
+    const [slot, index] =
+      worn.length && rand() < 0.8
+        ? (pick(worn).split(':') as [string, string])
+        : [pick(['ring', 'mainHand', 'cloak']), rand() < 0.8 ? '0' : '1'];
+    return { type: 'item.unequip', characterId, slot, index: Number(index) };
+  }
+  if (roll < 0.8 || tradeIds.length === 0) {
+    return {
+      type: 'trade.propose',
+      characterId: party(),
+      to: party(),
+      give: bundle(),
+      get: bundle(),
+    };
+  }
+  const trade = c.state?.trades[pick(tradeIds)];
+  const by = rand() < 0.7 ? (trade?.to ?? null) : (trade?.from ?? null);
+  return {
+    type: pick(['trade.accept', 'trade.accept', 'trade.decline', 'trade.cancel'] as const),
+    tradeId: trade?.id ?? 'none',
+    characterId: rand() < 0.9 ? by : someId(),
+  };
 }

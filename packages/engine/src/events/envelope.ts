@@ -15,6 +15,28 @@ const nonBlank = z
   .refine((s) => s.length <= 200, 'must be at most 200 characters');
 const recordId = z.string().min(1).max(100);
 const statValues = z.record(z.string().min(1), z.number().int().nonnegative());
+/** A party in a gift or trade: a character id, or null for the GM. */
+const party = recordId.nullable();
+const itemCount = z.number().int().positive().max(1_000_000);
+const bundle = z.strictObject({
+  currency: z.number().int().nonnegative().max(1_000_000_000),
+  items: z.record(recordId, itemCount),
+});
+const statBonus = z.strictObject({
+  stat: recordId,
+  flat: z.number().int().min(-1_000_000).max(1_000_000).optional(),
+  percent: z.number().min(-0.99).max(100).optional(),
+});
+const itemFields = {
+  name: nonBlank,
+  rarity: recordId,
+  description: z.string().trim().max(2000),
+  slot: recordId.nullable(),
+  bonuses: z.array(statBonus).max(30),
+};
+const tradeAction = z.strictObject({ tradeId: recordId, characterId: party });
+const distinctParties = (p: { characterId: string | null; to: string | null }) =>
+  p.characterId !== p.to;
 
 export const actorSchema = z.discriminatedUnion('role', [
   z.strictObject({ role: z.literal('gm') }),
@@ -86,6 +108,57 @@ export const EVENT_PAYLOAD_SCHEMAS = {
       .refine((t) => t.length <= 2000, 'must be at most 2000 characters'),
     characterIds: z.array(recordId).min(1).nullable(),
   }),
+  /** GM adds an item definition to the campaign library (M1.7). */
+  'item.defined': z.strictObject({ id: recordId, ...itemFields }),
+  /** GM edits a definition (rarity edits etc.); every copy changes. Omitted fields stay. */
+  'item.edited': z.strictObject({
+    itemId: recordId,
+    name: itemFields.name.optional(),
+    rarity: itemFields.rarity.optional(),
+    description: itemFields.description.optional(),
+    slot: itemFields.slot.optional(),
+    bonuses: itemFields.bonuses.optional(),
+  }),
+  /** GM gives or takes currency and items (signed deltas); nothing may go negative. */
+  'holdings.adjusted': z.strictObject({
+    characterId: recordId,
+    currency: z.number().int().min(-1_000_000_000).max(1_000_000_000),
+    items: z.record(
+      recordId,
+      z
+        .number()
+        .int()
+        .min(-1_000_000)
+        .max(1_000_000)
+        .refine((n) => n !== 0, 'must not be 0'),
+    ),
+    reason: z.string().trim().max(200),
+  }),
+  /** A one-way gift from the giver (`characterId`; null = GM) to `to` (null = GM). */
+  'gift.given': z
+    .strictObject({ characterId: party, to: party, bundle })
+    .refine(distinctParties, 'giver and recipient must differ'),
+  /** Moves one item from the inventory into a slot (a previous item there returns). */
+  'item.equipped': z.strictObject({
+    characterId: recordId,
+    itemId: recordId,
+    slot: recordId,
+    index: z.number().int().nonnegative().max(100),
+  }),
+  'item.unequipped': z.strictObject({
+    characterId: recordId,
+    slot: recordId,
+    index: z.number().int().nonnegative().max(100),
+  }),
+  /** Two-sided trade offer from `characterId` (null = GM) to `to` (null = GM). */
+  'trade.proposed': z
+    .strictObject({ tradeId: recordId, characterId: party, to: party, give: bundle, get: bundle })
+    .refine(distinctParties, 'a trade needs two different parties'),
+  /** The counterparty accepts: both sides move at once, or the event is rejected. */
+  'trade.accepted': tradeAction,
+  'trade.declined': tradeAction,
+  /** The proposer withdraws an open offer. */
+  'trade.cancelled': tradeAction,
   /** Compensating event: the target stops counting, as if it had never happened. */
   'event.undone': z.strictObject({ eventId: recordId }),
 } as const;
@@ -107,6 +180,16 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'freePoints.assigned': 1,
   'freePoints.overridden': 1,
   'system.broadcast': 1,
+  'item.defined': 1,
+  'item.edited': 1,
+  'holdings.adjusted': 1,
+  'gift.given': 1,
+  'item.equipped': 1,
+  'item.unequipped': 1,
+  'trade.proposed': 1,
+  'trade.accepted': 1,
+  'trade.declined': 1,
+  'trade.cancelled': 1,
   'event.undone': 1,
 };
 
@@ -164,6 +247,13 @@ function issuesText(error: z.ZodError): string {
  */
 export const PLAYER_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   'freePoints.assigned',
+  'gift.given',
+  'item.equipped',
+  'item.unequipped',
+  'trade.proposed',
+  'trade.accepted',
+  'trade.declined',
+  'trade.cancelled',
 ]);
 
 /** Throws when a player-recorded event is not one a player may cause. */

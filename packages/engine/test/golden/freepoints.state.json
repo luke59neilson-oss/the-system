@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "name": "Free points golden",
   "rules": {
     "configVersion": 1,
@@ -451,5 +451,10 @@
     }
   },
   "characterOrder": ["jake"],
-  "broadcasts": []
+  "broadcasts": [],
+  "items": {},
+  "itemOrder": [],
+  "holdings": {},
+  "trades": {},
+  "tradeOrder": []
 }

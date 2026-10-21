@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -432,5 +432,10 @@
       "text": "Welcome to the tutorial. The world is dying.",
       "characterIds": null
     }
-  ]
+  ],
+  "items": {},
+  "itemOrder": [],
+  "holdings": {},
+  "trades": {},
+  "tradeOrder": []
 }

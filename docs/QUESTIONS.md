@@ -55,3 +55,12 @@ answer under any question and the next run will follow it.
     were. Default: no refill (the GM heals or rests the party). Alternative:
     a level-up fills the pool (or adds the gained max).
     Answer:
+15. **Do item and title bonuses raise max HP/MP/Stamina?** E.g. a ring with
+    +1.0 Vitality. Default: yes, pool maxima use effective stats from M3.7 on
+    (D60); until then only base stats count.
+    Answer:
+16. **Does the GM keep a stock?** The GM side of gifts and trades is
+    unlimited (a shop or quest reward conjures the goods; what players hand
+    to the GM leaves play). Default: unlimited. Alternative: a GM stash
+    inventory that GM trades draw from.
+    Answer:

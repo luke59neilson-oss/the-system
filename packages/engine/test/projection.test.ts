@@ -290,6 +290,25 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
       ...s.broadcasts.map((b) => ({ ...b, gmNote: `${GM}-broadcast` })),
       ...whispers,
     ];
+    // Economy (M1.7): not projected yet, so every part of it is a canary.
+    const econ = s as Record<string, unknown>;
+    econ.items = {
+      ...s.items,
+      secret: { id: 'secret', name: `${GM}-item`, rarity: 'rare', description: `${GM}-desc` },
+    };
+    econ.itemOrder = [...s.itemOrder, `${GM}-order`];
+    econ.holdings = Object.fromEntries(
+      ids.map((id) => [
+        id,
+        {
+          currency: gmNum(),
+          inventory: { [`${GM}-inv`]: gmNum() },
+          equipped: { 'ring:0': `${GM}-eq` },
+        },
+      ]),
+    );
+    econ.trades = { t: { id: `${GM}-trade`, from: ids[0] ?? null, to: null } };
+    econ.tradeOrder = [`${GM}-trade`];
     return { state: s, owner, gm };
   }
 
