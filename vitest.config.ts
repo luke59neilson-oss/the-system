@@ -15,6 +15,8 @@ export default defineConfig({
       include: ['packages/engine/src/**/*.ts'],
       exclude: ['**/*.test.ts'],
       reporter: ['text-summary', 'text'],
+      // Engine line coverage floor (ROADMAP global rules). Never lower it.
+      thresholds: { lines: 90 },
     },
   },
 });

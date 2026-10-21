@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ENGINE_API_VERSION } from '@the-system/engine';
 import { ConfigError, resolveOptions } from './config';
 import { createServer } from './server';
 
@@ -13,7 +14,9 @@ async function main(): Promise<void> {
   await app.listen({ port: options.port, host: options.host });
   const address = app.server.address();
   const port = typeof address === 'object' && address ? address.port : options.port;
-  console.log(`The System server listening on http://${options.host}:${port}`);
+  console.log(
+    `The System server listening on http://${options.host}:${port} (engine API v${ENGINE_API_VERSION})`,
+  );
 
   const shutdown = (): void => {
     void app.close().then(() => process.exit(0));

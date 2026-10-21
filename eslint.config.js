@@ -4,12 +4,73 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-const focusOrSkip = ['describe', 'it', 'test', 'suite'].flatMap((fn) =>
-  ['skip', 'only'].map((mod) => ({
-    selector: `MemberExpression[object.name='${fn}'][property.name='${mod}']`,
-    message: `${fn}.${mod} is banned (docs/LOOP.md §5.6).`,
-  })),
-);
+// Test modifiers that disable or focus tests (docs/LOOP.md §5.6). Banned as any
+// member access, dotted or computed, in test files.
+const testModifiers = ['skip', 'only', 'fixme', 'todo', 'skipIf', 'runIf', 'fail'];
+const modifierRegex = `/^(${testModifiers.join('|')})$/`;
+const testBans = [
+  {
+    selector: `MemberExpression[computed=false][property.name=${modifierRegex}]`,
+    message: 'Disabling or focusing tests is banned (docs/LOOP.md §5.6).',
+  },
+  {
+    selector: `MemberExpression[computed=true][property.value=${modifierRegex}]`,
+    message: 'Disabling or focusing tests is banned (docs/LOOP.md §5.6).',
+  },
+  {
+    selector: 'CallExpression[callee.name=/^(xit|xdescribe|xtest|fit|fdescribe)$/]',
+    message: 'Disabling or focusing tests is banned (docs/LOOP.md §5.6).',
+  },
+];
+
+// The engine must stay pure and deterministic: no I/O, ambient time or randomness.
+const enginePurity = [
+  { selector: 'ImportExpression', message: 'No dynamic imports in the engine.' },
+  { selector: "NewExpression[callee.name='Date'][arguments.length=0]", message: 'Inject a clock.' },
+  { selector: "CallExpression[callee.name='Date']", message: 'Inject a clock.' },
+  {
+    selector: "MemberExpression[object.name='Date'][property.name='now']",
+    message: 'Inject a clock.',
+  },
+  {
+    selector: "MemberExpression[object.name='Date'][property.value='now']",
+    message: 'Inject a clock.',
+  },
+  {
+    selector: "MemberExpression[object.name='Math'][property.name='random']",
+    message: 'Inject an RNG.',
+  },
+  {
+    selector: "MemberExpression[object.name='Math'][property.value='random']",
+    message: 'Inject an RNG.',
+  },
+];
+const engineGlobals = [
+  'process',
+  'performance',
+  'crypto',
+  'setTimeout',
+  'setInterval',
+  'setImmediate',
+  'clearTimeout',
+  'clearInterval',
+  'queueMicrotask',
+  'Buffer',
+  'require',
+  'module',
+  'globalThis',
+  'window',
+  'document',
+  'fetch',
+  'navigator',
+  'localStorage',
+  'console',
+  '__dirname',
+  '__filename',
+].map((name) => ({ name, message: 'The engine must not touch the host environment.' }));
+
+const engineSrc = 'packages/engine/src/**/*.ts';
+const testFiles = ['**/*.test.{ts,tsx}', 'e2e/**/*.ts'];
 
 export default tseslint.config(
   {
@@ -22,15 +83,13 @@ export default tseslint.config(
     ],
   },
   {
-    // Inline lint-suppression comments are banned: they are ignored and reported.
+    // Inline lint-suppression comments have no effect; scripts/check-banned.mjs fails on them.
     linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: 'error' },
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    languageOptions: { globals: { ...globals.node } },
     rules: {
-      'no-restricted-syntax': ['error', ...focusOrSkip],
       '@typescript-eslint/ban-ts-comment': [
         'error',
         { 'ts-ignore': true, 'ts-nocheck': true, 'ts-expect-error': 'allow-with-description' },
@@ -39,34 +98,37 @@ export default tseslint.config(
     },
   },
   {
+    // Node globals everywhere except engine source.
+    ignores: [engineSrc],
+    languageOptions: { globals: { ...globals.node } },
+  },
+  {
     files: ['apps/web/src/**/*.{ts,tsx}'],
     languageOptions: { globals: { ...globals.browser } },
     plugins: { 'react-hooks': reactHooks },
     rules: reactHooks.configs.recommended.rules,
   },
   {
-    // The engine must stay pure: no I/O, no ambient time or randomness.
-    files: ['packages/engine/src/**/*.ts'],
-    ignores: ['packages/engine/src/**/*.test.ts'],
-    languageOptions: { globals: {} },
+    files: [engineSrc],
+    ignores: ['**/*.test.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: ['node:*', 'fs', 'path', 'os', 'http', 'net'] },
-      ],
-      'no-restricted-properties': [
-        'error',
-        { object: 'Date', property: 'now', message: 'Inject a clock instead.' },
-        { object: 'Math', property: 'random', message: 'Inject an RNG instead.' },
-      ],
-      'no-restricted-syntax': [
-        'error',
-        ...focusOrSkip,
         {
-          selector: "NewExpression[callee.name='Date'][arguments.length=0]",
-          message: 'Inject a clock instead.',
+          patterns: [
+            {
+              regex: '^(?!\\.{1,2}/|zod$|zod/)',
+              message: 'The engine may import only relative modules and zod.',
+            },
+          ],
         },
       ],
+      'no-restricted-globals': ['error', ...engineGlobals],
+      'no-restricted-syntax': ['error', ...enginePurity],
     },
+  },
+  {
+    files: testFiles,
+    rules: { 'no-restricted-syntax': ['error', ...testBans] },
   },
 );
