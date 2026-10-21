@@ -155,7 +155,7 @@ test('the GM views the table as each player, live, with player-only data', async
       .then((h) => h?.contentFrame());
     if (!frame) throw new Error(`No pane frame for ${name}`);
     return frame.evaluate((doSet) => {
-      const w = window as unknown as { ms3Marker?: string };
+      const w = globalThis as unknown as { ms3Marker?: string };
       if (doSet) w.ms3Marker = 'kept';
       return w.ms3Marker ?? null;
     }, set);
