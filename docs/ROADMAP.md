@@ -106,7 +106,7 @@ the full ones.
 
 - [x] **MS.1 Minimal GM screen.** Create a character from one built-in
   starter class; award XP with the even split; send a System broadcast.
-- [ ] **MS.2 Minimal player screen.** DESIGN §9 core rows (name, race, class,
+- [x] **MS.2 Minimal player screen.** DESIGN §9 core rows (name, race, class,
   levels, pools, nine stats in tenths, free points) and the live DING feed.
 - [ ] **MS.3 Perspective switcher.** In the GM app, a "View as" bar:
   [GM] [each character] [Table view]. Character views and the Table view's
