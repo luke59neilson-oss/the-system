@@ -1,8 +1,8 @@
 # Progress
 
-**Status:** in progress: M0 done; M1.1-M1.5, M1.13, M2.1-M2.3, MS.1-MS.6 done
-**Next item:** MS.A Milestone acceptance and review (then push `main` to `release`)
-**Blockers:** none
+**Status:** in progress: M0 and MS done; M1.1-M1.6, M1.13, M2.1-M2.3 done
+**Next item:** M1.7 Items and economy
+**Blockers:** first preview build not published: `git push origin main:release` was refused by this session's permission classifier ("Production Deploy"). Luke: push `main` to `release` yourself (or allow it) to get the preview-<date> Release.
 
 ## Run log
 
@@ -117,3 +117,17 @@ next item, blockers. -->
 - Open `wip/*` branches: none unfinished (`wip/MS.6` is merged).
 - Next: MS.A Milestone acceptance and review (reviewer `fable`), then `git push origin main:release`.
 - Blockers: none.
+
+### Run 9fed26a9 · 2026-10-21 20:06–20:36 UTC
+- Preflight: `add_repo` not offered in this session; repo already cloned (detached HEAD; local `main` had unrelated history, reset to `origin/main`; old ref kept locally as `old-local-main`). Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `fable` and `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md; latest CI run on main green (b88418e).
+- Finished: MS.A Milestone acceptance and review (fable, 2 rounds; new `e2e/MS.A.spec.ts`: first session end to end through a server restart with the phone reconnecting; Medium fixed: GM link for another browser on the host, D56). M1.6 Titles and bonuses (sonnet, 1 round, 0 H/M; Lows fixed; D57).
+- **Not done:** `git push origin main:release` (MS.A's preview build) was denied by the session's auto-mode permission classifier as a production deploy. Not retried or worked around. The release workflow is proven by the dry run (39663632813); Luke can push `main` to `release` to publish the first preview.
+- Tests: 349 unit/integration tests (28 files) incl. fixed-seed bonus reference test (seed 20261106); 11 e2e (M0.1, MS.1–MS.5, MS.A); desktop smoke (`npm run desktop:smoke`) passes locally. Engine line coverage 99.19% (floor 90%).
+- CI: green on 0df3fa7, 13c255d, 112f8df, cc2b308; 55918e5 running at the end of the run (the next run checks it first).
+- Reviews: 2 items, 3 rounds, 0 High; 1 Medium fixed; Lows fixed or logged.
+- New decisions D56–D57; new question Q14 (refill pools on level-up).
+- Note: running e2e rewrites tracked screenshots (join URL port changes); discard re-renders of other items before committing.
+- Open `wip/*` branches: none unfinished.
+- Next: M1.7 Items and economy (stopped at 26 min rather than start a large engine item that could not be reviewed within the timebox).
+- Blockers: preview release push needs Luke (see header).
