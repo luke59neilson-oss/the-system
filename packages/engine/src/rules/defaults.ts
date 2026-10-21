@@ -112,6 +112,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
       theme: 'diamond',
     },
   ],
+  character: { defaultRace: 'Human' },
   tracks: {
     professionUnlockGrade: 'E', // §2
     evolutionGate: 'race', // §2, QUESTIONS 6

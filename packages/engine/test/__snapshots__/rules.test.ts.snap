@@ -14,6 +14,9 @@ exports[`default rules > match the snapshot 1`] = `
       8,
     ],
   },
+  "character": {
+    "defaultRace": "Human",
+  },
   "configVersion": 1,
   "economy": {
     "currencyName": "Credits",

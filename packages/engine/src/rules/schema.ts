@@ -83,6 +83,10 @@ export const rulesConfigSchema = z
     }),
     pools: z.array(poolSchema).min(1),
     grades: z.array(gradeSchema).min(1),
+    character: z.strictObject({
+      /** Race every new character starts as (DESIGN §2: Earth's humans). */
+      defaultRace: z.string().min(1),
+    }),
     tracks: z.strictObject({
       /** Grade at whose evolution professions are first offered. */
       professionUnlockGrade: z.string(),
