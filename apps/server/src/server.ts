@@ -3,6 +3,7 @@ import path from 'node:path';
 import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { buildDemoEvents } from '@the-system/engine';
 import { LiveHub, type HubOptions } from './hub';
 import type { JoinInfo } from './join';
 import { helloMessage } from './protocol';
@@ -20,7 +21,15 @@ export interface CreateServerOptions {
   allowedHosts?: readonly string[];
   /** Join URLs and QR for the GM screen (GM-only route; null until listening). */
   joinInfo?: () => JoinInfo | null;
+  /**
+   * Opens another campaign by id (the demo, MS.4). Without it the server stays
+   * on `live.store` and the campaign switch route answers 404.
+   */
+  openCampaign?: (id: string) => CampaignStore;
 }
+
+/** The demo campaign's id (D53): its own directory, never the real campaign's. */
+export const DEMO_CAMPAIGN_ID = 'demo';
 
 /** /api paths anyone on the LAN may read; every other /api path needs the GM key. */
 export const PUBLIC_API = new Set(['/api/characters']);
@@ -37,7 +46,15 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   await app.register(fastifyWebsocket, { options: { maxPayload: 1024 * 1024 } });
   await app.register(fastifyStatic, { root: webRoot, index: ['index.html'] });
 
-  const hub = options.live ? new LiveHub(options.live.store, options.live) : null;
+  // The active campaign. Switching (real ↔ demo) closes every socket; clients
+  // reconnect and join the new campaign's hub, so no frame ever mixes the two.
+  const realId = options.live?.store.id ?? null;
+  let active = options.live
+    ? { store: options.live.store, hub: new LiveHub(options.live.store, options.live) }
+    : null;
+  const opened = new Map<string, CampaignStore>();
+  if (options.live) opened.set(options.live.store.id, options.live.store);
+  const sockets = new Set<{ close: (code: number, reason: string) => void }>();
 
   // Only /ws may be upgraded, and only from this server's own pages (or a
   // listed origin); refuse anything else before the handshake.
@@ -75,11 +92,12 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   app.get('/health', () => ({ status: 'ok' }));
 
   app.get(WS_PATH, { websocket: true }, (socket) => {
-    if (!hub) {
+    if (!active) {
       socket.send(JSON.stringify(helloMessage()));
       return;
     }
-    const connection = hub.connect((message) => {
+    sockets.add(socket);
+    const connection = active.hub.connect((message) => {
       if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(message));
     });
     socket.on('message', (data: Buffer | ArrayBuffer | Buffer[]) => {
@@ -93,12 +111,50 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
         }
       }
     });
-    socket.on('close', () => connection.close());
+    socket.on('close', () => {
+      sockets.delete(socket);
+      connection.close();
+    });
+  });
+
+  // Which campaign is open, and switching between the real one and the demo.
+  app.get('/api/gm/campaign', (_request, reply) => {
+    if (!active || realId === null) return reply.code(404).send({ error: 'No campaign open' });
+    return { id: active.store.id, demo: active.store.id === DEMO_CAMPAIGN_ID };
+  });
+  app.post('/api/gm/campaign', (request, reply) => {
+    const live = options.live;
+    if (!active || !live || realId === null || !options.openCampaign) {
+      return reply.code(404).send({ error: 'Campaign switching is not available' });
+    }
+    const body = request.body as { demo?: unknown } | null;
+    if (typeof body?.demo !== 'boolean') {
+      return reply.code(400).send({ error: 'Send { "demo": true } or { "demo": false }' });
+    }
+    const id = body.demo ? DEMO_CAMPAIGN_ID : realId;
+    if (id === active.store.id) return { id, demo: body.demo };
+    let store = opened.get(id);
+    if (!store) {
+      store = options.openCampaign(id);
+      opened.set(id, store);
+    }
+    // A fresh demo directory is seeded once; later loads keep what the GM did in it.
+    if (body.demo && store.campaign.events.length === 0) {
+      store.appendAll(buildDemoEvents({ now: live.now, newId: live.newId }));
+    }
+    active = { store, hub: new LiveHub(store, live) };
+    for (const socket of [...sockets]) socket.close(1012, 'Campaign changed');
+    sockets.clear();
+    return { id, demo: body.demo };
+  });
+  app.addHook('onClose', () => {
+    // The caller closes the store it passed in; close the ones opened here.
+    for (const [id, store] of opened) if (id !== realId) store.close();
   });
 
   // Join list: the only campaign data any LAN client may read over HTTP.
   app.get('/api/characters', () => {
-    const state = options.live?.store.campaign.state;
+    const state = active?.store.campaign.state;
     if (!state) return [];
     return state.characterOrder.flatMap((id) => {
       const c = state.characters[id];
@@ -115,8 +171,8 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   });
 
   app.get('/api/gm/export', () => {
-    if (!options.live) return { error: 'No campaign open' };
-    return options.live.store.exportCampaign();
+    if (!active) return { error: 'No campaign open' };
+    return active.store.exportCampaign();
   });
 
   // Browser navigations to client-side routes get the app shell; anything else

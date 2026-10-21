@@ -119,6 +119,13 @@ the full ones.
 - [ ] **MS.4 Demo campaign.** GM menu "Load demo campaign": 4 characters at
   different grades (G, F, E, D) with skills, titles, items and a quest with
   World Stability, for trying things out. Never mixes into a real campaign.
+  *Split (D53):* titles, items, quests/World Stability and grades above G
+  need M1.6, M1.7, M1.12 and M1.10, which come later in the work order, so
+  MS.4 ships the demo as its own campaign (load / back to my campaign) with
+  4 characters at different levels, starter skills and the tutorial quest
+  text as a System message; M1.15 grows it to the full content.
+  *Accept (MS.4):* e2e: load the demo, play in it, go back; the real
+  campaign's party, log and export carry nothing of the demo.
 - [ ] **MS.5 Desktop wrapper (preview).** Pulls M10.1 forward: double-click
   starts the server and opens the GM window with the GM key injected; join
   URL + QR shown; data in the OS app-data folder.
@@ -170,6 +177,10 @@ the full ones.
 - [ ] **M1.14 Campaign simulation.** 40 sessions, 4 characters, ~6 levels per
   session, random valid play (fixed seed). *Accept:* DESIGN check values; 29
   selections each; evolutions at thresholds; invariants hold; coverage ≥ 90%.
+- [ ] **M1.15 Demo campaign content.** (from MS.4, D53) Extend the demo:
+  characters at grades G, F, E and D (via evolutions), titles, items and a
+  quest with World Stability. *Accept:* demo tests check each grade, a title,
+  an item and a visible stability quest; the real campaign is untouched.
 - [ ] **M1.A Milestone acceptance and review.**
 
 ## M2 (continued) — Server and sync

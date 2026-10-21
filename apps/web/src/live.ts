@@ -50,6 +50,8 @@ export interface LiveSnapshot {
 export type CommandResult = { ok: true } | { ok: false; error: string };
 
 const RECONNECT_MS = 1000;
+/** Close code the server uses when the GM switches campaigns (1012 = service restart). */
+const CAMPAIGN_CHANGED = 1012;
 
 export class LiveClient {
   private socket: WebSocket | null = null;
@@ -126,9 +128,16 @@ export class LiveClient {
       }
       this.handle(socket, message);
     });
-    socket.addEventListener('close', () => {
+    socket.addEventListener('close', (event) => {
       for (const resolve of this.pending.values()) resolve({ ok: false, error: 'Connection lost' });
       this.pending.clear();
+      if (event.code === CAMPAIGN_CHANGED) {
+        // The GM switched campaigns (real ↔ demo, MS.4): nothing from the old
+        // one may carry over, so rejoin as if this page were fresh.
+        this.lastSeq = 0;
+        this.everJoined = false;
+        this.update({ notifications: [], gap: false, state: null, view: null, seq: 0 });
+      }
       if (this.closed || this.snapshot.status === 'refused') return;
       this.update({ status: 'offline' });
       this.retry = setTimeout(() => this.open(), RECONNECT_MS);

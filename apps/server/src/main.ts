@@ -16,10 +16,11 @@ const defaultWebRoot = path.resolve(here, '../../web/dist');
 
 async function main(): Promise<void> {
   const options = resolveOptions(process.argv.slice(2), process.env, defaultWebRoot);
-  const store = CampaignStore.open('main', {
+  const storeOptions = {
     dataDir: path.resolve(options.dataDir),
     now: () => new Date().toISOString(),
-  });
+  };
+  const store = CampaignStore.open('main', storeOptions);
   const gmKey = options.gmKey ?? newGmKey();
   let boundPort: number | null = null;
   const app = await createServer({
@@ -27,6 +28,8 @@ async function main(): Promise<void> {
     joinInfo: () =>
       boundPort === null ? null : joinInfo(options.host, boundPort, networkInterfaces()),
     webRoot: options.webRoot,
+    // The demo campaign lives in its own directory (MS.4, D53).
+    openCampaign: (id) => CampaignStore.open(id, storeOptions),
     live: { store, gmKey, now: () => new Date().toISOString(), newId: () => randomUUID() },
   });
   await app.listen({ port: options.port, host: options.host });

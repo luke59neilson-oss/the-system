@@ -461,3 +461,29 @@ a {
 .perspective-table .party {
   overflow-x: auto;
 }
+/* Demo campaign switch (MS.4). */
+.campaign-switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: -4px 0 12px;
+}
+.campaign-switch button {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid #3b5682;
+  padding: 3px 10px;
+  font-size: 0.85rem;
+}
+.campaign-switch.demo {
+  padding: 6px 10px;
+  border: 1px dashed #e0b45a;
+  border-radius: 4px;
+  background: rgba(224, 180, 90, 0.08);
+}
+.demo-badge {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: #f0c878;
+}

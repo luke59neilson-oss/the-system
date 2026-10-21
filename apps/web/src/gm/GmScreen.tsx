@@ -9,6 +9,7 @@ import {
 import { friendlyError } from '../format';
 import { forgetGmKey, takeGmKey } from '../gmKey';
 import { LiveClient, type CommandResult, type LiveSnapshot } from '../live';
+import { CampaignSwitch } from './CampaignSwitch';
 import { feedRows } from './feed';
 import { resolvePerspective, type PartyMember, type Perspective } from './perspective';
 import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
@@ -45,7 +46,7 @@ export function GmScreen() {
       </main>
     );
   }
-  return <GmConsole client={client} />;
+  return <GmConsole client={client} gmKey={gmKey ?? ''} />;
 }
 
 function useLive(client: LiveClient): LiveSnapshot {
@@ -63,7 +64,7 @@ function partyOf(state: CampaignState | null): PartyMember[] {
   });
 }
 
-function GmConsole({ client }: { client: LiveClient }) {
+function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
   const live = useLive(client);
   const state = live.state;
   const [wanted, setWanted] = useState<Perspective>({ kind: 'gm' });
@@ -110,6 +111,7 @@ function GmConsole({ client }: { client: LiveClient }) {
         </span>
         {state && <PerspectiveBar party={party} current={view} onChange={setWanted} />}
       </header>
+      {live.status === 'joined' && <CampaignSwitch gmKey={gmKey} stateName={state?.name ?? null} />}
       {live.status === 'joined' && state === null && <CreateCampaign client={client} />}
       {state && (
         <div className="perspective-body">
