@@ -556,7 +556,7 @@ describe('evolution', () => {
     expect(char(c).skills[0]?.name).toBe('Second');
   });
 
-  it('a choice is re-checked against the character at choose time', () => {
+  it('an open release holds the XP that opened it; undoing the release closes it', () => {
     let c = ok(atGTop(), release(archery, 'Volley', 'common'));
     // The skill name became taken after the release? Not possible at G (no selections), so
     // undo the XP instead: the release no longer holds and the undo is refused.
@@ -715,5 +715,145 @@ describe('projection', () => {
     if (!after) throw new Error('no state');
     expect(projectForPlayer(after, 'jake').me.selections).toEqual(char(c).selections);
     expect(JSON.stringify(projectForPlayer(after, 'kim'))).not.toContain('Skill 5');
+  });
+});
+
+describe('review fixes (M1.10 round 1)', () => {
+  const toF = () =>
+    ok(ok(atGTop(), release(archery, 'Volley', 'common')), {
+      type: 'evolution.choose',
+      characterId: 'jake',
+      optionId: 'o1',
+    });
+
+  it('undoing a re-release the player already answered is refused (the choice names its release)', () => {
+    let c = ok(atGTop(), release(archery, 'Volley', 'common'));
+    c = ok(c, release(archery, 'Sniper', 'uncommon'));
+    const second = c.events.at(-1)?.id ?? '';
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' }, player('jake'));
+    expect(c.events.at(-1)?.payload).toMatchObject({ releaseId: second });
+    expect(reject(c, { type: 'event.undo', eventId: second })).toMatch(/released again/);
+    expect(char(c).skills[0]?.name).toBe('Sniper');
+  });
+
+  it('a choice naming a stale release or offer is refused', () => {
+    let c = ok(atGTop(), release(archery, 'Volley', 'common'));
+    const first = c.events.at(-1)?.id ?? '';
+    c = ok(c, release(archery, 'Sniper', 'uncommon'));
+    expect(
+      reject(c, {
+        type: 'evolution.choose',
+        characterId: 'jake',
+        optionId: 'o1',
+        releaseId: first,
+      }),
+    ).toMatch(/released again/);
+    c = ok(ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' }), award(150));
+    c = ok(c, { type: 'selection.offer', characterId: 'jake', level: 5, options: menu(5, 'rare') });
+    const offer1 = c.events.at(-1)?.id ?? '';
+    c = ok(c, { type: 'selection.offer', characterId: 'jake', level: 5, options: menu(5, 'rare') });
+    const offer2 = c.events.at(-1)?.id ?? '';
+    expect(
+      reject(c, {
+        type: 'selection.choose',
+        characterId: 'jake',
+        level: 5,
+        skill: 'Skill 5a',
+        offerId: offer1,
+      }),
+    ).toMatch(/offered again/);
+    c = ok(c, { type: 'selection.choose', characterId: 'jake', level: 5, skill: 'Skill 5a' });
+    expect(reject(c, { type: 'event.undo', eventId: offer2 })).toMatch(/offered again/);
+  });
+
+  it('class gate: a lagging profession evolves with its level and banked XP repriced at the new grade', () => {
+    const raw = rawRules() as { tracks: { evolutionGate: string } };
+    raw.tracks.evolutionGate = 'class';
+    let c = run(
+      [{ type: 'campaign.create', name: 'Gate', rules: raw }, make('jake', 'Jake')],
+      testContext('h'),
+    );
+    c = ok(c, award(400));
+    c = ok(c, release(archery, 'Volley', 'common'));
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    c = ok(c, award(10 * 150));
+    c = ok(c, release('Volley', 'Volley II', 'uncommon', { professions: ['Smith'] }));
+    c = ok(c, {
+      type: 'evolution.choose',
+      characterId: 'jake',
+      optionId: 'o1',
+      profession: 'Smith',
+    });
+    // E: class to 49, profession only to 30 (+ 100 XP into level 31).
+    c = ok(c, award(35 * 250));
+    c = ok(c, award(16 * 250 + 100, 'profession'));
+    expect(char(c)).toMatchObject({ classLevel: 49, professionLevel: 30, grade: 'E' });
+    expect(raceLevel(rules, char(c))).toBe(39);
+    // Profession XP beyond what it needs is not banked: it is below its cap.
+    expect(char(c).xp.profession).toBe(100);
+    c = ok(c, award(1000)); // banks on the class track
+    c = ok(c, release('Volley II', 'Volley III', 'epic'));
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    const j = char(c);
+    expect(j.grade).toBe('D');
+    expect(j.classLevel).toBe(51); // 1000 banked / 400 per D level, 200 left
+    expect(j.xp.class).toBe(200);
+    expect(j.professionLevel).toBe(30);
+    expect(j.xp.profession).toBe(100); // kept; now toward a D level (400)
+  });
+
+  it('race gate: banked profession XP applies after the evolution', () => {
+    let c = toF();
+    c = ok(c, award(10 * 150));
+    c = ok(c, release('Volley', 'Volley II', 'uncommon', { professions: ['Smith'] }));
+    c = ok(c, {
+      type: 'evolution.choose',
+      characterId: 'jake',
+      optionId: 'o1',
+      profession: 'Smith',
+    });
+    c = ok(c, award(35 * 250));
+    c = ok(c, award(35 * 250 + 900, 'profession'));
+    expect(char(c)).toMatchObject({ classLevel: 49, professionLevel: 49 });
+    expect(char(c).xp.profession).toBe(900);
+    c = ok(c, release('Volley II', 'Volley III', 'epic'));
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    expect(char(c)).toMatchObject({ grade: 'D', professionLevel: 51 });
+    expect(char(c).xp.profession).toBe(100);
+  });
+
+  it('a selection left pending across an evolution keeps its own grade ceiling (Q21)', () => {
+    let c = ok(toF(), award(10 * 150));
+    c = ok(c, release('Volley', 'Volley II', 'uncommon'));
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    expect(char(c).grade).toBe('E');
+    expect(dueSelections(rules, char(c)).map((s) => s.level)).toEqual([5, 10]);
+    expect(
+      reject(c, {
+        type: 'selection.offer',
+        characterId: 'jake',
+        level: 10,
+        options: menu(10, 'epic'),
+      }),
+    ).toMatch(/above the F-grade ceiling/);
+    c = ok(c, {
+      type: 'selection.offer',
+      characterId: 'jake',
+      level: 10,
+      options: menu(10, 'rare'),
+    });
+    c = ok(c, { type: 'selection.choose', characterId: 'jake', level: 10, skill: 'Skill 10a' });
+    expect(char(c).skills.at(-1)).toMatchObject({ name: 'Skill 10a', rarity: 'rare' });
+  });
+
+  it('a transform may not take a name on a pending menu', () => {
+    let c = ok(toF(), award(10 * 150));
+    c = ok(c, {
+      type: 'selection.offer',
+      characterId: 'jake',
+      level: 10,
+      options: menu(10, 'rare'),
+    });
+    expect(reject(c, release('Volley', 'Skill 10b', 'uncommon'))).toMatch(/pending level 10 menu/);
   });
 });

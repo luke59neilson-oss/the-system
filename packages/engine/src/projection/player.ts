@@ -280,12 +280,14 @@ function ownSheet(rules: RulesConfig, c: Character): OwnSheet {
       level: r.level,
       options: r.options.map(copyOption),
       chosen: r.chosen,
+      offerId: r.offerId,
     })),
     evolution:
       c.evolution === null
         ? null
         : {
             toGrade: c.evolution.toGrade,
+            releaseId: c.evolution.releaseId,
             options: c.evolution.options.map((o) => ({
               id: o.id,
               className: o.className,

@@ -558,7 +558,8 @@
               "description": ""
             }
           ],
-          "chosen": "Quick Draw"
+          "chosen": "Quick Draw",
+          "offerId": "ev7"
         }
       ],
       "evolution": null

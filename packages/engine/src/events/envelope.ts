@@ -235,6 +235,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     characterId: recordId,
     level: z.number().int().positive().max(10_000),
     skill: nonBlank,
+    /** The offer chosen from (its event id); absent only in logs from before it existed. */
+    offerId: recordId.optional(),
   }),
   /** GM releases an available evolution with its options (DESIGN §3 "held until released"). */
   'evolution.released': z.strictObject({
@@ -260,6 +262,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     characterId: recordId,
     optionId: recordId,
     profession: nonBlank.nullable(),
+    /** The release chosen from (its event id); absent only in logs from before it existed. */
+    releaseId: recordId.optional(),
   }),
   /** Compensating event: the target stops counting, as if it had never happened. */
   'event.undone': z.strictObject({ eventId: recordId }),

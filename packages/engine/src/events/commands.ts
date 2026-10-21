@@ -177,7 +177,14 @@ export type Command =
         description?: string | undefined;
       }[];
     }
-  | { type: 'selection.choose'; characterId: string; level: number; skill: string }
+  | {
+      type: 'selection.choose';
+      characterId: string;
+      level: number;
+      skill: string;
+      /** The offer being answered; defaults to the menu pending now. */
+      offerId?: string | undefined;
+    }
   | {
       type: 'evolution.release';
       characterId: string;
@@ -197,6 +204,8 @@ export type Command =
       characterId: string;
       optionId: string;
       profession?: string | null | undefined;
+      /** The release being answered; defaults to the one pending now. */
+      releaseId?: string | undefined;
     }
   | { type: 'event.undo'; eventId: string };
 
@@ -349,10 +358,22 @@ function awardPayload(command: Extract<Command, { type: 'xp.award' }>) {
   };
 }
 
+/** The character a choice is made for, if it exists (choices default to what is pending). */
+function pendingOf(campaign: Campaign, characterId: string) {
+  const characters = campaign.state?.characters;
+  return characters && Object.prototype.hasOwnProperty.call(characters, characterId)
+    ? characters[characterId]
+    : undefined;
+}
+
 export type CommandResult =
   { ok: true; campaign: Campaign; events: DomainEvent[] } | { ok: false; error: string };
 
-function toEvent(command: Command, ctx: CommandContext): { type: EventType; payload: unknown } {
+function toEvent(
+  command: Command,
+  ctx: CommandContext,
+  campaign: Campaign,
+): { type: EventType; payload: unknown } {
   switch (command.type) {
     case 'campaign.create':
       return { type: 'campaign.created', payload: { name: command.name, rules: command.rules } };
@@ -580,7 +601,16 @@ function toEvent(command: Command, ctx: CommandContext): { type: EventType; payl
     case 'selection.choose':
       return {
         type: 'selection.chosen',
-        payload: { characterId: command.characterId, level: command.level, skill: command.skill },
+        payload: {
+          characterId: command.characterId,
+          level: command.level,
+          skill: command.skill,
+          offerId:
+            command.offerId ??
+            pendingOf(campaign, command.characterId)?.selections.find(
+              (s) => s.level === command.level,
+            )?.offerId,
+        },
       };
     case 'evolution.release':
       return {
@@ -604,6 +634,8 @@ function toEvent(command: Command, ctx: CommandContext): { type: EventType; payl
           characterId: command.characterId,
           optionId: command.optionId,
           profession: command.profession ?? null,
+          releaseId:
+            command.releaseId ?? pendingOf(campaign, command.characterId)?.evolution?.releaseId,
         },
       };
     case 'event.undo':
@@ -624,7 +656,7 @@ export function execute(campaign: Campaign, command: Command, ctx: CommandContex
   const denied = authorize(command, ctx.actor);
   if (denied) return { ok: false, error: `Not allowed: ${denied}` };
   try {
-    const { type, payload } = toEvent(command, ctx);
+    const { type, payload } = toEvent(command, ctx, campaign);
     const event = parseEvent({
       id: ctx.newId(),
       type,

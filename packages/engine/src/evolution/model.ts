@@ -44,6 +44,8 @@ export interface SelectionRecord {
   readonly level: number;
   readonly options: readonly SkillOption[];
   readonly chosen: string | null;
+  /** Id of the offer event; a choice names it, so undoing a re-offer cannot re-aim a pick. */
+  readonly offerId: string;
 }
 
 /** One skill an evolution option rewrites (DESIGN §6 "Evolutions transform 1–2 skills"). */
@@ -70,6 +72,8 @@ export interface EvolutionOption {
 export interface PendingEvolution {
   /** Grade the character evolves into. */
   readonly toGrade: string;
+  /** Id of the release event; a choice names it (see SelectionRecord.offerId). */
+  readonly releaseId: string;
   readonly options: readonly EvolutionOption[];
   /** Professions offered at the unlock grade (empty otherwise, or when none is offered). */
   readonly professions: readonly string[];
@@ -175,6 +179,7 @@ export function offerSelection(
   level: number,
   options: readonly SkillOption[],
   retired: ReadonlySet<string> = new Set(),
+  offerId = `offer-${level}`,
 ): Character {
   const slot = selectionAt(rules, level);
   if (!slot) throw new CharacterRuleError(`Class level ${level} grants no skill selection`);
@@ -223,6 +228,7 @@ export function offerSelection(
     level,
     options: options.map((o) => ({ ...o, name: o.name.trim() })),
     chosen: null,
+    offerId,
   };
   const selections = [...character.selections.filter((s) => s.level !== level), record].sort(
     (a, b) => a.level - b.level,
@@ -237,10 +243,16 @@ export function chooseSelection(
   level: number,
   name: string,
   retired: ReadonlySet<string> = new Set(),
+  offerId: string | null = null,
 ): Character {
   const index = character.selections.findIndex((s) => s.level === level);
   const record = character.selections[index];
   if (!record) throw new CharacterRuleError(`No selection is offered at level ${level}`);
+  if (offerId !== null && offerId !== record.offerId) {
+    throw new CharacterRuleError(
+      `The level ${level} menu was offered again; choose from the new one`,
+    );
+  }
   if (record.chosen !== null) {
     throw new CharacterRuleError(`The level ${level} selection was already chosen`);
   }
@@ -311,6 +323,13 @@ function checkOption(
     to.add(lower(name));
     // Renaming onto another transformed skill's old name is refused too (simpler to read).
     checkFreeName(character, name, retired, t.skill);
+    for (const menu of character.selections) {
+      if (menu.chosen === null && menu.options.some((o) => lower(o.name) === lower(name))) {
+        throw new CharacterRuleError(
+          `"${name}" is on the pending level ${menu.level} menu; re-offer that menu or pick another name`,
+        );
+      }
+    }
     const rank = rarityIndex(rules, t.rarity);
     if (rank < rarityIndex(rules, skill.rarity)) {
       throw new CharacterRuleError(`[${t.skill}] cannot drop to a lower rarity`);
@@ -336,6 +355,7 @@ export function releaseEvolution(
   options: readonly EvolutionOption[],
   professions: readonly string[],
   retired: ReadonlySet<string> = new Set(),
+  releaseId = 'release',
 ): Character {
   const target = evolutionTarget(rules, character);
   if (!target) {
@@ -366,6 +386,7 @@ export function releaseEvolution(
     ...character,
     evolution: {
       toGrade: target.id,
+      releaseId,
       options: options.map((o) => ({ ...o, className: o.className.trim() })),
       professions: trimmed,
     },
@@ -391,9 +412,13 @@ export function chooseEvolution(
   optionId: string,
   profession: string | null,
   retired: ReadonlySet<string> = new Set(),
+  releaseId: string | null = null,
 ): EvolutionResult {
   const pending = character.evolution;
   if (!pending) throw new CharacterRuleError(`No evolution is released for ${character.name}`);
+  if (releaseId !== null && releaseId !== pending.releaseId) {
+    throw new CharacterRuleError('The evolution was released again; choose from the new options');
+  }
   const option = pending.options.find((o) => o.id === optionId);
   if (!option) throw new CharacterRuleError(`No evolution option "${optionId}"`);
   const target = evolutionTarget(rules, character);

@@ -665,8 +665,22 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
         state,
         rule(event, () =>
           event.type === 'selection.offered'
-            ? offerSelection(state.rules, character, level, event.payload.options, retired)
-            : chooseSelection(state.rules, character, level, event.payload.skill, retired),
+            ? offerSelection(
+                state.rules,
+                character,
+                level,
+                event.payload.options,
+                retired,
+                event.id,
+              )
+            : chooseSelection(
+                state.rules,
+                character,
+                level,
+                event.payload.skill,
+                retired,
+                event.payload.offerId ?? null,
+              ),
         ),
       );
     }
@@ -682,6 +696,7 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
             options,
             professions,
             retiredFor(state, character),
+            event.id,
           ),
         ),
       );
@@ -690,7 +705,14 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       const { characterId, optionId, profession } = event.payload;
       const character = characterOf(state, event, characterId);
       const result = rule(event, () =>
-        chooseEvolution(state.rules, character, optionId, profession, retiredFor(state, character)),
+        chooseEvolution(
+          state.rules,
+          character,
+          optionId,
+          profession,
+          retiredFor(state, character),
+          event.payload.releaseId ?? null,
+        ),
       );
       // Practice entries follow transformed skills, so pair counts carry over.
       const renamed = new Map(result.renames);
