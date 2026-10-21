@@ -6,6 +6,7 @@ import { ConfigError, resolveOptions } from './config';
 import { joinUrls } from './lan';
 import { createServer } from './server';
 
+const SHUTDOWN_TIMEOUT_MS = 5_000;
 const here = path.dirname(fileURLToPath(import.meta.url));
 // Works from both src/ (tsx) and dist/ (bundle): each sits one level below apps/server.
 const defaultWebRoot = path.resolve(here, '../../web/dist');
@@ -23,6 +24,8 @@ async function main(): Promise<void> {
   for (const url of joinUrls(options.host, port, networkInterfaces())) console.log(`  ${url}`);
 
   const shutdown = (): void => {
+    // Don't let a client that ignores the close handshake keep the process alive.
+    setTimeout(() => process.exit(0), SHUTDOWN_TIMEOUT_MS).unref();
     void app.close().then(() => process.exit(0));
   };
   process.on('SIGINT', shutdown);

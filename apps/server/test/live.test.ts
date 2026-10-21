@@ -2,6 +2,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { request } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -55,13 +56,35 @@ describe('live server', () => {
     }
   });
 
-  it('does not upgrade other paths', async () => {
-    const ws = new WebSocket(`ws://${base}/not-ws`);
-    const outcome = await new Promise<string>((resolve) => {
-      ws.addEventListener('open', () => resolve('open'));
-      ws.addEventListener('error', () => resolve('error'));
-    });
-    ws.close();
-    expect(outcome).toBe('error');
+  it('refuses upgrades on other paths with 404 before the handshake', async () => {
+    for (const upgradePath of ['/not-ws', '/', '/health', '/ws/']) {
+      const status = await new Promise<number>((resolve, reject) => {
+        const [host, port] = base.split(':');
+        const req = request({
+          host,
+          port: Number(port),
+          path: upgradePath,
+          agent: false,
+          headers: {
+            Connection: 'Upgrade',
+            Upgrade: 'websocket',
+            'Sec-WebSocket-Version': '13',
+            'Sec-WebSocket-Key': 'dGhlIHNhbXBsZSBub25jZQ==',
+          },
+        });
+        req.on('upgrade', (_res, socket) => {
+          socket.destroy();
+          resolve(101);
+        });
+        req.on('response', (res) => {
+          res.resume();
+          resolve(res.statusCode ?? 0);
+        });
+        req.on('error', reject);
+        req.end();
+      });
+      expect(status, upgradePath).toBe(404);
+    }
+    expect((await fetch(`http://${base}/health`)).status).toBe(200);
   });
 });
