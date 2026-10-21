@@ -116,7 +116,7 @@ the full ones.
   browser on the host at `http://localhost:30333`.
   *Accept:* e2e: in Table view, the GM awards XP and every affected player
   pane shows the DING within 1 s; the canary test passes on every pane.
-- [ ] **MS.4 Demo campaign.** GM menu "Load demo campaign": 4 characters at
+- [x] **MS.4 Demo campaign.** GM menu "Load demo campaign": 4 characters at
   different grades (G, F, E, D) with skills, titles, items and a quest with
   World Stability, for trying things out. Never mixes into a real campaign.
   *Split (D53):* titles, items, quests/World Stability and grades above G
