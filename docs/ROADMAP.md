@@ -25,7 +25,7 @@ Work top to bottom. An item is checked only when its acceptance criteria pass
 
 ## M0 — Foundation
 
-- [ ] **M0.1 Monorepo scaffold.** npm workspaces: `packages/engine`,
+- [x] **M0.1 Monorepo scaffold.** npm workspaces: `packages/engine`,
   `apps/server`, `apps/web`, `apps/desktop` (placeholder until M10). TS strict
   with `moduleResolution: Bundler`; engine consumed as source (no engine
   build step). ESLint (bans `.skip`/`.only`/`@ts-ignore`/`eslint-disable`),
