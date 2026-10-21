@@ -44,6 +44,23 @@ const enginePurity = [
     selector: "MemberExpression[object.name='Math'][property.value='random']",
     message: 'Inject an RNG.',
   },
+  {
+    selector:
+      "MemberExpression[object.name=/^(Date|Math)$/][computed=true][property.type!='Literal']",
+    message: 'No dynamic member access on Date or Math.',
+  },
+  {
+    selector: 'VariableDeclarator[init.name=/^(Date|Math|Reflect)$/]',
+    message: 'Do not alias Date, Math or Reflect.',
+  },
+  {
+    selector: 'AssignmentExpression[right.name=/^(Date|Math|Reflect)$/]',
+    message: 'Do not alias Date, Math or Reflect.',
+  },
+  {
+    selector: "NewExpression[callee.name='Date'] > SpreadElement",
+    message: 'Inject a clock.',
+  },
 ];
 const engineGlobals = [
   'process',
@@ -65,12 +82,20 @@ const engineGlobals = [
   'navigator',
   'localStorage',
   'console',
+  'eval',
+  'Function',
+  'self',
+  'Reflect',
+  'Intl',
   '__dirname',
   '__filename',
 ].map((name) => ({ name, message: 'The engine must not touch the host environment.' }));
 
 const engineSrc = 'packages/engine/src/**/*.ts';
-const testFiles = ['**/*.test.{ts,tsx}', 'e2e/**/*.ts'];
+const testFiles = [
+  '**/*.{test,spec}.{ts,tsx,js,mjs}',
+  '**/{test,tests,e2e,__tests__}/**/*.{ts,tsx,js,mjs}',
+];
 
 export default tseslint.config(
   {

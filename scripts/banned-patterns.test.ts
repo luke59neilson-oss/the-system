@@ -48,6 +48,9 @@ describe('isTestFile', () => {
     expect(isTestFile('apps/server/test/server.test.ts')).toBe(true);
     expect(isTestFile('e2e/M0.1.spec.ts')).toBe(true);
     expect(isTestFile('e2e/helpers/server.ts')).toBe(true);
+    expect(isTestFile('apps/server/test/helpers.ts')).toBe(true);
+    expect(isTestFile('packages/x/tests/setup.ts')).toBe(true);
+    expect(isTestFile('packages/x/src/__tests__/a.ts')).toBe(true);
     expect(isTestFile('apps/server/src/server.ts')).toBe(false);
   });
 });

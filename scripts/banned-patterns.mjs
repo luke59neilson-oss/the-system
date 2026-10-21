@@ -31,7 +31,10 @@ export const BANNED_IN_TESTS = [
 ];
 
 export function isTestFile(file) {
-  return /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file) || /(?:^|[\\/])e2e[\\/]/.test(file);
+  return (
+    /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file) ||
+    /(?:^|[\\/])(?:test|tests|e2e|__tests__)[\\/]/.test(file)
+  );
 }
 
 /** Returns the banned-pattern hits in a file's text, one per line. */

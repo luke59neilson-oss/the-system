@@ -10,7 +10,10 @@ async function ruleIds(code: string, filePath: string): Promise<string[]> {
 }
 
 const enginePath = 'packages/engine/src/__lint_probe__.ts';
-const testPath = 'packages/engine/src/__lint_probe__.test.ts';
+const testPaths = [
+  'packages/engine/src/__lint_probe__.test.ts',
+  'apps/server/test/__lint_probe_helper__.ts',
+];
 
 describe('engine purity lint', () => {
   it.each([
@@ -27,6 +30,14 @@ describe('engine purity lint', () => {
     ['dynamic import', "export const a = import('node:fs');"],
     ['node import', "import { readFileSync } from 'node:fs';\nexport const a = readFileSync;"],
     ['bare node import', "import fs from 'fs/promises';\nexport const a = fs;"],
+    ['aliased Date', 'const D = Date;\nexport const a = D.now();'],
+    ['destructured Math', 'const { random } = Math;\nexport const a = random();'],
+    ['Reflect', "export const a = Reflect.get(Date, 'now');"],
+    ['computed Date member', "const k = 'now';\nexport const a = Date[k]();"],
+    ['spread new Date', 'const args: [] = [];\nexport const a = new Date(...args);'],
+    ['eval', "export const a = eval('1');"],
+    ['Function', "export const a = new Function('return 1');"],
+    ['Intl', 'export const a = Intl.DateTimeFormat().format();'],
     ['package import', "import cp from 'child_process';\nexport const a = cp;"],
   ])('rejects %s', async (_label, code) => {
     expect(await ruleIds(code, enginePath)).not.toEqual([]);
@@ -49,7 +60,9 @@ describe('test-modifier lint', () => {
     `it.${'on' + 'ly'}('a', () => {});`,
     `x${'it'}('a', () => {});`,
   ])('rejects %s', async (code) => {
-    const ids = await ruleIds(`import { it, test } from 'vitest';\n${code}\n`, testPath);
-    expect(ids).toContain('no-restricted-syntax');
+    for (const testPath of testPaths) {
+      const ids = await ruleIds(`import { it, test } from 'vitest';\n${code}\n`, testPath);
+      expect(ids, testPath).toContain('no-restricted-syntax');
+    }
   });
 });
