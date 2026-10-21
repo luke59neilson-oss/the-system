@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0 done; M1.1-M1.2 done
-**Next item:** M1.3 Event-sourced core
+**Status:** in progress: M0 done; M1.1-M1.5 done
+**Next item:** M1.13 Player projection
 **Blockers:** none
 
 ## Run log
@@ -45,4 +45,24 @@ next item, blockers. -->
 - Open `wip/*` branches: none.
 - New question: Q9 starting World Stability (default 100).
 - Next: M1.3 Event-sourced core.
+- Blockers: none.
+
+### Run 3b746078 · 2026-10-21 15:07–15:47 UTC
+- Preflight: `add_repo` tool not offered in this session; repo already cloned
+  and attached, fetch/ff-merge worked. Lock pushed to main. `npm view vitest
+  version` → 5.0.5. Reviewer subagents on `sonnet` work (fresh context,
+  different model from the builder).
+- Orient: no answers in QUESTIONS.md; latest CI run on main green (7b414c5).
+- Finished: M1.3 Event-sourced core, M1.4 XP and leveling, M1.5 Free points
+  (each reviewed by Sonnet in 2 rounds; see REVIEW-LOG.md).
+- Tests: 221 unit tests (15 files) incl. fixed-seed property test (seed
+  20261021) and three frozen golden logs (basic, xp, freepoints). Engine line
+  coverage 99.15% (floor 90%).
+- CI: green on 1a7c6d0 … c8d859f (every code commit this run).
+- Reviews: 3 items, 6 rounds, 0 High; Mediums fixed except two kept by design
+  and logged (D34 create events store inputs; D35 class spread uses a
+  cumulative highest-deficit split, raised as Q10).
+- New decisions D27–D38; new question Q10 (class spread rounding).
+- Open `wip/*` branches: none.
+- Next: M1.13 Player projection (then M2.1–M2.3, MS).
 - Blockers: none.
