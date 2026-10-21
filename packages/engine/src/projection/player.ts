@@ -6,9 +6,13 @@ import type { RulesConfig } from '../rules';
  * Player projection (ROADMAP M1.13): what one player's browser may receive.
  *
  * Everything here is built by **allowlist**: each output field is copied by
- * name, so a field added to the state later stays GM-only until it is listed
+ * name, so a field added to the state later stays GM-only until it is copied
  * here on purpose. The visibility tables below are typed against the state
- * interfaces, so adding a state field without classifying it fails to compile.
+ * interfaces, so adding a state field without classifying it fails to compile;
+ * tests (projection.test.ts) tie each table to the keys the projection emits.
+ *
+ * Party pool bars are percentages: they reveal how hurt someone is, and over
+ * many observations roughly how big their pools are (accepted by D5/D39).
  */
 
 /** Who may see a field: everyone in the party, only the owning player, or only the GM. */
@@ -164,11 +168,18 @@ export function projectRules(rules: RulesConfig): PlayerRules {
   };
 }
 
+/** Own-property lookup: ids like "constructor" never resolve to inherited members. */
+const own = (record: Readonly<Record<string, number>>, key: string): number | undefined => {
+  if (!Object.prototype.hasOwnProperty.call(record, key)) return undefined;
+  const value = record[key];
+  return typeof value === 'number' ? value : undefined;
+};
+
 const copyRecord = (record: Readonly<Record<string, number>>, keys: readonly string[]) => {
   const out: Record<string, number> = {};
   for (const key of keys) {
-    const value = record[key];
-    if (typeof value === 'number') out[key] = value;
+    const value = own(record, key);
+    if (value !== undefined) Object.defineProperty(out, key, { value, enumerable: true });
   }
   return out;
 };
@@ -199,7 +210,7 @@ function ownSheet(rules: RulesConfig, c: Character): OwnSheet {
     stats: copyRecord(c.stats, statIds),
     pools: rules.pools.map((p) => ({
       id: p.id,
-      current: c.pools[p.id] ?? 0,
+      current: own(c.pools, p.id) ?? 0,
       max: poolMax(rules, c.stats, p.id),
     })),
     freePointBatches: c.freePointBatches.map((b) => ({
@@ -231,7 +242,7 @@ function partyMember(rules: RulesConfig, c: Character): PartyMember {
     grade: c.grade,
     pools: rules.pools.map((p) => ({
       id: p.id,
-      percent: poolPercent(c.pools[p.id] ?? 0, poolMax(rules, c.stats, p.id)),
+      percent: poolPercent(own(c.pools, p.id) ?? 0, poolMax(rules, c.stats, p.id)),
     })),
   };
 }

@@ -299,9 +299,9 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
             if (json.includes(s) !== mine) problems.push(`${viewer}: ${s} present=${!mine}`);
           }
           if (mine) {
-            // Non-vacuous: the viewer's own stats do arrive.
-            if (!nums.has(canaries.numbers[0] as number))
-              problems.push(`${viewer}: own stats missing`);
+            // Non-vacuous: every one of the viewer's own values arrives.
+            for (const n of canaries.numbers)
+              if (!nums.has(n)) problems.push(`${viewer}: own ${n} missing`);
           } else {
             for (const n of canaries.numbers)
               if (nums.has(n)) problems.push(`${viewer}: ${id}'s ${n}`);
