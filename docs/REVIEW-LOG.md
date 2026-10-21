@@ -164,3 +164,8 @@
 - Round 1: H 0 · M 0 · L 6. Reviewer ran `npm run check` (exit 0) and coverage (99.35% lines).
   - L fixed: trade accept settled sequentially, so a side could pay with what it was receiving in the same trade → both sides are now checked against their pre-trade holdings first (test added); an `item.edit` that changes nothing is rejected.
   - L accepted: trades are never pruned and have no per-proposer cap (M3.7/M6 can add limits or archiving); the GM must unequip before taking an equipped item (UI to explain, M3.7/M6.1); item rarity reuses the skill rarity ladder and slot `kind` is unused (no two-handed rule in DESIGN); equipped keys for slots missing from the rules are ignored (rules are fixed per campaign, unreachable).
+
+## 2026-10-21 · M1.8 Practice log and notes · sonnet (fresh context, 1 round)
+- Round 1: H 0 · M 0 · L 7. Reviewer ran `npm run check` (exit 0) and coverage; traced every GM-bound path (state frames, notifications, error strings, HTTP) for unshared journal text.
+  - L fixed: repeat detection was O(n²) per character → one keyed pass; entries logged outside a session (null session) were all treated as one session → never repeats.
+  - L accepted / carried forward: the backup export and files on disk hold journal text (D62, Q17); differing error texts reveal whether a guessed note id exists (M3.10 uses server ids, noted on the roadmap); pairs keyed by skill name are lost on rename/evolution (M1.9/M1.10 transforms); practice entries need edit/remove and a reviewed flag (added to M5.5); selection alert does not know whether a selection was taken (M1.10); player-side note projection and canary (added to M3.10).

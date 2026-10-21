@@ -58,29 +58,33 @@ export const normalizeAction = (action: string): string =>
 
 const pairKey = (a: string, b: string): [string, string] => (a < b ? [a, b] : [b, a]);
 
-const sameUse = (a: PracticeEntry, b: PracticeEntry): boolean =>
-  a.characterId === b.characterId &&
-  a.sessionId === b.sessionId &&
-  normalizeAction(a.action) === normalizeAction(b.action) &&
-  a.stat === b.stat &&
-  [...a.skills].sort().join('\u0000') === [...b.skills].sort().join('\u0000');
+/** Identity of a use for repeat detection; null outside a play session (never a repeat). */
+const useKey = (e: PracticeEntry): string | null =>
+  e.sessionId === null
+    ? null
+    : JSON.stringify([
+        e.characterId,
+        e.sessionId,
+        normalizeAction(e.action),
+        e.stat,
+        [...e.skills].sort(),
+      ]);
 
 /**
  * Ids of entries that repeat an earlier entry: same character, same session,
  * same action (normalized) and the same skills and stat (DESIGN §7
- * "repeats flagged"). The first of a run is not a repeat.
+ * "repeats flagged"). The first of a run is not a repeat. Entries logged
+ * outside a session are never repeats. One pass.
  */
 export function repeatedEntryIds(entries: readonly PracticeEntry[]): Set<string> {
   const out = new Set<string>();
-  entries.forEach((entry, i) => {
-    for (let j = 0; j < i; j++) {
-      const earlier = entries[j];
-      if (earlier && sameUse(earlier, entry)) {
-        out.add(entry.id);
-        return;
-      }
-    }
-  });
+  const seen = new Set<string>();
+  for (const entry of entries) {
+    const key = useKey(entry);
+    if (key === null) continue;
+    if (seen.has(key)) out.add(entry.id);
+    else seen.add(key);
+  }
   return out;
 }
 

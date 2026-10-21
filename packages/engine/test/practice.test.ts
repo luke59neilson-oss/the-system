@@ -136,6 +136,8 @@ describe('practice log', () => {
       entry('e', 'Shot the wolf', [archery, eye], 's1', 'kim'),
       entry('f', 'Shot the bear', [archery, eye]),
       entry('g', 'Shot the wolf', [archery, eye]),
+      entry('h', 'Shot the wolf', [archery, eye], null),
+      entry('i', 'Shot the wolf', [archery, eye], null),
     ];
     expect([...repeatedEntryIds(entries)]).toEqual(['b', 'g']);
   });

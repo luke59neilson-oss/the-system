@@ -148,7 +148,7 @@ the full ones.
   and two-sided trades between characters and the GM. *Accept:* atomic
   transfers; no negative balances or stacks; equip rules; item effects reach
   effective stats via M1.6 order; trade accept/decline/cancel.
-- [ ] **M1.8 Practice log and notes.** Practice entries (character, action,
+- [x] **M1.8 Practice log and notes.** Practice entries (character, action,
   skill/stat, tags, source GM/player/montage), repeat detection, skill-pair
   counts, alerts (selection within 5 levels, merge at 3 joint uses). Notes:
   private journal, party notes, GM notes, tags, shareable flag, search.
@@ -210,7 +210,8 @@ the full ones.
 - [ ] **M3.8 Quest log.** Text, days left, stability gauge when visible.
 - [ ] **M3.9 Identify.** Choose a known entity; show tier text.
 - [ ] **M3.10 Notes.** Private journal (markdown, shareable toggle), live
-  party notes, tags, search.
+  party notes, tags, search. Project notes with `canReadNote` (own journal +
+  party; never GM notes) with a canary; server-generated note ids.
 - [ ] **M3.11 Practice and montage.** Submit practice entries; enter montage
   focus when offered.
 - [ ] **M3.12 Party view.** Names, race/class/level, pool bars.
@@ -254,7 +255,8 @@ the full ones.
 - [ ] **M5.3 Marks review.** End-of-session queue; upgrade prompts.
 - [ ] **M5.4 Merges.** Alert, build, send.
 - [ ] **M5.5 Practice capture.** Quick-add with shortcut; end-of-scene
-  prompt; review of player submissions.
+  prompt; review of player submissions. Needs new events to edit/remove an
+  entry and to mark entries reviewed (M1.8 review, Lows 5).
 - [ ] **M5.A Milestone acceptance and review.** Full selection, evolution,
   mark-upgrade and merge loops between GM and player.
 
