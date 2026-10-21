@@ -68,7 +68,7 @@ Work top to bottom. An item is checked only when its acceptance criteria pass
   simulation reproduces 194 @14, 614 @49, 1,514 @99, 2,864 @149, 4,864 @199,
   7,324 @240; diverging-tracks test (class 30, profession 10 → race 20,
   correct free points and spread).
-- [ ] **M1.5 Free points.** Per-level batches assigned once then locked; GM
+- [x] **M1.5 Free points.** Per-level batches assigned once then locked; GM
   override. *Accept:* reassigning a locked batch is rejected; the next level
   grants a new unlocked batch; override is undoable.
 - [ ] **M1.13 Player projection.** (built early; extend it with every later feature) Player view: own sheet in full; party

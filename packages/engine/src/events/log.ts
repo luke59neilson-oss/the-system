@@ -38,13 +38,13 @@ function fold(events: readonly DomainEvent[]): CampaignState | null {
   return state;
 }
 
-/** Checks that an undo may target `targetId` given the log so far (not the fold). */
 /** Latest-first lookup: undo targets are usually recent. */
 function findEvent(events: readonly DomainEvent[], id: string): DomainEvent | undefined {
   for (let i = events.length - 1; i >= 0; i--) if (events[i]?.id === id) return events[i];
   return undefined;
 }
 
+/** Checks that an undo may target its event given the log so far (not the fold). */
 function checkUndoTarget(
   campaign: Campaign,
   undo: DomainEvent & { type: 'event.undone' },
