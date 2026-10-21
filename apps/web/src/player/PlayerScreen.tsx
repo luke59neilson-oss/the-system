@@ -79,7 +79,7 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
           </a>
         )}
       </header>
-      {pane && <LatestDing live={live} />}
+      {pane && <PaneLatest live={live} view={view} />}
       {(live.status === 'refused' || live.error) && (
         <p className="err" role="alert">
           {live.error}
@@ -215,15 +215,21 @@ function Feed({ live, view }: { live: LiveSnapshot; view: PlayerView }) {
 }
 
 /**
- * Pane mode only: the newest DING pinned above the sheet, so the GM sees it
- * land in a small Table-view pane without scrolling to the feed.
+ * Pane mode only: the newest DING and System message pinned above the sheet,
+ * so the GM sees them land in a small Table-view pane without scrolling.
  */
-function LatestDing({ live }: { live: LiveSnapshot }) {
+function PaneLatest({ live, view }: { live: LiveSnapshot; view: PlayerView | null }) {
   const latest = live.notifications.filter((n) => n.notification.kind === 'level').at(-1);
-  if (!latest) return null;
+  const message = view?.messages.at(-1);
+  if (!latest && !message) return null;
   return (
-    <p className="pane-latest" data-testid="latest-ding" aria-live="polite">
-      {notificationText(latest.notification)}
-    </p>
+    <div className="pane-latest" aria-live="polite">
+      {latest && <p data-testid="latest-ding">{notificationText(latest.notification)}</p>}
+      {message && (
+        <p data-testid="latest-message">
+          <span className="muted">System:</span> {message.text}
+        </p>
+      )}
+    </div>
   );
 }

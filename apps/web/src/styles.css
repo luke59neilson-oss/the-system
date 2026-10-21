@@ -307,7 +307,6 @@ a {
   display: grid;
   grid-template-columns: minmax(360px, 2fr) minmax(0, 3fr);
   gap: 14px;
-  height: calc(100vh - 80px);
 }
 .perspective-table .gm-pane {
   overflow: auto;
@@ -365,7 +364,8 @@ a {
   background: var(--bg);
 }
 .single-pane {
-  height: calc(100vh - 80px);
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -390,7 +390,7 @@ a {
 }
 .pane-latest {
   margin: 0 0 8px;
-  padding: 6px 10px;
+  padding: 4px 10px;
   font-family: var(--mono);
   font-size: 0.85rem;
   color: #fff;
@@ -398,4 +398,63 @@ a {
   border: 1px solid var(--border);
   border-radius: 4px;
   background: rgba(90, 127, 184, 0.18);
+}
+.pane-latest p {
+  margin: 2px 0;
+}
+/* Compact chrome so a quarter-screen pane shows as much of the sheet as it can. */
+.player.pane-mode {
+  font-size: 13px;
+}
+.pane-mode .window {
+  padding: 8px 10px;
+}
+.pane-mode h2 {
+  margin-bottom: 6px;
+}
+.pane-mode .rows {
+  gap: 1px 10px;
+}
+.pane-mode .stats {
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1px 10px;
+}
+.pane-mode .player-grid,
+.pane-mode .feeds {
+  gap: 8px;
+}
+.perspective-table .perspective-body {
+  grid-template-columns: minmax(340px, 1fr) minmax(0, 3fr);
+}
+.table-side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.table-side[hidden] {
+  display: none;
+}
+.table-side .table-panes {
+  flex: 1;
+}
+/* Character and Table views fill the window below the header, however tall it wraps. */
+.gm.perspective-table,
+.gm.perspective-character {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.perspective-table .perspective-body,
+.perspective-character .perspective-body {
+  flex: 1;
+  min-height: 0;
+}
+.perspective-character .perspective-body {
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 900px) {
+  .gm.perspective-table {
+    height: auto;
+  }
 }

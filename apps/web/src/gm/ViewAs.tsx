@@ -50,6 +50,11 @@ export function PerspectiveBar({
 /**
  * One player's screen as a real player client: a frame on the ordinary player
  * page, which joins without the GM key and receives only that player's view.
+ * The frame is same-origin (a sandboxed opaque origin would fail the server's
+ * WebSocket Origin check), so it could technically reach this tab's
+ * sessionStorage and `window.parent`; only our own player bundle runs there and
+ * it never reads either. Never render GM- or player-authored HTML in player
+ * screens without sanitising it.
  */
 export function PlayerPane({ member }: { member: PartyMember }) {
   return (

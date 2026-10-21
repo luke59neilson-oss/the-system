@@ -68,8 +68,11 @@ function GmConsole({ client }: { client: LiveClient }) {
   const state = live.state;
   const [wanted, setWanted] = useState<Perspective>({ kind: 'gm' });
   const [picked, setPicked] = useState<string[] | null>(null);
+  // Once opened, Table view's panes stay connected (hidden) across switches.
+  const [tableOpened, setTableOpened] = useState(false);
   const party = useMemo(() => partyOf(state), [state]);
   const view = resolvePerspective(wanted, party);
+  if (view.kind === 'table' && !tableOpened) setTableOpened(true);
   const viewed =
     view.kind === 'character' ? party.find((m) => m.id === view.characterId) : undefined;
 
