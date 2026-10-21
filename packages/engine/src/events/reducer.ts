@@ -340,6 +340,7 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
     case 'item.edited': {
       const { itemId, ...changes } = event.payload;
       const old = itemOf(state, event, itemId);
+      if (Object.keys(changes).length === 0) fail(event, 'nothing to change');
       const def = toItemDef(itemId, {
         name: changes.name ?? old.name,
         rarity: changes.rarity ?? old.rarity,
@@ -457,6 +458,18 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       }
       if (event.type !== 'trade.accepted') {
         return closeTrade(state, event, trade, cancelling ? 'cancelled' : 'declined');
+      }
+      // Each side must hold its part before anything moves (not via what it receives).
+      const currencyName = state.rules.economy.currencyName;
+      for (const [party, bundle] of [
+        [trade.from, trade.give],
+        [trade.to, trade.get],
+      ] as const) {
+        if (party === null) continue;
+        characterOf(state, event, party);
+        rule(event, () =>
+          applyBundle(holdingsOf(state, party), bundle, -1, state.items, currencyName),
+        );
       }
       const moved = transfer(
         transfer(state, event, trade.from, trade.to, trade.give),

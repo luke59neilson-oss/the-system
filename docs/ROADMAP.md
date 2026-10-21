@@ -142,7 +142,7 @@ the full ones.
 - [x] **M1.6 Titles and bonuses.** Flat and percentage bonuses, percentage
   cap, documented order (base → flat → percent → cap). *Accept:* stacking and
   cap tests.
-- [ ] **M1.7 Items and economy.** Item definitions (rarity, effects), rarity
+- [x] **M1.7 Items and economy.** Item definitions (rarity, effects), rarity
   edits, inventories, 12 equipment slots (2 rings, necklace, chest, legs,
   boots, bracers, mask, cloak, gloves, main hand, off hand), currency, gifts
   and two-sided trades between characters and the GM. *Accept:* atomic

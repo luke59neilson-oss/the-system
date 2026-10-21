@@ -117,6 +117,7 @@ describe('item library', () => {
 
   it('rarity edits change every copy; a slot change cannot strand an equipped copy', () => {
     let c = base();
+    expect(reject(c, { type: 'item.edit', itemId: 'ring' })).toContain('nothing to change');
     c = ok(c, { type: 'item.edit', itemId: 'ring', rarity: 'epic' });
     expect(c.state?.items['ring']).toMatchObject({ rarity: 'epic', name: 'Ring of Haste' });
     expect(reject(c, { type: 'item.edit', itemId: 'ring', rarity: 'divine' })).toContain(
@@ -495,6 +496,20 @@ describe('trades', () => {
       'Not enough Credits',
     );
     expect(held(d, 'kim')).toMatchObject({ currency: 50, inventory: { bow: 1 } });
+  });
+
+  it('each side must already hold its part; receiving it in the same trade does not count', () => {
+    const c = ok(base(), {
+      type: 'trade.propose',
+      tradeId: 'loop',
+      characterId: 'kim',
+      to: 'jake',
+      give: { items: { bow: 1 } },
+      get: { items: { bow: 1 } },
+    });
+    expect(reject(c, { type: 'trade.accept', tradeId: 'loop', characterId: 'jake' })).toContain(
+      'Not enough [Bow]',
+    );
   });
 
   it('the proposer must hold the offer; trades need two parties and something on them', () => {
