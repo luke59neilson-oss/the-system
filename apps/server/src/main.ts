@@ -41,6 +41,8 @@ async function main(): Promise<void> {
   if (!options.gmKey) {
     // Local terminal only (never in a join URL or QR). The desktop app injects its own key.
     console.log(`GM key for this run (keep private): ${gmKey}`);
+    // The key rides in the URL fragment, which browsers never send to the server.
+    console.log(`GM console on this computer: http://localhost:${port}/gm#key=${gmKey}`);
   }
 
   const shutdown = (): void => {

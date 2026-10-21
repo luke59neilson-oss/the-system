@@ -13,6 +13,7 @@ import {
   raceLevel,
   trackCap,
   DEFAULT_RULES,
+  STARTER_CLASSES,
   type Character,
   type RulesConfig,
 } from '../src';
@@ -211,5 +212,24 @@ describe('derived pools and display', () => {
       r.stats.displayDecimals = 2;
     });
     expect(formatStat(hundredths, 5)).toBe('0.05');
+  });
+});
+
+describe('starter classes', () => {
+  it('each creates a valid G-grade character under the default rules', () => {
+    expect(STARTER_CLASSES.length).toBeGreaterThan(0);
+    for (const starter of STARTER_CLASSES) {
+      const character = createCharacter(rules, {
+        id: starter.id,
+        name: 'Test',
+        className: starter.name,
+        classSkills: starter.skills,
+        classWeights: starter.weights,
+      });
+      expect(character.skills.map((s) => s.name)).toEqual(
+        expect.arrayContaining(starter.skills.map((s) => s.name)),
+      );
+      expect(Object.keys(starter.weights).sort()).toEqual(rules.stats.list.map((s) => s.id).sort());
+    }
   });
 });

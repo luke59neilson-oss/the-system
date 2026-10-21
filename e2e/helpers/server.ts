@@ -11,13 +11,13 @@ export interface RunningServer {
 const repoRoot = path.resolve(import.meta.dirname, '../..');
 
 /** Starts the built server bundle on a random free port (127.0.0.1). */
-export async function startBuiltServer(): Promise<RunningServer> {
+export async function startBuiltServer(env: Record<string, string> = {}): Promise<RunningServer> {
   // Each run gets its own data dir so tests never share or keep campaigns.
   const dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-e2e-'));
   const child: ChildProcess = spawn(
     process.execPath,
     ['apps/server/dist/main.js', '--port', '0', '--host', '127.0.0.1', '--data-dir', dataDir],
-    { cwd: repoRoot, stdio: ['ignore', 'pipe', 'pipe'] },
+    { cwd: repoRoot, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ...env } },
   );
 
   let output = '';
