@@ -40,6 +40,8 @@ jobs:
         run: npm run test:coverage
       - name: Build
         run: npm run build
+      - name: Bundle the desktop main process (no Electron binary needed)
+        run: npm run build -w @the-system/desktop
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
       - name: E2E

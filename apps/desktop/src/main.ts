@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, shell } from 'electron';
+import { app, BrowserWindow, dialog, Menu, shell } from 'electron';
 import { startApp, type RunningApp } from '../../server/src/app';
 import { newGmKey } from '../../server/src/security';
 import {
@@ -18,6 +18,10 @@ import {
 
 let running: RunningApp | null = null;
 let gmWindow: BrowserWindow | null = null;
+/** Set once quitting starts, so closing the window no longer asks. */
+let quitting = false;
+/** A stuck close (e.g. a client that never finishes the WebSocket close) must not hang Quit. */
+const QUIT_TIMEOUT_MS = 5_000;
 
 function openGmWindow(server: RunningApp): void {
   const win = new BrowserWindow({
@@ -26,17 +30,41 @@ function openGmWindow(server: RunningApp): void {
     title: 'The System · GM',
     backgroundColor: '#0b0f17',
     autoHideMenuBar: true,
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      // The GM key sits in this window's sessionStorage; no DevTools in release builds.
+      devTools: !app.isPackaged,
+    },
   });
   gmWindow = win;
+  // Closing the GM window quits the app and drops every player: ask first.
+  win.on('close', (event) => {
+    if (quitting) return;
+    const choice = dialog.showMessageBoxSync(win, {
+      type: 'question',
+      buttons: ['Keep running', 'Quit The System'],
+      defaultId: 0,
+      cancelId: 0,
+      message: 'Quit The System?',
+      detail: 'Every player screen disconnects until you start it again.',
+    });
+    if (choice !== 1) event.preventDefault();
+  });
+  win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) =>
+    callback(false),
+  );
   // Links to anything but our own pages open in the system browser.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//.test(url) && !isOwnPage(url, server.port)) void shell.openExternal(url);
     return { action: 'deny' };
   });
-  win.webContents.on('will-navigate', (event, url) => {
+  const keepOnOwnPages = (event: { preventDefault: () => void }, url: string) => {
     if (!isOwnPage(url, server.port)) event.preventDefault();
-  });
+  };
+  win.webContents.on('will-navigate', keepOnOwnPages);
+  win.webContents.on('will-redirect', keepOnOwnPages);
   win.on('closed', () => {
     gmWindow = null;
   });
@@ -78,13 +106,19 @@ if (!app.requestSingleInstanceLock()) {
   app.on('activate', () => {
     if (!gmWindow && running) openGmWindow(running);
   });
-  let quitting = false;
   app.on('before-quit', (event) => {
-    if (quitting || !running) return;
+    if (quitting || !running) {
+      quitting = true;
+      return;
+    }
     // Close the server (and its campaign files) before the process exits.
     event.preventDefault();
     quitting = true;
+    setTimeout(() => app.exit(0), QUIT_TIMEOUT_MS).unref();
     void running.close().finally(() => app.quit());
   });
-  void app.whenReady().then(start);
+  void app.whenReady().then(() => {
+    if (app.isPackaged) Menu.setApplicationMenu(null);
+    return start();
+  });
 }

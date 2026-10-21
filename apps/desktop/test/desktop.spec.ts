@@ -21,7 +21,7 @@ test('double-click start: server up, GM window connected with the key', async ()
     const gm = await app.firstWindow();
     await expect(gm.getByTestId('connection')).toHaveText('Connected');
     // The key was moved out of the address bar.
-    expect(gm.url()).toMatch(/^http:\/\/localhost:\d+\/gm$/);
+    expect(gm.url()).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/gm$/);
     const port = Number(new URL(gm.url()).port);
     await expect(gm.getByRole('heading', { name: 'New campaign' })).toBeVisible();
     await gm.getByLabel('Campaign name').fill('Desktop smoke');

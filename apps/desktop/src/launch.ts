@@ -7,9 +7,13 @@ import path from 'node:path';
 
 export const DEFAULT_DESKTOP_PORT = 30333;
 
-/** The GM window's URL: the key rides in the fragment, never sent to the server (D48). */
+/**
+ * The GM window's URL: the key rides in the fragment, never sent to the server
+ * (D48). 127.0.0.1, not localhost: the server listens on IPv4 and Windows may
+ * resolve localhost to ::1 first.
+ */
 export function gmWindowUrl(port: number, gmKey: string): string {
-  return `http://localhost:${port}/gm#key=${encodeURIComponent(gmKey)}`;
+  return `http://127.0.0.1:${port}/gm#key=${encodeURIComponent(gmKey)}`;
 }
 
 /** Where the built web app lives: inside the app's resources when packaged, beside the repo otherwise. */

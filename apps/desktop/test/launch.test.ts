@@ -12,7 +12,7 @@ import {
 
 describe('desktop launch helpers', () => {
   it('puts the GM key only in the fragment of a localhost URL', () => {
-    expect(gmWindowUrl(30333, 'k+y/=')).toBe('http://localhost:30333/gm#key=k%2By%2F%3D');
+    expect(gmWindowUrl(30333, 'k+y/=')).toBe('http://127.0.0.1:30333/gm#key=k%2By%2F%3D');
   });
   it('finds the web build packaged or in the repo', () => {
     expect(webRootFor(true, '/res', '/x/dist')).toBe(path.join('/res', 'web'));
