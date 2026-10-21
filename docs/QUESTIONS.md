@@ -41,3 +41,7 @@ answer under any question and the next run will follow it.
     (a percentage), because max HP/MP/Stamina would reveal their Vitality,
     Wisdom and Endurance (D39). Alternative: show "340/400" for everyone.
     Answer:
+12. **GM from another device?** The GM console is meant to run on the host
+    laptop (key stays on that machine). Running it from a second device works
+    but sends the key over plain wifi. Default: allowed, not recommended.
+    Answer:

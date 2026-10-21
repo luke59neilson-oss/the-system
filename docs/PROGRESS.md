@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0 done; M1.1-M1.5 done
-**Next item:** M1.13 Player projection
+**Status:** in progress: M0 done; M1.1-M1.5, M1.13, M2.1, M2.2 done
+**Next item:** M2.3 Join helper
 **Blockers:** none
 
 ## Run log
@@ -65,4 +65,16 @@ next item, blockers. -->
 - New decisions D27–D38; new question Q10 (class spread rounding).
 - Open `wip/*` branches: none.
 - Next: M1.13 Player projection (then M2.1–M2.3, MS).
+- Blockers: none.
+
+### Run 647c5fd1 · 2026-10-21 16:06–16:53 UTC
+- Preflight: `add_repo` not offered in this session; repo already cloned, fetch/ff-merge worked. Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md; latest CI run on main green (b02ec4f).
+- Finished: M1.13 Player projection, M2.1 Persistence, M2.2 Live protocol and authority (each reviewed by Sonnet in 2 rounds; see REVIEW-LOG.md). M2.2 was built on `wip/M2.2` and fast-forwarded into main once clean (the branch stays on the remote; nothing left on it).
+- Tests: 279 unit/integration tests (21 files) incl. the projection canary over 1,000 random states (seed 20261022) and a live GM + 2 players canary over every player frame and public HTTP body; 2 e2e (M0.1). Engine line coverage ≈99% (floor 90%).
+- CI: green on every code commit pushed to main this run through 2fe68fd; 84c8d69 (M2.2) pushed at the end of the run.
+- Reviews: 3 items, 6 rounds; 1 High (M2.2 GM HTTP gate bypass via `/%61pi`, fixed and tested); all Mediums fixed or logged (D44 one event per command; D46 GM key over LAN).
+- New decisions D39–D46; new questions Q11 (party pool bars), Q12 (GM from another device).
+- Open `wip/*` branches: none unfinished (`wip/M2.2` is merged).
+- Next: M2.3 Join helper, then MS.1–MS.6, MS.A.
 - Blockers: none.

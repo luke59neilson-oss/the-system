@@ -85,7 +85,7 @@ Work top to bottom. An item is checked only when its acceptance criteria pass
   campaign export/import with secrets (tokens) stripped. *Accept:* restart
   keeps state; torn-line test; export→import round trip identical; no secret
   in exports.
-- [ ] **M2.2 Live protocol and authority.** Zod-typed messages. Clients join
+- [x] **M2.2 Live protocol and authority.** Zod-typed messages. Clients join
   as a character (no password) or as GM (GM key required, injected by the
   desktop app; never in join URL/QR). Origin check on WS upgrade; GM HTTP
   routes deny by default. Players may only act on their own character (free
