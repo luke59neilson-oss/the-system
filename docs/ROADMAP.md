@@ -53,7 +53,7 @@ Work top to bottom. An item is checked only when its acceptance criteria pass
 - [x] **M1.2 Character model.** Stats, tracks, grade, derived pools, tenths
   formatting, Identify (Common) at creation. *Accept:* track/grade rules from
   DESIGN §2 incl. caps at 4/14/49/99/149/199/240; pool formulas; formatting.
-- [ ] **M1.3 Event-sourced core.** Commands → validated events → reducer.
+- [x] **M1.3 Event-sourced core.** Commands → validated events → reducer.
   Events carry id, timestamp, actor, sessionId, `schemaVersion`; upcasters for
   old versions. Undo = compensating event; undoing a non-latest event is
   rejected when the result would be invalid. A committed golden event log
