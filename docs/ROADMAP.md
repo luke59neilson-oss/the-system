@@ -104,7 +104,7 @@ A thin end-to-end slice so Luke can run the app early and watch GM changes
 land on player screens. Later milestones replace these minimal screens with
 the full ones.
 
-- [ ] **MS.1 Minimal GM screen.** Create a character from one built-in
+- [x] **MS.1 Minimal GM screen.** Create a character from one built-in
   starter class; award XP with the even split; send a System broadcast.
 - [ ] **MS.2 Minimal player screen.** DESIGN §9 core rows (name, race, class,
   levels, pools, nine stats in tenths, free points) and the live DING feed.

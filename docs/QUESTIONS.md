@@ -45,3 +45,8 @@ answer under any question and the next run will follow it.
     laptop (key stays on that machine). Running it from a second device works
     but sends the key over plain wifi. Default: allowed, not recommended.
     Answer:
+13. **Starter class.** The walking skeleton ships one built-in class, Archer
+    (Basic Archery, Basic Stealth, Archer’s Eye; Agility and Perception
+    weighted 3, Strength 2, others 1). Default: keep it until the class
+    library (M4.2) lets you define your own. Want different starter classes?
+    Answer:
