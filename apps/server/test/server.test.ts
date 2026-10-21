@@ -49,8 +49,12 @@ describe('createServer', () => {
   it('404s missing assets, non-page requests and server-owned paths', async () => {
     expect((await app.inject({ url: '/missing.js' })).statusCode).toBe(404);
     expect((await app.inject({ url: '/sheet/abc' })).statusCode).toBe(404);
-    for (const url of ['/api', '/api/nope', '/health/x', '/ws/x?y=1']) {
+    for (const url of ['/health/x', '/ws/x?y=1']) {
       expect((await app.inject({ url, headers: html })).statusCode, url).toBe(404);
+    }
+    // /api is deny-by-default: without the GM key even unknown paths are 403.
+    for (const url of ['/api', '/api/nope', '/api/gm/export']) {
+      expect((await app.inject({ url, headers: html })).statusCode, url).toBe(403);
     }
     expect(
       (await app.inject({ method: 'POST', url: '/sheet/abc', headers: html })).statusCode,

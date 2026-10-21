@@ -23,7 +23,17 @@ describe('resolveOptions', () => {
       port: DEFAULT_PORT,
       host: DEFAULT_HOST,
       webRoot: '/web',
+      dataDir: 'data',
+      gmKey: undefined,
     });
+  });
+  it('reads the data dir from a flag or env, and the GM key only from env', () => {
+    expect(resolveOptions(['--data-dir', '/d'], { DATA_DIR: '/e' }, '/w').dataDir).toBe('/d');
+    expect(resolveOptions([], { DATA_DIR: '/e', GM_KEY: 'k' }, '/w')).toMatchObject({
+      dataDir: '/e',
+      gmKey: 'k',
+    });
+    expect(resolveOptions(['--gm-key', 'x'], { GM_KEY: '' }, '/w').gmKey).toBeUndefined();
   });
   it('prefers flags over env', () => {
     const opts = resolveOptions(['--port', '1234', '--host', '127.0.0.1'], { PORT: '999' }, '/w');

@@ -1,4 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 export interface RunningServer {
@@ -10,9 +12,11 @@ const repoRoot = path.resolve(import.meta.dirname, '../..');
 
 /** Starts the built server bundle on a random free port (127.0.0.1). */
 export async function startBuiltServer(): Promise<RunningServer> {
+  // Each run gets its own data dir so tests never share or keep campaigns.
+  const dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-e2e-'));
   const child: ChildProcess = spawn(
     process.execPath,
-    ['apps/server/dist/main.js', '--port', '0', '--host', '127.0.0.1'],
+    ['apps/server/dist/main.js', '--port', '0', '--host', '127.0.0.1', '--data-dir', dataDir],
     { cwd: repoRoot, stdio: ['ignore', 'pipe', 'pipe'] },
   );
 
@@ -39,8 +43,12 @@ export async function startBuiltServer(): Promise<RunningServer> {
     url,
     stop: () =>
       new Promise<void>((resolve) => {
-        if (child.exitCode !== null) return resolve();
-        child.once('exit', () => resolve());
+        const done = () => {
+          rmSync(dataDir, { recursive: true, force: true });
+          resolve();
+        };
+        if (child.exitCode !== null) return done();
+        child.once('exit', done);
         child.kill('SIGTERM');
       }),
   };

@@ -6,6 +6,10 @@ export interface ServerOptions {
   host: string;
   /** Directory holding the built web app (index.html + assets). */
   webRoot: string;
+  /** Data directory (campaigns, backups); the desktop app passes the OS app-data folder. */
+  dataDir: string;
+  /** GM key; generated at launch when not given (the desktop app injects it). */
+  gmKey: string | undefined;
 }
 
 export class ConfigError extends Error {}
@@ -38,5 +42,8 @@ export function resolveOptions(
     port: parsePort(flag('port') ?? env['PORT']),
     host: flag('host') ?? env['HOST'] ?? DEFAULT_HOST,
     webRoot: flag('web-root') ?? env['WEB_ROOT'] ?? defaultWebRoot,
+    dataDir: flag('data-dir') ?? env['DATA_DIR'] ?? 'data',
+    // Never a flag: command lines are visible to other local users.
+    gmKey: env['GM_KEY'] || undefined,
   };
 }

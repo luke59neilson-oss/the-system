@@ -1,10 +1,13 @@
+import { randomUUID } from 'node:crypto';
 import { networkInterfaces } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ENGINE_API_VERSION } from '@the-system/engine';
 import { ConfigError, resolveOptions } from './config';
 import { joinUrls } from './lan';
+import { newGmKey } from './security';
 import { createServer } from './server';
+import { CampaignStore } from './store';
 
 const SHUTDOWN_TIMEOUT_MS = 5_000;
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -13,7 +16,15 @@ const defaultWebRoot = path.resolve(here, '../../web/dist');
 
 async function main(): Promise<void> {
   const options = resolveOptions(process.argv.slice(2), process.env, defaultWebRoot);
-  const app = await createServer({ webRoot: options.webRoot });
+  const store = CampaignStore.open('main', {
+    dataDir: path.resolve(options.dataDir),
+    now: () => new Date().toISOString(),
+  });
+  const gmKey = options.gmKey ?? newGmKey();
+  const app = await createServer({
+    webRoot: options.webRoot,
+    live: { store, gmKey, now: () => new Date().toISOString(), newId: () => randomUUID() },
+  });
   await app.listen({ port: options.port, host: options.host });
   const address = app.server.address();
   const port = typeof address === 'object' && address ? address.port : options.port;
@@ -22,11 +33,18 @@ async function main(): Promise<void> {
   );
   console.log('Players join at:');
   for (const url of joinUrls(options.host, port, networkInterfaces())) console.log(`  ${url}`);
+  if (!options.gmKey) {
+    // Local terminal only (never in a join URL or QR). The desktop app injects its own key.
+    console.log(`GM key for this run (keep private): ${gmKey}`);
+  }
 
   const shutdown = (): void => {
     // Don't let a client that ignores the close handshake keep the process alive.
     setTimeout(() => process.exit(0), SHUTDOWN_TIMEOUT_MS).unref();
-    void app.close().then(() => process.exit(0));
+    void app.close().then(() => {
+      store.close();
+      process.exit(0);
+    });
   };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
