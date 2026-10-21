@@ -34,6 +34,12 @@ const itemFields = {
   slot: recordId.nullable(),
   bonuses: z.array(statBonus).max(30),
 };
+const stabilityRules = z.record(
+  z.string().min(1).max(60),
+  z.number().finite().min(-1_000).max(1_000),
+);
+const questText = z.string().trim().max(5000);
+const questDays = z.number().int().min(1).max(10_000).nullable();
 const tradeAction = z.strictObject({ tradeId: recordId, characterId: party });
 const distinctParties = (p: { characterId: string | null; to: string | null }) =>
   p.characterId !== p.to;
@@ -278,6 +284,52 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     amount: z.number().int().min(1).max(24),
   }),
   'clock.removed': z.strictObject({ clockId: recordId }),
+  /** GM creates a quest (M1.12, DESIGN §7), optionally with a day timer and World Stability. */
+  'quest.created': z.strictObject({
+    questId: recordId,
+    title: nonBlank,
+    text: questText,
+    visible: z.boolean(),
+    days: questDays,
+    stability: z
+      .strictObject({
+        /** null = the configured starting value. */
+        initial: z.number().finite().nullable(),
+        visible: z.boolean(),
+        rules: stabilityRules,
+      })
+      .nullable(),
+  }),
+  /** GM edits a quest; omitted fields stay. */
+  'quest.edited': z.strictObject({
+    questId: recordId,
+    title: nonBlank.optional(),
+    text: questText.optional(),
+    visible: z.boolean().optional(),
+    days: questDays.optional(),
+    stabilityVisible: z.boolean().optional(),
+    stabilityRules: stabilityRules.optional(),
+  }),
+  'quest.statusSet': z.strictObject({
+    questId: recordId,
+    status: z.enum(['active', 'completed', 'failed']),
+  }),
+  /** A tagged action moves World Stability by its rule's delta × count (clamped). */
+  'stability.actionApplied': z.strictObject({
+    questId: recordId,
+    tag: z.string().min(1).max(60),
+    count: z.number().int().min(1).max(100),
+    /** Free text for the session log. */
+    reason: z.string().trim().max(200),
+  }),
+  /** GM's manual nudge (clamped). */
+  'stability.nudged': z.strictObject({
+    questId: recordId,
+    delta: z.number().finite().min(-1_000).max(1_000),
+    reason: z.string().trim().max(200),
+  }),
+  /** The in-game day counter moves forward (quest timers count down). */
+  'campaign.dayAdvanced': z.strictObject({ days: z.number().int().min(1).max(1000) }),
   /** Compensating event: the target stops counting, as if it had never happened. */
   'event.undone': z.strictObject({ eventId: recordId }),
 } as const;
@@ -325,6 +377,12 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'clock.created': 1,
   'clock.ticked': 1,
   'clock.removed': 1,
+  'quest.created': 1,
+  'quest.edited': 1,
+  'quest.statusSet': 1,
+  'stability.actionApplied': 1,
+  'stability.nudged': 1,
+  'campaign.dayAdvanced': 1,
   'event.undone': 1,
 };
 

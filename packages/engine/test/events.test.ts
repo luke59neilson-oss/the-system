@@ -817,6 +817,12 @@ describe('property: replay equals incremental state', () => {
       'clock.create',
       'clock.tick',
       'clock.remove',
+      'quest.create',
+      'quest.edit',
+      'quest.setStatus',
+      'stability.applyAction',
+      'stability.nudge',
+      'campaign.advanceDay',
     ]) {
       expect(acceptedByType[type] ?? 0, `seed ${SEED}: accepted ${type}`).toBeGreaterThan(0);
     }

@@ -222,6 +222,45 @@ export type Command =
       amount?: number | undefined;
     }
   | { type: 'clock.remove'; clockId: string }
+  | {
+      type: 'quest.create';
+      /** Optional; a fresh id is generated when omitted. */
+      questId?: string | undefined;
+      title: string;
+      text?: string | undefined;
+      /** Default true. */
+      visible?: boolean | undefined;
+      days?: number | null | undefined;
+      stability?:
+        | {
+            initial?: number | null | undefined;
+            /** Default: the config's `stability.visibleToPlayersByDefault`. */
+            visible?: boolean | undefined;
+            rules?: Readonly<Record<string, number>> | undefined;
+          }
+        | null
+        | undefined;
+    }
+  | {
+      type: 'quest.edit';
+      questId: string;
+      title?: string | undefined;
+      text?: string | undefined;
+      visible?: boolean | undefined;
+      days?: number | null | undefined;
+      stabilityVisible?: boolean | undefined;
+      stabilityRules?: Readonly<Record<string, number>> | undefined;
+    }
+  | { type: 'quest.setStatus'; questId: string; status: 'active' | 'completed' | 'failed' }
+  | {
+      type: 'stability.applyAction';
+      questId: string;
+      tag: string;
+      count?: number | undefined;
+      reason?: string | undefined;
+    }
+  | { type: 'stability.nudge'; questId: string; delta: number; reason?: string | undefined }
+  | { type: 'campaign.advanceDay'; days?: number | undefined }
   | { type: 'event.undo'; eventId: string };
 
 export interface StatBonusInput {
@@ -297,6 +336,12 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('clock.create') }),
   z.object({ type: z.literal('clock.tick') }),
   z.object({ type: z.literal('clock.remove') }),
+  z.object({ type: z.literal('quest.create') }),
+  z.object({ type: z.literal('quest.edit') }),
+  z.object({ type: z.literal('quest.setStatus') }),
+  z.object({ type: z.literal('stability.applyAction') }),
+  z.object({ type: z.literal('stability.nudge') }),
+  z.object({ type: z.literal('campaign.advanceDay') }),
   z.object({ type: z.literal('event.undo') }),
 ]);
 
@@ -672,6 +717,60 @@ function toEvent(
       };
     case 'clock.remove':
       return { type: 'clock.removed', payload: { clockId: command.clockId } };
+    case 'quest.create': {
+      const st = command.stability;
+      return {
+        type: 'quest.created',
+        payload: {
+          questId: command.questId ?? ctx.newId(),
+          title: command.title,
+          text: command.text ?? '',
+          visible: command.visible ?? true,
+          days: command.days ?? null,
+          stability:
+            st === null || st === undefined
+              ? null
+              : {
+                  initial: st.initial ?? null,
+                  visible:
+                    st.visible ??
+                    campaign.state?.rules.stability.visibleToPlayersByDefault ??
+                    false,
+                  rules: st.rules ?? {},
+                },
+        },
+      };
+    }
+    case 'quest.edit': {
+      const { questId, title, text, visible, days, stabilityVisible, stabilityRules } = command;
+      // Undefined fields vanish in the event's JSON round trip (= unchanged).
+      return {
+        type: 'quest.edited',
+        payload: { questId, title, text, visible, days, stabilityVisible, stabilityRules },
+      };
+    }
+    case 'quest.setStatus':
+      return {
+        type: 'quest.statusSet',
+        payload: { questId: command.questId, status: command.status },
+      };
+    case 'stability.applyAction':
+      return {
+        type: 'stability.actionApplied',
+        payload: {
+          questId: command.questId,
+          tag: command.tag,
+          count: command.count ?? 1,
+          reason: command.reason ?? '',
+        },
+      };
+    case 'stability.nudge':
+      return {
+        type: 'stability.nudged',
+        payload: { questId: command.questId, delta: command.delta, reason: command.reason ?? '' },
+      };
+    case 'campaign.advanceDay':
+      return { type: 'campaign.dayAdvanced', payload: { days: command.days ?? 1 } };
     case 'event.undo':
       return { type: 'event.undone', payload: { eventId: command.eventId } };
   }

@@ -31,11 +31,12 @@ import {
   retiredSkillNames,
 } from '../evolution';
 import { newClock, tickClock, type Clock } from '../resolution';
+import { applyAction, checkStabilityRules, nudge, type Quest } from '../quests';
 import { parseRulesConfig, type RulesConfig } from '../rules';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 8;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 9;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -78,6 +79,12 @@ export interface CampaignState {
   readonly clocks: Readonly<Record<string, Clock>>;
   /** Clock ids in creation order. */
   readonly clockOrder: readonly string[];
+  /** Quests by id (M1.12). Hidden ones and stability rules never reach players. */
+  readonly quests: Readonly<Record<string, Quest>>;
+  /** Quest ids in creation order. */
+  readonly questOrder: readonly string[];
+  /** In-game day counter, from 1 (quest timers count against it). */
+  readonly day: number;
 }
 
 const hasOwn = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
@@ -226,6 +233,9 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       noteOrder: [],
       clocks: {},
       clockOrder: [],
+      quests: {},
+      questOrder: [],
+      day: 1,
     };
   }
   if (state === null) return fail(event, 'the log must start with campaign.created');
@@ -758,6 +768,103 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       );
       return { ...state, clocks: { ...state.clocks, [clockId]: ticked } };
     }
+    case 'quest.created': {
+      const { questId, title, text, visible, days, stability } = event.payload;
+      if (hasOwn(state.quests, questId)) fail(event, `quest "${questId}" already exists`);
+      const range = state.rules.stability;
+      if (stability) {
+        rule(event, () => checkStabilityRules(state.rules, stability.rules));
+        if (
+          stability.initial !== null &&
+          (stability.initial < range.min || stability.initial > range.max)
+        ) {
+          fail(event, `stability must start between ${range.min} and ${range.max}`);
+        }
+      }
+      const quest: Quest = {
+        id: questId,
+        title,
+        text,
+        status: 'active',
+        visible,
+        days,
+        startDay: state.day,
+        stability: stability
+          ? {
+              value: stability.initial ?? range.initial,
+              visible: stability.visible,
+              rules: { ...stability.rules },
+            }
+          : null,
+        createdAt: event.timestamp,
+      };
+      return {
+        ...state,
+        quests: { ...state.quests, [questId]: quest },
+        questOrder: [...state.questOrder, questId],
+      };
+    }
+    case 'quest.edited':
+    case 'quest.statusSet':
+    case 'stability.actionApplied':
+    case 'stability.nudged': {
+      const quest = hasOwn(state.quests, event.payload.questId)
+        ? state.quests[event.payload.questId]
+        : undefined;
+      if (!quest) return fail(event, `unknown quest "${event.payload.questId}"`);
+      const withQuest = (q: Quest): CampaignState => ({
+        ...state,
+        quests: { ...state.quests, [q.id]: q },
+      });
+      switch (event.type) {
+        case 'quest.edited': {
+          const { title, text, visible, days, stabilityVisible, stabilityRules } = event.payload;
+          if (
+            [title, text, visible, days, stabilityVisible, stabilityRules].every(
+              (v) => v === undefined,
+            )
+          ) {
+            fail(event, 'nothing to change');
+          }
+          if (
+            (stabilityVisible !== undefined || stabilityRules !== undefined) &&
+            !quest.stability
+          ) {
+            fail(event, 'this quest has no World Stability');
+          }
+          if (stabilityRules !== undefined) {
+            rule(event, () => checkStabilityRules(state.rules, stabilityRules));
+          }
+          return withQuest({
+            ...quest,
+            title: title ?? quest.title,
+            text: text ?? quest.text,
+            visible: visible ?? quest.visible,
+            days: days === undefined ? quest.days : days,
+            stability: quest.stability && {
+              ...quest.stability,
+              visible: stabilityVisible ?? quest.stability.visible,
+              rules: stabilityRules === undefined ? quest.stability.rules : { ...stabilityRules },
+            },
+          });
+        }
+        case 'quest.statusSet':
+          if (event.payload.status === quest.status)
+            fail(event, `the quest is already ${quest.status}`);
+          return withQuest({ ...quest, status: event.payload.status });
+        case 'stability.actionApplied':
+          return withQuest(
+            rule(event, () =>
+              applyAction(state.rules, quest, event.payload.tag, event.payload.count),
+            ),
+          );
+        case 'stability.nudged':
+          return withQuest(rule(event, () => nudge(state.rules, quest, event.payload.delta)));
+      }
+      return state;
+    }
+    case 'campaign.dayAdvanced':
+      return { ...state, day: state.day + event.payload.days };
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');
   }

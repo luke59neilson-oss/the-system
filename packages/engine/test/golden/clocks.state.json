@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 8,
+  "schemaVersion": 9,
   "name": "Golden: clocks",
   "rules": {
     "configVersion": 1,
@@ -459,5 +459,8 @@
       "createdAt": "2026-11-25T18:00:02.000Z"
     }
   },
-  "clockOrder": ["spout"]
+  "clockOrder": ["spout"],
+  "quests": {},
+  "questOrder": [],
+  "day": 1
 }

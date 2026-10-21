@@ -276,7 +276,8 @@ the full ones.
 ## M7 — Quests, encounters, bestiary
 
 - [ ] **M7.1 Quest manager.** Text, timers, stability rules, nudges,
-  visibility.
+  visibility. Offer to apply a quest's stability rule when a practice entry
+  carries one of its action tags (D67).
 - [ ] **M7.2 Bestiary and NPCs.** Grade, level, stats, Identify tiers, notes.
 - [ ] **M7.3 Encounter panel.** Ratio-odds roller (stats + mode), pool
   damage/heal, progress clocks, montage trigger.

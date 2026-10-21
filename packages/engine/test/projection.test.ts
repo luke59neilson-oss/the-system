@@ -96,9 +96,11 @@ describe('player projection', () => {
     expect(JSON.stringify(view)).not.toContain('secret');
     expect(Object.keys(view).sort()).toEqual([
       'campaignName',
+      'day',
       'me',
       'messages',
       'party',
+      'quests',
       'rules',
       'viewerId',
     ]);
@@ -271,6 +273,30 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         points: num(),
         gmNote: `${GM}-batch`,
       }));
+      // M1.10: menus and released evolutions are the owner's alone.
+      strings.push(`OWNER-${id}-menu`, `OWNER-${id}-evo`);
+      c.selections = [
+        {
+          level: 5,
+          offerId: 'o',
+          chosen: null,
+          options: [{ name: `OWNER-${id}-menu`, rarity: 'rare', kind: 'class', description: '' }],
+        },
+      ];
+      c.evolution = {
+        toGrade: 'F',
+        releaseId: 'r',
+        professions: [],
+        options: [
+          {
+            id: 'o1',
+            className: `OWNER-${id}-evo`,
+            description: '',
+            transforms: [],
+            classWeights: null,
+          },
+        ],
+      };
       owner.set(id, { strings, numbers });
     }
     // Broadcasts: a whisper per character (owner-only text) and a GM-only extra key.
@@ -313,6 +339,35 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
     econ.practice = [{ id: 'pr', characterId: ids[0], action: `${GM}-practice`, skills: [] }];
     econ.notes = { n: { id: 'n', kind: 'party', body: `${GM}-note` } };
     econ.noteOrder = [`${GM}-noteorder`];
+    // Clocks (M1.11) are GM-only; hidden quests, hidden gauges and tag rules too (M1.12).
+    econ.clocks = {
+      k: { id: 'k', name: `${GM}-clock`, segments: gmNum(), filled: 0, failures: 0 },
+    };
+    econ.clockOrder = [`${GM}-clockorder`];
+    econ.quests = {
+      hidden: {
+        id: 'hidden',
+        title: `${GM}-hidden-quest`,
+        text: `${GM}-hidden-text`,
+        status: 'active',
+        visible: false,
+        days: gmNum(),
+        startDay: 1,
+        stability: { value: gmNum(), visible: true, rules: { [`${GM}-tag`]: gmNum() } },
+      },
+      shown: {
+        id: 'shown',
+        title: 'The world is dying',
+        text: 'Find what is killing it.',
+        status: 'active',
+        visible: true,
+        days: 30,
+        startDay: 1,
+        stability: { value: gmNum(), visible: false, rules: { [`${GM}-tag2`]: gmNum() } },
+        gmNote: `${GM}-quest`,
+      },
+    };
+    econ.questOrder = ['hidden', 'shown'];
     return { state: s, owner, gm };
   }
 

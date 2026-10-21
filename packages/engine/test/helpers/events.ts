@@ -67,7 +67,9 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
   const pick = <T>(items: readonly T[]): T => items[Math.floor(rand() * items.length)] as T;
   const ids = c.state?.characterOrder ?? [];
   const someId = () => (ids.length && rand() < 0.95 ? pick(ids) : 'ghost');
-  if (rand() < 0.04) return randomClockCommand(rand, c, pick);
+  if (rand() < 0.1) {
+    return rand() < 0.5 ? randomClockCommand(rand, c, pick) : randomQuestCommand(rand, c, pick);
+  }
   if (rand() < 0.35) return randomEconomyCommand(rand, c, pick, someId);
   if (rand() < 0.15) return randomNotesCommand(rand, c, pick, someId);
   if (rand() < 0.12) return randomSkillCommand(rand, c, pick, someId);
@@ -354,4 +356,51 @@ function randomClockCommand(
     };
   }
   return { type: 'clock.remove', clockId: someClock() };
+}
+
+function randomQuestCommand(
+  rand: () => number,
+  c: Campaign,
+  pick: <T>(items: readonly T[]) => T,
+): Command {
+  const ids = c.state?.questOrder ?? [];
+  const someQuest = () => (ids.length && rand() < 0.9 ? pick(ids) : 'no-quest');
+  const roll = rand();
+  if (roll < 0.15) {
+    return {
+      type: 'quest.create',
+      questId: `q${Math.floor(rand() * 4)}`,
+      title: pick(['The world is dying', 'Find the survivors', ' ']),
+      visible: rand() < 0.5,
+      days: pick([30, null, 0]),
+      stability:
+        rand() < 0.7 ? { initial: pick([null, 50, 120]), rules: { cleanse: -5, heal: 3 } } : null,
+    };
+  }
+  if (roll < 0.4) {
+    return {
+      type: 'quest.edit',
+      questId: someQuest(),
+      visible: pick([true, false]),
+      stabilityVisible: rand() < 0.3 ? pick([true, false]) : undefined,
+    };
+  }
+  if (roll < 0.55) {
+    return {
+      type: 'quest.setStatus',
+      questId: someQuest(),
+      status: pick(['completed', 'failed', 'completed', 'active'] as const),
+    };
+  }
+  if (roll < 0.8) {
+    return {
+      type: 'stability.applyAction',
+      questId: someQuest(),
+      tag: pick(['cleanse', 'heal', 'dance']),
+      count: pick([1, 2, 30]),
+    };
+  }
+  if (roll < 0.9)
+    return { type: 'stability.nudge', questId: someQuest(), delta: pick([-10, 5, 0]) };
+  return { type: 'campaign.advanceDay', days: pick([1, 3, 0]) };
 }

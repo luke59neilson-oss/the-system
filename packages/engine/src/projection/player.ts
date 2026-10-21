@@ -1,6 +1,7 @@
 import { poolMax, raceLevel, type Character, type FreePointBatch } from '../character';
 import type { CampaignState } from '../events';
 import type { PendingEvolution, SelectionRecord, SkillOption } from '../evolution';
+import { daysLeft, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
 
 /**
@@ -76,6 +77,11 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   // table sees.
   clocks: 'gm',
   clockOrder: 'gm',
+  // M1.12: players get visible quests only, as PlayerQuest (days left, and the
+  // stability value only when its gauge is visible; never the tag rules).
+  quests: 'owner',
+  questOrder: 'gm',
+  day: 'party',
 };
 
 /** The rules subset a player screen needs to draw the sheet (no GM tuning, no stability). */
@@ -177,6 +183,22 @@ export interface PlayerView {
   readonly party: readonly PartyMember[];
   /** System broadcasts addressed to this character (or everyone), oldest first. */
   readonly messages: readonly PlayerMessage[];
+  /** In-game day counter. */
+  readonly day: number;
+  /** Visible quests in creation order. */
+  readonly quests: readonly PlayerQuest[];
+}
+
+/** A visible quest as players see it (DESIGN §7; M3.8 draws it). */
+export interface PlayerQuest {
+  readonly id: string;
+  readonly title: string;
+  readonly text: string;
+  readonly status: QuestStatus;
+  /** Days left on the timer (≤ 0 once it runs out), or null for none. */
+  readonly daysLeft: number | null;
+  /** World Stability value, only when the GM made the gauge visible. */
+  readonly stability: number | null;
 }
 
 /** A broadcast as one recipient sees it: never who else received it. */
@@ -356,5 +378,22 @@ export function projectForPlayer(state: CampaignState, characterId: string): Pla
     messages: state.broadcasts
       .filter((b) => b.characterIds === null || b.characterIds.includes(viewer.id))
       .map((b) => ({ id: b.id, at: b.at, text: b.text })),
+    day: state.day,
+    quests: state.questOrder.flatMap((id) => {
+      const q = Object.prototype.hasOwnProperty.call(state.quests, id)
+        ? state.quests[id]
+        : undefined;
+      if (!q || !q.visible) return [];
+      return [
+        {
+          id: q.id,
+          title: q.title,
+          text: q.text,
+          status: q.status,
+          daysLeft: daysLeft(q, state.day),
+          stability: q.stability !== null && q.stability.visible ? q.stability.value : null,
+        },
+      ];
+    }),
   };
 }
