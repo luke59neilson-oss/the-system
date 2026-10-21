@@ -7,7 +7,7 @@ import {
   type DomainEvent,
   type EventUpcasters,
 } from './envelope';
-import { applyEvent, type CampaignState } from './reducer';
+import { CAMPAIGN_STATE_SCHEMA_VERSION, applyEvent, type CampaignState } from './reducer';
 
 /**
  * An event log and the state it folds to. Undo is a compensating
@@ -110,13 +110,11 @@ export interface ReplayOptions {
   versions?: Readonly<Record<string, number>>;
 }
 
-/**
- * Rebuilds a campaign from stored events (oldest first), upcasting old
- * versions. Equal to appending the same events one by one, in O(n): every
- * undo is checked against the log, then the events that still count are
- * folded once. Throws EventRejectedError naming the first bad event.
- */
-export function replay(rawEvents: readonly unknown[], options: ReplayOptions = {}): Campaign {
+/** Parses, upcasts and checks stored events (ids, authority, undo targets) without folding. */
+function parseLog(
+  rawEvents: readonly unknown[],
+  options: ReplayOptions,
+): { events: DomainEvent[]; undone: Record<string, string> } {
   const upcasters = options.upcasters ?? EVENT_UPCASTERS;
   const versions = options.versions ?? EVENT_SCHEMA_VERSIONS;
   const events: DomainEvent[] = [];
@@ -148,7 +146,112 @@ export function replay(rawEvents: readonly unknown[], options: ReplayOptions = {
     ids.add(event.id);
     events.push(event);
   }
+  return { events, undone };
+}
+
+/**
+ * Rebuilds a campaign from stored events (oldest first), upcasting old
+ * versions. Equal to appending the same events one by one, in O(n): every
+ * undo is checked against the log, then the events that still count are
+ * folded once. Throws EventRejectedError naming the first bad event.
+ */
+export function replay(rawEvents: readonly unknown[], options: ReplayOptions = {}): Campaign {
+  const { events, undone } = parseLog(rawEvents, options);
   return { events, state: fold(effectiveEvents(events, undone)), undone };
+}
+
+/** Bumped when the snapshot format changes; older snapshots are ignored (full replay). */
+export const SNAPSHOT_FORMAT_VERSION = 1;
+
+/**
+ * A cached fold of the first `eventCount` events (after log upcasting). Only a
+ * speed-up: a snapshot that does not match the log, the state schema or the
+ * event schema versions is ignored and the log is replayed in full.
+ */
+export interface Snapshot {
+  readonly format: number;
+  readonly stateSchemaVersion: number;
+  /** Event schema versions the snapshot was folded with. */
+  readonly eventVersions: Readonly<Record<string, number>>;
+  readonly eventCount: number;
+  readonly lastEventId: string | null;
+  readonly state: CampaignState | null;
+  readonly undone: Readonly<Record<string, string>>;
+}
+
+export function snapshotOf(
+  campaign: Campaign,
+  versions: Readonly<Record<string, number>> = EVENT_SCHEMA_VERSIONS,
+): Snapshot {
+  return JSON.parse(
+    JSON.stringify({
+      format: SNAPSHOT_FORMAT_VERSION,
+      stateSchemaVersion: campaign.state?.schemaVersion ?? CAMPAIGN_STATE_SCHEMA_VERSION,
+      eventVersions: versions,
+      eventCount: campaign.events.length,
+      lastEventId: campaign.events[campaign.events.length - 1]?.id ?? null,
+      state: campaign.state,
+      undone: campaign.undone,
+    }),
+  ) as Snapshot;
+}
+
+const sameRecord = (a: Readonly<Record<string, unknown>>, b: Readonly<Record<string, unknown>>) => {
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((k) => has(b, k) && a[k] === b[k]);
+};
+
+/** Why a snapshot cannot be used for these events, or null when it can. */
+function snapshotMismatch(
+  snapshot: Snapshot,
+  events: readonly DomainEvent[],
+  undone: Readonly<Record<string, string>>,
+  versions: Readonly<Record<string, number>>,
+): string | null {
+  if (snapshot.format !== SNAPSHOT_FORMAT_VERSION) return 'format';
+  if (snapshot.stateSchemaVersion !== CAMPAIGN_STATE_SCHEMA_VERSION) return 'state schema';
+  if (snapshot.state !== null && snapshot.state.schemaVersion !== CAMPAIGN_STATE_SCHEMA_VERSION)
+    return 'state schema';
+  if (!sameRecord(snapshot.eventVersions, versions)) return 'event versions';
+  const count = snapshot.eventCount;
+  if (!Number.isInteger(count) || count < 0 || count > events.length) return 'event count';
+  const last = count === 0 ? null : (events[count - 1]?.id ?? null);
+  if (last !== snapshot.lastEventId) return 'last event id';
+  if ((count === 0) !== (snapshot.state === null)) return 'state';
+  // The undo map over the prefix must be what the snapshot folded.
+  const prefixIds = new Set(events.slice(0, count).map((e) => e.id));
+  const expected: Record<string, string> = {};
+  for (const [target, by] of Object.entries(undone)) if (prefixIds.has(by)) expected[target] = by;
+  if (!sameRecord(expected, snapshot.undone)) return 'undo map';
+  return null;
+}
+
+/**
+ * Loads a campaign from stored events, starting from a snapshot when it
+ * matches (the remaining events are appended with full checks), otherwise by
+ * full replay. Every event is still parsed and checked for ids, authority and
+ * undo targets. `usedSnapshot` says which path ran.
+ */
+export function resume(
+  snapshot: Snapshot | null,
+  rawEvents: readonly unknown[],
+  options: ReplayOptions = {},
+): { campaign: Campaign; usedSnapshot: boolean } {
+  const versions = options.versions ?? EVENT_SCHEMA_VERSIONS;
+  const { events, undone } = parseLog(rawEvents, options);
+  if (snapshot === null || snapshotMismatch(snapshot, events, undone, versions) !== null) {
+    return {
+      campaign: { events, state: fold(effectiveEvents(events, undone)), undone },
+      usedSnapshot: false,
+    };
+  }
+  let campaign: Campaign = {
+    events: events.slice(0, snapshot.eventCount),
+    state: snapshot.state,
+    undone: { ...snapshot.undone },
+  };
+  for (const event of events.slice(snapshot.eventCount)) campaign = appendEvent(campaign, event);
+  return { campaign, usedSnapshot: true };
 }
 
 /** Parses a JSONL event log (one event per line; blank lines ignored). */
