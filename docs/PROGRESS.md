@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0 done; M1.1-M1.5, M1.13, M2.1, M2.2 done
-**Next item:** M2.3 Join helper
+**Status:** in progress: M0 done; M1.1-M1.5, M1.13, M2.1-M2.3, MS.1, MS.2 done
+**Next item:** MS.3 Perspective switcher
 **Blockers:** none
 
 ## Run log
@@ -77,4 +77,17 @@ next item, blockers. -->
 - New decisions D39–D46; new questions Q11 (party pool bars), Q12 (GM from another device).
 - Open `wip/*` branches: none unfinished (`wip/M2.2` is merged).
 - Next: M2.3 Join helper, then MS.1–MS.6, MS.A.
+- Blockers: none.
+
+### Run (lock id blank) · 2026-10-21 17:06–17:44 UTC
+- Preflight: `add_repo` not offered in this session; repo already cloned, fetch/ff-merge worked. Lock pushed to main (its `run` id came out blank: `xxd` is missing in this image; harmless). `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md; latest CI run on main green (a5eb685).
+- Finished: M2.3 Join helper, MS.1 Minimal GM screen, MS.2 Minimal player screen (each reviewed by Sonnet in 2 rounds; see REVIEW-LOG.md).
+- Tests: 298 unit/integration tests (22 files) incl. QR decode via jsQR, a new golden log (`broadcast.jsonl`), broadcast canaries in the projection and live sync tests; 6 e2e (M0.1, MS.1, MS.2) with screenshots in `docs/screens/MS.1/` and `docs/screens/MS.2/`. Engine line coverage 99.12% (floor 90%).
+- CI: green on every code commit except 852df0f (MS.2 e2e spec used a DOM global the tools tsconfig lacks; my check output was grepped instead of exit-code-checked). Fixed in f46f1a7 four minutes later; later runs green. Lesson: gate pushes on `npm run check` exit status.
+- Reviews: 3 items, 6 rounds, 0 High; Mediums fixed (per-URL QR options; broadcasts kept in state, campaign state v3; DING resend on join; gap notice only after reconnect).
+- New decisions D47–D51; new question Q13 (starter class).
+- How to try it: `npm run build && node apps/server/dist/main.js`, open the printed `http://localhost:30333/gm#key=…` link as GM and the join URL (`/`) as a player.
+- Open `wip/*` branches: none.
+- Next: MS.3 Perspective switcher, then MS.4–MS.6, MS.A.
 - Blockers: none.
