@@ -10,13 +10,25 @@ export interface RunningServer {
 
 const repoRoot = path.resolve(import.meta.dirname, '../..');
 
+export interface ServerOptions {
+  /** Reuse this data dir (the caller owns it and removes it); default: a fresh temp dir. */
+  dataDir?: string;
+  /** Listen on this port (e.g. to restart on the same address); default: a random free port. */
+  port?: number;
+}
+
 /** Starts the built server bundle on a random free port (127.0.0.1). */
-export async function startBuiltServer(env: Record<string, string> = {}): Promise<RunningServer> {
+export async function startBuiltServer(
+  env: Record<string, string> = {},
+  options: ServerOptions = {},
+): Promise<RunningServer> {
   // Each run gets its own data dir so tests never share or keep campaigns.
-  const dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-e2e-'));
+  const ownsDir = options.dataDir === undefined;
+  const dataDir = options.dataDir ?? mkdtempSync(path.join(tmpdir(), 'the-system-e2e-'));
+  const port = String(options.port ?? 0);
   const child: ChildProcess = spawn(
     process.execPath,
-    ['apps/server/dist/main.js', '--port', '0', '--host', '127.0.0.1', '--data-dir', dataDir],
+    ['apps/server/dist/main.js', '--port', port, '--host', '127.0.0.1', '--data-dir', dataDir],
     { cwd: repoRoot, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ...env } },
   );
 
@@ -44,7 +56,7 @@ export async function startBuiltServer(env: Record<string, string> = {}): Promis
     stop: () =>
       new Promise<void>((resolve) => {
         const done = () => {
-          rmSync(dataDir, { recursive: true, force: true });
+          if (ownsDir) rmSync(dataDir, { recursive: true, force: true });
           resolve();
         };
         if (child.exitCode !== null) return done();
