@@ -3,8 +3,10 @@ import {
   DEFAULT_RULES,
   RULES_CONFIG_VERSION,
   defaultRules,
+  gradeIndexForLevel,
   migrateRulesConfig,
   parseRulesConfig,
+  selectionLevels,
   type RulesMigration,
 } from '../src';
 
@@ -74,23 +76,26 @@ describe('default rules', () => {
   });
 
   it('yield 29 selections with capstones at 10/45/90/140/190/240 (DESIGN §3)', () => {
+    const perGrade = selectionLevels(defaultRules());
+    expect(perGrade.map((g) => g.grade)).toEqual(['G', 'F', 'E', 'D', 'C', 'B', 'A']);
+    expect(perGrade.flatMap((g) => g.levels)).toHaveLength(29);
+    expect(perGrade.flatMap((g) => g.levels.slice(-1))).toEqual([10, 45, 90, 140, 190, 240]);
+    expect(perGrade[1]?.levels).toEqual([5, 10]);
+  });
+
+  it('stop selections at the level cap', () => {
+    const raw = rawDefaults();
+    raw.campaign.levelCap = 49;
+    const result = parseRulesConfig(raw);
+    if (!result.ok) throw new Error(result.errors.join('\n'));
+    expect(selectionLevels(result.config).map((g) => g.grade)).toEqual(['G', 'F', 'E']);
+  });
+
+  it('map levels to grades', () => {
     const rules = defaultRules();
-    const selections: number[] = [];
-    const capstones: number[] = [];
-    let previousTop = 0;
-    for (const grade of rules.grades) {
-      const inGrade: number[] = [];
-      if (grade.selectionInterval !== null) {
-        for (let l = previousTop + 1; l <= grade.topLevel; l++) {
-          if (l % grade.selectionInterval === 0) inGrade.push(l);
-        }
-      }
-      selections.push(...inGrade);
-      if (inGrade.length > 0) capstones.push(inGrade.at(-1) as number);
-      previousTop = grade.topLevel;
-    }
-    expect(selections).toHaveLength(29);
-    expect(capstones).toEqual([10, 45, 90, 140, 190, 240]);
+    expect(
+      [0, 4, 5, 14, 15, 240, 999].map((l) => rules.grades[gradeIndexForLevel(rules, l)]?.id),
+    ).toEqual(['G', 'G', 'F', 'F', 'E', 'A', 'A']);
   });
 });
 
@@ -100,7 +105,7 @@ describe('invalid configs give readable errors', () => {
       raw.grades[2].topLevel = 'fifty';
     });
     expect(errors).toHaveLength(1);
-    expect(errors[0]).toMatch(/^grades\[2\]\.topLevel: .*number/i);
+    expect(errors[0]).toMatch(/^grades\[2\] \(E\)\.topLevel: .*number/i);
   });
 
   it('reports missing sections', () => {
@@ -120,27 +125,27 @@ describe('invalid configs give readable errors', () => {
     [
       'pool references an unknown stat',
       (r: any) => (r.pools[0].stat = 'luck'),
-      /^pools\[0\]\.stat: unknown stat "luck"/,
+      /^pools\[0\] \(hp\)\.stat: unknown stat "luck"/,
     ],
     [
       'grade ceiling is an unknown rarity',
       (r: any) => (r.grades[0].rarityCeiling = 'shiny'),
-      /^grades\[0\]\.rarityCeiling: unknown rarity "shiny"/,
+      /^grades\[0\] \(G\)\.rarityCeiling: unknown rarity "shiny"/,
     ],
     [
       'grade tops are not increasing',
       (r: any) => (r.grades[3].topLevel = 40),
-      /^grades\[3\]\.topLevel: must be greater than the previous grade's \(49\)/,
+      /^grades\[3\] \(D\)\.topLevel: must be greater than the previous grade's \(49\)/,
     ],
     [
       'selection interval skips the grade',
       (r: any) => (r.grades[1].selectionInterval = 20),
-      /^grades\[1\]\.selectionInterval: no selection level falls inside levels 5-14/,
+      /^grades\[1\] \(F\)\.selectionInterval: no selection level falls inside levels 5-14/,
     ],
     [
       'level cap exceeds last grade',
       (r: any) => (r.campaign.levelCap = 300),
-      /^campaign\.levelCap: exceeds the last grade's top level \(240\)/,
+      /^campaign\.levelCap: must equal the top level of a grade/,
     ],
     [
       'profession grade unknown',
@@ -191,12 +196,12 @@ describe('invalid configs give readable errors', () => {
     [
       'bad id format',
       (r: any) => (r.stats.list[0].id = 'Strength'),
-      /^stats\.list\[0\]\.id: must be a camelCase identifier/,
+      /^stats\.list\[0\] \(Strength\)\.id: must be a camelCase identifier/,
     ],
     [
       'non-integer spread',
       (r: any) => (r.grades[0].classSpreadPerLevel = 4.5),
-      /^grades\[0\]\.classSpreadPerLevel: /,
+      /^grades\[0\] \(G\)\.classSpreadPerLevel: /,
     ],
   ])('%s', (_label, mutate, pattern) => {
     const errors = errorsFor(mutate);
@@ -204,6 +209,107 @@ describe('invalid configs give readable errors', () => {
       errors.some((e) => pattern.test(e)),
       errors.join('\n'),
     ).toBe(true);
+  });
+
+  it.each([
+    [
+      'reserved rarity as a ceiling',
+      (r: any) => (r.grades[6].rarityCeiling = 'divine'),
+      /^grades\[6\] \(A\)\.rarityCeiling: rarity "divine" is reserved/,
+    ],
+    [
+      'reserved rarity for the race skill',
+      (r: any) => (r.skills.startingRaceSkill.rarity = 'divine'),
+      /^skills\.startingRaceSkill\.rarity: rarity "divine" is reserved/,
+    ],
+    [
+      'reserved rarity as merge minimum',
+      (r: any) => (r.skills.merge.minRarity = 'divine'),
+      /^skills\.merge\.minRarity: rarity "divine" is reserved/,
+    ],
+    [
+      'reserved rarity mid-ladder',
+      (r: any) => (r.skills.rarities[3].reserved = true),
+      /^skills\.rarities: reserved rarities must come last/,
+    ],
+    [
+      'ceiling going down',
+      (r: any) => (r.grades[3].rarityCeiling = 'inferior'),
+      /^grades\[3\] \(D\)\.rarityCeiling: grade D's ceiling must not be below grade E's \("epic"\)/,
+    ],
+    [
+      'level cap inside a grade',
+      (r: any) => (r.campaign.levelCap = 1),
+      /^campaign\.levelCap: must equal the top level of a grade/,
+    ],
+    ['unknown top-level key', (r: any) => (r.bogus = 1), /^bogus: unknown setting/],
+    ['typo key', (r: any) => (r.bonuses.percentCap = 0.3), /^bonuses\.percentCap: unknown setting/],
+    [
+      'missing value',
+      (r: any) => delete r.grades[1].xpPerLevel,
+      /^grades\[1\] \(F\)\.xpPerLevel: is required/,
+    ],
+    [
+      'typical pace outside range',
+      (r: any) => (r.campaign.typicalLevelsPerSession = 50),
+      /^campaign\.typicalLevelsPerSession: must be within the range 4-8/,
+    ],
+    [
+      'profession at first grade',
+      (r: any) => (r.tracks.professionUnlockGrade = 'G'),
+      /^tracks\.professionUnlockGrade: must be a grade reached by evolving/,
+    ],
+    [
+      'inherited-name rarity without a mark cost',
+      (r: any) => r.skills.rarities.splice(1, 0, { id: 'toString', name: 'X' }),
+      /^skills\.markUpgrades: missing mark cost to upgrade from "toString"/,
+    ],
+    [
+      'duplicate pool',
+      (r: any) => r.pools.push({ ...r.pools[0] }),
+      /^pools: duplicate pool id "hp"/,
+    ],
+    [
+      'duplicate rarity',
+      (r: any) => r.skills.rarities.splice(1, 0, { id: 'inferior', name: 'Again' }),
+      /^skills\.rarities: duplicate rarity id "inferior"/,
+    ],
+    [
+      'duplicate slot',
+      (r: any) => r.economy.equipmentSlots.push({ ...r.economy.equipmentSlots[0] }),
+      /^economy\.equipmentSlots: duplicate slot id "ring"/,
+    ],
+    [
+      'transforms min over max',
+      (r: any) => (r.skills.evolutionTransforms.min = 3),
+      /^skills\.evolutionTransforms: min must not exceed max/,
+    ],
+    [
+      'pace range reversed',
+      (r: any) => (r.campaign.typicalLevelsPerSessionRange = [8, 4]),
+      /^campaign\.typicalLevelsPerSessionRange: low must not exceed high/,
+    ],
+    ['zero starting stats', (r: any) => (r.stats.startingValue = 0), /^stats\.startingValue: /],
+  ])('%s', (_label, mutate, pattern) => {
+    const errors = errorsFor(mutate);
+    expect(
+      errors.some((e) => pattern.test(e)),
+      errors.join('\n'),
+    ).toBe(true);
+  });
+
+  it('reports each duplicate once', () => {
+    const errors = errorsFor((r) => {
+      r.stats.list.push({ id: 'strength', name: 'A' }, { id: 'strength', name: 'B' });
+    });
+    expect(errors.filter((e) => e.includes('duplicate stat id'))).toHaveLength(1);
+  });
+
+  it('accepts grades defined above the level cap (adding S later)', () => {
+    const raw = rawDefaults();
+    raw.campaign.levelCap = 199;
+    const result = parseRulesConfig(raw);
+    expect(result.ok ? [] : result.errors).toEqual([]);
   });
 
   it('rejects non-objects and bad versions without throwing', () => {
@@ -243,7 +349,51 @@ describe('migration hook', () => {
     };
     const result = migrateRulesConfig({ configVersion: 1, old: 'x' }, migrations, 3);
     expect(calls).toEqual([1, 2]);
-    expect(result).toEqual({ ok: true, raw: { configVersion: 3, renamed: 'x', old: undefined } });
+    expect(result).toMatchObject({ ok: true, raw: { configVersion: 3, renamed: 'x' } });
+  });
+
+  it('never mutates the caller and contains throwing migrations', () => {
+    const input = { configVersion: 1, list: [1] };
+    const mutating: Record<number, RulesMigration> = {
+      1: (raw) => {
+        (raw['list'] as number[]).push(2);
+        return raw;
+      },
+    };
+    expect(migrateRulesConfig(input, mutating, 2).ok).toBe(true);
+    expect(input).toEqual({ configVersion: 1, list: [1] });
+
+    const throwing: Record<number, RulesMigration> = {
+      1: () => {
+        throw new Error('grades missing');
+      },
+    };
+    expect(parseRulesConfig(input, throwing, 2)).toEqual({
+      ok: false,
+      errors: ['configVersion: migration from version 1 failed: grades missing'],
+    });
+  });
+
+  it('validates migrated configs end to end', () => {
+    // Pretend the current schema is v2 and v1 files named the currency field differently.
+    const v1 = rawDefaults();
+    v1.economy.currency = v1.economy.currencyName;
+    delete v1.economy.currencyName;
+    const migrations: Record<number, RulesMigration> = {
+      1: (raw) => {
+        const economy = raw['economy'] as Record<string, unknown>;
+        const { currency, ...rest } = economy;
+        return { ...raw, economy: { ...rest, currencyName: currency } };
+      },
+    };
+    // v2 result is then validated against the (v1) schema's literal, so stamp back for the check.
+    const migrated = migrateRulesConfig(v1, migrations, 2);
+    expect(migrated.ok).toBe(true);
+    if (migrated.ok) {
+      expect((migrated.raw['economy'] as Record<string, unknown>)['currencyName']).toBe('Credits');
+      expect(parseRulesConfig({ ...migrated.raw, configVersion: 1 }).ok).toBe(true);
+    }
+    expect(parseRulesConfig(v1).ok).toBe(false); // unmigrated: unknown key + missing value
   });
 
   it('reports a gap in the migration chain', () => {

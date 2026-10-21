@@ -14,9 +14,9 @@ const positiveInt = z.number().int().positive();
 const nonNegativeInt = z.number().int().nonnegative();
 const fraction = z.number().min(0);
 
-export const statSchema = z.object({ id, name: z.string().min(1) });
+export const statSchema = z.strictObject({ id, name: z.string().min(1) });
 
-export const poolSchema = z.object({
+export const poolSchema = z.strictObject({
   id,
   name: z.string().min(1),
   /** Stat whose value drives the pool maximum. */
@@ -25,14 +25,14 @@ export const poolSchema = z.object({
   multiplier: positiveInt,
 });
 
-export const raritySchema = z.object({
+export const raritySchema = z.strictObject({
   id,
   name: z.string().min(1),
   /** Reserved rarities exist in the ladder but cannot be granted yet (Divine). */
   reserved: z.boolean().default(false),
 });
 
-export const gradeSchema = z.object({
+export const gradeSchema = z.strictObject({
   id: z.string().regex(/^[A-Z]$/, 'must be a single capital letter'),
   /** Highest race/class/profession level reachable in this grade (4, 14, 49, ...). */
   topLevel: positiveInt,
@@ -46,13 +46,17 @@ export const gradeSchema = z.object({
   freePointsPerRaceLevel: nonNegativeInt,
   /** XP needed per level while the character is in this grade. */
   xpPerLevel: positiveInt,
-  /** Stat multiplier for grade-gap mode "multiplier" (DESIGN §7). */
+  /**
+   * Grade-gap mode "multiplier" (DESIGN §7: "grade bonus multiplier per 10
+   * points"): each side's stat value is multiplied by its grade's factor before
+   * the ratio is taken. M1.11 owns the exact formula.
+   */
   gradeGapMultiplier: z.number().positive(),
   /** Metallic theme token (M8.1). */
   theme: z.string().min(1),
 });
 
-export const equipmentSlotSchema = z.object({
+export const equipmentSlotSchema = z.strictObject({
   id,
   name: z.string().min(1),
   count: positiveInt,
@@ -60,9 +64,9 @@ export const equipmentSlotSchema = z.object({
 });
 
 export const rulesConfigSchema = z
-  .object({
+  .strictObject({
     configVersion: z.literal(RULES_CONFIG_VERSION),
-    campaign: z.object({
+    campaign: z.strictObject({
       /** Campaign level cap (DESIGN §2: 240 for now). */
       levelCap: positiveInt,
       /** Pacing target shown to the GM ("typical session ≈ 6 levels"). */
@@ -70,16 +74,16 @@ export const rulesConfigSchema = z
       typicalLevelsPerSessionRange: z.tuple([positiveInt, positiveInt]),
       plannedSessions: positiveInt,
     }),
-    stats: z.object({
+    stats: z.strictObject({
       list: z.array(statSchema).min(1),
-      startingValue: nonNegativeInt,
+      startingValue: positiveInt,
       /** Modifier = stat ÷ displayDivisor, shown with displayDecimals (10 → 1.0). */
       displayDivisor: positiveInt,
       displayDecimals: nonNegativeInt.max(4),
     }),
     pools: z.array(poolSchema).min(1),
     grades: z.array(gradeSchema).min(1),
-    tracks: z.object({
+    tracks: z.strictObject({
       /** Grade at whose evolution professions are first offered. */
       professionUnlockGrade: z.string(),
       /** What opens an evolution: race level or class level at the grade top. */
@@ -87,61 +91,61 @@ export const rulesConfigSchema = z
       /** Race level = floor(average(class, profession)) once a profession exists. */
       raceLevelRounding: z.literal('floor'),
     }),
-    xp: z.object({
+    xp: z.strictObject({
       /** Bonus per level the enemy is above the character (0.10 = +10%). */
       aboveLevelBonusPerLevel: fraction,
       aboveLevelBonusCap: fraction,
       defaultSplit: z.literal('even'),
     }),
-    bonuses: z.object({
+    bonuses: z.strictObject({
       /** Cap on the sum of percentage bonuses per stat (0.25 = +25%). */
       percentCapPerStat: fraction,
     }),
-    skills: z.object({
+    skills: z.strictObject({
       rarities: z.array(raritySchema).min(2),
       startingClassSkillCount: positiveInt,
-      startingRaceSkill: z.object({ name: z.string().min(1), rarity: id }),
-      menuSize: z.object({ min: positiveInt, max: positiveInt }),
-      evolutionTransforms: z.object({ min: nonNegativeInt, max: positiveInt }),
+      startingRaceSkill: z.strictObject({ name: z.string().min(1), rarity: id }),
+      menuSize: z.strictObject({ min: positiveInt, max: positiveInt }),
+      evolutionTransforms: z.strictObject({ min: nonNegativeInt, max: positiveInt }),
       /** Marks needed to upgrade FROM the keyed rarity to the next one. */
       markUpgrades: z.record(z.string(), positiveInt),
       maxMarksPerSkillPerSession: positiveInt,
-      merge: z.object({
+      merge: z.strictObject({
         requiredJointUses: positiveInt,
         minRarity: id,
         maxPerCharacterPerGrade: positiveInt,
         rarityStepsAboveHigher: positiveInt,
       }),
     }),
-    practice: z.object({
+    practice: z.strictObject({
       /** Selection alert fires within this many class levels of a selection. */
       selectionAlertWithinLevels: positiveInt,
     }),
-    resolution: z.object({
+    resolution: z.strictObject({
       gradeGapMode: z.enum(['none', 'multiplier', 'lowerGradeFraction']),
       /** Stat factor for the lower-grade side in "lowerGradeFraction" mode (⅓). */
       lowerGradeFraction: z.number().positive().max(1),
     }),
-    montage: z.object({
+    montage: z.strictObject({
       /** Clock fill fraction needed before a montage is offered. */
       minClockFill: z.number().min(0).max(1),
       requireNoFailures: z.boolean(),
     }),
-    stability: z.object({
+    stability: z.strictObject({
       min: z.number(),
       max: z.number(),
       initial: z.number(),
       visibleToPlayersByDefault: z.boolean(),
     }),
-    hunger: z.object({
+    hunger: z.strictObject({
       enabledByDefault: z.boolean(),
       fadesAtGrade: z.string(),
     }),
-    economy: z.object({
+    economy: z.strictObject({
       currencyName: z.string().min(1),
       equipmentSlots: z.array(equipmentSlotSchema).min(1),
     }),
-    logging: z.object({
+    logging: z.strictObject({
       autosaveMinutes: positiveInt,
     }),
   })
@@ -149,8 +153,9 @@ export const rulesConfigSchema = z
     const issue = (path: (string | number)[], message: string): void => {
       ctx.addIssue({ code: 'custom', path, message });
     };
-    const duplicates = (ids: string[]): string[] =>
-      ids.filter((value, index) => ids.indexOf(value) !== index);
+    const duplicates = (ids: string[]): string[] => [
+      ...new Set(ids.filter((value, index) => ids.indexOf(value) !== index)),
+    ];
 
     const statIds = config.stats.list.map((s) => s.id);
     for (const dup of duplicates(statIds)) issue(['stats', 'list'], `duplicate stat id "${dup}"`);
@@ -167,9 +172,19 @@ export const rulesConfigSchema = z
     for (const dup of duplicates(rarityIds)) {
       issue(['skills', 'rarities'], `duplicate rarity id "${dup}"`);
     }
+    const reservedSeen = config.skills.rarities.findIndex((r) => r.reserved);
+    if (
+      reservedSeen !== -1 &&
+      config.skills.rarities.slice(reservedSeen).some((r) => !r.reserved)
+    ) {
+      issue(['skills', 'rarities'], 'reserved rarities must come last in the ladder');
+    }
+    const grantable = config.skills.rarities.filter((r) => !r.reserved).map((r) => r.id);
     const knownRarity = (value: string, path: (string | number)[]): void => {
       if (!rarityIds.includes(value)) {
         issue(path, `unknown rarity "${value}" (known: ${rarityIds.join(', ')})`);
+      } else if (!grantable.includes(value)) {
+        issue(path, `rarity "${value}" is reserved and cannot be used yet`);
       }
     };
 
@@ -177,7 +192,17 @@ export const rulesConfigSchema = z
     for (const dup of duplicates(gradeIds)) issue(['grades'], `duplicate grade id "${dup}"`);
     config.grades.forEach((grade, i) => {
       knownRarity(grade.rarityCeiling, ['grades', i, 'rarityCeiling']);
-      const previousTop = i === 0 ? 0 : (config.grades[i - 1]?.topLevel ?? 0);
+      const previous = config.grades[i - 1];
+      if (
+        previous &&
+        rarityIds.indexOf(grade.rarityCeiling) < rarityIds.indexOf(previous.rarityCeiling)
+      ) {
+        issue(
+          ['grades', i, 'rarityCeiling'],
+          `grade ${grade.id}'s ceiling must not be below grade ${previous.id}'s ("${previous.rarityCeiling}")`,
+        );
+      }
+      const previousTop = previous?.topLevel ?? 0;
       if (grade.topLevel <= previousTop) {
         issue(
           ['grades', i, 'topLevel'],
@@ -195,9 +220,17 @@ export const rulesConfigSchema = z
         }
       }
     });
-    const lastTop = config.grades.at(-1)?.topLevel ?? 0;
-    if (config.campaign.levelCap > lastTop) {
-      issue(['campaign', 'levelCap'], `exceeds the last grade's top level (${lastTop})`);
+    // The cap must be the top of some grade, so every grade up to it is complete.
+    // Grades above the cap may be defined ahead of time (e.g. S) but are unreachable.
+    const tops = config.grades.map((g) => g.topLevel);
+    if (!tops.includes(config.campaign.levelCap)) {
+      issue(['campaign', 'levelCap'], `must equal the top level of a grade (${tops.join(', ')})`);
+    }
+    if (config.grades[0]?.id === config.tracks.professionUnlockGrade) {
+      issue(
+        ['tracks', 'professionUnlockGrade'],
+        'must be a grade reached by evolving (not the first)',
+      );
     }
     for (const [path, value] of [
       [['tracks', 'professionUnlockGrade'], config.tracks.professionUnlockGrade],
@@ -215,7 +248,7 @@ export const rulesConfigSchema = z
       return !r.reserved && next !== undefined && !next.reserved;
     });
     for (const rarity of upgradable) {
-      if (config.skills.markUpgrades[rarity.id] === undefined) {
+      if (!Object.hasOwn(config.skills.markUpgrades, rarity.id)) {
         issue(['skills', 'markUpgrades'], `missing mark cost to upgrade from "${rarity.id}"`);
       }
     }
@@ -232,6 +265,10 @@ export const rulesConfigSchema = z
     }
     const [low, high] = config.campaign.typicalLevelsPerSessionRange;
     if (low > high) issue(['campaign', 'typicalLevelsPerSessionRange'], 'low must not exceed high');
+    const typical = config.campaign.typicalLevelsPerSession;
+    if (typical < low || typical > high) {
+      issue(['campaign', 'typicalLevelsPerSession'], `must be within the range ${low}-${high}`);
+    }
 
     if (config.stability.min >= config.stability.max) {
       issue(['stability', 'min'], 'must be less than max');
