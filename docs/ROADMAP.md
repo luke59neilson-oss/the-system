@@ -108,7 +108,7 @@ the full ones.
   starter class; award XP with the even split; send a System broadcast.
 - [x] **MS.2 Minimal player screen.** DESIGN §9 core rows (name, race, class,
   levels, pools, nine stats in tenths, free points) and the live DING feed.
-- [ ] **MS.3 Perspective switcher.** In the GM app, a "View as" bar:
+- [x] **MS.3 Perspective switcher.** In the GM app, a "View as" bar:
   [GM] [each character] [Table view]. Character views and the Table view's
   panes are real player clients (no GM key, player projection only), so what
   Luke sees is exactly what that player sees. Table view shows the GM console
