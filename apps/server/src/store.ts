@@ -15,6 +15,7 @@ import {
   writeSync,
 } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { hostname, uptime } from 'node:os';
 import path from 'node:path';
 import {
   EventRejectedError,
@@ -187,10 +188,40 @@ function defaultIsAlive(pid: number): boolean {
   }
 }
 
-/** Takes the campaign's single-writer lock, replacing a lock whose owner is gone; returns its contents. */
+/** Boot time of this machine to the nearest minute (pids restart after a reboot). */
+const bootMinute = () => Math.round((Date.now() - uptime() * 1000) / 60_000);
+
+interface LockInfo {
+  pid: number;
+  host: string;
+  boot: number;
+  token: string;
+}
+
+function readLock(file: string): LockInfo | null {
+  try {
+    const info = JSON.parse(readFileSync(file, 'utf8')) as Partial<LockInfo>;
+    return typeof info.pid === 'number' && typeof info.host === 'string'
+      ? (info as LockInfo)
+      : null;
+  } catch {
+    return null; // Missing or unreadable: treated as stale (or already gone).
+  }
+}
+
+/**
+ * Takes the campaign's single-writer lock; returns its contents. A lock from
+ * this machine is stale when its pid is gone or it predates the last boot; a
+ * lock from another machine (shared drive) is never taken over automatically.
+ */
 function takeLock(file: string, isAlive: (pid: number) => boolean): string {
-  const contents = `${process.pid} ${randomUUID()}`;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  const contents = JSON.stringify({
+    pid: process.pid,
+    host: hostname(),
+    boot: bootMinute(),
+    token: randomUUID(),
+  });
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const fd = openSync(file, 'wx');
       try {
@@ -202,11 +233,20 @@ function takeLock(file: string, isAlive: (pid: number) => boolean): string {
       return contents;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-      const pid = Number(readFileSync(file, 'utf8').trim().split(' ')[0]);
-      if (Number.isInteger(pid) && pid > 0 && isAlive(pid)) {
-        throw new StoreError(`The campaign is already open (process ${pid})`);
+      const raw = existsSync(file) ? readFileSync(file, 'utf8') : null;
+      if (raw === null) continue; // Released between our open and read.
+      const info = readLock(file);
+      if (info && info.host !== hostname()) {
+        throw new StoreError(
+          `The campaign is open on ${info.host}; if that computer is off, delete ${file}`,
+        );
       }
-      unlinkSync(file); // Stale: its owner died without closing.
+      const sameBoot = info !== null && Math.abs(info.boot - bootMinute()) <= 1;
+      if (info && sameBoot && isAlive(info.pid)) {
+        throw new StoreError(`The campaign is already open (process ${info.pid})`);
+      }
+      // Stale. Remove it only if it is still the lock we judged.
+      if (existsSync(file) && readFileSync(file, 'utf8') === raw) unlinkSync(file);
     }
   }
   throw new StoreError('Could not take the campaign lock');
@@ -346,7 +386,6 @@ export class CampaignStore {
     const bytes = Buffer.from(events.map((e) => `${JSON.stringify(e)}\n`).join(''), 'utf8');
     try {
       writeAll(fd, bytes);
-      fsyncSync(fd);
     } catch (error) {
       try {
         ftruncateSync(fd, this.goodBytes);
@@ -356,10 +395,23 @@ export class CampaignStore {
       }
       throw error;
     }
+    try {
+      fsyncSync(fd);
+    } catch (error) {
+      // After a failed fsync the file's durable contents are unknown: stop writing.
+      this.broken = `the event log could not be synced to disk (${String(error)})`;
+      throw error;
+    }
     this.goodBytes += bytes.length;
     this.campaignValue = next;
     this.sinceSnapshot += events.length;
-    if (this.sinceSnapshot >= (this.options.snapshotEvery ?? 100)) this.writeSnapshot();
+    if (this.sinceSnapshot >= (this.options.snapshotEvery ?? 100)) {
+      try {
+        this.writeSnapshot();
+      } catch {
+        // The events are committed; a snapshot is only a speed-up and retries next time.
+      }
+    }
     return next;
   }
 
@@ -378,8 +430,10 @@ export class CampaignStore {
    */
   backup(label = 'session-end'): string {
     if (!/^[a-z0-9-]{1,40}$/.test(label)) throw new StoreError(`Invalid backup label "${label}"`);
-    this.requireWritable();
-    this.writeSnapshot();
+    if (this.fd === null) throw new StoreError(`Campaign "${this.id}" is closed`);
+    // Allowed on a broken store too (that is when a copy matters most); the
+    // snapshot is skipped there and the log's whole lines are what counts.
+    if (this.broken === null) this.writeSnapshot();
     const backups = path.join(this.dir, 'backups');
     const name = `${stamp(this.options.now())}-${label}`;
     const target = path.join(backups, name);
@@ -388,6 +442,7 @@ export class CampaignStore {
     rmSync(staging, { recursive: true, force: true });
     mkdirSync(staging);
     for (const file of ['events.jsonl', 'snapshot.json']) {
+      if (!existsSync(path.join(this.dir, file))) continue;
       copyFileSync(path.join(this.dir, file), path.join(staging, file));
       fsyncFile(path.join(staging, file));
     }
@@ -418,6 +473,8 @@ export class CampaignStore {
     const owned = existsSync(lockFile) && readFileSync(lockFile, 'utf8') === this.lock;
     try {
       if (owned && this.broken === null) this.writeSnapshot();
+    } catch {
+      // Only a speed-up: the next open replays the log instead.
     } finally {
       closeSync(this.fd);
       this.fd = null;

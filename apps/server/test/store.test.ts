@@ -1,6 +1,7 @@
 import {
   appendFileSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -235,13 +236,47 @@ describe('CampaignStore', () => {
     expect(existsSync(path.join(takeover.dir, 'LOCK'))).toBe(false);
   });
 
+  it('refuses a lock from another computer, and takes over one from before a reboot', () => {
+    const dir = CampaignStore.open('main', options).dir;
+    const lock = path.join(dir, 'LOCK');
+    const info = JSON.parse(readFileSync(lock, 'utf8')) as Record<string, unknown>;
+    writeFileSync(lock, JSON.stringify({ ...info, host: 'other-laptop' }));
+    expect(() => CampaignStore.open('main', options)).toThrow(/open on other-laptop/);
+    // Same machine, live pid, but an earlier boot: the pid was reused.
+    writeFileSync(lock, JSON.stringify({ ...info, boot: (info.boot as number) - 600 }));
+    const store = CampaignStore.open('main', options);
+    store.close();
+    writeFileSync(lock, 'garbage');
+    CampaignStore.open('main', options).close();
+  });
+
+  it('commits events even when the snapshot cannot be written', () => {
+    const store = CampaignStore.open('main', { ...options, snapshotEvery: 1 });
+    rmSync(path.join(store.dir, 'snapshot.json'), { force: true });
+    mkdirSync(path.join(store.dir, 'snapshot.json'));
+    const before = play(store, script);
+    store.close();
+    const reopened = CampaignStore.open('main', options);
+    expect(reopened.loadedFromSnapshot).toBe(false);
+    expect(reopened.campaign).toEqual(before);
+    reopened.close();
+  });
+
   it('falls back to replay for a garbled snapshot shape', () => {
     const store = CampaignStore.open('main', options);
     const before = play(store, script);
     store.close();
     const file = path.join(dataDir, 'campaigns', 'main', 'snapshot.json');
     const snap = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
-    for (const bad of [{ ...snap, eventVersions: null }, { ...snap, undone: null }, 5, null]) {
+    const noState = { ...snap };
+    delete noState.state;
+    for (const bad of [
+      { ...snap, eventVersions: null },
+      { ...snap, undone: null },
+      noState,
+      5,
+      null,
+    ]) {
       writeFileSync(file, JSON.stringify(bad));
       const s = CampaignStore.open('main', options);
       expect(s.loadedFromSnapshot).toBe(false);

@@ -250,8 +250,12 @@ export function resume(
     campaign: { events, state: fold(effectiveEvents(events, undone)), undone },
     usedSnapshot: false,
   });
-  if (snapshot === null || snapshotMismatch(snapshot, events, undone, versions, rawCount) !== null)
-    return full();
+  if (snapshot === null) return full();
+  try {
+    if (snapshotMismatch(snapshot, events, undone, versions, rawCount) !== null) return full();
+  } catch {
+    return full(); // A malformed snapshot is only a lost speed-up.
+  }
   let campaign: Campaign = {
     events: events.slice(0, snapshot.eventCount),
     state: snapshot.state,
@@ -259,11 +263,10 @@ export function resume(
   };
   try {
     for (const event of events.slice(snapshot.eventCount)) campaign = appendEvent(campaign, event);
-  } catch (error) {
+  } catch {
     // A tail append can refuse what a full fold accepts (an event later undone
-    // in a hand-edited log, or a bad snapshot body): the replay decides.
-    if (error instanceof EventRejectedError) return full();
-    throw error;
+    // in a hand-edited log), or trip on a malformed snapshot body: replay decides.
+    return full();
   }
   return { campaign, usedSnapshot: true };
 }
