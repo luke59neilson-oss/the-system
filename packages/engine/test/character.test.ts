@@ -167,6 +167,13 @@ describe('derived pools and display', () => {
     expect(() => poolMax(rules, stats, 'luck')).toThrow(/Unknown pool/);
     expect(() => poolMax(rules, { wisdom: 1 }, 'hp')).toThrow(/"vitality" is missing/);
     expect(poolMax(rules, { ...stats, vitality: 12.34 }, 'hp')).toBe(123);
+    expect(
+      poolMax(
+        customRules((r) => (r.pools[0].multiplier = 100)),
+        { vitality: 0.29 },
+        'hp',
+      ),
+    ).toBe(29);
   });
 
   it('clamps current pools to 0..max', () => {
@@ -175,6 +182,14 @@ describe('derived pools and display', () => {
       hp: 12,
       mp: 3,
       stamina: 7,
+    });
+  });
+
+  it('treats non-finite current pools as full', () => {
+    expect(clampPools(rules, stats, { hp: Number.NaN, mp: Infinity })).toEqual({
+      hp: 400,
+      mp: 210,
+      stamina: 200,
     });
   });
 

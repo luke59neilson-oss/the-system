@@ -1,4 +1,4 @@
-import type { RulesConfig } from '../rules';
+import type { GradeRules, RulesConfig } from '../rules';
 
 /** Bumped when the serialized character shape changes; M1.3 upcasts old states. */
 export const CHARACTER_SCHEMA_VERSION = 1;
@@ -135,13 +135,17 @@ export function raceLevel(
   switch (rules.tracks.raceLevelRounding) {
     case 'floor':
       return Math.floor(average);
+    default:
+      throw new CharacterRuleError(
+        `Unknown race level rounding "${String(rules.tracks.raceLevelRounding)}"`,
+      );
   }
 }
 
 /** Highest level any track may reach in the given grade (4, 14, 49, ...). */
 export function trackCap(rules: RulesConfig, gradeId: string): number {
   const grade = rules.grades[gradeIndexOf(rules, gradeId)];
-  return Math.min(grade?.topLevel ?? 0, rules.campaign.levelCap);
+  return Math.min((grade as GradeRules).topLevel, rules.campaign.levelCap);
 }
 
 /** True when the track is frozen at its grade cap (extra XP banks; DESIGN §2-3). */
@@ -164,7 +168,8 @@ export function poolMax(
   if (value === undefined || !Number.isFinite(value)) {
     throw new CharacterRuleError(`Stat "${pool.stat}" is missing or not a number`);
   }
-  return Math.floor(pool.multiplier * value);
+  // Round away float noise (0.29 × 100 = 28.999…) before flooring.
+  return Math.floor(Number((pool.multiplier * value).toFixed(9)));
 }
 
 /** Current pools clamped to 0..max for the given stats (after a stat change or heal). */
@@ -176,7 +181,9 @@ export function clampPools(
   const out: Record<string, number> = {};
   for (const pool of rules.pools) {
     const max = poolMax(rules, stats, pool.id);
-    out[pool.id] = Math.min(max, Math.max(0, Math.floor(pools[pool.id] ?? max)));
+    const current = pools[pool.id];
+    const value = current === undefined || !Number.isFinite(current) ? max : Math.floor(current);
+    out[pool.id] = Math.min(max, Math.max(0, value));
   }
   return out;
 }
