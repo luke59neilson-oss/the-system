@@ -879,3 +879,26 @@ describe('review fixes (M1.10 round 2)', () => {
     ok(c, release('Volley', 'Volley', 'rare'));
   });
 });
+
+describe('banked marks through an evolution (M1.A review)', () => {
+  const marked = () =>
+    ['s1', 's2'].reduce(
+      (c, session) =>
+        ok(c, { type: 'skill.awardMark', characterId: 'jake', skill: archery, session }),
+      atGTop(),
+    );
+  const evolveWith = (rarity: string) =>
+    ok(ok(marked(), release(archery, 'Archery', rarity)), {
+      type: 'evolution.choose',
+      characterId: 'jake',
+      optionId: 'o1',
+    });
+
+  it('a transform that keeps the rarity keeps the banked marks', () => {
+    expect(char(evolveWith('inferior')).skills[0]).toMatchObject({ name: 'Archery', marks: 2 });
+  });
+
+  it('a transform that raises the rarity spends them', () => {
+    expect(char(evolveWith('common')).skills[0]).toMatchObject({ name: 'Archery', marks: 0 });
+  });
+});

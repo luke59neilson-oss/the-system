@@ -364,7 +364,7 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
           held.profession !== null && rand() < 0.5 ? 'profession' : 'class';
         const level = bankTrack === 'class' ? held.classLevel : held.professionLevel;
         const room = Math.max(0, Math.min(2, (targets[id] as number) - level));
-        evolve(id, target, rand() < 0.5 ? int(0, room) : 0, bankTrack);
+        evolve(id, target, room > 0 && rand() < 0.5 ? int(1, room) : 0, bankTrack);
         assignFreePoints(id);
         recordCheck(id);
         handleSelections(id);

@@ -88,6 +88,9 @@ export function repeatedEntryIds(entries: readonly PracticeEntry[]): Set<string>
   return out;
 }
 
+/** Host-independent string order (UTF-16 code units), unlike locale-dependent localeCompare. */
+const codeUnitCompare = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
 export interface SkillPairCount {
   /** The two skill names, sorted. */
   readonly skills: readonly [string, string];
@@ -119,8 +122,8 @@ export function skillPairCounts(
   return [...counts.values()].sort(
     (a, b) =>
       b.count - a.count ||
-      a.skills[0].localeCompare(b.skills[0]) ||
-      a.skills[1].localeCompare(b.skills[1]),
+      codeUnitCompare(a.skills[0], b.skills[0]) ||
+      codeUnitCompare(a.skills[1], b.skills[1]),
   );
 }
 
@@ -220,7 +223,7 @@ export function searchNotes(notes: readonly Note[], query: NoteQuery): Note[] {
       const hay = `${note.title}\n${note.body}\n${own.join(' ')}`.toLowerCase();
       return words.every((w) => hay.includes(w));
     })
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || a.id.localeCompare(b.id));
+    .sort((a, b) => codeUnitCompare(b.updatedAt, a.updatedAt) || codeUnitCompare(a.id, b.id));
 }
 
 /** May this reader see the note? Reader: a character id, or null for the GM. */

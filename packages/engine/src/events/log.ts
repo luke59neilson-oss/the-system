@@ -8,6 +8,7 @@ import {
   type EventUpcasters,
 } from './envelope';
 import { CAMPAIGN_STATE_SCHEMA_VERSION, applyEvent, type CampaignState } from './reducer';
+import { RULES_CONFIG_VERSION } from '../rules';
 
 /**
  * An event log and the state it folds to. Undo is a compensating
@@ -161,7 +162,8 @@ export function replay(rawEvents: readonly unknown[], options: ReplayOptions = {
 }
 
 /** Bumped when the snapshot format changes; older snapshots are ignored (full replay). */
-export const SNAPSHOT_FORMAT_VERSION = 1;
+/** v2: records the rules config version (M1.A). */
+export const SNAPSHOT_FORMAT_VERSION = 2;
 
 /**
  * A cached fold of the first `eventCount` events (after log upcasting). Only a
@@ -175,6 +177,11 @@ export interface Snapshot {
   readonly eventVersions: Readonly<Record<string, number>>;
   /** Number of log-level upcasters in force when it was folded (a new one invalidates it). */
   readonly rawUpcasters: number;
+  /**
+   * Rules config version the state's rules were migrated to: a new rules
+   * migration (D23) changes `state.rules` without any event schema bump.
+   */
+  readonly rulesConfigVersion: number;
   readonly eventCount: number;
   readonly lastEventId: string | null;
   readonly state: CampaignState | null;
@@ -189,6 +196,7 @@ export function snapshotOf(campaign: Campaign, options: ReplayOptions = {}): Sna
       stateSchemaVersion: campaign.state?.schemaVersion ?? CAMPAIGN_STATE_SCHEMA_VERSION,
       eventVersions: options.versions ?? EVENT_SCHEMA_VERSIONS,
       rawUpcasters: (options.rawUpcasters ?? RAW_EVENT_UPCASTERS).length,
+      rulesConfigVersion: RULES_CONFIG_VERSION,
       eventCount: campaign.events.length,
       lastEventId: campaign.events[campaign.events.length - 1]?.id ?? null,
       state: campaign.state,
@@ -215,6 +223,7 @@ function snapshotMismatch(
   if (typeof snapshot.eventVersions !== 'object' || snapshot.eventVersions === null) return 'shape';
   if (typeof snapshot.undone !== 'object' || snapshot.undone === null) return 'shape';
   if (snapshot.format !== SNAPSHOT_FORMAT_VERSION) return 'format';
+  if (snapshot.rulesConfigVersion !== RULES_CONFIG_VERSION) return 'rules config version';
   if (snapshot.stateSchemaVersion !== CAMPAIGN_STATE_SCHEMA_VERSION) return 'state schema';
   if (snapshot.state !== null && snapshot.state.schemaVersion !== CAMPAIGN_STATE_SCHEMA_VERSION)
     return 'state schema';

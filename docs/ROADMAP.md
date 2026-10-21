@@ -284,6 +284,8 @@ the full ones.
 - [ ] **M7.2 Bestiary and NPCs.** Grade, level, stats, Identify tiers, notes.
 - [ ] **M7.3 Encounter panel.** Ratio-odds roller (stats + mode), pool
   damage/heal, progress clocks, montage trigger.
+  Store the race level used for the above-level XP bonus in `xp.awarded`
+  so a non-latest undo cannot re-price a later award (D71).
 - [ ] **M7.4 Trackers.** Hunger (fades at E-grade by default), regions,
   survivor factions.
 - [ ] **M7.A Milestone acceptance and review.** Sample encounter end to end;

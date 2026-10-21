@@ -104,3 +104,13 @@ answer under any question and the next run will follow it.
     them. Default: owner only (titles may carry stat bonuses in M6.4).
     Alternative: titles are public, like name, class and grade.
     Answer:
+24. **Profession start level when XP is banked.** At the E-grade evolution
+    the profession starts at the class level *before* banked class XP
+    applies (Cook 14 while class jumps to 24, race 19). Default: before
+    (D64 order). Alternative: after, so the profession starts at the new
+    class level.
+    Answer:
+25. **Declining an offered profession.** When an evolution offers
+    professions, the player must pick one. Default: must pick (the GM can
+    re-release with none). Alternative: allow "none for now".
+    Answer:

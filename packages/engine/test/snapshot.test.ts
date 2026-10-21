@@ -48,9 +48,12 @@ describe('snapshots and resume', () => {
     for (const bad of [
       null,
       { ...snap, lastEventId: 'nope' },
+      // A rules migration since the snapshot: its state.rules is stale (M1.A).
+      { ...snap, rulesConfigVersion: snap.rulesConfigVersion - 1 },
+      { ...snap, format: 1 },
       { ...snap, eventCount: raw.length + 1 },
       { ...snap, eventCount: 1.5 },
-      { ...snap, format: 2 },
+      { ...snap, format: 3 },
       { ...snap, stateSchemaVersion: 1 },
       { ...snap, eventVersions: { ...snap.eventVersions, extra: 1 } },
       { ...snap, undone: { e2: 'e9' } },

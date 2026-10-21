@@ -446,7 +446,11 @@ export function chooseEvolution(
   const byName = new Map(option.transforms.map((t) => [t.skill, t]));
   const skills: CharacterSkill[] = character.skills.map((s) => {
     const t = byName.get(s.name);
-    return t ? { ...s, name: t.name.trim(), rarity: t.rarity, marks: 0 } : s;
+    if (!t) return s;
+    // A rarity gain spends the banked marks (as an upgrade would); a transform
+    // that keeps the rarity keeps them (DESIGN §6: they bank until the evolution).
+    const marks = t.rarity === s.rarity ? s.marks : 0;
+    return { ...s, name: t.name.trim(), rarity: t.rarity, marks };
   });
   let next: Character = {
     ...character,
