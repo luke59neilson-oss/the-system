@@ -6,3 +6,5 @@ export const ENGINE_NAME = 'the-system-engine';
 
 /** Engine API version; bumped when the public surface changes incompatibly. */
 export const ENGINE_API_VERSION = 0;
+
+export * from './rules';

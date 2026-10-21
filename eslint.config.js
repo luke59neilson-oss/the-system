@@ -154,6 +154,10 @@ export default tseslint.config(
   },
   {
     files: testFiles,
-    rules: { 'no-restricted-syntax': ['error', ...testBans] },
+    rules: {
+      'no-restricted-syntax': ['error', ...testBans],
+      // Tests build deliberately malformed inputs.
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
   },
 );

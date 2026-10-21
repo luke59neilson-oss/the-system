@@ -1,0 +1,344 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`default rules > match the snapshot 1`] = `
+{
+  "bonuses": {
+    "percentCapPerStat": 0.25,
+  },
+  "campaign": {
+    "levelCap": 240,
+    "plannedSessions": 40,
+    "typicalLevelsPerSession": 6,
+    "typicalLevelsPerSessionRange": [
+      4,
+      8,
+    ],
+  },
+  "configVersion": 1,
+  "economy": {
+    "currencyName": "Credits",
+    "equipmentSlots": [
+      {
+        "count": 2,
+        "id": "ring",
+        "kind": "jewelry",
+        "name": "Ring",
+      },
+      {
+        "count": 1,
+        "id": "necklace",
+        "kind": "jewelry",
+        "name": "Necklace",
+      },
+      {
+        "count": 1,
+        "id": "chest",
+        "kind": "armor",
+        "name": "Chest",
+      },
+      {
+        "count": 1,
+        "id": "legs",
+        "kind": "armor",
+        "name": "Legs",
+      },
+      {
+        "count": 1,
+        "id": "boots",
+        "kind": "armor",
+        "name": "Boots",
+      },
+      {
+        "count": 1,
+        "id": "bracers",
+        "kind": "armor",
+        "name": "Bracers",
+      },
+      {
+        "count": 1,
+        "id": "mask",
+        "kind": "armor",
+        "name": "Mask",
+      },
+      {
+        "count": 1,
+        "id": "cloak",
+        "kind": "armor",
+        "name": "Cloak",
+      },
+      {
+        "count": 1,
+        "id": "gloves",
+        "kind": "armor",
+        "name": "Gloves",
+      },
+      {
+        "count": 1,
+        "id": "mainHand",
+        "kind": "weapon",
+        "name": "Main hand",
+      },
+      {
+        "count": 1,
+        "id": "offHand",
+        "kind": "weapon",
+        "name": "Off hand",
+      },
+    ],
+  },
+  "grades": [
+    {
+      "classSpreadPerLevel": 4,
+      "freePointsPerRaceLevel": 2,
+      "gradeGapMultiplier": 1,
+      "id": "G",
+      "rarityCeiling": "rare",
+      "selectionInterval": null,
+      "theme": "aluminum",
+      "topLevel": 4,
+      "xpPerLevel": 100,
+    },
+    {
+      "classSpreadPerLevel": 5,
+      "freePointsPerRaceLevel": 3,
+      "gradeGapMultiplier": 3,
+      "id": "F",
+      "rarityCeiling": "rare",
+      "selectionInterval": 5,
+      "theme": "bronze",
+      "topLevel": 14,
+      "xpPerLevel": 150,
+    },
+    {
+      "classSpreadPerLevel": 8,
+      "freePointsPerRaceLevel": 4,
+      "gradeGapMultiplier": 5,
+      "id": "E",
+      "rarityCeiling": "epic",
+      "selectionInterval": 5,
+      "theme": "copper",
+      "topLevel": 49,
+      "xpPerLevel": 250,
+    },
+    {
+      "classSpreadPerLevel": 12,
+      "freePointsPerRaceLevel": 6,
+      "gradeGapMultiplier": 10,
+      "id": "D",
+      "rarityCeiling": "ancient",
+      "selectionInterval": 10,
+      "theme": "silver",
+      "topLevel": 99,
+      "xpPerLevel": 400,
+    },
+    {
+      "classSpreadPerLevel": 18,
+      "freePointsPerRaceLevel": 9,
+      "gradeGapMultiplier": 20,
+      "id": "C",
+      "rarityCeiling": "legendary",
+      "selectionInterval": 10,
+      "theme": "gold",
+      "topLevel": 149,
+      "xpPerLevel": 650,
+    },
+    {
+      "classSpreadPerLevel": 27,
+      "freePointsPerRaceLevel": 13,
+      "gradeGapMultiplier": 40,
+      "id": "B",
+      "rarityCeiling": "legendary",
+      "selectionInterval": 10,
+      "theme": "platinum",
+      "topLevel": 199,
+      "xpPerLevel": 1000,
+    },
+    {
+      "classSpreadPerLevel": 40,
+      "freePointsPerRaceLevel": 20,
+      "gradeGapMultiplier": 80,
+      "id": "A",
+      "rarityCeiling": "mythical",
+      "selectionInterval": 10,
+      "theme": "diamond",
+      "topLevel": 240,
+      "xpPerLevel": 1500,
+    },
+  ],
+  "hunger": {
+    "enabledByDefault": false,
+    "fadesAtGrade": "E",
+  },
+  "logging": {
+    "autosaveMinutes": 5,
+  },
+  "montage": {
+    "minClockFill": 0.5,
+    "requireNoFailures": true,
+  },
+  "pools": [
+    {
+      "id": "hp",
+      "multiplier": 10,
+      "name": "Health Points (HP)",
+      "stat": "vitality",
+    },
+    {
+      "id": "mp",
+      "multiplier": 10,
+      "name": "Mana Points (MP)",
+      "stat": "wisdom",
+    },
+    {
+      "id": "stamina",
+      "multiplier": 10,
+      "name": "Stamina",
+      "stat": "endurance",
+    },
+  ],
+  "practice": {
+    "selectionAlertWithinLevels": 5,
+  },
+  "resolution": {
+    "gradeGapMode": "none",
+    "lowerGradeFraction": 0.3333333333333333,
+  },
+  "skills": {
+    "evolutionTransforms": {
+      "max": 2,
+      "min": 1,
+    },
+    "markUpgrades": {
+      "ancient": 12,
+      "common": 4,
+      "epic": 10,
+      "inferior": 3,
+      "legendary": 15,
+      "rare": 8,
+      "uncommon": 6,
+    },
+    "maxMarksPerSkillPerSession": 1,
+    "menuSize": {
+      "max": 4,
+      "min": 3,
+    },
+    "merge": {
+      "maxPerCharacterPerGrade": 1,
+      "minRarity": "uncommon",
+      "rarityStepsAboveHigher": 1,
+      "requiredJointUses": 3,
+    },
+    "rarities": [
+      {
+        "id": "inferior",
+        "name": "Inferior",
+        "reserved": false,
+      },
+      {
+        "id": "common",
+        "name": "Common",
+        "reserved": false,
+      },
+      {
+        "id": "uncommon",
+        "name": "Uncommon",
+        "reserved": false,
+      },
+      {
+        "id": "rare",
+        "name": "Rare",
+        "reserved": false,
+      },
+      {
+        "id": "epic",
+        "name": "Epic",
+        "reserved": false,
+      },
+      {
+        "id": "ancient",
+        "name": "Ancient",
+        "reserved": false,
+      },
+      {
+        "id": "legendary",
+        "name": "Legendary",
+        "reserved": false,
+      },
+      {
+        "id": "mythical",
+        "name": "Mythical",
+        "reserved": false,
+      },
+      {
+        "id": "divine",
+        "name": "Divine",
+        "reserved": true,
+      },
+    ],
+    "startingClassSkillCount": 3,
+    "startingRaceSkill": {
+      "name": "Identify",
+      "rarity": "common",
+    },
+  },
+  "stability": {
+    "initial": 100,
+    "max": 100,
+    "min": 0,
+    "visibleToPlayersByDefault": false,
+  },
+  "stats": {
+    "displayDecimals": 1,
+    "displayDivisor": 10,
+    "list": [
+      {
+        "id": "strength",
+        "name": "Strength",
+      },
+      {
+        "id": "agility",
+        "name": "Agility",
+      },
+      {
+        "id": "endurance",
+        "name": "Endurance",
+      },
+      {
+        "id": "vitality",
+        "name": "Vitality",
+      },
+      {
+        "id": "toughness",
+        "name": "Toughness",
+      },
+      {
+        "id": "wisdom",
+        "name": "Wisdom",
+      },
+      {
+        "id": "intelligence",
+        "name": "Intelligence",
+      },
+      {
+        "id": "perception",
+        "name": "Perception",
+      },
+      {
+        "id": "willpower",
+        "name": "Willpower",
+      },
+    ],
+    "startingValue": 10,
+  },
+  "tracks": {
+    "evolutionGate": "race",
+    "professionUnlockGrade": "E",
+    "raceLevelRounding": "floor",
+  },
+  "xp": {
+    "aboveLevelBonusCap": 1,
+    "aboveLevelBonusPerLevel": 0.1,
+    "defaultSplit": "even",
+  },
+}
+`;
