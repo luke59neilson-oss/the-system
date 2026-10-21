@@ -39,7 +39,9 @@ jobs:
             files: |
               apps/desktop/release/*-setup.exe
               apps/desktop/release/*-portable.exe
-          - os: macos-latest
+          # Intel runner: macos-latest (arm64) jobs were never picked up for lack of
+          # capacity (D55); the universal dmg still runs on Apple Silicon.
+          - os: macos-15-intel
             target: mac
             files: apps/desktop/release/*.dmg
     runs-on: ${{ matrix.os }}
