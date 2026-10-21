@@ -219,3 +219,12 @@
   - L fixed: a non-string title threw instead of being refused (trimming moved to the payload schema, with a test); the quest broadcast said 30 days at day 5; budget and pool checks now cover every demo character.
   - L accepted: filler skill names and arbitrary picks until the M4 content library; Q23 (party sees titles?) open with an owner-only default.
 - Round 2 (148ec52..df5724a): 0 High, 0 Medium, 0 Low.
+
+## 2026-10-21 · M1.A Milestone acceptance and review · fable (fresh context, 2 rounds)
+- Acceptance: `npm run check` green (494 tests), engine line coverage 99.19%, all 11 e2e specs pass, golden logs cover all 44 event types, no host globals in the engine, authority and projection allowlist hold under probes.
+- Round 1 (main c065d6e): 0 High, 1 Medium, 6 Low.
+  - M fixed: the snapshot cache ignored the rules config version, so after a rules migration a stale `state.rules` would be trusted → snapshot format v2 records `rulesConfigVersion` (D71), with a test.
+  - L fixed: a rarity-keeping evolution transform wiped banked marks (it now keeps them, tested both ways); `localeCompare` in derived lists replaced by code-unit order.
+  - L logged: a non-latest XP undo re-prices a later above-level bonus (D71a; M7.3 note); class-gate free-point pricing (D71b); profession start vs banked XP (Q24); declining an offered profession (Q25).
+- Round 2 (c065d6e..56b2db6): 0 High, 0 Medium, 1 Low (`evolution.chosen` meaning changed without a version bump; no released log can contain it → stated in D71).
+- Not done: pushing `main` to `release` (the global rule for Mx.A). The session's permission classifier refused it at MS.A as a production deploy, so it was not retried (see PROGRESS blocker).

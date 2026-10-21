@@ -182,7 +182,7 @@ the full ones.
   characters at grades G, F, E and D (via evolutions), titles, items and a
   quest with World Stability. *Accept:* demo tests check each grade, a title,
   an item and a visible stability quest; the real campaign is untouched.
-- [ ] **M1.A Milestone acceptance and review.**
+- [x] **M1.A Milestone acceptance and review.**
 
 ## M2 (continued) — Server and sync
 

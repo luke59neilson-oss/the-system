@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0 and MS done; M1.1-M1.13, M2.1-M2.3 done
-**Next item:** M1.14 Campaign simulation
+**Status:** in progress: M0, MS and M1 done; M2.1-M2.3 done
+**Next item:** M2.4 Session log autosave
 **Blockers:** first preview build not published: `git push origin main:release` was refused by this session's permission classifier ("Production Deploy"). Luke: push `main` to `release` yourself (or allow it) to get the preview-<date> Release.
 
 ## Run log
@@ -155,3 +155,17 @@ next item, blockers. -->
 - Open `wip/*` branches: none unfinished.
 - Next: M1.14 Campaign simulation (stopped at 39 min: past the 35-minute start limit).
 - Blockers: preview release push still needs Luke (see header).
+
+### Run e560e415 · 2026-10-21 23:07–23:56 UTC
+- Preflight: `add_repo` not offered in this session; repo already cloned (detached HEAD and a stale local `main`; reset `main` to `origin/main`). Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` and `fable` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md; latest CI run on main green (b7a0cf6).
+- Finished: M1.14 Campaign simulation (sonnet, 2 rounds; 3 High in round 1, all in the test's rigor, fixed); M1.15 Demo campaign content (sonnet, 2 rounds; 1 Medium fixed); M1.A Milestone acceptance and review (fable, 2 rounds; 1 Medium fixed: stale snapshot after a rules migration). See REVIEW-LOG.md.
+- Engine: new GM-only `title.award` event (D69; golden log `titles`). Demo now reaches grades G/F/E/D through evolutions, with titles, equipped items, an open menu, an unassigned free-point batch and a visible World Stability quest (D70). Snapshot format v2 records the rules config version; derived lists sort host-independently; rarity-keeping transforms keep banked marks (D71).
+- Tests: 494 unit/integration tests (37 files), including the 40-session, 4-character simulation (seed 20261121; invariants after every command; replay and leak checks every session and while releases or menus are pending). All 11 e2e specs green (MS.4 screenshots updated for the new demo; re-renders of other items discarded). Engine line coverage 99.19% (floor 90%).
+- CI: green on every code commit this run (c213ecf, 148ec52, df5724a, 56b2db6).
+- New decisions D68–D71; new questions Q23 (party sees titles?), Q24 (profession start vs banked XP), Q25 (declining an offered profession). Roadmap notes on M3.6–M3.8 (show the demo's menu, gear and gauge) and M7.3 (store the race level used for the XP bonus).
+- Not done: M1.A's `git push origin main:release`. The permission classifier refused it at MS.A, so it was not retried.
+- Open `wip/*` branches: none unfinished.
+- Next: M2.4 Session log autosave, then M2.A (stopped at 47 min, past the 35-minute start limit).
+- Blockers: the preview release push still needs Luke (see header).
+
