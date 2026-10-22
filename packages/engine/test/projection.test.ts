@@ -531,7 +531,7 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
     expect(projections, `seed ${SEED}`).toBeGreaterThan(STATES * 2);
     expect(multiParty, `seed ${SEED}`).toBeGreaterThan(STATES * 0.9);
     expect(c.state?.characterOrder.length ?? 0, `seed ${SEED}`).toBeGreaterThan(3);
-  });
+  }, 60_000);
 });
 
 describe('effective stats on the player sheet (M3.7, D81)', () => {

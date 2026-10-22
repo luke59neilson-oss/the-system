@@ -115,7 +115,7 @@ describe('Identify entities (M3.9, DESIGN §7)', () => {
     expect(c.state?.entities.curse?.knownBy).toEqual(['kim', 'jake']);
     expect(view(c).identify).toHaveLength(1);
     expect(reject(c, { type: 'entity.reveal', entityId: 'curse' })).toMatch(
-      /at least 1|too_small|>=1/i,
+      /already knows this entity/,
     );
     expect(reject(c, { type: 'entity.reveal', entityId: 'curse', characterIds: ['kim'] })).toMatch(
       /already knows/,

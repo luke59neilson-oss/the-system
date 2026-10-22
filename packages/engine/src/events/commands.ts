@@ -849,6 +849,9 @@ function toEvent(
       const known = entity?.knownBy ?? [];
       const characterIds =
         command.characterIds ?? (state?.characterOrder ?? []).filter((id) => !known.includes(id));
+      if (characterIds.length === 0 && entity !== undefined) {
+        throw new EventRejectedError('Every character already knows this entity');
+      }
       return { type: 'entity.revealed', payload: { entityId: command.entityId, characterIds } };
     }
     case 'stability.applyAction':
