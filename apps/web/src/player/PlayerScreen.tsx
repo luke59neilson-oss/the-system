@@ -128,8 +128,11 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
       ? null
       : (me.freePointBatches.find((b) => b.raceLevel === openLevel && b.allocation === null) ??
         null);
-  // Set while this screen's own assign is in flight, so its success is no surprise.
+  // Set while this screen's own assign is in flight: if the batch closes then,
+  // the result decides what to say (success: nothing; refusal: a notice).
   const [confirming, setConfirming] = useState<number | null>(null);
+  // Bumped to move focus back to [Assign] once the panel has closed.
+  const [focusAssign, setFocusAssign] = useState(0);
   if (openLevel !== null && open === null) {
     if (confirming !== openLevel) {
       setNotice(
@@ -137,21 +140,30 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
       );
     }
     setOpenLevel(null);
-    setConfirming(null);
+    setFocusAssign(focusAssign + 1);
   }
   const locked = assignedBatches(me.freePointBatches);
   const assignButton = useRef<HTMLButtonElement | null>(null);
-  const returnFocus = useRef(false);
   useEffect(() => {
-    // After the panel closes, focus goes back to [Assign] (or stays put if it is gone).
-    if (returnFocus.current && assignButton.current) {
-      returnFocus.current = false;
-      assignButton.current.focus();
-    }
-  });
+    // Runs once per close; if [Assign] is gone (nothing left), focus stays put.
+    if (focusAssign > 0) assignButton.current?.focus();
+  }, [focusAssign]);
   const close = () => {
     setOpenLevel(null);
-    returnFocus.current = true;
+    setFocusAssign((n) => n + 1);
+  };
+  const openNow = useRef<number | null>(null);
+  useEffect(() => {
+    openNow.current = openLevel;
+  });
+  /** The result of this screen's own assign, even after the panel closed. */
+  const settled = (level: number, ok: boolean) => {
+    setConfirming(null);
+    // Still open: the panel shows its own error.
+    if (!ok && openNow.current !== level)
+      setNotice(
+        `The race level ${level} points were changed by the GM; your choice was not saved.`,
+      );
   };
   return (
     <section
@@ -232,7 +244,8 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
           raceLevel={open.raceLevel}
           points={open.points}
           more={me.freePointBatches.filter((b) => b.allocation === null).length - 1}
-          onConfirming={(on) => setConfirming(on ? open.raceLevel : null)}
+          onConfirming={() => setConfirming(open.raceLevel)}
+          onSettled={(ok) => settled(open.raceLevel, ok)}
           onClose={close}
         />
       )}
@@ -273,6 +286,7 @@ function AssignPoints({
   points,
   more,
   onConfirming,
+  onSettled,
   onClose,
 }: {
   client: LiveClient;
@@ -280,7 +294,9 @@ function AssignPoints({
   raceLevel: number;
   points: number;
   more: number;
-  onConfirming: (on: boolean) => void;
+  onConfirming: () => void;
+  /** Called with the outcome; a refusal after the panel closed becomes a notice. */
+  onSettled: (ok: boolean) => void;
   onClose: () => void;
 }) {
   const rules = view.rules;
@@ -302,7 +318,7 @@ function AssignPoints({
   const confirm = async () => {
     setBusy(true);
     setError(null);
-    onConfirming(true);
+    onConfirming();
     const result = await client.command({
       type: 'freePoints.assign',
       characterId: view.me.id,
@@ -310,7 +326,7 @@ function AssignPoints({
       allocation,
     });
     setBusy(false);
-    if (!result.ok) onConfirming(false);
+    onSettled(result.ok);
     if (result.ok) onClose();
     else if (result.error === 'Connection lost' || result.error === 'Not connected to the System')
       setError(

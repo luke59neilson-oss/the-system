@@ -286,3 +286,18 @@
 - Round 2 (ccd68ac..1d400d3): 0 High, 0 Medium.
   - Lows: a DING whose numbers change after an undo can pop again with corrected text, which is accepted as right.
   - The shown-key set is never pruned, which is negligible.
+
+## 2026-10-22 · M3.4 Free points · reviewer: sonnet (fresh context)
+- Round 1 (d39e723..4ce5cb8): 0 High, 4 Medium, 5 Low.
+  - M: an open panel switched to another batch silently after a GM override or undo. Fixed: the panel is pinned to the batch it opened and closes with a notice if that batch is no longer open.
+  - M: focus was lost at every step. Fixed: focus moves to the heading, then Confirm or Review, then back to [Assign]. The live glow no longer remounts the row, so [Assign] keeps focus.
+  - M: tests covered only the happy path. The e2e now covers the keyboard, a GM override while the panel is open, and no [Assign] in the GM pane.
+  - M: the 1366 screenshot was cut off. There is now a full-page assign shot and a review-step shot.
+  - L fixed: steppers are 40px tall; a lost connection says "check your sheet".
+  - L accepted: the stepper value change is not announced per stat ("Points left" is live); `Batch.locked` is unused by the UI (D38 locks every assigned batch).
+- Round 2 (4ce5cb8..9b98ced): 0 High, 2 Medium, 5 Low.
+  - M: a refusal that raced a GM override, arriving after the panel closed, was dropped. Fixed: the result is reported to Status, which shows a notice when the panel is already gone.
+  - M: a stale focus-return flag could steal focus later. Fixed: a close bumps a counter and its effect focuses [Assign] once.
+  - The GM-forced close now returns focus too.
+  - Lows accepted: the notice stays until the next [Assign]; no e2e for the confirm-versus-override race (timing-dependent).
+- LOOP §6.3 allows 2 rounds and no High remained, so the round-2 Mediums were fixed without a third review.

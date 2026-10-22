@@ -200,7 +200,7 @@ the full ones.
 - [x] **M3.3 Notifications and history.** Book-style DING feed, queued
   animation, optional sound; full history back to day 1, searchable and
   filterable.
-- [ ] **M3.4 Free points.** Allocate a batch, confirm, locked.
+- [x] **M3.4 Free points.** Allocate a batch, confirm, locked.
 - [ ] **M3.5 Skill detail.** Rarity color, description, flavor, marks
   progress, nickname edit (official name always shown).
 - [ ] **M3.6 Skill selection.** Pending badge, offers side by side, choose.

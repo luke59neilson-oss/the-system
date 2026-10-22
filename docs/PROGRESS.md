@@ -1,8 +1,8 @@
 # Progress
 
-**Status:** in progress: M0, MS, M1 and M2 done; M3 started (M3.1, M3.2)
-**Next item:** M3.3 Notifications and history
-**Blockers:** none. The first preview build published as `preview-2026-10-22-4.1` (Release run on 3151482 succeeded).
+**Status:** in progress: M0, MS, M1 and M2 done; M3 started (M3.1–M3.4)
+**Next item:** M3.5 Skill detail
+**Blockers:** none.
 
 ## Run log
 
@@ -209,4 +209,29 @@ next item, blockers. -->
 - New decisions D74–D75; new question Q28 (rejoin automatically?).
 - Open `wip/*` branches: none unfinished.
 - Next: M3.3 Notifications and history. Not started: at 27 min it needs engine/server history (DINGs back to day 1, with undo), which would not fit with review before the 60-minute stop.
+- Blockers: none.
+
+### Run b1b95d91 · 2026-10-22 02:06–02:55 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD and a stale, unrelated local `main`), so `main` was reset to `origin/main`.
+  - The lock was pushed to main.
+  - `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md. The latest CI run on main was green (11afded).
+- Finished (see REVIEW-LOG.md):
+  - M3.3 Notifications and history (sonnet, 2 rounds; 3 Medium fixed or measured).
+  - M3.4 Free points (sonnet, 2 rounds; round 1 had 4 Medium, all fixed; round 2 had 2 Medium, both fixed).
+- Built:
+  - Engine `history` module: `notificationsBetween` and `notificationHistory`, folded from the log with undone events skipped.
+  - Hub: history derived from the log (no cap, no `gap`; protocol v3). Items carry `at` and `day`. A `reset` frame is sent after an undo, and on a rejoin past an undo.
+  - Player Notifications window: Show filter, search, "Day N · time".
+  - Queued DING pop-ups at the bottom of the screen and an optional Web Audio chime (off by default).
+  - Free-point assignment: steppers, review and confirm, pinned to its batch, a GM-change notice, and a locked list.
+  - The live glow restarts without remounting.
+  - New `e2e/M3.3.spec.ts` and `e2e/M3.4.spec.ts`.
+- Tests: 536 unit/integration tests (44 files). All 17 e2e specs are green; screenshot re-renders of earlier items were discarded. Engine line coverage 99.35% (floor 90%).
+- CI: green on ccd68ac, 1d400d3, 4ce5cb8 and 9b98ced. The final M3.4 fix commit was pushed at the end of the run.
+- New decisions D76–D77; new question Q29 (what pops up as a DING; sound default).
+- Open `wip/*` branches: none.
+- Next: M3.5 Skill detail. Not started: at 47 min this run was past the 35-minute start limit.
 - Blockers: none.
