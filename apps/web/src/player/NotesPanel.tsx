@@ -195,6 +195,7 @@ export function NotesPanel({ view, client }: { view: PlayerView; client: LiveCli
             Title
             <input
               type="text"
+              autoFocus
               value={draft.title}
               maxLength={MAX_TITLE}
               data-testid="note-title"
@@ -319,7 +320,10 @@ export function NotesPanel({ view, client }: { view: PlayerView; client: LiveCli
                   type="button"
                   className="note-summary"
                   aria-expanded={open}
-                  onClick={() => setOpenId(open ? null : note.id)}
+                  onClick={() => {
+                    setConfirmDelete(null);
+                    setOpenId(open ? null : note.id);
+                  }}
                 >
                   <span className="note-title" data-testid="note-heading">
                     {noteTitle(note)}

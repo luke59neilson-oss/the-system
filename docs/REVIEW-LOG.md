@@ -359,3 +359,9 @@
   - L fixed: revealing to "everyone" when everyone already knows the entity now says so, instead of a generic schema error.
   - L accepted: `identifyRarity` matches the race skill by the configured name (D40, pre-existing); the "gone" notice uses the label as chosen (correct, untested).
 - Round 2 (0ae144d..98b5742): 0 High, 0 Medium, 0 Low.
+
+### 2026-10-22 · M3.10 Notes · reviewer: sonnet (fresh context)
+- Round 1 (645c108..148d3f4): 0 High, 0 Medium, 8 Low.
+  - L fixed: the "Delete for good" confirmation resets when a note is collapsed or another is opened; the title field takes focus when the note form opens; D85 now says plainly that players join by picking a character (no player login), so journal privacy is enforced toward the GM's screens and other characters' views.
+  - L accepted: same-second edit conflicts miss the warning (last write wins, D85); full notes resent in every view (no note cap yet; revisit if views grow); inline Markdown regexes not benchmarked on adversarial 20k-character lines; the phone screenshot shows an open note, not the form (the e2e drives the form on the phone).
+- No round 2 needed (no High or Medium).
