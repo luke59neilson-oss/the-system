@@ -477,5 +477,5 @@ next item, blockers. -->
   - MQ.9 Windows-first releases (taken early because it shared the dry run with MS.7): Windows and Linux only, exactly 3 files. Sonnet: 0 High/Medium. Dry runs green: 39794644988 (new names, four files) and 39796128748 (three files). The `release-dry-run` branch had unrelated history, so it was joined with an `-s ours` merge (no force push).
 - Built, not checked: MQ.1 Evolution rules (fefa7d7, b3c1f84; D110). Round 1 had 3 Medium: the refill now uses effective stats (fixed); open for round 2: no GM UI for the bonus until M5.2, and the gate re-running on replay after a rules edit. Next run: run round 2 on 835717c..HEAD for MQ.1, fix, then check the box.
 - Tests: 691 unit/integration tests; full e2e suite (35) green before the default-transform change, M3.13 and MS.4 re-run after it; 6 desktop specs green. Engine coverage not re-measured.
-- Open `wip/*` branches: `wip/MQ.1` (same as main at fefa7d7; nothing to resume from it).
+- Open `wip/*` branches: none (MQ.1 code is on main; only its review round 2 remains).
 - Blockers: none.
