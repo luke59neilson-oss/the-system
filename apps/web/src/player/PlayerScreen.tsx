@@ -118,9 +118,41 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
   const metal = themeClass(rules.grades.find((g) => g.id === me.grade)?.theme);
   const skills = (kind: SkillKind) => me.skills.filter((s) => s.kind === kind);
   const free = unassignedPoints(me.freePointBatches);
-  const [assigning, setAssigning] = useState(false);
+  // The batch the player opened (by race level): a live change never swaps it
+  // for another; if it stops being open (GM override, undo), the panel closes.
+  const [openLevel, setOpenLevel] = useState<number | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const batch = nextBatch(me.freePointBatches);
+  const open =
+    openLevel === null
+      ? null
+      : (me.freePointBatches.find((b) => b.raceLevel === openLevel && b.allocation === null) ??
+        null);
+  // Set while this screen's own assign is in flight, so its success is no surprise.
+  const [confirming, setConfirming] = useState<number | null>(null);
+  if (openLevel !== null && open === null) {
+    if (confirming !== openLevel) {
+      setNotice(
+        `The race level ${openLevel} points were changed by the GM; your draft was discarded.`,
+      );
+    }
+    setOpenLevel(null);
+    setConfirming(null);
+  }
   const locked = assignedBatches(me.freePointBatches);
+  const assignButton = useRef<HTMLButtonElement | null>(null);
+  const returnFocus = useRef(false);
+  useEffect(() => {
+    // After the panel closes, focus goes back to [Assign] (or stays put if it is gone).
+    if (returnFocus.current && assignButton.current) {
+      returnFocus.current = false;
+      assignButton.current.focus();
+    }
+  });
+  const close = () => {
+    setOpenLevel(null);
+    returnFocus.current = true;
+  };
   return (
     <section
       className={`window status-window${metal}`}
@@ -166,8 +198,16 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
       <dl className="rows">
         <dt>Free points</dt>
         <Live testId="free-points" value={String(free)}>
-          {client && batch && !assigning && (
-            <button type="button" className="assign-btn" onClick={() => setAssigning(true)}>
+          {client && batch && openLevel === null && (
+            <button
+              type="button"
+              className="assign-btn"
+              ref={assignButton}
+              onClick={() => {
+                setNotice(null);
+                setOpenLevel(batch.raceLevel);
+              }}
+            >
               [Assign]
             </button>
           )}
@@ -179,15 +219,21 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
           </>
         )}
       </dl>
-      {client && batch && assigning && (
+      {notice && (
+        <p className="err" role="alert" data-testid="assign-notice">
+          {notice}
+        </p>
+      )}
+      {client && open && (
         <AssignPoints
-          key={batch.raceLevel}
+          key={open.raceLevel}
           client={client}
           view={view}
-          raceLevel={batch.raceLevel}
-          points={batch.points}
+          raceLevel={open.raceLevel}
+          points={open.points}
           more={me.freePointBatches.filter((b) => b.allocation === null).length - 1}
-          onClose={() => setAssigning(false)}
+          onConfirming={(on) => setConfirming(on ? open.raceLevel : null)}
+          onClose={close}
         />
       )}
       {locked.length > 0 && (
@@ -226,6 +272,7 @@ function AssignPoints({
   raceLevel,
   points,
   more,
+  onConfirming,
   onClose,
 }: {
   client: LiveClient;
@@ -233,6 +280,7 @@ function AssignPoints({
   raceLevel: number;
   points: number;
   more: number;
+  onConfirming: (on: boolean) => void;
   onClose: () => void;
 }) {
   const rules = view.rules;
@@ -241,9 +289,20 @@ function AssignPoints({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const left = points - spent(allocation);
+  // Keyboard and screen-reader users land on each step (M3.4 review).
+  const heading = useRef<HTMLHeadingElement | null>(null);
+  const confirmButton = useRef<HTMLButtonElement | null>(null);
+  const reviewButton = useRef<HTMLButtonElement | null>(null);
+  const [stepped, setStepped] = useState(false);
+  useEffect(() => {
+    if (!stepped) heading.current?.focus();
+    else if (review) confirmButton.current?.focus();
+    else reviewButton.current?.focus();
+  }, [review, stepped]);
   const confirm = async () => {
     setBusy(true);
     setError(null);
+    onConfirming(true);
     const result = await client.command({
       type: 'freePoints.assign',
       characterId: view.me.id,
@@ -251,12 +310,19 @@ function AssignPoints({
       allocation,
     });
     setBusy(false);
+    if (!result.ok) onConfirming(false);
     if (result.ok) onClose();
+    else if (result.error === 'Connection lost' || result.error === 'Not connected to the System')
+      setError(
+        'Connection lost. Check your sheet once you are back: the points may already be assigned.',
+      );
     else setError(friendlyError(result.error));
   };
   return (
     <section className="assign" aria-labelledby="assign-heading" data-testid="assign">
-      <h3 id="assign-heading">Assign free points</h3>
+      <h3 id="assign-heading" tabIndex={-1} ref={heading}>
+        Assign free points
+      </h3>
       <p className="muted">
         Race level {raceLevel}: {points} points
         {more > 0 ? ` (${more} more ${more === 1 ? 'batch' : 'batches'} waiting)` : ''}
@@ -298,7 +364,15 @@ function AssignPoints({
             Points left: {left}
           </p>
           <div className="assign-actions">
-            <button type="button" disabled={left !== 0} onClick={() => setReview(true)}>
+            <button
+              type="button"
+              ref={reviewButton}
+              disabled={left !== 0}
+              onClick={() => {
+                setStepped(true);
+                setReview(true);
+              }}
+            >
               Review
             </button>
             <button type="button" className="secondary" onClick={onClose}>
@@ -308,12 +382,18 @@ function AssignPoints({
         </>
       ) : (
         <>
-          <p data-testid="assign-review">
+          <p id="assign-review" data-testid="assign-review">
             Assign {allocationText(rules, allocation)}? Assigned points lock; only the GM can change
             them.
           </p>
           <div className="assign-actions">
-            <button type="button" disabled={busy} onClick={() => void confirm()}>
+            <button
+              type="button"
+              ref={confirmButton}
+              disabled={busy}
+              aria-describedby="assign-review"
+              onClick={() => void confirm()}
+            >
               Confirm
             </button>
             <button
@@ -373,7 +453,7 @@ function SkillList({
 
 /**
  * Counts changes to `value` after the first render (React's "adjust state
- * while rendering" pattern, no refs or effects). Used as a key, it remounts
+ * while rendering" pattern, no refs or effects). Used as a key (or an alternating class), it restarts
  * the element so the CSS glow replays on every change (DESIGN §9 "values
  * update live"), including a change back to an earlier value.
  */
@@ -404,7 +484,9 @@ function Live({
 }) {
   const changes = useChangeCount(value);
   return (
-    <dd className={changes > 0 ? 'flash' : undefined} key={changes}>
+    // Alternating animation names replay the glow on every change without
+    // remounting, so a control inside (e.g. [Assign]) keeps its focus.
+    <dd className={changes > 0 ? `flash flash-${changes % 2}` : undefined}>
       <span data-testid={testId}>
         {parts.map((part, i) => (
           <Fragment key={i}>

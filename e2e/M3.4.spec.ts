@@ -28,6 +28,37 @@ function watchErrors(page: Page) {
   return errors;
 }
 
+/** Runs one GM command over the GM page's own origin (no console form for it yet). */
+async function gmCommand(gm: Page, command: Record<string, unknown>): Promise<void> {
+  const result = await gm.evaluate(
+    ({ key, command }) =>
+      new Promise<string>((resolve) => {
+        const ws = new WebSocket(
+          `ws://${(globalThis as unknown as { location: { host: string } }).location.host}/ws`,
+        );
+        ws.onmessage = (e) => {
+          const m = JSON.parse(String(e.data)) as { type: string; ok?: boolean; error?: string };
+          if (m.type === 'hello') ws.send(JSON.stringify({ type: 'join', role: 'gm', gmKey: key }));
+          if (m.type === 'joined')
+            ws.send(JSON.stringify({ type: 'command', requestId: 'x', command }));
+          if (m.type === 'result') {
+            ws.close();
+            resolve(m.ok ? 'ok' : (m.error ?? 'failed'));
+          }
+        };
+      }),
+    { key: GM_KEY, command },
+  );
+  expect(result).toBe('ok');
+}
+
+const focusedText = (page: Page) =>
+  page.evaluate(
+    () =>
+      (globalThis as unknown as { document: { activeElement: { textContent: string } | null } })
+        .document.activeElement?.textContent ?? '',
+  );
+
 async function award(gm: Page, amount: number) {
   const form = gm.locator('form[aria-labelledby="award-xp"]');
   await gm.getByLabel('Amount').fill(String(amount));
@@ -55,9 +86,12 @@ test('a player assigns a free-point batch, which then locks', async ({ browser }
   const agility = laptop.getByTestId('stat-agility');
   const agilityBefore = (await agility.locator('strong').innerText()).trim();
 
-  await laptop.getByRole('button', { name: '[Assign]' }).click();
+  // Keyboard: Enter on [Assign] lands on the panel heading.
+  await laptop.getByRole('button', { name: '[Assign]' }).focus();
+  await laptop.keyboard.press('Enter');
   const panel = laptop.getByTestId('assign');
   await expect(panel).toContainText('Race level 1: 2 points (1 more batch waiting)');
+  await expect.poll(() => focusedText(laptop)).toBe('Assign free points');
   await expect(laptop.getByTestId('points-left')).toHaveText('Points left: 2');
   const review = panel.getByRole('button', { name: 'Review' });
   await expect(review).toBeDisabled();
@@ -70,16 +104,24 @@ test('a player assigns a free-point batch, which then locks', async ({ browser }
   await panel.getByRole('button', { name: 'Remove a point from Perception' }).click();
   await panel.getByRole('button', { name: 'Add a point to Agility' }).click();
   await expect(panel.getByTestId('assign-agility')).toContainText('(+2)');
-  await laptop.screenshot({ path: path.join(shots, 'player-assign-1366x768.png') });
+  await laptop.screenshot({ path: path.join(shots, 'player-assign-1366x768.png'), fullPage: true });
   await review.click();
   await expect(laptop.getByTestId('assign-review')).toHaveText(
     'Assign +2 Agility? Assigned points lock; only the GM can change them.',
   );
+  await expect.poll(() => focusedText(laptop)).toBe('Confirm');
+  await panel.scrollIntoViewIfNeeded();
+  await laptop.screenshot({ path: path.join(shots, 'player-review-1366x768.png') });
+  await panel.getByRole('button', { name: 'Back' }).click();
+  await expect.poll(() => focusedText(laptop)).toBe('Review');
+  await review.click();
   await panel.getByRole('button', { name: 'Confirm' }).click();
 
   // Locked: the stat rose live, the batch is listed as assigned.
   await expect(panel).toHaveCount(0);
+  await expect(laptop.getByTestId('assign-notice')).toHaveCount(0);
   await expect(laptop.getByTestId('free-points')).toHaveText('2');
+  await expect.poll(() => focusedText(laptop)).toBe('[Assign]');
   await expect(agility.locator('strong')).not.toHaveText(agilityBefore);
   const locked = laptop.getByTestId('locked-points');
   await locked.getByText('Assigned points (locked)').click();
@@ -107,25 +149,44 @@ test('a player assigns a free-point batch, which then locks', async ({ browser }
   await expect(locked).toContainText('Race level 2: +2 Perception');
   await laptop.screenshot({ path: path.join(shots, 'player-1366x768.png') });
 
-  // Phone: a new batch, assigned on a 390-wide screen without sideways scroll.
+  // A new batch. The GM's View-as pane never offers [Assign].
   await award(gm, 100);
+  await expect(laptop.getByTestId('free-points')).toHaveText('2');
+  const pane = await browser.newPage({ viewport: { width: 340, height: 600 } });
+  await pane.goto(`${laptop.url()}?pane=1`);
+  await expect(pane.getByTestId('free-points')).toHaveText('2');
+  await expect(pane.getByRole('button', { name: '[Assign]' })).toHaveCount(0);
+  await pane.close();
+
+  // Phone: 390 wide, no sideways scroll. The GM overrides the batch while the
+  // panel is open: it closes with a notice instead of switching batches.
   const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const phoneErrors = watchErrors(phone);
   await phone.goto(laptop.url());
   await expect(phone.getByTestId('free-points')).toHaveText('2');
   await phone.getByRole('button', { name: '[Assign]' }).click();
   const phonePanel = phone.getByTestId('assign');
+  await expect(phonePanel).toContainText('Race level 3: 2 points');
   await phonePanel.getByRole('button', { name: 'Add a point to Strength' }).click();
   await phonePanel.getByRole('button', { name: 'Add a point to Endurance' }).click();
   const width = await phone.locator('html').evaluate((el) => el.scrollWidth);
   expect(width).toBeLessThanOrEqual(390);
-  await phonePanel.scrollIntoViewIfNeeded();
   await phone.screenshot({ path: path.join(shots, 'player-assign-390x844.png'), fullPage: true });
-  await phonePanel.getByRole('button', { name: 'Review' }).click();
-  await phonePanel.getByRole('button', { name: 'Confirm' }).click();
+  const characterId = new URL(laptop.url()).pathname.split('/').at(-1);
+  await gmCommand(gm, {
+    type: 'freePoints.override',
+    characterId,
+    raceLevel: 3,
+    allocation: { vitality: 2 },
+  });
+  await expect(phonePanel).toHaveCount(0);
+  await expect(phone.getByTestId('assign-notice')).toHaveText(
+    'The race level 3 points were changed by the GM; your draft was discarded.',
+  );
   await expect(phone.getByTestId('free-points')).toHaveText('0');
-  // The laptop sees it too.
   await expect(laptop.getByTestId('free-points')).toHaveText('0');
+  await phone.getByText('Assigned points (locked)').click();
+  await expect(phone.getByTestId('locked-points')).toContainText('Race level 3: +2 Vitality');
 
   expect(errors).toEqual([]);
   expect(phoneErrors).toEqual([]);
