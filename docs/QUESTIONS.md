@@ -11,10 +11,10 @@ DESIGN/ROADMAP; do not re-apply them.
    Answer (Luke, 2026-10-22): Credits. (default kept)
 3. **Grade gap on rolls** (open decision in DESIGN §7)? Default: pure ratio
    odds, switchable in settings.
-   Answer (Luke, 2026-10-22): Default for now, switchable later. (default kept)
+   Answer (Luke, 2026-10-22): Default for now, switchable later. Superseded the same day in chat: grade walls are the default. (applied, D110)
 4. **XP per level by grade** (G 100, F 150, E 250, D 400, C 650, B 1,000,
    A 1,500) OK? Default: yes.
-   Answer (Luke, 2026-10-22): Too low and too flat: XP should scale with power like stats do. Numbers being settled in chat; keep the current curve until then. (open)
+   Answer (Luke, 2026-10-22): Too low and too flat; ramp it like the power gap. ×3 per grade (G 100 … A 72,900); no XP from targets two or more grades below. (applied, D111)
 5. **One-time stat bonus at each evolution?** Default: none.
    Answer (Luke, 2026-10-22): Yes, set by the System (GM) at each evolution. (applied, D98)
 6. **What opens an evolution?** Default: race level at the top of the grade,
@@ -51,7 +51,7 @@ DESIGN/ROADMAP; do not re-apply them.
     (Basic Archery, Basic Stealth, Archer’s Eye; Agility and Perception
     weighted 3, Strength 2, others 1). Default: keep it until the class
     library (M4.2) lets you define your own. Want different starter classes?
-    Answer (Luke, 2026-10-22): A pool of starter classes from the class library; see Q38. (open)
+    Answer (Luke, 2026-10-22): A pool of starter classes from the class library: the books' six (Q38). (applied, D114)
 14. **Refill pools on level-up?** When a level raises max HP/MP/Stamina
     (e.g. Endurance up → Stamina 100/110), current values stay where they
     were. Default: no refill (the GM heals or rests the party). Alternative:
@@ -100,7 +100,7 @@ DESIGN/ROADMAP; do not re-apply them.
     ×⅓ as F against E. Default: flat ⅓ whenever the grades differ (DESIGN
     §7 wording). Alternative: ⅓ per grade step. (The "multiplier" mode
     multiplies the whole stat value by the grade's factor.)
-    Answer (Luke, 2026-10-22): Per grade step, compounding. (applied, D104)
+    Answer (Luke, 2026-10-22): Per grade step, compounding. Refined the same day: ⅓ at one grade apart, automatic at two or more. (applied, D110)
 23. **Can party members see each other's titles?** DESIGN §9 lists Titles
     on the player's own status screen; it doesn't say whether the party sees
     them. Default: owner only (titles may carry stat bonuses in M6.4).
@@ -111,7 +111,7 @@ DESIGN/ROADMAP; do not re-apply them.
     applies (Cook 14 while class jumps to 24, race 19). Default: before
     (D64 order). Alternative: after, so the profession starts at the new
     class level.
-    Answer (Luke, 2026-10-22): Asked for examples; discussing in chat. (open)
+    Answer (Luke, 2026-10-22): Moot: there is no banked XP. XP for a capped track levels the other track. (applied, D112)
 25. **Declining an offered profession.** When an evolution offers
     professions, the player must pick one. Default: must pick (the GM can
     re-release with none). Alternative: allow "none for now".
@@ -192,7 +192,7 @@ DESIGN/ROADMAP; do not re-apply them.
     Alternatives: one entry per name and rarity; library edits update every
     character's copy that has not been individually edited; show effects to
     the skill's owner.
-    Answer (Luke, 2026-10-22): Asked for examples; discussing in chat. (open)
+    Answer (Luke, 2026-10-22): All three alternatives: entries per name and rarity; edits update unedited copies; effects shown to the owner. (applied, D113)
 
 38. **Default classes, races and professions.** New campaigns start with six
     starting classes (Archer, Warrior, Mage, Healer, Rogue, Brawler), the
@@ -203,7 +203,7 @@ DESIGN/ROADMAP; do not re-apply them.
     described (D91). Alternatives: a different starting set; races with
     their own stat weights or skills; show the descriptions to players on
     the status screen or the evolution profession picker.
-    Answer (Luke, 2026-10-22): Match the book's starting classes (discussing in chat, open). No default professions: tailored per player once unlocked. (professions applied, D105)
+    Answer (Luke, 2026-10-22): Replace the six with the books' six (Warrior Light/Medium/Heavy, Archer, Caster, Healer). No default professions: tailored per player once unlocked. (applied, D105, D114)
 
 39. **Session log between sessions.** The running log now covers only a
     started session; changes made between sessions (prep, XP awarded after

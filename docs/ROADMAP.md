@@ -172,8 +172,18 @@ They touch finished engine and player items, so they come before M4.4.
 - [ ] **MQ.4 Marks carry over.** Excess marks carry into the next rarity
   after an upgrade (incl. banked marks applied after an evolution).
   *Accept:* tests.
-- [ ] **MQ.5 Grade gap per step.** The lower-grade mode applies ⅓ per grade
-  step. *Accept:* statistical test for 1- and 2-step gaps.
+- [ ] **MQ.5 Grade walls.** New default grade-gap mode per DESIGN §7: same
+  grade plain odds; one grade apart lower side ×⅓ in rolls and ⅓ damage; two
+  or more apart no roll (higher grade succeeds) and zero damage; no pooling of
+  lower-grade power against a higher grade. Encounter tools (M7.3) apply it.
+  *Accept:* statistical test for the one-grade case (24% ±2% for DESIGN's
+  peak-E vs fresh-D example); deterministic tests for two-plus grades,
+  damage scaling and the no-pooling rule.
+- [ ] **MQ.10 Steep XP curve.** XP per level ×3 per grade (G 100 … A 72,900);
+  XP for defeating a target one grade below ×⅓, two or more below 0; the
+  "typical session" helper per grade. Config migration with an upcaster for
+  existing campaigns. *Accept:* engine tests; the 40-session simulation
+  still reaches the DESIGN check values with awards scaled per grade.
 - [ ] **MQ.6 Tailored professions.** Remove the default profession list from
   the library seed. The GM offers each character their own professions at
   the E evolution; the player may choose "none for now"; a Professions tab
@@ -191,6 +201,21 @@ They touch finished engine and player items, so they come before M4.4.
   Windows (portable + installer) and Linux (kept for the automated smoke
   test); drop macOS (macOS Actions minutes count 10×). *Accept:* release
   dry run green with exactly 3 files.
+- [ ] **MQ.11 XP overflow, no banking.** Replace banked XP: XP for a capped
+  track levels the other track; when both are capped (or the class is capped
+  with no profession) the XP is lost and the GM's award preview says so.
+  Schema bump + upcaster for logs that banked XP. *Accept:* engine tests
+  (class capped → profession levels; profession capped → class levels; both
+  capped → lost and reported); 40-session simulation still passes.
+- [ ] **MQ.12 Skill library rules.** Library entries keyed by name and rarity;
+  an upgrade takes the higher rarity's text; library edits update every copy
+  not individually edited by the GM; effects visible to the skill's owner
+  only. *Accept:* engine and projection tests (other players never see
+  effects); e2e for an upgrade picking up new text and an edit propagating.
+- [ ] **MQ.13 The books' starting classes.** Replace the default class set
+  with DESIGN §10 (weights and starting skills, original text); update the
+  built-in Archer, the demo campaign and screenshots. *Accept:* seed tests;
+  demo e2e still green.
 - [ ] **MQ.A Batch acceptance and review.**
 
 ## M1 (continued) — Rules engine

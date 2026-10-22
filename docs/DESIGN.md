@@ -37,19 +37,23 @@ October 2026.
     what they have done (practice log). The player picks one or chooses
     "none for now"; offered professions stay listed in a Professions tab and
     can be taken later, until one is chosen and the list locks (greyed out).
-    A profession starts at the character's class level when taken (timing
-    with banked XP: see QUESTIONS Q24).
+    A profession starts at the character's class level when taken.
   - **Class levels** grant the class spread; **race levels** grant free
     points; **profession levels** grant no stats directly (they raise race
     level and add profession skill options).
   - **Grade** is the highest grade the character has evolved into. Class and
     profession levels cannot pass the top level of the current grade
-    (4, 14, 49, 99, 149, 199, 240); extra XP banks.
+    (4, 14, 49, 99, 149, 199, 240).
+  - **No banked XP; XP overflows.** XP for a track that is at the grade's top
+    goes to the other track instead (class XP levels the profession, and
+    profession XP levels the class), so whatever isn't ready yet catches up.
+    When both tracks are at the top (or the class is at the top and there is
+    no profession), the XP has nowhere to go and is lost; the GM's XP preview
+    says so before the award is confirmed.
   - **Evolution becomes available** when race level reaches the top of the
     current grade (config `evolutionGate: "race"`, Luke confirmed) **and no
     skill selection is pending**: every selection a character has earned must
-    be chosen first. The GM releases it, the player chooses, and banked XP then
-    applies at the new grade.
+    be chosen first. The GM releases it and the player chooses.
   - **Evolution refills HP, MP and Stamina** and grants a **one-time stat
     bonus** that the GM, as the System, sets for each evolution option (any
     mix of stats, or +N to all).
@@ -61,8 +65,9 @@ October 2026.
 ## 3. Grades and pacing
 
 Pacing target: ~6 race levels per session (range 4–8), 40-session campaign.
-Evolutions are **held** at each threshold until the GM releases them; XP keeps
-banking but levels don't advance past the cap until the evolution is done.
+Evolutions are **held** at each threshold until the GM releases them. Nothing
+banks while they wait: XP overflows to the track that isn't capped yet, and is
+lost once both are (§2).
 
 | Grade | Race levels | Reached by session | Selection interval | Capstone level | Rarity ceiling | Theme |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -117,9 +122,12 @@ blue-white tint and a heavier brushed texture so the change is visible.
   profession acts. Race level is derived.
 - Optional bonus for defeating enemies above the character's level
   (default +10% per level of difference, capped at +100%).
-- XP needed per level (default, by grade, **under review**: Luke finds it too
-  low and too flat; see QUESTIONS Q4): G 100, F 150, E 250, D 400,
-  C 650, B 1,000, A 1,500. The app shows the GM a "typical session ≈ 6 levels"
+- XP needed per level triples each grade (the books' ×3): G 100, F 300,
+  E 900, D 2,700, C 8,100, B 24,300, A 72,900. The GM ramps awards to match;
+  the "typical session ≈ 6 levels" helper shows the amount for each grade.
+- **XP across grades:** defeating something one grade below the character
+  gives ⅓ of the award; two or more grades below gives **0 XP** (no farming
+  weaker grades). The app shows the GM a "typical session ≈ 6 levels"
   helper.
 
 ## 6. Skills
@@ -142,6 +150,11 @@ blue-white tint and a heavier brushed texture so the change is visible.
   as part of the evolution.
 - **Skill names:** the System gives the official name; the player may add a
   nickname ("Jake Juice"). Show both.
+- **Skill library (Luke, Q37):** one entry per skill name **and rarity**, so an
+  upgrade picks up the higher rarity's text automatically. Editing a library
+  entry updates every character's copy the GM has not personally edited. A
+  skill's **effects** text is shown to its owner (never to other players), like
+  the books' skill descriptions.
 
 ### Mastery marks (upgrades outside selections)
 
@@ -172,12 +185,25 @@ turning point). GM confirms marks in the end-of-session review.
 
 ## 7. Play tools
 
-- **Resolution (proposed):** ratio odds, chance = yours ÷ (yours + theirs).
-  The app rolls and shows results. Grade-gap handling is an open decision, so
-  support three modes in config: none; grade bonus multiplier per 10 points
-  (G×1, F×3, E×5, D×10, C×20, B×40, A×80); lower-grade side × ⅓ **per
-  grade step** (one grade apart ×⅓, two apart ×1/9, and so on). Default mode:
-  none (pure ratio odds), switchable in settings.
+- **Resolution:** ratio odds, chance = yours ÷ (yours + theirs). The app
+  rolls and shows results.
+- **Grade walls (default mode, Luke 2026-10-22).** A higher grade is a
+  different order of being.
+  - **Same grade:** plain ratio odds.
+  - **One grade apart:** the lower side's stat counts ×⅓ in the roll, and its
+    hits deal ⅓ damage. Only a strong late-stage lower grade against a weak,
+    barely evolved higher grade has a real chance.
+  - **Two or more grades apart:** no roll. The higher grade succeeds, and the
+    lower grade's attacks deal no damage.
+  - **No strength in numbers across grades:** lower-grade characters cannot
+    pool their power against a higher grade; each acts alone, and anything
+    two or more grades below cannot touch it at all. A thousand G-grades are
+    nothing to an A-grade.
+  - **A fight against a higher grade is a clock, never one roll.** With ⅓,
+    a peak E against a fresh D wins about 24% of single rolls but about 10% of
+    a best-of-five fight; a mid-E against a mid-D about 2%.
+  - Other modes stay available in settings: none (pure ratio odds); grade
+    multiplier per 10 points (G×1, F×3, E×5, D×10, C×20, B×40, A×80).
 - **Progress clocks** with N segments. **Montage:** available when a clock is
   half filled with no failures; player gives a one-line focus (saved to the
   practice log); GM narrates the rest and adds one cost.
@@ -245,6 +271,28 @@ Race Skills: [Identify (Common)]
 - Supported viewports: 1366×768 and 1920×1080 laptops; 390×844 phones must
   remain usable (single column).
 - Theme check: silver and platinum accent colors differ by at least ΔE 10.
+
+## 10. Starting classes (the books' six; Luke 2026-10-22)
+
+Every class gets the same budget (§4); the books' per-level stat lines become
+the class weights. Each starts with two Inferior proficiencies and one Common
+signature skill. Archer's three are the books' own; Healer's are from the fan
+wiki; the Warriors' and Caster's are originals in the same style. Write
+original description and flavour text for every skill.
+
+| Class | Weights (from the books' per-level lines) | Starting skills |
+| --- | --- | --- |
+| Warrior (Light) | Agi 2, End 1, Str 1, Vit 1 | Basic Light Weapons (Inferior): rapiers, daggers, hatchets, thrown weapons · Basic Footwork (Inferior): dodging and evasion · Swift Strike (Common): a fast strike that is hard to read |
+| Warrior (Medium) | Agi 1, End 1, Vit 1, Str 1, Tough 1 | Basic Weapons (Inferior): most light and heavy weapons · Basic Guard (Inferior): parrying and blocking · Measured Blow (Common): a balanced strike that exploits an opening |
+| Warrior (Heavy) | Str 2, Tough 1, Vit 1, End 1 | Basic Heavy Weapons (Inferior): two-handed weapons and weapon-and-shield · Basic Shield (Inferior) · Brace (Common): plant your feet to absorb a blow or hold a line |
+| Archer | Per 2, Agi 1, End 1, Str 1 | Basic Archery (Inferior) · Basic One-Handed Weapon (Inferior) · Archer's Eye (Common) |
+| Caster | Int 2, Wis 1, Will 1, Per 1 | Basic Catalyst Proficiency (Inferior): staves, idols, relics, wands · Mana Bolt (Inferior) · Mana Sense (Common): feel mana and spellwork nearby |
+| Healer | Will 2, Wis 2, Int 1 | Basic Magic-Tool Proficiency (Inferior) · Heal (Inferior) · Regenerate (Common) |
+
+Short GM-facing descriptions, paraphrased: Light: speed, evasion, finesse.
+Medium: balanced, wide weapon range. Heavy: power and survivability, few
+ranged options. Archer: ranged, fast and flexible. Caster: non-attuned magic,
+wide but limited, fragile. Healer: mends, cleanses and supports; weak alone.
 
 ## 8. Tutorial (first content pack)
 
