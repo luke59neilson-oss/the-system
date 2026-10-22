@@ -219,7 +219,7 @@ the full ones.
 - [x] **M3.11 Practice and montage.** Submit practice entries; enter montage
   focus when offered.
 - [x] **M3.12 Party view.** Names, race/class/level, pool bars.
-- [ ] **M3.13 Table extras.** Evolution screen (options, warnings, choose).
+- [x] **M3.13 Table extras.** Evolution screen (options, warnings, choose).
   The contest result pop-up moved to M7.3 and the hunger tracker to M7.4,
   where the engine first records rolls and hunger (D88).
 - [ ] **M3.A Milestone acceptance and review.** All M3 specs pass at both

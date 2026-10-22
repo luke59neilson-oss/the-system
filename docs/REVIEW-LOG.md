@@ -378,3 +378,10 @@
   - L fixed: member heading ids are `party-member-<id>` (cannot collide with `party-heading`); pool names wrap instead of truncating behind a hover-only tooltip.
   - L accepted: the 25% "low" colour is a display threshold, not a rule (D87); no glow assertion, pane-mode screenshot or 1920×1080 check in the spec (the M3.2 spec covers pane width; M3.A runs both viewports); the M3.2 no-flash check is scoped to the Status window because the party view now follows Sultan; the window sits under Status on laptops by design (D87); bars do not animate, labels glow.
 - No round 2 needed (no High or Medium).
+
+### 2026-10-22 · M3.13 Table extras (evolution screen; D88) · reviewer: sonnet (fresh context)
+- Round 1 (a1f5d7f..8f71d59): 0 High, 3 Medium, 6 Low. Scoping (contest pop-up to M7.3, hunger to M7.4) judged sound and honestly recorded.
+  - M fixed: focus returns to [Evolve] after Close; Back refocuses the picked path; a replaced release closes the dialog with a notice instead of silently swapping the options.
+  - L fixed: a settled or withdrawn release also closes with a notice; the free-points warning (evolving does not touch free points) is gone; a phone screenshot of the review step was added.
+  - L accepted: options without transforms look sparse; no component-level unit test or View-as assertion (the pane has no client, so no button).
+- Round 2 (8f71d59..8afc40b): 0 High, 0 Medium, 2 new Low, accepted for now: an old evolution notice lingers until [Evolve] is clicked again; if a confirm is saved but its result is lost to a dropped connection, the player sees the "settled by the GM" notice instead of the connection message.

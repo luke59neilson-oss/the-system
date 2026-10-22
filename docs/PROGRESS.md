@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0, MS, M1 and M2 done; M3 started (M3.1–M3.11)
-**Next item:** M3.12 Party view
+**Status:** in progress: M0, MS, M1 and M2 done; M3.1–M3.13 done (M3.A left)
+**Next item:** M3.A Milestone acceptance and review
 **Blockers:** none.
 
 ## Run log
@@ -353,4 +353,27 @@ next item, blockers. -->
 - New decisions D85, D86. New questions Q34 (who edits party notes), Q35 (montage focus and marks).
 - Open `wip/*` branches: none unfinished (`wip/M3.11` is merged).
 - Next: M3.12 Party view.
+- Blockers: none.
+
+### Run a379851e · 2026-10-22 08:07–08:53 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD and a stale local `main`), so `main` was reset to `origin/main`.
+  - The lock was pushed to main.
+  - `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md. The latest completed CI run on main was green (f2c68e3).
+- Finished M3.12 Party view. Reviewed by sonnet in 1 round: 0 High, 0 Medium, 7 Low (2 fixed).
+  - A Party window sits under Status (on phones after Quests and Practice, before Inventory). It shows each other character's name in their grade metal, bracketed race, class and profession levels, and one bar per pool. Bars are labelled HP/MP/Stamina and read Full, Empty or a whole percent; bars at 25% or below are red. Levels and labels glow live (D87).
+  - It reads only `PlayerView.party`, so no raw pools or stats reach it.
+  - The M3.2 no-flash assertion is now scoped to the Status window, because Jake's party view legitimately follows Sultan.
+- Finished M3.13 Table extras, now the evolution screen alone (D88). The contest pop-up moved to M7.3 and the hunger tracker to M7.4, where the engine first has rolls and hunger. Reviewed by sonnet in 2 rounds: round 1 had 3 Medium (focus and re-release handling, all fixed); round 2 had 0 High, 0 Medium, 2 Low (accepted).
+  - The Status window gets an "Evolution · <grade>-grade available · [Evolve]" row.
+  - [Evolve] opens a modal with the paths side by side: transforms, then reshaped class stats.
+  - Choosing a path shows warnings: marks reset, selections waiting, a reshape, and that the choice is final. A Profession picker appears when professions are offered. Then Evolve or Back.
+  - A release that is replaced, settled or withdrawn elsewhere closes the modal with a notice.
+- Tests: 610 unit/integration tests (54 files). All 27 e2e specs green; screenshot re-renders of earlier items were discarded. Engine untouched this run (line coverage 99.36%, floor 90%).
+- CI: green on b17e8bb, a1f5d7f and 8f71d59; 8afc40b running at the end of the run.
+- New decisions D87, D88. New question Q36 (warnings before an evolution; warn-only default).
+- Open `wip/*` branches: none unfinished (`wip/M3.13` is merged).
+- Next: M3.A Milestone acceptance and review (fable reviewer; ends by pushing `main` to `release`). Not started: the run was past the 35-minute mark.
 - Blockers: none.
