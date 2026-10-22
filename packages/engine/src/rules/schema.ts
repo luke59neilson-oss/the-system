@@ -120,6 +120,12 @@ export const rulesConfigSchema = z
       /** Marks needed to upgrade FROM the keyed rarity to the next one. */
       markUpgrades: z.record(z.string(), positiveInt),
       maxMarksPerSkillPerSession: positiveInt,
+      /**
+       * DESIGN §6 (MQ.4, D101): marks beyond an upgrade's cost carry into the
+       * next rarity. Rules stored before it read false (marks reset to 0), so
+       * older campaigns replay unchanged.
+       */
+      marksCarryOver: z.boolean().default(false),
       merge: z.strictObject({
         requiredJointUses: positiveInt,
         minRarity: id,

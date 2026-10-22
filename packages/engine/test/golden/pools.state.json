@@ -239,6 +239,7 @@
         "legendary": 15
       },
       "maxMarksPerSkillPerSession": 1,
+      "marksCarryOver": false,
       "merge": {
         "requiredJointUses": 3,
         "minRarity": "uncommon",

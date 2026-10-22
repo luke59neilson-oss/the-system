@@ -142,7 +142,11 @@ export function canUpgrade(
   return needed !== null && skill.marks >= needed && !atCeiling(rules, character, skill);
 }
 
-/** Upgrades one rarity step; marks reset to 0 (DESIGN §6). */
+/**
+ * Upgrades one rarity step (DESIGN §6). Marks beyond the cost carry into the
+ * next rarity (MQ.4, `skills.marksCarryOver`), banked ones included; with the
+ * flag off (rules stored before MQ.4) they reset to 0.
+ */
 export function upgradeSkill(rules: RulesConfig, character: Character, name: string): Character {
   const index = skillIndex(character, name);
   const skill = character.skills[index] as CharacterSkill;
@@ -161,7 +165,8 @@ export function upgradeSkill(rules: RulesConfig, character: Character, name: str
     );
   }
   const next = rules.skills.rarities[rarityIndex(rules, skill.rarity) + 1];
-  return withSkill(character, index, { ...skill, rarity: next?.id ?? skill.rarity, marks: 0 });
+  const marks = rules.skills.marksCarryOver ? skill.marks - needed : 0;
+  return withSkill(character, index, { ...skill, rarity: next?.id ?? skill.rarity, marks });
 }
 
 /**

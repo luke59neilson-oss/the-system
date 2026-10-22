@@ -374,3 +374,43 @@ describe('merges', () => {
     expect(mergeSkills(rules, atF, eye, 'Identify', 'Far Sight', 3).merges).toEqual({ G: 1, F: 1 });
   });
 });
+
+describe('marks carry over (MQ.4, DESIGN §6, D101)', () => {
+  const extraMarks = (c0: Campaign) => {
+    let c = c0;
+    for (const s of ['x1', 'x2', 'x3', 'x4', 'x5']) c = ok(c, mark(archery, s));
+    return ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: archery });
+  };
+
+  it('marks beyond the cost carry into the next rarity', () => {
+    // Inferior → Common costs 3; 5 marks leave 2 toward Uncommon (4).
+    const c = extraMarks(base());
+    expect(skill(c, archery)).toMatchObject({ rarity: 'common', marks: 2 });
+  });
+
+  it('banked marks apply after an evolution and the rest carry on', () => {
+    // Rare at the G ceiling with 10 banked marks; once the grade's ceiling is
+    // Epic (E), the upgrade costs 8 and 2 carry toward Ancient.
+    let c = upgrade(base(), archery, 3);
+    for (let i = 0; i < 10; i++) c = ok(c, mark(archery, `carry${i}`));
+    const rules = c.state?.rules ?? (null as never);
+    const jake = c.state?.characters['jake'] ?? (null as never);
+    const evolved = upgradeSkill(rules, { ...jake, grade: 'E' }, archery);
+    expect(evolved.skills.find((s) => s.name === archery)).toMatchObject({
+      rarity: 'epic',
+      marks: 2,
+    });
+  });
+
+  it('rules stored before MQ.4 (flag absent) still reset marks, so old logs replay unchanged', () => {
+    const raw = rawRules() as { skills: Record<string, unknown> };
+    const { marksCarryOver: _dropped, ...skills } = raw.skills;
+    void _dropped;
+    const old = run(
+      [{ type: 'campaign.create', name: 'Old', rules: { ...raw, skills } }, make('jake', 'Jake')],
+      testContext('old'),
+    );
+    expect(old.state?.rules.skills.marksCarryOver).toBe(false);
+    expect(skill(extraMarks(old), archery)).toMatchObject({ rarity: 'common', marks: 0 });
+  });
+});
