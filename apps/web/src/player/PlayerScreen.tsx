@@ -25,6 +25,7 @@ import {
 import { allocationText, assignedBatches, nextBatch, spent, step } from './freePoints';
 import { browserStorage, remember } from './join';
 import { Inventory } from './Inventory';
+import { QuestLog } from './QuestLog';
 import { SkillDetail } from './SkillDetail';
 import { SkillSelection } from './SkillSelection';
 import { closedReason, pendingSelections, pendingText, settleNotice } from './selection';
@@ -754,6 +755,7 @@ function Feed({ live, view }: { live: LiveSnapshot; view: PlayerView }) {
   const messages = [...view.messages].reverse();
   return (
     <div className="feeds">
+      <QuestLog view={view} />
       <section className="window feed" aria-labelledby="dings" data-testid="history">
         <h2 id="dings">Notifications</h2>
         <div className="history-tools">

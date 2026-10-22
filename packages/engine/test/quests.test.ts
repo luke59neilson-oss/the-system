@@ -177,11 +177,13 @@ describe('quests and World Stability (DESIGN §7)', () => {
         status: 'active',
         daysLeft: 30,
         stability: null,
+        stabilityPercent: null,
       },
     ]);
     expect(JSON.stringify(view(c))).not.toContain('cleanse');
     c = ok(c, { type: 'quest.edit', questId: 'whale', stabilityVisible: true });
     expect(view(c).quests[0]?.stability).toBe(95);
+    expect(view(c).quests[0]?.stabilityPercent).toBe(95);
     expect(JSON.stringify(view(c))).not.toContain('kill-pale-hunter');
     expect(view(c).day).toBe(1);
   });
@@ -205,6 +207,27 @@ describe('quests and World Stability (DESIGN §7)', () => {
     c = ok(c, tutorial());
     expect(quest(c).stability?.visible).toBe(true);
     expect(view(c).quests[0]?.stability).toBe(100);
+  });
+
+  it('the gauge percent follows the configured range (M3.8)', () => {
+    const raw = rawRules() as { stability: { min: number; max: number; initial: number } };
+    raw.stability.min = -50;
+    raw.stability.max = 150;
+    let c = run(
+      [
+        { type: 'campaign.create', name: 'Range', rules: raw },
+        {
+          type: 'character.create',
+          id: 'jake',
+          name: 'Jake',
+          className: 'Archer',
+          classSkills: kit,
+        },
+      ],
+      testContext('r'),
+    );
+    c = ok(c, tutorial({ stability: { initial: 0, visible: true, rules: {} } }));
+    expect(view(c).quests[0]).toMatchObject({ stability: 0, stabilityPercent: 25 });
   });
 
   it('only the GM manages quests; undo restores stability', () => {

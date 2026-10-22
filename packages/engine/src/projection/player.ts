@@ -265,6 +265,8 @@ export interface PlayerQuest {
   readonly daysLeft: number | null;
   /** World Stability value, only when the GM made the gauge visible. */
   readonly stability: number | null;
+  /** Where that value sits in the configured range, 0–100 (M3.8 gauge); null when hidden. */
+  readonly stabilityPercent: number | null;
 }
 
 /** A broadcast as one recipient sees it: never who else received it. */
@@ -486,10 +488,21 @@ export function projectForPlayer(state: CampaignState, characterId: string): Pla
           status: q.status,
           daysLeft: daysLeft(q, state.day),
           stability: q.stability !== null && q.stability.visible ? q.stability.value : null,
+          stabilityPercent:
+            q.stability !== null && q.stability.visible
+              ? gaugePercent(state.rules, q.stability.value)
+              : null,
         },
       ];
     }),
   };
+}
+
+/** A stability value as a share of the configured range, 0–100 (an empty range shows full). */
+function gaugePercent(rules: RulesConfig, value: number): number {
+  const { min, max } = rules.stability;
+  if (!(max > min)) return 100;
+  return Math.min(100, Math.max(0, Math.round(((value - min) / (max - min)) * 1000) / 10));
 }
 
 const hasOwnKey = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);

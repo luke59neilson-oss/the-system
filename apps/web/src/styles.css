@@ -1133,3 +1133,53 @@ button.skill-open:hover .skill-name {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* M3.8 quest log */
+.quest-day {
+  margin: -6px 0 8px;
+  font-family: var(--mono);
+}
+.quest {
+  font-family: var(--mono);
+  padding: 6px 0 8px;
+  border-bottom: 1px solid rgba(90, 127, 184, 0.2);
+}
+.quest:last-of-type {
+  border-bottom: none;
+}
+.quest-title {
+  margin: 4px 0;
+  color: var(--text);
+}
+.quest-status {
+  margin-left: 8px;
+}
+.quest-failed .quest-title {
+  color: var(--err);
+}
+.quest-text {
+  margin: 0 0 6px;
+}
+.quest-time {
+  margin: 0 0 6px;
+  color: var(--accent);
+}
+.quest-time.urgent {
+  color: var(--err);
+}
+.stability-label strong {
+  color: var(--text);
+}
+.stability-bar {
+  display: block;
+  height: 6px;
+  margin-top: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.stability-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
