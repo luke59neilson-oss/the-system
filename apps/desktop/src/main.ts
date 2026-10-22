@@ -76,6 +76,8 @@ let gmWindow: BrowserWindow | null = null;
 let splash: BrowserWindow | null = null;
 /** Set once quitting starts, so closing the window no longer asks. */
 let quitting = false;
+/** True while the server is starting: a quit then waits for start() to finish and close it. */
+let starting = false;
 /** A stuck close (e.g. a client that never finishes the WebSocket close) must not hang Quit. */
 const QUIT_TIMEOUT_MS = 5_000;
 
@@ -166,10 +168,13 @@ function openGmWindow(server: RunningApp, notice: string | null = null): void {
 
 async function start(): Promise<void> {
   const port = desktopPort(process.env);
-  // Tests only: hold the start so the splash can be seen.
-  const hold = Number(process.env['THE_SYSTEM_TEST_START_DELAY_MS'] ?? 0);
-  if (!app.isPackaged && hold > 0) await new Promise((r) => setTimeout(r, Math.min(hold, 30_000)));
+  // Quit asked for before anything opened: nothing to close.
+  if (quitting) {
+    app.exit(0);
+    return;
+  }
   let notice: string | null = null;
+  starting = true;
   try {
     const gmKey = newGmKey();
     const started = await startOnFreePort(port, (p) =>
@@ -182,18 +187,32 @@ async function start(): Promise<void> {
         machineId: machineIdFor(app.getPath('userData')),
       }),
     );
+    // Tests only: a slow start (server and campaign already open), so the
+    // splash, and quitting or relaunching while starting, can be tested.
+    const hold = Number(process.env['THE_SYSTEM_TEST_START_DELAY_MS'] ?? 0);
+    if (!app.isPackaged && hold > 0) {
+      await new Promise((r) => setTimeout(r, Math.min(hold, 30_000)));
+    }
     running = started.value;
     if (started.fellBack) notice = portFallbackMessage(port, started.port);
   } catch (error) {
+    starting = false;
+    if (quitting) {
+      app.exit(0);
+      return;
+    }
     // The splash stays behind the error box; exit closes both.
     dialog.showErrorBox('The System', startErrorMessage(error, port));
     app.exit(1);
     return;
   }
+  starting = false;
   // For scripts and the smoke test; the key is never printed.
   console.log(`The System desktop ready on port ${running.port}`);
-  // Quit was asked for while starting: close what just started instead.
+  // Quit was asked for while starting: close what just started (campaign
+  // files and lock included) instead of opening the console.
   if (quitting) {
+    setTimeout(() => app.exit(0), QUIT_TIMEOUT_MS).unref();
     void running.close().finally(() => app.exit(0));
     return;
   }
@@ -220,6 +239,12 @@ if (!app.requestSingleInstanceLock()) {
     if (!gmWindow && running && !quitting) openGmWindow(running);
   });
   app.on('before-quit', (event) => {
+    // Mid-start: hold the exit; start() closes the server once it is up.
+    if (starting && !running) {
+      event.preventDefault();
+      quitting = true;
+      return;
+    }
     if (quitting || !running) {
       quitting = true;
       return;

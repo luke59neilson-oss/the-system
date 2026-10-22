@@ -50,8 +50,13 @@ Luke is not watching. Never stop to ask him a question.
 Read `CLAUDE.md`, `docs/PROGRESS.md`, `docs/QUESTIONS.md`,
 `docs/DECISIONS.md`, `docs/DESIGN.md`, `docs/ROADMAP.md`.
 
-- **Answers from Luke in QUESTIONS.md:** apply them by editing DESIGN.md (and
-  DECISIONS.md) in the same commit, then build to DESIGN.md.
+- **Answers from Luke live in `docs/ANSWERS.md`.** Never edit that file (Luke
+  edits it on GitHub; your commits to it would block his). Apply any answer
+  not yet applied by editing DESIGN.md, DECISIONS.md and, if needed,
+  ROADMAP.md in one commit; mark the matching question in QUESTIONS.md
+  `(applied, D<n>)`. You may only append new questions to QUESTIONS.md and
+  mark them applied; never rewrite Luke's text.
+- **Skip** items marked deferred in ROADMAP.md.
 - **CI:** check the latest completed run on main:
   `GH_TOKEN= gh api "repos/luke59neilson-oss/the-system/actions/runs?branch=main&status=completed&per_page=1"`.
   If it failed, fixing it is your first task. After 3 runs in a row fail to

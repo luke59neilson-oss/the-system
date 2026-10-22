@@ -24,11 +24,21 @@ October 2026.
   (10 → 1.0, 23 → 2.3).
 - **Derived pools (default, open decision):** HP = 10 × Vitality,
   MP = 10 × Wisdom, Stamina = 10 × Endurance.
+- **Pools when maxima change:** if a maximum rises (level, item, title,
+  evolution bonus), a **full pool stays full**; any other pool keeps its
+  current value. Level-ups never refill pools. If a maximum falls, the
+  current value clamps to it. (Example: 85/100 HP equips +20 → 85/120;
+  100/100 HP equips +20 → 120/120.)
 - **Tracks:** Class level, Profession level, Race level.
   - Race level = average of class and profession levels (rounded down).
   - Before a character has a profession, race level = class level.
-  - Professions are first offered at the **E-grade evolution** and start at the
-    character's current class level (the System credits what it already saw).
+  - **Professions** become available at the **E-grade evolution**. There is
+    no standard list: the GM offers each character professions tailored to
+    what they have done (practice log). The player picks one or chooses
+    "none for now"; offered professions stay listed in a Professions tab and
+    can be taken later, until one is chosen and the list locks (greyed out).
+    A profession starts at the character's class level when taken (timing
+    with banked XP: see QUESTIONS Q24).
   - **Class levels** grant the class spread; **race levels** grant free
     points; **profession levels** grant no stats directly (they raise race
     level and add profession skill options).
@@ -36,9 +46,13 @@ October 2026.
     profession levels cannot pass the top level of the current grade
     (4, 14, 49, 99, 149, 199, 240); extra XP banks.
   - **Evolution becomes available** when race level reaches the top of the
-    current grade (config `evolutionGate: "race"`; alternative `"class"`, see
-    QUESTIONS). The GM releases it, the player chooses, and banked XP then
+    current grade (config `evolutionGate: "race"`, Luke confirmed) **and no
+    skill selection is pending**: every selection a character has earned must
+    be chosen first. The GM releases it, the player chooses, and banked XP then
     applies at the new grade.
+  - **Evolution refills HP, MP and Stamina** and grants a **one-time stat
+    bonus** that the GM, as the System, sets for each evolution option (any
+    mix of stats, or +N to all).
   - Skill selections trigger from **class level**. XP needed per level uses
     the character's **current grade**. Level 240 is the campaign cap for now.
 - Every character starts with the race skill **Identify (Common)** and 3 class
@@ -78,14 +92,18 @@ blue-white tint and a heavier brushed texture so the change is visible.
 | B | 27 | 13 | 40 |
 | A | 40 | 20 | 60 |
 
-- Class spread follows the class's stat weights (largest-remainder rounding so
-  the total is exact).
+- Class spread follows the class's stat weights. Each point goes to the stat
+  furthest below its weighted share of all spread received so far (ties in
+  stat order), so totals are exact every level and fair over time (D35,
+  Luke approved).
 - Free points: each level-up's free points are assigned **once**, then that
   batch locks. Later level-ups grant new, unlocked points. The GM can
   override.
 - Each evolution may reshape the class spread toward stats the character used
   (GM chooses, guided by the practice log).
 - Percentage bonuses are capped (default cap +25% per stat, configurable).
+  Luke wants a cap on stats gained from items too; the cap is still being
+  settled (QUESTIONS Q15).
 - Check values (all tracks leveling together, starting total 90):
   total stats = 194 at level 14, 614 at level 49, 1,514 at 99, 2,864 at 149,
   4,864 at 199, **7,324 at 240**.
@@ -99,7 +117,8 @@ blue-white tint and a heavier brushed texture so the change is visible.
   profession acts. Race level is derived.
 - Optional bonus for defeating enemies above the character's level
   (default +10% per level of difference, capped at +100%).
-- XP needed per level (default, by grade): G 100, F 150, E 250, D 400,
+- XP needed per level (default, by grade, **under review**: Luke finds it too
+  low and too flat; see QUESTIONS Q4): G 100, F 150, E 250, D 400,
   C 650, B 1,000, A 1,500. The app shows the GM a "typical session ≈ 6 levels"
   helper.
 
@@ -110,10 +129,17 @@ blue-white tint and a heavier brushed texture so the change is visible.
 - **Selections:** at the class levels in §3. Menu of 3–4 options, built by the
   GM (often from imported files Claude drafts) using the practice log. The
   level-up can happen mid-session; the choice can wait for downtime.
+- **Passed-over options stay available.** Every later menu lists the new
+  options first and older unchosen options below them (scrollable); still
+  one pick per selection. An option leaves the list when chosen, withdrawn by
+  the GM, already owned, or above the current rarity ceiling.
 - **Capstone:** the last selection before each evolution must include at
   least one option at the grade's rarity ceiling.
 - **Profession options** appear inside class menus once a profession exists.
-- **Evolutions** transform 1–2 existing skills.
+- **Evolutions rarely transform skills.** Transforms are optional (config
+  minimum 0). When two compatible skills have been used together often enough
+  (the merge alert), the evolution builder prompts the GM to offer that merge
+  as part of the evolution.
 - **Skill names:** the System gives the official name; the player may add a
   nickname ("Jake Juice"). Show both.
 
@@ -134,7 +160,8 @@ turning point). GM confirms marks in the end-of-session review.
 
 - Max one mark per skill per session (a montage focus counts as that mark).
 - A skill at its grade's rarity ceiling banks marks until the next evolution.
-- Marks reset after an upgrade.
+- After an upgrade, marks beyond the threshold **carry into the next
+  rarity** (they are player effort; Luke's call).
 
 ### Merges
 
@@ -148,7 +175,9 @@ turning point). GM confirms marks in the end-of-session review.
 - **Resolution (proposed):** ratio odds, chance = yours ÷ (yours + theirs).
   The app rolls and shows results. Grade-gap handling is an open decision, so
   support three modes in config: none; grade bonus multiplier per 10 points
-  (G×1, F×3, E×5, D×10, C×20, B×40, A×80); lower-grade opponents at ⅓.
+  (G×1, F×3, E×5, D×10, C×20, B×40, A×80); lower-grade side × ⅓ **per
+  grade step** (one grade apart ×⅓, two apart ×1/9, and so on). Default mode:
+  none (pure ratio odds), switchable in settings.
 - **Progress clocks** with N segments. **Montage:** available when a clock is
   half filled with no failures; player gives a one-line focus (saved to the
   practice log); GM narrates the rest and adds one cost.
@@ -158,9 +187,15 @@ turning point). GM confirms marks in the end-of-session review.
 - **Titles:** flat and/or percentage stat bonuses, awarded by GM, shown to the
   player with System-style text.
 - **Identify:** entities carry descriptions per minimum Identify rarity; the
-  player sees the best tier their Identify rarity unlocks.
+  player sees the best tier their Identify rarity unlocks. **Who can be
+  identified:** anything of a lower grade always; nothing of a higher grade;
+  the same grade only if its level is at most 1.5 × the viewer's level.
+  Otherwise Identify shows `[??? – lvl ???]`.
 - **Quests:** text, timer/day counter, and an optional **World Stability %**
-  with GM-defined rules (action tags → deltas) and a visible/hidden toggle.
+  (starts at 100) with GM-defined rules (action tags → deltas) and a
+  visible/hidden toggle. **Hidden quests:** when one exists, the affected
+  players get a System notice that a hidden quest exists and can be
+  triggered, with no details.
 - **Hunger tracker** (tutorial): optional per campaign; fades at E-grade.
 - **Items:** rarity, description, effects; equipment slots (Zogarth's 10):
   2 rings, necklace, chest, legs, boots, bracers, mask, cloak, gloves; plus

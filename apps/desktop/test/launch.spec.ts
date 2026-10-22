@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { createServer, type Server } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -104,9 +104,12 @@ test('a second launch exits and brings the running window to the front', async (
     expect(await heard).toBe(true);
     await expect
       .poll(() =>
-        app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible()),
+        app.evaluate(({ BrowserWindow }) => {
+          const w = BrowserWindow.getAllWindows()[0];
+          return w ? { visible: w.isVisible(), focused: w.isFocused() } : null;
+        }),
       )
-      .toBe(true);
+      .toEqual({ visible: true, focused: true });
     // Still one window, still connected: no second server, no error.
     expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
     await expect(gm.getByTestId('connection')).toHaveText('Connected');
@@ -168,6 +171,78 @@ test('a port taken by another program moves to the next free one and says so', a
   } finally {
     await app.close();
     held.server.close();
+    p.cleanup();
+  }
+});
+
+function exitOf(child: ReturnType<typeof spawn>): Promise<number | null> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('second instance did not exit')), 20_000);
+    child.on('exit', (c) => {
+      clearTimeout(timer);
+      resolve(c);
+    });
+  });
+}
+
+test('a second launch while starting exits and brings the splash forward', async () => {
+  const p = profile();
+  const env = {
+    THE_SYSTEM_PORT: '0',
+    THE_SYSTEM_DATA_DIR: p.dataDir,
+    THE_SYSTEM_USER_DATA_DIR: p.userData,
+    THE_SYSTEM_TEST_START_DELAY_MS: '4000',
+  };
+  const app = await launch(env);
+  try {
+    const splash = await app.firstWindow();
+    await expect(splash.getByRole('heading', { name: 'Starting The System…' })).toBeVisible();
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.hide());
+    const second = spawn(electronBin, [main, '--no-sandbox'], {
+      env: { ...process.env, ...env },
+      stdio: 'ignore',
+    });
+    expect(await exitOf(second)).toBe(0);
+    await expect
+      .poll(() =>
+        app.evaluate(({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows()
+            .filter((w) => w.isVisible())
+            .map((w) => ({ title: w.getTitle(), focused: w.isFocused() })),
+        ),
+      )
+      .toEqual([{ title: 'Starting The System…', focused: true }]);
+    // The start carries on and the console still opens.
+    const gm = await gmWindow(app);
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+  } finally {
+    await app.close();
+    p.cleanup();
+  }
+});
+
+test('closing the splash while starting quits and closes the campaign it opened', async () => {
+  const p = profile();
+  const app = await launch({
+    THE_SYSTEM_PORT: '0',
+    THE_SYSTEM_DATA_DIR: p.dataDir,
+    THE_SYSTEM_USER_DATA_DIR: p.userData,
+    THE_SYSTEM_TEST_START_DELAY_MS: '3000',
+  });
+  try {
+    const splash = await app.firstWindow();
+    await expect(splash.getByRole('heading', { name: 'Starting The System…' })).toBeVisible();
+    const campaign = path.join(p.dataDir, 'campaigns', 'main');
+    // The server is up and holds the campaign lock while the start is held.
+    await expect.poll(() => existsSync(path.join(campaign, 'LOCK'))).toBe(true);
+    const exited = new Promise<void>((r) => app.process().once('exit', () => r()));
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.close());
+    await exited;
+    // Closed properly: the lock is released and no GM window ever opened.
+    expect(existsSync(path.join(campaign, 'LOCK'))).toBe(false);
+    expect(existsSync(path.join(campaign, 'events.jsonl'))).toBe(true);
+  } finally {
+    await app.close().catch(() => undefined);
     p.cleanup();
   }
 });

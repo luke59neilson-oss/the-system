@@ -1,8 +1,9 @@
 name: Release
 
-# Desktop builds (ROADMAP MS.6, D8, D15, D55).
-# - Push to `release`: build Windows (installer + portable), macOS (dmg,
-#   unsigned, universal) and Linux (AppImage), smoke-test the Linux build, then
+# Desktop builds (ROADMAP MS.6, MQ.9, D8, D15, D55, D97).
+# - Push to `release`: build Windows (installer + portable) and Linux
+#   (AppImage, kept for the automated smoke test; macOS dropped, D97),
+#   smoke-test both packaged apps, then
 #   publish a GitHub Release named `preview-<date>-<run>` (tag
 #   `preview-<date>-<run>.<attempt>`; build sessions cannot push tags, the
 #   workflow creates it). Every file name carries `preview-<date>-<run>`
@@ -55,11 +56,6 @@ jobs:
             files: |
               apps/desktop/release/*-setup.exe
               apps/desktop/release/*-portable.exe
-          # Intel runner: macos-latest (arm64) jobs were never picked up for lack of
-          # capacity (D55); the universal dmg still runs on Apple Silicon.
-          - os: macos-15-intel
-            target: mac
-            files: apps/desktop/release/*.dmg
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     env:
@@ -89,13 +85,6 @@ jobs:
         if: matrix.target == 'win'
         run: |
           THE_SYSTEM_PACKAGED_EXE="$PWD/apps/desktop/release/win-unpacked/TheSystem.exe" \
-            npx playwright test -c apps/desktop/playwright.packaged.config.ts
-      - name: Smoke-test the packaged macOS app
-        if: matrix.target == 'mac'
-        run: |
-          app="$PWD/apps/desktop/release/mac-universal/The System.app"
-          codesign --verify --deep --strict --verbose=2 "$app"
-          THE_SYSTEM_PACKAGED_EXE="$app/Contents/MacOS/The System" \
             npx playwright test -c apps/desktop/playwright.packaged.config.ts
       - name: Smoke-test the AppImage itself
         if: matrix.target == 'linux'
@@ -140,9 +129,9 @@ jobs:
         run: |
           ls -la out
           total=$(find out -maxdepth 1 -type f | wc -l)
-          if [ "$total" -ne 4 ]; then echo "expected exactly 4 files, found $total"; exit 1; fi
+          if [ "$total" -ne 3 ]; then echo "expected exactly 3 files, found $total"; exit 1; fi
           # Exact names (MS.7): TheSystem-preview-<date>-<run>-win-x64-portable.exe and so on.
-          for suffix in win-x64-setup.exe win-x64-portable.exe mac-universal.dmg linux-x86_64.AppImage; do
+          for suffix in win-x64-setup.exe win-x64-portable.exe linux-x86_64.AppImage; do
             name="TheSystem-${THE_SYSTEM_BUILD_ID}-${suffix}"
             if [ ! -f "out/$name" ]; then echo "missing $name"; exit 1; fi
             echo "ok $name"
@@ -173,7 +162,6 @@ jobs:
           Preview build of The System from ${GITHUB_SHA::7}.
 
           - Windows: TheSystem-${id}-win-x64-setup.exe (installer) or TheSystem-${id}-win-x64-portable.exe (no install). Unsigned: if SmartScreen warns, choose More info, then Run anyway. A "Starting The System…" window appears while it starts; launching it again brings the running window to the front.
-          - macOS: TheSystem-${id}-mac-universal.dmg. Not notarized: right-click the app, choose Open, then Open again. If macOS still says it is damaged, run \`xattr -cr "/Applications/The System.app"\` in Terminal once.
           - Linux: TheSystem-${id}-linux-x86_64.AppImage. Make it executable (chmod +x), then run it.
 
           Double-click starts the server and opens the GM console; players join at the URL or QR code it shows. If port 30333 is taken, The System uses the next free port and tells you.
