@@ -204,7 +204,7 @@ exports[`default rules > match the snapshot 1`] = `
     "selectionAlertWithinLevels": 5,
   },
   "resolution": {
-    "gradeGapMode": "none",
+    "gradeGapMode": "gradeWalls",
     "lowerGradeFraction": 0.3333333333333333,
   },
   "skills": {

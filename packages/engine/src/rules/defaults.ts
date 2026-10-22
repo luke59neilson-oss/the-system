@@ -163,7 +163,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
   },
   practice: { selectionAlertWithinLevels: 5 }, // §7
   resolution: {
-    gradeGapMode: 'none', // §7 open decision, QUESTIONS 3
+    gradeGapMode: 'gradeWalls', // §7 grade walls (Luke), MQ.5
     lowerGradeFraction: 1 / 3,
   },
   montage: { minClockFill: 0.5, requireNoFailures: true }, // §7

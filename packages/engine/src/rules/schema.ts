@@ -138,8 +138,8 @@ export const rulesConfigSchema = z
       selectionAlertWithinLevels: positiveInt,
     }),
     resolution: z.strictObject({
-      gradeGapMode: z.enum(['none', 'multiplier', 'lowerGradeFraction']),
-      /** Stat factor for the lower-grade side in "lowerGradeFraction" mode (⅓). */
+      gradeGapMode: z.enum(['none', 'multiplier', 'lowerGradeFraction', 'gradeWalls']),
+      /** Stat (and, in "gradeWalls", damage) factor for a side one grade lower (⅓). */
       lowerGradeFraction: z.number().positive().max(1),
     }),
     montage: z.strictObject({
