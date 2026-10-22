@@ -1,6 +1,12 @@
-import { closeSync, fsyncSync, mkdirSync, openSync, renameSync, writeSync } from 'node:fs';
+import { closeSync, fsyncSync, mkdirSync, openSync, renameSync, rmSync, writeSync } from 'node:fs';
 import path from 'node:path';
-import { buildSessionLog, renderSessionLog } from '@the-system/engine';
+import {
+  buildSessionLog,
+  renderSessionLog,
+  sessionLogBase,
+  sessionLogBaseIsCurrent,
+  type SessionLogBase,
+} from '@the-system/engine';
 import type { CampaignStore } from './store';
 
 /**
@@ -40,6 +46,7 @@ const stamp = (iso: string) => iso.replace(/[:.]/g, '-');
 function writeAtomic(file: string, text: string): void {
   const tmp = `${file}.tmp-${process.pid}`;
   const fd = openSync(tmp, 'w');
+  let written = false;
   try {
     const data = Buffer.from(text, 'utf8');
     let done = 0;
@@ -49,10 +56,18 @@ function writeAtomic(file: string, text: string): void {
       done += n;
     }
     fsyncSync(fd);
+    written = true;
   } finally {
     closeSync(fd);
+    // Never leave a half-written temp file in the exports folder.
+    if (!written) rmSync(tmp, { force: true });
   }
-  renameSync(tmp, file);
+  try {
+    renameSync(tmp, file);
+  } catch (error) {
+    rmSync(tmp, { force: true });
+    throw error;
+  }
 }
 
 export class SessionLogWriter {
@@ -64,6 +79,8 @@ export class SessionLogWriter {
   private readonly startedAt: string;
   /** Event count at the last write; -1 = never written. */
   private writtenSeq = -1;
+  /** Fold of the events before the sitting, reused while still valid. */
+  private base: SessionLogBase | null = null;
   private cancel: (() => void) | null;
 
   constructor(store: CampaignStore, options: SessionLogOptions) {
@@ -85,7 +102,13 @@ export class SessionLogWriter {
   flush(): boolean {
     const seq = this.store.campaign.events.length;
     if (seq <= this.fromSeq || seq === this.writtenSeq) return false;
-    const log = buildSessionLog(this.store.campaign, this.fromSeq);
+    const campaign = this.store.campaign;
+    // Fold the pre-sitting events once (and again only after an undo reaches
+    // back into them), so a write costs the sitting's events, not the campaign's.
+    if (this.base === null || !sessionLogBaseIsCurrent(campaign, this.base)) {
+      this.base = sessionLogBase(campaign, this.fromSeq);
+    }
+    const log = buildSessionLog(campaign, this.fromSeq, this.base);
     const text = renderSessionLog(log, {
       startedAt: this.startedAt,
       writtenAt: this.options.now(),

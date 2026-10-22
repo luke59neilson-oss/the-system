@@ -119,3 +119,8 @@ answer under any question and the next run will follow it.
     tag. Alternative: a separate "include in report" toggle on GM notes
     (the M4 notes screen could show the tag as a toggle either way).
     Answer:
+27. **Hidden quests in the session log.** The session log is a GM-only
+    file and includes hidden quests and the GM's reasons. Default: include
+    them (the log is GM prep material for Claude). Alternative: leave
+    hidden quests and reasons out so the file could be shown to players.
+    Answer:

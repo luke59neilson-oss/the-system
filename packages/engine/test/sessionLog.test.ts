@@ -7,6 +7,8 @@ import {
   execute,
   noteIsExportable,
   renderSessionLog,
+  sessionLogBase,
+  sessionLogBaseIsCurrent,
   type Campaign,
   type Command,
   type CommandContext,
@@ -22,6 +24,12 @@ function ok(c: Campaign, command: Command, context: CommandContext = ctx): Campa
   const result = execute(c, command, context);
   if (!result.ok) throw new Error(`${command.type}: ${result.error}`);
   return result.campaign;
+}
+/** The campaign as it was with only its first `n` events. */
+function replayPrefix(c: Campaign, n: number): Campaign {
+  let out = emptyCampaign();
+  for (const event of c.events.slice(0, n)) out = appendEvent(out, event);
+  return out;
 }
 const lastId = (c: Campaign) => c.events[c.events.length - 1]?.id ?? '';
 const meta = { startedAt: '2026-10-21T12:00:00.000Z', writtenAt: '2026-10-21T12:05:00.000Z' };
@@ -326,6 +334,32 @@ describe('session log (M2.4)', () => {
     expect(text).toContain('Quest edited: Soothe the whale');
     expect(text).toContain('World Stability (Soothe the whale): 90 → 93 (GM nudge)');
     expect(text).toContain('Quest Soothe the whale: completed');
+  });
+
+  it('gives the same log from a cached base, and refuses a base an undo made stale', () => {
+    const { campaign, fromSeq } = sitting();
+    const full = buildSessionLog(campaign, fromSeq);
+    // The sitting already undid a pre-sitting event, so a base taken now is current.
+    const base = sessionLogBase(campaign, fromSeq);
+    expect(sessionLogBaseIsCurrent(campaign, base)).toBe(true);
+    expect(buildSessionLog(campaign, fromSeq, base)).toEqual(full);
+    // A base from before that undo is stale: the builder ignores it and folds from 0.
+    const undoSeq = campaign.events.findIndex(
+      (e) => e.type === 'event.undone' && e.payload.eventId === campaign.events[3]?.id,
+    );
+    const before: Campaign = replayPrefix(campaign, undoSeq);
+    const stale = sessionLogBase(before, fromSeq);
+    expect(sessionLogBaseIsCurrent(campaign, stale)).toBe(false);
+    expect(buildSessionLog(campaign, fromSeq, stale)).toEqual(full);
+    // A wrong-sitting base is ignored too.
+    expect(buildSessionLog(campaign, fromSeq, { ...base, fromSeq: 0 })).toEqual(full);
+  });
+
+  it('marks the file as GM-only', () => {
+    const { campaign, fromSeq } = sitting();
+    expect(renderSessionLog(buildSessionLog(campaign, fromSeq), meta)).toContain(
+      'GM-only file: it includes hidden quests and GM reasons. Do not show it to players.',
+    );
   });
 
   it('decides note visibility by kind', () => {

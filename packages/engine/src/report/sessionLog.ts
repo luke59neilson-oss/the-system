@@ -327,21 +327,78 @@ function describe(
 }
 
 /**
+ * Where a sitting's fold starts: the state of the events before `fromSeq`
+ * that still count, and how many sitting undos reached back before it. Pass
+ * it to `buildSessionLog` to skip re-folding the whole campaign; it stays
+ * valid while `preUndos` is unchanged (only those undos change that state).
+ */
+export interface SessionLogBase {
+  readonly fromSeq: number;
+  readonly state: CampaignState | null;
+  readonly preUndos: number;
+}
+
+function sittingIds(campaign: Campaign, start: number): Set<string> {
+  const ids = new Set<string>();
+  for (let i = start; i < campaign.events.length; i++) {
+    const e = campaign.events[i];
+    if (e) ids.add(e.id);
+  }
+  return ids;
+}
+
+/** Sitting undos whose target is an event from before the sitting. */
+function countPreUndos(campaign: Campaign, start: number, sitting: Set<string>): number {
+  let n = 0;
+  for (let i = start; i < campaign.events.length; i++) {
+    const e = campaign.events[i];
+    if (e?.type === 'event.undone' && !sitting.has(e.payload.eventId)) n++;
+  }
+  return n;
+}
+
+/** Folds the counted events before `fromSeq` (see SessionLogBase). */
+export function sessionLogBase(campaign: Campaign, fromSeq: number): SessionLogBase {
+  const start = Math.max(0, fromSeq);
+  let state: CampaignState | null = null;
+  for (let seq = 0; seq < Math.min(start, campaign.events.length); seq++) {
+    const event = campaign.events[seq];
+    if (!event || event.type === 'event.undone' || has(campaign.undone, event.id)) continue;
+    state = applyEvent(state, event);
+  }
+  return {
+    fromSeq: start,
+    state,
+    preUndos: countPreUndos(campaign, start, sittingIds(campaign, start)),
+  };
+}
+
+/** Whether `base` still matches the campaign (no new undo reached back before it). */
+export function sessionLogBaseIsCurrent(campaign: Campaign, base: SessionLogBase): boolean {
+  const sitting = sittingIds(campaign, base.fromSeq);
+  return base.preUndos === countPreUndos(campaign, base.fromSeq, sitting);
+}
+
+/**
  * Builds the session log for the events from `fromSeq` on. Undone events and
  * their undos inside that range leave no trace; an undo of an earlier event
- * is noted, since it changes state this sitting.
+ * is noted, since it changes state this sitting. A `base` from
+ * `sessionLogBase` is reused when still valid, else the fold starts at 0.
  */
-export function buildSessionLog(campaign: Campaign, fromSeq: number): SessionLog {
+export function buildSessionLog(
+  campaign: Campaign,
+  fromSeq: number,
+  base?: SessionLogBase,
+): SessionLog {
   const entries: SessionLogEntry[] = [];
   const practiceIds = new Set<string>();
   const noteIds = new Set<string>();
-  const sitting = new Set<string>();
   const start = Math.max(0, fromSeq);
-  campaign.events.forEach((e, i) => {
-    if (i >= start) sitting.add(e.id);
-  });
-  let state: CampaignState | null = null;
-  for (let seq = 0; seq < campaign.events.length; seq++) {
+  const sitting = sittingIds(campaign, start);
+  const reuse =
+    base !== undefined && base.fromSeq === start && sessionLogBaseIsCurrent(campaign, base);
+  let state: CampaignState | null = reuse ? base.state : null;
+  for (let seq = reuse ? start : 0; seq < campaign.events.length; seq++) {
     const event = campaign.events[seq];
     if (!event) continue;
     if (event.type === 'event.undone') {
@@ -436,6 +493,7 @@ export function renderSessionLog(
   out.push(`- Last written: ${meta.writtenAt}`);
   if (log.day !== null) out.push(`- In-game day: ${log.day}`);
   out.push(`- Events: ${log.fromSeq}–${Math.max(log.fromSeq, log.toSeq - 1)} of the campaign log`);
+  out.push('- GM-only file: it includes hidden quests and GM reasons. Do not show it to players.');
   out.push(
     '- Times are UTC. Unshared journal entries and GM notes not tagged "export" are left out.',
   );
