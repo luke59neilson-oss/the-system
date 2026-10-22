@@ -228,3 +228,43 @@ export const DEFAULT_LIBRARY: DefaultLibrary = {
   races: RACES,
   professions: PROFESSIONS,
 };
+
+/** The libraries `missingDefaultEntries` compares against. */
+export interface DefaultTarget {
+  readonly rules: { readonly skills: { readonly libraryByRarity: boolean } };
+  readonly skillLibrary: Readonly<
+    Record<string, { readonly name: string; readonly rarity: string }>
+  >;
+  readonly classLibrary: Readonly<Record<string, { readonly name: string }>>;
+  readonly raceLibrary: Readonly<Record<string, { readonly name: string }>>;
+  readonly professionLibrary: Readonly<Record<string, { readonly name: string }>>;
+}
+
+/**
+ * The default entries a campaign's libraries lack: matched by name (ignoring
+ * case), and skills under `libraryByRarity` by name and rarity (MQ.12, D126),
+ * since that is what makes two skill entries distinct.
+ */
+export function missingDefaultEntries(state: DefaultTarget): DefaultLibrary {
+  const byName = (d: { name: string }) => d.name.trim().toLowerCase();
+  const byNameAndRarity = (d: { name: string; rarity?: string }) =>
+    `${byName(d)}\u0000${d.rarity ?? ''}`;
+  const missing = <T extends { name: string }>(
+    defaults: readonly T[],
+    library: Readonly<Record<string, { name: string }>>,
+    key: (d: { name: string; rarity?: string }) => string = byName,
+  ) => {
+    const have = new Set(Object.values(library).map(key));
+    return defaults.filter((d) => !have.has(key(d)));
+  };
+  return {
+    skills: missing(
+      DEFAULT_LIBRARY.skills,
+      state.skillLibrary,
+      state.rules.skills.libraryByRarity ? byNameAndRarity : byName,
+    ),
+    classes: missing(DEFAULT_LIBRARY.classes, state.classLibrary),
+    races: missing(DEFAULT_LIBRARY.races, state.raceLibrary),
+    professions: missing(DEFAULT_LIBRARY.professions, state.professionLibrary),
+  };
+}

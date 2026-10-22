@@ -161,13 +161,20 @@ describe('GM class, race and profession libraries (M4.2)', () => {
       DEFAULT_LIBRARY.races.length +
       DEFAULT_LIBRARY.professions.length +
       DEFAULT_LIBRARY.skills.length;
-    expect(missingDefaults(empty)).toBe(all);
-    expect(
-      missingDefaults({
-        ...empty,
-        raceLibrary: { h: { id: 'h', name: 'human ', description: '' } },
-      }),
-    ).toBe(all - 1);
+    const target = { ...empty, rules: DEFAULT_RULES };
+    expect(missingDefaults(target)).toBe(all);
+    expect(missingDefaults({ ...target, raceLibrary: { h: { name: 'human ' } } })).toBe(all - 1);
+  });
+
+  it('counts a default skill as present only at its own rarity (MQ.12)', () => {
+    const first = DEFAULT_LIBRARY.skills[0];
+    if (!first) throw new Error('no default skills');
+    const target = { ...empty, rules: DEFAULT_RULES };
+    const all = missingDefaults(target);
+    const at = (rarity: string) =>
+      missingDefaults({ ...target, skillLibrary: { s: { name: first.name, rarity } } });
+    expect(at(first.rarity)).toBe(all - 1);
+    expect(at(first.rarity === 'mythical' ? 'common' : 'mythical')).toBe(all);
   });
 
   it('summarises weights biggest first', () => {

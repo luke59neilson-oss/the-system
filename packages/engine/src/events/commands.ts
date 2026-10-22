@@ -9,7 +9,7 @@ import {
 } from './envelope';
 import { CharacterRuleError } from '../character';
 import { normalizeTags } from '../skills/library';
-import { DEFAULT_LIBRARY } from '../content/defaults';
+import { missingDefaultEntries } from '../content/defaults';
 import { largestRemainderSplit } from '../progression';
 import { appendEvent, type Campaign } from './log';
 
@@ -618,31 +618,18 @@ function pendingOf(campaign: Campaign, characterId: string) {
     : undefined;
 }
 
-/**
- * The default library entries the campaign lacks, with fresh ids: matched by
- * name (ignoring case), and for skills under `libraryByRarity` by name and
- * rarity (MQ.12), since that is what makes two skill entries distinct.
- */
+/** The default library entries the campaign lacks (`missingDefaultEntries`), with fresh ids. */
 function defaultSeed(campaign: Campaign, ctx: CommandContext) {
   const state = campaign.state;
   if (!state) throw new EventRejectedError('Create a campaign first');
-  const byName = (d: { name: string }) => d.name.trim().toLowerCase();
-  const missing = <T extends { name: string }>(
-    defaults: readonly T[],
-    library: Readonly<Record<string, T | { name: string }>>,
-    key: (d: { name: string; rarity?: string }) => string = byName,
-  ) => {
-    const have = new Set(Object.values(library).map(key));
-    return defaults.filter((d) => !have.has(key(d))).map((d) => ({ id: ctx.newId(), ...d }));
-  };
-  const skillKey = state.rules.skills.libraryByRarity
-    ? (d: { name: string; rarity?: string }) => `${byName(d)}\u0000${d.rarity ?? ''}`
-    : byName;
+  const lacking = missingDefaultEntries(state);
+  const withIds = <T extends object>(list: readonly T[]) =>
+    list.map((d) => ({ id: ctx.newId(), ...d }));
   const seed = {
-    skills: missing(DEFAULT_LIBRARY.skills, state.skillLibrary, skillKey),
-    classes: missing(DEFAULT_LIBRARY.classes, state.classLibrary),
-    races: missing(DEFAULT_LIBRARY.races, state.raceLibrary),
-    professions: missing(DEFAULT_LIBRARY.professions, state.professionLibrary),
+    skills: withIds(lacking.skills),
+    classes: withIds(lacking.classes),
+    races: withIds(lacking.races),
+    professions: withIds(lacking.professions),
   };
   if (Object.values(seed).every((list) => list.length === 0)) {
     throw new EventRejectedError('The libraries already hold every default entry');
