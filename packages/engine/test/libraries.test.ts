@@ -102,6 +102,13 @@ describe('class library (M4.2)', () => {
 
   it('edits only the given fields and re-checks the result', () => {
     let c = ok(run([created], ctx), warrior);
+    expect(
+      reject(c, {
+        type: 'classDef.edit',
+        classDefId: 'warrior',
+        weights: { toughness: 2, strength: 3 },
+      }),
+    ).toMatch(/nothing to change/);
     c = ok(c, { type: 'classDef.edit', classDefId: 'warrior', weights: { agility: 1 } });
     expect(c.state?.classLibrary['warrior']?.weights).toEqual({ agility: 1 });
     expect(c.state?.classLibrary['warrior']?.name).toBe('Warrior');

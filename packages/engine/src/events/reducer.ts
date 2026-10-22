@@ -334,8 +334,15 @@ function entryOf<T>(
 
 /** Refuses an edit that changes nothing (compared field by field as JSON). */
 function unchanged<T extends object>(event: DomainEvent, def: T, old: T): void {
+  // Keys sorted, so a record sent in another key order still counts as the same.
+  const canonical = (value: unknown): string =>
+    JSON.stringify(value, (_key, v: unknown) =>
+      v !== null && typeof v === 'object' && !Array.isArray(v)
+        ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+        : v,
+    );
   const same = (Object.keys(def) as (keyof T)[]).every(
-    (k) => JSON.stringify(def[k]) === JSON.stringify(old[k]),
+    (k) => canonical(def[k]) === canonical(old[k]),
   );
   if (same) fail(event, 'nothing to change');
 }

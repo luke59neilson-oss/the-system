@@ -1612,6 +1612,9 @@ button.danger {
 .origin-library {
   grid-column: 1 / -1;
 }
+.origin-library .library-list {
+  max-height: min(520px, 70vh);
+}
 .origin-library h3 {
   margin: 4px 0 8px;
   font-size: 1rem;

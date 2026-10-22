@@ -112,6 +112,11 @@ test('the GM manages classes, races and professions; characters start from them'
   await add.click();
   await expect(lib.getByRole('alert')).toContainText('already has [Warrior]');
 
+  // The refused draft is still unsaved: the first click away warns, the second discards.
+  await classes.getByRole('button', { name: /\[Warrior\]/ }).click();
+  await expect(lib.getByRole('alert').filter({ hasText: 'unsaved changes' })).toBeVisible();
+  await expect(lib.getByRole('heading', { name: 'New class' })).toBeVisible();
+  await expect(lib.getByLabel('Class name')).toHaveValue('warrior');
   // Edit Warrior: Save stays off until something changes.
   await classes.getByRole('button', { name: /\[Warrior\]/ }).click();
   await expect(lib.getByRole('heading', { name: 'Edit [Warrior]' })).toBeVisible();
@@ -163,7 +168,7 @@ test('the GM manages classes, races and professions; characters start from them'
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('cell', { name: 'Miranda', exact: true })).toBeVisible();
   await expect(gm.getByRole('cell', { name: '[Mage]' })).toBeVisible();
-  await gm.screenshot({ path: path.join(shots, 'gm-console-1366x768.png') });
+  await gm.screenshot({ path: path.join(shots, 'gm-console-1366x768.png'), fullPage: true });
 
   for (const viewport of [
     { width: 1366, height: 768 },
@@ -176,13 +181,16 @@ test('the GM manages classes, races and professions; characters start from them'
     await player.getByRole('link', { name: /Miranda/ }).click();
     await expect(player.getByText(/\[Dwarf \(G\) – lvl 0\]/)).toBeVisible();
     await expect(player.getByText(/\[Mage – lvl 0\]/)).toBeVisible();
+    await noSidewaysScroll(player);
+    await player.screenshot({
+      path: path.join(shots, `player-status-${viewport.width}x${viewport.height}.png`),
+    });
     await player.getByRole('button', { name: /\[Mana Bolt \(Common\)\]/ }).click();
     await expect(player.getByTestId('skill-detail-description')).toHaveText(
       'Shape mana into a bolt and throw it. Costs Mana; harder hits cost more.',
     );
-    await noSidewaysScroll(player);
     await player.screenshot({
-      path: path.join(shots, `player-status-${viewport.width}x${viewport.height}.png`),
+      path: path.join(shots, `player-skill-${viewport.width}x${viewport.height}.png`),
     });
     const all = frames.join('\n');
     expect(frames.length).toBeGreaterThan(0);
@@ -205,7 +213,9 @@ test('a campaign started without defaults can add them later', async ({ browser 
     await gm.getByLabel(/Start with the default classes/).uncheck();
     await gm.getByRole('button', { name: 'Create campaign' }).click();
     const lib = gm.locator('section[aria-labelledby="origin-library"]');
-    await expect(lib.getByText(/No classes yet/)).toBeVisible();
+    await expect(lib.getByRole('note')).toContainText(
+      'Until then new characters start as the built-in Archer.',
+    );
     // The character form falls back to the built-in Archer and the rules' race.
     const create = gm.locator('form[aria-labelledby="new-character"]');
     await expect(create.getByLabel('Starting class').locator('option')).toHaveText(['Archer']);

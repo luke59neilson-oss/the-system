@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react';
-import type { CampaignState } from '@the-system/engine';
+import { MAX_PROFESSION_SKILLS, type CampaignState } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 import { cssToken } from '../player/sheet';
@@ -64,14 +64,31 @@ export function OriginLibrary({ client, state }: { client: LiveClient; state: Ca
     kind === 'class' ? classRarities(rules) : rules.skills.rarities.filter((r) => !r.reserved);
   const rarityName = (id: string) => rules.skills.rarities.find((r) => r.id === id)?.name ?? id;
 
+  // Unsaved work in the form: a second click on the same target discards it.
+  const dirty =
+    base === null
+      ? JSON.stringify(draft) !== JSON.stringify(emptyDraft(kind, rules))
+      : unsavedChanges(kind, draft, base, rules);
+  const [pendingDiscard, setPendingDiscard] = useState<string | null>(null);
+  const guard = (target: string) => {
+    if (dirty && pendingDiscard !== target) {
+      setPendingDiscard(target);
+      return false;
+    }
+    setPendingDiscard(null);
+    return true;
+  };
   const switchKind = (next: OriginKind) => {
+    if (next === kind || !guard(`kind:${next}`)) return;
     setKind(next);
     setBase(null);
     setDraft(emptyDraft(next, rules));
     setQuery('');
     setResult(null);
   };
-  const open = (def: OriginDef | null) => {
+  const open = (def: OriginDef | null, force = false) => {
+    if (!force && !guard(`open:${def?.id ?? 'new'}`)) return;
+    setPendingDiscard(null);
     setBase(def);
     setDraft(def ? draftOf(kind, def, rules) : emptyDraft(kind, rules));
     setResult(null);
@@ -142,9 +159,18 @@ export function OriginLibrary({ client, state }: { client: LiveClient; state: Ca
           New {label.one}
         </button>
       </div>
+      {pendingDiscard !== null && dirty && (
+        <p className="err" role="alert">
+          The form has unsaved changes. Click again to discard them, or save first.
+        </p>
+      )}
       {total === 0 ? (
-        <p className="muted">
+        <p
+          className={kind === 'class' ? 'err' : 'muted'}
+          role={kind === 'class' ? 'note' : undefined}
+        >
           No {label.many.toLowerCase()} yet. Add one below or add the default set.
+          {kind === 'class' && ' Until then new characters start as the built-in Archer.'}
         </p>
       ) : shown.length === 0 ? (
         <p className="muted">Nothing matches “{query.trim()}”.</p>
@@ -216,11 +242,10 @@ export function OriginLibrary({ client, state }: { client: LiveClient; state: Ca
                   />
                 </label>
                 <label>
-                  Rarity
+                  Skill {i + 1} rarity
                   <select
                     value={skill.rarity}
                     onChange={(e) => setSkill(i, 'rarity', e.target.value)}
-                    aria-label={`Skill ${i + 1} rarity`}
                   >
                     {rarities.map((r) => (
                       <option key={r.id} value={r.id}>
@@ -243,7 +268,7 @@ export function OriginLibrary({ client, state }: { client: LiveClient; state: Ca
                 )}
               </div>
             ))}
-            {kind === 'profession' && draft.skills.length < 10 && (
+            {kind === 'profession' && draft.skills.length < MAX_PROFESSION_SKILLS && (
               <button
                 type="button"
                 className="secondary"
@@ -292,7 +317,7 @@ export function OriginLibrary({ client, state }: { client: LiveClient; state: Ca
           <p className="err" role="alert">
             [{stored.name}] changed elsewhere since you opened it. Saving sends only the fields you
             changed.{' '}
-            <button type="button" className="secondary" onClick={() => open(stored)}>
+            <button type="button" className="secondary" onClick={() => open(stored, true)}>
               Reload
             </button>
           </p>
