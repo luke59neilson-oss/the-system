@@ -117,7 +117,7 @@ blue-white tint and a heavier brushed texture so the change is visible.
     title percentages). Example: base Vitality 100, items +30 (capped to +20),
     titles +10% and +5% → (100 + 20) × 1.15 = 138.
   - The total title percentage per stat keeps its configurable cap (default
-    +25%; see QUESTIONS Q41).
+    +25%; see QUESTIONS Q42).
 - Check values (all tracks leveling together, starting total 90):
   total stats = 194 at level 14, 614 at level 49, 1,514 at 99, 2,864 at 149,
   4,864 at 199, **7,324 at 240**.

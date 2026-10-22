@@ -235,7 +235,7 @@ DESIGN/ROADMAP; do not re-apply them.
     too.
     Answer:
 
-41. **Cap on title percentages?** Titles give percentage bonuses and stack
+42. **Cap on title percentages?** Titles give percentage bonuses and stack
     additively (D115). The engine also caps the total percentage per stat
     (default +25%). Default: keep the +25% cap. Alternative: no cap on title
     percentages, or a different cap.
