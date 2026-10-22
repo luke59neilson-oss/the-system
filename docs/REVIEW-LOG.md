@@ -407,3 +407,11 @@
   - L fixed: visible "Skill N rarity" labels; the profession skill limit comes from the engine; the no-change check ignores key order (unit test).
   - L accepted: race is a free-text name on the character (the library is a picker; Q38); no delete/archive for entries (as M4.1); the property stream does not create characters (example tests cover creation from every default class).
 - Round 2 (3bf0cef..cf102fd): 0 High, 0 Medium, 3 Low, accepted: the stricter no-change check only affects logs written by this item's first commit; the M4.1 skill list in the full-page console shot still scrolls; the discard warning stays armed for the same target after further edits.
+
+### 2026-10-22 · M4.3 Campaign and sessions (D92) · reviewer: sonnet (fresh context)
+- Round 1 (2499214..b5a7d9e): 0 High, 3 Medium, 6 Low. Check, build, M4.3 and M2.A e2e pass; golden logs replay; no session data or GM reasons reach players (engine test and e2e frame canary).
+  - M fixed: undoing a session end left the file saying "report" until the next tick (the server now rewrites the file at once after an undo of a session start or end); undoing a running session's start left a stale "(running)" file (it is rewritten as "Session N: undone").
+  - M recorded, not changed: nothing is written between sessions (by design; QUESTIONS Q39 with the default, D92).
+  - L fixed: Session window messages clear when the session changes; past-sessions cells no longer wrap mid-value at 390 px; duplicate `node:fs` import merged.
+  - L accepted: any undo rewrites an ended session's report once (harmless churn); button size and window position; a GM may choose a session id (validated, duplicates refused).
+- Round 2 (b5a7d9e..1351fca): 0 High, 0 Medium, 2 Low, accepted: an undo of a start right after a restart, before any write by the new process, leaves the old file saying "(running)" until the number is reused; the keep-message flag relies on the result frame arriving before the state frame (the hub's order).

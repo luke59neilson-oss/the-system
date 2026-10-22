@@ -233,7 +233,7 @@ the full ones.
   a skill is granted, including the starting race skill (Identify).
 - [x] **M4.2 Class, race and profession libraries.** Starting classes (stat
   weights + 3 starting skills), Human race, professions; seed a default set.
-- [ ] **M4.3 Campaign and sessions.** Create campaign; start/end session (end
+- [x] **M4.3 Campaign and sessions.** Create campaign; start/end session (end
   = backup + full session report); in-game day counter. Point the running
   session log (M2.4, D72) at the started session's events instead of "since
   the server opened the campaign".

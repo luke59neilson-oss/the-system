@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0, MS, M1, M2 and M3 done; M4 under way (M4.1, M4.2 done)
-**Next item:** M4.3 Campaign and sessions
+**Status:** in progress: M0, MS, M1, M2 and M3 done; M4 under way (M4.1–M4.3 done)
+**Next item:** M4.4 Character creation
 **Blockers:** none.
 
 ## Run log
@@ -428,4 +428,22 @@ next item, blockers. -->
 - New decision D91. New question Q38 (default classes, races, professions; race as name only; descriptions GM-only).
 - Open `wip/*` branches: none unfinished.
 - Next: M4.3 Campaign and sessions. Not started: too little of the timebox left to finish and review it.
+- Blockers: none.
+
+### Run 1506f1ae · 2026-10-22 12:12–12:50 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD and a stale local `main`, kept locally as `stale-local-main`), so `main` was reset to `origin/main`.
+  - The lock was pushed to main.
+  - `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md. The latest completed CI run on main was green (cf102fd).
+- Finished M4.3 Campaign and sessions. Reviewed by sonnet in 2 rounds: round 1 had 0 High and 3 Medium (2 fixed, 1 kept by design as Q39); round 2 had 0 High, 0 Medium and 2 Low (accepted).
+  - Engine: GM-only `session.started`/`session.ended` (state v15: `sessions`, `currentSession`; golden states bumped additively, new `sessions` golden log). Every event is stamped with the running session, so marks and practice repeats count per real session. `buildSessionLog` takes an end bound; `sessionEventRange` finds a session's events; the renderer has session headers (running log or report).
+  - Server: the session log follows the started session (`exports/<campaign>/session-NN.md`). Ending a session backs the campaign up (`backups/<stamp>-session-N-end`) and rewrites the file as the report at once. Failures come back to the GM as a `warning` on the command result. Undoing a session start or end rewrites the file at once.
+  - GM console: a Session window (start; end behind a confirm step; in-game day with "Advance by N days"; past sessions) and a "Session N · Day D" header chip. The party table now scrolls inside its window on phones.
+  - M2.A e2e now starts a session and checks that the session survives the restart.
+- Tests: 656 unit/integration tests (59 files). All 34 e2e tests green before the review fixes; M4.3 and M2.A were re-run after them. Screenshot re-renders of earlier items were discarded. Engine line coverage 99.3% (floor 90%).
+- New decision D92. New question Q39 (nothing is logged between sessions).
+- Open `wip/*` branches: none unfinished.
+- Next: M4.4 Character creation. Not started: the run was past the 35-minute mark.
 - Blockers: none.
