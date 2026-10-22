@@ -1147,7 +1147,18 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
                 ? { ...entry, skills: entry.skills.map((n) => renamed.get(n) ?? n) }
                 : entry,
             );
-      return { ...withCharacter(state, result.character), practice };
+      // Evolution refills every pool to its effective maximum, titles and
+      // items included (D99); old events keep the old rules (D110).
+      let evolved = result.character;
+      if (event.payload.legacy !== true) {
+        const stats = rule(event, () => effectiveOf(state, evolved));
+        const full: Record<string, number> = {};
+        for (const p of state.rules.pools) {
+          full[p.id] = rule(event, () => poolMax(state.rules, stats, p.id));
+        }
+        evolved = { ...evolved, pools: full };
+      }
+      return { ...withCharacter(state, evolved), practice };
     }
     case 'clock.created': {
       const { clockId, name, segments } = event.payload;

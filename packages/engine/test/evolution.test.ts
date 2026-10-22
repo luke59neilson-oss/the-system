@@ -1125,3 +1125,25 @@ describe('evolution rules from Luke (MQ.1: D98, D99, D102, D103)', () => {
     expect(j?.pools).toEqual(char(legacy).pools);
   });
 });
+
+describe('evolution refill counts items and titles (MQ.1 review)', () => {
+  it('refills to the effective maximum, not the base one', () => {
+    let c = atGTop();
+    c = ok(c, {
+      type: 'item.define',
+      id: 'amulet',
+      name: 'Amulet of Life',
+      rarity: 'common',
+      slot: 'necklace',
+      bonuses: [{ stat: 'vitality', flat: 10 }],
+    });
+    c = ok(c, { type: 'holdings.adjust', characterId: 'jake', items: { amulet: 1 } });
+    c = ok(c, { type: 'item.equip', characterId: 'jake', itemId: 'amulet', slot: 'necklace' });
+    const hurt = Object.fromEntries(Object.keys(char(c).pools).map((id) => [id, 1]));
+    c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: hurt });
+    c = ok(c, release(archery, 'Volley', 'common'));
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    const base = char(c).stats['vitality'] ?? 0;
+    expect(char(c).pools['hp']).toBe(10 * (base + 10));
+  });
+});
