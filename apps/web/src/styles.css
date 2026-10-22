@@ -383,14 +383,18 @@ a {
   .player-grid .quests {
     order: 2;
   }
-  .player-grid .inventory-window {
+  /* Party (M3.12): a glance at everyone's pools before the inventory. */
+  .player-grid .party-window {
     order: 3;
   }
-  .player-grid .identify-window {
+  .player-grid .inventory-window {
     order: 4;
   }
-  .player-grid .notes-window {
+  .player-grid .identify-window {
     order: 5;
+  }
+  .player-grid .notes-window {
+    order: 6;
   }
   /* Montage offers wait on the player: right after the quests (M3.11). */
   .player-grid .practice-window {
@@ -1447,4 +1451,78 @@ button.danger {
   cursor: pointer;
   color: var(--accent);
   margin: 4px 0 8px;
+}
+
+/* M3.12 party view */
+.party-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px 16px;
+}
+.party-member {
+  font-family: var(--mono);
+  padding: 6px 0 6px 10px;
+  border-left: 3px solid var(--metal, var(--accent));
+  min-width: 0;
+}
+.party-name {
+  margin: 0 0 4px;
+  color: var(--metal, var(--text));
+}
+.party-tracks {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 1px 10px;
+  margin: 0 0 6px;
+}
+.party-tracks dt {
+  color: var(--muted);
+}
+.party-tracks dd {
+  margin: 0;
+  min-width: 0;
+}
+.party-pools {
+  display: grid;
+  gap: 3px;
+}
+.party-pool {
+  display: grid;
+  grid-template-columns: minmax(0, 7em) minmax(60px, 1fr) 4.5em;
+  align-items: center;
+  gap: 8px;
+}
+.party-pool-name {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.party-pool-bar {
+  display: block;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.party-pool-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.party-pool-label {
+  text-align: right;
+}
+.party-pool.low .party-pool-label,
+.party-pool.empty .party-pool-label {
+  color: var(--err);
+}
+.party-pool.low .party-pool-bar > span {
+  background: var(--err);
+}
+.pane-mode .party-list {
+  gap: 4px 10px;
 }

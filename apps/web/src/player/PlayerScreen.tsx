@@ -29,6 +29,8 @@ import { QuestLog } from './QuestLog';
 import { IdentifyPanel } from './IdentifyPanel';
 import { NotesPanel } from './NotesPanel';
 import { PracticePanel } from './PracticePanel';
+import { PartyPanel } from './PartyPanel';
+import { useChangeCount } from './changeCount';
 import { SkillDetail } from './SkillDetail';
 import { SkillSelection } from './SkillSelection';
 import { closedReason, pendingSelections, pendingText, settleNotice } from './selection';
@@ -117,6 +119,7 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
         <div className="player-grid">
           <div className="player-col">
             <Status view={view} client={pane ? null : client} />
+            <PartyPanel view={view} />
             <Inventory view={view} client={pane ? null : client} />
           </div>
           <Feed live={live} view={view} client={pane ? null : client} />
@@ -692,16 +695,6 @@ function SkillList({
  * the element so the CSS glow replays on every change (DESIGN §9 "values
  * update live"), including a change back to an earlier value.
  */
-function useChangeCount(value: string): number {
-  const [seen, setSeen] = useState(value);
-  const [count, setCount] = useState(0);
-  if (value !== seen) {
-    setSeen(value);
-    setCount(count + 1);
-  }
-  return count;
-}
-
 /**
  * A live row value. `parts` (default: the whole value) are kept unbroken, so
  * narrow screens wrap between them, never inside a bracketed name.

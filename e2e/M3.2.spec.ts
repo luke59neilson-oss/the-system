@@ -140,9 +140,9 @@ test('status screens follow DESIGN §9 and update live', async ({ browser }) => 
     sultan.locator('dd.flash').filter({ has: sultan.getByTestId('free-points') }),
   ).toHaveCount(1);
   await sultan.screenshot({ path: path.join(shots, 'sultan-live-390x844.png'), fullPage: true });
-  // Jake's screen did not change.
+  // Jake's own sheet did not change (his party view, M3.12, follows Sultan).
   await expect(laptop.getByTestId('class')).toHaveText('[Tempest Warden – lvl 52]');
-  await expect(laptop.locator('.flash')).toHaveCount(0);
+  await expect(laptop.getByTestId('status').locator('.flash')).toHaveCount(0);
 
   // The GM's View-as pane (MS.3, compact) shows the same sheet without
   // sideways scrolling, even in a quarter-width Table-view pane.
