@@ -26,6 +26,16 @@ export const kit = [
 ];
 
 export const rawRules = () => JSON.parse(JSON.stringify(DEFAULT_RULES)) as unknown;
+/**
+ * The M1.6 bonus rules (items may carry percentages, +25% percent cap, no item
+ * cap), as stored campaigns read them (MQ.14, D128): for tests of those rules.
+ */
+export const LEGACY_BONUSES = {
+  percentCapPerStat: 0.25,
+  itemCapOfBase: null,
+  itemsFlatOnly: false,
+} as const;
+export const legacyBonusRules = () => ({ ...DEFAULT_RULES, bonuses: LEGACY_BONUSES }) as unknown;
 
 /** Runs commands, failing loudly on any rejection. */
 export function run(

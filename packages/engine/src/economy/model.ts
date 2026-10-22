@@ -81,6 +81,11 @@ export function validateItemDef(rules: RulesConfig, def: ItemDef): void {
   }
   const stats = new Set<string>();
   for (const b of def.bonuses) {
+    if (rules.bonuses.itemsFlatOnly && b.percent !== undefined) {
+      throw new EconomyRuleError(
+        `Items give flat stat bonuses only: remove the percentage on ${b.stat}`,
+      );
+    }
     if (stats.has(b.stat)) throw new EconomyRuleError(`Stat "${b.stat}" is listed twice`);
     stats.add(b.stat);
   }
@@ -193,6 +198,20 @@ export function equippedSources(
     }
   }
   return out;
+}
+
+/**
+ * Stats whose equipped item bonus the item cap cut (MQ.14, DESIGN §4), in rules
+ * stat order: the owner's status screen shows those bonuses as capped.
+ */
+export function itemCappedStats(
+  rules: RulesConfig,
+  base: Readonly<Record<string, number>>,
+  holdings: Holdings,
+  items: Readonly<Record<string, ItemDef>>,
+): string[] {
+  const breakdown = statBreakdown(rules, base, equippedSources(rules, holdings, items));
+  return rules.stats.list.filter((s) => breakdown[s.id]?.itemCapped).map((s) => s.id);
 }
 
 /** Effective stats with equipped item bonuses (base → flat → percent → cap). */

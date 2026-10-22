@@ -171,7 +171,7 @@ export const DEMO_ITEMS: readonly Command[] = [
     rarity: 'rare',
     slot: 'ring',
     description: 'A band of pale bone that hums when you run.',
-    bonuses: [{ stat: 'agility', flat: 5, percent: 0.05 }],
+    bonuses: [{ stat: 'agility', flat: 5 }],
   },
   {
     type: 'item.define',

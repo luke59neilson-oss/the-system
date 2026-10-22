@@ -112,7 +112,8 @@ test('inventory: gear, effective stats, gifts and trades', async ({ browser }) =
     name: 'Amulet of Vigor',
     rarity: 'rare',
     slot: 'necklace',
-    bonuses: [{ stat: 'vitality', flat: 10 }],
+    // Within the item cap (MQ.14: 20% of base; Jake's Archer has Vitality 1.0).
+    bonuses: [{ stat: 'vitality', flat: 2 }],
   });
   await gmCommand(gm, {
     type: 'gift.give',
@@ -132,13 +133,13 @@ test('inventory: gear, effective stats, gifts and trades', async ({ browser }) =
   });
   await expect(hp).toHaveText(`${Number(hpMaxBefore) - 15}/${hpMaxBefore}`);
   await inv.getByRole('button', { name: 'Equip Amulet of Vigor' }).click();
-  await expect(hp).toHaveText(`${Number(hpMaxBefore) - 15}/${Number(hpMaxBefore) + 100}`);
+  await expect(hp).toHaveText(`${Number(hpMaxBefore) - 15}/${Number(hpMaxBefore) + 20}`);
   await gmCommand(gm, {
     type: 'character.setPools',
     characterId: 'demo-jake',
-    pools: { hp: Number(hpMaxBefore) + 90 },
+    pools: { hp: Number(hpMaxBefore) + 10 },
   });
-  await expect(hp).toHaveText(`${Number(hpMaxBefore) + 90}/${Number(hpMaxBefore) + 100}`);
+  await expect(hp).toHaveText(`${Number(hpMaxBefore) + 10}/${Number(hpMaxBefore) + 20}`);
   await inv.getByRole('button', { name: 'Unequip Amulet of Vigor' }).click();
   await expect(hp).toHaveText(`${hpMaxBefore}/${hpMaxBefore}`);
   // Focus stays in the window after the clicked button disappears.

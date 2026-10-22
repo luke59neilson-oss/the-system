@@ -3,7 +3,9 @@
 exports[`default rules > match the snapshot 1`] = `
 {
   "bonuses": {
-    "percentCapPerStat": 0.25,
+    "itemCapOfBase": 0.2,
+    "itemsFlatOnly": true,
+    "percentCapPerStat": null,
   },
   "campaign": {
     "levelCap": 240,

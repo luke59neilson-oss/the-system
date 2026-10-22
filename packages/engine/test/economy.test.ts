@@ -11,9 +11,11 @@ import {
   type Command,
   type CommandContext,
 } from '../src';
-import { kit, rawRules, run, testContext } from './helpers/events';
+import { kit, legacyBonusRules, rawRules, run, testContext } from './helpers/events';
 
-const created: Command = { type: 'campaign.create', name: 'Whale', rules: rawRules() };
+// These tests use the M1.6 bonus rules (item percentages, +25% cap); MQ.14's
+// flat-only, item-capped defaults are tested in 'bonus rules (MQ.14)' below.
+const created: Command = { type: 'campaign.create', name: 'Whale', rules: legacyBonusRules() };
 const make = (id: string, name: string): Command => ({
   type: 'character.create',
   id,
@@ -404,7 +406,7 @@ describe('item effects reach effective stats in the M1.6 order', () => {
     expect(characterEffectiveStats(state(), 'jake')['agility']).toBe(144);
     c = ok(c, { type: 'item.equip', characterId: 'jake', itemId: 'bow', slot: 'mainHand' });
     // Percent 0.1 + 0.1 + 0.2 = 0.4, capped at +25%: (100 + 20) × 1.25 = 150
-    expect(DEFAULT_RULES.bonuses.percentCapPerStat).toBe(0.25);
+    expect(state().rules.bonuses.percentCapPerStat).toBe(0.25);
     expect(characterEffectiveStats(state(), 'jake')['agility']).toBe(150);
     // Matches M1.6 effectiveStats with the same sources.
     const jake = state().characters['jake'];
@@ -813,5 +815,69 @@ describe('pool clamp edge cases (M3.7 review)', () => {
     // A gift of another item touches holdings; the pools stay as they are.
     c = ok(c, { type: 'gift.give', characterId: 'jake', to: 'kim', items: { potion: 1 } });
     expect(c.state?.characters['jake']?.pools['hp']).toBe(full);
+  });
+});
+
+describe('bonus rules (MQ.14, DESIGN §4, L6)', () => {
+  const fresh = (): Campaign =>
+    run(
+      [
+        { type: 'campaign.create', name: 'New', rules: rawRules() },
+        make('jake', 'Jake'),
+        make('kim', 'Kim'),
+        {
+          type: 'item.define',
+          id: 'band',
+          name: 'Iron Band',
+          rarity: 'common',
+          slot: 'ring',
+          bonuses: [{ stat: 'vitality', flat: 3 }],
+        },
+        {
+          type: 'item.define',
+          id: 'charm',
+          name: 'Charm',
+          rarity: 'common',
+          slot: 'necklace',
+          bonuses: [{ stat: 'vitality', flat: 1 }],
+        },
+        { type: 'holdings.adjust', characterId: 'jake', items: { band: 1, charm: 1 } },
+      ],
+      ctx,
+    );
+
+  it('refuses item definitions and edits that carry percentages', () => {
+    const c = fresh();
+    expect(reject(c, { ...(ring as object), id: 'ring2' } as Command)).toContain(
+      'flat stat bonuses only',
+    );
+    expect(
+      reject(c, {
+        type: 'item.edit',
+        itemId: 'band',
+        bonuses: [{ stat: 'vitality', percent: 0.1 }],
+      }),
+    ).toContain('flat stat bonuses only');
+    // Stored M1.6 rules still accept them, so their logs replay.
+    expect(base().state?.items['ring']?.bonuses[0]?.percent).toBe(0.1);
+  });
+
+  it('caps the total item bonus per stat at 20% of base and tells the owner', () => {
+    let c = fresh();
+    c = ok(c, { type: 'item.equip', characterId: 'jake', itemId: 'charm', slot: 'necklace' });
+    let me = projectForPlayer(c.state!, 'jake').me;
+    expect(me.effectiveStats['vitality']).toBe(11);
+    expect(me.itemCappedStats).toEqual([]);
+    // Base Vitality 10: items may add 2. Band +3 and charm +1 = +4 → +2.
+    c = ok(c, { type: 'item.equip', characterId: 'jake', itemId: 'band', slot: 'ring' });
+    me = projectForPlayer(c.state!, 'jake').me;
+    expect(me.effectiveStats['vitality']).toBe(12);
+    expect(me.itemCappedStats).toEqual(['vitality']);
+    expect(me.pools.find((p) => p.id === 'hp')?.max).toBe(120);
+    expect(characterEffectiveStats(c.state!, 'jake')['vitality']).toBe(12);
+    // Another player's view carries none of it.
+    const kim = projectForPlayer(c.state!, 'kim');
+    expect(kim.me.itemCappedStats).toEqual([]);
+    expect(JSON.stringify(kim.party)).not.toContain('itemCapped');
   });
 });
