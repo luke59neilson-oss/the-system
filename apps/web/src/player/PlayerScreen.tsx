@@ -34,6 +34,7 @@ import { useChangeCount } from './changeCount';
 import { SkillDetail } from './SkillDetail';
 import { SkillSelection } from './SkillSelection';
 import { EvolutionChoice } from './EvolutionChoice';
+import { ProfessionsPanel } from './ProfessionsPanel';
 import { closedReason, pendingSelections, pendingText, settleNotice } from './selection';
 import {
   cssToken,
@@ -120,6 +121,7 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
         <div className="player-grid">
           <div className="player-col">
             <Status view={view} client={pane ? null : client} />
+            <ProfessionsPanel view={view} client={pane ? null : client} />
             <PartyPanel view={view} />
             <Inventory view={view} client={pane ? null : client} />
           </div>

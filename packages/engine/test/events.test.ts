@@ -902,6 +902,7 @@ describe('property: replay equals incremental state', () => {
     // evolutions need a GM-built menu or release (evolution.test.ts).
     const unreachable = new Set([
       'character.professionGranted',
+      'profession.chosen',
       'skill.merged',
       'selection.offered',
       'selection.chosen',

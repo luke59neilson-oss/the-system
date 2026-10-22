@@ -204,7 +204,7 @@ function CreateCampaign({ client }: { client: LiveClient }) {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const r = await run({ type: 'campaign.create', name, rules: DEFAULT_RULES });
-    // The default class, race, profession and skill libraries (M4.2); if this
+    // The default class, race and skill libraries (M4.2; no professions, MQ.6); if this
     // fails or is left out, the library window offers it again.
     if (r.ok && defaults) await client.command({ type: 'library.seedDefaults' });
   };
@@ -217,7 +217,7 @@ function CreateCampaign({ client }: { client: LiveClient }) {
       </label>
       <label className="check">
         <input type="checkbox" checked={defaults} onChange={(e) => setDefaults(e.target.checked)} />
-        Start with the default classes, Human race, professions and their skills
+        Start with the default classes, Human race and their skills
       </label>
       <button type="submit" disabled={busy}>
         Create campaign

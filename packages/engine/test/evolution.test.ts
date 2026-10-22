@@ -8,6 +8,7 @@ import {
   evolutionTarget,
   execute,
   nextSelectionLevel,
+  notificationsBetween,
   projectForPlayer,
   raceLevel,
   replay,
@@ -620,7 +621,7 @@ describe('evolution', () => {
       ]),
     ).toMatch(/at least one stat/);
     expect(bad([{ className: 'H', transforms: [t(archery, 'A', 'common')] }], ['Smith'])).toMatch(
-      /Professions are offered at the E-grade/,
+      /Professions are offered from the E-grade evolution on/,
     );
   });
 
@@ -667,9 +668,6 @@ describe('evolution', () => {
     c = pickAll(c);
     expect(evolutionTarget(rules, char(c))?.id).toBe('E');
     c = ok(c, release('Volley', 'Volley II', 'epic', { professions: ['Smith', 'Cook'] }));
-    expect(reject(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' })).toMatch(
-      /Choose one of the offered professions/,
-    );
     expect(
       reject(c, {
         type: 'evolution.choose',
@@ -686,6 +684,7 @@ describe('evolution', () => {
     const j = char(c);
     expect(j.grade).toBe('E');
     expect(j.profession).toBe('Smith');
+    expect(j.professionOffers).toEqual(['Smith', 'Cook']); // kept, locked (MQ.6)
     expect(j.professionLevel).toBe(14); // the System credits what it already saw
     expect(j.classLevel).toBe(16); // two E levels banked
     expect(raceLevel(rules, j)).toBe(15);
@@ -712,7 +711,7 @@ describe('evolution', () => {
     expect(char(c).profession).toBeNull();
     c = ok(c, { type: 'character.grantProfession', characterId: 'jake', profession: 'Cook' });
     expect(char(c)).toMatchObject({ profession: 'Cook', professionLevel: 14 });
-    // Past E, professions are never offered with an evolution.
+    // A character with a profession is never offered more.
     expect(
       reject(c, {
         type: 'evolution.release',
@@ -1516,5 +1515,124 @@ describe('a chosen option never returns as passed-over (QF.1, DESIGN §6)', () =
     const listed = mine.find((r) => r.level === 15)?.passedOver.map((o) => o.name) ?? [];
     expect(listed).not.toContain('Piercing Shot');
     expect(listed).toContain('Skill 5c');
+  });
+});
+
+describe('tailored professions (MQ.6, DESIGN §2)', () => {
+  /** Jake released into E with Smith and Cook offered, not chosen yet. */
+  const offeredAtE = (): Campaign => {
+    let c = ok(atGTop(), release(archery, 'Volley', 'common'));
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    c = pickAll(ok(c, award(10 * XP_F)));
+    return ok(c, release('Volley', 'Volley II', 'epic', { professions: ['Smith', 'Cook'] }));
+  };
+  /** Jake evolved into E and chose "none for now". */
+  const declined = (): Campaign =>
+    ok(
+      offeredAtE(),
+      { type: 'evolution.choose', characterId: 'jake', optionId: 'o1', profession: null },
+      player('jake'),
+    );
+  const take = (profession: string): Command => ({
+    type: 'profession.choose',
+    characterId: 'jake',
+    profession,
+  });
+
+  it('the player may evolve with "none for now"; the offers stay and race level = class level', () => {
+    const j = char(declined());
+    expect(j.grade).toBe('E');
+    expect(j.profession).toBeNull();
+    expect(j.professionOffers).toEqual(['Smith', 'Cook']);
+    expect(raceLevel(rules, j)).toBe(j.classLevel);
+  });
+
+  it('the player takes an offered profession later; it starts at class level and locks the list', () => {
+    let c = declined();
+    c = ok(c, award(XP_E)); // class 15 at E; race level follows class alone
+    expect(raceLevel(rules, char(c))).toBe(15);
+    c = pickAll(c);
+    expect(reject(c, take('Baker'), player('jake'))).toMatch(/not one of your offered professions/);
+    expect(reject(c, take('smith'), player('jake'))).toMatch(/not one of your offered/);
+    c = ok(c, take('Cook'), player('jake'));
+    const j = char(c);
+    expect(j).toMatchObject({ profession: 'Cook', professionLevel: 15 });
+    expect(j.professionOffers).toEqual(['Smith', 'Cook']);
+    expect(raceLevel(rules, j)).toBe(15);
+    expect(reject(c, take('Smith'), player('jake'))).toMatch(/already has the profession \[Cook\]/);
+    const undone = ok(c, { type: 'event.undo', eventId: c.events.at(-1)?.id ?? '' });
+    expect(char(undone).profession).toBeNull();
+    expect(char(undone).professionOffers).toEqual(['Smith', 'Cook']);
+  });
+
+  it('only the owning player (or the GM) takes a profession; nothing is offered before E', () => {
+    const c = declined();
+    expect(reject(c, take('Cook'), player('kim'))).toMatch(/own character/);
+    expect(char(ok(c, take('Smith'))).profession).toBe('Smith'); // GM may record it
+    expect(reject(base(), take('Cook'))).toMatch(/not one of your offered/);
+  });
+
+  it('a GM grant also locks the offers', () => {
+    let c = ok(declined(), {
+      type: 'character.grantProfession',
+      characterId: 'jake',
+      profession: 'Tamer',
+    });
+    expect(char(c).professionOffers).toEqual(['Smith', 'Cook']);
+    expect(reject(c, take('Cook'), player('jake'))).toMatch(/already has the profession/);
+    c = ok(c, { type: 'event.undo', eventId: c.events.at(-1)?.id ?? '' });
+    expect(char(ok(c, take('Cook'), player('jake'))).profession).toBe('Cook');
+  });
+
+  it('a character who declined can be offered more at a later evolution; offers merge', () => {
+    let c = pickAll(ok(declined(), award(40 * XP_E)));
+    expect(evolutionTarget(rules, char(c))?.id).toBe('D');
+    c = ok(c, {
+      type: 'evolution.release',
+      characterId: 'jake',
+      options: [{ className: 'Hunter III', transforms: [] }],
+      professions: ['cook', 'Warden'],
+    });
+    c = ok(
+      c,
+      { type: 'evolution.choose', characterId: 'jake', optionId: 'o1', profession: 'Warden' },
+      player('jake'),
+    );
+    const j = char(c);
+    expect(j).toMatchObject({ grade: 'D', profession: 'Warden', professionLevel: 49 });
+    expect(j.professionOffers).toEqual(['Smith', 'Cook', 'Warden']);
+  });
+
+  it('the offers reach only their owner', () => {
+    const state = declined().state;
+    if (!state) throw new Error('no state');
+    const mine = projectForPlayer(state, 'jake');
+    expect(mine.me.professionOffers).toEqual(['Smith', 'Cook']);
+    const theirs = projectForPlayer(state, 'kim');
+    expect(JSON.stringify(theirs)).not.toContain('Smith');
+    expect(theirs.me.professionOffers).toEqual([]);
+    const jake = theirs.party.find((m) => m.id === 'jake');
+    expect(jake && Object.keys(jake)).not.toContain('professionOffers');
+  });
+
+  it('taking a profession notifies "acquired at level N", not a level-up from 0', () => {
+    const c = declined();
+    const taken = ok(c, take('Cook'), player('jake'));
+    const before = c.state;
+    if (!before || !taken.state) throw new Error('no state');
+    const event = taken.events.at(-1);
+    if (!event) throw new Error('no event');
+    expect(notificationsBetween(before, taken.state, event)).toEqual([
+      { kind: 'profession', characterId: 'jake', name: 'Cook', level: 14 },
+    ]);
+  });
+
+  it('the session log notes a declined profession', () => {
+    const c = declined();
+    const texts = buildSessionLog(c, c.events.length - 1).entries.map((e) => e.text);
+    expect(texts.some((t) => t.includes('no profession for now'))).toBe(true);
+    const taken = ok(c, take('Cook'), player('jake'));
+    const after = buildSessionLog(taken, taken.events.length - 1).entries.map((e) => e.text);
+    expect(after, after.join(' | ')).toContain('Jake gained the profession Cook at level 14');
   });
 });

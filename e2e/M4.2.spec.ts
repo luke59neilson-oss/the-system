@@ -67,7 +67,8 @@ test('the GM manages classes, races and professions; characters start from them'
   // The default set arrived with the campaign.
   await expect(tab(/^Classes \(6\)/)).toHaveAttribute('aria-pressed', 'true');
   await expect(tab(/^Races \(1\)/)).toBeVisible();
-  await expect(tab(/^Professions \(5\)/)).toBeVisible();
+  // No default professions (MQ.6): the GM tailors them per character.
+  await expect(tab(/^Professions \(0\)/)).toBeVisible();
   await expect(lib.getByRole('button', { name: /Add the default set/ })).toHaveCount(0);
   const classes = lib.getByRole('list', { name: 'Library classes' });
   await expect(classes.getByRole('listitem')).toHaveCount(6);
@@ -143,8 +144,8 @@ test('the GM manages classes, races and professions; characters start from them'
   await add.click();
   await expect(lib.getByRole('status')).toHaveText('[Dwarf] added to the library');
   await tab(/^Professions/).click();
+  await expect(lib).toContainText('tailored to each character at the E-grade evolution');
   const professions = lib.getByRole('list', { name: 'Library professions' });
-  await expect(professions.getByRole('listitem')).toHaveCount(5);
   await lib.getByLabel('Profession name').fill('Fletcher');
   await lib.getByRole('button', { name: 'Add a skill idea' }).click();
   await lib.getByLabel('Skill 1', { exact: true }).fill('Arrow Crafting');

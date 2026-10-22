@@ -380,6 +380,10 @@ a {
   .player-grid .status-window {
     order: 1;
   }
+  /* Professions (MQ.6): right under the status window it extends. */
+  .player-grid .professions-window {
+    order: 1;
+  }
   .player-grid .quests {
     order: 2;
   }
@@ -1814,4 +1818,28 @@ p.small {
 }
 .party-head .party-name {
   margin: 0;
+}
+
+/* Professions tab (MQ.6): offered professions; greyed once one is taken. */
+.profession-offers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+.profession-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.profession-offer.greyed {
+  opacity: 0.5;
+}
+.profession-confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
 }

@@ -52,6 +52,8 @@ export const CHARACTER_FIELD_VISIBILITY: Readonly<Record<keyof Character, Visibi
   race: 'party',
   className: 'party',
   profession: 'party',
+  // MQ.6: the professions offered to this character are theirs alone.
+  professionOffers: 'owner',
   classLevel: 'party',
   professionLevel: 'party',
   grade: 'party',
@@ -180,6 +182,8 @@ export interface OwnSheet {
   readonly race: string;
   readonly className: string;
   readonly profession: string | null;
+  /** Professions the GM offered (MQ.6); locked once `profession` is set. */
+  readonly professionOffers: readonly string[];
   readonly classLevel: number;
   readonly professionLevel: number;
   readonly raceLevel: number;
@@ -459,6 +463,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
     race: c.race,
     className: c.className,
     profession: c.profession,
+    professionOffers: [...c.professionOffers],
     classLevel: c.classLevel,
     professionLevel: c.professionLevel,
     raceLevel: raceLevel(rules, c),

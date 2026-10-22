@@ -138,6 +138,9 @@ export function EvolutionChoice({
                   </option>
                 ))}
               </select>
+              <span className="muted">
+                &ldquo;None for now&rdquo; keeps the offers: take one later from Professions.
+              </span>
             </label>
           )}
           <div className="assign-actions">

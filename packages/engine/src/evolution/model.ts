@@ -469,10 +469,14 @@ export function releaseEvolution(
     checkOption(rules, character, target, option, retired);
     checkStatBonus(rules, option);
   }
-  const unlock = target.id === rules.tracks.professionUnlockGrade && character.profession === null;
+  // From the unlock grade on, a character without a profession can be offered
+  // some (MQ.6): at the unlock evolution, or at a later one after "none for now".
+  const unlock =
+    character.profession === null &&
+    gradeIndexOf(rules, target.id) >= gradeIndexOf(rules, rules.tracks.professionUnlockGrade);
   if (!unlock && professions.length > 0) {
     throw new CharacterRuleError(
-      `Professions are offered at the ${rules.tracks.professionUnlockGrade}-grade evolution of a character without one`,
+      `Professions are offered from the ${rules.tracks.professionUnlockGrade}-grade evolution on, to a character without one`,
     );
   }
   const trimmed = professions.map((p) => p.trim());
@@ -532,9 +536,10 @@ export function chooseEvolution(
     );
   }
   checkOption(rules, character, target, option, retired);
+  // "None for now" (null) is always allowed; the offers stay on the character
+  // and can be taken later from the Professions tab (MQ.6, DESIGN §2).
   if (pending.professions.length > 0) {
-    if (profession === null) throw new CharacterRuleError('Choose one of the offered professions');
-    if (!pending.professions.includes(profession)) {
+    if (profession !== null && !pending.professions.includes(profession)) {
       throw new CharacterRuleError(`"${profession}" is not an offered profession`);
     }
   } else if (profession !== null) {
@@ -562,6 +567,7 @@ export function chooseEvolution(
     className: option.className,
     skills,
     evolution: null,
+    professionOffers: mergeOffers(character.professionOffers, pending.professions),
   };
   if (option.classWeights !== null) next = reshapeClassWeights(rules, next, option.classWeights);
   if (!legacy) next = applyStatBonus(next, option.statBonus ?? {});
@@ -581,6 +587,13 @@ export function chooseEvolution(
     .filter((t) => t.name.trim() !== t.skill)
     .map((t) => [t.skill, t.name.trim()] as const);
   return { character: next, renames, levelUps };
+}
+
+/** Earlier offers first, then new names not already offered (ignoring case). */
+function mergeOffers(was: readonly string[], offered: readonly string[]): readonly string[] {
+  const seen = new Set(was.map(lower));
+  const added = offered.filter((p) => !seen.has(lower(p)));
+  return added.length === 0 ? was : [...was, ...added];
 }
 
 /** An evolution waits for every earned selection to be chosen (DESIGN §2, D103). */

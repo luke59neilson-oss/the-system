@@ -2,7 +2,7 @@ import type { PendingEvolution, SelectionRecord } from '../evolution/model';
 import type { GradeRules, RulesConfig } from '../rules';
 
 /** Bumped when the serialized character shape changes; M1.3 upcasts old states. */
-export const CHARACTER_SCHEMA_VERSION = 6;
+export const CHARACTER_SCHEMA_VERSION = 7;
 
 /** Skill as held by a character (the full skill system arrives in M1.9). */
 export interface CharacterSkill {
@@ -39,6 +39,11 @@ export interface Character {
   readonly className: string;
   /** null until the profession unlock at the E-grade evolution. */
   readonly profession: string | null;
+  /**
+   * Professions the GM has offered this character (MQ.6, DESIGN §2), in offer
+   * order. They stay listed after one is taken; the list then locks.
+   */
+  readonly professionOffers: readonly string[];
   readonly classLevel: number;
   readonly professionLevel: number;
   /** Id of the highest grade evolved into (ids survive grade inserts; DESIGN §3). */
@@ -198,6 +203,7 @@ export function createCharacter(rules: RulesConfig, input: NewCharacter): Charac
     race: input.race === undefined ? rules.character.defaultRace : required(input.race, 'Race'),
     className,
     profession: null,
+    professionOffers: [],
     classLevel: 0,
     professionLevel: 0,
     grade: firstGrade.id,
@@ -318,4 +324,25 @@ export function grantProfession(
     professionLevel: character.classLevel,
     xp: { ...character.xp, profession: 0 },
   };
+}
+
+/**
+ * The player takes one of their offered professions later (MQ.6, DESIGN §2):
+ * only a profession the GM offered, only while the character has none. It
+ * starts at the current class level like any granted profession.
+ */
+export function takeOfferedProfession(
+  rules: RulesConfig,
+  character: Character,
+  profession: string,
+): Character {
+  if (character.profession !== null) {
+    throw new CharacterRuleError(
+      `${character.name} already has the profession [${character.profession}]`,
+    );
+  }
+  if (!character.professionOffers.includes(profession)) {
+    throw new CharacterRuleError(`"${profession}" is not one of your offered professions`);
+  }
+  return grantProfession(rules, character, profession);
 }

@@ -269,3 +269,11 @@ DESIGN/ROADMAP; do not re-apply them.
     a player may ask another player only for currency, or only for items the
     asker has already seen.
     Answer:
+
+46. **More profession offers after "none for now".** A character who declined
+    every offered profession at the E-grade evolution keeps those offers in
+    the Professions tab. Built default (MQ.6, D121): the GM may also offer new
+    professions with any later evolution (D, C, ...) while the character still
+    has none; they join the same list. The GM can also grant any profession
+    directly. Alternative: offers happen only at the E-grade evolution.
+    Answer:
