@@ -723,13 +723,15 @@ describe('replay', () => {
 });
 
 describe('property: replay equals incremental state', () => {
-  const SEED = 20261021;
+  // Two fixed seeds: every walk must replay exactly, and together they must
+  // reach every command path. One walk alone reaches some rare paths only a
+  // handful of times, so any rule change that reshuffles it (QF.2) could drop
+  // a path to zero without a bug; two walks keep coverage from hinging on luck.
+  const SEEDS = [20261021, 20261022] as const;
+  const SEED = SEEDS.join('+');
   const STEPS = 2000;
 
-  it(`holds over ${STEPS} random commands (seed ${SEED})`, () => {
-    const rand = seededRandom(SEED);
-    const ctx = testContext('p');
-    let c = run([created]);
+  it(`holds over ${STEPS} random commands per seed (seeds ${SEED})`, () => {
     let accepted = 0;
     let undos = 0;
     let rejected = 0;
@@ -738,52 +740,59 @@ describe('property: replay equals incremental state', () => {
     let playerAccepted = 0;
     const acceptedByType: Record<string, number> = {};
     let dependent = 0;
-    const libraryRand = seededRandom(SEED + 1);
-    for (let step = 0; step < STEPS; step++) {
-      const command =
-        step % 20 === 7 ? randomLibraryCommand(libraryRand, c) : randomCommand(rand, c);
-      const asPlayer =
-        (command.type === 'event.undo' ||
-          (PLAYER_COMMANDS.has(command.type) &&
-            'characterId' in command &&
-            typeof command.characterId === 'string')) &&
-        rand() < 0.5;
-      const actorCtx = asPlayer
-        ? {
-            ...ctx,
-            actor: {
-              role: 'player' as const,
-              characterId:
-                'characterId' in command && typeof command.characterId === 'string'
-                  ? command.characterId
-                  : 'c1',
-            },
-          }
-        : ctx;
-      const result = execute(deepFreeze(c), command, actorCtx);
-      if (!result.ok) {
-        rejected++;
-        if (result.error.includes('already assigned and locked')) lockedRejections++;
-        if (command.type === 'event.undo' && result.error.includes('depends on it')) dependent++;
-        continue;
+    const seen = new Set<string>();
+    for (const seed of SEEDS) {
+      const rand = seededRandom(seed);
+      const ctx = testContext('p');
+      let c = run([created]);
+      const libraryRand = seededRandom(seed + 1);
+      for (let step = 0; step < STEPS; step++) {
+        const command =
+          step % 20 === 7 ? randomLibraryCommand(libraryRand, c) : randomCommand(rand, c);
+        const asPlayer =
+          (command.type === 'event.undo' ||
+            (PLAYER_COMMANDS.has(command.type) &&
+              'characterId' in command &&
+              typeof command.characterId === 'string')) &&
+          rand() < 0.5;
+        const actorCtx = asPlayer
+          ? {
+              ...ctx,
+              actor: {
+                role: 'player' as const,
+                characterId:
+                  'characterId' in command && typeof command.characterId === 'string'
+                    ? command.characterId
+                    : 'c1',
+              },
+            }
+          : ctx;
+        const result = execute(deepFreeze(c), command, actorCtx);
+        if (!result.ok) {
+          rejected++;
+          if (result.error.includes('already assigned and locked')) lockedRejections++;
+          if (command.type === 'event.undo' && result.error.includes('depends on it')) dependent++;
+          continue;
+        }
+        accepted++;
+        acceptedByType[command.type] = (acceptedByType[command.type] ?? 0) + 1;
+        if (asPlayer) playerAccepted++;
+        if (command.type === 'event.undo') {
+          undos++;
+          const latest = [...c.events].reverse().find((e) => e.type !== 'event.undone');
+          if (latest?.id !== command.eventId) nonLatest++;
+        }
+        c = result.campaign;
+        {
+          const replayed = replay(JSON.parse(JSON.stringify(c.events)) as unknown[]);
+          expect(replayed.state, `seed ${seed}, step ${step}`).toEqual(c.state);
+          expect(replayed.undone, `seed ${seed}, step ${step}`).toEqual(c.undone);
+        }
       }
-      accepted++;
-      acceptedByType[command.type] = (acceptedByType[command.type] ?? 0) + 1;
-      if (asPlayer) playerAccepted++;
-      if (command.type === 'event.undo') {
-        undos++;
-        const latest = [...c.events].reverse().find((e) => e.type !== 'event.undone');
-        if (latest?.id !== command.eventId) nonLatest++;
-      }
-      c = result.campaign;
-      {
-        const replayed = replay(JSON.parse(JSON.stringify(c.events)) as unknown[]);
-        expect(replayed.state, `seed ${SEED}, step ${step}`).toEqual(c.state);
-        expect(replayed.undone, `seed ${SEED}, step ${step}`).toEqual(c.undone);
-      }
+      const replayed = replay(JSON.parse(JSON.stringify(c.events)) as unknown[]);
+      expect(replayed, `seed ${seed}`).toEqual(c);
+      for (const e of c.events) seen.add(e.type);
     }
-    const replayed = replay(JSON.parse(JSON.stringify(c.events)) as unknown[]);
-    expect(replayed, `seed ${SEED}`).toEqual(c);
     // The run must exercise every path, or the property proves little.
     expect(accepted, `seed ${SEED}`).toBeGreaterThan(100);
     expect(undos, `seed ${SEED}`).toBeGreaterThan(10);
@@ -869,11 +878,10 @@ describe('property: replay equals incremental state', () => {
       // M4.4 portraits have their own tests (portraits.test.ts) and golden log.
       'character.portraitSet',
     ]);
-    const seen = new Set(c.events.map((e) => e.type));
     expect(
       EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),
       `seed ${SEED}`,
     ).toEqual([]);
     // Every step replays the whole log (quadratic); slower under coverage.
-  }, 60_000);
+  }, 120_000);
 });
