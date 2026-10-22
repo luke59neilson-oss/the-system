@@ -27,8 +27,10 @@ October 2026.
 - **Pools when maxima change:** if a maximum rises (level, item, title,
   evolution bonus), a **full pool stays full**; any other pool keeps its
   current value. Level-ups never refill pools. If a maximum falls, the
-  current value clamps to it. (Example: 85/100 HP equips +20 → 85/120;
-  100/100 HP equips +20 → 120/120.)
+  current value clamps to it, and the pool stays full only if it was full
+  before the drop (Luke, Q41: no healing by swapping gear). Examples: 85/100
+  HP equips +20 → 85/120; 100/100 → 120/120; 110/120 removes a +20 charm →
+  100/100, puts it back on → 100/120; 120/120 → 100/100 → 120/120.
 - **Tracks:** Class level, Profession level, Race level.
   - Race level = average of class and profession levels (rounded down).
   - Before a character has a profession, race level = class level.
@@ -116,8 +118,8 @@ blue-white tint and a heavier brushed texture so the change is visible.
     applied once. Effective stat = (base + capped item bonus) × (1 + sum of
     title percentages). Example: base Vitality 100, items +30 (capped to +20),
     titles +10% and +5% → (100 + 20) × 1.15 = 138.
-  - The total title percentage per stat keeps its configurable cap (default
-    +25%; see QUESTIONS Q42).
+  - **No cap on title percentages** (Luke, Q42): titles are rare and hard
+    to earn. The config may still set one, but the default is none.
 - Check values (all tracks leveling together, starting total 90):
   total stats = 194 at level 14, 614 at level 49, 1,514 at 99, 2,864 at 149,
   4,864 at 199, **7,324 at 240**.

@@ -233,10 +233,10 @@ DESIGN/ROADMAP; do not re-apply them.
     Default: as described (D111). Alternatives: remember that a pool was
     clamped and do not treat it as full; apply the new rule to old campaigns
     too.
-    Answer:
+    Answer (Luke, 2026-10-22): Agreed: close the loophole; a clamped pool stays full only if it was full before the drop. (applied, L7)
 
 42. **Cap on title percentages?** Titles give percentage bonuses and stack
     additively (D115). The engine also caps the total percentage per stat
     (default +25%). Default: keep the +25% cap. Alternative: no cap on title
     percentages, or a different cap.
-    Answer:
+    Answer (Luke, 2026-10-22): No cap; titles will be few, far between and hard to earn. (applied, L8)

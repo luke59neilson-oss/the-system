@@ -119,3 +119,5 @@ Newest at the bottom. Format: ID · date · decision · why. D-numbers are writt
 - L4 · 2026-10-22 · Skill library entries keyed by name and rarity; edits propagate to copies the GM has not edited; effects visible to the owner only (MQ.12). Supersedes D90's name-only matching and GM-only effects. · Q37.
 - L5 · 2026-10-22 · Default starting classes are the books' six (Warrior Light/Medium/Heavy, Archer, Caster, Healer) with the books' per-level lines as weights and the starting skills in DESIGN §10 (MQ.13). Supersedes D91's class set. · Q38.
 - L6 · 2026-10-22 · Titles give percentage bonuses (flat optional); items give flat bonuses only, capped at 20% of the stat's base; percentages are additive and applied once: effective = (base + capped items) × (1 + Σ title %) (MQ.14). · Luke's answer to Q15.
+- L7 · 2026-10-22 · A pool clamped by a falling maximum stays full only if it was full before the drop, so swapping gear never heals (MQ.15). Refines D111. · Luke agreed (Q41).
+- L8 · 2026-10-22 · No cap on title percentages by default (MQ.14). · Luke (Q42): titles are rare and hard to earn.

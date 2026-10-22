@@ -219,10 +219,15 @@ They touch finished engine and player items, so they come before M4.4.
 - [ ] **MQ.14 Bonus rules.** Items carry flat stat bonuses only (no
   percentages); total item bonus per stat capped at 20% of base; title
   percentages summed and applied once to (base + capped items); the existing
-  title-percentage cap stays configurable. Status screen shows a capped item
+  title percentages uncapped by default (config may set a cap). Status screen shows a capped item
   bonus as capped. *Accept:* engine tests incl. DESIGN §4's 100 → 138
   example; item definitions with percentages rejected (upcaster for old
   logs); e2e for the capped display.
+- [ ] **MQ.15 No healing by gear swap.** A pool clamped by a falling maximum
+  stays full only if it was full before the drop (DESIGN §2 examples); applies
+  to new campaigns and, via the rules setting, older ones. *Accept:* engine
+  tests for all four DESIGN §2 examples; property test that equip/unequip
+  cycles never raise a non-full pool's current value.
 - [ ] **MQ.A Batch acceptance and review.**
 
 ## M1 (continued) — Rules engine
