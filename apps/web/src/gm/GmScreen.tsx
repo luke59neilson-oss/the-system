@@ -305,7 +305,7 @@ function CreateCharacter({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const library = entriesOf(state, 'class') as ClassChoice[];
-  // Campaigns made before M4.2 may have no classes yet; the built-in Archer keeps working.
+  // Campaigns made before M4.2 may have no classes yet; the built-in six keep working.
   const classes: readonly ClassChoice[] = library.length > 0 ? library : STARTER_CLASSES;
   const races = entriesOf(state, 'race').map((r) => r.name);
   const raceChoices = races.length > 0 ? races : [state.rules.character.defaultRace];
@@ -337,7 +337,11 @@ function CreateCharacter({
       className: chosen.name,
       race: chosenRace,
       // Built-in starters carry their own skill text; library classes take it from the skill library.
-      classSkills: chosen.skills,
+      classSkills: chosen.skills.map((s) => ({
+        name: s.name,
+        rarity: s.rarity,
+        ...('description' in s ? { description: s.description, flavor: s.flavor } : {}),
+      })),
       classWeights: chosen.weights,
       ...(portrait === undefined ? {} : { portrait }),
     });

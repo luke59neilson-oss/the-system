@@ -10,6 +10,7 @@ import {
   DEFAULT_RULES,
   DEMO_CHARACTERS,
   STARTER_CLASSES,
+  starterClassSkills,
   execute,
   type Command,
 } from '@the-system/engine';
@@ -63,7 +64,7 @@ describe('demo campaign switch', () => {
       id: 'real-ada',
       name: 'Ada',
       className: 'Archer',
-      classSkills: STARTER_CLASSES[0]?.skills ?? [],
+      classSkills: STARTER_CLASSES[0] ? starterClassSkills(STARTER_CLASSES[0]) : [],
     });
     app = await createServer({
       webRoot: dir,

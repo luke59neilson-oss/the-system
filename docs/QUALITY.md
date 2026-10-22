@@ -113,6 +113,8 @@ reviewers ran 15–20 minutes each in the background.
 
 ## Backlog (Lows; M11.5 goes through these)
 
+- Content (MQ.13 review): a campaign seeded before MQ.13 keeps the old Mage/Rogue/Brawler/Healer; "Add the default set" matches classes by name, so the old Healer blocks the new one, and under stored rules (name-only skills) the old Common Mana Bolt blocks the new Inferior one, with no hint to the GM.
+- Content (MQ.13): the default set has no skill-library entry for the race skill Identify (Common), so a new campaign's characters show Identify with no description (the demo writes its own text).
 - Skills (MQ.12 review): a hand-edited copy (`textEdited`) keeps its text through an upgrade, and the GM has no way to clear the mark and return the copy to library text.
 - Skills (MQ.12 review): renaming a library entry or changing its rarity orphans copies at the old key (they keep their text; effects drop to null) with no GM warning; a copy upgraded to a rarity with no entry keeps the old text silently.
 - Skills (MQ.12 review): if M4.9 switches `libraryByRarity` on for a stored campaign, earlier `skill.describe` edits lack `textEdited` and would be overwritten by the next library edit.

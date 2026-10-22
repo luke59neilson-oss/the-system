@@ -172,7 +172,7 @@ export function OriginLibrary({ client, state }: { client: LiveClient; state: Ca
           {kind === 'profession'
             ? 'No professions yet. There is no default list: professions are tailored to each character at the E-grade evolution. Add your ideas below.'
             : `No ${label.many.toLowerCase()} yet. Add one below or add the default set.`}
-          {kind === 'class' && ' Until then new characters start as the built-in Archer.'}
+          {kind === 'class' && ' Until then new characters start from the six built-in classes.'}
         </p>
       ) : shown.length === 0 ? (
         <p className="muted">Nothing matches “{query.trim()}”.</p>

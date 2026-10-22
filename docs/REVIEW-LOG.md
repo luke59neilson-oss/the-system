@@ -540,3 +540,12 @@
 - Low fixed: the GM "Skill text" form says a hand edit stops later library edits reaching that copy.
 - Low to the QUALITY backlog: hand-edited copies keep their text through upgrades and the mark cannot be cleared; renaming an entry or changing its rarity orphans copies silently; switching the flag on for a stored campaign (M4.9) would overwrite earlier hand edits. Low accepted: a copy upgraded to a rarity with no entry keeps its old text (D125 says so); grant-with-explicit-text overwrite is moot (no grant path carries text).
 - Round 2 (6bf36a5): 0 High, 0 Medium, 0 Low.
+
+## 2026-10-22 · MQ.13 The books' starting classes · sonnet (round 1)
+
+- Range 2676e61..7e00755 (`wip/MQ.13`). Reviewer ran `npm run check` (790 unit) and MQ.13, M4.2, M4.4, MS.4 e2e: green.
+- Findings: 0 High, 0 Medium, 5 Low.
+  - L fixed: Mana Bolt's text named a stat ("damage grows with Intelligence"), a rules claim in content text; now "hits harder as your magic grows".
+  - L to Backlog: campaigns seeded before MQ.13 keep the old classes and "Add the default set" cannot replace a same-named stale entry (old Healer, old Common Mana Bolt under name-only rules); Identify has no default library text.
+  - L no change: Basic Heavy Weapons mentions weapon-and-shield (DESIGN §10 says exactly that); an empty class library shows the six only in the character form (D91 fallback, by design).
+- Also: the full local e2e run hit the 30 s timeout on the MQ.13 spec while the reviewer loaded the 2 CPUs; it passed alone and with `--workers=2`. Split the demo check into its own test with its own server so each test is well inside the budget.

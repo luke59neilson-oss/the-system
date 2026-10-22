@@ -186,13 +186,13 @@ describe('skill library keyed by name and rarity (MQ.12)', () => {
       classSkills: [
         { name: 'Kim One', rarity: 'inferior' },
         { name: 'Kim Two', rarity: 'inferior' },
-        { name: 'Battle Cry', rarity: 'common' },
+        { name: 'Brace', rarity: 'common' },
       ],
     });
-    const cry = () => c.state?.characters['kim']?.skills.find((s) => s.name === 'Battle Cry');
+    const cry = () => c.state?.characters['kim']?.skills.find((s) => s.name === 'Brace');
     expect(cry()?.description).toBeNull();
     c = ok(c, { type: 'library.seedDefaults' });
-    const entry = Object.values(c.state?.skillLibrary ?? {}).find((d) => d.name === 'Battle Cry');
+    const entry = Object.values(c.state?.skillLibrary ?? {}).find((d) => d.name === 'Brace');
     expect(entry?.description).toBeTruthy();
     expect(cry()?.description).toBe(entry?.description);
   });
@@ -201,7 +201,7 @@ describe('skill library keyed by name and rarity (MQ.12)', () => {
     const cry = {
       type: 'skillDef.define',
       id: 'cry-u',
-      name: 'Battle Cry',
+      name: 'Brace',
       rarity: 'uncommon',
       tags: [],
       description: 'Louder.',
@@ -210,7 +210,7 @@ describe('skill library keyed by name and rarity (MQ.12)', () => {
     } as const;
     const cries = (c: Campaign) =>
       Object.values(c.state?.skillLibrary ?? {})
-        .filter((d) => d.name === 'Battle Cry')
+        .filter((d) => d.name === 'Brace')
         .map((d) => d.rarity)
         .sort();
     const c = ok(ok(run([created], ctx), cry), { type: 'library.seedDefaults' });
