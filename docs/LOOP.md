@@ -45,10 +45,23 @@ Luke is not watching. Never stop to ask him a question.
 - If pushing the lock failed for any reason other than a race, log a Blocker
   in PROGRESS.md and stop.
 
-## 4. Orient
+## 4. Orient (targeted reads)
 
-Read `CLAUDE.md`, `docs/PROGRESS.md`, `docs/QUESTIONS.md`,
-`docs/DECISIONS.md`, `docs/DESIGN.md`, `docs/ROADMAP.md`.
+Read in full: `CLAUDE.md`, `docs/DESIGN.md`, `docs/ANSWERS.md`. Of the
+rest, read only what bears on this run (the logs grow every hour; reading
+them whole costs about 30k tokens per run for history you do not need):
+
+- `docs/PROGRESS.md`: the header lines (Status, Next item, Blockers) and the
+  last run entry only (`sed -n 1,6p`, then from the last `### ` heading on).
+- `docs/ROADMAP.md`: "Global rules" plus every milestone section that still
+  has a `[ ]` or `[~]` box. Skip fully checked milestones.
+- `docs/QUESTIONS.md`: only questions with no `Answer` line yet, plus any
+  question that `docs/ANSWERS.md` answers and that is not marked applied.
+- `docs/DECISIONS.md`: the header and every L-entry (`grep -n '^- L'`).
+  Before starting each item, `grep -n -i` for its ID and its key terms and
+  read the D-entries that match. Read the whole file only when changing a
+  rule that many entries touch.
+- `docs/REVIEW-LOG.md`: append only; never read it whole.
 
 - **Answers from Luke live in `docs/ANSWERS.md`.** Never edit that file (Luke
   edits it on GitHub; your commits to it would block his). Apply any answer
@@ -61,6 +74,12 @@ Read `CLAUDE.md`, `docs/PROGRESS.md`, `docs/QUESTIONS.md`,
   `GH_TOKEN= gh api "repos/luke59neilson-oss/the-system/actions/runs?branch=main&status=completed&per_page=1"`.
   If it failed, fixing it is your first task. After 3 runs in a row fail to
   fix it, log a Blocker and continue with roadmap work.
+- **CI that never ran is not a code failure.** If the failed run's jobs have
+  no steps (`.../actions/runs/<id>/jobs --jq '.jobs[].steps|length'` is 0)
+  or its messages mention billing, a spending limit or minutes, the Actions
+  minutes are used up. Do not try to fix it. Note "CI minutes exhausted" under
+  Blockers once, and until CI runs again, run the full e2e suite locally
+  before every push to main.
 
 ## 5. Work
 
@@ -72,15 +91,26 @@ Read `CLAUDE.md`, `docs/PROGRESS.md`, `docs/QUESTIONS.md`,
 4. Commit small. End every commit message with the attribution lines from your
    session's system reminder. `git fetch && git rebase origin/main` before
    pushing main (never rebase `wip/*` branches). Never force-push.
-5. **Timebox (no idle time).** All times are minutes after you took the lock.
-   - Never stop early: always start the next item, even a large one.
-   - At **45**, if the current item cannot be finished and reviewed by 52,
-     push it to `wip/<item-id>` (`git push -u origin wip/<item-id>`) with a
-     short "where I stopped" note in PROGRESS.md (branch, base SHA, next
-     step). The next run resumes it first.
-   - **Hard stop at 52**: write PROGRESS, release the lock, push. This frees
-     the lock before the next hourly run checks it; a run that holds the lock
-     past the hour makes the next run exit and wastes a whole hour.
+5. **Timebox: fixed clock, no forecasting.** All times are minutes after you
+   took the lock. Runs have been ending around minute 39 because they guessed
+   the next item would not fit; that guess is never a reason to stop.
+   - **0–44: build.** When an item passes its checks, launch its reviewer in
+     the background (§6.3) and start the next item in the same minute, however
+     large it is. An item that will not finish this run still starts: its
+     progress goes to a `wip/*` branch at 44 and the next run resumes it.
+   - **At 44: hand off.** Commit the item in progress and push it to
+     `wip/<item-id>` (`git push -u origin wip/<item-id>`) with a short "where
+     I stopped" note in PROGRESS.md (branch, base SHA, next step).
+   - **44–50: close out.** Fix findings from reviewers that have reported,
+     check those boxes, write REVIEW-LOG and PROGRESS. A reviewer that has
+     not reported by 50 leaves its box unchecked; note "review running, not
+     back" and the next run re-launches that review first.
+   - **Hard stop at 52**: release the lock and push. This frees the lock
+     before the next hourly run checks it; a run that holds the lock past the
+     hour makes the next run exit and wastes a whole hour.
+   - Ending before minute 48 needs one of these reasons, written in the
+     PROGRESS entry: `docs/DONE.md` written, a Blocker, or every remaining
+     item is blocked or deferred.
    - Remote branches cannot be deleted from here; leave finished `wip/*`
      branches alone.
 6. **Test scope.** Before each push to main: `npm run check` plus the e2e
@@ -130,7 +160,8 @@ should weigh in on also go in `docs/QUESTIONS.md` with the default you used.
 
 ## 8. Finish the run
 
-1. Append a run entry to `docs/PROGRESS.md`: start/end UTC, preflight results,
+1. Append a run entry to `docs/PROGRESS.md`: start/end UTC (and the end
+   minute; if before 48, the reason from §5.5), preflight results,
    items finished, test counts, engine coverage, review summary, open `wip/*`
    branches, next item, blockers. Update the header lines (Status, Next item,
    Blockers).
