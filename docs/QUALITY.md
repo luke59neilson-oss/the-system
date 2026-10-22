@@ -101,6 +101,9 @@ reviewers ran 15–20 minutes each in the background.
 
 ## Backlog (Lows; M11.5 goes through these)
 
+- Rules: `offerSelection` (`evolution/model.ts` ~214) lets the GM offer a
+  name the character already chose (and an evolution renamed) as a fresh
+  option, so the character can end up with both forms (QF.1 review).
 - Rules: `mergeSkills` (`skills/model.ts` ~219) does not refuse a retired
   skill name, unlike selections and transforms (D63).
 - Boundaries: accepting a stale trade reveals the proposer's exact holdings

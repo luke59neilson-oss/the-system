@@ -172,7 +172,7 @@ They touch finished engine and player items, so they come before M4.4.
 - [x] **MQ.4 Marks carry over.** Excess marks carry into the next rarity
   after an upgrade (incl. banked marks applied after an evolution).
   *Accept:* tests.
-- [ ] **MQ.5 Grade walls.** New default grade-gap mode per DESIGN §7: same
+- [x] **MQ.5 Grade walls.** New default grade-gap mode per DESIGN §7: same
   grade plain odds; one grade apart lower side ×⅓ in rolls and ⅓ damage; two
   or more apart no roll (higher grade succeeds) and zero damage; no pooling of
   lower-grade power against a higher grade. Encounter tools (M7.3) apply it.
@@ -236,7 +236,7 @@ Confirmed findings from quality sweeps (`docs/QUALITY.md`). Items marked
 **(High)** are taken before any other new item, wherever they sit (LOOP §5.2);
 the rest follow in file order. Each gets its own §6 review.
 
-- [ ] **QF.1 (High) Chosen options never return as passed-over options.**
+- [x] **QF.1 (High) Chosen options never return as passed-over options.**
   `passedOverOptions` (`packages/engine/src/evolution/model.ts` ~276) drops a
   menu's chosen option only while a skill of that name is owned, so after an
   evolution transform renames it, the old name comes back on every later menu,

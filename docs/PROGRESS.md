@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1, MQ.2, MQ.3, MQ.9 done; MQ.4 on `wip/MQ.4`); M4.1–M4.4 done
-**Next item:** resume MQ.4 Marks carry over from `wip/MQ.4` (fix the review-1 High in the evolution transform path, then review round 2)
+**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1–MQ.5, MQ.9 done); QF.1 done, QF.2 on `wip/QF.2`; M4.1–M4.4 done
+**Next item:** resume QF.2 (High) Item definitions reach players only for items they can see, from `wip/QF.2` (update 6 tests, projection canary, review)
 **Blockers:** none.
 
 ## Run log
@@ -525,3 +525,21 @@ next item, blockers. -->
 - Open `wip/*` branches: `wip/MQ.4` (unfinished). `wip/MQ.3` is merged.
 - Blockers: none.
 
+
+### Run f4eb87e7 · 2026-10-22 17:07–17:48 UTC (ended at minute 41: QF.2 cannot reach a reviewed state before the 44 hand-off; handed off to `wip/QF.2`, close-out done)
+- Preflight:
+  - `add_repo` was not offered; the repo was already cloned with a stale local `main` (diverged, old history) and a detached HEAD, so `main` was reset to `origin/main`.
+  - Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work in the background on worktrees.
+- Orient: no new answers in ANSWERS.md. Luke pushed LOOP §10 (quality sweeps) and the QF queue during the run; merged by rebase, no force push. Not an efficiency or sweep hour (17).
+- Finished:
+  - MQ.4 Marks carry over (D113, D114). Evolution transforms that raise a rarity spend the skipped steps' mark costs and carry the rest; the evolution screen says what marks spend, carry or reset (`rules.marks` sent to players: carry flag, step costs, rarity order). Review round 2 (sonnet): 0 High, 0 Medium, 3 Low accepted. Asked as Q43.
+  - MQ.5 Grade walls (D115). New default mode `gradeWalls`: one grade apart ×⅓ odds and `damageFactor` ⅓; two or more apart no roll (`roll: null`, `walled: true`, no RNG draw) and 0 damage; `planGroup`/`pooledSide` for no pooling across grades. Stored campaigns keep their saved mode. Round 1: 3 Medium, fixed; round 2: 0 High/Medium.
+  - QF.1 (High) Chosen options never return as passed-over (D116). Round 1: 0 High/Medium, 2 Low (one to the QUALITY backlog).
+- Built, not checked: QF.2 on `wip/QF.2` (base 6ca3e7e, head efb4549). A command-level check (`itemOutOfReach` in `events/commands.ts`, so golden logs replay) refuses trade items a side does not hold, a player asking the GM for items, and equipping an unheld item, with one message `That item is not available`. Next steps:
+  1. Update the 6 failing engine tests (economy equip/trade message expectations; the `shop` test now needs the GM to propose item trades, Q44 default; the `events.test.ts` property test seed 20261021 now accepts no `montage.offer`: find out why the random command mix changed, do not loosen the check).
+  2. Gift errors (`economy/model.ts` ~124 `Not enough [Name]`) for unheld items should use the same message.
+  3. Projection canary per QF.2's Accept (trades with item bundles, a GM-only item no player holds).
+  4. Review, then merge.
+- Tests: 739 on main (65 files). Full e2e (35) green locally after MQ.4's player-projection change. Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/QF.2` (unfinished). `wip/MQ.4` is merged.
+- Blockers: none.
