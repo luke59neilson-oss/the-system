@@ -22,6 +22,7 @@ import {
   deepFreeze,
   kit,
   randomCommand,
+  randomLibraryCommand,
   rawRules,
   run,
   seededRandom,
@@ -737,8 +738,10 @@ describe('property: replay equals incremental state', () => {
     let playerAccepted = 0;
     const acceptedByType: Record<string, number> = {};
     let dependent = 0;
+    const libraryRand = seededRandom(SEED + 1);
     for (let step = 0; step < STEPS; step++) {
-      const command = randomCommand(rand, c);
+      const command =
+        step % 20 === 7 ? randomLibraryCommand(libraryRand, c) : randomCommand(rand, c);
       const asPlayer =
         (command.type === 'event.undo' ||
           (PLAYER_COMMANDS.has(command.type) &&
@@ -831,6 +834,8 @@ describe('property: replay equals incremental state', () => {
       'montage.offer',
       'montage.focus',
       'montage.close',
+      'skillDef.define',
+      'skillDef.edit',
     ]) {
       expect(acceptedByType[type] ?? 0, `seed ${SEED}: accepted ${type}`).toBeGreaterThan(0);
     }

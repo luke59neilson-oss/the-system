@@ -78,6 +78,9 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   // the GM has not handed out, so players get only the definitions of items
   // they hold, wear or see in an own trade; holdings and trades only their own.
   items: 'gm',
+  // M4.1: the library may hold skills nobody has; granted skills carry their own text.
+  skillLibrary: 'gm',
+  skillLibraryOrder: 'gm',
   itemOrder: 'gm',
   holdings: 'owner',
   trades: 'owner',

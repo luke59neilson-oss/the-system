@@ -24,10 +24,13 @@ import { canReadNote, skillPairCounts, type Note, type PracticeEntry } from '../
 import {
   awardMark,
   describeSkill,
+  fillGrantedSkills,
   mergeSkills,
   setNickname,
   setUnique,
   upgradeSkill,
+  validateSkillDef,
+  type SkillDef,
 } from '../skills';
 import { gainXp, shareBonus } from '../progression';
 import {
@@ -43,8 +46,8 @@ import { parseRulesConfig, type RulesConfig } from '../rules';
 import { tierProblem, type Entity } from '../entities';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 12;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 13;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -71,6 +74,10 @@ export interface CampaignState {
   readonly items: Readonly<Record<string, ItemDef>>;
   /** Item ids in definition order. */
   readonly itemOrder: readonly string[];
+  /** Skill library by id (M4.1). GM-only: fills granted skills' text by name. */
+  readonly skillLibrary: Readonly<Record<string, SkillDef>>;
+  /** Skill library ids in definition order. */
+  readonly skillLibraryOrder: readonly string[];
   /** Currency, inventory and equipment per character id; absent = nothing held. */
   readonly holdings: Readonly<Record<string, Holdings>>;
   /** Every trade ever proposed, by id (closed ones keep their outcome). */
@@ -234,7 +241,21 @@ const partyName = (id: string | null) => (id === null ? 'the GM' : `"${id}"`);
  */
 export function applyEvent(state: CampaignState | null, event: DomainEvent): CampaignState {
   const next = applyEventRaw(state, event);
-  return state === null ? next : clampToEffective(state, next, event);
+  return state === null ? next : clampToEffective(state, fillFromLibrary(state, next), event);
+}
+
+/** Granted skills take their empty text from the skill library (M4.1, D90). */
+function fillFromLibrary(before: CampaignState, after: CampaignState): CampaignState {
+  if (after.skillLibraryOrder.length === 0 || before.characters === after.characters) return after;
+  let characters: Record<string, Character> | null = null;
+  for (const id of after.characterOrder) {
+    const c = hasOwn(after.characters, id) ? after.characters[id] : undefined;
+    const old = hasOwn(before.characters, id) ? before.characters[id] : undefined;
+    if (!c || c === old) continue;
+    const filled = fillGrantedSkills(old, c, after.skillLibrary);
+    if (filled !== c) (characters ??= { ...after.characters })[id] = filled;
+  }
+  return characters === null ? after : { ...after, characters };
 }
 
 function clampToEffective(
@@ -294,6 +315,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       broadcasts: [],
       items: {},
       itemOrder: [],
+      skillLibrary: {},
+      skillLibraryOrder: [],
       holdings: {},
       trades: {},
       tradeOrder: [],
@@ -487,6 +510,39 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         }
       }
       return { ...state, items: { ...state.items, [itemId]: def } };
+    }
+    case 'skillDef.defined': {
+      const { id, ...fields } = event.payload;
+      if (hasOwn(state.skillLibrary, id)) fail(event, `library skill "${id}" already exists`);
+      const def: SkillDef = { id, ...fields };
+      rule(event, () => validateSkillDef(state.rules, def, state.skillLibrary));
+      return {
+        ...state,
+        skillLibrary: { ...state.skillLibrary, [id]: def },
+        skillLibraryOrder: [...state.skillLibraryOrder, id],
+      };
+    }
+    case 'skillDef.edited': {
+      const { skillDefId, ...changes } = event.payload;
+      const old = hasOwn(state.skillLibrary, skillDefId)
+        ? state.skillLibrary[skillDefId]
+        : undefined;
+      if (!old) return fail(event, `unknown library skill "${skillDefId}"`);
+      const def: SkillDef = {
+        id: skillDefId,
+        name: changes.name ?? old.name,
+        rarity: changes.rarity ?? old.rarity,
+        tags: changes.tags ?? old.tags,
+        description: changes.description ?? old.description,
+        flavor: changes.flavor ?? old.flavor,
+        effects: changes.effects ?? old.effects,
+      };
+      const same = (Object.keys(def) as (keyof SkillDef)[]).every(
+        (k) => JSON.stringify(def[k]) === JSON.stringify(old[k]),
+      );
+      if (same) fail(event, 'nothing to change');
+      rule(event, () => validateSkillDef(state.rules, def, state.skillLibrary));
+      return { ...state, skillLibrary: { ...state.skillLibrary, [skillDefId]: def } };
     }
     case 'holdings.adjusted': {
       const { characterId, currency, items } = event.payload;

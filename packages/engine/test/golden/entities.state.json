@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 12,
+  "schemaVersion": 13,
   "name": "Golden: entities",
   "rules": {
     "configVersion": 1,
@@ -420,7 +420,7 @@
           "flavor": null
         },
         {
-          "name": "Archer’s Eye",
+          "name": "Archer\u2019s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -524,7 +524,7 @@
           "flavor": null
         },
         {
-          "name": "Archer’s Eye",
+          "name": "Archer\u2019s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -581,7 +581,7 @@
         },
         {
           "minRarity": "rare",
-          "text": "[The Host’s Response]"
+          "text": "[The Host\u2019s Response]"
         }
       ],
       "knownBy": ["jake", "kim"],
@@ -604,5 +604,7 @@
   "entityOrder": ["curse", "drum"],
   "montages": {},
   "montageOrder": [],
-  "day": 1
+  "day": 1,
+  "skillLibrary": {},
+  "skillLibraryOrder": []
 }

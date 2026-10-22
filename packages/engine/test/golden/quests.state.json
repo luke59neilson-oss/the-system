@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 12,
+  "schemaVersion": 13,
   "name": "Golden: quests",
   "rules": {
     "configVersion": 1,
@@ -420,7 +420,7 @@
           "flavor": null
         },
         {
-          "name": "Archer’s Eye",
+          "name": "Archer\u2019s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -496,5 +496,7 @@
   "entityOrder": [],
   "montages": {},
   "montageOrder": [],
-  "day": 3
+  "day": 3,
+  "skillLibrary": {},
+  "skillLibraryOrder": []
 }

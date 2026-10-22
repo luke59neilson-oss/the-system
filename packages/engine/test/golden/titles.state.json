@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 12,
+  "schemaVersion": 13,
   "name": "Titles",
   "rules": {
     "configVersion": 1,
@@ -420,7 +420,7 @@
           "flavor": null
         },
         {
-          "name": "Archer’s Eye",
+          "name": "Archer\u2019s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -465,5 +465,7 @@
   "entityOrder": [],
   "montages": {},
   "montageOrder": [],
-  "day": 1
+  "day": 1,
+  "skillLibrary": {},
+  "skillLibraryOrder": []
 }

@@ -8,6 +8,7 @@ import {
   type EventType,
 } from './envelope';
 import { CharacterRuleError } from '../character';
+import { normalizeTags } from '../skills/library';
 import { largestRemainderSplit } from '../progression';
 import { appendEvent, type Campaign } from './log';
 
@@ -292,6 +293,28 @@ export type Command =
     }
   | { type: 'stability.nudge'; questId: string; delta: number; reason?: string | undefined }
   | {
+      type: 'skillDef.define';
+      /** Optional; a fresh id is generated when omitted. */
+      id?: string | undefined;
+      name: string;
+      rarity: string;
+      tags?: readonly string[] | undefined;
+      description?: string | undefined;
+      flavor?: string | undefined;
+      /** GM-only effects text. */
+      effects?: string | undefined;
+    }
+  | {
+      type: 'skillDef.edit';
+      skillDefId: string;
+      name?: string | undefined;
+      rarity?: string | undefined;
+      tags?: readonly string[] | undefined;
+      description?: string | undefined;
+      flavor?: string | undefined;
+      effects?: string | undefined;
+    }
+  | {
       type: 'entity.define';
       /** Optional; a fresh id is generated when omitted. */
       entityId?: string | undefined;
@@ -402,6 +425,8 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('quest.setStatus') }),
   z.object({ type: z.literal('stability.applyAction') }),
   z.object({ type: z.literal('stability.nudge') }),
+  z.object({ type: z.literal('skillDef.define'), tags: z.array(z.string()).optional() }),
+  z.object({ type: z.literal('skillDef.edit'), tags: z.array(z.string()).optional() }),
   z.object({ type: z.literal('entity.define'), tiers: z.array(z.unknown()) }),
   z.object({ type: z.literal('entity.edit') }),
   z.object({
@@ -861,6 +886,35 @@ function toEvent(
         type: 'quest.statusSet',
         payload: { questId: command.questId, status: command.status },
       };
+    case 'skillDef.define':
+      return {
+        type: 'skillDef.defined',
+        payload: {
+          id: command.id ?? ctx.newId(),
+          name: command.name,
+          rarity: command.rarity,
+          tags: normalizeTags(command.tags ?? []),
+          description: command.description ?? '',
+          flavor: command.flavor ?? '',
+          effects: command.effects ?? '',
+        },
+      };
+    case 'skillDef.edit': {
+      const { skillDefId, name, rarity, tags, description, flavor, effects } = command;
+      // Undefined fields vanish in the event's JSON round trip (= unchanged).
+      return {
+        type: 'skillDef.edited',
+        payload: {
+          skillDefId,
+          name,
+          rarity,
+          tags: tags === undefined ? undefined : normalizeTags(tags),
+          description,
+          flavor,
+          effects,
+        },
+      };
+    }
     case 'entity.define':
       return {
         type: 'entity.defined',

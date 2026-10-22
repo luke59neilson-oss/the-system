@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 12,
+  "schemaVersion": 13,
   "name": "Golden: montage",
   "rules": {
     "configVersion": 1,
@@ -420,7 +420,7 @@
           "flavor": null
         },
         {
-          "name": "Archer’s Eye",
+          "name": "Archer\u2019s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -524,7 +524,7 @@
           "flavor": null
         },
         {
-          "name": "Archer’s Eye",
+          "name": "Archer\u2019s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -623,5 +623,7 @@
     }
   },
   "montageOrder": ["m1", "m2"],
-  "day": 1
+  "day": 1,
+  "skillLibrary": {},
+  "skillLibraryOrder": []
 }

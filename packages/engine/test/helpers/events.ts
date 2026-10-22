@@ -299,6 +299,35 @@ function randomNotesCommand(
 }
 
 /** Skill commands (M1.9): nicknames, Unique, marks, upgrades, merges. */
+/**
+ * M4.1 skill library: defines (often clashing names) and edits. Drawn from its
+ * own random stream so the main stream's coverage stays as it was.
+ */
+export function randomLibraryCommand(rand: () => number, c: Campaign): Command {
+  const pick = <T>(items: readonly T[]): T => items[Math.floor(rand() * items.length)] as T;
+  const defs = c.state?.skillLibraryOrder ?? [];
+  const name = () => pick(['Identify', 'Basic Archery', 'basic stealth', 'Fireball', ' ']);
+  if (defs.length === 0 || rand() < 0.5) {
+    return {
+      type: 'skillDef.define',
+      id: rand() < 0.8 ? `sd${Math.floor(rand() * 6)}` : undefined,
+      name: name(),
+      rarity: pick(['common', 'rare', 'divine', 'bogus']),
+      tags: rand() < 0.5 ? ['Bow', ' bow ', 'Ranged'] : undefined,
+      description: pick(['Learn what something is.', '', undefined]),
+      flavor: pick(['Know thy prey.', undefined]),
+      effects: pick(['+1 die on checks', undefined]),
+    };
+  }
+  return {
+    type: 'skillDef.edit',
+    skillDefId: rand() < 0.9 ? pick(defs) : 'no-def',
+    name: rand() < 0.3 ? name() : undefined,
+    rarity: rand() < 0.3 ? pick(['uncommon', 'bogus']) : undefined,
+    description: rand() < 0.5 ? pick(['Edited.', '']) : undefined,
+  };
+}
+
 function randomSkillCommand(
   rand: () => number,
   c: Campaign,

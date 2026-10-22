@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 12,
+  "schemaVersion": 13,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -409,7 +409,7 @@
           "flavor": null
         },
         {
-          "name": "Archer’s Eye",
+          "name": "Archer\u2019s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": "Jake Juice",
@@ -490,5 +490,7 @@
   "entityOrder": [],
   "montages": {},
   "montageOrder": [],
-  "day": 1
+  "day": 1,
+  "skillLibrary": {},
+  "skillLibraryOrder": []
 }

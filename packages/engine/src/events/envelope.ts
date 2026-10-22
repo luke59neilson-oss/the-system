@@ -37,6 +37,15 @@ const itemFields = {
   slot: recordId.nullable(),
   bonuses: z.array(statBonus).max(30),
 };
+/** Skill library entry fields (M4.1). Text is trimmed; blank means none. */
+const skillDefFields = {
+  name: nonBlank,
+  rarity: recordId,
+  tags: z.array(z.string().trim().max(40)).max(20),
+  description: skillDescription.trim(),
+  flavor: skillFlavor.trim(),
+  effects: z.string().trim().max(4000),
+};
 const stabilityRules = z.record(
   z.string().min(1).max(60),
   z.number().finite().min(-1_000).max(1_000),
@@ -245,6 +254,18 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     skills: z.tuple([nonBlank, nonBlank]),
     name: nonBlank,
   }),
+  /** GM adds a skill to the campaign's skill library (M4.1; GM-only, D90). */
+  'skillDef.defined': z.strictObject({ id: recordId, ...skillDefFields }),
+  /** GM edits a library skill; omitted fields stay. Characters' granted skills keep their text. */
+  'skillDef.edited': z.strictObject({
+    skillDefId: recordId,
+    name: skillDefFields.name.optional(),
+    rarity: skillDefFields.rarity.optional(),
+    tags: skillDefFields.tags.optional(),
+    description: skillDefFields.description.optional(),
+    flavor: skillDefFields.flavor.optional(),
+    effects: skillDefFields.effects.optional(),
+  }),
   /** GM offers (or re-offers) the skill menu for a reached selection level (M1.10). */
   'selection.offered': z.strictObject({
     characterId: recordId,
@@ -437,6 +458,8 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'skill.markAwarded': 1,
   'skill.upgraded': 1,
   'skill.merged': 1,
+  'skillDef.defined': 1,
+  'skillDef.edited': 1,
   'selection.offered': 1,
   'selection.chosen': 1,
   'evolution.released': 1,

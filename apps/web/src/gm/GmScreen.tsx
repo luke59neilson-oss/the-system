@@ -12,6 +12,7 @@ import { LiveClient, type CommandResult, type LiveSnapshot } from '../live';
 import { CampaignSwitch } from './CampaignSwitch';
 import { feedRows } from './feed';
 import { JoinPanel } from './JoinPanel';
+import { SkillLibrary } from './SkillLibrary';
 import { resolvePerspective, type PartyMember, type Perspective } from './perspective';
 import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
 
@@ -126,6 +127,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <AwardXp client={client} state={state} />
               <Broadcast client={client} state={state} />
               <SkillText client={client} state={state} />
+              <SkillLibrary client={client} state={state} />
               <Feed live={live} state={state} />
             </div>
           </div>
