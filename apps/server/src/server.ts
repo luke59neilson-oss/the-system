@@ -60,7 +60,10 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     : null;
   const opened = new Map<string, { store: CampaignStore; hub: LiveHub }>();
   if (active && options.live) opened.set(options.live.store.id, active);
-  const sockets = new Set<{ close: (code: number, reason: string) => void }>();
+  const sockets = new Set<{
+    close: (code: number, reason: string) => void;
+    terminate: () => void;
+  }>();
   const logWriters: SessionLogWriter[] = [];
   const startLog = (store: CampaignStore) => {
     if (!options.sessionLog) return;
@@ -181,8 +184,22 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     sockets.clear();
     return { id, demo: body.demo };
   });
+  // preClose runs before Fastify waits for connections to end: write the last
+  // session logs now, then drop every socket so a sleeping phone that never
+  // answers the close handshake cannot hold shutdown past the exit guard.
+  app.addHook('preClose', (done) => {
+    for (const writer of logWriters) writer.close();
+    for (const socket of [...sockets]) {
+      try {
+        socket.terminate();
+      } catch (error) {
+        app.log.error(error);
+      }
+    }
+    done();
+  });
   app.addHook('onClose', () => {
-    // Last session log writes first (on shutdown), while every store is still open.
+    // Writers are closed in preClose; closing again is a no-op unless something changed.
     for (const writer of logWriters) writer.close();
     // The caller closes the store it passed in; close the ones opened here.
     for (const [id, { store }] of opened) {

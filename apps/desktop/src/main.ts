@@ -3,6 +3,7 @@ import { startApp, type RunningApp } from '../../server/src/app';
 import { newGmKey } from '../../server/src/security';
 import {
   dataDirFor,
+  machineIdFor,
   desktopPort,
   gmWindowUrl,
   isOwnPage,
@@ -94,6 +95,7 @@ async function start(): Promise<void> {
       webRoot: webRootFor(app.isPackaged, process.resourcesPath, __dirname),
       dataDir: process.env['THE_SYSTEM_DATA_DIR'] ?? dataDirFor(app.getPath('userData')),
       gmKey: newGmKey(),
+      machineId: machineIdFor(app.getPath('userData')),
     });
   } catch (error) {
     dialog.showErrorBox('The System', startErrorMessage(error, port));

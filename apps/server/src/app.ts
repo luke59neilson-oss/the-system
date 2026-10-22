@@ -19,6 +19,8 @@ export interface StartOptions {
   dataDir: string;
   /** Generated when omitted. */
   gmKey?: string | undefined;
+  /** Stable id of this computer for campaign locks (see StoreOptions.machineId). */
+  machineId?: string | undefined;
   /** Session log autosave interval (M2.4); 5 minutes when omitted. */
   sessionLogIntervalMs?: number | undefined;
 }
@@ -40,6 +42,7 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
   const storeOptions = {
     dataDir: path.resolve(options.dataDir),
     now: () => new Date().toISOString(),
+    ...(options.machineId === undefined ? {} : { machineId: options.machineId }),
   };
   const store = CampaignStore.open('main', storeOptions);
   const exportsDir = exportsDirFor(storeOptions.dataDir);

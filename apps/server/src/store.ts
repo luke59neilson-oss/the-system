@@ -68,6 +68,12 @@ export interface StoreOptions {
   readonly snapshotEvery?: number;
   /** Whether a lock holder's pid is alive (injected for tests). */
   readonly isAlive?: (pid: number) => boolean;
+  /**
+   * Stable id of this computer for the campaign lock (the desktop app keeps
+   * one in its settings folder). Defaults to the host name, which can change
+   * with the network on macOS, so a lock left by a crash could look foreign.
+   */
+  readonly machineId?: string;
 }
 
 const CAMPAIGN_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -194,6 +200,8 @@ const bootMinute = () => Math.round((Date.now() - uptime() * 1000) / 60_000);
 interface LockInfo {
   pid: number;
   host: string;
+  /** Absent in locks written before machine ids. */
+  machine?: string;
   boot: number;
   token: string;
 }
@@ -214,10 +222,11 @@ function readLock(file: string): LockInfo | null {
  * this machine is stale when its pid is gone or it predates the last boot; a
  * lock from another machine (shared drive) is never taken over automatically.
  */
-function takeLock(file: string, isAlive: (pid: number) => boolean): string {
+function takeLock(file: string, isAlive: (pid: number) => boolean, machine: string): string {
   const contents = JSON.stringify({
     pid: process.pid,
     host: hostname(),
+    machine,
     boot: bootMinute(),
     token: randomUUID(),
   });
@@ -236,7 +245,10 @@ function takeLock(file: string, isAlive: (pid: number) => boolean): string {
       const raw = existsSync(file) ? readFileSync(file, 'utf8') : null;
       if (raw === null) continue; // Released between our open and read.
       const info = readLock(file);
-      if (info && info.host !== hostname()) {
+      const foreign =
+        info !== null &&
+        (info.machine !== undefined ? info.machine !== machine : info.host !== hostname());
+      if (info && foreign) {
         throw new StoreError(
           `The campaign is open on ${info.host}; if that computer is off, delete ${file}`,
         );
@@ -311,7 +323,11 @@ export class CampaignStore {
     const dir = path.join(CampaignStore.campaignsDir(options.dataDir), checkCampaignId(id));
     mkdirSync(path.join(dir, 'backups'), { recursive: true });
     const lockFile = path.join(dir, 'LOCK');
-    const lock = takeLock(lockFile, options.isAlive ?? defaultIsAlive);
+    const lock = takeLock(
+      lockFile,
+      options.isAlive ?? defaultIsAlive,
+      options.machineId ?? hostname(),
+    );
     try {
       return CampaignStore.load(id, dir, options, lock);
     } catch (error) {

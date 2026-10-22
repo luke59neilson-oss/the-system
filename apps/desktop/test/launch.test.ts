@@ -1,3 +1,5 @@
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
@@ -8,6 +10,7 @@ import {
   isOwnPage,
   startErrorMessage,
   webRootFor,
+  machineIdFor,
 } from '../src/launch';
 
 describe('desktop launch helpers', () => {
@@ -45,5 +48,22 @@ describe('desktop launch helpers', () => {
       'Port 30333 is already in use',
     );
     expect(startErrorMessage(new Error('boom'), 1)).toBe('The System could not start: boom');
+  });
+});
+
+describe('machineIdFor', () => {
+  it('creates an id once, keeps it, and replaces a damaged one', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'the-system-machine-'));
+    try {
+      let n = 0;
+      const make = () => `id-0000000${++n}`;
+      expect(machineIdFor(path.join(dir, 'user'), make)).toBe('id-00000001');
+      expect(machineIdFor(path.join(dir, 'user'), make)).toBe('id-00000001');
+      expect(readFileSync(path.join(dir, 'user', 'machine-id'), 'utf8')).toBe('id-00000001\n');
+      writeFileSync(path.join(dir, 'user', 'machine-id'), '../../bad id');
+      expect(machineIdFor(path.join(dir, 'user'), make)).toBe('id-00000002');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

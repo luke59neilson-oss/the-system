@@ -240,7 +240,7 @@ describe('CampaignStore', () => {
     const dir = CampaignStore.open('main', options).dir;
     const lock = path.join(dir, 'LOCK');
     const info = JSON.parse(readFileSync(lock, 'utf8')) as Record<string, unknown>;
-    writeFileSync(lock, JSON.stringify({ ...info, host: 'other-laptop' }));
+    writeFileSync(lock, JSON.stringify({ ...info, host: 'other-laptop', machine: 'other-laptop' }));
     expect(() => CampaignStore.open('main', options)).toThrow(/open on other-laptop/);
     // Same machine, live pid, but an earlier boot: the pid was reused.
     writeFileSync(lock, JSON.stringify({ ...info, boot: (info.boot as number) - 600 }));
@@ -248,6 +248,25 @@ describe('CampaignStore', () => {
     store.close();
     writeFileSync(lock, 'garbage');
     CampaignStore.open('main', options).close();
+  });
+
+  it('judges a lock by machine id, not the host name, once the lock has one', () => {
+    const withId = { ...options, machineId: 'install-1234abcd' };
+    const dir = CampaignStore.open('main', withId).dir;
+    const lock = path.join(dir, 'LOCK');
+    const info = JSON.parse(readFileSync(lock, 'utf8')) as Record<string, unknown>;
+    expect(info['machine']).toBe('install-1234abcd');
+    // Left by a crash while the network gave the laptop another host name: still ours, and stale.
+    writeFileSync(lock, JSON.stringify({ ...info, host: 'lukes-mbp.lan', pid: 999_999_999 }));
+    CampaignStore.open('main', { ...withId, isAlive: () => false }).close();
+    // Another install's lock is refused whatever the host name says.
+    const held = CampaignStore.open('main', withId);
+    const other = JSON.parse(readFileSync(lock, 'utf8')) as Record<string, unknown>;
+    writeFileSync(lock, JSON.stringify({ ...other, machine: 'install-other999' }));
+    expect(() => CampaignStore.open('main', { ...withId, isAlive: () => false })).toThrow(
+      /is open on/,
+    );
+    held.close();
   });
 
   it('commits events even when the snapshot cannot be written', () => {

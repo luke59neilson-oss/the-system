@@ -10,6 +10,7 @@ import {
   statSync,
   writeFileSync,
 } from 'node:fs';
+import { connect } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -340,6 +341,49 @@ describe('session log during a scripted session (M2.4 acceptance)', () => {
     } finally {
       for (const ws of clients) ws.close();
       await app.close();
+    }
+  });
+
+  it('writes the log and closes quickly even when a socket never answers the close handshake', async () => {
+    const dataDir = tempDir('log-zombie');
+    const webRoot = tempDir('log-zombie-web');
+    writeFileSync(path.join(webRoot, 'index.html'), '<!doctype html><title>shell</title>');
+    const app = await startApp({ port: 0, host: '127.0.0.1', webRoot, dataDir, gmKey: KEY });
+    const ws = new WebSocket(`ws://127.0.0.1:${app.port}/ws`);
+    const done = new Set<string>();
+    ws.addEventListener('message', (event) => {
+      const m = JSON.parse(String(event.data)) as { type: string; requestId?: string };
+      if (m.type === 'result' && m.requestId) done.add(m.requestId);
+    });
+    await new Promise<void>((resolve) => ws.addEventListener('open', () => resolve()));
+    ws.send(JSON.stringify({ type: 'join', role: 'gm', gmKey: KEY }));
+    ws.send(
+      JSON.stringify({
+        type: 'command',
+        requestId: 'a',
+        command: { type: 'campaign.create', name: 'Z', rules: rules() },
+      }),
+    );
+    const until = Date.now() + 5000;
+    while (!done.has('a') && Date.now() < until) await new Promise((r) => setTimeout(r, 10));
+    ws.close();
+    // A "sleeping phone": completes the upgrade, then never reads or answers again.
+    const zombie = connect(app.port, '127.0.0.1');
+    await new Promise<void>((resolve) => zombie.on('connect', () => resolve()));
+    zombie.write(
+      `GET /ws HTTP/1.1\r\nHost: 127.0.0.1:${app.port}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n`,
+    );
+    await new Promise<void>((resolve) => zombie.once('data', () => resolve()));
+    zombie.pause();
+    const started = Date.now();
+    try {
+      await app.close();
+      expect(Date.now() - started).toBeLessThan(2000);
+      const dir = path.join(app.exportsDir, 'main');
+      expect(readdirSync(dir).filter((f) => f.endsWith('.md'))).toHaveLength(1);
+      expect(existsSync(path.join(dataDir, 'campaigns', 'main', 'LOCK'))).toBe(false);
+    } finally {
+      zombie.destroy();
     }
   });
 

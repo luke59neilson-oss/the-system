@@ -1,7 +1,9 @@
+import { randomUUID } from 'node:crypto';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * Pure helpers for the desktop wrapper (ROADMAP MS.5). Kept free of Electron
+ * Helpers for the desktop wrapper (ROADMAP MS.5), pure except machineIdFor. Kept free of Electron
  * so they unit-test in plain Node.
  */
 
@@ -24,6 +26,24 @@ export function webRootFor(isPackaged: boolean, resourcesPath: string, bundleDir
 }
 
 /** Campaign data in the OS app-data folder (e.g. %APPDATA%/The System/data). */
+/**
+ * This install's machine id (campaign locks, D73): read from
+ * `<userData>/machine-id`, created with a random UUID the first time.
+ */
+export function machineIdFor(userData: string, newId: () => string = randomUUID): string {
+  const file = path.join(userData, 'machine-id');
+  try {
+    const id = readFileSync(file, 'utf8').trim();
+    if (/^[\w-]{8,100}$/.test(id)) return id;
+  } catch {
+    // Missing or unreadable: make a new one.
+  }
+  const id = newId();
+  mkdirSync(userData, { recursive: true });
+  writeFileSync(file, `${id}\n`);
+  return id;
+}
+
 export function dataDirFor(userData: string): string {
   return path.join(userData, 'data');
 }
