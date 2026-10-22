@@ -33,6 +33,7 @@ import { PartyPanel } from './PartyPanel';
 import { useChangeCount } from './changeCount';
 import { SkillDetail } from './SkillDetail';
 import { SkillSelection } from './SkillSelection';
+import { EvolutionChoice } from './EvolutionChoice';
 import { closedReason, pendingSelections, pendingText, settleNotice } from './selection';
 import {
   cssToken,
@@ -222,6 +223,9 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
   // never swaps it: if the GM re-offers, chooses or undoes it, it closes with
   // a notice (unless this screen's own choice closed it).
   const pending = pendingSelections(me.selections);
+  const [evoOpen, setEvoOpen] = useState(false);
+  // A withdrawn or settled release closes the dialog; a new one waits for [Evolve].
+  if (evoOpen && me.evolution === null) setEvoOpen(false);
   const [selOpen, setSelOpen] = useState<{ level: number; offerId: string } | null>(null);
   const [selConfirming, setSelConfirming] = useState<number | null>(null);
   const [selNotice, setSelNotice] = useState<string | null>(null);
@@ -395,6 +399,36 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
             </button>
           )}
         </p>
+      )}
+      {me.evolution !== null && (
+        <p className="selection-pending evolution-pending" data-testid="evolution-pending">
+          <span className="selection-label">Evolution</span>
+          <span className="badge" data-testid="evolution-badge">
+            {me.evolution.toGrade}-grade available
+          </span>
+          {client && !evoOpen && (
+            <button
+              type="button"
+              className="assign-btn"
+              aria-haspopup="dialog"
+              onClick={() => setEvoOpen(true)}
+            >
+              [Evolve]
+            </button>
+          )}
+        </p>
+      )}
+      {client && me.evolution !== null && evoOpen && (
+        <EvolutionChoice
+          key={me.evolution.releaseId}
+          evolution={me.evolution}
+          view={view}
+          client={client}
+          onSettled={(ok) => {
+            if (ok) setEvoOpen(false);
+          }}
+          onClose={() => setEvoOpen(false)}
+        />
       )}
       {selNotice && (
         <p className="err" role="alert" data-testid="selection-notice">

@@ -1,0 +1,61 @@
+import type { EvolutionOption, OwnSheet, PlayerRules } from '@the-system/engine';
+import { pendingSelections } from './selection';
+import { rarityName, unassignedPoints } from './sheet';
+
+/**
+ * Evolution screen helpers (ROADMAP M3.13, DESIGN §2–§3, §6, D64). Pure.
+ */
+
+/** "[Old (Rare)] → [New (Epic)]" for one transform, with the current rarity when known. */
+export function transformText(
+  rules: PlayerRules,
+  me: Pick<OwnSheet, 'skills'>,
+  t: EvolutionOption['transforms'][number],
+): string {
+  const old = me.skills.find((s) => s.name === t.skill);
+  const from = old ? `[${old.name} (${rarityName(rules, old.rarity)})]` : `[${t.skill}]`;
+  return `${from} → [${t.name} (${rarityName(rules, t.rarity)})]`;
+}
+
+/** The reshaped class stat weights, biggest first ("Agility 3 · Perception 2"), or null. */
+export function weightsText(
+  rules: PlayerRules,
+  weights: EvolutionOption['classWeights'],
+): string | null {
+  if (weights === null) return null;
+  const parts = rules.stats.list
+    .map((s, i) => ({ name: s.name, w: weights[s.id] ?? 0, i }))
+    .filter((p) => p.w > 0)
+    .sort((a, b) => b.w - a.w || a.i - b.i)
+    .map((p) => `${p.name} ${p.w}`);
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
+
+/**
+ * What the player should know before confirming an option: marks the
+ * transforms reset (D64), choices still waiting, and that it is final.
+ */
+export function evolutionWarnings(
+  me: Pick<OwnSheet, 'skills' | 'selections' | 'freePointBatches'>,
+  option: EvolutionOption,
+): string[] {
+  const out: string[] = [];
+  for (const t of option.transforms) {
+    const s = me.skills.find((k) => k.name === t.skill);
+    if (s && s.marks > 0)
+      out.push(
+        `[${s.name}] becomes [${t.name}]: its ${s.marks} mastery ${s.marks === 1 ? 'mark resets' : 'marks reset'} to 0.`,
+      );
+  }
+  const waiting = pendingSelections(me.selections).length;
+  if (waiting > 0)
+    out.push(
+      `You have ${waiting} skill ${waiting === 1 ? 'selection' : 'selections'} still waiting.`,
+    );
+  const free = unassignedPoints(me.freePointBatches);
+  if (free > 0) out.push(`You have ${free} free ${free === 1 ? 'point' : 'points'} to assign.`);
+  if (option.classWeights !== null)
+    out.push('Your class stat spread changes for every class level from now on.');
+  out.push('The choice is final; the other options will be gone.');
+  return out;
+}

@@ -1524,3 +1524,23 @@ button.danger {
 .pane-mode .party-list {
   gap: 4px 10px;
 }
+
+/* M3.13 evolution screen */
+.evolution-transforms,
+.evolution-warnings {
+  margin: 4px 0 8px;
+  padding-left: 1.2em;
+  font-family: var(--mono);
+}
+.evolution-warnings li {
+  color: var(--accent);
+}
+.evolution-warnings li:last-child {
+  color: var(--err);
+}
+.evolution-profession {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 10px;
+  max-width: 320px;
+}

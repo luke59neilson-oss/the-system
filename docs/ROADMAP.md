@@ -219,8 +219,9 @@ the full ones.
 - [x] **M3.11 Practice and montage.** Submit practice entries; enter montage
   focus when offered.
 - [x] **M3.12 Party view.** Names, race/class/level, pool bars.
-- [ ] **M3.13 Table extras.** Contest result pop-up; hunger tracker when
-  enabled; evolution screen (options, warnings, choose).
+- [ ] **M3.13 Table extras.** Evolution screen (options, warnings, choose).
+  The contest result pop-up moved to M7.3 and the hunger tracker to M7.4,
+  where the engine first records rolls and hunger (D88).
 - [ ] **M3.A Milestone acceptance and review.** All M3 specs pass at both
   viewports with zero console errors.
 
@@ -287,11 +288,14 @@ the full ones.
   carries one of its action tags (D67).
 - [ ] **M7.2 Bestiary and NPCs.** Grade, level, stats, Identify tiers, notes.
 - [ ] **M7.3 Encounter panel.** Ratio-odds roller (stats + mode), pool
-  damage/heal, progress clocks, montage trigger.
+  damage/heal, progress clocks, montage trigger. Rolls the GM shares become
+  events, and the players involved get a contest result pop-up (from M3.13,
+  D88).
   Store the race level used for the above-level XP bonus in `xp.awarded`
   so a non-latest undo cannot re-price a later award (D71).
 - [ ] **M7.4 Trackers.** Hunger (fades at E-grade by default), regions,
-  survivor factions.
+  survivor factions. Players see their hunger tracker when the campaign
+  enables it (from M3.13, D88).
 - [ ] **M7.A Milestone acceptance and review.** Sample encounter end to end;
   stability visible to players only when toggled on.
 
