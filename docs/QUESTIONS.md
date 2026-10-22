@@ -60,7 +60,7 @@ DESIGN/ROADMAP; do not re-apply them.
 15. **Do item and title bonuses raise max HP/MP/Stamina?** E.g. a ring with
     +1.0 Vitality. Default: yes, pool maxima use effective stats from M3.7 on
     (D60); until then only base stats count.
-    Answer (Luke, 2026-10-22): Yes. A full pool stays full when its max rises; otherwise current is unchanged (85/100 +20 → 85/120; 100/100 +20 → 120/120). Wants a cap on item stats like the books; cap being settled in chat. (partly applied, D100)
+    Answer (Luke, 2026-10-22): Yes. A full pool stays full when its max rises; otherwise current is unchanged (85/100 +20 → 85/120; 100/100 +20 → 120/120). Item bonuses are flat only, capped at 20% of base; title percentages are additive. (applied, D100, D115)
 16. **Does the GM keep a stock?** The GM side of gifts and trades is
     unlimited (a shop or quest reward conjures the goods; what players hand
     to the GM leaves play). Default: unlimited. Alternative: a GM stash
@@ -233,4 +233,10 @@ DESIGN/ROADMAP; do not re-apply them.
     Default: as described (D111). Alternatives: remember that a pool was
     clamped and do not treat it as full; apply the new rule to old campaigns
     too.
+    Answer:
+
+41. **Cap on title percentages?** Titles give percentage bonuses and stack
+    additively (D115). The engine also caps the total percentage per stat
+    (default +25%). Default: keep the +25% cap. Alternative: no cap on title
+    percentages, or a different cap.
     Answer:

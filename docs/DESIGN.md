@@ -106,9 +106,18 @@ blue-white tint and a heavier brushed texture so the change is visible.
   override.
 - Each evolution may reshape the class spread toward stats the character used
   (GM chooses, guided by the practice log).
-- Percentage bonuses are capped (default cap +25% per stat, configurable).
-  Luke wants a cap on stats gained from items too; the cap is still being
-  settled (QUESTIONS Q15).
+- **Bonuses (Luke, 2026-10-22):**
+  - **Titles** give a set percentage bonus (the GM sets it per title; a title
+    may also give flat stats). Characters can earn many.
+  - **Items** give flat stat bonuses only, never percentages. The total item
+    bonus on a stat is capped at **20% of that stat's base value**; anything
+    above the cap is ignored and shown as capped.
+  - **All percentages are additive**, never compounding: they are summed, then
+    applied once. Effective stat = (base + capped item bonus) × (1 + sum of
+    title percentages). Example: base Vitality 100, items +30 (capped to +20),
+    titles +10% and +5% → (100 + 20) × 1.15 = 138.
+  - The total title percentage per stat keeps its configurable cap (default
+    +25%; see QUESTIONS Q41).
 - Check values (all tracks leveling together, starting total 90):
   total stats = 194 at level 14, 614 at level 49, 1,514 at 99, 2,864 at 149,
   4,864 at 199, **7,324 at 240**.
@@ -210,8 +219,8 @@ turning point). GM confirms marks in the end-of-session review.
 - **Practice log:** quick-add (character, action, skill/stat), end-of-scene
   prompt, end-of-session review (repeats flagged, skill pairs counted, marks
   confirmed), selection alert (within 5 levels), merge alert.
-- **Titles:** flat and/or percentage stat bonuses, awarded by GM, shown to the
-  player with System-style text.
+- **Titles:** percentage stat bonuses (optionally flat stats too), awarded by
+  the GM, shown to the player with System-style text. Rules in §4.
 - **Identify:** entities carry descriptions per minimum Identify rarity; the
   player sees the best tier their Identify rarity unlocks. **Who can be
   identified:** anything of a lower grade always; nothing of a higher grade;
@@ -223,7 +232,8 @@ turning point). GM confirms marks in the end-of-session review.
   players get a System notice that a hidden quest exists and can be
   triggered, with no details.
 - **Hunger tracker** (tutorial): optional per campaign; fades at E-grade.
-- **Items:** rarity, description, effects; equipment slots (Zogarth's 10):
+- **Items:** rarity, description, effects (flat stat bonuses only, capped per
+  §4); equipment slots (Zogarth's 10):
   2 rings, necklace, chest, legs, boots, bracers, mask, cloak, gloves; plus
   weapon slots (main hand, off hand). Inventory, a configurable currency, and
   giving/trading between players and the GM.
