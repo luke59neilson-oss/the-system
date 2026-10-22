@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0, MS, M1 and M2 done; M3 started (M3.1–M3.8)
-**Next item:** M3.9 Identify
+**Status:** in progress: M0, MS, M1 and M2 done; M3 started (M3.1–M3.9)
+**Next item:** M3.10 Notes
 **Blockers:** none.
 
 ## Run log
@@ -309,4 +309,24 @@ next item, blockers. -->
 - New decisions D81–D83. New question Q32 (gear and pools; gift/trade pop-ups).
 - Open `wip/*` branches: none unfinished (`wip/M3.7` is merged).
 - Next: M3.9 Identify. Not started: at 49 min this run was past the 35-minute start limit.
+- Blockers: none.
+
+### Run 5faa0b38 · 2026-10-22 06:08–06:44 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD and a stale local `main`), so `main` was reset to `origin/main`.
+  - The lock was pushed to main.
+  - `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md. The latest completed CI run on main had failed (27c0d4f: `format:check` on `reducer.ts`). Fixed first with Prettier (631f6f3, CI green).
+- Finished M3.9 Identify. Reviewed by sonnet in 2 rounds: round 1 had 1 Medium (canary timeout margin) and 3 Low; round 2 had none.
+  - Entities in the campaign state (v11, D84). Each has a GM name, a player label, Identify tiers and the characters who know it. New GM events `entity.defined`/`edited`/`revealed`, a new golden log, and additive golden state diffs.
+  - The player projection adds `identify`: only known entities, each with the single tier text the viewer's Identify rarity unlocks. The canary is extended.
+  - An Identify window under Quests (after Inventory on phones): choose a known entity and read its tier text, live.
+  - The demo trains Casper's Identify to Uncommon. He reads "[Fever]"; Miranda reads "[Malignant Miasma]". The Drum is known to nobody.
+  - New `e2e/M3.9.spec.ts` also checks that the players' WebSocket frames never carry GM names, deeper tiers or unrevealed entities.
+- Tests: 583 unit/integration tests (49 files). All 23 e2e specs green. Engine line coverage 99.36% (floor 90%).
+- CI: green on 631f6f3 and 0ae144d; 98b5742 running at the end of the run.
+- New decision D84. New question Q33 (Identify level gap; per-character knowledge).
+- Open `wip/*` branches: none unfinished.
+- Next: M3.10 Notes. Not started: at 34 min, an item plus two review rounds would not fit before the 60-minute stop.
 - Blockers: none.

@@ -212,7 +212,7 @@ the full ones.
   checks the demo's equipped ring and bow on Jake's screen (D70).
 - [x] **M3.8 Quest log.** Text, days left, stability gauge when visible.
   The e2e checks the demo quest's visible gauge (89) on a player screen (D70).
-- [ ] **M3.9 Identify.** Choose a known entity; show tier text.
+- [x] **M3.9 Identify.** Choose a known entity; show tier text.
 - [ ] **M3.10 Notes.** Private journal (markdown, shareable toggle), live
   party notes, tags, search. Project notes with `canReadNote` (own journal +
   party; never GM notes) with a canary; server-generated note ids.

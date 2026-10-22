@@ -352,3 +352,10 @@
     - Failed and expired quests are covered by helper unit tests only.
     - The e2e drives the GM over a raw WebSocket, as in earlier specs.
 - Round 2 (23e69c2..6bf8fdf): 0 High, 0 Medium, 3 Low, all accepted. The order is measured once; the label can show one decimal; the failed-quest rendering gap stands.
+
+### 2026-10-22 · M3.9 Identify · reviewer: sonnet (fresh context)
+- Round 1 (631f6f3..0ae144d): 0 High, 1 Medium, 3 Low.
+  - M fixed: the 1000-state canary sat near the 5 s default limit and timed out once under full-suite load. It now has a 60 s limit; STATES is unchanged.
+  - L fixed: revealing to "everyone" when everyone already knows the entity now says so, instead of a generic schema error.
+  - L accepted: `identifyRarity` matches the race skill by the configured name (D40, pre-existing); the "gone" notice uses the label as chosen (correct, untested).
+- Round 2 (0ae144d..98b5742): 0 High, 0 Medium, 0 Low.
