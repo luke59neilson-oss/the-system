@@ -205,7 +205,7 @@ the full ones.
   progress, nickname edit (official name always shown).
 - [x] **M3.6 Skill selection.** Pending badge, offers side by side, choose.
   The e2e uses the demo's open menu (Jake, level 50; D70).
-- [ ] **M3.7 Inventory, gifts, trades.** Equip; give items/currency to a
+- [x] **M3.7 Inventory, gifts, trades.** Equip; give items/currency to a
   character or the GM; propose/accept/decline trades; incoming notices.
   Project holdings, own trades and the definitions of held/offered items;
   switch pool maxima and the stats block to effective stats (D60). The e2e

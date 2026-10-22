@@ -322,3 +322,21 @@
 - Round 2 (078936c..167999d): 0 High, 0 Medium, 4 Low.
   - L fixed: the connection-lost notice no longer fades.
   - L accepted: [Choose] stays hidden until the reconnect snapshot if the view frame is lost after an ok; `isConnectionError` matches the two `live.ts` strings; the in-flight race is still untested.
+
+## 2026-10-22 · M3.7 Inventory, gifts, trades · reviewer: sonnet (fresh context)
+- Round 1 (af88ab6..ef2d567): 0 High, 4 Medium, 6 Low.
+  - M: the reviewer reported that self-gifts and self-trades were accepted. Not a bug: the envelope schemas already reject them (`distinctParties`), and tests cover this. The reviewer withdrew it in round 2.
+  - M: some clamp paths were untested. Fixed: an engine test with level-ups and gifts while gear is equipped. The e2e now checks that equipping does not heal and that unequipping clamps HP (470/480 → 380/380).
+  - M: the post-event clamp could fill a missing pool key. Fixed: it only lowers pools that exist.
+  - M: focus dropped to `<body>` when the clicked [Equip]/[Unequip] or a closing form disappeared. Fixed: focus moves to the Inventory heading (asserted in the e2e).
+  - L fixed: the done notice fades after 8 s; duplicate `.items` CSS removed.
+  - L accepted:
+    - [Equip] swaps slot 1 when every slot is full (D82).
+    - The gift notice omits rarity.
+    - Past trades are unbounded and undated.
+    - No warning that unequipping lowers HP (Q32).
+- Round 2 (ef2d567..42624e2): 0 High, 0 Medium, 4 Low.
+  - L fixed: the focus rescue runs once per action and uses `preventScroll`, so a later live update cannot pull focus or scroll the page.
+  - L accepted:
+    - A DING toast can cover part of an open form on a 390 px phone. This is the existing toast position; M8 theming can move it.
+    - Focus is not rescued after Cancel or a refused command (the button stays in those cases).
