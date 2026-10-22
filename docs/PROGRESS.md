@@ -424,7 +424,7 @@ next item, blockers. -->
   - Engine: GM-only class, race and profession libraries (state v14, golden states bumped additively, new `libraries` golden log); define/edit events per kind, validated with character creation's own checks for classes; `library.seedDefaults` → one stored `library.seeded` event with the default set (6 classes, Human, 5 professions, skill text for every starting class skill), skipping names already present. The demo seeds it last.
   - GM console: "Classes, races and professions" window (tabs, search, form with skill rows and stat weights, "Add the default set", unsaved-draft guard). New campaign seeds the defaults unless unchecked. The character form picks class and race from the libraries (falls back to the built-in Archer).
   - The M4.1 spec now opts out of the defaults; MS.1 checks the selected class by text.
-- Tests: 644 unit/integration tests (58 files incl. a 400-step library property test, seed 20261022). All 33 e2e tests green before the review fixes; M4.2/M4.1/MS.1 re-run after. Screenshot re-renders of earlier items were discarded. Engine line coverage 99.15% (floor 90%).
+- Tests: 644 unit/integration tests (57 files incl. a 400-step library property test, seed 20261022). All 33 e2e tests green before the review fixes; M4.2/M4.1/MS.1 re-run after. Screenshot re-renders of earlier items were discarded. Engine line coverage 99.15% (floor 90%).
 - New decision D91. New question Q38 (default classes, races, professions; race as name only; descriptions GM-only).
 - Open `wip/*` branches: none unfinished.
 - Next: M4.3 Campaign and sessions. Not started: too little of the timebox left to finish and review it.
