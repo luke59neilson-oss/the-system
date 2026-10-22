@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.9 done, MQ.1 built, awaiting review round 2); M4.1–M4.4 done
-**Next item:** MQ.1 review round 2 (code is on main), then MQ.2 Pools follow maxima
+**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1, MQ.2, MQ.9 done; MQ.3 on `wip/MQ.3`); M4.1–M4.4 done
+**Next item:** resume MQ.3 Passed-over options from `wip/MQ.3` (GM withdraw still to build, then review)
 **Blockers:** none.
 
 ## Run log
@@ -478,4 +478,26 @@ next item, blockers. -->
 - Built, not checked: MQ.1 Evolution rules (fefa7d7, b3c1f84; D110). Round 1 had 3 Medium: the refill now uses effective stats (fixed); open for round 2: no GM UI for the bonus until M5.2, and the gate re-running on replay after a rules edit. Next run: run round 2 on 835717c..HEAD for MQ.1, fix, then check the box.
 - Tests: 691 unit/integration tests; full e2e suite (35) green before the default-transform change, M3.13 and MS.4 re-run after it; 6 desktop specs green. Engine coverage not re-measured.
 - Open `wip/*` branches: none (MQ.1 code is on main; only its review round 2 remains).
+- Blockers: none.
+
+### Run 451e9851 · 2026-10-22 15:09–15:50 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD), so `main` was reset to `origin/main`.
+  - The lock was pushed to main. `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work in the background on worktrees.
+- Orient: no new answers in ANSWERS.md. CI on main was green (b3c1f84).
+- Finished:
+  - MQ.1 Evolution rules, review round 2 (sonnet): 0 High, 1 Medium, 3 Low. The Medium is fixed in 66033ea: the player view carries `selectionsDue`, and the evolution screen blocks Evolve while earned selections wait. The round-1 replay concern was confirmed not to be a defect (note for M4.9 in REVIEW-LOG).
+  - MQ.2 Pools follow maxima (D111, Q41). A full pool stays full when its maximum rises, behind `rules.character.fullPoolsStayFull`: on for new campaigns, off for stored rules, so old logs replay unchanged. Golden states were bumped additively, and there is a new `pools` golden log. Sonnet: 0 High, 0 Medium, 4 Low (2 fixed, 2 accepted).
+- Tests: 702 unit/integration tests (65 files). The full e2e suite (35) was run after the MQ.2 engine change: 3 expected failures, fixed by updating the M3.2 and M3.7 expectations to D100. M3.2, M3.7, M3.6 and M3.13 were re-run green. Engine coverage was not re-measured.
+- Open `wip/*` branches: `wip/MQ.3`, base 6c241ad, head e99c52c. Done there:
+  - `passedOverOptions` (newest menu first; drops owned, retired, above-ceiling and no-profession options).
+  - `selection.chosen` accepts a passed-over name.
+  - The owner projection gives each pending menu `passedOver`.
+  - The selection screen has a "Passed over earlier (N)" list, and the review text now says passed-over skills stay on offer.
+  - The M3.6 e2e covers picking a passed-over option at level 60. `npm run check` (704) and M3.6 are green there.
+- Next step on `wip/MQ.3`:
+  - The GM "withdraw" of an option (DESIGN §6). Plan: a new GM-only event `selection.optionWithdrawn {characterId, name}` stored as an optional per-character list, so goldens stay unchanged. It needs a golden log and a session-log line.
+  - Consider a compact layout for long passed-over lists (the demo shows 20 cards).
+  - Then the sonnet review, merge to main, and check the box.
 - Blockers: none.
