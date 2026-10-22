@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_LIBRARY, STARTER_CLASSES } from '../src';
+import { DEFAULT_LIBRARY, STARTER_CLASSES, execute, type Campaign, type Command } from '../src';
+import { rawRules, run, testContext } from './helpers/events';
+
+const ctx = testContext('id');
+function ok(c: Campaign, command: Command): Campaign {
+  const r = execute(c, command, ctx);
+  if (!r.ok) throw new Error(`${command.type}: ${r.error}`);
+  return r.campaign;
+}
 
 /** MQ.13: the default classes are DESIGN §10's table, exactly. */
 const DESIGN_10: Record<string, { weights: Record<string, number>; skills: string[] }> = {
@@ -59,5 +67,53 @@ describe('starting classes (MQ.13, DESIGN §10)', () => {
     }
     expect(DEFAULT_LIBRARY.classes.map((c) => c.name)).toEqual(STARTER_CLASSES.map((c) => c.name));
     expect(DEFAULT_LIBRARY.skills).toHaveLength(18);
+  });
+
+  it('seed a campaign whose characters level only the stats their class names', () => {
+    let c = ok(run([{ type: 'campaign.create', name: 'Six', rules: rawRules() }], ctx), {
+      type: 'library.seedDefaults',
+    });
+    const s = c.state!;
+    expect(s.classLibraryOrder.map((id) => s.classLibrary[id]?.name)).toEqual(
+      STARTER_CLASSES.map((k) => k.name),
+    );
+    for (const [i, id] of s.classLibraryOrder.entries()) {
+      const def = s.classLibrary[id]!;
+      c = ok(c, {
+        type: 'character.create',
+        id: `c${i}`,
+        name: def.name,
+        className: def.name,
+        race: 'Human',
+        classSkills: def.skills,
+        classWeights: def.weights,
+      });
+      c = ok(c, {
+        type: 'xp.award',
+        track: 'class',
+        amount: 400,
+        participants: [{ characterId: `c${i}` }],
+      });
+      const ch = c.state!.characters[`c${i}`]!;
+      const want = DESIGN_10[def.name]!;
+      expect(ch.classLevel, def.name).toBe(4);
+      const gained = Object.fromEntries(
+        Object.entries(ch.stats).map(([k, v]) => [k, v - 10] as const),
+      );
+      // G-grade spread: 4 per class level, 16 in all, only into the class's stats.
+      expect(
+        Object.values(gained).reduce((a, b) => a + b, 0),
+        def.name,
+      ).toBe(16);
+      for (const [stat, g] of Object.entries(gained)) {
+        expect(g > 0, `${def.name} ${stat}`).toBe((want.weights[stat] ?? 0) > 0);
+      }
+      expect(ch.skills.map((k) => `${k.name}:${k.rarity}`)).toEqual([
+        ...want.skills,
+        'Identify:common',
+      ]);
+      // Identify's text is not part of the default set (QUALITY backlog).
+      for (const k of ch.skills.slice(0, 3)) expect(k.description, k.name).toBeTruthy();
+    }
   });
 });
