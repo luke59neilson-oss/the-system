@@ -228,3 +228,17 @@
   - L logged: a non-latest XP undo re-prices a later above-level bonus (D71a; M7.3 note); class-gate free-point pricing (D71b); profession start vs banked XP (Q24); declining an offered profession (Q25).
 - Round 2 (c065d6e..56b2db6): 0 High, 0 Medium, 1 Low (`evolution.chosen` meaning changed without a version bump; no released log can contain it → stated in D71).
 - Not done: pushing `main` to `release` (the global rule for Mx.A). The session's permission classifier refused it at MS.A as a production deploy, so it was not retried (see PROGRESS blocker).
+
+## 2026-10-22 · M2.4 Session log autosave · sonnet (fresh context, 2 rounds)
+- Round 1 (d95c360..be60158): 0 High, 2 Medium, 5 Low.
+  - M decided: hidden quest titles and GM reasons reach the log. Kept on purpose, because the log is GM-only prep for Claude. The file header now says so, with a test (D72, Q27).
+  - M fixed: each write refolded the whole campaign on the event loop. It now caches the pre-sitting fold (`sessionLogBase`) and refolds only after an undo reaches back before the sitting. Tested in the engine for equivalence and staleness, and in the writer.
+  - L fixed: a failed write left a temp file behind. It is now removed, with a test that forces the rename to fail.
+  - L accepted:
+    - Timeline lines are computed from the final undone set.
+    - The final write depends on `app.close()` within the 5 s exit guard.
+    - A crash loses up to 5 minutes of log.
+    - Demo logs go to `exports/demo/`.
+- Round 2 (be60158..9bf0d6d): 0 High, 0 Medium, 5 Low.
+  - L fixed (test gaps): temp-file cleanup, and the writer reusing its base across a pre-sitting undo.
+  - L accepted: the cached state relies on reducer immutability (true today); the validity check costs O(sitting) per write; the `closeSync` EIO edge.

@@ -2,6 +2,7 @@
 // session against the real server writing on a short interval and on close.
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
@@ -146,6 +147,64 @@ describe('SessionLogWriter', () => {
     expect(() => writer.close()).not.toThrow();
     expect(errors).toHaveLength(2);
     expect(() => writer.flush()).toThrow();
+    store.close();
+  });
+});
+
+describe('SessionLogWriter edge cases', () => {
+  it('leaves no temp file when the final rename fails, and follows an undo of a pre-sitting event', () => {
+    const dataDir = tempDir('log-edge');
+    const now = clock();
+    const store = CampaignStore.open('main', { dataDir, now });
+    let n = 0;
+    const gm: CommandContext = {
+      actor: { role: 'gm' },
+      sessionId: null,
+      now,
+      newId: () => `e${++n}`,
+    };
+    apply(store, { type: 'campaign.create', name: 'Whale', rules: rules() }, gm);
+    apply(
+      store,
+      { type: 'character.create', id: 'jake', name: 'Jake', className: 'Archer', classSkills: kit },
+      gm,
+    );
+    apply(
+      store,
+      { type: 'xp.award', track: 'class', amount: 300, participants: [{ characterId: 'jake' }] },
+      gm,
+    );
+    const earlier = store.campaign.events[store.campaign.events.length - 1]?.id ?? '';
+    const writer = new SessionLogWriter(store, {
+      exportsDir: exportsDirFor(dataDir),
+      now,
+      every: () => () => undefined,
+    });
+    apply(
+      store,
+      { type: 'xp.award', track: 'class', amount: 100, participants: [{ characterId: 'jake' }] },
+      gm,
+    );
+    expect(writer.flush()).toBe(true);
+    expect(readFileSync(writer.file, 'utf8')).toContain('Jake: class Archer 3 → 4');
+    // Undo the pre-sitting award: the cached base must be refolded.
+    apply(store, { type: 'event.undo', eventId: earlier }, gm);
+    apply(
+      store,
+      { type: 'xp.award', track: 'class', amount: 100, participants: [{ characterId: 'jake' }] },
+      gm,
+    );
+    expect(writer.flush()).toBe(true);
+    const text = readFileSync(writer.file, 'utf8');
+    expect(text).toContain('GM undid an earlier change');
+    expect(text).toContain('Jake: class Archer 0 → 1');
+    expect(text).toContain('Jake: class Archer 1 → 2');
+    // A directory where the log file goes makes the rename fail: no temp file stays.
+    rmSync(writer.file);
+    mkdirSync(writer.file);
+    apply(store, { type: 'title.award', characterId: 'jake', title: 'Blocked' }, gm);
+    expect(() => writer.flush()).toThrow();
+    expect(readdirSync(path.dirname(writer.file)).filter((f) => f.includes('.tmp-'))).toEqual([]);
     store.close();
   });
 });

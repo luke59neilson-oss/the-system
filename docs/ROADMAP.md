@@ -186,7 +186,7 @@ the full ones.
 
 ## M2 (continued) — Server and sync
 
-- [ ] **M2.4 Session log autosave.** Running log (DESIGN §7 "Logging for
+- [x] **M2.4 Session log autosave.** Running log (DESIGN §7 "Logging for
   Claude") written to the exports folder every 5 minutes and on shutdown.
   *Accept:* file appears and grows during a scripted session; contains no
   GM-private notes unless GM-flagged for export.
