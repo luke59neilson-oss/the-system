@@ -489,3 +489,9 @@
 - Round 1 (fc84bf9..6ca3e7e): 0 High, 0 Medium, 2 Low. `npm run check` green (739); the reviewer confirmed the new test fails without the fix.
   - L accepted for now: the GM can still offer a chosen-then-renamed name fresh on a later menu (`offerSelection`/`checkFreeName` ~214); a GM action, not a leak; noted for the QUALITY backlog.
   - L accepted: no test pins `withdrawPassedOver` on the old name or a case variant.
+
+## 2026-10-22 · QF.2 Item definitions reach players only for items they can see · sonnet
+- Round 1 (6ca3e7e..bc6ff15): 0 High, 1 Medium, 3 Low. `npm run check` green (739); `e2e/M3.7` green. The reviewer judged the two-seed property test (D118) robust, not weaker.
+  - M fixed (97d0ff2): a zero, negative or fractional count on a known id reached the payload schema, whose error named the id, so a player could scan for ids that exist. Every bad count now reads `That item is not available`; test over 0, -1, 0.5 × known/unknown ids for trades and gifts, confirmed failing without the fix. No round 2 (one Medium).
+  - L to Q45: asking another player for an item they hold shows its definition (a guessed id probes their inventory); by Accept's design.
+  - L accepted: a stale trade's accept error names an item both parties already saw. L fixed: canary failure text read inverted.

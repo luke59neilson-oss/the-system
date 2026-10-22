@@ -246,7 +246,7 @@ the rest follow in file order. Each gets its own §6 review.
   to Storm Pierce at evolution, offer the level-15 menu): it is not passed-over,
   `selection.choose` refuses it, and the player view does not list it; golden
   logs still replay.
-- [ ] **QF.2 (High) Item definitions reach players only for items they can
+- [x] **QF.2 (High) Item definitions reach players only for items they can
   see.** A player's own `trade.propose` may name any library item on the `get`
   side, and the player projection then sends its full definition (name, GM
   description, bonuses) to both sides; equip and gift errors also name items

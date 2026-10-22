@@ -23,6 +23,7 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 | L9 fixed-clock timebox (§5.5) | 2026-10-22 16:37 | End minute ≥ 48; items/run up | 39.0; 1.3 (last 6 runs) | Highs, round-2 share, CI red | first check after 6 runs |
 | L9 targeted orient reads (§4) | 2026-10-22 16:37 | Orient words down | ~30,800 (whole files) → 7,841 | Review findings that cite a missed decision | first check after 6 runs |
 | L9 CI: no `wip/*`, Chromium cache | 2026-10-22 16:37 | Main CI minutes down | 4.3 | CI red | first check after 6 runs |
+| D119 pre-review sibling self-check (§6.2) | 2026-10-22 18:35 | Round-2 share down (to ~4/10) | 7/10 | Highs, items/run | first check after 6 runs |
 
 ## Kept
 
@@ -46,3 +47,4 @@ table last in the file.
 | Date (UTC) | Runs | End minute (mean) | Items per run | Round-2 share | Highs | Main CI runs/day | Main CI red/day | Main CI minutes (mean) | Orient words |
 |---|---|---|---|---|---|---|---|---|---|
 | 2026-10-22 16:53 | 6 | 39.8 | 1.3 | 7/10 | 1 | 97 | 5 | 4.3 | 8110 |
+| 2026-10-22 18:07 | 6 | 41.3 | 1.7 | 7/10 | 1 | 95 | 8 | 4.6 | 9665 |

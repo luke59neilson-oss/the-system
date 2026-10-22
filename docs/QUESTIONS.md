@@ -260,3 +260,12 @@ DESIGN/ROADMAP; do not re-apply them.
     Alternative: a player may ask the GM only for items they have already
     seen (held, equipped, or in an earlier trade).
     Answer:
+
+45. **Asking another player for items.** A trade proposal may ask only for
+    items the other player holds now (QF.2). So a player who guesses an item
+    id can learn whether another player carries it, and the proposal then
+    shows them its name and description. Built default: allowed (trading is
+    open between players, and the ids are not shown anywhere). Alternative:
+    a player may ask another player only for currency, or only for items the
+    asker has already seen.
+    Answer:

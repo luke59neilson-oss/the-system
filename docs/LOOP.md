@@ -147,6 +147,11 @@ them whole costs about 30k tokens per run for history you do not need):
    tests (banned patterns in §5.7), GM-only data reaching players, and UX
    problems; report High / Medium / Low with file:line and a concrete failure
    scenario; do not edit files.
+   **Before launching it, self-check siblings (about 2 minutes)** and paste
+   the results into the prompt: (a) `grep` every other caller of each rule or
+   command you changed; (b) `grep` UI and help text that describes the changed
+   behaviour; (c) confirm each new test goes through the public command path
+   (`execute`), not a helper. Fix what this finds first.
 3. **Review in parallel.** Launch the reviewer with `run_in_background: true`
    and `isolation: "worktree"` (so it tests the item's commit, not your
    working tree), then start the next item while it works. When it reports,

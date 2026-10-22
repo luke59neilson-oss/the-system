@@ -98,9 +98,16 @@ reviewers ran 15–20 minutes each in the background.
 - 2026-10-22 16:55 · CI on 5e72abe red in E2E; the same commit passed the
   full suite locally (35/35). Failing test unknown (job logs are not
   reachable from runs; CI now reports failures as annotations). See QF.8.
+- 2026-10-22 18:10 · CI on 6ca3e7e red in E2E: `e2e/M3.7.spec.ts:202` (GM
+  View-as panes) timed out waiting for the View-as `Jake` button. The same
+  commit passed that spec 3× locally (`--repeat-each=3`). Watch for a repeat;
+  a second occurrence becomes a QF item.
 
 ## Backlog (Lows; M11.5 goes through these)
 
+- Boundaries: the QF.2 canary is engine-level (projection); no server-level
+  test drives a player's refused item command through the hub and scans the
+  frames (the hub sends only `projectForPlayer` output).
 - Rules: `offerSelection` (`evolution/model.ts` ~214) lets the GM offer a
   name the character already chose (and an evolution renamed) as a fresh
   option, so the character can end up with both forms (QF.1 review).
