@@ -150,6 +150,49 @@ the full ones.
   focuses the first), busy-port fallback and the splash; the release
   workflow's dry run produces the new file names.
 
+## MQ — Luke's answers, batch 1 (2026-10-22)
+
+Rule changes from Luke's answers (DESIGN §2, §4, §6, §7 updated; D97–D109).
+They touch finished engine and player items, so they come before M4.4.
+
+- [ ] **MQ.1 Evolution rules.** Evolution cannot be released, and a player
+  cannot evolve, while any skill selection is pending. Evolution refills
+  all pools. Each evolution option carries a GM-set one-time stat bonus.
+  Transforms are optional (config `skills.evolutionTransforms` minimum 0).
+  *Accept:* engine tests for each rule (new event versions + upcasters,
+  golden logs); evolution screen shows the bonus; e2e.
+- [ ] **MQ.2 Pools follow maxima.** A full pool stays full when its maximum
+  rises (level, item, title, evolution bonus); otherwise current is
+  unchanged; never refill on level-up; clamp when a maximum falls.
+  *Accept:* tests incl. DESIGN §2's 85/100 → 85/120 and 100/100 → 120/120.
+- [ ] **MQ.3 Passed-over options.** Unchosen menu options stay eligible and
+  appear in later menus below the new ones; one pick per selection;
+  eligibility rules from DESIGN §6. Player selection screen scrolls through
+  older options. *Accept:* engine tests; e2e.
+- [ ] **MQ.4 Marks carry over.** Excess marks carry into the next rarity
+  after an upgrade (incl. banked marks applied after an evolution).
+  *Accept:* tests.
+- [ ] **MQ.5 Grade gap per step.** The lower-grade mode applies ⅓ per grade
+  step. *Accept:* statistical test for 1- and 2-step gaps.
+- [ ] **MQ.6 Tailored professions.** Remove the default profession list from
+  the library seed. The GM offers each character their own professions at
+  the E evolution; the player may choose "none for now"; a Professions tab
+  lists the offers and lets the player take one later; once chosen the list
+  locks (greyed). Race level = class level until a profession is taken.
+  *Accept:* engine tests; e2e for picking at evolution, declining, and
+  picking later from the tab.
+- [ ] **MQ.7 Hidden quest notice.** Creating a hidden quest sends the
+  affected players a System notice that a hidden quest exists, with no
+  details. *Accept:* canary test still passes; notice e2e.
+- [ ] **MQ.8 Identify range.** Lower grade always; higher grade never; same
+  grade only if level ≤ 1.5 × the viewer's level; otherwise
+  `[??? – lvl ???]`. *Accept:* engine and projection tests; e2e.
+- [ ] **MQ.9 Windows-first releases.** Luke uses Windows. Release builds
+  Windows (portable + installer) and Linux (kept for the automated smoke
+  test); drop macOS (macOS Actions minutes count 10×). *Accept:* release
+  dry run green with exactly 3 files.
+- [ ] **MQ.A Batch acceptance and review.**
+
 ## M1 (continued) — Rules engine
 
 - [x] **M1.6 Titles and bonuses.** Flat and percentage bonuses, percentage
@@ -274,8 +317,9 @@ the full ones.
   log; capstone check; profession options; send. Show due selections
   (`dueSelections`) next to the M1.8 selection alert, which does not know
   whether a selection was taken.
-- [ ] **M5.2 Evolution builder.** Options, warnings, transforms, spread
-  reshape; release. Warn when a selection (esp. the capstone) is still
+- [ ] **M5.2 Evolution builder.** Options, warnings, one-time stat bonus per
+  option, optional transforms with merge prompts, spread reshape, tailored
+  profession offers (E evolution); release. Warn when a selection (esp. the capstone) is still
   pending (Q21).
 - [ ] **M5.3 Marks review.** End-of-session queue; upgrade prompts.
 - [ ] **M5.4 Merges.** Alert, build, send.
@@ -336,7 +380,7 @@ the full ones.
   examples.
 - [ ] **M9.3 Import with approval.** Invalid files show errors and change
   nothing; GM approves what applies.
-- [ ] **M9.4 Optional GitHub sync.** Token stored in OS app data only, never
+- [ ] **M9.4 Optional GitHub sync (deferred: Luke chose folder export for now; skip and leave unchecked until he asks).** Token stored in OS app data only, never
   exported. Session end pushes the report to `campaign/sessions/`; pulls
   `campaign/inbox/*.json` into the import queue. Off by default. Tested
   against a mocked API.
