@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0, MS, M1 and M2 done; M3 started (M3.1–M3.5)
-**Next item:** M3.6 Skill selection
+**Status:** in progress: M0, MS, M1 and M2 done; M3 started (M3.1–M3.6)
+**Next item:** M3.7 Inventory, gifts, trades (resume `wip/M3.7`)
 **Blockers:** none.
 
 ## Run log
@@ -259,3 +259,30 @@ next item, blockers. -->
 - Open `wip/*` branches: none.
 - Next: M3.6 Skill selection. Not started: at 34 min, an item plus two review rounds would not fit before the 60-minute stop.
 - Blockers: none.
+
+### Run 832a5b4e · 2026-10-22 04:06–04:36 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD and a stale local `main`), so `main` was reset to `origin/main`.
+  - The lock was pushed to main.
+  - `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md. The latest CI run on main was green (e8f5f3b).
+- Finished: M3.6 Skill selection (sonnet, 2 rounds; round 1 had 3 Medium, all fixed or partly fixed with unit tests; round 2 had none). See REVIEW-LOG.md.
+- Built:
+  - A "Skill selection · N waiting · [Choose]" strip under Free points/Titles. The DESIGN §9 rows are unchanged.
+  - A modal dialog with the offered skills as cards side by side, one column on phones. Each card shows the rarity-coloured `[Name (Rarity)]`, Class/Profession, rarity and description.
+  - Choose → review → Confirm. The command carries `offerId`.
+  - A GM re-offer, choice or undo closes the dialog with a notice. Escape cannot drop a choice in flight, and focus lands on the new skill. The View-as panes show the badge without [Choose].
+  - New `apps/web/src/player/selection.ts` (unit tested) and `e2e/M3.6.spec.ts`.
+- Started M3.7 on `wip/M3.7` (base 57987d6, head e42874b): `PlayerView.inventory` holds the player's own currency, items, equipment and trades, plus definitions of only the items those mention. The canary was reworked so that holdings, trades and held items are owner canaries and the rest of the library stays GM.
+- Still to do on M3.7:
+  - Switch pool maxima and the stats block to effective stats (D60). Decide how pools clamp when an unequip, gift, trade or `item.edited` lowers a maximum without breaking undo (D31).
+  - Inventory UI: equip, give, trades, incoming notices.
+  - e2e checking the demo's ring and bow on Jake.
+- Tests: 551 unit/integration tests (45 files). All 19 e2e specs are green, and screenshot re-renders of earlier items were discarded. Engine line coverage 99.36% (floor 90%).
+- CI: green on 078936c and 167999d. 57987d6 was pushed at the end of the run.
+- New decision D80. New question Q31 (should a skill selection DING?).
+- Open `wip/*` branches: `wip/M3.7` (unfinished, see above).
+- Next: M3.7, resuming `wip/M3.7`. Not finished: the pool-clamp semantics touch the undo rules (D31) and could not be built and reviewed before the 60-minute stop.
+- Blockers: none.
+
