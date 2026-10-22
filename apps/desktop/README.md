@@ -23,15 +23,16 @@ lives in the OS app-data folder (`<userData>/data`). One instance at a time.
 ## Packaging (MS.6)
 
 - `npm run build && npm run package -w @the-system/desktop -- --linux` (or
-  `--win`, `--mac`) runs electron-builder (`electron-builder.yml`, through
+  `--win`) runs electron-builder (`electron-builder.yml`, through
   `package.mjs`, which names files `TheSystem-<THE_SYSTEM_BUILD_ID>-…`,
   default `dev-<version>`) into
-  `apps/desktop/release/`: Windows installer + portable exe, macOS universal
-  dmg (unsigned), Linux AppImage. Only `dist/main.cjs` ships in the asar; the
+  `apps/desktop/release/`: Windows installer + portable exe, Linux AppImage.
+  The `mac` section of `electron-builder.yml` stays for local `--mac` builds,
+  but releases no longer build macOS (MQ.9, D97). Only `dist/main.cjs` ships in the asar; the
   web build goes to `resources/web`.
 - `THE_SYSTEM_PACKAGED_EXE=apps/desktop/release/linux-unpacked/the-system npm run package:smoke -w @the-system/desktop`
   launches the packaged app under `xvfb-run` and checks it serves and connects.
-- `.github/workflows/release.yml` builds all three on push to `release` and
+- `.github/workflows/release.yml` builds Windows and Linux on push to `release` and
   publishes a GitHub pre-release `preview-<date>-<run>` whose files carry the
   same id and whose notes list the commits since the previous preview
   (`scripts/release-notes.mjs`); a push to `release-dry-run` builds and
