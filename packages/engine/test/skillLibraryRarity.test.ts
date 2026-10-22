@@ -177,6 +177,52 @@ describe('skill library keyed by name and rarity (MQ.12)', () => {
     expect(JSON.stringify(projectForGm(state))).toContain('CANARY effects text');
   });
 
+  it('seeding the default set reaches copies that already exist', () => {
+    let c = ok(run([created], ctx), {
+      type: 'character.create',
+      id: 'kim',
+      name: 'Kim',
+      className: 'Brawler',
+      classSkills: [
+        { name: 'Kim One', rarity: 'inferior' },
+        { name: 'Kim Two', rarity: 'inferior' },
+        { name: 'Battle Cry', rarity: 'common' },
+      ],
+    });
+    const cry = () => c.state?.characters['kim']?.skills.find((s) => s.name === 'Battle Cry');
+    expect(cry()?.description).toBeNull();
+    c = ok(c, { type: 'library.seedDefaults' });
+    const entry = Object.values(c.state?.skillLibrary ?? {}).find((d) => d.name === 'Battle Cry');
+    expect(entry?.description).toBeTruthy();
+    expect(cry()?.description).toBe(entry?.description);
+  });
+
+  it('seeding adds a default entry when only another rarity of that name exists', () => {
+    const cry = {
+      type: 'skillDef.define',
+      id: 'cry-u',
+      name: 'Battle Cry',
+      rarity: 'uncommon',
+      tags: [],
+      description: 'Louder.',
+      flavor: '',
+      effects: '',
+    } as const;
+    const cries = (c: Campaign) =>
+      Object.values(c.state?.skillLibrary ?? {})
+        .filter((d) => d.name === 'Battle Cry')
+        .map((d) => d.rarity)
+        .sort();
+    const c = ok(ok(run([created], ctx), cry), { type: 'library.seedDefaults' });
+    expect(cries(c)).toEqual(['common', 'uncommon']);
+    // Stored rules (D90) still match by name only.
+    const raw = rawRules() as { skills: Record<string, unknown> };
+    const { libraryByRarity: _dropped, ...skills } = raw.skills;
+    void _dropped;
+    const old = run([{ type: 'campaign.create', name: 'Old', rules: { ...raw, skills } }], ctx);
+    expect(cries(ok(ok(old, cry), { type: 'library.seedDefaults' }))).toEqual(['uncommon']);
+  });
+
   it('rules stored before MQ.12 keep effects GM-only', () => {
     const raw = rawRules() as { skills: Record<string, unknown> };
     const { libraryByRarity: _dropped, ...skills } = raw.skills;

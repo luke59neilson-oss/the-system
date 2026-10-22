@@ -314,22 +314,24 @@ function syncFromLibrary(
   after: CampaignState,
   event: DomainEvent,
 ): CampaignState {
-  const touchedId =
+  // Entries this event defined or edited: their copies take the new text.
+  const touchedIds =
     event.type === 'skillDef.defined'
-      ? event.payload.id
+      ? [event.payload.id]
       : event.type === 'skillDef.edited'
-        ? event.payload.skillDefId
-        : null;
-  const touched =
-    touchedId !== null && hasOwn(after.skillLibrary, touchedId)
-      ? after.skillLibrary[touchedId]
-      : undefined;
-  if (!touched && before.characters === after.characters) return after;
+        ? [event.payload.skillDefId]
+        : event.type === 'library.seeded'
+          ? event.payload.skills.map((d) => d.id)
+          : [];
+  const touched = touchedIds.flatMap((id) =>
+    hasOwn(after.skillLibrary, id) ? [after.skillLibrary[id] as SkillDef] : [],
+  );
+  if (touched.length === 0 && before.characters === after.characters) return after;
   let characters: Record<string, Character> | null = null;
   for (const id of after.characterOrder) {
     const c = hasOwn(after.characters, id) ? after.characters[id] : undefined;
     const old = hasOwn(before.characters, id) ? before.characters[id] : undefined;
-    if (!c || (c === old && !touched)) continue;
+    if (!c || (c === old && touched.length === 0)) continue;
     const synced = syncCharacterSkills(after.rules, old, c, after.skillLibrary, touched);
     if (synced !== c) (characters ??= { ...after.characters })[id] = synced;
   }

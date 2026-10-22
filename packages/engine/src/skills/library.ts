@@ -112,7 +112,7 @@ export function syncSkillText(skill: CharacterSkill, def: SkillDef | undefined):
 
 /**
  * MQ.12: after an event, every skill copy that is new, changed rarity, or
- * whose entry `touched` names, takes its entry's text (unless hand-edited).
+ * whose entry is in `touched`, takes its entry's text (unless hand-edited).
  * Returns `after` itself when nothing changes.
  */
 export function syncCharacterSkills(
@@ -120,16 +120,13 @@ export function syncCharacterSkills(
   before: Character | undefined,
   after: Character,
   library: Readonly<Record<string, SkillDef>>,
-  touched: SkillDef | undefined,
+  touched: readonly SkillDef[],
 ): Character {
   const had = new Map(before?.skills.map((s) => [s.name, s.rarity]) ?? []);
   let changed = false;
   const skills = after.skills.map((skill) => {
     const fresh = had.get(skill.name) !== skill.rarity;
-    const hit =
-      touched !== undefined &&
-      touched.rarity === skill.rarity &&
-      sameName(touched.name, skill.name);
+    const hit = touched.some((t) => t.rarity === skill.rarity && sameName(t.name, skill.name));
     if (!fresh && !hit) return skill;
     const synced = syncSkillText(skill, entryForSkill(rules, library, skill));
     if (synced !== skill) changed = true;
