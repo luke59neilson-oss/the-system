@@ -703,7 +703,7 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         const party = viewer === state.characterOrder[0] || viewer === state.characterOrder[1];
         for (const field of ['TRADE-swap', 'TRADE-swapdesc']) {
           if (json.includes(field) !== party)
-            problems.push(`${viewer}: ${field} present=${!party}`);
+            problems.push(`${viewer}: ${field} expected=${party}`);
         }
         // Non-vacuous: party notes reach every player, in full.
         for (const part of ['title', 'body', 'tag']) {

@@ -1176,7 +1176,14 @@ function itemOutOfReach(state: NonNullable<Campaign['state']>, command: Command)
       : {};
   const holds = (who: string, items: Readonly<Record<string, unknown>>) =>
     Object.entries(items).every(
-      ([id, n]) => known(id) && countOf(inv(who), id) >= (typeof n === 'number' ? n : 1),
+      // A bad count reads like a missing item too, or the payload schema's
+      // error would confirm that the id exists (QF.2 review).
+      ([id, n]) =>
+        typeof n === 'number' &&
+        Number.isSafeInteger(n) &&
+        n > 0 &&
+        known(id) &&
+        countOf(inv(who), id) >= n,
     );
   if (command.type === 'item.equip') {
     return known(command.itemId) && countOf(inv(command.characterId), command.itemId) >= 1

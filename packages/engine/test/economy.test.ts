@@ -668,6 +668,27 @@ describe('a player cannot pull unseen item definitions (QF.2)', () => {
       expect(result.ok, command.type).toBe(false);
       if (!result.ok) expect(result.error).not.toContain('Relic');
     }
+    // Bad counts read the same for a known id as for an unknown one (review).
+    for (const n of [0, -1, 0.5]) {
+      for (const id of ['relic', 'nope']) {
+        for (const command of [
+          {
+            type: 'trade.propose',
+            tradeId: 'p',
+            characterId: 'jake',
+            to: 'kim',
+            get: { items: { [id]: n } },
+            give: { currency: 1 },
+          },
+          { type: 'gift.give', characterId: 'jake', to: 'kim', items: { [id]: n } },
+        ] as Command[]) {
+          const result = execute(c, command, player('jake'));
+          expect(result.ok ? 'ok' : result.error, `${command.type} ${id} ${n}`).toBe(
+            ITEM_NOT_AVAILABLE,
+          );
+        }
+      }
+    }
     for (const viewer of ['jake', 'kim']) {
       expect(JSON.stringify(projectForPlayer(c.state ?? (null as never), viewer))).not.toContain(
         'SECRET',
