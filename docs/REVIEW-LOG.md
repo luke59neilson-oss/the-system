@@ -465,3 +465,11 @@
 - Round 2 (64a5968..22a9d0c), sonnet: 0 High, 0 Medium, 3 Low, all accepted: the sticky header hard-codes the dialog background and padding; withdrawing a retired name succeeds with no visible effect; the withdrawn notice stays until the player picks again or closes.
 - Builder ran the full e2e suite (35) green after merging into main.
 
+## 2026-10-22 · MQ.4 Marks carry over · sonnet
+- Round 1 (835e3f5..1bc57bf): 1 High, 2 Medium, 3 Low. `npm run check` green (715); no banned patterns; golden logs untouched; state changes additive.
+  - H open: an evolution transform that raises a skill's rarity still zeroes its marks (`evolution/model.ts` ~546), so banked marks are not carried after an evolution.
+  - M open: the "banked marks apply after an evolution" test calls `upgradeSkill` on a hand-made E-grade character instead of running an evolution.
+  - M open: the evolution screen warns "N mastery marks reset to 0" for every transformed skill (`apps/web/src/player/evolution.ts:77`), which is wrong when the rarity is kept and after the fix.
+  - L: "5 / 4 marks" can show after a carry (the bar clamps); a double carry through two upgrades is not tested; the schema comment cites D101 rather than D113. The flag has no settings UI (as with `fullPoolsStayFull`, D111), so stored campaigns keep the reset rule until M4.9.
+- Round 2 required (a High). Not run this run (timebox); the box stays unchecked.
+

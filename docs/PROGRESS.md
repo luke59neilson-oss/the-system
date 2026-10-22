@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1, MQ.2, MQ.9 done; MQ.3 on `wip/MQ.3`); M4.1–M4.4 done
-**Next item:** resume MQ.3 Passed-over options from `wip/MQ.3` (GM withdraw still to build, then review)
+**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1, MQ.2, MQ.3, MQ.9 done; MQ.4 on `wip/MQ.4`); M4.1–M4.4 done
+**Next item:** resume MQ.4 Marks carry over from `wip/MQ.4` (fix the review-1 High in the evolution transform path, then review round 2)
 **Blockers:** none.
 
 ## Run log
@@ -501,3 +501,27 @@ next item, blockers. -->
   - Consider a compact layout for long passed-over lists (the demo shows 20 cards).
   - Then the sonnet review, merge to main, and check the box.
 - Blockers: none.
+
+### Run cff91d0a · 2026-10-22 16:07–16:53 UTC (ended at minute 46: §5.5 hand-off and close-out)
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned with a stale local `main` and a detached HEAD, so `main` was reset to `origin/main`.
+  - The lock was pushed to main. `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work in the background on worktrees.
+- Orient: no new answers in ANSWERS.md. CI on main was green (6c241ad). Luke pushed during the run: L-numbered chat decisions (L1–L10), the new LOOP timebox and orient rules, and the public-repo rule. All of it was merged with no force push.
+- Finished: MQ.3 Passed-over options (D112).
+  - The GM withdraws an option with the GM-only event `selection.optionWithdrawn`. It can be undone, writes a session-log line, and has a new `passed-over` golden log. The GM button comes with M5.1.
+  - Passed-over options show as compact rows. The dialog header stays in place while the list scrolls. The count includes older options, e.g. "choose one of 22 skills (3 new)". A notice appears when the option under review is withdrawn.
+  - Review round 1 (sonnet): 0 High, 4 Medium, all fixed. Round 2: 0 High, 0 Medium, 3 Low, accepted.
+  - A D-number collision with Luke's chat decisions was renumbered, then reverted once Luke moved his to L-numbers.
+- Built, not checked: MQ.4 Marks carry over, on `wip/MQ.4` (base 835e3f5, head 1bc57bf; D113).
+  - `skill.upgrade` keeps `marks - needed` behind `rules.skills.marksCarryOver`: on for new campaigns, off for stored rules. Golden states were bumped additively, and there is a new `marks` golden log. 715 tests green.
+  - Review round 1 (sonnet): 1 High, 2 Medium. Details are in REVIEW-LOG.
+  - Next step:
+    1. In `packages/engine/src/evolution/model.ts` (~546), when an evolution transform raises a skill's rarity, keep the marks minus the summed step costs (clamped at 0) under the flag.
+    2. Replace the direct `upgradeSkill` test with one that goes through `evolution.choose`.
+    3. Fix the evolution screen's "marks reset to 0" warning (`apps/web/src/player/evolution.ts:77`; may need `marksCarryOver` in the player rules).
+    4. Run review round 2, merge, and check the box.
+- Tests: 711 on main (64 files). The full e2e suite (35) was green after the MQ.3 merge. M3.6, M3.13 and M3.A were re-run, and only the M3.6 and M3.13 screenshots were kept. Engine coverage was not re-measured.
+- Open `wip/*` branches: `wip/MQ.4` (unfinished). `wip/MQ.3` is merged.
+- Blockers: none.
+
