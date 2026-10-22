@@ -318,8 +318,17 @@ function randomSkillCommand(
       nickname: pick(['Jake Juice', null, '', 'Zap']),
     };
   }
-  if (roll < 0.25) {
+  if (roll < 0.2) {
     return { type: 'skill.setUnique', characterId, skill: someSkill(), unique: rand() < 0.5 };
+  }
+  if (roll < 0.25) {
+    return {
+      type: 'skill.describe',
+      characterId,
+      skill: someSkill(),
+      description: pick(['Shoots true.', null, ' ', 'x'.repeat(2001)]),
+      flavor: pick([null, 'Old hands.', '']),
+    };
   }
   if (roll < 0.75) {
     return {

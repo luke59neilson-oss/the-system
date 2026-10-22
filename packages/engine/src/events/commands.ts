@@ -24,7 +24,12 @@ export type Command =
       name: string;
       className: string;
       race?: string | undefined;
-      classSkills: readonly { name: string; rarity: string }[];
+      classSkills: readonly {
+        name: string;
+        rarity: string;
+        description?: string | undefined;
+        flavor?: string | undefined;
+      }[];
       classWeights?: Readonly<Record<string, number>> | undefined;
     }
   | { type: 'character.rename'; characterId: string; name: string }
@@ -156,6 +161,13 @@ export type Command =
     }
   | { type: 'note.delete'; noteId: string; characterId: string | null }
   | { type: 'skill.nickname'; characterId: string; skill: string; nickname: string | null }
+  | {
+      type: 'skill.describe';
+      characterId: string;
+      skill: string;
+      description: string | null;
+      flavor: string | null;
+    }
   | { type: 'skill.setUnique'; characterId: string; skill: string; unique: boolean }
   | {
       type: 'skill.awardMark';
@@ -324,6 +336,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('note.edit') }),
   z.object({ type: z.literal('note.delete') }),
   z.object({ type: z.literal('skill.nickname') }),
+  z.object({ type: z.literal('skill.describe') }),
   z.object({ type: z.literal('skill.setUnique') }),
   z.object({ type: z.literal('skill.awardMark') }),
   z.object({ type: z.literal('skill.upgrade') }),
@@ -630,6 +643,16 @@ function toEvent(
           characterId: command.characterId,
           skill: command.skill,
           nickname: command.nickname,
+        },
+      };
+    case 'skill.describe':
+      return {
+        type: 'skill.described',
+        payload: {
+          characterId: command.characterId,
+          skill: command.skill,
+          description: command.description,
+          flavor: command.flavor,
         },
       };
     case 'skill.setUnique':

@@ -14,6 +14,9 @@ const nonBlank = z
   .min(1, 'must not be blank')
   .refine((s) => s.length <= 200, 'must be at most 200 characters');
 const recordId = z.string().min(1).max(100);
+/** Skill System text (M3.5): trimmed by the engine; blank means none. */
+const skillDescription = z.string().max(2000);
+const skillFlavor = z.string().max(1000);
 const statValues = z.record(z.string().min(1), z.number().int().nonnegative());
 /** A party in a gift or trade: a character id, or null for the GM. */
 const party = recordId.nullable();
@@ -60,7 +63,15 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     name: nonBlank,
     className: nonBlank,
     race: nonBlank.optional(),
-    classSkills: z.array(z.strictObject({ name: nonBlank, rarity: z.string().min(1) })),
+    /** `description`/`flavor` optional since M3.5, so older payloads stay valid. */
+    classSkills: z.array(
+      z.strictObject({
+        name: nonBlank,
+        rarity: z.string().min(1),
+        description: skillDescription.optional(),
+        flavor: skillFlavor.optional(),
+      }),
+    ),
     /** Optional since M1.4 (absent = equal weights), so v1 payloads stay valid. */
     classWeights: statValues.optional(),
   }),
@@ -201,6 +212,13 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     characterId: recordId,
     skill: nonBlank,
     nickname: z.string().max(200).nullable(),
+  }),
+  /** GM writes a skill's System description and flavour; null or blank clears (M3.5). */
+  'skill.described': z.strictObject({
+    characterId: recordId,
+    skill: nonBlank,
+    description: skillDescription.nullable(),
+    flavor: skillFlavor.nullable(),
   }),
   /** GM sets or clears a skill's Unique tag. */
   'skill.uniqueSet': z.strictObject({
@@ -369,6 +387,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'note.edited': 1,
   'note.deleted': 1,
   'skill.nicknamed': 1,
+  'skill.described': 1,
   'skill.uniqueSet': 1,
   'skill.markAwarded': 1,
   'skill.upgraded': 1,

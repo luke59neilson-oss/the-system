@@ -70,7 +70,71 @@ describe('rarity ladder and new skills', () => {
       unique: false,
       marks: 0,
       markSessions: [],
+      description: null,
+      flavor: null,
     });
+  });
+});
+
+describe('skill text (M3.5)', () => {
+  const describe_ = (
+    skillName: string,
+    description: string | null,
+    flavor: string | null = null,
+  ): Command => ({
+    type: 'skill.describe',
+    characterId: 'jake',
+    skill: skillName,
+    description,
+    flavor,
+  });
+
+  it('creation carries optional System text, trimmed; blank means none', () => {
+    const c = run(
+      [
+        created,
+        {
+          type: 'character.create',
+          id: 'jake',
+          name: 'Jake',
+          className: 'Archer',
+          classSkills: [
+            {
+              name: archery,
+              rarity: 'inferior',
+              description: '  Shoots true. ',
+              flavor: 'Old hands.',
+            },
+            { name: stealth, rarity: 'inferior', description: '   ' },
+            { name: eye, rarity: 'common' },
+          ],
+        },
+      ],
+      ctx,
+    );
+    expect(skill(c, archery)).toMatchObject({ description: 'Shoots true.', flavor: 'Old hands.' });
+    expect(skill(c, stealth)).toMatchObject({ description: null, flavor: null });
+    expect(skill(c, eye)).toMatchObject({ description: null, flavor: null });
+  });
+
+  it('the GM writes and clears a description and flavour', () => {
+    let c = ok(base(), describe_(eye, ' Spots what moves. ', 'Nothing hides.'));
+    expect(skill(c, eye)).toMatchObject({
+      description: 'Spots what moves.',
+      flavor: 'Nothing hides.',
+    });
+    expect(skill(c, eye, 'kim')).toMatchObject({ description: null, flavor: null });
+    c = ok(c, describe_(eye, '', 'Nothing hides.'));
+    expect(skill(c, eye)).toMatchObject({ description: null, flavor: 'Nothing hides.' });
+  });
+
+  it('refuses unchanged text, unknown skills, over-long text and players', () => {
+    const c = ok(base(), describe_(eye, 'Spots.'));
+    expect(reject(c, describe_(eye, ' Spots. '))).toMatch('already has that text');
+    expect(reject(c, describe_('Fireball', 'Boom'))).toMatch('no skill "Fireball"');
+    expect(reject(c, describe_(eye, 'x'.repeat(2001)))).toBeTruthy();
+    expect(reject(c, describe_(eye, 'ok', 'y'.repeat(1001)))).toBeTruthy();
+    expect(reject(c, describe_(eye, 'Mine now'), player('jake'))).toMatch('only the GM');
   });
 });
 
@@ -230,6 +294,8 @@ describe('merges', () => {
       unique: false,
       marks: 0,
       markSessions: [],
+      description: null,
+      flavor: null,
     });
     expect(c.state?.characters['jake']?.merges).toEqual({ G: 1 });
   });

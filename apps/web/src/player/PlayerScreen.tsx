@@ -24,6 +24,7 @@ import {
 } from './history';
 import { allocationText, assignedBatches, nextBatch, spent, step } from './freePoints';
 import { browserStorage, remember } from './join';
+import { SkillDetail } from './SkillDetail';
 import {
   cssToken,
   formatStatValue,
@@ -165,8 +166,35 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
         `The race level ${level} points were changed by the GM; your choice was not saved.`,
       );
   };
+  // M3.5: the skill whose detail is open, by official name. If it stops
+  // existing (merged, transformed by an evolution, undone), the detail closes.
+  const [skillOpen, setSkillOpen] = useState<string | null>(null);
+  const [skillNotice, setSkillNotice] = useState<string | null>(null);
+  const detail = skillOpen === null ? null : (me.skills.find((s) => s.name === skillOpen) ?? null);
+  if (skillOpen !== null && detail === null) {
+    setSkillNotice(`[${skillOpen}] changed, so its details were closed.`);
+    setSkillOpen(null);
+  }
+  const statusSection = useRef<HTMLElement | null>(null);
+  const openSkill = (name: string) => {
+    setSkillNotice(null);
+    setSkillOpen(name);
+  };
+  const closeSkill = () => {
+    const name = skillOpen;
+    setSkillOpen(null);
+    // Back to the skill that opened the detail (a modal dialog restores focus
+    // itself in most browsers; this covers the rest and a renamed opener).
+    requestAnimationFrame(() => {
+      const opener = [
+        ...(statusSection.current?.querySelectorAll<HTMLButtonElement>('button[data-skill]') ?? []),
+      ].find((b) => b.dataset['skill'] === name);
+      opener?.focus();
+    });
+  };
   return (
     <section
+      ref={statusSection}
       className={`window status-window${metal}`}
       aria-labelledby="status"
       data-testid="status"
@@ -261,16 +289,43 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
           </ul>
         </details>
       )}
-      <SkillList title="Class Skills" kind="class" list={skills('class')} rules={rules} />
+      <SkillList
+        title="Class Skills"
+        kind="class"
+        list={skills('class')}
+        rules={rules}
+        onOpen={openSkill}
+      />
       {skills('profession').length > 0 && (
         <SkillList
           title="Profession Skills"
           kind="profession"
           list={skills('profession')}
           rules={rules}
+          onOpen={openSkill}
         />
       )}
-      <SkillList title="Race Skills" kind="race" list={skills('race')} rules={rules} />
+      <SkillList
+        title="Race Skills"
+        kind="race"
+        list={skills('race')}
+        rules={rules}
+        onOpen={openSkill}
+      />
+      {skillNotice && (
+        <p className="muted" role="status" data-testid="skill-notice">
+          {skillNotice}
+        </p>
+      )}
+      {detail && (
+        <SkillDetail
+          key={detail.name}
+          skill={detail}
+          view={view}
+          client={client}
+          onClose={closeSkill}
+        />
+      )}
     </section>
   );
 }
@@ -439,11 +494,13 @@ function SkillList({
   kind,
   list,
   rules,
+  onOpen,
 }: {
   title: string;
   kind: SkillKind;
   list: OwnSheet['skills'];
   rules: PlayerView['rules'];
+  onOpen: (name: string) => void;
 }) {
   const id = `skills-${kind}`;
   return (
@@ -455,10 +512,18 @@ function SkillList({
         <ul className="skills" aria-labelledby={id} data-testid={id}>
           {list.map((s) => (
             <li key={s.name} className={`skill rarity-${cssToken(s.rarity)}`} data-testid="skill">
-              <span className="skill-name">
-                [{s.name} ({rarityName(rules, s.rarity)})]
-              </span>
-              {s.nickname && <span className="nickname"> “{s.nickname}”</span>}
+              <button
+                type="button"
+                className="skill-open"
+                data-skill={s.name}
+                aria-haspopup="dialog"
+                onClick={() => onOpen(s.name)}
+              >
+                <span className="skill-name">
+                  [{s.name} ({rarityName(rules, s.rarity)})]
+                </span>
+                {s.nickname && <span className="nickname"> “{s.nickname}”</span>}
+              </button>
             </li>
           ))}
         </ul>

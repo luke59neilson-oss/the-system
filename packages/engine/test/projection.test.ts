@@ -45,6 +45,35 @@ function party(): CampaignState {
 }
 
 describe('player projection', () => {
+  it('reports mark progress from the rules: next step, ceiling banking, ladder top (M3.5)', () => {
+    const state = party();
+    const jake = state.characters.jake;
+    if (!jake) throw new Error('no jake');
+    const at = (rarity: string, marks = 0) =>
+      projectForPlayer(
+        {
+          ...state,
+          characters: {
+            ...state.characters,
+            jake: {
+              ...jake,
+              skills: [{ ...(jake.skills[0] as (typeof jake.skills)[0]), rarity, marks }],
+            },
+          },
+        },
+        'jake',
+      ).me.skills[0];
+    expect(at('uncommon', 2)).toMatchObject({
+      marksNeeded: 6,
+      nextRarity: 'rare',
+      atCeiling: false,
+    });
+    // G-grade's ceiling is Rare: marks bank there.
+    expect(at('rare', 9)).toMatchObject({ marksNeeded: 8, nextRarity: 'epic', atCeiling: true });
+    // Mythical has no mark upgrade (Divine is reserved).
+    expect(at('mythical')).toMatchObject({ marksNeeded: null, nextRarity: null, atCeiling: true });
+  });
+
   it('gives the viewer their own sheet in full', () => {
     const state = party();
     const view = projectForPlayer(state, 'jake');
@@ -52,7 +81,14 @@ describe('player projection', () => {
     expect(view.viewerId).toBe('jake');
     expect(view.campaignName).toBe('Whale');
     expect(view.me.stats).toEqual(jake?.stats);
-    expect(view.me.skills).toEqual(jake?.skills);
+    expect(view.me.skills).toEqual(
+      jake?.skills.map((s) => ({
+        ...s,
+        marksNeeded: s.rarity === 'inferior' ? 3 : 4,
+        nextRarity: s.rarity === 'inferior' ? 'common' : 'uncommon',
+        atCeiling: false,
+      })),
+    );
     expect(view.me.freePointBatches).toEqual(jake?.freePointBatches);
     expect(view.me.classLevel).toBe(3);
     expect(view.me.raceLevel).toBe(3);

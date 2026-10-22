@@ -135,3 +135,9 @@ answer under any question and the next run will follow it.
     until a player turns it on. Default: as described (D76). Alternative:
     sound on by default, or pop-ups for free points too.
     Answer:
+30. **Who writes skill text?** Skills now show a System description and
+    flavour line. Default: the GM writes it (per skill, per character for
+    now; the skill library in M4.1 will reuse it), and the built-in Archer
+    skills ship with original text (D78). Alternative: players may write
+    their own flavour line.
+    Answer:

@@ -1,8 +1,15 @@
-import { poolMax, raceLevel, type Character, type FreePointBatch } from '../character';
+import {
+  poolMax,
+  raceLevel,
+  type Character,
+  type CharacterSkill,
+  type FreePointBatch,
+} from '../character';
 import type { CampaignState } from '../events';
 import type { PendingEvolution, SelectionRecord, SkillOption } from '../evolution';
 import { daysLeft, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
+import { atCeiling, marksToUpgrade } from '../skills';
 
 /**
  * Player projection (ROADMAP M1.13): what one player's browser may receive.
@@ -150,6 +157,15 @@ export interface OwnSheet {
     /** Mastery marks toward the next upgrade (M3.5 shows progress). */
     readonly marks: number;
     readonly markSessions: readonly string[];
+    /** System description and flavour (M3.5), or null for none yet. */
+    readonly description: string | null;
+    readonly flavor: string | null;
+    /** Marks the next upgrade needs, or null when the ladder has no next step. */
+    readonly marksNeeded: number | null;
+    /** The rarity id a mark upgrade leads to, or null. */
+    readonly nextRarity: string | null;
+    /** At the grade's rarity ceiling: marks bank until the next evolution. */
+    readonly atCeiling: boolean;
   }[];
   /** Merges done per grade id. */
   readonly merges: Readonly<Record<string, number>>;
@@ -297,6 +313,9 @@ function ownSheet(rules: RulesConfig, c: Character): OwnSheet {
       unique: s.unique,
       marks: s.marks,
       markSessions: [...s.markSessions],
+      description: s.description,
+      flavor: s.flavor,
+      ...markProgress(rules, c, s),
     })),
     merges: copyRecord(
       c.merges,
@@ -327,6 +346,17 @@ function ownSheet(rules: RulesConfig, c: Character): OwnSheet {
             })),
             professions: [...c.evolution.professions],
           },
+  };
+}
+
+/** Where a skill stands on the mark ladder (DESIGN §6), from the rules config. */
+function markProgress(rules: RulesConfig, c: Character, s: CharacterSkill) {
+  const needed = marksToUpgrade(rules, s);
+  const index = rules.skills.rarities.findIndex((r) => r.id === s.rarity);
+  return {
+    marksNeeded: needed,
+    nextRarity: needed === null ? null : (rules.skills.rarities[index + 1]?.id ?? null),
+    atCeiling: atCeiling(rules, c, s),
   };
 }
 

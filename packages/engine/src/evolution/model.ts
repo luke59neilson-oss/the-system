@@ -275,7 +275,10 @@ export function chooseSelection(
   return {
     ...character,
     selections,
-    skills: [...character.skills, newSkill(option.name, option.rarity, option.kind)],
+    skills: [
+      ...character.skills,
+      newSkill(option.name, option.rarity, option.kind, { description: option.description }),
+    ],
   };
 }
 

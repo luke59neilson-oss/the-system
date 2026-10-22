@@ -3,7 +3,15 @@ import { emptyCampaign, execute, type Campaign, type Command, type DomainEvent }
 import { dueSelections, evolutionTarget } from '../evolution';
 import { xpForLevels, type XpTrack } from '../progression';
 import { DEFAULT_RULES, type RulesConfig } from '../rules';
+import { marksToUpgrade } from '../skills';
 import { STARTER_CLASSES } from './starters';
+
+/** Demo System text for the starting race skill (real campaigns: the skill library, M4.1). */
+const IDENTIFY_TEXT = {
+  description:
+    'Reveals what the System knows about a creature, item or place. How much it shows depends on your level and theirs.',
+  flavor: 'Knowledge is the first weapon.',
+};
 
 /**
  * The demo campaign (ROADMAP MS.4, M1.15): a ready-made party for trying the
@@ -279,6 +287,19 @@ export function buildDemoEvents(ctx: DemoContext): DomainEvent[] {
         skill: firstClassSkill.name,
         nickname: demo.nickname,
       });
+    }
+    // M3.5: the race skill's System text, and a mark toward the first class
+    // skill's next rarity, so the skill detail has something to show.
+    run({
+      type: 'skill.describe',
+      characterId: id,
+      skill: rules.skills.startingRaceSkill.name,
+      description: IDENTIFY_TEXT.description,
+      flavor: IDENTIFY_TEXT.flavor,
+    });
+    const marked = char(id).skills.find((s) => s.kind === 'class');
+    if (marked && marksToUpgrade(rules, marked) !== null) {
+      run({ type: 'skill.awardMark', characterId: id, skill: marked.name, session: 'demo-1' });
     }
     // Rested: pools full (level-ups do not refill them, Q14).
     const stats = char(id).stats;

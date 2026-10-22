@@ -2,7 +2,7 @@ import type { PendingEvolution, SelectionRecord } from '../evolution/model';
 import type { GradeRules, RulesConfig } from '../rules';
 
 /** Bumped when the serialized character shape changes; M1.3 upcasts old states. */
-export const CHARACTER_SCHEMA_VERSION = 4;
+export const CHARACTER_SCHEMA_VERSION = 5;
 
 /** Skill as held by a character (the full skill system arrives in M1.9). */
 export interface CharacterSkill {
@@ -16,6 +16,10 @@ export interface CharacterSkill {
   readonly marks: number;
   /** Sessions this skill earned a mark in (DESIGN §6: one per skill per session). */
   readonly markSessions: readonly string[];
+  /** What the skill does, in the System's words (M3.5); null until the GM writes one. */
+  readonly description: string | null;
+  /** Flavour text shown under the description (M3.5); null for none. */
+  readonly flavor: string | null;
 }
 
 /** One level-up's free points (DESIGN §4): assigned once, then locked (M1.5). */
@@ -65,18 +69,34 @@ export interface NewCharacter {
   name: string;
   className: string;
   race?: string | undefined;
-  classSkills: readonly { name: string; rarity: string }[];
+  classSkills: readonly SkillGrant[];
   /** Stat weights of the starting class; equal weights when omitted. */
   classWeights?: Readonly<Record<string, number>> | undefined;
 }
 
+/** A skill as granted at creation: name and rarity, with optional System text (M3.5). */
+export interface SkillGrant {
+  readonly name: string;
+  readonly rarity: string;
+  readonly description?: string | undefined;
+  readonly flavor?: string | undefined;
+}
+
 export class CharacterRuleError extends Error {}
+
+/** Trimmed text, or null when absent or blank. */
+export const textOrNull = (value: string | null | undefined): string | null => {
+  if (value === null || value === undefined) return null;
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
+};
 
 /** A freshly granted skill: no nickname, not unique, no marks. */
 export const newSkill = (
   name: string,
   rarity: string,
   kind: CharacterSkill['kind'],
+  text: { description?: string | null | undefined; flavor?: string | null | undefined } = {},
 ): CharacterSkill => ({
   name,
   rarity,
@@ -85,6 +105,8 @@ export const newSkill = (
   unique: false,
   marks: 0,
   markSessions: [],
+  description: textOrNull(text.description),
+  flavor: textOrNull(text.flavor),
 });
 
 const required = (value: string, label: string): string => {
@@ -129,7 +151,7 @@ export function createCharacter(rules: RulesConfig, input: NewCharacter): Charac
       throw new CharacterRuleError(`Duplicate skill "${skillName}"`);
     }
     names.add(skillName.toLowerCase());
-    return newSkill(skillName, skill.rarity, 'class');
+    return newSkill(skillName, skill.rarity, 'class', skill);
   });
 
   const statIds = rules.stats.list.map((s) => s.id);

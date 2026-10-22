@@ -887,3 +887,108 @@ button.secondary:hover {
   margin: 4px 0;
   padding-left: 18px;
 }
+
+/* Skill detail (M3.5). */
+button.skill-open {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  padding: 2px 0;
+  text-align: left;
+  cursor: pointer;
+}
+button.skill-open:hover .skill-name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.skill-detail.window {
+  /* Opaque so the sheet behind never shows through the text. */
+  background: #111a2b;
+  border-color: var(--metal, var(--border));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--metal, var(--border)) 40%, transparent);
+}
+.skill-detail {
+  color: var(--text);
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 16px 18px;
+}
+.skill-detail::backdrop {
+  background: rgba(4, 7, 12, 0.7);
+}
+.skill-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.skill-detail h3 {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+.skill-detail h4 {
+  margin: 14px 0 4px;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.skill-detail-kind {
+  margin: 4px 0 10px;
+}
+.unique-tag {
+  color: var(--accent);
+}
+.skill-nickname {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+.skill-nickname p {
+  margin: 0;
+}
+.skill-nickname-form {
+  display: grid;
+  gap: 6px;
+}
+.skill-nickname-form input {
+  font: inherit;
+  padding: 7px 8px;
+  color: var(--text);
+  background: #0e1524;
+  border: 1px solid #3b5682;
+  border-radius: 4px;
+}
+.skill-nickname-form p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+.skill-description {
+  margin: 12px 0 6px;
+}
+.skill-flavor {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-style: italic;
+}
+.marks-bar {
+  height: 6px;
+  max-width: 320px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.marks-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.marks-bar.banked > span {
+  background: var(--ok);
+}

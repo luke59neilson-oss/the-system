@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 9,
+  "schemaVersion": 10,
   "name": "Free points golden",
   "rules": {
     "configVersion": 1,
@@ -343,7 +343,7 @@
   },
   "characters": {
     "jake": {
-      "schemaVersion": 4,
+      "schemaVersion": 5,
       "id": "jake",
       "name": "Jake",
       "race": "Human",
@@ -430,7 +430,9 @@
           "nickname": null,
           "unique": false,
           "marks": 0,
-          "markSessions": []
+          "markSessions": [],
+          "description": null,
+          "flavor": null
         },
         {
           "name": "Basic Stealth",
@@ -439,7 +441,9 @@
           "nickname": null,
           "unique": false,
           "marks": 0,
-          "markSessions": []
+          "markSessions": [],
+          "description": null,
+          "flavor": null
         },
         {
           "name": "Archer’s Eye",
@@ -448,7 +452,9 @@
           "nickname": null,
           "unique": false,
           "marks": 0,
-          "markSessions": []
+          "markSessions": [],
+          "description": null,
+          "flavor": null
         },
         {
           "name": "Identify",
@@ -457,7 +463,9 @@
           "nickname": null,
           "unique": false,
           "marks": 0,
-          "markSessions": []
+          "markSessions": [],
+          "description": null,
+          "flavor": null
         }
       ],
       "merges": {},

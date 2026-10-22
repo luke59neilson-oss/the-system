@@ -21,7 +21,14 @@ import {
   type Trade,
 } from '../economy';
 import { skillPairCounts, type Note, type PracticeEntry } from '../practice';
-import { awardMark, mergeSkills, setNickname, setUnique, upgradeSkill } from '../skills';
+import {
+  awardMark,
+  describeSkill,
+  mergeSkills,
+  setNickname,
+  setUnique,
+  upgradeSkill,
+} from '../skills';
 import { gainXp, shareBonus } from '../progression';
 import {
   chooseEvolution,
@@ -36,7 +43,7 @@ import { parseRulesConfig, type RulesConfig } from '../rules';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
 /** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 9;
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 10;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -641,6 +648,14 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       return withCharacter(
         state,
         rule(event, () => setNickname(character, skill, nickname)),
+      );
+    }
+    case 'skill.described': {
+      const { characterId, skill, description, flavor } = event.payload;
+      const character = characterOf(state, event, characterId);
+      return withCharacter(
+        state,
+        rule(event, () => describeSkill(character, skill, description, flavor)),
       );
     }
     case 'skill.uniqueSet': {

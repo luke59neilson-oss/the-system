@@ -204,7 +204,10 @@ describe('selections', () => {
       type: 'selection.offer',
       characterId: 'jake',
       level: 5,
-      options: [...menu(5, 'rare'), { name: 'Skill 5d', rarity: 'uncommon' }],
+      options: [
+        ...menu(5, 'rare'),
+        { name: 'Skill 5d', rarity: 'uncommon', description: ' Hits twice. ' },
+      ],
     });
     expect(char(c).selections).toEqual([expect.objectContaining({ level: 5, chosen: null })]);
     expect(
@@ -224,6 +227,9 @@ describe('selections', () => {
       rarity: 'uncommon',
       kind: 'class',
       marks: 0,
+      // M3.5: the chosen skill keeps the offered description.
+      description: 'Hits twice.',
+      flavor: null,
     });
     expect(char(c).selections[0]?.chosen).toBe('Skill 5d');
     expect(dueSelections(rules, char(c))).toEqual([]);

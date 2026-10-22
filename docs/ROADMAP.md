@@ -227,7 +227,9 @@ the full ones.
 ## M4 — GM console
 
 - [ ] **M4.1 Skill library.** Create/edit skills: rarity, tags, description,
-  flavor, effects text.
+  flavor, effects text. Character skills already carry `description` and
+  `flavor` (M3.5, D78; `skill.described`); the library should fill them when
+  a skill is granted, including the starting race skill (Identify).
 - [ ] **M4.2 Class, race and profession libraries.** Starting classes (stat
   weights + 3 starting skills), Human race, professions; seed a default set.
 - [ ] **M4.3 Campaign and sessions.** Create campaign; start/end session (end

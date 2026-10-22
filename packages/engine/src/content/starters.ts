@@ -7,7 +7,12 @@ export interface StarterClass {
   readonly id: string;
   readonly name: string;
   readonly description: string;
-  readonly skills: readonly { readonly name: string; readonly rarity: string }[];
+  readonly skills: readonly {
+    readonly name: string;
+    readonly rarity: string;
+    readonly description: string;
+    readonly flavor: string;
+  }[];
   readonly weights: Readonly<Record<string, number>>;
 }
 
@@ -17,9 +22,27 @@ export const STARTER_CLASSES: readonly StarterClass[] = [
     name: 'Archer',
     description: 'Strikes from range; sharp eyes and quick feet.',
     skills: [
-      { name: 'Basic Archery', rarity: 'inferior' },
-      { name: 'Basic Stealth', rarity: 'inferior' },
-      { name: 'Archer’s Eye', rarity: 'common' },
+      {
+        name: 'Basic Archery',
+        rarity: 'inferior',
+        description:
+          'Grants a basic understanding of the bow. Slightly improves draw strength, aim and the speed of nocking an arrow.',
+        flavor: 'Every hunter starts with a string and a stick.',
+      },
+      {
+        name: 'Basic Stealth',
+        rarity: 'inferior',
+        description:
+          'Move with less sound and draw less attention while unseen. Slightly harder to notice while standing still.',
+        flavor: 'The prey that never hears you never runs.',
+      },
+      {
+        name: 'Archer’s Eye',
+        rarity: 'common',
+        description:
+          'Sharpens sight at range. Distant targets are easier to track, and the path of a shot is easier to judge.',
+        flavor: 'See it first. Hit it first.',
+      },
     ],
     weights: {
       strength: 2,

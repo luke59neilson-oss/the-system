@@ -1,4 +1,10 @@
-import { CharacterRuleError, newSkill, type Character, type CharacterSkill } from '../character';
+import {
+  CharacterRuleError,
+  newSkill,
+  textOrNull,
+  type Character,
+  type CharacterSkill,
+} from '../character';
 import { currentGrade } from '../progression';
 import type { RulesConfig } from '../rules';
 
@@ -8,7 +14,8 @@ import type { RulesConfig } from '../rules';
  * breaks throw CharacterRuleError, which the reducer turns into rejections.
  */
 
-const MAX_NICKNAME = 60;
+/** Longest nickname a player may give a skill. */
+export const MAX_NICKNAME = 60;
 
 function rarityIndex(rules: RulesConfig, rarity: string): number {
   const index = rules.skills.rarities.findIndex((r) => r.id === rarity);
@@ -47,6 +54,25 @@ export function setNickname(
   const next = trimmed === '' ? null : trimmed;
   if (next === skill.nickname) throw new CharacterRuleError('The nickname is unchanged');
   return withSkill(character, index, { ...skill, nickname: next });
+}
+
+/**
+ * Sets the System description and flavour of a skill (GM, M3.5). Blank text
+ * clears a field; a change that leaves both as they were is refused.
+ */
+export function describeSkill(
+  character: Character,
+  name: string,
+  description: string | null,
+  flavor: string | null,
+): Character {
+  const index = skillIndex(character, name);
+  const skill = character.skills[index] as CharacterSkill;
+  const next = { description: textOrNull(description), flavor: textOrNull(flavor) };
+  if (next.description === skill.description && next.flavor === skill.flavor) {
+    throw new CharacterRuleError(`[${name}] already has that text`);
+  }
+  return withSkill(character, index, { ...skill, ...next });
 }
 
 /** Sets or clears the Unique tag. */
