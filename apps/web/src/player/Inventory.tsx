@@ -12,7 +12,7 @@ import {
   partyName,
   slotRows,
   wholeNumber,
-} from './inventory';
+} from './inventoryModel';
 import { cssToken } from './sheet';
 
 type Form = { kind: 'give'; itemId: string | null } | { kind: 'trade' } | null;

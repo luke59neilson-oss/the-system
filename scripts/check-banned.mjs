@@ -27,6 +27,16 @@ function* walk(dir) {
 }
 
 const failures = [];
+// Two modules whose paths differ only by case or extension (Inventory.tsx and
+// inventory.ts) resolve to the same import on Windows and macOS, breaking the
+// release build there while Linux stays green.
+const modules = new Map();
+for (const file of walk('.')) {
+  const key = file.slice(0, -path.extname(file).length).toLowerCase();
+  const prev = modules.get(key);
+  if (prev) failures.push(`${file} collides with ${prev} on case-insensitive file systems`);
+  else modules.set(key, file);
+}
 for (const file of walk('.')) {
   const text = readFileSync(file, 'utf8');
   for (const hit of findBanned(text, { test: isTestFile(file) })) {
@@ -35,7 +45,9 @@ for (const file of walk('.')) {
 }
 
 if (failures.length > 0) {
-  console.error('Banned patterns found (docs/LOOP.md §5.6):\n' + failures.join('\n'));
+  console.error(
+    'Banned patterns or module collisions found (docs/LOOP.md §5.6):\n' + failures.join('\n'),
+  );
   process.exit(1);
 }
 console.log('No banned patterns.');

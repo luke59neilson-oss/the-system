@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultRules, projectRules, type OwnSheet } from '@the-system/engine';
-import { kindLabel, markProgress } from '../src/player/skillDetail';
+import { kindLabel, markProgress } from '../src/player/skillDetailModel';
 
 const rules = projectRules(defaultRules());
 const skill = (over: Partial<OwnSheet['skills'][number]>): OwnSheet['skills'][number] => ({

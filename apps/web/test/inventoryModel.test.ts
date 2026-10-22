@@ -16,7 +16,7 @@ import {
   partyName,
   slotRows,
   wholeNumber,
-} from '../src/player/inventory';
+} from '../src/player/inventoryModel';
 import { notificationText } from '../src/format';
 import { isQueued, matchesFilter } from '../src/player/history';
 

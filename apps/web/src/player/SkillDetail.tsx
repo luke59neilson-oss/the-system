@@ -3,7 +3,7 @@ import { MAX_NICKNAME, type OwnSheet, type PlayerView } from '@the-system/engine
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 import { cssToken, rarityName } from './sheet';
-import { kindLabel, markProgress } from './skillDetail';
+import { kindLabel, markProgress } from './skillDetailModel';
 
 type Skill = OwnSheet['skills'][number];
 
