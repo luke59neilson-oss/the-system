@@ -30,10 +30,9 @@ const option = (over: Partial<EvolutionOption> = {}): EvolutionOption => ({
   ...over,
 });
 
-const me = (over: Partial<Pick<OwnSheet, 'skills' | 'selections' | 'freePointBatches'>> = {}) => ({
+const me = (over: Partial<Pick<OwnSheet, 'skills' | 'selections'>> = {}) => ({
   skills: [skill('Basic Archery', 3)],
   selections: [],
-  freePointBatches: [],
   ...over,
 });
 
@@ -63,16 +62,12 @@ describe('evolution screen helpers (M3.13)', () => {
           { level: 10, options: [], chosen: null, offerId: 'x' },
           { level: 5, options: [], chosen: 'A', offerId: 'y' },
         ],
-        freePointBatches: [
-          { raceLevel: 3, points: 2, allocation: null },
-        ] as unknown as OwnSheet['freePointBatches'],
       }),
       option({ classWeights: { agility: 2 } }),
     );
     expect(w).toEqual([
       '[Basic Archery] becomes [Expert Archery]: its 3 mastery marks reset to 0.',
       'You have 1 skill selection still waiting.',
-      'You have 2 free points to assign.',
       'Your class stat spread changes for every class level from now on.',
       'The choice is final; the other options will be gone.',
     ]);

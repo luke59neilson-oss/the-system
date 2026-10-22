@@ -140,7 +140,6 @@ test('a player chooses a released evolution with a profession', async ({ browser
   await expect(warnings).toContainText(
     new RegExp(`\\[${skill}\\] becomes \\[Storm Shot\\]: its \\d+ mastery marks? resets? to 0\\.`),
   );
-  await expect(warnings).toContainText('free points to assign');
   await expect(warnings).toContainText('Your class stat spread changes');
   await expect(warnings).toContainText('The choice is final');
   await dialog.getByLabel('Profession').selectOption('Cook');
@@ -148,6 +147,7 @@ test('a player chooses a released evolution with a profession', async ({ browser
   await dialog.getByRole('button', { name: 'Evolve' }).click();
   await expect(dialog).toHaveCount(0);
   await expect(pending).toHaveCount(0);
+  await expect(laptop.getByTestId('evolution-notice')).toHaveCount(0);
   await expect(laptop.getByTestId('class')).toHaveText(/^\[Storm Ranger – lvl \d+\]$/);
   await expect(laptop.getByTestId('race')).toContainText('(E)');
   await expect(laptop.getByTestId('profession')).toHaveText(/^\[Cook – lvl \d+\]$/);
@@ -199,10 +199,42 @@ test('a player chooses a released evolution with a profession', async ({ browser
   await expect(phoneDialog.getByTestId('evolution-option')).toHaveCount(3);
   await expect(phoneDialog.getByLabel('Profession')).toHaveCount(0);
   await phone.screenshot({ path: path.join(shots, 'player-evolution-390x844.png') });
-  // The GM withdraws it by choosing for the player: the dialog closes.
+  // The GM re-releases while the dialog is open: it closes with a notice.
+  await gmCommand(gm, {
+    type: 'evolution.release',
+    characterId: 'demo-sultan',
+    options: [
+      {
+        className: 'Skirmisher',
+        transforms: [{ skill: sultanSkill, name: 'Snap Shot', rarity: 'common' }],
+      },
+      {
+        className: 'Warden',
+        transforms: [{ skill: sultanSkill, name: 'Guard Shot', rarity: 'common' }],
+      },
+    ],
+  });
+  await expect(phoneDialog).toHaveCount(0);
+  await expect(phone.getByTestId('evolution-notice')).toHaveText(
+    'The GM changed your evolution; open it again to see the new paths.',
+  );
+  // Keyboard: Back returns focus to the picked path; Close returns it to [Evolve].
+  const evolve = phone.getByTestId('evolution-pending').getByRole('button', { name: '[Evolve]' });
+  await evolve.click();
+  await phoneDialog.getByRole('button', { name: 'Choose Warden' }).click();
+  await phone.screenshot({ path: path.join(shots, 'player-evolution-review-390x844.png') });
+  await phoneDialog.getByRole('button', { name: 'Back' }).click();
+  await expect(phoneDialog.getByRole('button', { name: 'Choose Warden' })).toBeFocused();
+  await phoneDialog.getByRole('button', { name: 'Close evolution' }).click();
+  await expect(evolve).toBeFocused();
+  await evolve.click();
+  // The GM chooses for the player while the dialog is open: it closes with a notice.
   await gmCommand(gm, { type: 'evolution.choose', characterId: 'demo-sultan', optionId: 'o2' });
   await expect(phoneDialog).toHaveCount(0);
-  await expect(phone.getByTestId('class')).toHaveText(/^\[Skirmisher – lvl \d+\]$/);
+  await expect(phone.getByTestId('evolution-notice')).toHaveText(
+    'Your evolution was settled or withdrawn by the GM.',
+  );
+  await expect(phone.getByTestId('class')).toHaveText(/^\[Warden – lvl \d+\]$/);
 
   expect(errors).toEqual([]);
   expect(jakeErrors).toEqual([]);

@@ -223,9 +223,28 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
   // never swaps it: if the GM re-offers, chooses or undoes it, it closes with
   // a notice (unless this screen's own choice closed it).
   const pending = pendingSelections(me.selections);
-  const [evoOpen, setEvoOpen] = useState(false);
-  // A withdrawn or settled release closes the dialog; a new one waits for [Evolve].
-  if (evoOpen && me.evolution === null) setEvoOpen(false);
+  // The evolution dialog (M3.13) is open on one release; a settled, withdrawn
+  // or replaced release closes it with a notice (unless this screen chose).
+  const [evoOpen, setEvoOpen] = useState<string | null>(null);
+  const [evoConfirming, setEvoConfirming] = useState(false);
+  const [evoNotice, setEvoNotice] = useState<string | null>(null);
+  const [evoFocus, setEvoFocus] = useState(0);
+  const evolveButton = useRef<HTMLButtonElement | null>(null);
+  if (evoOpen !== null && me.evolution?.releaseId !== evoOpen) {
+    setEvoOpen(null);
+    if (!evoConfirming)
+      setEvoNotice(
+        me.evolution === null
+          ? 'Your evolution was settled or withdrawn by the GM.'
+          : 'The GM changed your evolution; open it again to see the new paths.',
+      );
+    setEvoConfirming(false);
+    setEvoFocus((n) => n + 1);
+  }
+  useEffect(() => {
+    if (evoFocus === 0) return;
+    (evolveButton.current ?? statusHeading.current)?.focus();
+  }, [evoFocus]);
   const [selOpen, setSelOpen] = useState<{ level: number; offerId: string } | null>(null);
   const [selConfirming, setSelConfirming] = useState<number | null>(null);
   const [selNotice, setSelNotice] = useState<string | null>(null);
@@ -406,28 +425,45 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
           <span className="badge" data-testid="evolution-badge">
             {me.evolution.toGrade}-grade available
           </span>
-          {client && !evoOpen && (
+          {client && (
             <button
               type="button"
               className="assign-btn"
+              ref={evolveButton}
               aria-haspopup="dialog"
-              onClick={() => setEvoOpen(true)}
+              onClick={() => {
+                setEvoNotice(null);
+                setEvoOpen(me.evolution?.releaseId ?? null);
+              }}
             >
               [Evolve]
             </button>
           )}
         </p>
       )}
-      {client && me.evolution !== null && evoOpen && (
+      {evoNotice && (
+        <p className="err" role="alert" data-testid="evolution-notice">
+          {evoNotice}
+        </p>
+      )}
+      {client && me.evolution !== null && evoOpen === me.evolution.releaseId && (
         <EvolutionChoice
           key={me.evolution.releaseId}
           evolution={me.evolution}
           view={view}
           client={client}
+          onConfirming={() => setEvoConfirming(true)}
           onSettled={(ok) => {
-            if (ok) setEvoOpen(false);
+            setEvoConfirming(false);
+            if (ok) {
+              setEvoOpen(null);
+              setEvoFocus((n) => n + 1);
+            }
           }}
-          onClose={() => setEvoOpen(false)}
+          onClose={() => {
+            setEvoOpen(null);
+            setEvoFocus((n) => n + 1);
+          }}
         />
       )}
       {selNotice && (

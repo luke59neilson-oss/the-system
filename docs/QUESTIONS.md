@@ -175,8 +175,8 @@ answer under any question and the next run will follow it.
     Answer:
 
 36. **Warnings before an evolution.** The evolution screen warns about mastery
-    marks a transform resets, skill selections still waiting, unassigned free
-    points, a reshaped class spread, and that the choice is final. It does
+    marks a transform resets, skill selections still waiting, a reshaped
+    class spread, and that the choice is final. It does
     not stop the player evolving with a selection still open. Default: warn
     only (D88). Alternative: refuse to evolve until every waiting selection
     is chosen (see also Q21).

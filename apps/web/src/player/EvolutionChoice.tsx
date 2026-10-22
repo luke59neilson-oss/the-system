@@ -15,13 +15,15 @@ export function EvolutionChoice({
   evolution,
   view,
   client,
+  onConfirming,
   onSettled,
   onClose,
 }: {
   evolution: PendingEvolution;
   view: PlayerView;
   client: LiveClient;
-  onSettled: (ok: boolean, className: string, error: string | undefined) => void;
+  onConfirming: () => void;
+  onSettled: (ok: boolean) => void;
   onClose: () => void;
 }) {
   const rules = view.rules;
@@ -42,9 +44,18 @@ export function EvolutionChoice({
   useEffect(() => {
     if (option) confirmButton.current?.focus();
   }, [option]);
-  const confirm = async (optionId: string, className: string) => {
+  // Back returns keyboard focus to the path that was picked.
+  const [backTo, setBackTo] = useState<string | null>(null);
+  useEffect(() => {
+    if (backTo === null) return;
+    dialog.current
+      ?.querySelector<HTMLButtonElement>(`button[data-option="${CSS.escape(backTo)}"]`)
+      ?.focus();
+  }, [backTo]);
+  const confirm = async (optionId: string) => {
     setBusy(true);
     setError(null);
+    onConfirming();
     const result = await client.command({
       type: 'evolution.choose',
       characterId: me.id,
@@ -53,7 +64,7 @@ export function EvolutionChoice({
       releaseId: evolution.releaseId,
     });
     setBusy(false);
-    onSettled(result.ok, className, result.ok ? undefined : result.error);
+    onSettled(result.ok);
     if (result.ok) return;
     if (isConnectionError(result.error))
       setError('Connection lost. Check your class once you are back: the choice may be saved.');
@@ -121,7 +132,7 @@ export function EvolutionChoice({
               ref={confirmButton}
               disabled={busy}
               aria-describedby="evolution-review"
-              onClick={() => void confirm(option.id, option.className)}
+              onClick={() => void confirm(option.id)}
             >
               Evolve
             </button>
@@ -129,7 +140,10 @@ export function EvolutionChoice({
               type="button"
               className="secondary"
               disabled={busy}
-              onClick={() => setPicked(null)}
+              onClick={() => {
+                setBackTo(option.id);
+                setPicked(null);
+              }}
             >
               Back
             </button>
@@ -160,6 +174,7 @@ export function EvolutionChoice({
                 {weights && <p className="muted">Class stats per level: {weights}</p>}
                 <button
                   type="button"
+                  data-option={o.id}
                   aria-label={`Choose ${o.className}`}
                   onClick={() => {
                     setError(null);

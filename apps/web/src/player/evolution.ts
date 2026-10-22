@@ -1,6 +1,6 @@
 import type { EvolutionOption, OwnSheet, PlayerRules } from '@the-system/engine';
 import { pendingSelections } from './selection';
-import { rarityName, unassignedPoints } from './sheet';
+import { rarityName } from './sheet';
 
 /**
  * Evolution screen helpers (ROADMAP M3.13, DESIGN §2–§3, §6, D64). Pure.
@@ -33,10 +33,11 @@ export function weightsText(
 
 /**
  * What the player should know before confirming an option: marks the
- * transforms reset (D64), choices still waiting, and that it is final.
+ * transforms reset (D64), selections still waiting, a reshaped spread, and
+ * that it is final. Free points are untouched by evolving, so not listed.
  */
 export function evolutionWarnings(
-  me: Pick<OwnSheet, 'skills' | 'selections' | 'freePointBatches'>,
+  me: Pick<OwnSheet, 'skills' | 'selections'>,
   option: EvolutionOption,
 ): string[] {
   const out: string[] = [];
@@ -52,8 +53,6 @@ export function evolutionWarnings(
     out.push(
       `You have ${waiting} skill ${waiting === 1 ? 'selection' : 'selections'} still waiting.`,
     );
-  const free = unassignedPoints(me.freePointBatches);
-  if (free > 0) out.push(`You have ${free} free ${free === 1 ? 'point' : 'points'} to assign.`);
   if (option.classWeights !== null)
     out.push('Your class stat spread changes for every class level from now on.');
   out.push('The choice is final; the other options will be gone.');
