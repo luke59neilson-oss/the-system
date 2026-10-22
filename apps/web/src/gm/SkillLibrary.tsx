@@ -166,7 +166,9 @@ export function SkillLibrary({ client, state }: { client: LiveClient; state: Cam
           />
         </label>
         <label>
-          Effects (GM only)
+          {state.rules.skills.libraryByRarity
+            ? 'Effects (only the skill’s owner sees this)'
+            : 'Effects (GM only)'}
           <textarea
             value={draft.effects}
             onChange={(e) => set('effects', e.target.value)}
@@ -174,10 +176,18 @@ export function SkillLibrary({ client, state }: { client: LiveClient; state: Cam
             rows={3}
           />
         </label>
-        <p className="muted hint">
-          Characters who gain a skill with this name get its description and flavour, unless the
-          skill already has its own. Editing here does not change skills already granted.
-        </p>
+        {state.rules.skills.libraryByRarity ? (
+          <p className="muted hint">
+            One entry per name and rarity. Every character’s copy at this rarity shows its text,
+            including after an upgrade, and follows your edits here, unless you wrote that
+            character’s text by hand (Skill text).
+          </p>
+        ) : (
+          <p className="muted hint">
+            Characters who gain a skill with this name get its description and flavour, unless the
+            skill already has its own. Editing here does not change skills already granted.
+          </p>
+        )}
         {changedElsewhere && stored && (
           <p className="err" role="alert">
             [{stored.name}] changed elsewhere since you opened it. Saving sends only the fields you
