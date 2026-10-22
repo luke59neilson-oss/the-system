@@ -13,6 +13,7 @@ const skill = (over: Partial<OwnSheet['skills'][number]>): OwnSheet['skills'][nu
   markSessions: [],
   description: null,
   flavor: null,
+  effects: null,
   marksNeeded: 3,
   nextRarity: 'common',
   atCeiling: false,

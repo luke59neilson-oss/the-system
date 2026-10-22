@@ -26,6 +26,7 @@ import {
   awardMark,
   describeSkill,
   fillGrantedSkills,
+  syncCharacterSkills,
   mergeSkills,
   setNickname,
   setUnique,
@@ -278,12 +279,25 @@ const partyName = (id: string | null) => (id === null ? 'the GM' : `"${id}"`);
  */
 export function applyEvent(state: CampaignState | null, event: DomainEvent): CampaignState {
   const next = applyEventRaw(state, event);
-  return state === null ? next : clampToEffective(state, fillFromLibrary(state, next), event);
+  return state === null
+    ? next
+    : clampToEffective(state, fillFromLibrary(state, next, event), event);
 }
 
-/** Granted skills take their empty text from the skill library (M4.1, D90). */
-function fillFromLibrary(before: CampaignState, after: CampaignState): CampaignState {
-  if (after.skillLibraryOrder.length === 0 || before.characters === after.characters) return after;
+/**
+ * Granted skills take their empty text from the skill library (M4.1, D90).
+ * Under `rules.skills.libraryByRarity` (MQ.12, L4) every copy the GM has not
+ * edited follows its name-and-rarity entry: on a grant, a rarity change, and
+ * whenever that entry is defined or edited.
+ */
+function fillFromLibrary(
+  before: CampaignState,
+  after: CampaignState,
+  event: DomainEvent,
+): CampaignState {
+  if (after.skillLibraryOrder.length === 0) return after;
+  if (after.rules.skills.libraryByRarity) return syncFromLibrary(before, after, event);
+  if (before.characters === after.characters) return after;
   let characters: Record<string, Character> | null = null;
   for (const id of after.characterOrder) {
     const c = hasOwn(after.characters, id) ? after.characters[id] : undefined;
@@ -291,6 +305,33 @@ function fillFromLibrary(before: CampaignState, after: CampaignState): CampaignS
     if (!c || c === old) continue;
     const filled = fillGrantedSkills(old, c, after.skillLibrary);
     if (filled !== c) (characters ??= { ...after.characters })[id] = filled;
+  }
+  return characters === null ? after : { ...after, characters };
+}
+
+function syncFromLibrary(
+  before: CampaignState,
+  after: CampaignState,
+  event: DomainEvent,
+): CampaignState {
+  const touchedId =
+    event.type === 'skillDef.defined'
+      ? event.payload.id
+      : event.type === 'skillDef.edited'
+        ? event.payload.skillDefId
+        : null;
+  const touched =
+    touchedId !== null && hasOwn(after.skillLibrary, touchedId)
+      ? after.skillLibrary[touchedId]
+      : undefined;
+  if (!touched && before.characters === after.characters) return after;
+  let characters: Record<string, Character> | null = null;
+  for (const id of after.characterOrder) {
+    const c = hasOwn(after.characters, id) ? after.characters[id] : undefined;
+    const old = hasOwn(before.characters, id) ? before.characters[id] : undefined;
+    if (!c || (c === old && !touched)) continue;
+    const synced = syncCharacterSkills(after.rules, old, c, after.skillLibrary, touched);
+    if (synced !== c) (characters ??= { ...after.characters })[id] = synced;
   }
   return characters === null ? after : { ...after, characters };
 }
@@ -1079,7 +1120,9 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const character = characterOf(state, event, characterId);
       return withCharacter(
         state,
-        rule(event, () => describeSkill(character, skill, description, flavor)),
+        rule(event, () =>
+          describeSkill(character, skill, description, flavor, state.rules.skills.libraryByRarity),
+        ),
       );
     }
     case 'skill.uniqueSet': {

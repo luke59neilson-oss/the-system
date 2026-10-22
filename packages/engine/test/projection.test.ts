@@ -84,6 +84,7 @@ describe('player projection', () => {
     expect(view.me.skills).toEqual(
       jake?.skills.map((s) => ({
         ...s,
+        effects: null,
         marksNeeded: s.rarity === 'inferior' ? 3 : 4,
         nextRarity: s.rarity === 'inferior' ? 'common' : 'uncommon',
         atCeiling: false,

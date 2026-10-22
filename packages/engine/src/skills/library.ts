@@ -2,10 +2,11 @@ import { CharacterRuleError, type Character, type CharacterSkill } from '../char
 import type { RulesConfig } from '../rules';
 
 /**
- * Skill library (ROADMAP M4.1): the GM's catalogue of skills by official name.
+ * Skill library (ROADMAP M4.1, MQ.12): the GM's catalogue of skills by
+ * official name (and, under `rules.skills.libraryByRarity`, rarity).
  * When a character gains a skill the library knows, its System description and
  * flavour are filled from the entry (only fields still empty; D90). `effects`
- * is the GM's table note and never reaches a player. Pure.
+ * is the GM's table note; MQ.12 shows it to the skill's owner only. Pure.
  */
 
 export interface SkillDef {
@@ -59,20 +60,82 @@ export function validateSkillDef(
       throw new CharacterRuleError(`A tag is at most ${MAX_SKILL_TAG} characters`);
     }
   }
+  // MQ.12 (L4): one entry per name and rarity; before it, one per name (D90).
+  const byRarity = rules.skills.libraryByRarity;
   for (const other of Object.values(library)) {
-    if (other.id !== def.id && sameName(other.name, def.name)) {
-      throw new CharacterRuleError(`The library already has [${other.name}]`);
+    if (
+      other.id !== def.id &&
+      sameName(other.name, def.name) &&
+      (!byRarity || other.rarity === def.rarity)
+    ) {
+      const which = byRarity ? ` (${rarity.name})` : '';
+      throw new CharacterRuleError(`The library already has [${other.name}]${which}`);
     }
   }
 }
 
-/** The library entry for an official skill name (exact, then ignoring case), if any. */
+/**
+ * The library entry for an official skill name (exact, then ignoring case), if
+ * any. With a rarity (MQ.12), only an entry of that rarity matches.
+ */
 export function librarySkill(
   library: Readonly<Record<string, SkillDef>>,
   name: string,
+  rarity?: string,
 ): SkillDef | undefined {
-  const defs = Object.values(library);
+  const defs = Object.values(library).filter((d) => rarity === undefined || d.rarity === rarity);
   return defs.find((d) => d.name === name) ?? defs.find((d) => sameName(d.name, name));
+}
+
+/** The entry a character's skill copy follows under the campaign's rules. */
+export function entryForSkill(
+  rules: RulesConfig,
+  library: Readonly<Record<string, SkillDef>>,
+  skill: Pick<CharacterSkill, 'name' | 'rarity'>,
+): SkillDef | undefined {
+  return librarySkill(library, skill.name, rules.skills.libraryByRarity ? skill.rarity : undefined);
+}
+
+/**
+ * MQ.12 (L4): a copy the GM has not edited takes its entry's text; an empty
+ * field in the entry leaves the copy's own text. Returns `skill` when nothing
+ * changes.
+ */
+export function syncSkillText(skill: CharacterSkill, def: SkillDef | undefined): CharacterSkill {
+  if (!def || skill.textEdited) return skill;
+  const description = def.description.trim() || skill.description;
+  const flavor = def.flavor.trim() || skill.flavor;
+  return description === skill.description && flavor === skill.flavor
+    ? skill
+    : { ...skill, description, flavor };
+}
+
+/**
+ * MQ.12: after an event, every skill copy that is new, changed rarity, or
+ * whose entry `touched` names, takes its entry's text (unless hand-edited).
+ * Returns `after` itself when nothing changes.
+ */
+export function syncCharacterSkills(
+  rules: RulesConfig,
+  before: Character | undefined,
+  after: Character,
+  library: Readonly<Record<string, SkillDef>>,
+  touched: SkillDef | undefined,
+): Character {
+  const had = new Map(before?.skills.map((s) => [s.name, s.rarity]) ?? []);
+  let changed = false;
+  const skills = after.skills.map((skill) => {
+    const fresh = had.get(skill.name) !== skill.rarity;
+    const hit =
+      touched !== undefined &&
+      touched.rarity === skill.rarity &&
+      sameName(touched.name, skill.name);
+    if (!fresh && !hit) return skill;
+    const synced = syncSkillText(skill, entryForSkill(rules, library, skill));
+    if (synced !== skill) changed = true;
+    return synced;
+  });
+  return changed ? { ...after, skills } : after;
 }
 
 /** Fills a granted skill's empty description and flavour from its library entry. */

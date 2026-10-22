@@ -157,6 +157,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
     },
     maxMarksPerSkillPerSession: 1,
     marksCarryOver: true, // §6, MQ.4
+    libraryByRarity: true, // §6 skill library, MQ.12
     merge: {
       requiredJointUses: 3,
       minRarity: 'uncommon',

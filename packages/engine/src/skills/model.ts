@@ -65,6 +65,8 @@ export function describeSkill(
   name: string,
   description: string | null,
   flavor: string | null,
+  /** Mark the copy as hand-written so library edits skip it (MQ.12). */
+  markEdited = false,
 ): Character {
   const index = skillIndex(character, name);
   const skill = character.skills[index] as CharacterSkill;
@@ -72,7 +74,11 @@ export function describeSkill(
   if (next.description === skill.description && next.flavor === skill.flavor) {
     throw new CharacterRuleError(`[${name}] already has that text`);
   }
-  return withSkill(character, index, { ...skill, ...next });
+  return withSkill(character, index, {
+    ...skill,
+    ...next,
+    ...(markEdited ? { textEdited: true as const } : {}),
+  });
 }
 
 /** Sets or clears the Unique tag. */

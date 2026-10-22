@@ -138,6 +138,12 @@ export const rulesConfigSchema = z
        * older campaigns replay unchanged.
        */
       marksCarryOver: z.boolean().default(false),
+      /**
+       * DESIGN §6 skill library (MQ.12, L4): entries keyed by name and rarity;
+       * library text follows to every copy the GM has not edited. Rules stored
+       * before it read false (name-only fill of empty text, D90).
+       */
+      libraryByRarity: z.boolean().default(false),
       merge: z.strictObject({
         requiredJointUses: positiveInt,
         minRarity: id,
