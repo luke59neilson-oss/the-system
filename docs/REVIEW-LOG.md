@@ -372,3 +372,9 @@
   - L fixed: a montage offered without a label shows "Montage", not the GM-only clock's name.
   - L accepted: skills lost to an evolution drop silently from a half-filled form; a closed montage leaves without a notice; the window lists the 8 newest entries only; the e2e already asserts the clock name and id never reach player frames.
 - No round 2 needed (no High; the Medium was a one-line rule change, covered by unit and e2e tests).
+
+### 2026-10-22 · M3.12 Party view · reviewer: sonnet (fresh context)
+- Round 1 (1268f08..b17e8bb): 0 High, 0 Medium, 7 Low.
+  - L fixed: member heading ids are `party-member-<id>` (cannot collide with `party-heading`); pool names wrap instead of truncating behind a hover-only tooltip.
+  - L accepted: the 25% "low" colour is a display threshold, not a rule (D87); no glow assertion, pane-mode screenshot or 1920×1080 check in the spec (the M3.2 spec covers pane width; M3.A runs both viewports); the M3.2 no-flash check is scoped to the Status window because the party view now follows Sultan; the window sits under Status on laptops by design (D87); bars do not animate, labels glow.
+- No round 2 needed (no High or Medium).

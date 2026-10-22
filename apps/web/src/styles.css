@@ -1497,9 +1497,7 @@ button.danger {
 }
 .party-pool-name {
   color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .party-pool-bar {
   display: block;

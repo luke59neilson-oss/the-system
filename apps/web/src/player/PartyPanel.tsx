@@ -30,9 +30,9 @@ function Member({ member: m }: { member: PartyRow }) {
     <li
       className={`party-member${themeClass(m.theme)}`}
       data-testid="party-member"
-      aria-labelledby={`party-${m.id}`}
+      aria-labelledby={`party-member-${m.id}`}
     >
-      <h3 className="party-name" id={`party-${m.id}`}>
+      <h3 className="party-name" id={`party-member-${m.id}`}>
         {m.name}
       </h3>
       <dl className="party-tracks">

@@ -218,7 +218,7 @@ the full ones.
   party; never GM notes) with a canary; server-generated note ids.
 - [x] **M3.11 Practice and montage.** Submit practice entries; enter montage
   focus when offered.
-- [ ] **M3.12 Party view.** Names, race/class/level, pool bars.
+- [x] **M3.12 Party view.** Names, race/class/level, pool bars.
 - [ ] **M3.13 Table extras.** Contest result pop-up; hunger tracker when
   enabled; evolution screen (options, warnings, choose).
 - [ ] **M3.A Milestone acceptance and review.** All M3 specs pass at both
