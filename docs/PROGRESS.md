@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1–MQ.11 done); QF.1–QF.2 done; M4.1–M4.4 done
-**Next item:** MQ.12 Skill library rules
+**Next item:** MQ.12 Skill library rules (resume `wip/MQ.12`)
 **Blockers:** none.
 
 ## Run log
@@ -581,4 +581,17 @@ next item, blockers. -->
 - Tests: 777 unit (65 files). e2e run: MQ.7, MQ.8, M3.3, M3.8, M3.9 green locally (full suite not run; CI runs it on 6ca27d0). Engine coverage not re-measured.
 - Open `wip/*` branches: none unfinished (`wip/MQ.7`, `wip/MQ.8`, `wip/MQ.11` merged).
 - Next item: MQ.12 Skill library rules.
+- Blockers: none.
+
+### Run 1a32d25e · 2026-10-22 21:06–21:50 UTC (ended at minute 43, hand-off at 44; quality sweep run)
+- Preflight:
+  - `add_repo` was not offered; the repo was already cloned (detached HEAD, stale diverged local `main`), reset to `origin/main`.
+  - Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `haiku`, `fable` and `sonnet` work on worktrees, but this session's Agent tool had no background option: the three sweep reviewers ran in parallel and blocked the run until minute 23 (fable took 23 min).
+- Orient: no new answers in ANSWERS.md. Latest main CI (6ca27d0) green. Hour 21: quality sweep B.
+- Sweep B (5e72abe..520f6ce; Boundaries · haiku, Tests · fable, UX · sonnet): 0 High, 1 confirmed Medium → QF.9 (trade proposals probe the counterparty's item counts and reveal item definitions; confirmed by tracing `itemOutOfReach` and `inventoryView`); 1 Medium not a defect (`previewXpAward` UI belongs to unchecked M4.6); 11 Lows (2 already accepted, the rest to the QUALITY Backlog). Fable's 18 engine mutations: 17 caught.
+- Started MQ.12 Skill library rules (D125, Q50) on `wip/MQ.12` (base 91dd606, head 71cfedc): engine done behind `rules.skills.libraryByRarity` (name+rarity entries, propagation to copies not hand-edited, upgrade takes the higher rarity's text, owner-only `effects` in the projection and skill dialog; stored rules keep D90; goldens gain the flag additively); 7 new engine tests; GM form label and hint; M4.1 e2e updated (effects reach the owner; edits reach granted copies). `npm run check` green (784 unit); full e2e 39/39 green locally on the branch.
+  - Where I stopped / next step: write `e2e/MQ.12.spec.ts` (an upgrade picking up the next rarity's text; a library edit propagating; another player never sees the effects; screenshots in `docs/screens/MQ.12/` at 1366×768 and 390×844), then the sonnet review, merge to main, check the box.
+- Tests: 784 unit (66 files) on `wip/MQ.12`; main unchanged at 777. Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/MQ.12` (unfinished).
+- Next item: MQ.12 (resume `wip/MQ.12`).
 - Blockers: none.
