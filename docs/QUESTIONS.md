@@ -114,3 +114,8 @@ answer under any question and the next run will follow it.
     professions, the player must pick one. Default: must pick (the GM can
     re-release with none). Alternative: allow "none for now".
     Answer:
+26. **GM notes in session logs.** GM notes stay out of the session log
+    and report unless the GM tags them `export`. Default: the `export`
+    tag. Alternative: a separate "include in report" toggle on GM notes
+    (the M4 notes screen could show the tag as a toggle either way).
+    Answer:

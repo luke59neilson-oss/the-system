@@ -7,6 +7,7 @@ import { buildDemoEvents } from '@the-system/engine';
 import { LiveHub, type HubOptions } from './hub';
 import type { JoinInfo } from './join';
 import { helloMessage } from './protocol';
+import { SessionLogWriter, type SessionLogOptions } from './sessionLog';
 import { authPath, gmKeyMatches, isAllowedHost, isAllowedOrigin } from './security';
 import type { CampaignStore } from './store';
 
@@ -26,6 +27,11 @@ export interface CreateServerOptions {
    * on `live.store` and the campaign switch route answers 404.
    */
   openCampaign?: (id: string) => CampaignStore;
+  /**
+   * Running session log autosave (M2.4) for every campaign this server opens;
+   * the last write happens when the server closes. Off when omitted.
+   */
+  sessionLog?: Omit<SessionLogOptions, 'onError'>;
 }
 
 /** The demo campaign's id (D53): its own directory, never the real campaign's. */
@@ -55,6 +61,17 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   const opened = new Map<string, { store: CampaignStore; hub: LiveHub }>();
   if (active && options.live) opened.set(options.live.store.id, active);
   const sockets = new Set<{ close: (code: number, reason: string) => void }>();
+  const logWriters: SessionLogWriter[] = [];
+  const startLog = (store: CampaignStore) => {
+    if (!options.sessionLog) return;
+    logWriters.push(
+      new SessionLogWriter(store, {
+        ...options.sessionLog,
+        onError: (error) => app.log.error(error),
+      }),
+    );
+  };
+  if (options.live) startLog(options.live.store);
 
   // Only /ws may be upgraded, and only from this server's own pages (or a
   // listed origin); refuse anything else before the handshake.
@@ -157,6 +174,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       // in-memory notification history.
       next = { store, hub: new LiveHub(store, live) };
       opened.set(id, next);
+      startLog(store);
     }
     active = next;
     for (const socket of [...sockets]) socket.close(1012, 'Campaign changed');
@@ -164,6 +182,8 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     return { id, demo: body.demo };
   });
   app.addHook('onClose', () => {
+    // Last session log writes first (on shutdown), while every store is still open.
+    for (const writer of logWriters) writer.close();
     // The caller closes the store it passed in; close the ones opened here.
     for (const [id, { store }] of opened) {
       if (id === realId) continue;

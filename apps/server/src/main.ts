@@ -16,6 +16,7 @@ async function main(): Promise<void> {
   console.log(
     `The System server listening on http://${options.host}:${port} (engine API v${ENGINE_API_VERSION})`,
   );
+  console.log(`Session logs are saved in ${running.exportsDir}`);
   console.log('Players join at:');
   for (const url of running.join().urls) console.log(`  ${url}`);
   if (running.generatedKey) {

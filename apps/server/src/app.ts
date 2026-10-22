@@ -4,6 +4,7 @@ import path from 'node:path';
 import { joinInfo, type JoinInfo } from './join';
 import { newGmKey } from './security';
 import { createServer } from './server';
+import { exportsDirFor } from './sessionLog';
 import { CampaignStore } from './store';
 
 /**
@@ -18,6 +19,8 @@ export interface StartOptions {
   dataDir: string;
   /** Generated when omitted. */
   gmKey?: string | undefined;
+  /** Session log autosave interval (M2.4); 5 minutes when omitted. */
+  sessionLogIntervalMs?: number | undefined;
 }
 
 export interface RunningApp {
@@ -27,7 +30,9 @@ export interface RunningApp {
   generatedKey: boolean;
   /** Current join URLs and QR codes (interfaces re-read per call). */
   join: () => JoinInfo;
-  /** Closes the listener and every open campaign. */
+  /** Folder the running session logs are written to (M2.4). */
+  exportsDir: string;
+  /** Closes the listener and every open campaign (writing the session logs once more). */
   close: () => Promise<void>;
 }
 
@@ -37,6 +42,7 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
     now: () => new Date().toISOString(),
   };
   const store = CampaignStore.open('main', storeOptions);
+  const exportsDir = exportsDirFor(storeOptions.dataDir);
   const gmKey = options.gmKey ?? newGmKey();
   let boundPort: number | null = null;
   try {
@@ -47,6 +53,13 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
       webRoot: options.webRoot,
       // The demo campaign lives in its own directory (MS.4, D53).
       openCampaign: (id) => CampaignStore.open(id, storeOptions),
+      sessionLog: {
+        exportsDir,
+        now: storeOptions.now,
+        ...(options.sessionLogIntervalMs === undefined
+          ? {}
+          : { intervalMs: options.sessionLogIntervalMs }),
+      },
       live: { store, gmKey, now: () => new Date().toISOString(), newId: () => randomUUID() },
     });
     try {
@@ -62,6 +75,7 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
     return {
       port,
       gmKey,
+      exportsDir,
       generatedKey: options.gmKey === undefined,
       join: () => joinInfo(options.host, port, networkInterfaces()),
       close: () => {

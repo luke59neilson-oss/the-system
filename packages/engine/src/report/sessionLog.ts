@@ -1,0 +1,475 @@
+import { raceLevel, type Character } from '../character';
+import type { DomainEvent } from '../events/envelope';
+import type { Campaign } from '../events/log';
+import { applyEvent, type CampaignState } from '../events/reducer';
+import { repeatedEntryIds, type Note } from '../practice';
+
+/**
+ * The running session log (ROADMAP M2.4, DESIGN §7 "Logging for Claude").
+ * Pure: built from the campaign's events from `fromSeq` on (the events of
+ * this sitting), folded the same way the campaign is, so undone events never
+ * appear. The server writes it to the exports folder; M9.1 builds the full
+ * end-of-session report on top of it.
+ *
+ * Privacy (D62, D72): unshared journal entries never appear; GM notes appear
+ * only when the GM tagged them `export`. Party notes and shareable journal
+ * entries appear as they stand now.
+ */
+
+export type SessionLogKind =
+  | 'character'
+  | 'xp'
+  | 'level'
+  | 'selection'
+  | 'evolution'
+  | 'title'
+  | 'skill'
+  | 'item'
+  | 'broadcast'
+  | 'quest'
+  | 'stability'
+  | 'day'
+  | 'undo';
+
+export interface SessionLogEntry {
+  /** Index of the event in the campaign log. */
+  readonly seq: number;
+  /** Event timestamp (ISO-8601 UTC). */
+  readonly at: string;
+  readonly kind: SessionLogKind;
+  /** One line of plain text (user text has newlines folded to spaces). */
+  readonly text: string;
+}
+
+export interface SessionLogPractice {
+  readonly at: string;
+  readonly character: string;
+  readonly action: string;
+  readonly skills: readonly string[];
+  readonly stat: string | null;
+  readonly tags: readonly string[];
+  readonly source: string;
+  /** Same action, skills and stat already logged this session (DESIGN §7). */
+  readonly repeat: boolean;
+}
+
+export interface SessionLogNote {
+  readonly kind: Note['kind'];
+  /** Author's name, or "GM". */
+  readonly author: string;
+  readonly title: string;
+  readonly body: string;
+  readonly tags: readonly string[];
+  readonly updatedAt: string;
+}
+
+export interface SessionLog {
+  readonly campaignName: string;
+  /** First event index covered. */
+  readonly fromSeq: number;
+  /** Events in the log when it was built (exclusive end). */
+  readonly toSeq: number;
+  readonly day: number | null;
+  readonly entries: readonly SessionLogEntry[];
+  readonly practice: readonly SessionLogPractice[];
+  readonly notes: readonly SessionLogNote[];
+}
+
+/** The tag a GM puts on a GM note to include it in session logs and reports. */
+export const EXPORT_NOTE_TAG = 'export';
+
+/** Whether a note may appear in a session log or report. */
+export function noteIsExportable(note: Note): boolean {
+  switch (note.kind) {
+    case 'journal':
+      return note.shareable;
+    case 'party':
+      return true;
+    case 'gm':
+      return note.tags.some((t) => t.trim().toLowerCase() === EXPORT_NOTE_TAG);
+  }
+}
+
+const has = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
+/** Folds user text onto one line so it cannot break the markdown structure. */
+const line = (text: string) => text.replace(/\s+/g, ' ').trim();
+
+function nameOf(state: CampaignState | null, id: string | null): string {
+  if (id === null) return 'GM';
+  return line(state?.characters[id]?.name ?? id);
+}
+
+function bundleText(
+  state: CampaignState | null,
+  bundle: { currency: number; items: Readonly<Record<string, number>> },
+  signed = false,
+): string {
+  const parts: string[] = [];
+  const num = (n: number) => (signed && n > 0 ? `+${n}` : String(n));
+  if (bundle.currency !== 0) parts.push(`${num(bundle.currency)} currency`);
+  for (const [itemId, count] of Object.entries(bundle.items).sort(([a], [b]) =>
+    a < b ? -1 : a > b ? 1 : 0,
+  )) {
+    parts.push(`${num(count)}× ${line(state?.items[itemId]?.name ?? itemId)}`);
+  }
+  return parts.length ? parts.join(', ') : 'nothing';
+}
+
+function rarityName(state: CampaignState, id: string): string {
+  return state.rules.skills.rarities.find((r) => r.id === id)?.name ?? id;
+}
+
+function skillRarity(character: Character | undefined, skill: string): string | null {
+  return character?.skills.find((s) => s.name === skill)?.rarity ?? null;
+}
+
+/** Level gains and new professions between two states (losses come only from undo). */
+function levelLines(before: CampaignState | null, after: CampaignState): string[] {
+  const out: string[] = [];
+  for (const id of after.characterOrder) {
+    const now = after.characters[id];
+    const was = before?.characters[id];
+    if (!now || !was) continue;
+    const who = line(now.name);
+    if (now.classLevel > was.classLevel) {
+      out.push(`${who}: class ${line(now.className)} ${was.classLevel} → ${now.classLevel}`);
+    }
+    if (now.profession !== null && was.profession === null) {
+      out.push(`${who} gained the profession ${line(now.profession)}`);
+    }
+    if (now.profession !== null && now.professionLevel > was.professionLevel) {
+      out.push(
+        `${who}: profession ${line(now.profession)} ${was.professionLevel} → ${now.professionLevel}`,
+      );
+    }
+    const raceWas = raceLevel(before?.rules ?? after.rules, was);
+    const raceNow = raceLevel(after.rules, now);
+    if (raceNow > raceWas) {
+      const points = (c: Character) => c.freePointBatches.reduce((a, b) => a + b.points, 0);
+      const gained = points(now) - points(was);
+      const extra = gained > 0 ? ` (+${gained} free points)` : '';
+      out.push(`${who}: race ${line(now.race)} ${raceWas} → ${raceNow}${extra}`);
+    }
+  }
+  return out;
+}
+
+/** Log lines for one counted event, given the state before and after it. */
+function describe(
+  before: CampaignState | null,
+  after: CampaignState,
+  event: DomainEvent,
+): { kind: SessionLogKind; text: string }[] {
+  const out: { kind: SessionLogKind; text: string }[] = [];
+  const add = (kind: SessionLogKind, text: string) => out.push({ kind, text });
+  const who = (id: string | null) => nameOf(after, id);
+  switch (event.type) {
+    case 'character.created': {
+      const c = after.characters[event.payload.id];
+      if (c)
+        add('character', `New character ${line(c.name)} (${line(c.race)}, ${line(c.className)})`);
+      break;
+    }
+    case 'character.renamed':
+      add(
+        'character',
+        `${nameOf(before, event.payload.characterId)} is now called ${who(event.payload.characterId)}`,
+      );
+      break;
+    case 'xp.awarded': {
+      const p = event.payload;
+      const shares = p.shares.map((s) => `${who(s.characterId)} ${s.share}`).join(', ');
+      const enemy = p.enemyLevel === null ? '' : `, enemy level ${p.enemyLevel}`;
+      const reason = p.reason ? ` for ${line(p.reason)}` : '';
+      add('xp', `${p.amount} ${p.track} XP${reason}${enemy}: ${shares}`);
+      break;
+    }
+    case 'title.awarded':
+      add(
+        'title',
+        `${who(event.payload.characterId)} earned the title ${line(event.payload.title)}`,
+      );
+      break;
+    case 'selection.offered':
+      add(
+        'selection',
+        `Skill menu offered to ${who(event.payload.characterId)} at class level ${event.payload.level}: ${event.payload.options
+          .map((o) => `${line(o.name)} (${rarityName(after, o.rarity)})`)
+          .join(', ')}`,
+      );
+      break;
+    case 'selection.chosen': {
+      const rarity = skillRarity(after.characters[event.payload.characterId], event.payload.skill);
+      const r = rarity ? ` (${rarityName(after, rarity)})` : '';
+      add(
+        'selection',
+        `${who(event.payload.characterId)} chose ${line(event.payload.skill)}${r} at class level ${event.payload.level}`,
+      );
+      break;
+    }
+    case 'evolution.released':
+      add(
+        'evolution',
+        `Evolution released for ${who(event.payload.characterId)}: ${event.payload.options
+          .map((o) => line(o.className))
+          .join(', ')}`,
+      );
+      break;
+    case 'evolution.chosen': {
+      const id = event.payload.characterId;
+      const was = before?.characters[id];
+      const now = after.characters[id];
+      if (!now) break;
+      const grade = was && was.grade !== now.grade ? `, grade ${was.grade} → ${now.grade}` : '';
+      const prof = event.payload.profession ? `, profession ${line(event.payload.profession)}` : '';
+      add('evolution', `${who(id)} evolved into ${line(now.className)}${grade}${prof}`);
+      break;
+    }
+    case 'skill.upgraded': {
+      const id = event.payload.characterId;
+      const from = skillRarity(before?.characters[id], event.payload.skill);
+      const to = skillRarity(after.characters[id], event.payload.skill);
+      const change = from && to ? `: ${rarityName(after, from)} → ${rarityName(after, to)}` : '';
+      add('skill', `${who(id)} upgraded ${line(event.payload.skill)}${change}`);
+      break;
+    }
+    case 'skill.markAwarded':
+      add(
+        'skill',
+        `${who(event.payload.characterId)} earned a mark on ${line(event.payload.skill)}`,
+      );
+      break;
+    case 'skill.merged': {
+      const id = event.payload.characterId;
+      const rarity = skillRarity(after.characters[id], event.payload.name);
+      const r = rarity ? ` (${rarityName(after, rarity)})` : '';
+      const [a, b] = event.payload.skills;
+      add(
+        'skill',
+        `${who(id)} merged ${line(a)} and ${line(b)} into ${line(event.payload.name)}${r}`,
+      );
+      break;
+    }
+    case 'gift.given':
+      add(
+        'item',
+        `${who(event.payload.characterId)} gave ${who(event.payload.to)}: ${bundleText(after, event.payload.bundle)}`,
+      );
+      break;
+    case 'holdings.adjusted': {
+      const p = event.payload;
+      const reason = p.reason ? ` (${line(p.reason)})` : '';
+      add(
+        'item',
+        `GM adjusted ${who(p.characterId)}'s holdings: ${bundleText(after, { currency: p.currency, items: p.items }, true)}${reason}`,
+      );
+      break;
+    }
+    case 'trade.accepted': {
+      const trade = after.trades[event.payload.tradeId];
+      if (trade) {
+        add(
+          'item',
+          `Trade: ${who(trade.from)} gave ${who(trade.to)} ${bundleText(after, trade.give)}; ${who(trade.to)} gave ${bundleText(after, trade.get)}`,
+        );
+      }
+      break;
+    }
+    case 'system.broadcast': {
+      const to = event.payload.characterIds;
+      const audience = to === null ? 'everyone' : to.map((id) => who(id)).join(', ');
+      add('broadcast', `System message to ${audience}: ${line(event.payload.text)}`);
+      break;
+    }
+    case 'quest.created': {
+      const q = after.quests[event.payload.questId];
+      if (q) {
+        const hidden = q.visible ? '' : ' (hidden from players)';
+        const timer = q.days === null ? '' : `, ${q.days} days`;
+        const gauge = q.stability ? `, World Stability ${q.stability.value}` : '';
+        add('quest', `New quest: ${line(q.title)}${hidden}${timer}${gauge}`);
+      }
+      break;
+    }
+    case 'quest.edited': {
+      const q = after.quests[event.payload.questId];
+      if (q) add('quest', `Quest edited: ${line(q.title)}`);
+      break;
+    }
+    case 'quest.statusSet': {
+      const q = after.quests[event.payload.questId];
+      if (q) add('quest', `Quest ${line(q.title)}: ${q.status}`);
+      break;
+    }
+    case 'stability.actionApplied':
+    case 'stability.nudged': {
+      const id = event.payload.questId;
+      const from = before?.quests[id]?.stability?.value;
+      const q = after.quests[id];
+      const to = q?.stability?.value;
+      if (!q || from === undefined || to === undefined) break;
+      const how =
+        event.type === 'stability.actionApplied'
+          ? `${line(event.payload.tag)} × ${event.payload.count}`
+          : 'GM nudge';
+      const reason = event.payload.reason ? `; ${line(event.payload.reason)}` : '';
+      add('stability', `World Stability (${line(q.title)}): ${from} → ${to} (${how}${reason})`);
+      break;
+    }
+    case 'campaign.dayAdvanced':
+      add('day', `Day ${before?.day ?? after.day - event.payload.days} → ${after.day}`);
+      break;
+    default:
+      break;
+  }
+  for (const text of levelLines(before, after)) add('level', text);
+  return out;
+}
+
+/**
+ * Builds the session log for the events from `fromSeq` on. Undone events and
+ * their undos inside that range leave no trace; an undo of an earlier event
+ * is noted, since it changes state this sitting.
+ */
+export function buildSessionLog(campaign: Campaign, fromSeq: number): SessionLog {
+  const entries: SessionLogEntry[] = [];
+  const practiceIds = new Set<string>();
+  const noteIds = new Set<string>();
+  const sitting = new Set<string>();
+  const start = Math.max(0, fromSeq);
+  campaign.events.forEach((e, i) => {
+    if (i >= start) sitting.add(e.id);
+  });
+  let state: CampaignState | null = null;
+  for (let seq = 0; seq < campaign.events.length; seq++) {
+    const event = campaign.events[seq];
+    if (!event) continue;
+    if (event.type === 'event.undone') {
+      const target = event.payload.eventId;
+      if (seq >= start && !sitting.has(target)) {
+        entries.push({
+          seq,
+          at: event.timestamp,
+          kind: 'undo',
+          text: 'GM undid an earlier change',
+        });
+      }
+      continue;
+    }
+    if (has(campaign.undone, event.id)) continue;
+    const after = applyEvent(state, event);
+    if (seq >= start) {
+      for (const e of describe(state, after, event)) {
+        entries.push({ seq, at: event.timestamp, ...e });
+      }
+      if (event.type === 'practice.logged') practiceIds.add(event.id);
+      if (event.type === 'note.created' || event.type === 'note.edited') {
+        noteIds.add(event.payload.noteId);
+      }
+    }
+    state = after;
+  }
+  const final: CampaignState | null = state;
+  const repeats = final ? repeatedEntryIds(final.practice) : new Set<string>();
+  const practice: SessionLogPractice[] = (final?.practice ?? [])
+    .filter((p) => practiceIds.has(p.id))
+    .map((p) => ({
+      at: p.at,
+      character: nameOf(final, p.characterId),
+      action: line(p.action),
+      skills: p.skills.map(line),
+      stat:
+        p.stat === null
+          ? null
+          : (final?.rules.stats.list.find((s) => s.id === p.stat)?.name ?? p.stat),
+      tags: p.tags.map(line),
+      source: p.source,
+      repeat: repeats.has(p.id),
+    }));
+  const notes: SessionLogNote[] = (final?.noteOrder ?? []).flatMap((id) => {
+    const note = final?.notes[id];
+    if (!note || !noteIds.has(id) || !noteIsExportable(note)) return [];
+    return [
+      {
+        kind: note.kind,
+        author: nameOf(final, note.author),
+        title: line(note.title),
+        body: note.body,
+        tags: note.tags.map(line),
+        updatedAt: note.updatedAt,
+      },
+    ];
+  });
+  return {
+    campaignName: line(final?.name ?? ''),
+    fromSeq: start,
+    toSeq: campaign.events.length,
+    day: final?.day ?? null,
+    entries,
+    practice,
+    notes,
+  };
+}
+
+/** `2026-10-21T19:02:03.000Z` → `19:02:03`. */
+const clock = (iso: string) => iso.slice(11, 19);
+
+/** Indents note bodies so their own markdown headings stay inside the note. */
+const quoteBody = (body: string) =>
+  body.trim() === ''
+    ? '> (empty)'
+    : body
+        .replace(/\r\n?/g, '\n')
+        .split('\n')
+        .map((l) => (l === '' ? '>' : `> ${l}`))
+        .join('\n');
+
+/** Renders the log as markdown for the exports folder. */
+export function renderSessionLog(
+  log: SessionLog,
+  meta: { readonly startedAt: string; readonly writtenAt: string },
+): string {
+  const out: string[] = [];
+  out.push(`# Session log: ${log.campaignName || 'Campaign'}`);
+  out.push('');
+  out.push(`- Sitting started: ${meta.startedAt}`);
+  out.push(`- Last written: ${meta.writtenAt}`);
+  if (log.day !== null) out.push(`- In-game day: ${log.day}`);
+  out.push(`- Events: ${log.fromSeq}–${Math.max(log.fromSeq, log.toSeq - 1)} of the campaign log`);
+  out.push(
+    '- Times are UTC. Unshared journal entries and GM notes not tagged "export" are left out.',
+  );
+  out.push('');
+  out.push('## Timeline');
+  out.push('');
+  if (log.entries.length === 0) out.push('Nothing notable yet.');
+  for (const e of log.entries) out.push(`- ${clock(e.at)} · ${e.kind} · ${e.text}`);
+  out.push('');
+  out.push('## Practice');
+  out.push('');
+  if (log.practice.length === 0) out.push('No practice logged yet.');
+  for (const p of log.practice) {
+    const bits = [
+      p.skills.length ? `skills: ${p.skills.join(' + ')}` : null,
+      p.stat ? `stat: ${p.stat}` : null,
+      p.tags.length ? `tags: ${p.tags.join(', ')}` : null,
+      `from ${p.source}`,
+      p.repeat ? 'repeat' : null,
+    ].filter((b): b is string => b !== null);
+    out.push(`- ${clock(p.at)} · ${p.character}: ${p.action} (${bits.join('; ')})`);
+  }
+  out.push('');
+  out.push('## Notes');
+  out.push('');
+  if (log.notes.length === 0) out.push('No shared notes yet.');
+  for (const n of log.notes) {
+    const tags = n.tags.length ? ` · tags: ${n.tags.join(', ')}` : '';
+    out.push(`### ${n.title || '(untitled)'}`);
+    out.push('');
+    out.push(`${n.kind} note by ${n.author} · updated ${n.updatedAt}${tags}`);
+    out.push('');
+    out.push(quoteBody(n.body));
+    out.push('');
+  }
+  return `${out.join('\n').trimEnd()}\n`;
+}
