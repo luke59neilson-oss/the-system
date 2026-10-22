@@ -302,3 +302,11 @@ DESIGN/ROADMAP; do not re-apply them.
     they keep banking until the GM switches the rule in Rules settings
     (M4.9). Alternative: switch every campaign over automatically.
     Answer:
+
+50. **Hand-written skill text and the library.** Once you write a
+    character's skill text by hand (Skill text form), library edits no
+    longer change that copy, even after it upgrades. Default (D125): it
+    stays hand-written for good (until an evolution renames the skill).
+    Alternative: a "Use library text" button that hands it back to the
+    library.
+    Answer:
