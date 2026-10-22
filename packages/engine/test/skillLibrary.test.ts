@@ -177,4 +177,23 @@ describe('skill library (M4.1)', () => {
     expect(text).toContain('Learn what something is.');
     expect(projectForGm(c.state).skillLibrary['identify']?.effects).toMatch(/^GM:/);
   });
+
+  it('undo replays as if the library event never happened', () => {
+    let c = ok(run([created], ctx), identify);
+    const defineId = c.events.at(-1)?.id ?? '';
+    // A later edit depends on the define, so the define cannot be undone first.
+    c = ok(c, { type: 'skillDef.edit', skillDefId: 'identify', flavor: 'Edited.' });
+    const editId = c.events.at(-1)?.id ?? '';
+    expect(reject(c, { type: 'event.undo', eventId: defineId })).toMatch(/depends on it/);
+    c = ok(c, jake);
+    expect(skillOf(c, 'Identify')?.flavor).toBe('Edited.');
+    // Undoing the edit re-folds the log, so Jake (created after it) gets the original flavour.
+    c = ok(c, { type: 'event.undo', eventId: editId });
+    expect(c.state?.skillLibrary['identify']?.flavor).toBe('Knowledge is the first weapon.');
+    expect(skillOf(c, 'Identify')?.flavor).toBe('Knowledge is the first weapon.');
+    // With the edit gone, undoing the define leaves Jake's Identify without text.
+    c = ok(c, { type: 'event.undo', eventId: defineId });
+    expect(c.state?.skillLibraryOrder).toEqual([]);
+    expect(skillOf(c, 'Identify')).toMatchObject({ description: null, flavor: null });
+  });
 });

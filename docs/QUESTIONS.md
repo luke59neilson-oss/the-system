@@ -181,3 +181,13 @@ answer under any question and the next run will follow it.
     only (D88). Alternative: refuse to evolve until every waiting selection
     is chosen (see also Q21).
     Answer:
+
+37. **What the skill library fills, and when.** A character who gains a
+    skill gets the library entry's description and flavour by matching the
+    official name only; an Uncommon Identify still gets the Common entry's
+    text, and editing the library later does not change skills already
+    granted. Effects text stays GM-only. Default: as described (D90).
+    Alternatives: one entry per name and rarity; library edits update every
+    character's copy that has not been individually edited; show effects to
+    the skill's owner.
+    Answer:

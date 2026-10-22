@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import type { CampaignState, SkillDef } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { CommandResult, LiveClient } from '../live';
@@ -20,22 +20,38 @@ export function SkillLibrary({ client, state }: { client: LiveClient; state: Cam
   const rarities = state.rules.skills.rarities.filter((r) => !r.reserved);
   const rarityName = (id: string) => rarities.find((r) => r.id === id)?.name ?? id;
   const [query, setQuery] = useState('');
-  // null = a new skill; otherwise the id being edited.
-  const [editingId, setEditingId] = useState<string | null>(null);
+  // null = a new skill; otherwise the entry as it was when the draft was loaded.
+  const [base, setBase] = useState<SkillDef | null>(null);
   const [draft, setDraft] = useState<SkillDraft>(() => emptyDraft(rarities));
   const [busy, setBusy] = useState(false);
+  const nameInput = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
-  const editing: SkillDef | null =
-    editingId !== null && Object.prototype.hasOwnProperty.call(state.skillLibrary, editingId)
-      ? (state.skillLibrary[editingId] ?? null)
+  const stored: SkillDef | null =
+    base !== null && Object.prototype.hasOwnProperty.call(state.skillLibrary, base.id)
+      ? (state.skillLibrary[base.id] ?? null)
       : null;
+  // Follow the entry when it changes elsewhere (another tab, an undo).
+  if (base !== null && stored === null) {
+    setBase(null);
+    setDraft(emptyDraft(rarities));
+    setResult({ ok: false, text: `[${base.name}] is no longer in the library` });
+  } else if (base !== null && stored !== null && stored !== base) {
+    // No local edits, or the draft now matches (our own save): adopt the new entry.
+    if (saveCommand(draft, base) === null || saveCommand(draft, stored) === null) {
+      setBase(stored);
+      setDraft(draftOf(stored));
+    }
+  }
+  const changedElsewhere = base !== null && stored !== null && stored !== base;
   const shown = librarySkills(state, query);
-  const command = saveCommand(draft, editing);
+  // Edits send only the fields changed since the draft was loaded (D90).
+  const command = saveCommand(draft, base);
 
   const open = (def: SkillDef | null) => {
-    setEditingId(def?.id ?? null);
+    setBase(def);
     setDraft(def ? draftOf(def) : emptyDraft(rarities));
     setResult(null);
+    nameInput.current?.focus();
   };
   const set = (field: keyof SkillDraft, value: string) => setDraft({ ...draft, [field]: value });
   const submit = async (e: FormEvent) => {
@@ -49,8 +65,8 @@ export function SkillLibrary({ client, state }: { client: LiveClient; state: Cam
       return;
     }
     const name = draft.name.trim();
-    setResult({ ok: true, text: editing ? `[${name}] saved` : `[${name}] added to the library` });
-    if (!editing) setDraft(emptyDraft(rarities));
+    setResult({ ok: true, text: base ? `[${name}] saved` : `[${name}] added to the library` });
+    if (!base) setDraft(emptyDraft(rarities));
   };
 
   return (
@@ -66,7 +82,7 @@ export function SkillLibrary({ client, state }: { client: LiveClient; state: Cam
             placeholder="Name, rarity or tag"
           />
         </label>
-        <button type="button" onClick={() => open(null)} aria-pressed={editingId === null}>
+        <button type="button" onClick={() => open(null)} aria-pressed={base === null}>
           New skill
         </button>
       </div>
@@ -81,7 +97,7 @@ export function SkillLibrary({ client, state }: { client: LiveClient; state: Cam
               <button
                 type="button"
                 className="library-item"
-                aria-current={def.id === editingId ? 'true' : undefined}
+                aria-current={def.id === base?.id ? 'true' : undefined}
                 onClick={() => open(def)}
               >
                 <span className="skill-name">[{def.name}]</span>{' '}
@@ -101,10 +117,11 @@ export function SkillLibrary({ client, state }: { client: LiveClient; state: Cam
         </ul>
       )}
       <form onSubmit={(e) => void submit(e)} aria-labelledby="skill-library-form">
-        <h3 id="skill-library-form">{editing ? `Edit [${editing.name}]` : 'New skill'}</h3>
+        <h3 id="skill-library-form">{base ? `Edit [${base.name}]` : 'New skill'}</h3>
         <label>
           Official name
           <input
+            ref={nameInput}
             value={draft.name}
             onChange={(e) => set('name', e.target.value)}
             required
@@ -159,8 +176,17 @@ export function SkillLibrary({ client, state }: { client: LiveClient; state: Cam
           Characters who gain a skill with this name get its description and flavour, unless the
           skill already has its own. Editing here does not change skills already granted.
         </p>
+        {changedElsewhere && stored && (
+          <p className="err" role="alert">
+            [{stored.name}] changed elsewhere since you opened it. Saving sends only the fields you
+            changed.{' '}
+            <button type="button" className="secondary" onClick={() => open(stored)}>
+              Reload
+            </button>
+          </p>
+        )}
         <button type="submit" disabled={busy || command === null || draft.name.trim() === ''}>
-          {editing ? 'Save changes' : 'Add to library'}
+          {base ? 'Save changes' : 'Add to library'}
         </button>
         {result && (
           <p className={result.ok ? 'ok' : 'err'} role={result.ok ? 'status' : 'alert'}>

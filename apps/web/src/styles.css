@@ -1584,6 +1584,7 @@ button.danger {
 }
 .library-item[aria-current='true'] {
   border-color: var(--accent);
+  outline: 1px solid var(--accent);
   box-shadow: 0 0 8px var(--glow);
 }
 .library-tags {

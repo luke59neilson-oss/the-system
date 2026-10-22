@@ -170,5 +170,32 @@ test('the GM builds the skill library; granted skills take its text', async ({ b
   );
   await check.close();
 
+  // A second GM tab edits the entry: an untouched form follows it...
+  const other = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  const otherErrors = watchErrors(other);
+  await other.goto(`${server.url}/gm#key=${GM_KEY}`);
+  const otherLibrary = other.locator('section[aria-labelledby="skill-library"]');
+  await otherLibrary.getByRole('button', { name: /\[Identify\]/ }).click();
+  await otherLibrary.getByLabel('Flavour (players see this)').fill('From the other tab.');
+  await otherLibrary.getByRole('button', { name: 'Save changes' }).click();
+  await expect(otherLibrary.getByRole('status')).toHaveText('[Identify] saved');
+  await expect(library.getByLabel('Flavour (players see this)')).toHaveValue('From the other tab.');
+  // ...while a form with local edits warns, keeps them, and can reload.
+  await library.getByLabel('Effects (GM only)').fill('Local change.');
+  await otherLibrary.getByLabel('Flavour (players see this)').fill('Second outside edit.');
+  await otherLibrary.getByRole('button', { name: 'Save changes' }).click();
+  await expect(library.getByRole('alert')).toContainText('changed elsewhere');
+  await expect(library.getByLabel('Effects (GM only)')).toHaveValue('Local change.');
+  await library.getByRole('button', { name: 'Reload' }).click();
+  await expect(library.getByLabel('Flavour (players see this)')).toHaveValue(
+    'Second outside edit.',
+  );
+  await expect(library.getByLabel('Effects (GM only)')).toHaveValue(
+    `${SECRET}: reveals tier text.`,
+  );
+  await expect(library.getByRole('alert')).toHaveCount(0);
+  expect(otherErrors).toEqual([]);
+  await other.close();
+
   expect(gmErrors).toEqual([]);
 });
