@@ -15,3 +15,14 @@ export function unassignedPoints(
 export function rarityName(rules: PlayerRules, id: string): string {
   return rules.rarities.find((r) => r.id === id)?.name ?? id;
 }
+
+/** A config id made safe for a CSS class name (letters, digits, hyphens). */
+export function cssToken(id: string): string {
+  return id.replace(/[^a-z0-9-]/giu, '');
+}
+
+/** ` theme-<token>` for a grade metal theme token, or '' (M8.1 builds the full themes). */
+export function themeClass(theme: string | null | undefined): string {
+  const token = cssToken(theme ?? '');
+  return token ? ` theme-${token}` : '';
+}

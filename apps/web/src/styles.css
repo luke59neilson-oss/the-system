@@ -252,7 +252,10 @@ h3 {
   border-color: var(--accent);
 }
 
-/* Join screen (M3.1). Grade metal rings are placeholders until M8.1 themes. */
+/* Grade metals (DESIGN §3). Placeholders until the M8.1 themes. */
+:root {
+  --metal: #8a96a8;
+}
 .join {
   max-width: 640px;
   margin: 0 auto;
@@ -294,7 +297,6 @@ h3 {
   white-space: nowrap;
 }
 .portrait {
-  --metal: #8a96a8;
   flex: none;
   width: 48px;
   height: 48px;
@@ -314,25 +316,25 @@ h3 {
   height: 100%;
   object-fit: cover;
 }
-.portrait.theme-aluminum {
+.theme-aluminum {
   --metal: #a7adb4;
 }
-.portrait.theme-bronze {
+.theme-bronze {
   --metal: #a5733f;
 }
-.portrait.theme-copper {
+.theme-copper {
   --metal: #d9804f;
 }
-.portrait.theme-silver {
+.theme-silver {
   --metal: #d4d8de;
 }
-.portrait.theme-gold {
+.theme-gold {
   --metal: #e7c25a;
 }
-.portrait.theme-platinum {
+.theme-platinum {
   --metal: #b9d8f0;
 }
-.portrait.theme-diamond {
+.theme-diamond {
   --metal: #c9f3ff;
 }
 .continue h2 {
@@ -638,4 +640,91 @@ button.secondary {
 }
 button.secondary:hover {
   border-color: var(--accent);
+}
+
+/* Status screen (M3.2): grade-metal frame, rarity colours, live glow. */
+.status-window.window {
+  border-color: var(--metal);
+  box-shadow:
+    0 0 14px color-mix(in srgb, var(--metal) 35%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--metal) 20%, transparent);
+}
+.status-window h2 {
+  color: var(--metal);
+}
+.pool-bar {
+  display: block;
+  height: 4px;
+  margin-top: 3px;
+  max-width: 220px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.pool-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.skills {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-family: var(--mono);
+}
+.skill .nickname {
+  color: var(--muted);
+  font-style: italic;
+}
+.rarity-inferior .skill-name {
+  color: #9a9a9a;
+}
+.rarity-common .skill-name {
+  color: #e6ecf5;
+}
+.rarity-uncommon .skill-name {
+  color: #6ee08a;
+}
+.rarity-rare .skill-name {
+  color: #5fa8ff;
+}
+.rarity-epic .skill-name {
+  color: #c79bff;
+}
+.rarity-ancient .skill-name {
+  color: #2fd3c0;
+}
+.rarity-legendary .skill-name {
+  color: #ffa94d;
+}
+.rarity-mythical .skill-name {
+  color: #ff6b81;
+}
+.rarity-divine .skill-name {
+  color: #ffe58a;
+}
+.flash {
+  animation: flash 1.6s ease-out;
+}
+@keyframes flash {
+  from {
+    color: #fff;
+    text-shadow: 0 0 10px var(--glow);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flash {
+    animation: none;
+  }
+}
+@media (max-width: 700px) {
+  .status-window .rows {
+    grid-template-columns: minmax(0, 7.5em) 1fr;
+  }
+}
+.nowrap {
+  white-space: nowrap;
 }

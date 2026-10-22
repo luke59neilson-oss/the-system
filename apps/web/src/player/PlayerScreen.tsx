@@ -1,10 +1,17 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  Fragment,
+  type ReactNode,
+} from 'react';
 import type { OwnSheet, PlayerView } from '@the-system/engine';
 import { notificationText } from '../format';
 import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
 import { browserStorage, remember } from './join';
-import { formatStatValue, rarityName, unassignedPoints } from './sheet';
+import { cssToken, formatStatValue, rarityName, themeClass, unassignedPoints } from './sheet';
 
 /**
  * Player status screen (MS.2 walking skeleton; the full M3 screens build on it).
@@ -68,43 +75,37 @@ function Status({ view }: { view: PlayerView }) {
   const me: OwnSheet = view.me;
   const rules = view.rules;
   const poolName = (id: string) => rules.pools.find((p) => p.id === id)?.name ?? id;
-  const skills = (kind: 'class' | 'profession' | 'race') =>
-    me.skills.filter((s) => s.kind === kind);
-  const skillList = (kind: 'class' | 'profession' | 'race') =>
-    skills(kind)
-      .map(
-        (s) =>
-          `[${s.name} (${rarityName(rules, s.rarity)})]${s.nickname ? ` “${s.nickname}”` : ''}`,
-      )
-      .join(' ');
+  const metal = themeClass(rules.grades.find((g) => g.id === me.grade)?.theme);
+  const skills = (kind: SkillKind) => me.skills.filter((s) => s.kind === kind);
+  const free = unassignedPoints(me.freePointBatches);
   return (
-    <section className="window status-window" aria-labelledby="status" data-testid="status">
+    <section
+      className={`window status-window${metal}`}
+      aria-labelledby="status"
+      data-testid="status"
+    >
       <h2 id="status">Status</h2>
       <dl className="rows">
         <dt>Name</dt>
         <dd data-testid="name">{me.name}</dd>
         <dt>Race</dt>
-        <dd data-testid="race">
-          [{me.race} ({me.grade}) – lvl {me.raceLevel}]
-        </dd>
+        <Live testId="race" value={`[${me.race} (${me.grade}) – lvl ${me.raceLevel}]`} />
         <dt>Class</dt>
-        <dd data-testid="class">
-          [{me.className} – lvl {me.classLevel}]
-        </dd>
+        <Live testId="class" value={`[${me.className} – lvl ${me.classLevel}]`} />
         {me.profession !== null && (
           <>
             <dt>Profession</dt>
-            <dd data-testid="profession">
-              [{me.profession} – lvl {me.professionLevel}]
-            </dd>
+            <Live testId="profession" value={`[${me.profession} – lvl ${me.professionLevel}]`} />
           </>
         )}
         {me.pools.map((p) => (
           <div className="pool" key={p.id}>
             <dt>{poolName(p.id)}</dt>
-            <dd data-testid={`pool-${p.id}`}>
-              {p.current}/{p.max}
-            </dd>
+            <Live testId={`pool-${p.id}`} value={`${p.current}/${p.max}`}>
+              <span className="pool-bar" aria-hidden="true">
+                <span style={{ width: `${p.max > 0 ? (100 * p.current) / p.max : 0}%` }} />
+              </span>
+            </Live>
           </div>
         ))}
       </dl>
@@ -112,31 +113,111 @@ function Status({ view }: { view: PlayerView }) {
       <ul className="stats">
         {rules.stats.list.map((s) => (
           <li key={s.id} data-testid={`stat-${s.id}`}>
-            <span>{s.name}</span> <strong>{formatStatValue(rules, me.stats[s.id] ?? 0)}</strong>
+            <span>{s.name}</span> <LiveStrong value={formatStatValue(rules, me.stats[s.id] ?? 0)} />
           </li>
         ))}
       </ul>
       <dl className="rows">
         <dt>Free points</dt>
-        <dd data-testid="free-points">{unassignedPoints(me.freePointBatches)}</dd>
+        <Live testId="free-points" value={String(free)} />
         {me.titles.length > 0 && (
           <>
             <dt>Titles</dt>
-            <dd>{me.titles.map((t) => `[${t}]`).join(', ')}</dd>
+            <dd data-testid="titles">{me.titles.map((t) => `[${t}]`).join(', ')}</dd>
           </>
         )}
-        <dt>Class Skills</dt>
-        <dd>{skillList('class') || '—'}</dd>
-        {skills('profession').length > 0 && (
-          <>
-            <dt>Profession Skills</dt>
-            <dd>{skillList('profession')}</dd>
-          </>
-        )}
-        <dt>Race Skills</dt>
-        <dd>{skillList('race') || '—'}</dd>
       </dl>
+      <SkillList title="Class Skills" kind="class" list={skills('class')} rules={rules} />
+      {skills('profession').length > 0 && (
+        <SkillList
+          title="Profession Skills"
+          kind="profession"
+          list={skills('profession')}
+          rules={rules}
+        />
+      )}
+      <SkillList title="Race Skills" kind="race" list={skills('race')} rules={rules} />
     </section>
+  );
+}
+
+type SkillKind = 'class' | 'profession' | 'race';
+
+function SkillList({
+  title,
+  kind,
+  list,
+  rules,
+}: {
+  title: string;
+  kind: SkillKind;
+  list: OwnSheet['skills'];
+  rules: PlayerView['rules'];
+}) {
+  const id = `skills-${kind}`;
+  return (
+    <>
+      <h3 id={id}>{title}</h3>
+      {list.length === 0 ? (
+        <p className="muted">—</p>
+      ) : (
+        <ul className="skills" aria-labelledby={id} data-testid={id}>
+          {list.map((s) => (
+            <li key={s.name} className={`skill rarity-${cssToken(s.rarity)}`} data-testid="skill">
+              <span className="skill-name">
+                [{s.name} ({rarityName(rules, s.rarity)})]
+              </span>
+              {s.nickname && <span className="nickname"> “{s.nickname}”</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+/**
+ * A value that glows briefly whenever it changes after the screen opened
+ * (DESIGN §9 "values update live"). Re-keying replays the CSS animation.
+ */
+function Live({
+  value,
+  testId,
+  children,
+}: {
+  value: string;
+  testId: string;
+  children?: ReactNode;
+}) {
+  const [initial] = useState(value);
+  return (
+    <dd className={value !== initial ? 'flash' : undefined} key={value}>
+      <span data-testid={testId}>
+        {value.split(' – ').map((part, i) =>
+          // Narrow screens wrap at the dash, never inside a bracketed name.
+          i === 0 ? (
+            <span className="nowrap" key={i}>
+              {part}
+            </span>
+          ) : (
+            <Fragment key={i}>
+              {' '}
+              <span className="nowrap">– {part}</span>
+            </Fragment>
+          ),
+        )}
+      </span>
+      {children}
+    </dd>
+  );
+}
+
+function LiveStrong({ value }: { value: string }) {
+  const [initial] = useState(value);
+  return (
+    <strong key={value} className={value !== initial ? 'flash' : undefined}>
+      {value}
+    </strong>
   );
 }
 

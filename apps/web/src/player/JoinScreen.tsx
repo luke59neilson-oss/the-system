@@ -9,6 +9,7 @@ import {
   rememberedEntry,
   type JoinEntry,
 } from './join';
+import { themeClass } from './sheet';
 
 const playUrl = (id: string) => `/play/${encodeURIComponent(id)}`;
 
@@ -110,9 +111,12 @@ export function PlayerHome() {
 
 /** Portrait image, or a monogram framed in the character's grade metal. */
 function Portrait({ entry }: { entry: JoinEntry }) {
-  const theme = entry.theme ? ` theme-${entry.theme.replace(/[^a-z0-9-]/giu, '')}` : '';
   return (
-    <span className={`portrait${theme}`} aria-hidden="true" data-testid="portrait">
+    <span
+      className={`portrait${themeClass(entry.theme)}`}
+      aria-hidden="true"
+      data-testid="portrait"
+    >
       {entry.portrait ? <img src={entry.portrait} alt="" /> : initials(entry.name)}
     </span>
   );

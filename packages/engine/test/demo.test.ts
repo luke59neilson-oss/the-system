@@ -116,6 +116,17 @@ describe('demo campaign (MS.4, M1.15)', () => {
     expect(effective['perception']).toBe((jake.stats['perception'] ?? 0) + 3);
   });
 
+  it('Jake has a nicknamed class skill, so the status screen can show one', () => {
+    const state = demoState();
+    const me = projectForPlayer(state, 'demo-jake').me;
+    const first = me.skills.find((s) => s.kind === 'class');
+    expect(first?.nickname).toBe('Old Faithful');
+    expect(me.skills.filter((s) => s.nickname !== null)).toHaveLength(1);
+    for (const id of ['demo-miranda', 'demo-casper', 'demo-sultan']) {
+      expect(projectForPlayer(state, id).me.skills.every((s) => s.nickname === null)).toBe(true);
+    }
+  });
+
   it('every player sees the tutorial quest with its World Stability gauge, never its rules', () => {
     const state = demoState();
     for (const d of DEMO_CHARACTERS) {

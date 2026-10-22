@@ -28,6 +28,8 @@ export interface DemoCharacter {
   /** Class name after each evolution, from F upward. */
   readonly classNames: readonly string[];
   readonly titles: readonly string[];
+  /** Player nickname on the first class skill (DESIGN §6 "Jake Juice"), if any. */
+  readonly nickname?: string;
 }
 
 export const DEMO_CHARACTERS: readonly DemoCharacter[] = [
@@ -39,6 +41,7 @@ export const DEMO_CHARACTERS: readonly DemoCharacter[] = [
     profession: { name: 'Alchemist', level: 50 },
     classNames: ['Ranger', 'Storm Ranger', 'Tempest Warden'],
     titles: ['Forerunner', 'Rapid Spread'],
+    nickname: 'Old Faithful',
   },
   {
     id: 'demo-miranda',
@@ -268,6 +271,15 @@ export function buildDemoEvents(ctx: DemoContext): DomainEvent[] {
       });
     }
     for (const title of demo.titles) run({ type: 'title.award', characterId: id, title });
+    const firstClassSkill = char(id).skills.find((s) => s.kind === 'class');
+    if (demo.nickname && firstClassSkill) {
+      run({
+        type: 'skill.nickname',
+        characterId: id,
+        skill: firstClassSkill.name,
+        nickname: demo.nickname,
+      });
+    }
     // Rested: pools full (level-ups do not refill them, Q14).
     const stats = char(id).stats;
     run({
