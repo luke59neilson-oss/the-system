@@ -136,6 +136,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
       .array(z.strictObject({ characterId: recordId, share: z.number().int().nonnegative() }))
       .min(1),
     enemyLevel: z.number().int().nonnegative().max(10_000).nullable(),
+    /** Target's grade for the grade-gap XP factor (MQ.10); absent in older events. */
+    enemyGrade: z.string().min(1).max(40).optional(),
     /** Free text for the session log ("Pale hunter pack"). */
     reason: z.string().trim().max(200),
   }),

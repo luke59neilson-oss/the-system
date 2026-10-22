@@ -57,6 +57,8 @@ export type Command =
         share?: number | undefined;
       }[];
       enemyLevel?: number | null | undefined;
+      /** Target's grade id for the grade-gap XP factor (MQ.10). */
+      enemyGrade?: string | null | undefined;
       reason?: string | undefined;
     }
   | {
@@ -589,6 +591,9 @@ function awardPayload(command: Extract<Command, { type: 'xp.award' }>) {
     amount: command.amount,
     shares,
     enemyLevel: command.enemyLevel ?? null,
+    ...(command.enemyGrade !== null && command.enemyGrade !== undefined
+      ? { enemyGrade: command.enemyGrade }
+      : {}),
     reason: command.reason ?? '',
   };
 }

@@ -16,6 +16,9 @@ import {
   type Character,
   type Command,
   type GradeRules,
+  gradeGapXpFactor,
+  shareXp,
+  typicalSessionXp,
 } from '../src';
 import { kit, rawRules, run, seededRandom, testContext } from './helpers/events';
 
@@ -163,7 +166,7 @@ describe('classSpread', () => {
     expect(c.stats['strength']).toBe(26);
     c = reshapeClassWeights(rules, { ...c, grade: 'F' }, { strength: 1, agility: 1 });
     expect(Object.values(c.classSpreadTotals).every((t) => t === 0)).toBe(true);
-    const next = gainXp(rules, c, 'class', 2 * 150).character;
+    const next = gainXp(rules, c, 'class', 2 * 300).character;
     expect(next.stats['strength']).toBe(26 + 5);
     expect(next.stats['agility']).toBe(10 + 5);
     expect(() => reshapeClassWeights(rules, c, { luck: 1 })).toThrow('Unknown stat');
@@ -200,8 +203,9 @@ describe('gainXp', () => {
     expect(capped.classLevel).toBe(4);
     expect(capped.xp.class).toBe(600);
     expect(gainXp(rules, capped, 'class', 0).levelUps).toEqual([]);
+    // 600 banked at F's 300 per level (MQ.10) pays for two levels.
     const evolved = gainXp(rules, { ...capped, grade: 'F' }, 'class', 0).character;
-    expect(evolved.classLevel).toBe(8);
+    expect(evolved.classLevel).toBe(6);
     expect(evolved.xp.class).toBe(0);
   });
 
@@ -219,7 +223,7 @@ describe('gainXp', () => {
       professionLevel: 10,
     };
     expect(raceLevel(rules, base)).toBe(15);
-    const { character, levelUps } = gainXp(rules, base, 'class', 10 * 250);
+    const { character, levelUps } = gainXp(rules, base, 'class', 10 * 900);
     expect(character.classLevel).toBe(30);
     expect(raceLevel(rules, character)).toBe(20);
     expect(levelUps.filter((l) => l.track === 'race').map((l) => l.level)).toEqual([
@@ -232,13 +236,13 @@ describe('gainXp', () => {
       rules,
       { ...base, ...pick(fresh({ agility: 3, perception: 1 })) },
       'class',
-      2500,
+      10 * 900,
     ).character;
     expect(weighted.stats['agility']).toBe(10 + 60);
     expect(weighted.stats['perception']).toBe(10 + 20);
     expect(weighted.stats['strength']).toBe(10);
     // Profession levels raise race level (and free points) but grant no spread.
-    const prof = gainXp(rules, character, 'profession', 2 * 250);
+    const prof = gainXp(rules, character, 'profession', 2 * 900);
     expect(prof.character.professionLevel).toBe(12);
     expect(raceLevel(rules, prof.character)).toBe(21);
     expect(prof.character.stats).toEqual(character.stats);
@@ -298,8 +302,8 @@ describe('xp helpers', () => {
       },
     );
     expect(shares).toEqual([
-      { characterId: 'c1', share: 51, bonus: 10 },
-      { characterId: 'k1', share: 50, bonus: 20 },
+      { characterId: 'c1', share: 51, bonus: 10, gained: 61 },
+      { characterId: 'k1', share: 50, bonus: 20, gained: 70 },
     ]);
     expect(() =>
       splitXp(rules, { c1: jake }, { amount: 1, participants: [{ characterId: 'zz' }] }),
@@ -313,7 +317,49 @@ describe('xp helpers', () => {
     ).toThrow('listed twice');
     expect(
       splitXp(rules, { c1: jake }, { amount: 9, participants: [{ characterId: 'c1' }] }),
-    ).toEqual([{ characterId: 'c1', share: 9, bonus: 0 }]);
+    ).toEqual([{ characterId: 'c1', share: 9, bonus: 0, gained: 9 }]);
+  });
+
+  it('XP per level triples each grade (DESIGN §5, MQ.10)', () => {
+    expect(rules.grades.map((g) => g.xpPerLevel)).toEqual([
+      100, 300, 900, 2700, 8100, 24300, 72900,
+    ]);
+    // The "typical session ≈ 6 levels" helper per grade.
+    expect(rules.grades.map((g) => typicalSessionXp(rules, g.id))).toEqual([
+      600, 1800, 5400, 16200, 48600, 145800, 437400,
+    ]);
+    expect(() => typicalSessionXp(rules, 'S')).toThrow();
+  });
+
+  it("targets below the character's grade give ⅓ XP one grade down, none further (MQ.10)", () => {
+    expect(gradeGapXpFactor(rules, 'E', null)).toBe(1);
+    expect(gradeGapXpFactor(rules, 'E', 'E')).toBe(1);
+    expect(gradeGapXpFactor(rules, 'E', 'D')).toBe(1);
+    expect(gradeGapXpFactor(rules, 'E', 'F')).toBe(1 / 3);
+    expect(gradeGapXpFactor(rules, 'E', 'G')).toBe(0);
+    expect(gradeGapXpFactor(rules, 'A', 'G')).toBe(0);
+    expect(() => gradeGapXpFactor(rules, 'E', 'S')).toThrow('Unknown grade "S"');
+    // Stored rules from before MQ.10 have no factors: no reduction.
+    const old = { ...rules, xp: { ...rules.xp, gradeBelowFactors: [] } };
+    expect(gradeGapXpFactor(old, 'E', 'G')).toBe(1);
+    // Three entries: the last one covers every larger gap.
+    const steps = { ...rules, xp: { ...rules.xp, gradeBelowFactors: [0.5, 0.25, 0.1] } };
+    expect([3, 4, 5, 6].map((i) => gradeGapXpFactor(steps, 'A', rules.grades[6 - i]?.id))).toEqual([
+      0.1, 0.1, 0.1, 0.1,
+    ]);
+    // Shares scale (floored) before the above-level bonus.
+    const e = { ...fresh(), grade: 'E' };
+    expect(shareXp(rules, e, 100, null, 'F')).toBe(33);
+    expect(shareXp(rules, e, 100, null, 'G')).toBe(0);
+    // Race level 0 vs enemy level 5: +50% on the scaled 33.
+    expect(shareXp(rules, e, 99, 5, 'F')).toBe(33 + 16);
+    expect(
+      splitXp(
+        rules,
+        { c1: e },
+        { amount: 90, participants: [{ characterId: 'c1' }], enemyGrade: 'F' },
+      ),
+    ).toEqual([{ characterId: 'c1', share: 90, bonus: 0, gained: 30 }]);
   });
 
   it('xpForLevels counts XP already held', () => {

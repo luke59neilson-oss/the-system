@@ -139,6 +139,48 @@ export function aboveLevelBonus(
   return Math.min(aboveLevelBonusCap, Number((aboveLevelBonusPerLevel * diff).toFixed(9)));
 }
 
+/**
+ * XP factor for a target `enemyGrade` (DESIGN §5, MQ.10): 1 at the
+ * character's grade or above; one grade below the first `gradeBelowFactors`
+ * entry (⅓ by default), further below the next ones, the last entry for any
+ * larger gap (0 by default). Unknown grades are refused.
+ */
+export function gradeGapXpFactor(
+  rules: RulesConfig,
+  characterGrade: string,
+  enemyGrade: string | null | undefined,
+): number {
+  if (enemyGrade === null || enemyGrade === undefined) return 1;
+  const enemy = rules.grades.findIndex((g) => g.id === enemyGrade);
+  if (enemy < 0) throw new CharacterRuleError(`Unknown grade "${enemyGrade}"`);
+  const gap = gradeIndexOf(rules, characterGrade) - enemy;
+  const factors = rules.xp.gradeBelowFactors;
+  if (gap <= 0 || factors.length === 0) return 1;
+  return factors[Math.min(gap, factors.length) - 1] as number;
+}
+
+/**
+ * The XP a share is worth to one character (DESIGN §5): the share scaled by
+ * the grade-gap factor (floored), plus the above-level bonus on that.
+ */
+export function shareXp(
+  rules: RulesConfig,
+  character: Character,
+  share: number,
+  enemyLevel: number | null | undefined,
+  enemyGrade?: string | null,
+): number {
+  const factor = gradeGapXpFactor(rules, character.grade, enemyGrade);
+  const scaled = factor === 1 ? share : Math.floor(Number((share * factor).toFixed(9)));
+  return scaled + shareBonus(rules, character, scaled, enemyLevel);
+}
+
+/** XP a typical session awards at a grade ("typical session ≈ 6 levels", DESIGN §5). */
+export function typicalSessionXp(rules: RulesConfig, gradeId: string): number {
+  const grade = rules.grades[gradeIndexOf(rules, gradeId)] as GradeRules;
+  return rules.campaign.typicalLevelsPerSession * grade.xpPerLevel;
+}
+
 /** Whole above-level bonus XP on top of a share (floored, float noise removed). */
 export function shareBonus(
   rules: RulesConfig,
@@ -157,6 +199,8 @@ export interface XpShare {
   readonly share: number;
   /** Above-level bonus on top of the share (whole XP, floored). */
   readonly bonus: number;
+  /** XP the character gains: the share after the grade-gap factor, plus the bonus. */
+  readonly gained: number;
 }
 
 export interface SplitInput {
@@ -165,6 +209,8 @@ export interface SplitInput {
   participants: readonly { characterId: string; weight?: number | undefined }[];
   /** Enemy level for the optional above-level bonus; omit for none. */
   enemyLevel?: number | undefined;
+  /** Enemy grade for the grade-gap factor (MQ.10); omit for none. */
+  enemyGrade?: string | undefined;
 }
 
 /**
@@ -187,11 +233,10 @@ export function splitXp(
       : undefined;
     if (!character) throw new CharacterRuleError(`Unknown character "${p.characterId}"`);
     const share = shares[i] as number;
-    return {
-      characterId: p.characterId,
-      share,
-      bonus: shareBonus(rules, character, share, input.enemyLevel),
-    };
+    const gained = shareXp(rules, character, share, input.enemyLevel, input.enemyGrade);
+    const factor = gradeGapXpFactor(rules, character.grade, input.enemyGrade);
+    const scaled = factor === 1 ? share : Math.floor(Number((share * factor).toFixed(9)));
+    return { characterId: p.characterId, share, bonus: gained - scaled, gained };
   });
 }
 

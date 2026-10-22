@@ -722,6 +722,52 @@ describe('replay', () => {
   });
 });
 
+describe('XP across grades (MQ.10)', () => {
+  const awardVs = (enemyGrade: string | null): Command => ({
+    type: 'xp.award',
+    track: 'class',
+    amount: 90,
+    participants: [{ characterId: 'jake' }],
+    enemyGrade,
+  });
+  const xpOf = (c: Campaign) => c.state?.characters['jake']?.xp.class;
+  const asE = (c: Campaign): Campaign => {
+    const state = c.state as NonNullable<Campaign['state']>;
+    const jakeNow = state.characters['jake'] as Character;
+    return { ...c, state: { ...state, characters: { jake: { ...jakeNow, grade: 'E' } } } };
+  };
+
+  it('an award against a lower grade is cut on apply, and the event records the grade', () => {
+    const e = asE(base());
+    const r = execute(e, awardVs('F'), testContext('g'));
+    if (!r.ok) throw new Error(r.error);
+    expect(xpOf(r.campaign)).toBe(30);
+    const event = r.campaign.events.at(-1) as DomainEvent;
+    expect(event.payload).toMatchObject({ amount: 90, enemyGrade: 'F' });
+    const none = execute(e, awardVs('G'), testContext('g'));
+    expect(none.ok && xpOf(none.campaign)).toBe(0);
+    const same = execute(e, awardVs(null), testContext('g'));
+    expect(same.ok && xpOf(same.campaign)).toBe(90);
+    expect(
+      same.ok && 'enemyGrade' in ((same.campaign.events.at(-1) as DomainEvent).payload as object),
+    ).toBe(false);
+    expect(reject(e, awardVs('S'))).toContain('unknown grade "S"');
+  });
+
+  it('campaigns created before MQ.10 keep their stored curve and no grade cut', () => {
+    const raw = rawRules() as { xp: Record<string, unknown>; grades: { xpPerLevel: number }[] };
+    delete raw.xp['gradeBelowFactors'];
+    raw.grades.forEach(
+      (g, i) => (g.xpPerLevel = [100, 150, 250, 400, 650, 1000, 1500][i] as number),
+    );
+    const old = asE(run([{ type: 'campaign.create', name: 'Old', rules: raw }, jake]));
+    expect(old.state?.rules.xp.gradeBelowFactors).toEqual([]);
+    expect(old.state?.rules.grades[1]?.xpPerLevel).toBe(150);
+    const r = execute(old, awardVs('G'), testContext('g'));
+    expect(r.ok && xpOf(r.campaign)).toBe(90);
+  });
+});
+
 describe('property: replay equals incremental state', () => {
   // Two fixed seeds: every walk must replay exactly, and together they must
   // reach every command path. One walk alone reaches some rare paths only a

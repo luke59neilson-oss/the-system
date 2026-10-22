@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 16,
+  "schemaVersion": 17,
   "name": "XP golden",
   "rules": {
     "configVersion": 1,
@@ -163,6 +163,7 @@
     "xp": {
       "aboveLevelBonusPerLevel": 0.1,
       "aboveLevelBonusCap": 1,
+      "gradeBelowFactors": [],
       "defaultSplit": "even"
     },
     "bonuses": {
@@ -733,6 +734,14 @@
   "broadcasts": [],
   "items": {},
   "itemOrder": [],
+  "skillLibrary": {},
+  "skillLibraryOrder": [],
+  "classLibrary": {},
+  "classLibraryOrder": [],
+  "raceLibrary": {},
+  "raceLibraryOrder": [],
+  "professionLibrary": {},
+  "professionLibraryOrder": [],
   "holdings": {},
   "trades": {},
   "tradeOrder": [],
@@ -748,14 +757,6 @@
   "montages": {},
   "montageOrder": [],
   "day": 1,
-  "skillLibrary": {},
-  "skillLibraryOrder": [],
-  "classLibrary": {},
-  "classLibraryOrder": [],
-  "raceLibrary": {},
-  "raceLibraryOrder": [],
-  "professionLibrary": {},
-  "professionLibraryOrder": [],
   "sessions": [],
   "currentSession": null
 }
