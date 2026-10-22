@@ -31,20 +31,28 @@ export function Inventory({ view, client }: { view: PlayerView; client: LiveClie
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const heading = useRef<HTMLHeadingElement | null>(null);
+  // Set by this window's own successful action until focus is rescued once:
+  // the clicked button may be gone (equipped, unequipped, form closed), and
+  // the view that removes it can land after the result.
+  const rescue = useRef(false);
+  const rescueFocus = () => {
+    if (!rescue.current) return;
+    const active = document.activeElement;
+    if (active === null || active === document.body) {
+      rescue.current = false;
+      heading.current?.focus({ preventScroll: true });
+    }
+  };
   useEffect(() => {
     if (done === null) return;
-    // The clicked button may be gone (equipped, unequipped, form closed):
-    // keep keyboard users in the window, then let the message fade.
-    requestAnimationFrame(() => {
-      if (document.activeElement === document.body) heading.current?.focus();
-    });
-    const timer = setTimeout(() => setDone(null), 8000);
+    requestAnimationFrame(rescueFocus);
+    const timer = setTimeout(() => {
+      rescue.current = false;
+      setDone(null);
+    }, 8000);
     return () => clearTimeout(timer);
   }, [done]);
-  useEffect(() => {
-    // The view that removes the clicked button can land after the result.
-    if (done !== null && document.activeElement === document.body) heading.current?.focus();
-  }, [inv, done]);
+  useEffect(rescueFocus, [inv]);
   const send = async (command: { type: string } & Record<string, unknown>, ok: string) => {
     if (!client) return false;
     setBusy(true);
@@ -53,6 +61,7 @@ export function Inventory({ view, client }: { view: PlayerView; client: LiveClie
     const result = await client.command(command);
     setBusy(false);
     if (result.ok) {
+      rescue.current = true;
       setDone(ok);
       return true;
     }
