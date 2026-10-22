@@ -825,6 +825,9 @@ describe('property: replay equals incremental state', () => {
       'stability.nudge',
       'campaign.advanceDay',
       'title.award',
+      'entity.define',
+      'entity.edit',
+      'entity.reveal',
     ]) {
       expect(acceptedByType[type] ?? 0, `seed ${SEED}: accepted ${type}`).toBeGreaterThan(0);
     }

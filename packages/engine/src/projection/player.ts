@@ -17,6 +17,7 @@ import {
 import type { PendingEvolution, SelectionRecord, SkillOption } from '../evolution';
 import { daysLeft, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
+import { identifyRarity, resolveIdentify } from './identify';
 import { atCeiling, marksToUpgrade } from '../skills';
 
 /**
@@ -95,6 +96,11 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   // stability value only when its gauge is visible; never the tag rules).
   quests: 'owner',
   questOrder: 'gm',
+  // M3.9: each player gets only the entities they know, as label + the one
+  // tier text their Identify unlocks; never the GM name, other tiers or who
+  // else knows it.
+  entities: 'owner',
+  entityOrder: 'gm',
   day: 'party',
 };
 
@@ -215,6 +221,16 @@ export interface PlayerView {
   readonly quests: readonly PlayerQuest[];
   /** The viewer's own currency, items, equipment and trades (M3.7). */
   readonly inventory: PlayerInventory;
+  /** Entities the viewer knows, in definition order (M3.9). */
+  readonly identify: readonly PlayerIdentify[];
+}
+
+/** A known entity as one player sees it (M3.9, DESIGN §7 Identify). */
+export interface PlayerIdentify {
+  readonly id: string;
+  readonly label: string;
+  /** The best tier the viewer's Identify rarity unlocks, or null for none. */
+  readonly text: string | null;
 }
 
 /** An item definition, sent only for items the viewer holds or sees in an own trade. */
@@ -475,6 +491,7 @@ export function projectForPlayer(state: CampaignState, characterId: string): Pla
       .map((b) => ({ id: b.id, at: b.at, text: b.text })),
     day: state.day,
     inventory: playerInventory(state, viewer.id),
+    identify: playerIdentify(state, viewer),
     quests: state.questOrder.flatMap((id) => {
       const q = Object.prototype.hasOwnProperty.call(state.quests, id)
         ? state.quests[id]
@@ -496,6 +513,16 @@ export function projectForPlayer(state: CampaignState, characterId: string): Pla
       ];
     }),
   };
+}
+
+/** Known entities with the viewer's tier text only (D40: resolved here, never the tier list). */
+function playerIdentify(state: CampaignState, viewer: Character): PlayerIdentify[] {
+  const rarity = identifyRarity(state.rules, viewer);
+  return state.entityOrder.flatMap((id) => {
+    const e = hasOwnKey(state.entities, id) ? state.entities[id] : undefined;
+    if (!e || !e.knownBy.includes(viewer.id)) return [];
+    return [{ id: e.id, label: e.label, text: resolveIdentify(state.rules, e.tiers, rarity) }];
+  });
 }
 
 /** A stability value as a share of the configured range, 0–100 (an empty range shows full). */

@@ -20,5 +20,6 @@ export * from './skills';
 export * from './evolution';
 export * from './resolution';
 export * from './quests';
+export * from './entities';
 export * from './report';
 export * from './history';

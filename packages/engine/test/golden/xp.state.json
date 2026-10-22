@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 10,
+  "schemaVersion": 11,
   "name": "XP golden",
   "rules": {
     "configVersion": 1,
@@ -738,5 +738,7 @@
   "clockOrder": [],
   "quests": {},
   "questOrder": [],
+  "entities": {},
+  "entityOrder": [],
   "day": 1
 }

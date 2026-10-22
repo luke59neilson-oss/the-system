@@ -273,6 +273,31 @@ export type Command =
       reason?: string | undefined;
     }
   | { type: 'stability.nudge'; questId: string; delta: number; reason?: string | undefined }
+  | {
+      type: 'entity.define';
+      /** Optional; a fresh id is generated when omitted. */
+      entityId?: string | undefined;
+      /** The GM's own name; never sent to players. */
+      name: string;
+      /** What players see in their Identify list; defaults to `name`. */
+      label?: string | undefined;
+      tiers: readonly { minRarity: string; text: string }[];
+      /** Characters who know it from the start; default none. */
+      knownBy?: readonly string[] | undefined;
+    }
+  | {
+      type: 'entity.edit';
+      entityId: string;
+      name?: string | undefined;
+      label?: string | undefined;
+      tiers?: readonly { minRarity: string; text: string }[] | undefined;
+    }
+  | {
+      type: 'entity.reveal';
+      entityId: string;
+      /** Omitted or null = every character who does not know it yet. */
+      characterIds?: readonly string[] | null | undefined;
+    }
   | { type: 'campaign.advanceDay'; days?: number | undefined }
   | { type: 'event.undo'; eventId: string };
 
@@ -356,6 +381,12 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('quest.setStatus') }),
   z.object({ type: z.literal('stability.applyAction') }),
   z.object({ type: z.literal('stability.nudge') }),
+  z.object({ type: z.literal('entity.define'), tiers: z.array(z.unknown()) }),
+  z.object({ type: z.literal('entity.edit') }),
+  z.object({
+    type: z.literal('entity.reveal'),
+    characterIds: z.array(z.string()).nullable().optional(),
+  }),
   z.object({ type: z.literal('campaign.advanceDay') }),
   z.object({ type: z.literal('event.undo') }),
 ]);
@@ -785,6 +816,41 @@ function toEvent(
         type: 'quest.statusSet',
         payload: { questId: command.questId, status: command.status },
       };
+    case 'entity.define':
+      return {
+        type: 'entity.defined',
+        payload: {
+          entityId: command.entityId ?? ctx.newId(),
+          name: command.name,
+          label: command.label ?? command.name,
+          tiers: command.tiers.map((t) => ({ minRarity: t.minRarity, text: t.text })),
+          knownBy: command.knownBy ?? [],
+        },
+      };
+    case 'entity.edit': {
+      const { entityId, name, label, tiers } = command;
+      // Undefined fields vanish in the event's JSON round trip (= unchanged).
+      return {
+        type: 'entity.edited',
+        payload: {
+          entityId,
+          name,
+          label,
+          tiers: tiers?.map((t) => ({ minRarity: t.minRarity, text: t.text })),
+        },
+      };
+    }
+    case 'entity.reveal': {
+      const state = campaign.state;
+      const entity =
+        state && Object.prototype.hasOwnProperty.call(state.entities, command.entityId)
+          ? state.entities[command.entityId]
+          : undefined;
+      const known = entity?.knownBy ?? [];
+      const characterIds =
+        command.characterIds ?? (state?.characterOrder ?? []).filter((id) => !known.includes(id));
+      return { type: 'entity.revealed', payload: { entityId: command.entityId, characterIds } };
+    }
     case 'stability.applyAction':
       return {
         type: 'stability.actionApplied',

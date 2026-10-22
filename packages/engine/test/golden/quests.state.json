@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 10,
+  "schemaVersion": 11,
   "name": "Golden: quests",
   "rules": {
     "configVersion": 1,
@@ -492,5 +492,7 @@
     }
   },
   "questOrder": ["whale", "secret"],
+  "entities": {},
+  "entityOrder": [],
   "day": 3
 }

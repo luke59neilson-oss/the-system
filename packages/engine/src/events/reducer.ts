@@ -40,10 +40,11 @@ import {
 import { newClock, tickClock, type Clock } from '../resolution';
 import { applyAction, checkStabilityRules, nudge, type Quest } from '../quests';
 import { parseRulesConfig, type RulesConfig } from '../rules';
+import { tierProblem, type Entity } from '../entities';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 10;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 11;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -90,6 +91,10 @@ export interface CampaignState {
   readonly quests: Readonly<Record<string, Quest>>;
   /** Quest ids in creation order. */
   readonly questOrder: readonly string[];
+  /** Identify entities by id (M3.9). Players see only known ones, at their tier. */
+  readonly entities: Readonly<Record<string, Entity>>;
+  /** Entity ids in definition order. */
+  readonly entityOrder: readonly string[];
   /** In-game day counter, from 1 (quest timers count against it). */
   readonly day: number;
 }
@@ -295,6 +300,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       clockOrder: [],
       quests: {},
       questOrder: [],
+      entities: {},
+      entityOrder: [],
       day: 1,
     };
   }
@@ -935,11 +942,71 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       }
       return state;
     }
+    case 'entity.defined': {
+      const { entityId, name, label, tiers, knownBy } = event.payload;
+      if (hasOwn(state.entities, entityId)) fail(event, `entity "${entityId}" already exists`);
+      const problem = tierProblem(state.rules, tiers);
+      if (problem) fail(event, problem);
+      checkCharacters(state, event, knownBy);
+      const entity: Entity = {
+        id: entityId,
+        name,
+        label,
+        tiers: tiers.map((t) => ({ minRarity: t.minRarity, text: t.text })),
+        knownBy: [...knownBy],
+        createdAt: event.timestamp,
+      };
+      return {
+        ...state,
+        entities: { ...state.entities, [entityId]: entity },
+        entityOrder: [...state.entityOrder, entityId],
+      };
+    }
+    case 'entity.edited':
+    case 'entity.revealed': {
+      const { entityId } = event.payload;
+      const entity = hasOwn(state.entities, entityId) ? state.entities[entityId] : undefined;
+      if (!entity) return fail(event, `unknown entity "${entityId}"`);
+      let next: Entity;
+      if (event.type === 'entity.edited') {
+        const { name, label, tiers } = event.payload;
+        if (name === undefined && label === undefined && tiers === undefined) {
+          fail(event, 'nothing to change');
+        }
+        if (tiers !== undefined) {
+          const problem = tierProblem(state.rules, tiers);
+          if (problem) fail(event, problem);
+        }
+        next = {
+          ...entity,
+          name: name ?? entity.name,
+          label: label ?? entity.label,
+          tiers:
+            tiers === undefined
+              ? entity.tiers
+              : tiers.map((t) => ({ minRarity: t.minRarity, text: t.text })),
+        };
+      } else {
+        const ids = event.payload.characterIds;
+        checkCharacters(state, event, ids);
+        for (const id of ids) {
+          if (entity.knownBy.includes(id)) fail(event, `"${id}" already knows ${entity.name}`);
+        }
+        next = { ...entity, knownBy: [...entity.knownBy, ...ids] };
+      }
+      return { ...state, entities: { ...state.entities, [entityId]: next } };
+    }
     case 'campaign.dayAdvanced':
       return { ...state, day: state.day + event.payload.days };
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');
   }
+}
+
+/** Every id must be a character, listed once. */
+function checkCharacters(state: CampaignState, event: DomainEvent, ids: readonly string[]): void {
+  if (new Set(ids).size !== ids.length) fail(event, 'a character is listed twice');
+  for (const id of ids) characterOf(state, event, id);
 }
 
 /** Skill names the character's practice log still counts but that are no longer skills. */

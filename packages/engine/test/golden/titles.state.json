@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 10,
+  "schemaVersion": 11,
   "name": "Titles",
   "rules": {
     "configVersion": 1,
@@ -461,5 +461,7 @@
   "clockOrder": [],
   "quests": {},
   "questOrder": [],
+  "entities": {},
+  "entityOrder": [],
   "day": 1
 }

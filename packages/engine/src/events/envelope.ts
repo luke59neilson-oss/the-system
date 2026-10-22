@@ -43,6 +43,11 @@ const stabilityRules = z.record(
 );
 const questText = z.string().trim().max(5000);
 const questDays = z.number().int().min(1).max(10_000).nullable();
+/** Identify tiers (M3.9, DESIGN §7): one text per minimum Identify rarity. */
+const identifyTiers = z
+  .array(z.strictObject({ minRarity: recordId, text: z.string().trim().min(1).max(1000) }))
+  .min(1)
+  .max(12);
 const tradeAction = z.strictObject({ tradeId: recordId, characterId: party });
 const distinctParties = (p: { characterId: string | null; to: string | null }) =>
   p.characterId !== p.to;
@@ -348,6 +353,29 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     delta: z.number().finite().min(-1_000).max(1_000),
     reason: z.string().trim().max(200),
   }),
+  /**
+   * GM defines an entity players may Identify (M3.9): `name` is the GM's own
+   * name, `label` what players see in their list; `knownBy` lists characters.
+   */
+  'entity.defined': z.strictObject({
+    entityId: recordId,
+    name: nonBlank,
+    label: nonBlank,
+    tiers: identifyTiers,
+    knownBy: z.array(recordId).max(200),
+  }),
+  /** GM edits an entity; omitted fields stay. */
+  'entity.edited': z.strictObject({
+    entityId: recordId,
+    name: nonBlank.optional(),
+    label: nonBlank.optional(),
+    tiers: identifyTiers.optional(),
+  }),
+  /** These characters now know the entity and can Identify it. */
+  'entity.revealed': z.strictObject({
+    entityId: recordId,
+    characterIds: z.array(recordId).min(1).max(200),
+  }),
   /** The in-game day counter moves forward (quest timers count down). */
   'campaign.dayAdvanced': z.strictObject({ days: z.number().int().min(1).max(1000) }),
   /** Compensating event: the target stops counting, as if it had never happened. */
@@ -404,6 +432,9 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'quest.statusSet': 1,
   'stability.actionApplied': 1,
   'stability.nudged': 1,
+  'entity.defined': 1,
+  'entity.edited': 1,
+  'entity.revealed': 1,
   'campaign.dayAdvanced': 1,
   'event.undone': 1,
 };

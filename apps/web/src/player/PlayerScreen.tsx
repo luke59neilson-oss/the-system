@@ -26,6 +26,7 @@ import { allocationText, assignedBatches, nextBatch, spent, step } from './freeP
 import { browserStorage, remember } from './join';
 import { Inventory } from './Inventory';
 import { QuestLog } from './QuestLog';
+import { IdentifyPanel } from './IdentifyPanel';
 import { SkillDetail } from './SkillDetail';
 import { SkillSelection } from './SkillSelection';
 import { closedReason, pendingSelections, pendingText, settleNotice } from './selection';
@@ -756,6 +757,7 @@ function Feed({ live, view }: { live: LiveSnapshot; view: PlayerView }) {
   return (
     <div className="feeds">
       <QuestLog view={view} />
+      <IdentifyPanel view={view} />
       <section className="window feed" aria-labelledby="dings" data-testid="history">
         <h2 id="dings">Notifications</h2>
         <div className="history-tools">

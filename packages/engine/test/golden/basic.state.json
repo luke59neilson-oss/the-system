@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 10,
+  "schemaVersion": 11,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -669,5 +669,7 @@
   "clockOrder": [],
   "quests": {},
   "questOrder": [],
+  "entities": {},
+  "entityOrder": [],
   "day": 1
 }

@@ -386,6 +386,9 @@ a {
   .player-grid .inventory-window {
     order: 3;
   }
+  .player-grid .identify-window {
+    order: 4;
+  }
   .gm-header {
     flex-wrap: wrap;
   }
@@ -1201,4 +1204,39 @@ button.skill-open:hover .skill-name {
   display: block;
   height: 100%;
   background: var(--accent);
+}
+
+/* M3.9 Identify */
+.identify-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.identify-target {
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--accent);
+}
+.identify-target:hover {
+  background: rgba(120, 180, 255, 0.12);
+}
+/* The chosen target is the filled one. */
+.identify-target[aria-pressed='true'] {
+  color: #0b0f17;
+  background: var(--accent);
+}
+.identify-result {
+  font-family: var(--mono);
+  border-left: 2px solid var(--accent);
+  padding: 4px 0 4px 10px;
+}
+.identify-of {
+  margin: 0 0 4px;
+}
+.identify-text {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  color: var(--text);
 }

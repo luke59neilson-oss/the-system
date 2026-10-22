@@ -133,6 +133,7 @@ describe('player projection', () => {
     expect(Object.keys(view).sort()).toEqual([
       'campaignName',
       'day',
+      'identify',
       'inventory',
       'me',
       'messages',
@@ -453,6 +454,36 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
       },
     };
     econ.questOrder = ['hidden', 'shown'];
+    // Identify (M3.9): each player sees only entities they know, by label, at
+    // their own tier; never the GM name, deeper tiers, or who else knows it.
+    const top = s.rules.skills.rarities.at(-1)?.id ?? 'legendary';
+    const entities: Record<string, unknown> = {
+      hidden: {
+        id: 'hidden',
+        name: `${GM}-entity-name`,
+        label: `${GM}-entity-label`,
+        tiers: [{ minRarity: 'inferior', text: `${GM}-entity-tier` }],
+        knownBy: [],
+        createdAt: '2026-10-21T12:00:00.000Z',
+      },
+    };
+    for (const id of ids) {
+      owner.get(id)?.strings.push(`OWNER-${id}-entity`, `OWNER-${id}-tier`);
+      entities[`e-${id}`] = {
+        id: `e-${id}`,
+        name: `${GM}-entity-name`,
+        label: `OWNER-${id}-entity`,
+        tiers: [
+          { minRarity: 'inferior', text: `OWNER-${id}-tier` },
+          { minRarity: top, text: `${GM}-deep-tier` },
+        ],
+        knownBy: [id],
+        createdAt: '2026-10-21T12:00:00.000Z',
+        gmNote: `${GM}-entity`,
+      };
+    }
+    econ.entities = entities;
+    econ.entityOrder = ['hidden', ...ids.map((id) => `e-${id}`), `${GM}-entityorder`];
     return { state: s, owner, gm };
   }
 

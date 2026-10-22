@@ -154,3 +154,11 @@ answer under any question and the next run will follow it.
     Alternatives: equipping fills the gained amount; gifts and trades appear
     only in the history.
     Answer:
+33. **Identify: level gap and "who knows what".** DESIGN §7 picks the tier by
+    Identify rarity only; the demo Identify text says the result also depends
+    on "your level and theirs", and the books hide details of much stronger
+    targets. Entities are also known per character (the GM reveals them),
+    not party-wide. Default: rarity only, per-character knowledge (D84).
+    Alternatives: hide tiers when the target's grade is above the viewer's;
+    everything revealed to one party member is known to all.
+    Answer:

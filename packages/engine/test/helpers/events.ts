@@ -68,7 +68,10 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
   const ids = c.state?.characterOrder ?? [];
   const someId = () => (ids.length && rand() < 0.95 ? pick(ids) : 'ghost');
   if (rand() < 0.1) {
-    return rand() < 0.5 ? randomClockCommand(rand, c, pick) : randomQuestCommand(rand, c, pick);
+    const kind = rand();
+    if (kind < 0.35) return randomClockCommand(rand, c, pick);
+    if (kind < 0.7) return randomQuestCommand(rand, c, pick);
+    return randomEntityCommand(rand, c, pick, someId);
   }
   if (rand() < 0.35) return randomEconomyCommand(rand, c, pick, someId);
   if (rand() < 0.15) return randomNotesCommand(rand, c, pick, someId);
@@ -372,6 +375,57 @@ function randomClockCommand(
     };
   }
   return { type: 'clock.remove', clockId: someClock() };
+}
+
+function randomEntityCommand(
+  rand: () => number,
+  c: Campaign,
+  pick: <T>(items: readonly T[]) => T,
+  someId: () => string,
+): Command {
+  const ids = c.state?.entityOrder ?? [];
+  const someEntity = () => (ids.length && rand() < 0.9 ? pick(ids) : 'no-entity');
+  const tiers = () =>
+    pick([
+      [{ minRarity: 'common', text: '[Malignant Miasma]' }],
+      [
+        { minRarity: 'common', text: '[Malignant Miasma]' },
+        { minRarity: 'uncommon', text: '[Fever]' },
+        { minRarity: 'rare', text: '[The Host’s Response]' },
+      ],
+      [{ minRarity: 'mythic-ish', text: 'x' }],
+      [
+        { minRarity: 'rare', text: 'a' },
+        { minRarity: 'rare', text: 'b' },
+      ],
+    ]);
+  const roll = rand();
+  if (roll < 0.35) {
+    return {
+      type: 'entity.define',
+      entityId: `n${Math.floor(rand() * 4)}`,
+      name: pick(['Curse energy', 'Pale hunter', ' ']),
+      label: rand() < 0.5 ? pick(['The black miasma', ' ']) : undefined,
+      tiers: tiers(),
+      knownBy: rand() < 0.5 ? [someId()] : undefined,
+    };
+  }
+  if (roll < 0.6) {
+    return {
+      type: 'entity.edit',
+      entityId: someEntity(),
+      label: pick(['Black fog', 'Grey fog', ' ']),
+      tiers: rand() < 0.3 ? tiers() : undefined,
+    };
+  }
+  if (roll < 0.85) {
+    return {
+      type: 'entity.reveal',
+      entityId: someEntity(),
+      characterIds: rand() < 0.5 ? null : [someId()],
+    };
+  }
+  return { type: 'campaign.advanceDay', days: pick([1, 2, 0]) };
 }
 
 function randomQuestCommand(

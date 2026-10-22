@@ -86,6 +86,56 @@ export const DEMO_BROADCASTS: readonly string[] = [
 ];
 
 export const DEMO_QUEST_ID = 'demo-quest';
+
+/** Demo Identify entities (M3.9); tier names from DESIGN §8. */
+export const DEMO_ENTITIES: readonly {
+  readonly entityId: string;
+  readonly name: string;
+  readonly label: string;
+  readonly tiers: readonly { readonly minRarity: string; readonly text: string }[];
+  readonly knownBy: 'all' | readonly string[];
+}[] = [
+  {
+    entityId: 'demo-curse',
+    name: 'Curse energy (the Host’s immune response)',
+    label: 'The black miasma',
+    tiers: [
+      {
+        minRarity: 'common',
+        text: '[Malignant Miasma]\nA corrupting energy seeping from the walls of this world.',
+      },
+      {
+        minRarity: 'uncommon',
+        text: '[Fever]\nThe world runs hotter wherever you gather. Something here is fighting back.',
+      },
+      {
+        minRarity: 'rare',
+        text: '[The Host’s Response]\nThis is no curse. The world is defending itself — from you.',
+      },
+    ],
+    knownBy: 'all',
+  },
+  {
+    entityId: 'demo-pale-hunter',
+    name: 'Pale hunter (immune cell)',
+    label: 'Pale hunter',
+    tiers: [
+      { minRarity: 'common', text: '[Pale Hunter – lvl 14]' },
+      {
+        minRarity: 'uncommon',
+        text: '[Pale Hunter – lvl 14]\nIt does not hunt for food. It hunts whatever does not belong.',
+      },
+    ],
+    knownBy: ['demo-casper'],
+  },
+  {
+    entityId: 'demo-drum',
+    name: 'The Drum (the whale’s heart)',
+    label: 'The Drum',
+    tiers: [{ minRarity: 'common', text: '[The Heart of the World]' }],
+    knownBy: [],
+  },
+];
 export const DEMO_QUEST_TITLE = 'The world is dying';
 
 /** Characters whose newest selection menu is left for the player to pick. */
@@ -356,6 +406,29 @@ export function buildDemoEvents(ctx: DemoContext): DomainEvent[] {
   run({ type: 'campaign.advanceDay', days: 4 });
   run({ type: 'stability.applyAction', questId: DEMO_QUEST_ID, tag: 'cleanse', count: 3 });
   run({ type: 'stability.applyAction', questId: DEMO_QUEST_ID, tag: 'beast', count: 2 });
+
+  // Identify (M3.9): Casper has trained Identify to Uncommon, so he reads a
+  // deeper tier than the others. The Drum is defined but known to nobody yet.
+  for (const session of ['demo-1', 'demo-2', 'demo-3', 'demo-4']) {
+    run({
+      type: 'skill.awardMark',
+      characterId: 'demo-casper',
+      skill: rules.skills.startingRaceSkill.name,
+      session,
+    });
+  }
+  run({
+    type: 'skill.upgrade',
+    characterId: 'demo-casper',
+    skill: rules.skills.startingRaceSkill.name,
+  });
+  for (const entity of DEMO_ENTITIES) {
+    run({
+      type: 'entity.define',
+      ...entity,
+      knownBy: entity.knownBy === 'all' ? DEMO_CHARACTERS.map((c) => c.id) : [...entity.knownBy],
+    });
+  }
 
   for (const text of DEMO_BROADCASTS) {
     run({ type: 'system.broadcast', text, characterIds: null });

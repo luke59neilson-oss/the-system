@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 10,
+  "schemaVersion": 11,
   "name": "Golden: clocks",
   "rules": {
     "configVersion": 1,
@@ -470,5 +470,7 @@
   "clockOrder": ["spout"],
   "quests": {},
   "questOrder": [],
+  "entities": {},
+  "entityOrder": [],
   "day": 1
 }
