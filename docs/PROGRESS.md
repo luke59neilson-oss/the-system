@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0, MS, M1 and M2 done; M3 started (M3.1–M3.6)
-**Next item:** M3.7 Inventory, gifts, trades (resume `wip/M3.7`)
+**Status:** in progress: M0, MS, M1 and M2 done; M3 started (M3.1–M3.8)
+**Next item:** M3.9 Identify
 **Blockers:** none.
 
 ## Run log
@@ -286,3 +286,27 @@ next item, blockers. -->
 - Next: M3.7, resuming `wip/M3.7`. Not finished: the pool-clamp semantics touch the undo rules (D31) and could not be built and reviewed before the 60-minute stop.
 - Blockers: none.
 
+
+### Run 9565aa8d · 2026-10-22 05:07–05:57 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD and a stale local `main`), so `main` was reset to `origin/main`.
+  - The lock was pushed to main.
+  - `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md. The latest CI run on main was green (57987d6).
+- Finished M3.7 Inventory, gifts, trades (resumed `wip/M3.7`, merged to main by fast-forward). Reviewed by sonnet in 2 rounds: round 1 had 4 Medium (one was not a bug), round 2 had none.
+  - Pool maxima use effective stats everywhere. After every event, pools clamp down to the effective maximum and never refill (D81). Undo stays deterministic.
+  - The Stats block shows effective values with the gear difference underneath.
+  - New Inventory window: currency, equipment with [Unequip], items with [Equip]/[Give], Give currency, Propose a trade, offers with [Accept]/[Decline], own offers with [Withdraw], and past trades (D82).
+  - New `gift` and `trade` notices pop up and have a history filter.
+  - New `e2e/M3.7.spec.ts`: the demo ring and bow on Jake, effective stats, and HP max rising with an amulet without healing.
+- Finished M3.8 Quest log. Reviewed by sonnet in 2 rounds: round 1 had 1 Medium, round 2 had none.
+  - A Quests window shows the day, quest text, days left, and a World Stability % gauge only when visible. The projection adds `stabilityPercent` from the configured range (D83).
+  - On phones the order is Status, Quests, Inventory, then the feeds.
+  - New `e2e/M3.8.spec.ts`: the demo quest's gauge at 89%, with live updates.
+- CI fix: 23e69c2 failed because the 40-session simulation test passed the 5 s default limit under coverage. This is a pre-existing borderline: it was also over 5 s locally on 57987d6. The test now has a 60 s limit, and the reducer skips item bonuses when nothing is worn. 6bf8fdf was green; 27c0d4f was pushed at the end of the run.
+- Tests: 570 unit/integration tests (47 files). All 22 e2e specs green; screenshot re-renders of earlier items were discarded. Engine line coverage 99.34% (floor 90%).
+- New decisions D81–D83. New question Q32 (gear and pools; gift/trade pop-ups).
+- Open `wip/*` branches: none unfinished (`wip/M3.7` is merged).
+- Next: M3.9 Identify. Not started: at 49 min this run was past the 35-minute start limit.
+- Blockers: none.
