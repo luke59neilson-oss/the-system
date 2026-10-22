@@ -11,7 +11,7 @@
     "build": "node build.mjs",
     "start": "electron .",
     "smoke": "xvfb-run -a playwright test -c playwright.config.ts",
-    "package": "node build.mjs && electron-builder --config electron-builder.yml --publish never",
+    "package": "node build.mjs && node package.mjs",
     "package:smoke": "xvfb-run -a playwright test -c playwright.packaged.config.ts"
   },
   "devDependencies": {

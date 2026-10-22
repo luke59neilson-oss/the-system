@@ -2,6 +2,7 @@ import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
+import { gmWindow } from './windows';
 
 // MS.6 smoke: the packaged app (not the dev bundle) starts its server from the
 // app resources, serves the bundled web build and opens a connected GM window.
@@ -20,7 +21,7 @@ test('packaged app: server up, web build served, GM window connected', async () 
   });
   try {
     expect(await app.evaluate(({ app: a }) => a.isPackaged)).toBe(true);
-    const gm = await app.firstWindow();
+    const gm = await gmWindow(app);
     await expect(gm.getByTestId('connection')).toHaveText('Connected');
     expect(gm.url()).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/gm$/);
     const port = Number(new URL(gm.url()).port);

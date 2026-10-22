@@ -3,9 +3,10 @@ name: Release
 # Desktop builds (ROADMAP MS.6, D8, D15, D55).
 # - Push to `release`: build Windows (installer + portable), macOS (dmg,
 #   unsigned, universal) and Linux (AppImage), smoke-test the Linux build, then
-#   publish a GitHub Release named `preview-<date>` (tag
-#   `preview-<date>-<run number>`; build sessions cannot push tags, the
-#   workflow creates it).
+#   publish a GitHub Release named `preview-<date>-<run>` (tag
+#   `preview-<date>-<run>.<attempt>`; build sessions cannot push tags, the
+#   workflow creates it). Every file name carries `preview-<date>-<run>`
+#   (MS.7), and the notes list the commits since the previous preview.
 # - Push to `release-dry-run`: the same builds and checks, no Release.
 # - Manual: Actions → Release → Run workflow (Luke's one-click publish,
 #   D93). Publishes a preview from the chosen branch, normally main.
@@ -28,8 +29,20 @@ env:
   CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
 jobs:
+  # One build id for every job, so files made either side of midnight match (MS.7).
+  meta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      id: ${{ steps.id.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: id
+        run: echo "id=$(node scripts/release-notes.mjs id "$(date -u +%Y-%m-%d)" "$GITHUB_RUN_NUMBER")" >> "$GITHUB_OUTPUT"
+
   build:
     name: build (${{ matrix.target }})
+    needs: meta
     strategy:
       fail-fast: false
       matrix:
@@ -49,6 +62,8 @@ jobs:
             files: apps/desktop/release/*.dmg
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
+    env:
+      THE_SYSTEM_BUILD_ID: ${{ needs.meta.outputs.id }}
     defaults:
       run:
         shell: bash
@@ -104,12 +119,19 @@ jobs:
           retention-days: 14
 
   collect:
-    needs: build
+    needs: [meta, build]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
+    env:
+      THE_SYSTEM_BUILD_ID: ${{ needs.meta.outputs.id }}
     steps:
+      # Full history and tags, for the "what changed" list.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: repo
       - uses: actions/download-artifact@v4
         with:
           path: out
@@ -119,33 +141,50 @@ jobs:
           ls -la out
           total=$(find out -maxdepth 1 -type f | wc -l)
           if [ "$total" -ne 4 ]; then echo "expected exactly 4 files, found $total"; exit 1; fi
-          for pattern in '*-win-x64-setup.exe' '*-win-x64-portable.exe' '*-mac-universal.dmg' '*-linux-x86_64.AppImage'; do
-            count=$(find out -maxdepth 1 -name "$pattern" | wc -l)
-            if [ "$count" -ne 1 ]; then echo "expected one $pattern, found $count"; exit 1; fi
+          # Exact names (MS.7): TheSystem-preview-<date>-<run>-win-x64-portable.exe and so on.
+          for suffix in win-x64-setup.exe win-x64-portable.exe mac-universal.dmg linux-x86_64.AppImage; do
+            name="TheSystem-${THE_SYSTEM_BUILD_ID}-${suffix}"
+            if [ ! -f "out/$name" ]; then echo "missing $name"; exit 1; fi
+            echo "ok $name"
           done
+      - name: Write the release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The newest published preview before this one (drafts left by a failed run are skipped).
+          previous=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --limit 50 \
+            --json tagName,createdAt --jq '[.[] | select(.tagName | startswith("preview-"))] | sort_by(.createdAt) | reverse | .[0].tagName // ""')
+          if [ -n "$previous" ] && ! git -C repo rev-parse -q --verify "refs/tags/$previous" > /dev/null; then
+            echo "tag $previous not found locally; listing no changes"
+            previous=''
+          fi
+          (cd repo && node scripts/release-notes.mjs notes "${previous:--}" "$GITHUB_SHA") > changes.md
+          cat changes.md
       - name: Publish the preview release
         if: github.ref == 'refs/heads/release' || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          day=$(date -u +%Y-%m-%d)
-          # Unique per run and per re-run attempt; the title stays preview-<date>.
-          tag="preview-${day}-${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          id="$THE_SYSTEM_BUILD_ID"
+          # Unique per run and per re-run attempt; the title is the build id.
+          tag="${id}.${GITHUB_RUN_ATTEMPT}"
           notes=$(mktemp)
           cat > "$notes" <<NOTES
           Preview build of The System from ${GITHUB_SHA::7}.
 
-          - Windows: TheSystem-*-win-x64-setup.exe (installer) or TheSystem-*-win-x64-portable.exe (no install). Unsigned: if SmartScreen warns, choose More info, then Run anyway.
-          - macOS: TheSystem-*-mac-universal.dmg. Not notarized: right-click the app, choose Open, then Open again. If macOS still says it is damaged, run \`xattr -cr "/Applications/The System.app"\` in Terminal once.
-          - Linux: TheSystem-*-linux-x86_64.AppImage. Make it executable (chmod +x), then run it.
+          - Windows: TheSystem-${id}-win-x64-setup.exe (installer) or TheSystem-${id}-win-x64-portable.exe (no install). Unsigned: if SmartScreen warns, choose More info, then Run anyway. A "Starting The System…" window appears while it starts; launching it again brings the running window to the front.
+          - macOS: TheSystem-${id}-mac-universal.dmg. Not notarized: right-click the app, choose Open, then Open again. If macOS still says it is damaged, run \`xattr -cr "/Applications/The System.app"\` in Terminal once.
+          - Linux: TheSystem-${id}-linux-x86_64.AppImage. Make it executable (chmod +x), then run it.
 
-          Double-click starts the server and opens the GM console; players join at the URL or QR code it shows.
+          Double-click starts the server and opens the GM console; players join at the URL or QR code it shows. If port 30333 is taken, The System uses the next free port and tells you.
+
           NOTES
+          cat changes.md >> "$notes"
           # Draft first, so a failed upload never leaves a half-filled public release.
           gh release create "$tag" out/* \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "preview-${day}" \
+            --title "$id" \
             --prerelease \
             --draft \
             --notes-file "$notes"

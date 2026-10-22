@@ -2,6 +2,7 @@ import { mkdtempSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { _electron as electron, chromium, expect, test } from '@playwright/test';
+import { gmWindow } from './windows';
 
 // MS.5 smoke: the real Electron app starts the server, opens the GM console
 // with the key injected, shows the join URL + QR, and keeps data in the
@@ -13,12 +14,18 @@ const localChromium = '/opt/pw-browsers/chromium';
 
 test('double-click start: server up, GM window connected with the key', async () => {
   const dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-desktop-'));
+  const userData = mkdtempSync(path.join(tmpdir(), 'the-system-profile-'));
   const app = await electron.launch({
     args: [path.join(root, 'dist', 'main.cjs'), '--no-sandbox'],
-    env: { ...process.env, THE_SYSTEM_PORT: '0', THE_SYSTEM_DATA_DIR: dataDir },
+    env: {
+      ...process.env,
+      THE_SYSTEM_PORT: '0',
+      THE_SYSTEM_DATA_DIR: dataDir,
+      THE_SYSTEM_USER_DATA_DIR: userData,
+    },
   });
   try {
-    const gm = await app.firstWindow();
+    const gm = await gmWindow(app);
     await expect(gm.getByTestId('connection')).toHaveText('Connected');
     // The key was moved out of the address bar.
     expect(gm.url()).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/gm$/);
@@ -54,5 +61,6 @@ test('double-click start: server up, GM window connected with the key', async ()
   } finally {
     await app.close();
     rmSync(dataDir, { recursive: true, force: true });
+    rmSync(userData, { recursive: true, force: true });
   }
 });

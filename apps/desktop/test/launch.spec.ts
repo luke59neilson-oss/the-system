@@ -1,0 +1,173 @@
+import { spawn } from 'node:child_process';
+import { mkdtempSync, mkdirSync, rmSync } from 'node:fs';
+import { createServer, type Server } from 'node:net';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import { _electron as electron, expect, test, type ElectronApplication } from '@playwright/test';
+import { gmWindow } from './windows';
+
+// MS.7 launch polish: the splash comes up at once, a second launch focuses
+// the first instead of erroring, and a taken port moves to the next free one.
+
+const root = path.resolve(__dirname, '..');
+const main = path.join(root, 'dist', 'main.cjs');
+const electronBin = createRequire(__filename)('electron') as string;
+const shots = path.resolve(root, '../../docs/screens/MS.7');
+
+function profile(): { dataDir: string; userData: string; cleanup: () => void } {
+  const base = mkdtempSync(path.join(tmpdir(), 'the-system-ms7-'));
+  const dataDir = path.join(base, 'data');
+  const userData = path.join(base, 'profile');
+  mkdirSync(userData);
+  return { dataDir, userData, cleanup: () => rmSync(base, { recursive: true, force: true }) };
+}
+
+async function launch(env: Record<string, string>): Promise<ElectronApplication> {
+  return electron.launch({
+    args: [main, '--no-sandbox'],
+    env: { ...(process.env as Record<string, string>), ...env },
+  });
+}
+
+test('a splash says "Starting The System…" at once, then hands over to the GM console', async () => {
+  const p = profile();
+  const app = await launch({
+    THE_SYSTEM_PORT: '0',
+    THE_SYSTEM_DATA_DIR: p.dataDir,
+    THE_SYSTEM_USER_DATA_DIR: p.userData,
+    THE_SYSTEM_TEST_START_DELAY_MS: '3000',
+  });
+  try {
+    const splash = await app.firstWindow();
+    await expect(splash.getByRole('heading', { name: 'Starting The System…' })).toBeVisible();
+    expect(await splash.title()).toBe('Starting The System…');
+    const shownAfter = await app.evaluate(
+      () => (globalThis as { theSystemSplashShownAfterMs?: number }).theSystemSplashShownAfterMs,
+    );
+    console.log(`splash shown ${String(shownAfter)} ms after the process started`);
+    expect(shownAfter).toBeLessThan(1000);
+    // The server is held, so no GM window is visible yet.
+    expect(
+      await app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows()
+          .filter((w) => w.isVisible())
+          .map((w) => w.getTitle()),
+      ),
+    ).toEqual(['Starting The System…']);
+    mkdirSync(shots, { recursive: true });
+    await splash.screenshot({ path: path.join(shots, 'splash.png') });
+
+    const gm = await gmWindow(app);
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    await expect
+      .poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length))
+      .toBe(1);
+    expect(
+      await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible()),
+    ).toBe(true);
+  } finally {
+    await app.close();
+    p.cleanup();
+  }
+});
+
+test('a second launch exits and brings the running window to the front', async () => {
+  const p = profile();
+  const env = {
+    THE_SYSTEM_PORT: '0',
+    THE_SYSTEM_DATA_DIR: p.dataDir,
+    THE_SYSTEM_USER_DATA_DIR: p.userData,
+  };
+  const app = await launch(env);
+  try {
+    const gm = await gmWindow(app);
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    // Push the GM window back: hide it, as if behind other windows.
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.hide());
+    const heard = app.evaluate(
+      ({ app: a }) =>
+        new Promise<boolean>((resolve) => a.once('second-instance', () => resolve(true))),
+    );
+    const second = spawn(electronBin, [main, '--no-sandbox'], {
+      env: { ...process.env, ...env },
+      stdio: 'ignore',
+    });
+    const code = await new Promise<number | null>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('second instance did not exit')), 20_000);
+      second.on('exit', (c) => {
+        clearTimeout(timer);
+        resolve(c);
+      });
+    });
+    expect(code).toBe(0);
+    expect(await heard).toBe(true);
+    await expect
+      .poll(() =>
+        app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible()),
+      )
+      .toBe(true);
+    // Still one window, still connected: no second server, no error.
+    expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+  } finally {
+    await app.close();
+    p.cleanup();
+  }
+});
+
+async function holdFreePort(): Promise<{ server: Server; port: number }> {
+  // A port whose next neighbour is free too, held by "another program".
+  for (;;) {
+    const server = createServer();
+    await new Promise<void>((r) => server.listen(0, '0.0.0.0', r));
+    const port = (server.address() as { port: number }).port;
+    if (port >= 65000) {
+      server.close();
+      continue;
+    }
+    const probe = createServer();
+    const free = await new Promise<boolean>((r) => {
+      probe.once('error', () => r(false));
+      probe.listen(port + 1, '0.0.0.0', () => r(true));
+    });
+    if (free) {
+      await new Promise((r) => probe.close(r));
+      return { server, port };
+    }
+    server.close();
+  }
+}
+
+test('a port taken by another program moves to the next free one and says so', async () => {
+  const p = profile();
+  const held = await holdFreePort();
+  const app = await launch({
+    THE_SYSTEM_PORT: String(held.port),
+    THE_SYSTEM_DATA_DIR: p.dataDir,
+    THE_SYSTEM_USER_DATA_DIR: p.userData,
+  });
+  try {
+    const gm = await gmWindow(app);
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    const port = Number(new URL(gm.url()).port);
+    expect(port).toBe(held.port + 1);
+    await expect
+      .poll(() =>
+        app.evaluate(() => (globalThis as { theSystemNotice?: string }).theSystemNotice ?? ''),
+      )
+      .toContain(
+        `Port ${held.port} is used by another program, so The System is using port ${port}`,
+      );
+    const health = await fetch(`http://127.0.0.1:${port}/health`);
+    expect(health.status).toBe(200);
+    // The join address players see carries the new port.
+    await gm.getByLabel('Campaign name').fill('Busy port');
+    await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await expect(gm.getByTestId('join-url')).toHaveText(new RegExp(`:${port}/?$`));
+  } finally {
+    await app.close();
+    held.server.close();
+    p.cleanup();
+  }
+});

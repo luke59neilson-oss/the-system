@@ -19,7 +19,9 @@ npmRebuild: false
 nodeGypRebuild: false
 buildDependenciesFromSource: false
 publish: null
-artifactName: TheSystem-${version}-${os}-${arch}.${ext}
+# File names carry the build id (MS.7): a new download never collides with an
+# older copy that is still open. package.mjs always sets THE_SYSTEM_BUILD_ID.
+artifactName: TheSystem-${env.THE_SYSTEM_BUILD_ID}-${os}-${arch}.${ext}
 win:
   executableName: TheSystem
   target:
@@ -28,11 +30,11 @@ win:
     - target: portable
       arch: [x64]
 nsis:
-  artifactName: TheSystem-${version}-win-${arch}-setup.${ext}
+  artifactName: TheSystem-${env.THE_SYSTEM_BUILD_ID}-win-${arch}-setup.${ext}
   oneClick: false
   allowToChangeInstallationDirectory: true
 portable:
-  artifactName: TheSystem-${version}-win-${arch}-portable.${ext}
+  artifactName: TheSystem-${env.THE_SYSTEM_BUILD_ID}-win-${arch}-portable.${ext}
 mac:
   target:
     - target: dmg
