@@ -11,3 +11,4 @@ data/
 .env
 .DS_Store
 apps/desktop/release/
+.claude/worktrees/
