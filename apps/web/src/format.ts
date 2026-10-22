@@ -23,6 +23,26 @@ export function notificationText(n: LiveNotification): string {
         : 'All free points assigned';
     case 'broadcast':
       return n.text;
+    case 'gift': {
+      const parts = n.items.map((i) => (i.count > 1 ? `[${i.name}] ×${i.count}` : `[${i.name}]`));
+      if (n.currency > 0) parts.push(`${n.currency} ${n.currencyName}`);
+      const what =
+        parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0];
+      return `You received ${what ?? 'a gift'} from ${n.from ?? 'the GM'}`;
+    }
+    case 'trade': {
+      const who = n.other ?? 'The GM';
+      switch (n.action) {
+        case 'proposed':
+          return `${who} offers you a trade`;
+        case 'accepted':
+          return `${who} accepted your trade`;
+        case 'declined':
+          return `${who} declined your trade`;
+        case 'cancelled':
+          return `${who} withdrew a trade offer`;
+      }
+    }
   }
 }
 

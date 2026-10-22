@@ -329,9 +329,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       // Out-of-range values are rejected, not clamped, so an undo that would
       // change what a later pool set meant is refused (D31).
       for (const [poolId, value] of Object.entries(pools)) {
-        const max = rule(event, () =>
-          poolMax(state.rules, effectiveOf(state, character), poolId),
-        );
+        const max = rule(event, () => poolMax(state.rules, effectiveOf(state, character), poolId));
         if (value < 0 || value > max) fail(event, `${poolId} must be between 0 and ${max}`);
       }
       return withCharacter(state, {

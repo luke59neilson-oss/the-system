@@ -24,6 +24,7 @@ import {
 } from './history';
 import { allocationText, assignedBatches, nextBatch, spent, step } from './freePoints';
 import { browserStorage, remember } from './join';
+import { Inventory } from './Inventory';
 import { SkillDetail } from './SkillDetail';
 import { SkillSelection } from './SkillSelection';
 import { closedReason, pendingSelections, pendingText, settleNotice } from './selection';
@@ -106,7 +107,10 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
       )}
       {view && live.status !== 'refused' && (
         <div className="player-grid">
-          <Status view={view} client={pane ? null : client} />
+          <div className="player-col">
+            <Status view={view} client={pane ? null : client} />
+            <Inventory view={view} client={pane ? null : client} />
+          </div>
           <Feed live={live} view={view} />
         </div>
       )}
@@ -314,11 +318,24 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
       </dl>
       <h3>Stats</h3>
       <ul className="stats">
-        {rules.stats.list.map((s) => (
-          <li key={s.id} data-testid={`stat-${s.id}`}>
-            <span>{s.name}</span> <LiveStrong value={formatStatValue(rules, me.stats[s.id] ?? 0)} />
-          </li>
-        ))}
+        {rules.stats.list.map((s) => {
+          // M3.7 (D81): the effective value, with what gear adds beside it.
+          const base = me.stats[s.id] ?? 0;
+          const value = me.effectiveStats[s.id] ?? base;
+          const delta = value - base;
+          return (
+            <li key={s.id} data-testid={`stat-${s.id}`}>
+              <span>{s.name}</span> <LiveStrong value={formatStatValue(rules, value)} />
+              {delta !== 0 && (
+                <span className="muted stat-bonus" data-testid={`bonus-${s.id}`}>
+                  {' '}
+                  ({delta > 0 ? '+' : '−'}
+                  {formatStatValue(rules, Math.abs(delta))})
+                </span>
+              )}
+            </li>
+          );
+        })}
       </ul>
       <dl className="rows">
         <dt>Free points</dt>

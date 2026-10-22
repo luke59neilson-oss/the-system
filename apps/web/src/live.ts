@@ -17,7 +17,21 @@ export type LiveNotification =
       freePoints: number;
     }
   | { kind: 'freePoints'; characterId: string; unassigned: number }
-  | { kind: 'broadcast'; characterId: string; text: string };
+  | { kind: 'broadcast'; characterId: string; text: string }
+  | {
+      kind: 'gift';
+      characterId: string;
+      from: string | null;
+      currency: number;
+      currencyName: string;
+      items: { name: string; count: number }[];
+    }
+  | {
+      kind: 'trade';
+      characterId: string;
+      action: 'proposed' | 'accepted' | 'declined' | 'cancelled';
+      other: string | null;
+    };
 
 export interface SeqNotification {
   seq: number;

@@ -147,3 +147,10 @@ answer under any question and the next run will follow it.
     System notification such as *'DING!' Skill selection available* when a
     menu is offered and *Skill acquired: [Name (Rarity)]* when chosen.
     Answer:
+32. **Gear and pools; gift and trade pop-ups.** Equipping a Vitality item
+    raises max HP but does not heal; unequipping lowers current HP to the
+    new maximum (D81). Gifts received and trade offers/answers pop up on the
+    player's screen like System messages (D82). Default: as described.
+    Alternatives: equipping fills the gained amount; gifts and trades appear
+    only in the history.
+    Answer:

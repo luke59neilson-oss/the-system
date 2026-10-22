@@ -8,7 +8,7 @@ import type { LiveNotification, SeqNotification } from '../live';
  */
 
 export type HistoryFilter =
-  'dings' | 'all' | 'class' | 'profession' | 'race' | 'freePoints' | 'broadcast';
+  'dings' | 'all' | 'class' | 'profession' | 'race' | 'freePoints' | 'broadcast' | 'items';
 
 export const HISTORY_FILTERS: readonly { id: HistoryFilter; label: string }[] = [
   { id: 'dings', label: 'Level-ups' },
@@ -18,6 +18,7 @@ export const HISTORY_FILTERS: readonly { id: HistoryFilter; label: string }[] = 
   { id: 'race', label: 'Race' },
   { id: 'freePoints', label: 'Free points' },
   { id: 'broadcast', label: 'System messages' },
+  { id: 'items', label: 'Gifts and trades' },
 ];
 
 export function matchesFilter(n: LiveNotification, filter: HistoryFilter): boolean {
@@ -34,6 +35,8 @@ export function matchesFilter(n: LiveNotification, filter: HistoryFilter): boole
       return n.kind === 'freePoints';
     case 'broadcast':
       return n.kind === 'broadcast';
+    case 'items':
+      return n.kind === 'gift' || n.kind === 'trade';
   }
 }
 
@@ -63,9 +66,9 @@ export function whenLabel(n: Pick<SeqNotification, 'at' | 'day'>): string {
   return `Day ${n.day} · ${time}`;
 }
 
-/** What pops up one at a time as it arrives: DINGs and System messages. */
+/** What pops up one at a time as it arrives: DINGs, System messages, gifts and trades. */
 export function isQueued(n: LiveNotification): boolean {
-  return n.kind === 'level' || n.kind === 'broadcast';
+  return n.kind !== 'freePoints';
 }
 
 /** Identity of a notification that survives a history reset after an undo. */
