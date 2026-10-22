@@ -125,7 +125,7 @@ Read `CLAUDE.md`, `docs/PROGRESS.md`, `docs/QUESTIONS.md`,
 ## 7. Decisions
 
 Pick the option most consistent with DESIGN.md and what Luke has said; log it
-in `docs/DECISIONS.md` with one line of reasoning. Game-design choices Luke
+in `docs/DECISIONS.md` with one line of reasoning, continuing the D-number sequence (L-numbers are reserved for decisions made with Luke in chat). Game-design choices Luke
 should weigh in on also go in `docs/QUESTIONS.md` with the default you used.
 
 ## 8. Finish the run
