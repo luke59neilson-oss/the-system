@@ -240,7 +240,7 @@ export type Command =
       /** Optional; a fresh id is generated when omitted. */
       montageId?: string | undefined;
       clockId: string;
-      /** What players see; default: the clock's name. */
+      /** What players see; default "Montage" (the clock's name stays GM-only). */
       label?: string | undefined;
       characterIds: readonly string[];
     }
@@ -799,22 +799,16 @@ function toEvent(
         type: 'clock.ticked',
         payload: { clockId: command.clockId, result: command.result, amount: command.amount ?? 1 },
       };
-    case 'montage.offer': {
-      const state = campaign.state;
-      const clock =
-        state && Object.prototype.hasOwnProperty.call(state.clocks, command.clockId)
-          ? state.clocks[command.clockId]
-          : undefined;
+    case 'montage.offer':
       return {
         type: 'montage.offered',
         payload: {
           montageId: command.montageId ?? ctx.newId(),
           clockId: command.clockId,
-          label: command.label ?? clock?.name ?? command.clockId,
+          label: command.label ?? 'Montage',
           characterIds: [...command.characterIds],
         },
       };
-    }
     case 'montage.focus':
       return {
         type: 'montage.focused',

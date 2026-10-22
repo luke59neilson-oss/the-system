@@ -16,10 +16,12 @@ export function practiceProblem(
   action: string,
   skills: readonly string[],
   stat: string | null,
+  /** Practice entries need a skill or stat; a montage focus is just a line (DESIGN §7). */
+  needSkillOrStat = true,
 ): string | null {
   if (action.trim() === '') return 'Say what you did';
   if (action.trim().length > MAX_ACTION) return `At most ${MAX_ACTION} characters`;
-  if (skills.length === 0 && stat === null) return 'Pick a skill or a stat';
+  if (needSkillOrStat && skills.length === 0 && stat === null) return 'Pick a skill or a stat';
   return null;
 }
 

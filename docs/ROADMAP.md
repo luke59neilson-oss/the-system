@@ -216,7 +216,7 @@ the full ones.
 - [x] **M3.10 Notes.** Private journal (markdown, shareable toggle), live
   party notes, tags, search. Project notes with `canReadNote` (own journal +
   party; never GM notes) with a canary; server-generated note ids.
-- [ ] **M3.11 Practice and montage.** Submit practice entries; enter montage
+- [x] **M3.11 Practice and montage.** Submit practice entries; enter montage
   focus when offered.
 - [ ] **M3.12 Party view.** Names, race/class/level, pool bars.
 - [ ] **M3.13 Table extras.** Contest result pop-up; hunger tracker when

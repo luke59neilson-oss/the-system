@@ -365,3 +365,10 @@
   - L fixed: the "Delete for good" confirmation resets when a note is collapsed or another is opened; the title field takes focus when the note form opens; D85 now says plainly that players join by picking a character (no player login), so journal privacy is enforced toward the GM's screens and other characters' views.
   - L accepted: same-second edit conflicts miss the warning (last write wins, D85); full notes resent in every view (no note cap yet; revisit if views grow); inline Markdown regexes not benchmarked on adversarial 20k-character lines; the phone screenshot shows an open note, not the form (the e2e drives the form on the phone).
 - No round 2 needed (no High or Medium).
+
+### 2026-10-22 · M3.11 Practice and montage · reviewer: sonnet (fresh context)
+- Round 1 (6c3b0c0..04dcba5): 0 High, 1 Medium, 5 Low.
+  - M fixed: the montage focus form demanded a skill or stat; a focus is now just a line (skills and stat optional), as DESIGN §7 says. Practice entries still need one (engine rule).
+  - L fixed: a montage offered without a label shows "Montage", not the GM-only clock's name.
+  - L accepted: skills lost to an evolution drop silently from a half-filled form; a closed montage leaves without a notice; the window lists the 8 newest entries only; the e2e already asserts the clock name and id never reach player frames.
+- No round 2 needed (no High; the Medium was a one-line rule change, covered by unit and e2e tests).

@@ -27,6 +27,8 @@ describe('practice window helpers (M3.11)', () => {
     expect(practiceProblem('x'.repeat(MAX_ACTION + 1), [], 'strength')).toContain('At most');
     expect(practiceProblem('x', [], 'strength')).toBeNull();
     expect(practiceProblem('x', ['Basic Archery'], null)).toBeNull();
+    // A montage focus is just a line.
+    expect(practiceProblem('x', [], null, false)).toBeNull();
   });
 
   it('describes skills and the stat by its configured name', () => {

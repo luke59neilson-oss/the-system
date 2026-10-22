@@ -137,6 +137,7 @@ function MontageOffer({
           testId="montage-form"
           submitLabel="Send focus"
           legend="Your one-line focus"
+          optional
           onSubmit={onFocus}
         />
       ) : (
@@ -152,6 +153,7 @@ function PracticeForm({
   testId,
   submitLabel,
   legend,
+  optional = false,
   onSubmit,
 }: {
   view: PlayerView;
@@ -159,6 +161,8 @@ function PracticeForm({
   testId: string;
   submitLabel: string;
   legend: string;
+  /** Skills and stat are optional (montage focus). */
+  optional?: boolean;
   onSubmit: (fields: Fields) => Promise<boolean>;
 }) {
   const [action, setAction] = useState('');
@@ -170,7 +174,7 @@ function PracticeForm({
   const chosen = skills.filter((s) => owned.includes(s));
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const why = practiceProblem(action, chosen, stat);
+    const why = practiceProblem(action, chosen, stat, !optional);
     setProblem(why);
     if (why) return;
     if (await onSubmit({ action: action.trim(), skills: chosen, stat })) {
@@ -193,7 +197,7 @@ function PracticeForm({
         />
       </label>
       <fieldset className="practice-skills">
-        <legend>Skills used</legend>
+        <legend>Skills used{optional ? ' (optional)' : ''}</legend>
         {view.me.skills.map((s) => (
           <label key={s.name} className="check">
             <input

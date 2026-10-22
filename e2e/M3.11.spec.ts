@@ -85,10 +85,10 @@ test('players log practice and give montage focuses, live', async ({ browser }) 
     /Shot at moving targets from the trees\s+Perception · by you/,
   ]);
 
-  // A focus needs a skill or stat; then it is sent and shown.
-  await montage.getByTestId('montage-form-action').fill('Scout for dry ground ahead');
+  // A focus is one line; skills and stat are optional.
   await montage.getByTestId('montage-form-submit').click();
-  await expect(montage.getByRole('alert')).toHaveText('Pick a skill or a stat');
+  await expect(montage.getByRole('alert')).toHaveText('Say what you did');
+  await montage.getByTestId('montage-form-action').fill('Scout for dry ground ahead');
   await montage.getByTestId('montage-form-stat').selectOption({ label: 'Perception' });
   await montage.getByTestId('montage-form-submit').click();
   await expect(montage.getByTestId('montage-focus')).toContainText('Scout for dry ground ahead');

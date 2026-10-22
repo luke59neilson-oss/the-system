@@ -435,8 +435,8 @@ describe('montages (M3.11)', () => {
     expect(reject(clocked(2), { ...offer, clockId: 'nope' })).toContain('unknown clock');
     expect(reject(clocked(2), { ...offer, characterIds: ['jake', 'jake'] })).toContain('twice');
     const c = ok(clocked(2), offer);
-    // The label defaults to the clock's name.
-    expect(c.state?.montages['m']).toMatchObject({ label: 'Cross the swamp', status: 'open' });
+    // The label never defaults to the GM-only clock's name.
+    expect(c.state?.montages['m']).toMatchObject({ label: 'Montage', status: 'open' });
     expect(reject(c, offer)).toContain('already exists');
     expect(reject(c, offer, player('jake'))).toContain('only the GM');
   });
