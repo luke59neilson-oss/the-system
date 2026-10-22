@@ -171,6 +171,42 @@ should weigh in on also go in `docs/QUESTIONS.md` with the default you used.
 4. When every box is checked (none provisional) and M11.5 is clean, write
    `docs/DONE.md`: what was built, how to install and run it, known gaps.
 
+## 9. Efficiency check (every 6th run; at most 5 minutes of yours)
+
+Runs that take the lock in UTC hour 00, 06, 12 or 18 do this right after
+Orient, then build as usual. Goal: more verified work per hour and per token,
+never by lowering a gate. Changes need about 6 runs of data to judge; do not
+react to a single run.
+
+1. `npm run metrics -- --append` (adds a scorecard row to
+   `docs/EFFICIENCY.md`). Read that file.
+2. **Judge trials.** For each "In trial" change at least 6 runs old, compare
+   its target and the guard metrics (Highs, round-2 share, main CI red) with
+   its baseline. Keep it (move it to Kept) if the target improved and no
+   guard got worse; otherwise revert it (move it to Reverted). Log the
+   verdict as a D-entry.
+3. **Ask a fresh eye.** Launch one background auditor (`model: "sonnet"`, or
+   another model that is not yours) with the scorecard, the last 3 PROGRESS
+   entries, this file and `.github/workflows/ci.yml`. Ask for at most 2
+   proposals, each with evidence, the metric it should move and by how much,
+   its risk, and its tier. Keep building while it works.
+4. **Apply at most one Tier 1 proposal per check**, at close-out: edit the
+   protocol, config or scripts, add it to "In trial" with its baseline, log a
+   D-entry. Put Tier 2 proposals under "Proposals for Luke" and as a question
+   in QUESTIONS.md with the default "no change".
+   - **Tier 1 (a run may apply):** reversible and costs no quality, safety,
+     money or meaningful extra usage: read scope, caching, quieter output,
+     work order, helper scripts, wording that removes an ambiguity.
+   - **Tier 2 (Luke decides):** anything that weakens a gate (§5.6 tests,
+     §6 reviews, CI coverage, banned patterns, Hard rules), changes the lock
+     or the 52-minute stop, the schedule, or the models, adds parallel agents
+     or lanes, or costs money.
+5. **Second lane.** Once MQ.A is checked: if at least 4 of the next 10 open
+   items touch neither `packages/engine`, the save-format version nor the
+   golden logs, propose a second lane (Tier 2) with the item split.
+6. If three checks in a row keep nothing, run the check every 12th run
+   instead (hours 00 and 12) and note it in EFFICIENCY.md.
+
 ## Hard rules
 
 - No secrets, tokens, or personal data in the repo. **The repo is public**
