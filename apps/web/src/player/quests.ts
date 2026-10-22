@@ -34,3 +34,10 @@ export function splitQuests(quests: readonly PlayerQuest[]) {
 export function stabilityLabel(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
+
+/** The detail-free hidden-quest line (MQ.7): how many exist, nothing else. */
+export function hiddenQuestText(count: number): string {
+  return count === 1
+    ? 'A hidden quest exists and can be triggered.'
+    : `${count} hidden quests exist and can be triggered.`;
+}

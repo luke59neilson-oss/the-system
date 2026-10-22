@@ -135,6 +135,7 @@ describe('player projection', () => {
     expect(Object.keys(view).sort()).toEqual([
       'campaignName',
       'day',
+      'hiddenQuests',
       'identify',
       'inventory',
       'me',
@@ -629,6 +630,8 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         days: gmNum(),
         startDay: 1,
         stability: { value: gmNum(), visible: true, rules: { [`${GM}-tag`]: gmNum() } },
+        // MQ.7: the notice list names who is told; players get only a count.
+        noticeTo: [...ids, `${GM}-noticeto`],
       },
       shown: {
         id: 'shown',
@@ -705,6 +708,8 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
           if (json.includes(field) !== party)
             problems.push(`${viewer}: ${field} expected=${party}`);
         }
+        // MQ.7: the hidden quest reaches each player as a bare count.
+        if (!json.includes('"hiddenQuests":1')) problems.push(`${viewer}: hidden-quest count`);
         // Non-vacuous: party notes reach every player, in full.
         for (const part of ['title', 'body', 'tag']) {
           if (!json.includes(`PARTY-note-${part}`))

@@ -1237,6 +1237,18 @@ button.skill-open:hover .skill-name {
 .quest-time.urgent {
   color: var(--err);
 }
+/* MQ.7 hidden-quest notice: no title, no text, just that one exists. */
+.quest-hidden {
+  margin: 8px 0 4px;
+  padding: 6px 8px;
+  font-family: var(--mono);
+  border: 1px dashed var(--accent);
+  border-radius: 4px;
+  color: var(--text);
+}
+.quest-hidden-title {
+  color: var(--accent);
+}
 .stability-label strong {
   color: var(--text);
 }

@@ -2,6 +2,7 @@ import { raceLevel, type Character } from '../character';
 import type { DomainEvent } from '../events/envelope';
 import type { Campaign } from '../events/log';
 import { applyEvent, type CampaignState } from '../events/reducer';
+import { hiddenQuestNoticed } from '../quests';
 
 /**
  * System notifications (DESIGN §9 "DING!") and their history back to day 1
@@ -38,6 +39,14 @@ export type SystemNotification =
       readonly kind: 'broadcast';
       readonly characterId: string;
       readonly text: string;
+    }
+  | {
+      /**
+       * A hidden quest now concerns this character (MQ.7): it was created
+       * hidden, hidden later, reopened or its notice list grew. No details.
+       */
+      readonly kind: 'hiddenQuest';
+      readonly characterId: string;
     }
   | {
       /** Currency and/or items arrived as a gift (M3.7); only the recipient is told. */
@@ -93,6 +102,29 @@ export function notificationsBetween(
     const recipients = event.payload.characterIds ?? after.characterOrder;
     for (const characterId of recipients) {
       out.push({ kind: 'broadcast', characterId, text: event.payload.text });
+    }
+  }
+  if (
+    event?.type === 'quest.created' ||
+    event?.type === 'quest.edited' ||
+    event?.type === 'quest.statusSet'
+  ) {
+    const id = event.payload.questId;
+    const was = before && has(before.quests, id) ? before.quests[id] : undefined;
+    const now = has(after.quests, id) ? after.quests[id] : undefined;
+    const told = was && before ? hiddenQuestNoticed(was, before.characterOrder) : [];
+    for (const characterId of now ? hiddenQuestNoticed(now, after.characterOrder) : []) {
+      if (!told.includes(characterId)) out.push({ kind: 'hiddenQuest', characterId });
+    }
+  }
+  if (event?.type === 'character.created') {
+    // A newcomer is told of every hidden quest meant for everyone (noticeTo null).
+    const characterId = event.payload.id;
+    for (const id of after.questOrder) {
+      const q = has(after.quests, id) ? after.quests[id] : undefined;
+      if (q && hiddenQuestNoticed(q, after.characterOrder).includes(characterId)) {
+        out.push({ kind: 'hiddenQuest', characterId });
+      }
     }
   }
   if (event?.type === 'gift.given' && event.payload.to !== null) {

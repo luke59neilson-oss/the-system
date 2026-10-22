@@ -19,6 +19,7 @@ export type LiveNotification =
   | { kind: 'profession'; characterId: string; name: string; level: number }
   | { kind: 'freePoints'; characterId: string; unassigned: number }
   | { kind: 'broadcast'; characterId: string; text: string }
+  | { kind: 'hiddenQuest'; characterId: string }
   | {
       kind: 'gift';
       characterId: string;

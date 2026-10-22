@@ -1,5 +1,9 @@
 import type { LiveNotification } from './live';
 
+/** The System's detail-free hidden-quest notice (MQ.7, DESIGN §7). */
+export const HIDDEN_QUEST_NOTICE =
+  'Hidden quest detected - A hidden quest exists and can be triggered';
+
 /** Book-style notification text (DESIGN §9). */
 export function notificationText(n: LiveNotification): string {
   switch (n.kind) {
@@ -25,6 +29,8 @@ export function notificationText(n: LiveNotification): string {
         : 'All free points assigned';
     case 'broadcast':
       return n.text;
+    case 'hiddenQuest':
+      return `*${HIDDEN_QUEST_NOTICE}*`;
     case 'gift': {
       const parts = n.items.map((i) => (i.count > 1 ? `[${i.name}] ×${i.count}` : `[${i.name}]`));
       if (n.currency > 0) parts.push(`${n.currency} ${n.currencyName}`);

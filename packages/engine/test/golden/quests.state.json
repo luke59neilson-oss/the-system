@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 18,
+  "schemaVersion": 19,
   "name": "Golden: quests",
   "rules": {
     "configVersion": 1,
@@ -490,7 +490,8 @@
           "kill-beast": 2
         }
       },
-      "createdAt": "2026-12-02T18:00:02.000Z"
+      "createdAt": "2026-12-02T18:00:02.000Z",
+      "noticeTo": null
     },
     "secret": {
       "id": "secret",
@@ -501,7 +502,8 @@
       "days": null,
       "startDay": 1,
       "stability": null,
-      "createdAt": "2026-12-02T18:00:03.000Z"
+      "createdAt": "2026-12-02T18:00:03.000Z",
+      "noticeTo": null
     }
   },
   "questOrder": ["whale", "secret"],

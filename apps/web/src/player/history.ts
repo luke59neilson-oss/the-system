@@ -35,7 +35,7 @@ export function matchesFilter(n: LiveNotification, filter: HistoryFilter): boole
     case 'freePoints':
       return n.kind === 'freePoints';
     case 'broadcast':
-      return n.kind === 'broadcast';
+      return n.kind === 'broadcast' || n.kind === 'hiddenQuest';
     case 'items':
       return n.kind === 'gift' || n.kind === 'trade';
   }

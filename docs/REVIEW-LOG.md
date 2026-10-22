@@ -514,3 +514,10 @@
 - Round 2 (083d0a4..b94eb65): 0 High, 0 Medium, 2 Low. Vitest (engine evolution + web) and typecheck green.
   - L fixed: a picker value chosen before a profession arrived live was still sent after the picker hid; the dialog now sends none once a profession exists.
   - L accepted: states saved on the unreleased branch before the fix keep merged names (nothing shipped).
+
+## 2026-10-22 · MQ.7 Hidden quest notice · reviewer: sonnet (round 1)
+- Findings: 0 High, 1 Medium, 4 Low.
+- Medium: a character created after a hidden quest meant for everyone got the count but no notice. Fixed: `character.created` now notifies the newcomer once per such quest (test in `quests.test.ts`; D122 updated).
+- Low fixed: the "Every id must be a character" comment sat above the new `checkNoticeTo`; moved back.
+- Low accepted: no character removal exists, so no other event changes who is told; DESIGN §7 left as Luke's text (model in D122/Q47); toast overlap is existing behaviour; GM control for `noticeTo` comes with M7.1.
+- One Medium only, so no round 2 (LOOP §6.4); fix verified by the new test, `npm run check` and the MQ.7 e2e.
