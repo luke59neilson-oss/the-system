@@ -1459,3 +1459,57 @@ describe('marks carry over through evolutions (MQ.4, D113, D114)', () => {
     expect(skillOf(c, archery)).toMatchObject({ rarity: 'epic', marks: 2 });
   });
 });
+
+describe('a chosen option never returns as passed-over (QF.1, DESIGN §6)', () => {
+  it('Piercing Shot chosen at 5, transformed to Storm Pierce, stays off the level 15 menu', () => {
+    let c = ok(ok(atGTop(), release(archery, 'Volley', 'common')), {
+      type: 'evolution.choose',
+      characterId: 'jake',
+      optionId: 'o1',
+    });
+    c = ok(c, award(10 * 150));
+    c = ok(c, {
+      type: 'selection.offer',
+      characterId: 'jake',
+      level: 5,
+      options: [
+        { name: 'Piercing Shot', rarity: 'common' },
+        { name: 'Skill 5b', rarity: 'common' },
+        { name: 'Skill 5c', rarity: 'inferior' },
+      ],
+    });
+    c = ok(c, { type: 'selection.choose', characterId: 'jake', level: 5, skill: 'Piercing Shot' });
+    // Up to the F top, then evolve to E with the transform.
+    for (let step = 0; step < 200 && !evolutionTarget(rules, char(c)); step++) {
+      c = pickAll(c);
+      if (!evolutionTarget(rules, char(c))) c = ok(c, award(3 * 300));
+    }
+    c = pickAll(c);
+    c = ok(c, release('Piercing Shot', 'Storm Pierce', 'uncommon'));
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    expect(char(c).grade).toBe('E');
+    expect(char(c).skills.some((s) => s.name === 'Storm Pierce')).toBe(true);
+    while (char(c).classLevel < 15) c = ok(c, award(900));
+    const names = (cc: Campaign) => passedOverOptions(rules, char(cc), 15).map((o) => o.name);
+    expect(names(c)).not.toContain('Piercing Shot');
+    expect(names(c)).toContain('Skill 5c');
+    c = ok(c, {
+      type: 'selection.offer',
+      characterId: 'jake',
+      level: 15,
+      options: menu(15, 'epic'),
+    });
+    expect(
+      reject(c, {
+        type: 'selection.choose',
+        characterId: 'jake',
+        level: 15,
+        skill: 'Piercing Shot',
+      }),
+    ).toMatch(/not on the level 15 menu/);
+    const mine = projectForPlayer(c.state ?? (null as never), 'jake').me.selections;
+    const listed = mine.find((r) => r.level === 15)?.passedOver.map((o) => o.name) ?? [];
+    expect(listed).not.toContain('Piercing Shot');
+    expect(listed).toContain('Skill 5c');
+  });
+});

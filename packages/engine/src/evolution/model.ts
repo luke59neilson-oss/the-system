@@ -256,7 +256,7 @@ export function offerSelection(
  * Passed-over options (DESIGN §6, D103, MQ.3): options of earlier, chosen
  * selections that were not picked stay eligible for later selections, newest
  * menu first. An option drops out when the character already has (or had)
- * the skill, it is above the rarity ceiling of the selection being chosen,
+ * the skill or chose it on any menu, it is above the rarity ceiling of the selection being chosen,
  * it is on that selection's own menu, or it is a profession option and the
  * character has no profession. Pure; derived from the selection records, so
  * logs from before MQ.3 replay unchanged.
@@ -273,6 +273,9 @@ export function passedOverOptions(
   const record = character.selections.find((s) => s.level === level);
   const seen = new Set((record?.options ?? []).map((o) => lower(o.name)));
   const owned = new Set(character.skills.map((s) => lower(s.name)));
+  // A chosen option leaves the list for good (DESIGN §6), even after an
+  // evolution transform renames the skill it became (QF.1).
+  for (const s of character.selections) if (s.chosen !== null) owned.add(lower(s.chosen));
   const out: SkillOption[] = [];
   const earlier = character.selections
     .filter((s) => s.level < level && s.chosen !== null)
