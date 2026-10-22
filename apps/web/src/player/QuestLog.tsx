@@ -51,7 +51,7 @@ function Quest({ quest: q }: { quest: PlayerQuest }) {
         <div className="stability" data-testid="stability">
           <span className="stability-label">
             World Stability:{' '}
-            <strong data-testid="stability-value">{stabilityLabel(q.stability)}</strong>
+            <strong data-testid="stability-value">{stabilityLabel(q.stabilityPercent)}%</strong>
           </span>
           <span
             className="stability-bar"
@@ -60,6 +60,7 @@ function Quest({ quest: q }: { quest: PlayerQuest }) {
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={q.stabilityPercent}
+            aria-valuetext={`${stabilityLabel(q.stabilityPercent)}%`}
           >
             <span style={{ width: `${q.stabilityPercent}%` }} />
           </span>

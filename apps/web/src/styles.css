@@ -368,6 +368,24 @@ a {
   .player-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* One column (M3.8 review): Status, then Quests (deadlines), then the rest. */
+  .player-grid > .player-col,
+  .player-grid > .feeds {
+    display: contents;
+  }
+  .player-col > *,
+  .feeds > * {
+    order: 10;
+  }
+  .player-grid .status-window {
+    order: 1;
+  }
+  .player-grid .quests {
+    order: 2;
+  }
+  .player-grid .inventory-window {
+    order: 3;
+  }
   .gm-header {
     flex-wrap: wrap;
   }
@@ -1144,7 +1162,8 @@ button.skill-open:hover .skill-name {
   padding: 6px 0 8px;
   border-bottom: 1px solid rgba(90, 127, 184, 0.2);
 }
-.quest:last-of-type {
+.quests > .quest:last-of-type,
+.quests details > .quest:last-of-type {
   border-bottom: none;
 }
 .quest-title {

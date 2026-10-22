@@ -70,7 +70,7 @@ test('the quest log shows the demo quest and follows the GM live', async ({ brow
   const quest = log.getByRole('article', { name: 'The world is dying' });
   await expect(quest).toContainText('Delve to the heart of the world and purge the infection.');
   await expect(quest.getByTestId('quest-time')).toHaveText('Time remaining: 26 days');
-  await expect(quest.getByTestId('stability-value')).toHaveText('89');
+  await expect(quest.getByTestId('stability-value')).toHaveText('89%');
   await expect(quest.getByRole('meter', { name: 'World Stability' })).toHaveAttribute(
     'aria-valuenow',
     '89',
@@ -83,13 +83,35 @@ test('the quest log shows the demo quest and follows the GM live', async ({ brow
   await phone.goto(server.url);
   await phone.getByRole('link', { name: /Miranda/ }).click();
   const phoneLog = phone.getByTestId('quests');
-  await expect(phoneLog.getByTestId('stability-value')).toHaveText('89');
+  await expect(phoneLog.getByTestId('stability-value')).toHaveText('89%');
   await phoneLog.scrollIntoViewIfNeeded();
   await phone.screenshot({ path: path.join(shots, 'player-quests-390x844.png') });
 
   // Live: a cleansed zone drops the gauge; days pass; the GM hides the gauge.
   await gmCommand(gm, { type: 'stability.applyAction', questId: 'demo-quest', tag: 'cleanse' });
-  await expect(quest.getByTestId('stability-value')).toHaveText('84');
+  await expect(quest.getByTestId('stability-value')).toHaveText('84%');
+  await expect(quest.getByRole('meter', { name: 'World Stability' })).toHaveAttribute(
+    'aria-valuetext',
+    '84%',
+  );
+  // Phones: Status, then Quests, before the inventory (M3.8 review).
+  const order = await phone.evaluate(() => {
+    const d = (
+      globalThis as unknown as {
+        document: {
+          querySelector: (s: string) => { getBoundingClientRect: () => { top: number } } | null;
+        };
+      }
+    ).document;
+    const top = (s: string) => d.querySelector(s)?.getBoundingClientRect().top ?? -1;
+    return [
+      top('[data-testid=status]'),
+      top('[data-testid=quests]'),
+      top('[data-testid=inventory]'),
+    ];
+  });
+  expect(order[0]).toBeLessThan(order[1] ?? 0);
+  expect(order[1]).toBeLessThan(order[2] ?? 0);
   await gmCommand(gm, { type: 'campaign.advanceDay', days: 25 });
   await expect(quest.getByTestId('quest-time')).toHaveText('Time remaining: 1 day');
   await gmCommand(gm, { type: 'campaign.advanceDay' });
