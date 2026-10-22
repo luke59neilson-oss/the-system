@@ -184,7 +184,7 @@ They touch finished engine and player items, so they come before M4.4.
   "typical session" helper per grade. Config migration with an upcaster for
   existing campaigns. *Accept:* engine tests; the 40-session simulation
   still reaches the DESIGN check values with awards scaled per grade.
-- [ ] **MQ.6 Tailored professions.** Remove the default profession list from
+- [x] **MQ.6 Tailored professions.** Remove the default profession list from
   the library seed. The GM offers each character their own professions at
   the E evolution; the player may choose "none for now"; a Professions tab
   lists the offers and lets the player take one later; once chosen the list

@@ -511,3 +511,6 @@
   - M deferred to M5.2 (ROADMAP note): no GM console UI releases evolutions or offers professions yet (raw commands and the demo only); M5.2 now also lists withdrawing an untaken offer.
   - L accepted: exact-match take vs case-insensitive merge (D121; the UI sends stored names); no "Chosen" badge after a GM grant of an unoffered name (the locked line names it); ~22 px phone tap targets (same as other [Take]/[Choose] buttons; M8.3 accessibility); window vs "tab" naming (D121).
 - Round 2: see below (two Mediums in round 1).
+- Round 2 (083d0a4..b94eb65): 0 High, 0 Medium, 2 Low. Vitest (engine evolution + web) and typecheck green.
+  - L fixed: a picker value chosen before a profession arrived live was still sent after the picker hid; the dialog now sends none once a profession exists.
+  - L accepted: states saved on the unreleased branch before the fix keep merged names (nothing shipped).

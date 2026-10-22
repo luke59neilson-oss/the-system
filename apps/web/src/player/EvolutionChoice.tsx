@@ -69,7 +69,8 @@ export function EvolutionChoice({
       type: 'evolution.choose',
       characterId: me.id,
       optionId,
-      profession: profession === '' ? null : profession,
+      // A profession that arrived while the dialog was open hides the picker (MQ.6).
+      profession: profession === '' || me.profession !== null ? null : profession,
       releaseId: evolution.releaseId,
     });
     setBusy(false);
