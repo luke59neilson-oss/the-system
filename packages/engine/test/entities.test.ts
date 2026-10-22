@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildDemoEvents,
   execute,
+  replay,
   projectForPlayer,
   type Campaign,
   type Command,
@@ -32,6 +34,8 @@ const view = (c: Campaign, id = 'jake') => {
   if (!c.state) throw new Error('no state');
   return projectForPlayer(c.state, id);
 };
+/** No grade or level: always in range (MQ.8). */
+const open = { inRange: true, grade: null, level: null } as const;
 const TIERS = [
   { minRarity: 'common', text: '[Malignant Miasma]' },
   { minRarity: 'uncommon', text: '[Fever]' },
@@ -65,7 +69,7 @@ describe('Identify entities (M3.9, DESIGN §7)', () => {
     });
     expect(c.state?.entityOrder).toEqual(['curse']);
     expect(view(c).identify).toEqual([
-      { id: 'curse', label: 'The black miasma', text: '[Malignant Miasma]' },
+      { id: 'curse', label: 'The black miasma', ...open, text: '[Malignant Miasma]' },
     ]);
     expect(view(c, 'kim').identify).toEqual([]);
     const json = JSON.stringify(view(c));
@@ -92,7 +96,9 @@ describe('Identify entities (M3.9, DESIGN §7)', () => {
         ],
       }),
     );
-    expect(view(c).identify).toEqual([{ id: 'curse', label: 'The black miasma', text: null }]);
+    expect(view(c).identify).toEqual([
+      { id: 'curse', label: 'The black miasma', ...open, text: null },
+    ]);
     expect(view(trainIdentify(c)).identify[0]?.text).toBe('mid');
   });
 
@@ -130,7 +136,9 @@ describe('Identify entities (M3.9, DESIGN §7)', () => {
       entityId: 'curse',
       tiers: [{ minRarity: 'common', text: '[Miasma]' }],
     });
-    expect(view(c).identify).toEqual([{ id: 'curse', label: 'Black fog', text: '[Miasma]' }]);
+    expect(view(c).identify).toEqual([
+      { id: 'curse', label: 'Black fog', ...open, text: '[Miasma]' },
+    ]);
     expect(c.state?.entities.curse?.name).toBe('Curse energy (immune response)');
     expect(reject(c, { type: 'entity.edit', entityId: 'curse' })).toMatch(/nothing to change/);
   });
@@ -186,5 +194,136 @@ describe('Identify entities (M3.9, DESIGN §7)', () => {
     expect(view(c).identify).toHaveLength(1);
     c = ok(c, { type: 'event.undo', eventId: revealId });
     expect(view(c).identify).toEqual([]);
+  });
+});
+
+describe('Identify range (MQ.8, DESIGN §7)', () => {
+  /** The demo party: Jake D-grade race 51, Casper F-grade race 7, Sultan G race 0. */
+  const demo = (): Campaign => {
+    let n = 0;
+    return replay(
+      buildDemoEvents({ now: () => '2026-10-21T00:00:00.000Z', newId: () => `d-${++n}` }),
+    );
+  };
+  const who = ['demo-jake', 'demo-casper', 'demo-sultan'];
+  const target = (entityId: string, grade: string | null, level: number | null): Command => ({
+    type: 'entity.define',
+    entityId,
+    name: `GM name ${entityId}`,
+    label: `Target ${entityId}`,
+    tiers: [{ minRarity: 'inferior', text: `TEXT-${entityId}` }],
+    knownBy: who,
+    grade,
+    level,
+  });
+  const seen = (c: Campaign, viewer: string, entityId: string) =>
+    view(c, viewer).identify.find((e) => e.id === entityId);
+
+  it('lower grade always; higher grade never; same grade up to 1.5 × the race level', () => {
+    let c = demo();
+    for (const [id, grade, level] of [
+      ['g-high', 'G', 4],
+      ['e-top', 'E', 49],
+      ['d-76', 'D', 76],
+      ['d-77', 'D', 77],
+      ['c-low', 'C', 0],
+      ['f-10', 'F', 10],
+      ['f-11', 'F', 11],
+      ['g-0', 'G', 0],
+      ['g-1', 'G', 1],
+    ] as const) {
+      c = ok(c, target(id, grade, level));
+    }
+    const range = (viewer: string) =>
+      Object.fromEntries(
+        view(c, viewer)
+          .identify.filter((e) => e.id !== 'curse')
+          .map((e) => [e.id, e.inRange]),
+      );
+    // Jake (D, race 51): 1.5 × 51 = 76.5.
+    expect(range('demo-jake')).toMatchObject({
+      'g-high': true,
+      'e-top': true,
+      'd-76': true,
+      'd-77': false,
+      'c-low': false,
+      'f-10': true,
+    });
+    // Casper (F, race 7): 10.5.
+    expect(range('demo-casper')).toMatchObject({
+      'g-high': true,
+      'f-10': true,
+      'f-11': false,
+      'e-top': false,
+    });
+    // Sultan (G, race 0): only level 0 of his own grade.
+    expect(range('demo-sultan')).toMatchObject({ 'g-0': true, 'g-1': false, 'g-high': false });
+  });
+
+  it('out of range sends the label only: no text, grade or level', () => {
+    const c = ok(demo(), target('c-low', 'C', 3));
+    expect(seen(c, 'demo-casper', 'c-low')).toEqual({
+      id: 'c-low',
+      label: 'Target c-low',
+      inRange: false,
+      grade: null,
+      level: null,
+      text: null,
+    });
+    const json = JSON.stringify(view(c, 'demo-casper'));
+    expect(json).not.toContain('TEXT-c-low');
+    expect(json).not.toContain('GM name');
+    // In range, the grade and level come with the tier text.
+    const jake = ok(demo(), target('f-2', 'F', 2));
+    expect(seen(jake, 'demo-jake', 'f-2')).toMatchObject({
+      inRange: true,
+      grade: 'F',
+      level: 2,
+      text: 'TEXT-f-2',
+    });
+  });
+
+  it('follows level-ups and GM edits; the ratio comes from the rules', () => {
+    let c = ok(base(), {
+      type: 'entity.define',
+      entityId: 'rat',
+      name: 'Rat',
+      tiers: TIERS,
+      knownBy: ['jake'],
+      grade: 'G',
+      level: 1,
+    });
+    expect(view(c).identify[0]?.inRange).toBe(false);
+    c = ok(c, {
+      type: 'xp.award',
+      track: 'class',
+      amount: 100,
+      participants: [{ characterId: 'jake' }],
+    });
+    expect(c.state?.characters.jake?.classLevel).toBe(1);
+    expect(view(c).identify[0]).toMatchObject({ inRange: true, grade: 'G', level: 1 });
+    c = ok(c, { type: 'entity.edit', entityId: 'rat', level: 2 });
+    expect(view(c).identify[0]?.inRange).toBe(false);
+    c = ok(c, { type: 'entity.edit', entityId: 'rat', grade: null, level: null });
+    expect(view(c).identify[0]).toMatchObject({ inRange: true, grade: null, level: null });
+    expect(c.state?.rules.identify.sameGradeLevelRatio).toBe(1.5);
+  });
+
+  it('refuses half a rank, unknown grades and levels past the cap', () => {
+    const c = base();
+    const def = (grade: string | null, level: number | null): Command => ({
+      type: 'entity.define',
+      entityId: 'x',
+      name: 'X',
+      tiers: TIERS,
+      grade,
+      level,
+    });
+    expect(reject(c, def('G', null))).toMatch(/both a grade and a level/);
+    expect(reject(c, def(null, 3))).toMatch(/both a grade and a level/);
+    expect(reject(c, def('Z', 3))).toMatch(/unknown grade "Z"/);
+    expect(reject(c, def('A', 241))).toMatch(/at most 240/);
+    const d = ok(c, def('G', 2));
+    expect(reject(d, { type: 'entity.edit', entityId: 'x', grade: null })).toMatch(/both/);
   });
 });

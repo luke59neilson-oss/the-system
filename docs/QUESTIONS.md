@@ -286,3 +286,12 @@ DESIGN/ROADMAP; do not re-apply them.
     reopened. Alternative: notify only characters the GM names (default
     nobody), or tie it to who is in the scene. (D122)
     Answer:
+
+48. **Identify range details.** DESIGN §7: same grade only if the target's
+    level is at most 1.5 × the viewer's level. Defaults used (MQ.8, D123):
+    "the viewer's level" is their race level; targets without a grade and
+    level (a place, an energy) are always in range; a known target out of
+    range still shows its name in the Identify list, with `[??? – lvl ???]`
+    instead of its text. Alternatives: class level; hide out-of-range
+    targets from the list entirely.
+    Answer:

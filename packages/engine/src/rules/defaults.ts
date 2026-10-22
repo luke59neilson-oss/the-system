@@ -168,6 +168,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
     gradeGapMode: 'gradeWalls', // §7 grade walls (Luke), MQ.5
     lowerGradeFraction: 1 / 3,
   },
+  identify: { sameGradeLevelRatio: 1.5 }, // §7 Identify range, MQ.8
   montage: { minClockFill: 0.5, requireNoFailures: true }, // §7
   stability: { min: 0, max: 100, initial: 100, visibleToPlayersByDefault: false },
   hunger: { enabledByDefault: false, fadesAtGrade: 'E' }, // §7

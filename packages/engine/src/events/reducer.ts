@@ -45,7 +45,7 @@ import {
 import { montageAvailable, newClock, tickClock, type Clock, type Montage } from '../resolution';
 import { applyAction, checkStabilityRules, nudge, type Quest } from '../quests';
 import { parseRulesConfig, type RulesConfig } from '../rules';
-import { tierProblem, type Entity } from '../entities';
+import { rankProblem, tierProblem, type Entity } from '../entities';
 import {
   validateClassDef,
   validateProfessionDef,
@@ -56,8 +56,8 @@ import {
 } from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 19;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 20;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -1341,11 +1341,17 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const problem = tierProblem(state.rules, tiers);
       if (problem) fail(event, problem);
       checkCharacters(state, event, knownBy);
+      const grade = event.payload.grade ?? null;
+      const level = event.payload.level ?? null;
+      const rank = rankProblem(state.rules, grade, level);
+      if (rank) fail(event, rank);
       const entity: Entity = {
         id: entityId,
         name,
         label,
         tiers: tiers.map((t) => ({ minRarity: t.minRarity, text: t.text })),
+        grade,
+        level,
         knownBy: [...knownBy],
         createdAt: event.timestamp,
       };
@@ -1363,9 +1369,17 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       let next: Entity;
       if (event.type === 'entity.edited') {
         const { name, label, tiers } = event.payload;
-        if (name === undefined && label === undefined && tiers === undefined) {
+        if (
+          [name, label, tiers, event.payload.grade, event.payload.level].every(
+            (v) => v === undefined,
+          )
+        ) {
           fail(event, 'nothing to change');
         }
+        const grade = event.payload.grade === undefined ? entity.grade : event.payload.grade;
+        const level = event.payload.level === undefined ? entity.level : event.payload.level;
+        const rank = rankProblem(state.rules, grade, level);
+        if (rank) fail(event, rank);
         if (tiers !== undefined) {
           const problem = tierProblem(state.rules, tiers);
           if (problem) fail(event, problem);
@@ -1374,6 +1388,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
           ...entity,
           name: name ?? entity.name,
           label: label ?? entity.label,
+          grade,
+          level,
           tiers:
             tiers === undefined
               ? entity.tiers

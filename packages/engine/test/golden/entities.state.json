@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 19,
+  "schemaVersion": 20,
   "name": "Golden: entities",
   "rules": {
     "configVersion": 1,
@@ -254,6 +254,9 @@
     "resolution": {
       "gradeGapMode": "none",
       "lowerGradeFraction": 0.3333333333333333
+    },
+    "identify": {
+      "sameGradeLevelRatio": 1.5
     },
     "montage": {
       "minClockFill": 0.5,
@@ -600,6 +603,8 @@
         }
       ],
       "knownBy": ["jake", "kim"],
+      "grade": null,
+      "level": null,
       "createdAt": "2026-12-03T18:00:03.000Z"
     },
     "drum": {
@@ -613,6 +618,8 @@
         }
       ],
       "knownBy": [],
+      "grade": null,
+      "level": null,
       "createdAt": "2026-12-03T18:00:06.000Z"
     }
   },

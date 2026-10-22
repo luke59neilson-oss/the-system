@@ -657,6 +657,8 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         tiers: [{ minRarity: 'inferior', text: `${GM}-entity-tier` }],
         knownBy: [],
         createdAt: '2026-10-21T12:00:00.000Z',
+        grade: null,
+        level: null,
       },
     };
     for (const id of ids) {
@@ -672,10 +674,28 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         knownBy: [id],
         createdAt: '2026-10-21T12:00:00.000Z',
         gmNote: `${GM}-entity`,
+        grade: null,
+        level: null,
+      };
+      // MQ.8: a known target of the top grade is out of range: label only.
+      owner.get(id)?.strings.push(`OWNER-${id}-far`);
+      entities[`far-${id}`] = {
+        id: `far-${id}`,
+        name: `${GM}-far-name`,
+        label: `OWNER-${id}-far`,
+        tiers: [{ minRarity: 'inferior', text: `${GM}-far-tier` }],
+        knownBy: [id],
+        createdAt: '2026-10-21T12:00:00.000Z',
+        grade: s.rules.grades.at(-1)?.id ?? 'A',
+        level: gmNum(),
       };
     }
     econ.entities = entities;
-    econ.entityOrder = ['hidden', ...ids.map((id) => `e-${id}`), `${GM}-entityorder`];
+    econ.entityOrder = [
+      'hidden',
+      ...ids.flatMap((id) => [`e-${id}`, `far-${id}`]),
+      `${GM}-entityorder`,
+    ];
     return { state: s, owner, gm };
   }
 
