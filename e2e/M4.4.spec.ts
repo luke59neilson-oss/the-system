@@ -136,7 +136,7 @@ test('the GM creates characters with portraits; players see them live', async ({
     .toBe(512);
   await expect(kimRow.getByTestId('portrait')).toHaveText('K');
   await expect(kimRow.getByRole('button', { name: 'Remove Kim’s portrait' })).toHaveCount(0);
-  await gm.screenshot({ path: path.join(shots, 'gm-party-1366x768.png') });
+  await gm.screenshot({ path: path.join(shots, 'gm-party-1366x768.png'), fullPage: true });
 
   // Players: the join list shows Jake's portrait and Kim's monogram.
   const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -154,6 +154,8 @@ test('the GM creates characters with portraits; players see them live', async ({
   await expect(phone.getByText('[Identify (Common)]')).toBeVisible();
   const member = phone.getByTestId('party-member');
   await expect(member.getByTestId('portrait').locator('img')).toBeVisible();
+  await noSidewaysScroll(phone);
+  await phone.screenshot({ path: path.join(shots, 'player-status-390x844.png'), fullPage: true });
 
   // The GM gives Kim a portrait and removes Jake's; the phone follows live.
   await kimRow.getByTestId(/^portrait-file-/).setInputFiles({
@@ -182,7 +184,9 @@ test('the GM creates characters with portraits; players see them live', async ({
   const gmPhone = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await gmPhone.goto(`${server.url}/gm#key=${GM_KEY}`);
   await expect(gmPhone.locator('form[aria-labelledby="new-character"]')).toBeVisible();
+  await expect(gmPhone.getByRole('button', { name: 'Change Kim’s portrait' })).toBeVisible();
   await noSidewaysScroll(gmPhone);
+  await gmPhone.screenshot({ path: path.join(shots, 'gm-console-390x844.png'), fullPage: true });
 
   expect(gmErrors).toEqual([]);
   expect(phoneErrors).toEqual([]);

@@ -215,6 +215,8 @@ answer under any question and the next run will follow it.
     list, the GM party table and players' party views, not on a player's
     own status window (DESIGN §9 has no portrait row). Exports and backups
     carry the event log only, so portraits do not travel with an export.
+    Removing a portrait does not unpublish its file (anyone who saw the URL
+    can still load it).
     Default: as described (D95). Alternatives: a portrait at the top of the
     status window; bundle the portraits folder into backups and exports.
     Answer:

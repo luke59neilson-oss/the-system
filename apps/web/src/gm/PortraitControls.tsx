@@ -28,15 +28,24 @@ export function PortraitPicker({
     },
     [preview],
   );
+  // Only the latest pick counts, even if an earlier, larger image finishes later.
+  const latest = useRef(0);
+  const [reading, setReading] = useState(false);
   const pick = async (file: File | undefined) => {
     setError(null);
     if (!file) return;
+    const ticket = ++latest.current;
+    setReading(true);
     try {
-      onImage(await shrinkPortrait(file));
+      const image = await shrinkPortrait(file);
+      if (ticket === latest.current) onImage(image);
     } catch (e) {
-      onImage(null);
-      setError(e instanceof Error ? e.message : 'Could not read that image');
+      if (ticket === latest.current) {
+        onImage(null);
+        setError(e instanceof Error ? e.message : 'Could not read that image');
+      }
     } finally {
+      if (ticket === latest.current) setReading(false);
       if (inputRef.current) inputRef.current.value = '';
     }
   };
@@ -44,8 +53,13 @@ export function PortraitPicker({
     <div className="portrait-picker">
       <PortraitBadge name={name || '?'} src={preview} />
       <div>
-        <button type="button" className="secondary" onClick={() => inputRef.current?.click()}>
-          {image ? 'Change portrait' : 'Add portrait'}
+        <button
+          type="button"
+          className="secondary"
+          disabled={reading}
+          onClick={() => inputRef.current?.click()}
+        >
+          {reading ? 'Reading…' : image ? 'Change portrait' : 'Add portrait'}
         </button>
         <input
           ref={inputRef}
@@ -56,7 +70,12 @@ export function PortraitPicker({
           onChange={(e) => void pick(e.target.files?.[0])}
         />
         {image && (
-          <button type="button" className="secondary" onClick={() => onImage(null)}>
+          <button
+            type="button"
+            className="secondary"
+            aria-label="Remove the new character’s portrait"
+            onClick={() => onImage(null)}
+          >
             Remove
           </button>
         )}

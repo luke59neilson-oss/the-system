@@ -323,12 +323,20 @@ describe('session log (M2.4)', () => {
     c = ok(c, { type: 'quest.edit', questId: 'q1', title: 'Soothe the whale' });
     c = ok(c, { type: 'stability.nudge', questId: 'q1', delta: 3 });
     c = ok(c, { type: 'quest.setStatus', questId: 'q1', status: 'completed' });
+    c = ok(c, {
+      type: 'character.setPortrait',
+      characterId: 'jake',
+      portrait: `${'a'.repeat(64)}.png`,
+    });
+    c = ok(c, { type: 'character.setPortrait', characterId: 'jake', portrait: null });
     const text = buildSessionLog(c, fromSeq).entries.map((e) => e.text);
     expect(text).toContain(`Jake earned a mark on ${archery}`);
     expect(text).toContain(`Jake upgraded ${archery}: Inferior → Common`);
     expect(text).toContain(`Jake upgraded ${stealth}: Common → Uncommon`);
     expect(text).toContain(`Jake merged ${archery} and ${stealth} into Shadow Shot (Rare)`);
     expect(text).toContain('Kim is now called Kimberly');
+    expect(text).toContain('Jake has a new portrait');
+    expect(text).toContain("Jake's portrait was removed");
     expect(text).toContain('Trade: Jake gave Kimberly 1× Ring of Dew; Kimberly gave nothing');
     expect(text).toContain("GM adjusted Kimberly's holdings: -1× Ring of Dew (lost it)");
     expect(text).toContain('Quest edited: Soothe the whale');

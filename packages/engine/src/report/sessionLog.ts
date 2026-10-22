@@ -177,6 +177,14 @@ function describe(
         `${nameOf(before, event.payload.characterId)} is now called ${who(event.payload.characterId)}`,
       );
       break;
+    case 'character.portraitSet':
+      add(
+        'character',
+        event.payload.portrait === null
+          ? `${who(event.payload.characterId)}'s portrait was removed`
+          : `${who(event.payload.characterId)} has a new portrait`,
+      );
+      break;
     case 'xp.awarded': {
       const p = event.payload;
       const shares = p.shares.map((s) => `${who(s.characterId)} ${s.share}`).join(', ');
