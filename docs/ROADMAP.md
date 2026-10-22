@@ -172,8 +172,18 @@ They touch finished engine and player items, so they come before M4.4.
 - [ ] **MQ.4 Marks carry over.** Excess marks carry into the next rarity
   after an upgrade (incl. banked marks applied after an evolution).
   *Accept:* tests.
-- [ ] **MQ.5 Grade gap per step.** The lower-grade mode applies ⅓ per grade
-  step. *Accept:* statistical test for 1- and 2-step gaps.
+- [ ] **MQ.5 Grade walls.** New default grade-gap mode per DESIGN §7: same
+  grade plain odds; one grade apart lower side ×⅓ in rolls and ⅓ damage; two
+  or more apart no roll (higher grade succeeds) and zero damage; no pooling of
+  lower-grade power against a higher grade. Encounter tools (M7.3) apply it.
+  *Accept:* statistical test for the one-grade case (24% ±2% for DESIGN's
+  peak-E vs fresh-D example); deterministic tests for two-plus grades,
+  damage scaling and the no-pooling rule.
+- [ ] **MQ.10 Steep XP curve.** XP per level ×3 per grade (G 100 … A 72,900);
+  XP for defeating a target one grade below ×⅓, two or more below 0; the
+  "typical session" helper per grade. Config migration with an upcaster for
+  existing campaigns. *Accept:* engine tests; the 40-session simulation
+  still reaches the DESIGN check values with awards scaled per grade.
 - [ ] **MQ.6 Tailored professions.** Remove the default profession list from
   the library seed. The GM offers each character their own professions at
   the E evolution; the player may choose "none for now"; a Professions tab

@@ -117,9 +117,12 @@ blue-white tint and a heavier brushed texture so the change is visible.
   profession acts. Race level is derived.
 - Optional bonus for defeating enemies above the character's level
   (default +10% per level of difference, capped at +100%).
-- XP needed per level (default, by grade, **under review**: Luke finds it too
-  low and too flat; see QUESTIONS Q4): G 100, F 150, E 250, D 400,
-  C 650, B 1,000, A 1,500. The app shows the GM a "typical session ≈ 6 levels"
+- XP needed per level triples each grade (the books' ×3): G 100, F 300,
+  E 900, D 2,700, C 8,100, B 24,300, A 72,900. The GM ramps awards to match;
+  the "typical session ≈ 6 levels" helper shows the amount for each grade.
+- **XP across grades:** defeating something one grade below the character
+  gives ⅓ of the award; two or more grades below gives **0 XP** (no farming
+  weaker grades). The app shows the GM a "typical session ≈ 6 levels"
   helper.
 
 ## 6. Skills
@@ -172,12 +175,25 @@ turning point). GM confirms marks in the end-of-session review.
 
 ## 7. Play tools
 
-- **Resolution (proposed):** ratio odds, chance = yours ÷ (yours + theirs).
-  The app rolls and shows results. Grade-gap handling is an open decision, so
-  support three modes in config: none; grade bonus multiplier per 10 points
-  (G×1, F×3, E×5, D×10, C×20, B×40, A×80); lower-grade side × ⅓ **per
-  grade step** (one grade apart ×⅓, two apart ×1/9, and so on). Default mode:
-  none (pure ratio odds), switchable in settings.
+- **Resolution:** ratio odds, chance = yours ÷ (yours + theirs). The app
+  rolls and shows results.
+- **Grade walls (default mode, Luke 2026-10-22).** A higher grade is a
+  different order of being.
+  - **Same grade:** plain ratio odds.
+  - **One grade apart:** the lower side's stat counts ×⅓ in the roll, and its
+    hits deal ⅓ damage. Only a strong late-stage lower grade against a weak,
+    barely evolved higher grade has a real chance.
+  - **Two or more grades apart:** no roll. The higher grade succeeds, and the
+    lower grade's attacks deal no damage.
+  - **No strength in numbers across grades:** lower-grade characters cannot
+    pool their power against a higher grade; each acts alone, and anything
+    two or more grades below cannot touch it at all. A thousand G-grades are
+    nothing to an A-grade.
+  - **A fight against a higher grade is a clock, never one roll.** With ⅓,
+    a peak E against a fresh D wins about 24% of single rolls but about 10% of
+    a best-of-five fight; a mid-E against a mid-D about 2%.
+  - Other modes stay available in settings: none (pure ratio odds); grade
+    multiplier per 10 points (G×1, F×3, E×5, D×10, C×20, B×40, A×80).
 - **Progress clocks** with N segments. **Montage:** available when a clock is
   half filled with no failures; player gives a one-line focus (saved to the
   practice log); GM narrates the rest and adds one cost.

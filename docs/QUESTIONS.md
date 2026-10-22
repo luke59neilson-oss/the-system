@@ -11,10 +11,10 @@ DESIGN/ROADMAP; do not re-apply them.
    Answer (Luke, 2026-10-22): Credits. (default kept)
 3. **Grade gap on rolls** (open decision in DESIGN §7)? Default: pure ratio
    odds, switchable in settings.
-   Answer (Luke, 2026-10-22): Default for now, switchable later. (default kept)
+   Answer (Luke, 2026-10-22): Default for now, switchable later. Superseded the same day in chat: grade walls are the default. (applied, D110)
 4. **XP per level by grade** (G 100, F 150, E 250, D 400, C 650, B 1,000,
    A 1,500) OK? Default: yes.
-   Answer (Luke, 2026-10-22): Too low and too flat: XP should scale with power like stats do. Numbers being settled in chat; keep the current curve until then. (open)
+   Answer (Luke, 2026-10-22): Too low and too flat; ramp it like the power gap. ×3 per grade (G 100 … A 72,900); no XP from targets two or more grades below. (applied, D111)
 5. **One-time stat bonus at each evolution?** Default: none.
    Answer (Luke, 2026-10-22): Yes, set by the System (GM) at each evolution. (applied, D98)
 6. **What opens an evolution?** Default: race level at the top of the grade,
@@ -100,7 +100,7 @@ DESIGN/ROADMAP; do not re-apply them.
     ×⅓ as F against E. Default: flat ⅓ whenever the grades differ (DESIGN
     §7 wording). Alternative: ⅓ per grade step. (The "multiplier" mode
     multiplies the whole stat value by the grade's factor.)
-    Answer (Luke, 2026-10-22): Per grade step, compounding. (applied, D104)
+    Answer (Luke, 2026-10-22): Per grade step, compounding. Refined the same day: ⅓ at one grade apart, automatic at two or more. (applied, D110)
 23. **Can party members see each other's titles?** DESIGN §9 lists Titles
     on the player's own status screen; it doesn't say whether the party sees
     them. Default: owner only (titles may carry stat bonuses in M6.4).
