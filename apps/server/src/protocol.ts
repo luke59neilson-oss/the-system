@@ -40,6 +40,11 @@ export const clientMessageSchema = z.union([
     type: z.literal('join'),
     role: z.literal('player'),
     characterId: z.string().min(1).max(100),
+    /**
+     * The GM's View-as panes (M3.10): read-only, and the player's unshared
+     * journal entries are left out, as for the GM.
+     */
+    viewAs: z.boolean().optional(),
     /** Last notification seq this client saw; later ones are sent (0 = the whole history, M3.3). */
     lastSeq: seq.optional(),
   }),

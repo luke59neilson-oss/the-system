@@ -34,7 +34,8 @@ export interface HubOptions {
   readonly sessionId?: string | null;
 }
 
-type Role = { role: 'none' } | { role: 'gm' } | { role: 'player'; characterId: string };
+type Role =
+  { role: 'none' } | { role: 'gm' } | { role: 'player'; characterId: string; viewAs: boolean };
 
 export interface Connection {
   receive(raw: string): void;
@@ -102,7 +103,11 @@ export class LiveHub {
           client.role = { role: 'none' };
           return client.send({ type: 'error', error: 'No such character' });
         }
-        client.role = { role: 'player', characterId: message.characterId };
+        client.role = {
+          role: 'player',
+          characterId: message.characterId,
+          viewAs: message.viewAs === true,
+        };
       }
       client.send({
         type: 'joined',
@@ -126,14 +131,28 @@ export class LiveHub {
         error: 'Join first',
       });
     }
+    if (role.role === 'player' && role.viewAs) {
+      return client.send({
+        type: 'result',
+        requestId: message.requestId,
+        ok: false,
+        error: 'A View-as pane is read-only',
+      });
+    }
     const actor: Actor =
       role.role === 'gm' ? { role: 'gm' } : { role: 'player', characterId: role.characterId };
+    let command = message.command as unknown as Command;
+    if (actor.role === 'player' && command.type === 'note.create') {
+      // Note ids are server-generated for players (M3.10): a chosen id could
+      // probe for notes they cannot read ("already exists").
+      command = { ...command, noteId: undefined };
+    }
     const before = this.store.campaign.state;
     const fail = (error: string) =>
       client.send({ type: 'result', requestId: message.requestId, ok: false, error });
     let result: ReturnType<typeof execute>;
     try {
-      result = execute(this.store.campaign, message.command as unknown as Command, {
+      result = execute(this.store.campaign, command, {
         actor,
         sessionId: this.options.sessionId ?? null,
         now: this.options.now,
@@ -201,7 +220,11 @@ export class LiveHub {
     const state = this.store.campaign.state;
     try {
       if (!state) throw new ProjectionError('No campaign');
-      client.send({ type: 'view', seq: this.seq, view: projectForPlayer(state, role.characterId) });
+      client.send({
+        type: 'view',
+        seq: this.seq,
+        view: projectForPlayer(state, role.characterId, { viewAs: role.viewAs }),
+      });
     } catch (error) {
       if (!(error instanceof ProjectionError)) throw error;
       // The character is gone (e.g. its creation was undone): back to the join screen.

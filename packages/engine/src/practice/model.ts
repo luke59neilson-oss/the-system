@@ -212,7 +212,7 @@ export interface NoteQuery {
 }
 
 /** Filters notes (already limited to what the viewer may read), newest update first. */
-export function searchNotes(notes: readonly Note[], query: NoteQuery): Note[] {
+export function searchNotes<T extends Note>(notes: readonly T[], query: NoteQuery): T[] {
   const words = (query.text ?? '').toLowerCase().split(/\s+/).filter(Boolean);
   const tags = (query.tags ?? []).map((t) => t.toLowerCase());
   return notes

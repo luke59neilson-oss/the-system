@@ -52,7 +52,10 @@ type ServerMessage =
   | { type: 'result'; requestId: string; ok: false; error: string }
   | { type: 'error'; error: string };
 
-export type JoinAs = { role: 'gm'; gmKey: string } | { role: 'player'; characterId: string };
+export type JoinAs =
+  | { role: 'gm'; gmKey: string }
+  /** `viewAs`: a GM View-as pane (read-only; unshared journal entries left out, M3.10). */
+  | { role: 'player'; characterId: string; viewAs?: boolean };
 
 export interface LiveSnapshot {
   status: 'connecting' | 'joined' | 'offline' | 'refused';
@@ -197,7 +200,12 @@ export class LiveClient {
         const join =
           this.join.role === 'gm'
             ? { type: 'join', role: 'gm', gmKey: this.join.gmKey }
-            : { type: 'join', role: 'player', characterId: this.join.characterId };
+            : {
+                type: 'join',
+                role: 'player',
+                characterId: this.join.characterId,
+                ...(this.join.viewAs ? { viewAs: true } : {}),
+              };
         socket.send(JSON.stringify({ ...join, lastSeq: this.lastSeq }));
         return;
       }

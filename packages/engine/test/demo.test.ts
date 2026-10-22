@@ -26,9 +26,14 @@ const demoState = (): CampaignState => {
 };
 
 describe('demo campaign (MS.4, M1.15)', () => {
-  it('builds the party from ordinary GM commands', () => {
+  it('builds the party from ordinary GM commands (notes by their authors)', () => {
     const events = buildDemoEvents(ctx());
-    expect(events.every((e) => e.actor.role === 'gm')).toBe(true);
+    // M3.10: journal entries and Miranda's party note are written by their players.
+    expect(events.filter((e) => e.actor.role !== 'gm').map((e) => [e.type, e.actor])).toEqual([
+      ['note.created', { role: 'player', characterId: 'demo-jake' }],
+      ['note.created', { role: 'player', characterId: 'demo-jake' }],
+      ['note.created', { role: 'player', characterId: 'demo-miranda' }],
+    ]);
     const state = demoState();
     expect(state.name).toBe(DEMO_CAMPAIGN_NAME);
     expect(state.characterOrder).toEqual(DEMO_CHARACTERS.map((c) => c.id));

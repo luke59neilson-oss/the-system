@@ -191,6 +191,57 @@ export const DEMO_ITEMS: readonly Command[] = [
   },
 ];
 
+/** The demo's notes (M3.10), in creation order. `author` null = the GM. */
+export const DEMO_NOTES: readonly {
+  author: string | null;
+  kind: 'journal' | 'party' | 'gm';
+  title: string;
+  body: string;
+  tags: string[];
+  shareable: boolean;
+}[] = [
+  {
+    author: 'demo-jake',
+    kind: 'journal',
+    title: 'Something is watching',
+    body: 'Third night in the forest. The **Drum** again, closer.\n\n- It stops when I draw the bow\n- Nobody else hears it\n\nNot telling the others yet.',
+    tags: ['npc:the Drum', 'region:forest'],
+    shareable: false,
+  },
+  {
+    author: 'demo-jake',
+    kind: 'journal',
+    title: 'Questions for the System',
+    body: 'Why did my *class skill* change when I evolved? Ask the GM.',
+    tags: ['system'],
+    shareable: true,
+  },
+  {
+    author: 'demo-miranda',
+    kind: 'party',
+    title: 'Camp rules',
+    body: '1. Two on watch, always\n2. Boil the river water\n3. Nobody goes past the stones alone\n\n> The miasma is thicker after dark.',
+    tags: ['region:river', 'quest:tutorial'],
+    shareable: true,
+  },
+  {
+    author: null,
+    kind: 'party',
+    title: 'Tutorial map',
+    body: 'Known so far: the river camp, the standing stones, the fever village to the east.',
+    tags: ['region:forest', 'region:river'],
+    shareable: true,
+  },
+  {
+    author: null,
+    kind: 'gm',
+    title: 'Drum reveal (GM only)',
+    body: 'The Drum is the tutorial boss. Reveal on day 9.',
+    tags: ['npc:the Drum'],
+    shareable: false,
+  },
+];
+
 export interface DemoContext {
   readonly now: () => string;
   readonly newId: () => string;
@@ -205,9 +256,9 @@ export interface DemoContext {
 export function buildDemoEvents(ctx: DemoContext): DomainEvent[] {
   let campaign: Campaign = emptyCampaign();
   const events: DomainEvent[] = [];
-  const run = (command: Command): void => {
+  const run = (command: Command, characterId: string | null = null): void => {
     const result = execute(campaign, command, {
-      actor: { role: 'gm' },
+      actor: characterId === null ? { role: 'gm' } : { role: 'player', characterId },
       sessionId: null,
       now: ctx.now,
       newId: ctx.newId,
@@ -428,6 +479,25 @@ export function buildDemoEvents(ctx: DemoContext): DomainEvent[] {
       ...entity,
       knownBy: entity.knownBy === 'all' ? DEMO_CHARACTERS.map((c) => c.id) : [...entity.knownBy],
     });
+  }
+
+  // Notes (M3.10): written by whoever owns them. Jake keeps a private journal
+  // entry and one he shares with the GM; Miranda and the GM leave party
+  // notes; the GM's own note never reaches a player.
+  for (const n of DEMO_NOTES) {
+    const author = n.author;
+    run(
+      {
+        type: 'note.create',
+        characterId: author,
+        kind: n.kind,
+        title: n.title,
+        body: n.body,
+        tags: n.tags,
+        ...(n.kind === 'journal' ? { shareable: n.shareable } : {}),
+      },
+      author,
+    );
   }
 
   for (const text of DEMO_BROADCASTS) {

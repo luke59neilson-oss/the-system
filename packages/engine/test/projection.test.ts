@@ -137,6 +137,7 @@ describe('player projection', () => {
       'inventory',
       'me',
       'messages',
+      'notes',
       'party',
       'quests',
       'rules',
@@ -200,6 +201,77 @@ describe('poolPercent', () => {
     [150, 100, 100],
   ])('%i of %i → %i%%', (current, max, percent) => {
     expect(poolPercent(current, max)).toBe(percent);
+  });
+});
+
+describe('notes (M3.10)', () => {
+  const ctx = testContext('n');
+  const as = (characterId: string) => ({
+    ...ctx,
+    actor: { role: 'player' as const, characterId },
+  });
+  function withNotes(): CampaignState {
+    let c = run([created, make('jake', 'Jake'), make('casper', 'Casper')], ctx);
+    const step = (command: Command, context = ctx) => {
+      const r = execute(c, command, context);
+      if (!r.ok) throw new Error(r.error);
+      c = r.campaign;
+    };
+    const note = (noteId: string, characterId: string | null, kind: 'journal' | 'party' | 'gm') =>
+      ({
+        type: 'note.create',
+        noteId,
+        characterId,
+        kind,
+        title: noteId,
+        body: `${noteId} body`,
+      }) as const;
+    step(note('jake-private', 'jake', 'journal'), as('jake'));
+    step({ ...note('jake-shared', 'jake', 'journal'), shareable: true }, as('jake'));
+    step(note('casper-private', 'casper', 'journal'), as('casper'));
+    step({ ...note('casper-shared', 'casper', 'journal'), shareable: true }, as('casper'));
+    step(note('casper-party', 'casper', 'party'), as('casper'));
+    step({ ...note('gm-party', null, 'party'), tags: ['quest:tutorial'] });
+    step(note('gm-secret', null, 'gm'));
+    if (!c.state) throw new Error('no state');
+    return c.state;
+  }
+
+  it('sends the own journal (shared or not) and every party note, in creation order', () => {
+    const view = projectForPlayer(withNotes(), 'jake');
+    expect(view.notes.map((n) => n.id)).toEqual([
+      'jake-private',
+      'jake-shared',
+      'casper-party',
+      'gm-party',
+    ]);
+    expect(view.notes.find((n) => n.id === 'gm-party')).toEqual({
+      id: 'gm-party',
+      kind: 'party',
+      author: null,
+      title: 'gm-party',
+      body: 'gm-party body',
+      tags: ['quest:tutorial'],
+      shareable: true,
+      createdAt: expect.any(String),
+      updatedAt: expect.any(String),
+    });
+    expect(JSON.stringify(view)).not.toContain('gm-secret');
+    expect(JSON.stringify(view)).not.toContain('casper-shared');
+  });
+
+  it('leaves unshared journal entries out of the GM View-as panes', () => {
+    const state = withNotes();
+    expect(projectForPlayer(state, 'jake', { viewAs: true }).notes.map((n) => n.id)).toEqual([
+      'jake-shared',
+      'casper-party',
+      'gm-party',
+    ]);
+    // Everything else in a pane is the player's view.
+    expect({ ...projectForPlayer(state, 'jake', { viewAs: true }), notes: [] }).toEqual({
+      ...projectForPlayer(state, 'jake'),
+      notes: [],
+    });
   });
 });
 
@@ -421,10 +493,44 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
       },
     };
     econ.tradeOrder = ['t', `${GM}-tradeorder`];
-    // Practice and notes (M1.8): not projected yet either.
+    // Practice (M1.8) is not projected yet.
     econ.practice = [{ id: 'pr', characterId: ids[0], action: `${GM}-practice`, skills: [] }];
-    econ.notes = { n: { id: 'n', kind: 'party', body: `${GM}-note` } };
-    econ.noteOrder = [`${GM}-noteorder`];
+    // Notes (M3.10): own journal (shared or not) and party notes only; never
+    // GM notes, another player's journal, or unknown keys on a note.
+    const note = (
+      id: string,
+      kind: string,
+      author: string | null,
+      text: string,
+      shared: boolean,
+    ) => ({
+      id,
+      kind,
+      author,
+      title: `${text}-title`,
+      body: `${text}-body`,
+      tags: [`${text}-tag`],
+      shareable: shared,
+      createdAt: '2026-10-21T12:00:00.000Z',
+      updatedAt: '2026-10-21T12:00:00.000Z',
+      gmNote: `${GM}-noteextra`,
+    });
+    const notes: Record<string, unknown> = {
+      gm: note('gm', 'gm', null, `${GM}-gmnote`, false),
+      party: note('party', 'party', null, 'PARTY-note', true),
+    };
+    for (const id of ids) {
+      owner.get(id)?.strings.push(`OWNER-${id}-journal`, `OWNER-${id}-shared`);
+      notes[`j-${id}`] = note(`j-${id}`, 'journal', id, `OWNER-${id}-journal`, false);
+      notes[`s-${id}`] = note(`s-${id}`, 'journal', id, `OWNER-${id}-shared`, true);
+    }
+    econ.notes = notes;
+    econ.noteOrder = [
+      'gm',
+      'party',
+      ...ids.flatMap((id) => [`j-${id}`, `s-${id}`]),
+      `${GM}-noteorder`,
+    ];
     // Clocks (M1.11) are GM-only; hidden quests, hidden gauges and tag rules too (M1.12).
     econ.clocks = {
       k: { id: 'k', name: `${GM}-clock`, segments: gmNum(), filled: 0, failures: 0 },
@@ -510,6 +616,11 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         const nums = numbersIn(json);
         projections++;
         if (json.includes(GM)) problems.push(`${viewer}: GM canary leaked`);
+        // Non-vacuous: party notes reach every player, in full.
+        for (const part of ['title', 'body', 'tag']) {
+          if (!json.includes(`PARTY-note-${part}`))
+            problems.push(`${viewer}: party ${part} missing`);
+        }
         for (const n of gm) if (nums.has(n)) problems.push(`${viewer}: GM number ${n}`);
         for (const [id, canaries] of owner) {
           const mine = id === viewer;

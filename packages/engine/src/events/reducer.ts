@@ -20,7 +20,7 @@ import {
   type ItemDef,
   type Trade,
 } from '../economy';
-import { skillPairCounts, type Note, type PracticeEntry } from '../practice';
+import { canReadNote, skillPairCounts, type Note, type PracticeEntry } from '../practice';
 import {
   awardMark,
   describeSkill,
@@ -671,6 +671,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const note = hasOwn(state.notes, noteId) ? state.notes[noteId] : undefined;
       if (!note) return fail(event, `unknown note "${noteId}"`);
       const by = noteAuthor(state, event, event.payload.characterId);
+      // A player cannot tell a note they may not read from a missing one (M3.10).
+      if (by !== null && !canReadNote(note, by)) fail(event, `unknown note "${noteId}"`);
       // Journal: its author only. Party: its author or the GM. GM notes: the GM.
       const allowed =
         note.kind === 'journal' ? by === note.author : by === null || by === note.author;

@@ -152,21 +152,106 @@ describe('LiveHub notes privacy (M1.8)', () => {
     });
     expect(toJake.find((m) => m.type === 'result')).toMatchObject({ ok: true });
     expect(toGm.some((m) => m.includes('SECRET'))).toBe(false);
-    expect(store.campaign.state?.notes['n1']?.body).toBe('SECRET-BODY');
+    // The server picked the id (M3.10), not the player.
+    const id = store.campaign.state?.noteOrder[0] ?? '';
+    expect(id).not.toBe('n1');
+    expect(store.campaign.state?.notes[id]?.body).toBe('SECRET-BODY');
     // The GM cannot edit it into view either.
     gmConn.receive(
       JSON.stringify({
         type: 'command',
         requestId: 'g1',
-        command: { type: 'note.edit', noteId: 'n1', characterId: null, shareable: true },
+        command: { type: 'note.edit', noteId: id, characterId: null, shareable: true },
       }),
     );
     expect(toGm.some((m) => m.includes('SECRET'))).toBe(false);
     // Once the player shares it, the GM gets it.
-    send('r2', { type: 'note.edit', noteId: 'n1', characterId: 'jake', shareable: true });
+    send('r2', { type: 'note.edit', noteId: id, characterId: 'jake', shareable: true });
     expect(toGm[toGm.length - 1]).toContain('SECRET-BODY');
     gmConn.close();
     jake.close();
     store.close();
+  });
+
+  it('generates note ids for players; View-as panes are read-only and omit unshared journals (M3.10)', () => {
+    dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-hub-'));
+    const store = CampaignStore.open('main', { dataDir, now: () => '2026-10-21T00:00:00.000Z' });
+    let n = 0;
+    const ctx = {
+      actor: { role: 'gm' as const },
+      sessionId: null,
+      now: () => '2026-10-21T00:00:00.000Z',
+      newId: () => `e${++n}`,
+    };
+    for (const command of [
+      { type: 'campaign.create', name: 'W', rules: JSON.parse(JSON.stringify(DEFAULT_RULES)) },
+      {
+        type: 'character.create',
+        id: 'jake',
+        name: 'Jake',
+        className: 'Archer',
+        classSkills: [
+          { name: 'Basic Archery', rarity: 'inferior' },
+          { name: 'Basic Stealth', rarity: 'inferior' },
+          { name: 'Archer’s Eye', rarity: 'common' },
+        ],
+      },
+      { type: 'note.create', noteId: 'gm-1', characterId: null, kind: 'gm', body: 'GM-SECRET' },
+    ]) {
+      const r = execute(store.campaign, command as never, ctx);
+      if (!r.ok) throw new Error(r.error);
+      store.appendAll(r.events);
+    }
+    const hub = new LiveHub(store, { gmKey: 'k'.repeat(32), now: ctx.now, newId: ctx.newId });
+    const phone: ServerMessage[] = [];
+    const jake = hub.connect((m) => phone.push(m));
+    jake.receive(JSON.stringify({ type: 'join', role: 'player', characterId: 'jake' }));
+    const create = (requestId: string, noteId: string, shareable: boolean) =>
+      jake.receive(
+        JSON.stringify({
+          type: 'command',
+          requestId,
+          command: {
+            type: 'note.create',
+            noteId,
+            characterId: 'jake',
+            kind: 'journal',
+            body: `PRIVATE-${requestId}`,
+            shareable,
+          },
+        }),
+      );
+    // A chosen id that collides with a GM note is ignored, not an existence probe.
+    create('c1', 'gm-1', false);
+    create('c2', 'mine', true);
+    const results = phone.filter((m) => m.type === 'result');
+    expect(results).toEqual([
+      { type: 'result', requestId: 'c1', ok: true },
+      { type: 'result', requestId: 'c2', ok: true },
+    ]);
+    const notes = store.campaign.state?.notes ?? {};
+    expect(Object.keys(notes).sort()).not.toContain('mine');
+    expect(notes['gm-1']?.body).toBe('GM-SECRET');
+    // The GM's View-as pane: the shared entry only, and no commands.
+    const pane: ServerMessage[] = [];
+    const frame = hub.connect((m) => pane.push(m));
+    frame.receive(
+      JSON.stringify({ type: 'join', role: 'player', characterId: 'jake', viewAs: true }),
+    );
+    const view = pane.filter((m) => m.type === 'view').at(-1);
+    const json = JSON.stringify(view);
+    expect(json).toContain('PRIVATE-c2');
+    expect(json).not.toContain('PRIVATE-c1');
+    expect(json).not.toContain('GM-SECRET');
+    frame.receive(
+      JSON.stringify({
+        type: 'command',
+        requestId: 'p1',
+        command: { type: 'note.create', characterId: 'jake', kind: 'journal', body: 'x' },
+      }),
+    );
+    expect(pane.find((m) => m.type === 'result')).toMatchObject({ ok: false, requestId: 'p1' });
+    // Jake's own phone still gets both entries.
+    expect(JSON.stringify(phone.filter((m) => m.type === 'view').at(-1))).toContain('PRIVATE-c1');
   });
 });

@@ -27,6 +27,7 @@ import { browserStorage, remember } from './join';
 import { Inventory } from './Inventory';
 import { QuestLog } from './QuestLog';
 import { IdentifyPanel } from './IdentifyPanel';
+import { NotesPanel } from './NotesPanel';
 import { SkillDetail } from './SkillDetail';
 import { SkillSelection } from './SkillSelection';
 import { closedReason, pendingSelections, pendingText, settleNotice } from './selection';
@@ -43,15 +44,19 @@ import {
  * Player status screen (MS.2 walking skeleton; the full M3 screens build on it).
  */
 export function PlayerScreen({ characterId }: { characterId: string }) {
-  const client = useMemo(() => new LiveClient({ role: 'player', characterId }), [characterId]);
+  // Inside the GM app's "View as" frames (MS.3): same client, compact chrome,
+  // read-only, and the player's unshared journal entries stay out (M3.10).
+  const [pane] = useState(() => isPaneMode(window.location.search));
+  const client = useMemo(
+    () => new LiveClient({ role: 'player', characterId, viewAs: pane }),
+    [characterId, pane],
+  );
   useEffect(() => () => client.close(), [client]);
   const live = useSyncExternalStore(
     (onChange) => client.subscribe(onChange),
     () => client.current,
   );
   const view = live.view;
-  // Inside the GM app's "View as" frames (MS.3): same client, compact chrome.
-  const [pane] = useState(() => isPaneMode(window.location.search));
   // M3.1: this browser remembers who it plays (never the GM's View-as frames).
   // A stale id is harmless: the join screen offers it only while it is listed.
   useEffect(() => {
@@ -113,7 +118,7 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
             <Status view={view} client={pane ? null : client} />
             <Inventory view={view} client={pane ? null : client} />
           </div>
-          <Feed live={live} view={view} />
+          <Feed live={live} view={view} client={pane ? null : client} />
         </div>
       )}
     </main>
@@ -749,7 +754,15 @@ function Track({ testId, name, level }: { testId: string; name: string; level: n
   );
 }
 
-function Feed({ live, view }: { live: LiveSnapshot; view: PlayerView }) {
+function Feed({
+  live,
+  view,
+  client,
+}: {
+  live: LiveSnapshot;
+  view: PlayerView;
+  client: LiveClient | null;
+}) {
   const [filter, setFilter] = useState<HistoryFilter>('dings');
   const [query, setQuery] = useState('');
   const rows = filterHistory(live.notifications, filter, query);
@@ -758,6 +771,7 @@ function Feed({ live, view }: { live: LiveSnapshot; view: PlayerView }) {
     <div className="feeds">
       <QuestLog view={view} />
       <IdentifyPanel view={view} />
+      <NotesPanel view={view} client={client} />
       <section className="window feed" aria-labelledby="dings" data-testid="history">
         <h2 id="dings">Notifications</h2>
         <div className="history-tools">

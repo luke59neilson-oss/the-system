@@ -15,6 +15,7 @@ import {
   type TradeStatus,
 } from '../economy';
 import type { PendingEvolution, SelectionRecord, SkillOption } from '../evolution';
+import { canReadNote } from '../practice';
 import { daysLeft, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
 import { identifyRarity, resolveIdentify } from './identify';
@@ -81,13 +82,13 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   holdings: 'owner',
   trades: 'owner',
   tradeOrder: 'gm',
-  // M1.8. Not projected yet (M3.10 notes, M3.x practice): players will get
-  // their own practice entries, their own journal and the party notes.
-  // Journal entries a player has not shared are hidden from the GM too
-  // (projectForGm).
+  // M1.8. Practice is not projected yet (M3.11). Notes (M3.10): each player
+  // gets their own journal and the party notes (canReadNote), never GM notes
+  // or another player's journal, shared or not. Journal entries a player has
+  // not shared are hidden from the GM too (projectForGm, View-as panes).
   practice: 'owner',
   notes: 'owner',
-  noteOrder: 'owner',
+  noteOrder: 'gm',
   // M1.11. GM-only until the encounter panel (M7.3) decides which clocks the
   // table sees.
   clocks: 'gm',
@@ -223,6 +224,33 @@ export interface PlayerView {
   readonly inventory: PlayerInventory;
   /** Entities the viewer knows, in definition order (M3.9). */
   readonly identify: readonly PlayerIdentify[];
+  /** The viewer's own journal and the party notes, in creation order (M3.10). */
+  readonly notes: readonly PlayerNote[];
+}
+
+/** A note one player may read (M3.10, DESIGN §7 Notes): own journal or party. */
+export interface PlayerNote {
+  readonly id: string;
+  readonly kind: 'journal' | 'party';
+  /** Author character id; null = the GM (party notes only). */
+  readonly author: string | null;
+  readonly title: string;
+  /** Markdown. */
+  readonly body: string;
+  readonly tags: readonly string[];
+  /** Journal: the GM may read it. Party notes: always true. */
+  readonly shareable: boolean;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+/** Options for {@link projectForPlayer}. */
+export interface PlayerProjectionOptions {
+  /**
+   * The GM's View-as panes (MS.3) show a player's screen on the GM's laptop:
+   * journal entries the player has not shared are left out, as for the GM.
+   */
+  readonly viewAs?: boolean;
 }
 
 /** A known entity as one player sees it (M3.9, DESIGN §7 Identify). */
@@ -470,7 +498,11 @@ function partyMember(state: CampaignState, c: Character): PartyMember {
  * What the player of `characterId` may see. Throws ProjectionError for an
  * unknown character so a stale client never falls back to more data.
  */
-export function projectForPlayer(state: CampaignState, characterId: string): PlayerView {
+export function projectForPlayer(
+  state: CampaignState,
+  characterId: string,
+  options: PlayerProjectionOptions = {},
+): PlayerView {
   const viewer = Object.prototype.hasOwnProperty.call(state.characters, characterId)
     ? state.characters[characterId]
     : undefined;
@@ -492,6 +524,7 @@ export function projectForPlayer(state: CampaignState, characterId: string): Pla
     day: state.day,
     inventory: playerInventory(state, viewer.id),
     identify: playerIdentify(state, viewer),
+    notes: playerNotes(state, viewer.id, options.viewAs === true),
     quests: state.questOrder.flatMap((id) => {
       const q = Object.prototype.hasOwnProperty.call(state.quests, id)
         ? state.quests[id]
@@ -513,6 +546,31 @@ export function projectForPlayer(state: CampaignState, characterId: string): Pla
       ];
     }),
   };
+}
+
+/**
+ * Notes the viewer may read (canReadNote), copied field by field. In a View-as
+ * pane the GM also must be able to read it (unshared journal entries vanish).
+ */
+function playerNotes(state: CampaignState, viewerId: string, viewAs: boolean): PlayerNote[] {
+  return state.noteOrder.flatMap((id) => {
+    const n = hasOwnKey(state.notes, id) ? state.notes[id] : undefined;
+    if (!n || n.kind === 'gm' || !canReadNote(n, viewerId)) return [];
+    if (viewAs && !canReadNote(n, null)) return [];
+    return [
+      {
+        id: n.id,
+        kind: n.kind,
+        author: n.author,
+        title: n.title,
+        body: n.body,
+        tags: [...n.tags],
+        shareable: n.shareable,
+        createdAt: n.createdAt,
+        updatedAt: n.updatedAt,
+      },
+    ];
+  });
 }
 
 /** Known entities with the viewer's tier text only (D40: resolved here, never the tier list). */

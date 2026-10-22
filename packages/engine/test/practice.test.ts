@@ -290,7 +290,13 @@ describe('notes', () => {
     );
     expect(
       reject(c, { type: 'note.edit', noteId: 'j1', characterId: 'kim', body: 'x' }, player('kim')),
-    ).toContain('only the author');
+    ).toContain('unknown note');
+    // M3.10: another player cannot tell a journal entry from a missing note.
+    const why = (noteId: string) =>
+      reject(c, { type: 'note.delete', noteId, characterId: 'kim' }, player('kim'))
+        .replace(/^Event \S+ /, '')
+        .replace(noteId, 'ID');
+    expect(why('j1')).toBe(why('nope'));
     expect(reject(c, { ...journal, noteId: 'j3' }, system)).toContain('system does not write');
   });
 
@@ -329,6 +335,9 @@ describe('notes', () => {
       body: 'Casper is the traitor',
     });
     expect(c.state?.notes['g1']).toMatchObject({ shareable: false, author: null });
+    expect(
+      reject(c, { type: 'note.edit', noteId: 'g1', characterId: 'kim', body: 'x' }, player('kim')),
+    ).toContain('unknown note');
     expect(
       reject(c, { type: 'note.create', characterId: null, kind: 'gm', body: 'x', shareable: true }),
     ).toContain('never shared');

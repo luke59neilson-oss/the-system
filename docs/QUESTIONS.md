@@ -162,3 +162,8 @@ answer under any question and the next run will follow it.
     Alternatives: hide tiers when the target's grade is above the viewer's;
     everything revealed to one party member is known to all.
     Answer:
+34. **Who may edit party notes.** Party notes can be changed or deleted only
+    by their author or the GM (M1.8, D62), so a player cannot fix a typo in a
+    teammate's note. Default: author or GM only (D85). Alternative: any party
+    member may edit party notes (a shared wiki), with the GM able to undo.
+    Answer:
