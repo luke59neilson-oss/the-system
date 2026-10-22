@@ -218,7 +218,10 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     if (!state) return [];
     return state.characterOrder.flatMap((id) => {
       const c = state.characters[id];
-      return c ? [{ id: c.id, name: c.name, grade: c.grade }] : [];
+      if (!c) return [];
+      // Grade metal for the join-list portrait ring (M3.1); public like the grade.
+      const theme = state.rules.grades.find((g) => g.id === c.grade)?.theme ?? null;
+      return [{ id: c.id, name: c.name, grade: c.grade, theme }];
     });
   });
 

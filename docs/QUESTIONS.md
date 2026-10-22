@@ -124,3 +124,9 @@ answer under any question and the next run will follow it.
     them (the log is GM prep material for Claude). Alternative: leave
     hidden quests and reasons out so the file could be shown to players.
     Answer:
+
+28. **Rejoin automatically?** A phone that played Jake shows "Continue as
+    Jake" at the top of the join screen (one tap). Default: no automatic
+    jump, so "Switch character" always reaches the list (D74). Alternative:
+    opening the join URL goes straight to the last character.
+    Answer:

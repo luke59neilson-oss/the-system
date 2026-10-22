@@ -1,5 +1,6 @@
 import { GmScreen } from './gm/GmScreen';
-import { PlayerHome, PlayerScreen } from './player/PlayerScreen';
+import { PlayerHome } from './player/JoinScreen';
+import { PlayerScreen } from './player/PlayerScreen';
 
 export function App() {
   const path = window.location.pathname.replace(/\/+$/, '');

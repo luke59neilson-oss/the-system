@@ -1,55 +1,14 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { ENGINE_NAME, type OwnSheet, type PlayerView } from '@the-system/engine';
+import type { OwnSheet, PlayerView } from '@the-system/engine';
 import { notificationText } from '../format';
-import { isHostBrowser, isPaneMode } from '../gm/perspective';
+import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
+import { browserStorage, remember } from './join';
 import { formatStatValue, rarityName, unassignedPoints } from './sheet';
 
 /**
- * Minimal player screen (ROADMAP MS.2): pick a character, then the DESIGN §9
- * core rows and a live DING feed. The full player app replaces this in M3.
+ * Player status screen (MS.2 walking skeleton; the full M3 screens build on it).
  */
-export function PlayerHome() {
-  const [characters, setCharacters] = useState<
-    { id: string; name: string; grade: string }[] | null
-  >(null);
-  const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    fetch('/api/characters')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((list: { id: string; name: string; grade: string }[]) => setCharacters(list))
-      .catch(() => setError('Could not reach the System. Is the GM’s laptop on?'));
-  }, []);
-  return (
-    <main className="player" data-engine={ENGINE_NAME}>
-      <h1>The System</h1>
-      <section className="window" aria-labelledby="choose">
-        <h2 id="choose">Choose your character</h2>
-        {error && <p className="err">{error}</p>}
-        {!error && characters === null && <p className="muted">Connecting to the System…</p>}
-        {characters?.length === 0 && (
-          <p className="muted">No characters yet. Your GM will create them.</p>
-        )}
-        {isHostBrowser(window.location.hostname) && (
-          <p className="muted">
-            On the GM’s laptop? <a href="/gm">Open the GM console</a> (needs the GM link from the
-            desktop app or server terminal).
-          </p>
-        )}
-        <ul className="choices">
-          {characters?.map((c) => (
-            <li key={c.id}>
-              <a href={`/play/${encodeURIComponent(c.id)}`}>
-                {c.name} <span className="muted">({c.grade})</span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </main>
-  );
-}
-
 export function PlayerScreen({ characterId }: { characterId: string }) {
   const client = useMemo(() => new LiveClient({ role: 'player', characterId }), [characterId]);
   useEffect(() => () => client.close(), [client]);
@@ -60,6 +19,11 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
   const view = live.view;
   // Inside the GM app's "View as" frames (MS.3): same client, compact chrome.
   const [pane] = useState(() => isPaneMode(window.location.search));
+  // M3.1: this browser remembers who it plays (never the GM's View-as frames).
+  // A stale id is harmless: the join screen offers it only while it is listed.
+  useEffect(() => {
+    if (!pane && live.status === 'joined') remember(browserStorage(), characterId);
+  }, [pane, live.status, characterId]);
   return (
     <main className={pane ? 'player pane-mode' : 'player'}>
       <header className="gm-header">
