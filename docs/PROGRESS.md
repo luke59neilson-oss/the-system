@@ -371,7 +371,7 @@ next item, blockers. -->
   - [Evolve] opens a modal with the paths side by side: transforms, then reshaped class stats.
   - Choosing a path shows warnings: marks reset, selections waiting, a reshape, and that the choice is final. A Profession picker appears when professions are offered. Then Evolve or Back.
   - A release that is replaced, settled or withdrawn elsewhere closes the modal with a notice.
-- Tests: 610 unit/integration tests (54 files). All 27 e2e specs green; screenshot re-renders of earlier items were discarded. Engine untouched this run (line coverage 99.36%, floor 90%).
+- Tests: 610 unit/integration tests (53 files). All 27 e2e specs green; screenshot re-renders of earlier items were discarded. Engine untouched this run (line coverage 99.36%, floor 90%).
 - CI: green on b17e8bb, a1f5d7f and 8f71d59; 8afc40b running at the end of the run.
 - New decisions D87, D88. New question Q36 (warnings before an evolution; warn-only default).
 - Open `wip/*` branches: none unfinished (`wip/M3.13` is merged).
