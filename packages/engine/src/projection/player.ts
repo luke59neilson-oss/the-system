@@ -6,6 +6,13 @@ import {
   type FreePointBatch,
 } from '../character';
 import type { CampaignState } from '../events';
+import {
+  EMPTY_HOLDINGS,
+  type Bundle,
+  type Holdings,
+  type ItemDef,
+  type TradeStatus,
+} from '../economy';
 import type { PendingEvolution, SelectionRecord, SkillOption } from '../evolution';
 import { daysLeft, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
@@ -64,10 +71,9 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   characterOrder: 'party',
   // Each player gets only the broadcasts addressed to them, without the recipient list.
   broadcasts: 'owner',
-  // M1.7 economy. Not projected yet (M3.7 adds the player inventory view):
-  // the library may hold items the GM has not handed out, so players will get
-  // only the definitions of items they hold or are offered; holdings and
-  // trades only their own.
+  // M1.7 economy, projected as `inventory` (M3.7): the library may hold items
+  // the GM has not handed out, so players get only the definitions of items
+  // they hold, wear or see in an own trade; holdings and trades only their own.
   items: 'gm',
   itemOrder: 'gm',
   holdings: 'owner',
@@ -203,6 +209,46 @@ export interface PlayerView {
   readonly day: number;
   /** Visible quests in creation order. */
   readonly quests: readonly PlayerQuest[];
+  /** The viewer's own currency, items, equipment and trades (M3.7). */
+  readonly inventory: PlayerInventory;
+}
+
+/** An item definition, sent only for items the viewer holds or sees in an own trade. */
+export interface PlayerItem {
+  readonly id: string;
+  readonly name: string;
+  readonly rarity: string;
+  readonly description: string;
+  readonly slot: string | null;
+  readonly bonuses: readonly {
+    readonly stat: string;
+    readonly flat?: number;
+    readonly percent?: number;
+  }[];
+}
+
+/** A trade the viewer proposed or was offered; `null` = the GM. */
+export interface PlayerTrade {
+  readonly id: string;
+  readonly from: string | null;
+  readonly to: string | null;
+  readonly give: Bundle;
+  readonly get: Bundle;
+  readonly status: TradeStatus;
+  readonly proposedAt: string;
+  readonly closedAt: string | null;
+}
+
+export interface PlayerInventory {
+  readonly currency: number;
+  /** Item id → count. */
+  readonly items: Readonly<Record<string, number>>;
+  /** Slot key "<slotId>:<index>" → item id. */
+  readonly equipped: Readonly<Record<string, string>>;
+  /** Own trades, oldest first. */
+  readonly trades: readonly PlayerTrade[];
+  /** Definitions of every item above (held, equipped or in an own trade). */
+  readonly itemDefs: Readonly<Record<string, PlayerItem>>;
 }
 
 /** A visible quest as players see it (DESIGN §7; M3.8 draws it). */
@@ -409,6 +455,7 @@ export function projectForPlayer(state: CampaignState, characterId: string): Pla
       .filter((b) => b.characterIds === null || b.characterIds.includes(viewer.id))
       .map((b) => ({ id: b.id, at: b.at, text: b.text })),
     day: state.day,
+    inventory: playerInventory(state, viewer.id),
     quests: state.questOrder.flatMap((id) => {
       const q = Object.prototype.hasOwnProperty.call(state.quests, id)
         ? state.quests[id]
@@ -426,4 +473,73 @@ export function projectForPlayer(state: CampaignState, characterId: string): Pla
       ];
     }),
   };
+}
+
+const hasOwnKey = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
+
+function copyBundle(b: Bundle): Bundle {
+  const items: Record<string, number> = {};
+  for (const [id, n] of Object.entries(b.items)) items[id] = n;
+  return { currency: b.currency, items };
+}
+
+function copyItem(def: ItemDef): PlayerItem {
+  return {
+    id: def.id,
+    name: def.name,
+    rarity: def.rarity,
+    description: def.description,
+    slot: def.slot,
+    bonuses: def.bonuses.map((b) => ({
+      stat: b.stat,
+      ...(b.flat === undefined ? {} : { flat: b.flat }),
+      ...(b.percent === undefined ? {} : { percent: b.percent }),
+    })),
+  };
+}
+
+/**
+ * The viewer's own economy (M3.7, D58/D60): holdings, the trades they are a
+ * party to, and the definitions of exactly the items those mention. The rest
+ * of the item library (items the GM has not handed out) stays GM-only.
+ */
+function playerInventory(state: CampaignState, viewerId: string): PlayerInventory {
+  const h: Holdings = hasOwnKey(state.holdings, viewerId)
+    ? (state.holdings[viewerId] ?? EMPTY_HOLDINGS)
+    : EMPTY_HOLDINGS;
+  const wanted = new Set<string>();
+  const items: Record<string, number> = {};
+  for (const [id, n] of Object.entries(h.inventory)) {
+    items[id] = n;
+    wanted.add(id);
+  }
+  const equipped: Record<string, string> = {};
+  for (const [key, id] of Object.entries(h.equipped)) {
+    equipped[key] = id;
+    wanted.add(id);
+  }
+  const trades: PlayerTrade[] = [];
+  for (const id of state.tradeOrder) {
+    const t = hasOwnKey(state.trades, id) ? state.trades[id] : undefined;
+    if (!t || (t.from !== viewerId && t.to !== viewerId)) continue;
+    for (const itemId of [...Object.keys(t.give.items), ...Object.keys(t.get.items)]) {
+      wanted.add(itemId);
+    }
+    trades.push({
+      id: t.id,
+      from: t.from,
+      to: t.to,
+      give: copyBundle(t.give),
+      get: copyBundle(t.get),
+      status: t.status,
+      proposedAt: t.proposedAt,
+      closedAt: t.closedAt,
+    });
+  }
+  const itemDefs: Record<string, PlayerItem> = {};
+  for (const id of wanted) {
+    const def = hasOwnKey(state.items, id) ? state.items[id] : undefined;
+    if (def) itemDefs[id] = copyItem(def);
+  }
+  return { currency: h.currency, items, equipped, trades, itemDefs };
 }

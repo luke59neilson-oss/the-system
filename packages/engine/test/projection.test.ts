@@ -133,6 +133,7 @@ describe('player projection', () => {
     expect(Object.keys(view).sort()).toEqual([
       'campaignName',
       'day',
+      'inventory',
       'me',
       'messages',
       'party',
@@ -352,25 +353,70 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
       ...s.broadcasts.map((b) => ({ ...b, gmNote: `${GM}-broadcast` })),
       ...whispers,
     ];
-    // Economy (M1.7): not projected yet, so every part of it is a canary.
+    // Economy (M3.7): each player gets only their own holdings, their own
+    // trades and the definitions of the items those mention. The rest of the
+    // library, other players' holdings and trades, and unknown keys stay hidden.
     const econ = s as Record<string, unknown>;
+    const ownedItems: Record<string, unknown> = {};
+    for (const id of ids) {
+      ownedItems[`own-${id}`] = {
+        id: `own-${id}`,
+        name: `OWNER-${id}-item`,
+        rarity: 'rare',
+        description: `OWNER-${id}-itemdesc`,
+        slot: 'ring',
+        bonuses: [],
+        gmNote: `${GM}-itemnote`,
+      };
+    }
     econ.items = {
       ...s.items,
-      secret: { id: 'secret', name: `${GM}-item`, rarity: 'rare', description: `${GM}-desc` },
+      ...ownedItems,
+      secret: {
+        id: 'secret',
+        name: `${GM}-item`,
+        rarity: 'rare',
+        description: `${GM}-desc`,
+        slot: null,
+        bonuses: [],
+      },
     };
     econ.itemOrder = [...s.itemOrder, `${GM}-order`];
     econ.holdings = Object.fromEntries(
-      ids.map((id) => [
-        id,
-        {
-          currency: gmNum(),
-          inventory: { [`${GM}-inv`]: gmNum() },
-          equipped: { 'ring:0': `${GM}-eq` },
-        },
-      ]),
+      ids.map((id) => {
+        const mine = owner.get(id);
+        const currency = sentinel();
+        const count = sentinel();
+        mine?.numbers.push(currency, count);
+        mine?.strings.push(`OWNER-${id}-item`, `OWNER-${id}-itemdesc`);
+        return [
+          id,
+          {
+            currency,
+            inventory: { [`own-${id}`]: count },
+            equipped: { 'ring:0': `own-${id}` },
+            gmNote: `${GM}-holdings`,
+          },
+        ];
+      }),
     );
-    econ.trades = { t: { id: `${GM}-trade`, from: ids[0] ?? null, to: null } };
-    econ.tradeOrder = [`${GM}-trade`];
+    const first = ids[0] ?? null;
+    const tradeCurrency = sentinel();
+    if (first !== null) owner.get(first)?.numbers.push(tradeCurrency);
+    econ.trades = {
+      t: {
+        id: 't',
+        from: first,
+        to: null,
+        give: { currency: tradeCurrency, items: {} },
+        get: { currency: 0, items: {} },
+        status: 'open',
+        proposedAt: '2026-10-21T12:00:00.000Z',
+        closedAt: null,
+        gmNote: `${GM}-trade`,
+      },
+    };
+    econ.tradeOrder = ['t', `${GM}-tradeorder`];
     // Practice and notes (M1.8): not projected yet either.
     econ.practice = [{ id: 'pr', characterId: ids[0], action: `${GM}-practice`, skills: [] }];
     econ.notes = { n: { id: 'n', kind: 'party', body: `${GM}-note` } };
