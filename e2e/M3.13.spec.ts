@@ -92,6 +92,23 @@ test('a player chooses a released evolution with a profession', async ({ browser
     participants: [{ characterId: 'demo-casper' }],
   });
   await expect(laptop.getByTestId('class')).toHaveText('[Ranger – lvl 14]');
+  // An evolution waits for every earned selection (MQ.1, D103): the GM settles level 10.
+  await gmCommand(gm, {
+    type: 'selection.offer',
+    characterId: 'demo-casper',
+    level: 10,
+    options: [
+      { name: 'Hawk Step', rarity: 'rare' },
+      { name: 'Quiet Draw', rarity: 'common' },
+      { name: 'Trail Sign', rarity: 'common' },
+    ],
+  });
+  await gmCommand(gm, {
+    type: 'selection.choose',
+    characterId: 'demo-casper',
+    level: 10,
+    skill: 'Quiet Draw',
+  });
   await gmCommand(gm, {
     type: 'skill.awardMark',
     characterId: 'demo-casper',
@@ -111,6 +128,7 @@ test('a player chooses a released evolution with a profession', async ({ browser
         className: 'Storm Ranger',
         transforms: [{ skill, name: 'Storm Shot', rarity: 'rare' }],
         classWeights: { agility: 3, perception: 2, endurance: 1 },
+        statBonus: { agility: 5, perception: 3 },
       },
     ],
     professions: ['Cook', 'Alchemist'],
@@ -128,6 +146,13 @@ test('a player chooses a released evolution with a profession', async ({ browser
   await expect(storm).toContainText(`→ [Storm Shot (Rare)]`);
   await expect(storm).toContainText(
     'Class stats per level: Agility 3 · Perception 2 · Endurance 1',
+  );
+  // MQ.1: the one-time stat bonus and the refill are shown before choosing.
+  await expect(storm.getByTestId('evolution-bonus')).toHaveText(
+    'One-time bonus: +5 Agility · +3 Perception',
+  );
+  await expect(dialog.getByTestId('evolution-grade')).toContainText(
+    'Evolving refills HP, MP and Stamina.',
   );
   await laptop.screenshot({ path: path.join(shots, 'player-evolution-1366x768.png') });
 

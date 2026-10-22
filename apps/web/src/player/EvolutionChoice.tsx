@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { PendingEvolution, PlayerView } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
-import { evolutionWarnings, transformText, weightsText } from './evolution';
+import { bonusText, evolutionWarnings, transformText, weightsText } from './evolution';
 import { isConnectionError } from './selection';
 
 /**
@@ -97,7 +97,7 @@ export function EvolutionChoice({
       </div>
       <p className="muted" data-testid="evolution-grade">
         Evolve into {evolution.toGrade}-grade: choose one of {evolution.options.length}{' '}
-        {evolution.options.length === 1 ? 'path' : 'paths'}
+        {evolution.options.length === 1 ? 'path' : 'paths'}. Evolving refills HP, MP and Stamina.
       </p>
       {option ? (
         <div className="selection-review">
@@ -154,6 +154,7 @@ export function EvolutionChoice({
           {evolution.options.map((o, i) => {
             const id = `evolution-option-${i}`;
             const weights = weightsText(rules, o.classWeights);
+            const bonus = bonusText(rules, o.statBonus);
             return (
               <li key={o.id} className="offer" data-testid="evolution-option" aria-labelledby={id}>
                 <h4 id={id}>
@@ -170,6 +171,11 @@ export function EvolutionChoice({
                       <li key={t.skill}>{transformText(rules, me, t)}</li>
                     ))}
                   </ul>
+                )}
+                {bonus && (
+                  <p className="evolution-bonus" data-testid="evolution-bonus">
+                    One-time bonus: {bonus}
+                  </p>
                 )}
                 {weights && <p className="muted">Class stats per level: {weights}</p>}
                 <button

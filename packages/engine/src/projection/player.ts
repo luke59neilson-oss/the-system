@@ -496,6 +496,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
                 rarity: t.rarity,
               })),
               classWeights: o.classWeights === null ? null : copyRecord(o.classWeights, statIds),
+              statBonus: copyRecord(o.statBonus, statIds),
             })),
             professions: [...c.evolution.professions],
           },

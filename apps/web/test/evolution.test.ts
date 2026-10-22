@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { EvolutionOption, OwnSheet, PlayerRules } from '@the-system/engine';
-import { evolutionWarnings, transformText, weightsText } from '../src/player/evolution';
+import { bonusText, evolutionWarnings, transformText, weightsText } from '../src/player/evolution';
 
 const rules = {
   stats: {
@@ -27,6 +27,7 @@ const option = (over: Partial<EvolutionOption> = {}): EvolutionOption => ({
   description: '',
   transforms: [{ skill: 'Basic Archery', name: 'Expert Archery', rarity: 'rare' }],
   classWeights: null,
+  statBonus: {},
   ...over,
 });
 
@@ -80,5 +81,15 @@ describe('evolution screen helpers (M3.13)', () => {
     expect(evolutionWarnings(me({ skills: [skill('Basic Archery', 1)] }), option())[0]).toBe(
       '[Basic Archery] becomes [Expert Archery]: its 1 mastery mark resets to 0.',
     );
+  });
+});
+
+describe('evolution stat bonus (MQ.1)', () => {
+  it('lists a mixed bonus in stat order and folds an equal bonus to every stat', () => {
+    expect(bonusText(rules, { perception: 2, strength: 3 })).toBe('+3 Strength · +2 Perception');
+    expect(bonusText(rules, { strength: 2, agility: 2, perception: 2 })).toBe('+2 to every stat');
+    expect(bonusText(rules, { strength: 0 })).toBeNull();
+    expect(bonusText(rules, {})).toBeNull();
+    expect(bonusText(rules, undefined)).toBeNull();
   });
 });

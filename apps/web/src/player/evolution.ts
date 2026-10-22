@@ -32,6 +32,28 @@ export function weightsText(
 }
 
 /**
+ * The option's one-time stat bonus (D98): "+2 to every stat" when it raises
+ * every stat by the same amount, else "+3 Strength · +5 Vitality" in stat
+ * order; null when there is none.
+ */
+export function bonusText(
+  rules: PlayerRules,
+  bonus: EvolutionOption['statBonus'] | undefined,
+): string | null {
+  if (!bonus) return null;
+  const values = rules.stats.list.map((s) => bonus[s.id] ?? 0);
+  const first = values[0] ?? 0;
+  if (first > 0 && values.length > 1 && values.every((v) => v === first)) {
+    return `+${first} to every stat`;
+  }
+  const parts = rules.stats.list
+    .map((s) => ({ name: s.name, v: bonus[s.id] ?? 0 }))
+    .filter((p) => p.v > 0)
+    .map((p) => `+${p.v} ${p.name}`);
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
+
+/**
  * What the player should know before confirming an option: marks the
  * transforms reset (D64), selections still waiting, a reshaped spread, and
  * that it is final. Free points are untouched by evolving, so not listed.

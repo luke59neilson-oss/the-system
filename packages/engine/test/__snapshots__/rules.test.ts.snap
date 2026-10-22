@@ -209,7 +209,7 @@ exports[`default rules > match the snapshot 1`] = `
   "skills": {
     "evolutionTransforms": {
       "max": 2,
-      "min": 1,
+      "min": 0,
     },
     "markUpgrades": {
       "ancient": 12,

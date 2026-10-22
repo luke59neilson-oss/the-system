@@ -8,6 +8,7 @@ import {
   nextSelectionLevel,
   projectForPlayer,
   raceLevel,
+  replay,
   selectionSlots,
   skillPairCounts,
   type Campaign,
@@ -68,6 +69,25 @@ const release = (skill: string, name: string, rarity: string, extra: object = {}
   options: [{ className: 'Hunter', transforms: [{ skill, name, rarity }] }],
   ...extra,
 });
+/** Offers and chooses every earned selection (an evolution waits for them, D103). */
+function pickAll(c: Campaign, id = 'jake'): Campaign {
+  for (const slot of dueSelections(rules, char(c, id))) {
+    const ceiling = rules.grades.find((g) => g.id === slot.grade)?.rarityCeiling ?? 'common';
+    const options = [
+      { name: `Pick ${slot.level}a`, rarity: ceiling },
+      { name: `Pick ${slot.level}b`, rarity: 'common' },
+      { name: `Pick ${slot.level}c`, rarity: 'inferior' },
+    ];
+    c = ok(c, { type: 'selection.offer', characterId: id, level: slot.level, options });
+    c = ok(c, {
+      type: 'selection.choose',
+      characterId: id,
+      level: slot.level,
+      skill: `Pick ${slot.level}b`,
+    });
+  }
+  return c;
+}
 /** Jake at class level 4 (G-grade top), not yet evolved. */
 const atGTop = () => ok(base(), award(400));
 
@@ -533,7 +553,19 @@ describe('evolution', () => {
       });
     const t = (skill: string, name: string, rarity: string) => ({ skill, name, rarity });
     expect(bad([])).toMatch(/1–4 options|too small|>=1/i);
-    expect(bad([{ className: 'H', transforms: [] }])).toMatch(/transforms 0 skills/);
+    // Transforms are optional by default (D102); three are still too many.
+    expect(
+      bad([
+        {
+          className: 'H',
+          transforms: [
+            t(archery, 'A2', 'common'),
+            t(stealth, 'S2', 'common'),
+            t(kit[2]?.name ?? '', 'E2', 'common'),
+          ],
+        },
+      ]),
+    ).toMatch(/transforms 3 skills/);
     expect(
       bad([
         {
@@ -625,6 +657,7 @@ describe('evolution', () => {
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
     c = ok(c, award(10 * 150 + 500)); // class 14 (F top) + 500 banked
     expect(char(c).classLevel).toBe(14);
+    c = pickAll(c);
     expect(evolutionTarget(rules, char(c))?.id).toBe('E');
     c = ok(c, release('Volley', 'Volley II', 'epic', { professions: ['Smith', 'Cook'] }));
     expect(reject(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' })).toMatch(
@@ -666,7 +699,7 @@ describe('evolution', () => {
   it('an E-grade release may offer no profession; the GM can grant one later', () => {
     let c = ok(atGTop(), release(archery, 'Volley', 'common'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
-    c = ok(c, award(10 * 150));
+    c = pickAll(ok(c, award(10 * 150)));
     c = ok(c, release('Volley', 'Volley II', 'uncommon'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
     expect(char(c).profession).toBeNull();
@@ -812,7 +845,7 @@ describe('review fixes (M1.10 round 1)', () => {
     c = ok(c, award(400));
     c = ok(c, release(archery, 'Volley', 'common'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
-    c = ok(c, award(10 * 150));
+    c = pickAll(ok(c, award(10 * 150)));
     c = ok(c, release('Volley', 'Volley II', 'uncommon', { professions: ['Smith'] }));
     c = ok(c, {
       type: 'evolution.choose',
@@ -827,7 +860,7 @@ describe('review fixes (M1.10 round 1)', () => {
     expect(raceLevel(rules, char(c))).toBe(39);
     // Profession XP beyond what it needs is not banked: it is below its cap.
     expect(char(c).xp.profession).toBe(100);
-    c = ok(c, award(1000)); // banks on the class track
+    c = pickAll(ok(c, award(1000))); // banks on the class track
     c = ok(c, release('Volley II', 'Volley III', 'epic'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
     const j = char(c);
@@ -840,7 +873,7 @@ describe('review fixes (M1.10 round 1)', () => {
 
   it('race gate: banked profession XP applies after the evolution', () => {
     let c = toF();
-    c = ok(c, award(10 * 150));
+    c = pickAll(ok(c, award(10 * 150)));
     c = ok(c, release('Volley', 'Volley II', 'uncommon', { professions: ['Smith'] }));
     c = ok(c, {
       type: 'evolution.choose',
@@ -852,67 +885,55 @@ describe('review fixes (M1.10 round 1)', () => {
     c = ok(c, award(35 * 250 + 900, 'profession'));
     expect(char(c)).toMatchObject({ classLevel: 49, professionLevel: 49 });
     expect(char(c).xp.profession).toBe(900);
+    c = pickAll(c);
     c = ok(c, release('Volley II', 'Volley III', 'epic'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
     expect(char(c)).toMatchObject({ grade: 'D', professionLevel: 51 });
     expect(char(c).xp.profession).toBe(100);
   });
 
-  it('a selection left pending across an evolution keeps its own grade ceiling (Q21)', () => {
+  it('an evolution waits for every earned selection (D103, replaces Q21)', () => {
     let c = ok(toF(), award(10 * 150));
+    expect(dueSelections(rules, char(c)).map((s) => s.level)).toEqual([5, 10]);
+    expect(reject(c, release('Volley', 'Volley II', 'uncommon'))).toMatch(
+      /skill selection to choose first \(class level 5, 10\)/,
+    );
+    c = ok(c, {
+      type: 'selection.offer',
+      characterId: 'jake',
+      level: 5,
+      options: menu(5, 'rare'),
+    });
+    c = ok(c, { type: 'selection.choose', characterId: 'jake', level: 5, skill: 'Skill 5b' });
+    // An offered but unchosen menu still holds it back.
+    c = ok(c, {
+      type: 'selection.offer',
+      characterId: 'jake',
+      level: 10,
+      options: menu(10, 'rare'),
+    });
+    expect(reject(c, release('Volley', 'Volley II', 'uncommon'))).toMatch(/class level 10\)/);
+    c = ok(c, { type: 'selection.choose', characterId: 'jake', level: 10, skill: 'Skill 10b' });
     c = ok(c, release('Volley', 'Volley II', 'uncommon'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
     expect(char(c).grade).toBe('E');
-    expect(dueSelections(rules, char(c)).map((s) => s.level)).toEqual([5, 10]);
-    expect(
-      reject(c, {
-        type: 'selection.offer',
-        characterId: 'jake',
-        level: 10,
-        options: menu(10, 'epic'),
-      }),
-    ).toMatch(/above the F-grade ceiling/);
-    c = ok(c, {
-      type: 'selection.offer',
-      characterId: 'jake',
-      level: 10,
-      options: menu(10, 'rare'),
-    });
-    c = ok(c, { type: 'selection.choose', characterId: 'jake', level: 10, skill: 'Skill 10a' });
-    expect(char(c).skills.at(-1)).toMatchObject({ name: 'Skill 10a', rarity: 'rare' });
-  });
-
-  it('a transform may not take a name on a pending menu', () => {
-    let c = ok(toF(), award(10 * 150));
-    c = ok(c, {
-      type: 'selection.offer',
-      characterId: 'jake',
-      level: 10,
-      options: menu(10, 'rare'),
-    });
-    expect(reject(c, release('Volley', 'Skill 10b', 'uncommon'))).toMatch(/pending level 10 menu/);
   });
 });
 
 describe('review fixes (M1.10 round 2)', () => {
-  it('a menu may not offer a name a released evolution transforms into', () => {
+  it('a pick an open release depends on cannot be undone (D103)', () => {
     let c = ok(ok(atGTop(), release(archery, 'Volley', 'common')), {
       type: 'evolution.choose',
       characterId: 'jake',
       optionId: 'o1',
     });
-    c = ok(c, award(10 * 150));
+    c = pickAll(ok(c, award(10 * 150)));
     c = ok(c, release('Volley', 'Volley II', 'uncommon'));
-    expect(
-      reject(c, {
-        type: 'selection.offer',
-        characterId: 'jake',
-        level: 5,
-        options: [...menu(5, 'rare').slice(0, 2), { name: 'Volley II', rarity: 'common' }],
-      }),
-    ).toMatch(/released evolution/);
-    // A rarity-only transform keeps its own name.
-    ok(c, release('Volley', 'Volley', 'rare'));
+    const pickEvent = c.events.findLast((e) => e.type === 'selection.chosen');
+    if (!pickEvent) throw new Error('no pick');
+    expect(reject(c, { type: 'event.undo', eventId: pickEvent.id })).toMatch(
+      /skill selection to choose first/,
+    );
   });
 });
 
@@ -936,5 +957,171 @@ describe('banked marks through an evolution (M1.A review)', () => {
 
   it('a transform that raises the rarity spends them', () => {
     expect(char(evolveWith('common')).skills[0]).toMatchObject({ name: 'Archery', marks: 0 });
+  });
+});
+
+/** Jake evolved to F with every pool at 1 (to see that the old rules never refill). */
+function toFLegacy(): Campaign {
+  let c = ok(ok(atGTop(), release(archery, 'Volley', 'common')), {
+    type: 'evolution.choose',
+    characterId: 'jake',
+    optionId: 'o1',
+  });
+  const hurt = Object.fromEntries(Object.keys(char(c).pools).map((id) => [id, 1]));
+  c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: hurt });
+  return c;
+}
+
+describe('evolution rules from Luke (MQ.1: D98, D99, D102, D103)', () => {
+  const pools = (c: Campaign) => char(c).pools;
+  it('the chosen option adds its one-time stat bonus to base stats; the others do not count', () => {
+    let c = ok(atGTop(), {
+      type: 'evolution.release',
+      characterId: 'jake',
+      options: [
+        {
+          className: 'Hunter',
+          transforms: [{ skill: archery, name: 'Volley', rarity: 'common' }],
+          statBonus: { strength: 3, agility: 5 },
+        },
+        {
+          className: 'Scout',
+          transforms: [{ skill: stealth, name: 'Shade', rarity: 'common' }],
+          statBonus: { perception: 20 },
+        },
+      ],
+    });
+    const before = char(c).stats;
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' }, player('jake'));
+    const after = char(c).stats;
+    expect(after['strength']).toBe((before['strength'] ?? 0) + 3);
+    expect(after['agility']).toBe((before['agility'] ?? 0) + 5);
+    expect(after['perception']).toBe(before['perception']);
+  });
+
+  it('a +N to all bonus raises every stat', () => {
+    const all = Object.fromEntries(rules.stats.list.map((s) => [s.id, 2]));
+    let c = ok(atGTop(), {
+      type: 'evolution.release',
+      characterId: 'jake',
+      options: [
+        {
+          className: 'Hunter',
+          transforms: [{ skill: archery, name: 'Volley', rarity: 'common' }],
+          statBonus: all,
+        },
+      ],
+    });
+    const before = char(c).stats;
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    for (const s of rules.stats.list) expect(char(c).stats[s.id]).toBe((before[s.id] ?? 0) + 2);
+  });
+
+  it('rejects a bonus for an unknown stat or a negative or fractional value', () => {
+    const bad = (statBonus: Record<string, number>) =>
+      reject(atGTop(), {
+        type: 'evolution.release',
+        characterId: 'jake',
+        options: [
+          {
+            className: 'Hunter',
+            transforms: [{ skill: archery, name: 'Volley', rarity: 'common' }],
+            statBonus,
+          },
+        ],
+      });
+    expect(bad({ luck: 1 })).toMatch(/Unknown stat "luck"|luck/);
+    expect(bad({ strength: -1 })).toMatch(/strength|nonnegative|>=/i);
+    expect(bad({ strength: 1.5 })).toMatch(/strength|integer/i);
+  });
+
+  it('evolution refills HP, MP and Stamina, at the new maxima', () => {
+    let c = atGTop();
+    const hurt = Object.fromEntries(Object.keys(pools(c)).map((id) => [id, 1]));
+    c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: hurt });
+    expect(Object.values(pools(c)).every((v) => v === 1)).toBe(true);
+    c = ok(c, {
+      type: 'evolution.release',
+      characterId: 'jake',
+      options: [
+        {
+          className: 'Hunter',
+          transforms: [{ skill: archery, name: 'Volley', rarity: 'common' }],
+          statBonus: { vitality: 10 },
+        },
+      ],
+    });
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    const stats = char(c).stats;
+    for (const pool of rules.pools) {
+      expect(pools(c)[pool.id]).toBe(Math.floor(pool.multiplier * (stats[pool.stat] ?? 0)));
+    }
+    expect(pools(c)['hp']).toBeGreaterThan(10 * 10); // vitality bonus counted
+  });
+
+  it('level-ups never refill pools', () => {
+    let c = atGTop();
+    c = ok(c, release(archery, 'Volley', 'common'));
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    const hurt = Object.fromEntries(Object.keys(pools(c)).map((id) => [id, 1]));
+    c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: hurt });
+    c = ok(c, award(150 * 3));
+    expect(char(c).classLevel).toBeGreaterThan(4);
+    expect(Object.values(pools(c)).every((v) => v === 1)).toBe(true);
+  });
+
+  it('transforms are optional: the default minimum is 0 (D102)', () => {
+    expect(rules.skills.evolutionTransforms.min).toBe(0);
+    let c = atGTop();
+    c = ok(c, {
+      type: 'evolution.release',
+      characterId: 'jake',
+      options: [{ className: 'Hunter', transforms: [], statBonus: { strength: 1 } }],
+    });
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    expect(char(c).grade).toBe('F');
+  });
+
+  it('events stored before MQ.1 replay under the old rules (upcast, no gate, no refill)', () => {
+    // A v1 log: an evolution released and chosen while selections were pending.
+    const legacy = ok(toFLegacy(), award(10 * 150));
+    expect(dueSelections(rules, char(legacy)).length).toBeGreaterThan(0);
+    const events = legacy.events.map((e) => ({ ...e }));
+    const relId = 'v-legacy-rel';
+    const choId = 'v-legacy-cho';
+    const stamp = events.at(-1)?.timestamp ?? '2026-10-22T00:00:00.000Z';
+    const v1Release = {
+      id: relId,
+      timestamp: stamp,
+      actor: { role: 'gm' },
+      sessionId: null,
+      type: 'evolution.released',
+      schemaVersion: 1,
+      payload: {
+        characterId: 'jake',
+        options: [
+          {
+            id: 'o1',
+            className: 'Hunter II',
+            description: '',
+            transforms: [{ skill: 'Volley', name: 'Volley II', rarity: 'uncommon' }],
+            classWeights: null,
+          },
+        ],
+        professions: [],
+      },
+    };
+    const v1Choice = {
+      ...v1Release,
+      id: choId,
+      type: 'evolution.chosen',
+      schemaVersion: 1,
+      payload: { characterId: 'jake', optionId: 'o1', profession: null, releaseId: relId },
+    };
+    const replayed = replay([...events, v1Release, v1Choice]);
+    const j = replayed.state?.characters['jake'];
+    expect(j?.grade).toBe('E');
+    // No refill under the old rules: pools as they were before.
+    expect(j?.pools).toEqual(char(legacy).pools);
   });
 });

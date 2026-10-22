@@ -140,7 +140,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
     startingClassSkillCount: 3, // §2
     startingRaceSkill: { name: 'Identify', rarity: 'common' },
     menuSize: { min: 3, max: 4 }, // §6
-    evolutionTransforms: { min: 1, max: 2 },
+    evolutionTransforms: { min: 0, max: 2 },
     // §6 mastery marks.
     markUpgrades: {
       inferior: 3,

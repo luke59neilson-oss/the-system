@@ -1106,7 +1106,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       );
     }
     case 'evolution.released': {
-      const { characterId, options, professions } = event.payload;
+      const { characterId, options, professions, legacy } = event.payload;
       const character = characterOf(state, event, characterId);
       return withCharacter(
         state,
@@ -1118,6 +1118,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
             professions,
             retiredFor(state, character),
             event.id,
+            legacy === true,
           ),
         ),
       );
@@ -1133,6 +1134,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
           profession,
           retiredFor(state, character),
           event.payload.releaseId ?? null,
+          event.payload.legacy === true,
         ),
       );
       // Practice entries follow transformed skills, so pair counts carry over.

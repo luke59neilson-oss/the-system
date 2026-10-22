@@ -3,6 +3,7 @@ import {
   gradeIndexOf,
   grantProfession,
   newSkill,
+  poolMax,
   raceLevel,
   trackCap,
   type Character,
@@ -66,6 +67,8 @@ export interface EvolutionOption {
   readonly transforms: readonly SkillTransform[];
   /** Reshaped class stat weights (DESIGN §4), or null to keep the current ones. */
   readonly classWeights: Readonly<Record<string, number>> | null;
+  /** One-time stat bonus the GM sets as the System, added to base stats on choosing (D98). */
+  readonly statBonus: Readonly<Record<string, number>>;
 }
 
 /** An evolution the GM has released and the player has not chosen yet. */
@@ -365,7 +368,9 @@ export function releaseEvolution(
   professions: readonly string[],
   retired: ReadonlySet<string> = new Set(),
   releaseId = 'release',
+  legacy = false,
 ): Character {
+  if (!legacy) checkNoPendingSelection(rules, character, 'released');
   const target = evolutionTarget(rules, character);
   if (!target) {
     const top = trackCap(rules, character.grade);
@@ -379,7 +384,10 @@ export function releaseEvolution(
   }
   const ids = new Set(options.map((o) => o.id));
   if (ids.size !== options.length) throw new CharacterRuleError('Two options share an id');
-  for (const option of options) checkOption(rules, character, target, option, retired);
+  for (const option of options) {
+    checkOption(rules, character, target, option, retired);
+    checkStatBonus(rules, option);
+  }
   const unlock = target.id === rules.tracks.professionUnlockGrade && character.profession === null;
   if (!unlock && professions.length > 0) {
     throw new CharacterRuleError(
@@ -396,7 +404,11 @@ export function releaseEvolution(
     evolution: {
       toGrade: target.id,
       releaseId,
-      options: options.map((o) => ({ ...o, className: o.className.trim() })),
+      options: options.map((o) => ({
+        ...o,
+        className: o.className.trim(),
+        statBonus: o.statBonus ?? {},
+      })),
       professions: trimmed,
     },
   };
@@ -422,9 +434,11 @@ export function chooseEvolution(
   profession: string | null,
   retired: ReadonlySet<string> = new Set(),
   releaseId: string | null = null,
+  legacy = false,
 ): EvolutionResult {
   const pending = character.evolution;
   if (!pending) throw new CharacterRuleError(`No evolution is released for ${character.name}`);
+  if (!legacy) checkNoPendingSelection(rules, character, 'chosen');
   if (releaseId !== null && releaseId !== pending.releaseId) {
     throw new CharacterRuleError('The evolution was released again; choose from the new options');
   }
@@ -467,6 +481,7 @@ export function chooseEvolution(
     evolution: null,
   };
   if (option.classWeights !== null) next = reshapeClassWeights(rules, next, option.classWeights);
+  if (!legacy) next = applyStatBonus(next, option.statBonus ?? {});
   if (profession !== null) next = grantProfession(rules, next, profession);
   const levelUps: LevelUp[] = [];
   const cls = gainXp(rules, next, 'class', 0);
@@ -477,8 +492,52 @@ export function chooseEvolution(
     next = prof.character;
     levelUps.push(...prof.levelUps);
   }
+  // Evolution refills every pool (D99); level-ups alone never do.
+  if (!legacy) next = { ...next, pools: fullPools(rules, next.stats) };
   const renames = option.transforms
     .filter((t) => t.name.trim() !== t.skill)
     .map((t) => [t.skill, t.name.trim()] as const);
   return { character: next, renames, levelUps };
+}
+
+/** An evolution waits for every earned selection to be chosen (DESIGN §2, D103). */
+function checkNoPendingSelection(
+  rules: RulesConfig,
+  character: Character,
+  verb: 'released' | 'chosen',
+): void {
+  const due = dueSelections(rules, character);
+  if (due.length === 0) return;
+  const levels = due.map((s) => s.level).join(', ');
+  throw new CharacterRuleError(
+    `${character.name} has a skill selection to choose first (class level ${levels}); an evolution cannot be ${verb} until then`,
+  );
+}
+
+/** Bonus stats must be real stats with whole, non-negative values (D98). */
+function checkStatBonus(rules: RulesConfig, option: EvolutionOption): void {
+  const ids = new Set(rules.stats.list.map((s) => s.id));
+  for (const [stat, value] of Object.entries(option.statBonus ?? {})) {
+    if (!ids.has(stat)) throw new CharacterRuleError(`Unknown stat "${stat}" in the stat bonus`);
+    if (!Number.isInteger(value) || value < 0) {
+      throw new CharacterRuleError(`The ${stat} bonus must be a whole number of 0 or more`);
+    }
+  }
+}
+
+function applyStatBonus(character: Character, bonus: Readonly<Record<string, number>>): Character {
+  const entries = Object.entries(bonus).filter(([, v]) => v > 0);
+  if (entries.length === 0) return character;
+  const stats = { ...character.stats };
+  for (const [stat, value] of entries) stats[stat] = (stats[stat] ?? 0) + value;
+  return { ...character, stats };
+}
+
+function fullPools(
+  rules: RulesConfig,
+  stats: Readonly<Record<string, number>>,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const pool of rules.pools) out[pool.id] = poolMax(rules, stats, pool.id);
+  return out;
 }

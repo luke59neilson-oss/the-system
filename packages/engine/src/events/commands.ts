@@ -213,6 +213,7 @@ export type Command =
         description?: string | undefined;
         transforms?: readonly { skill: string; name: string; rarity: string }[] | undefined;
         classWeights?: Readonly<Record<string, number>> | null | undefined;
+        statBonus?: Readonly<Record<string, number>> | undefined;
       }[];
       /** Offered at the profession unlock grade; default none. */
       professions?: readonly string[] | undefined;
@@ -897,6 +898,7 @@ function toEvent(
             description: o.description ?? '',
             transforms: o.transforms ?? [],
             classWeights: o.classWeights ?? null,
+            statBonus: o.statBonus ?? {},
           })),
           professions: command.professions ?? [],
         },

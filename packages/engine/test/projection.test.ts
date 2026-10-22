@@ -410,6 +410,7 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
             description: '',
             transforms: [],
             classWeights: null,
+            statBonus: { strength: 5 },
           },
         ],
       };

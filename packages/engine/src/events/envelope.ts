@@ -362,11 +362,15 @@ export const EVENT_PAYLOAD_SCHEMAS = {
             .array(z.strictObject({ skill: nonBlank, name: nonBlank, rarity: recordId }))
             .max(10),
           classWeights: statValues.nullable(),
+          /** One-time stat bonus on choosing this option (MQ.1, D98; v2). */
+          statBonus: statValues,
         }),
       )
       .min(1)
       .max(10),
     professions: z.array(nonBlank).max(10),
+    /** Upcast from v1: released under the old rules (no pending-selection gate). */
+    legacy: z.literal(true).optional(),
   }),
   /** The player (or GM) chooses a released option (and an offered profession, if any). */
   'evolution.chosen': z.strictObject({
@@ -375,6 +379,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     profession: nonBlank.nullable(),
     /** The release chosen from (its event id); absent only in logs from before it existed. */
     releaseId: recordId.optional(),
+    /** Upcast from v1: chosen under the old rules (no gate, no refill, D99). */
+    legacy: z.literal(true).optional(),
   }),
   /** GM starts a progress clock with N segments (M1.11, DESIGN §7). */
   'clock.created': z.strictObject({
@@ -533,8 +539,8 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'library.seeded': 1,
   'selection.offered': 1,
   'selection.chosen': 1,
-  'evolution.released': 1,
-  'evolution.chosen': 1,
+  'evolution.released': 2,
+  'evolution.chosen': 2,
   'clock.created': 1,
   'clock.ticked': 1,
   'clock.removed': 1,
@@ -565,7 +571,25 @@ export type EventUpcaster = (payload: unknown) => unknown;
 export type EventUpcasters = Readonly<
   Partial<Record<string, Readonly<Record<number, EventUpcaster>>>>
 >;
-export const EVENT_UPCASTERS: EventUpcasters = {};
+export const EVENT_UPCASTERS: EventUpcasters = {
+  // MQ.1 (D98, D99, D103): options gain a stat bonus; events stored before it
+  // keep the old rules on replay (no pending-selection gate, no pool refill).
+  'evolution.released': {
+    1: (payload) => {
+      const p = payload as { options?: unknown };
+      return {
+        ...(payload as object),
+        options: Array.isArray(p.options)
+          ? p.options.map((o: unknown) => ({ ...(o as object), statBonus: {} }))
+          : p.options,
+        legacy: true,
+      };
+    },
+  },
+  'evolution.chosen': {
+    1: (payload) => ({ ...(payload as object), legacy: true }),
+  },
+};
 
 interface EnvelopeBase {
   readonly id: string;
