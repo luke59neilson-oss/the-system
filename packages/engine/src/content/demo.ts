@@ -4,7 +4,7 @@ import { dueSelections, evolutionTarget } from '../evolution';
 import { xpForLevels, type XpTrack } from '../progression';
 import { DEFAULT_RULES, type RulesConfig } from '../rules';
 import { marksToUpgrade } from '../skills';
-import { STARTER_CLASSES } from './starters';
+import { STARTER_CLASSES, starterClassSkills } from './starters';
 
 /** Demo System text for the starting race skill (real campaigns: the skill library, M4.1). */
 const IDENTIFY_TEXT = {
@@ -287,7 +287,7 @@ export function buildDemoEvents(ctx: DemoContext): DomainEvent[] {
       id: c.id,
       name: c.name,
       className: archer.name,
-      classSkills: archer.skills,
+      classSkills: starterClassSkills(archer),
       classWeights: archer.weights,
     });
   }
