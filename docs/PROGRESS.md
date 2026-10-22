@@ -1,8 +1,8 @@
 # Progress
 
-**Status:** in progress: M0, MS, M1 and M2 done
-**Next item:** M3.1 Join screen
-**Blockers:** none. The first preview build was pushed to `release` at 3151482 (Release run 39701983963 started); the next run should confirm that it published.
+**Status:** in progress: M0, MS, M1 and M2 done; M3 started (M3.1, M3.2)
+**Next item:** M3.3 Notifications and history
+**Blockers:** none. The first preview build published as `preview-2026-10-22-4.1` (Release run on 3151482 succeeded).
 
 ## Run log
 
@@ -189,4 +189,24 @@ next item, blockers. -->
 - New decisions D72–D73; new questions Q26 (GM notes in logs: `export` tag) and Q27 (hidden quests in the GM-only log). Roadmap note on M4.3: point the session log at the started session.
 - Open `wip/*` branches: none unfinished.
 - Next: M3.1 Join screen. Stopped at 43 min, past the 35-minute start limit.
+- Blockers: none.
+
+### Run 5a4cdc41 · 2026-10-22 01:06–01:33 UTC
+- Preflight: `add_repo` was not offered in this session. The repo was already cloned (detached HEAD and a stale remote-tracking ref), so `main` was reset to `origin/main`. Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md. The latest CI run on main was green (3151482). The Release run on 3151482 succeeded and published the pre-release `preview-2026-10-22-4.1`.
+- Finished:
+  - M3.1 Join screen (sonnet, 2 rounds; 1 High fixed: the e2e init script broke typecheck).
+  - M3.2 Status screen (sonnet, 2 rounds; 3 Medium fixed: live-update coverage, compact pane, glow logic).
+  - See REVIEW-LOG.md for both.
+- Built:
+  - `/api/characters` adds the grade's theme token.
+  - Join screen: portrait monogram in the grade metal, grade, "Continue as…" and "Last played" from localStorage (try/catch; works when storage throws), Refresh.
+  - Status screen: DESIGN §9 order, grade-metal frame, rarity-coloured skill lists with nicknames, pool bars, a glow on changed values.
+  - Demo: Jake's first class skill is nicknamed "Old Faithful".
+  - New `e2e/M3.1.spec.ts` and `e2e/M3.2.spec.ts`.
+- Tests: 523 unit/integration tests (40 files). All 15 e2e specs green; screenshot re-renders of earlier items discarded (their player shots now predate the M3.2 look).
+- CI: green on b0e1210. 11afded (M3.2) was still running at the end of the run.
+- New decisions D74–D75; new question Q28 (rejoin automatically?).
+- Open `wip/*` branches: none unfinished.
+- Next: M3.3 Notifications and history. Not started: at 27 min it needs engine/server history (DINGs back to day 1, with undo), which would not fit with review before the 60-minute stop.
 - Blockers: none.
