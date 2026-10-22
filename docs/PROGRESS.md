@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1–MQ.12 done); QF.1–QF.2 done; M4.1–M4.4 done
-**Next item:** MQ.13 The books' starting classes (resume `wip/MQ.13`)
+**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1–MQ.13 done); QF.1–QF.2 done; M4.1–M4.4 done
+**Next item:** MQ.14 Bonus rules (resume `wip/MQ.14`: reviewed clean, needs a green full e2e, then merge)
 **Blockers:** none.
 
 ## Run log
@@ -609,3 +609,14 @@ next item, blockers. -->
 - Open `wip/*` branches: `wip/MQ.13` (unfinished).
 - Next item: MQ.13 (resume `wip/MQ.13`).
 - Blockers: none.
+
+### Run 4a0765f3 · 2026-10-22 23:06–23:57 UTC (hand-off at minute 49, close-out to 51)
+- Preflight: `add_repo` not offered; repo already cloned and current. Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` with worktrees work (the Agent tool blocks; no background option). Latest main CI (2676e61) green. Hour 23: no efficiency check or sweep. No new answers.
+- MQ.13 The books' starting classes: finished `wip/MQ.13`: M4.2/M4.4 e2e updated to the six classes; new `e2e/MQ.13.spec.ts` (a character from each class with its three skills and text; demo loads with the new Archer kit, own server) and screenshots; seed test through `execute` (each seeded class levels only its named stats). Review (sonnet): 0 H, 0 M, 5 L (Mana Bolt text no longer names a stat; two Lows to Backlog). Merged to main (83ef5b8), box checked.
+- MQ.14 Bonus rules on `wip/MQ.14` (base 83ef5b8, head 956e26a): rules flags `itemCapOfBase` 0.2 / `itemsFlatOnly` / nullable `percentCapPerStat` (stored rules keep M1.6, D128); golden states gain two fields additively; percentage items refused; owner projection `itemCappedStats`; status screen "(+0.2, capped)"; `e2e/MQ.14.spec.ts` and screenshots. `npm run check` green (799 unit). Review (sonnet): 0 H, 0 M, 5 L (one to Backlog). Not merged: the full local e2e had 42/43 green; `MQ.14.spec.ts` timed out waiting for the GM setup form, while it passes alone. The same happened to the new MQ.13 spec earlier this run (also the newest spec, also at the first step, passing alone and with `--workers=2`).
+  - Next step: run the full e2e on `wip/MQ.14`; if the MQ.14 spec fails again only in the full run, find why a late spec's fresh server never shows "Campaign name" (server start, leftover state, load), then merge and check the box.
+- Tests: 790 unit on main; 799 on `wip/MQ.14`. Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/MQ.14` (reviewed, unmerged).
+- Next item: MQ.14 (resume `wip/MQ.14`), then MQ.15.
+- Blockers: none.
+
