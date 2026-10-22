@@ -68,6 +68,21 @@ export function isQueued(n: LiveNotification): boolean {
   return n.kind === 'level' || n.kind === 'broadcast';
 }
 
+/** Identity of a notification that survives a history reset after an undo. */
+export function notificationKey(n: SeqNotification): string {
+  return `${n.seq}:${JSON.stringify(n.notification)}`;
+}
+
+/** The next queued DING not yet shown (keys, not positions: an undo can remove earlier ones). */
+export function nextArrival(
+  items: readonly SeqNotification[],
+  liveSince: number | null,
+  shown: ReadonlySet<string>,
+): { current: SeqNotification | undefined; waiting: number } {
+  const left = arrivals(items, liveSince).filter((n) => !shown.has(notificationKey(n)));
+  return { current: left[0], waiting: Math.max(0, left.length - 1) };
+}
+
 /** Notifications that arrived while this page was open, oldest first. */
 export function arrivals(
   items: readonly SeqNotification[],

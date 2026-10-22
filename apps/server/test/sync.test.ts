@@ -285,17 +285,19 @@ describe('live protocol and authority', () => {
     };
     expect(view.view.me.classLevel).toBe(store.campaign.state?.characters.casper?.classLevel);
 
-    // Undo: the undone award's notifications are not replayed on a later rejoin.
-    const award2Id = store.campaign.events[store.campaign.events.length - 1]?.id;
+    // Undo: the undone award's notifications are not replayed on a later rejoin;
+    // an undo since lastSeq replaces the whole history (M3.3).
+    const award2Seq = store.campaign.events.length;
+    const award2Id = store.campaign.events[award2Seq - 1]?.id;
     expect((await gm.command({ type: 'event.undo', eventId: award2Id })).ok).toBe(true);
     const later = await connect();
     later.send({ type: 'join', role: 'player', characterId: 'casper', lastSeq });
     await later.waitFor((m) => m.type === 'view');
-    const replayed = later
-      .messages()
-      .filter((m) => m.type === 'notifications')
-      .flatMap((m) => m.items as { notification: { kind: string } }[]);
-    expect(replayed.filter((i) => i.notification.kind === 'level')).toEqual([]);
+    const frames = later.messages().filter((m) => m.type === 'notifications');
+    expect(frames).toEqual([expect.objectContaining({ reset: true })]);
+    const replayed = frames.flatMap((m) => m.items as { seq: number }[]);
+    expect(replayed.length).toBeGreaterThan(0);
+    expect(replayed.filter((i) => i.seq >= award2Seq)).toEqual([]);
     // lastSeq 0 is the whole history (M3.3): Casper's own, the undone award gone.
     const old = await connect();
     old.send({ type: 'join', role: 'player', characterId: 'casper', lastSeq: 0 });

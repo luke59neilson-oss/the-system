@@ -223,6 +223,19 @@ export class LiveHub {
    */
   private sendMissed(client: Client, lastSeq: number | undefined): void {
     if (lastSeq === undefined || client.role.role === 'none') return;
+    // An undo since lastSeq (e.g. while this player was offline) may have
+    // removed DINGs the client still holds: send the whole history to replace them.
+    const undoneSince =
+      lastSeq > 0 &&
+      this.store.campaign.events.slice(lastSeq).some((e) => e.type === 'event.undone');
+    if (undoneSince) {
+      client.send({
+        type: 'notifications',
+        items: this.filter(client.role, this.history),
+        reset: true,
+      });
+      return;
+    }
     const items = this.filter(
       client.role,
       this.history.filter((n) => n.seq > lastSeq),

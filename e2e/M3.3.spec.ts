@@ -236,6 +236,18 @@ test('the DING history reaches back to day 1 and new DINGs queue up', async ({ b
   const width = await phone.locator('html').evaluate((el) => el.scrollWidth);
   expect(width).toBeLessThanOrEqual(390);
   await phone.screenshot({ path: path.join(shots, 'player-390x844.png'), fullPage: true });
+  // A DING on the phone pops up at the bottom, clear of the header controls.
+  await award(gm, 200);
+  const phoneToast = phone.getByTestId('ding-toast');
+  await expect(phoneToast).toContainText("*'DING!' Class: [Archer]");
+  await phoneToast.evaluate((el) =>
+    Promise.all(el.getAnimations().map((a: { finished: Promise<unknown> }) => a.finished)),
+  );
+  const box = await phoneToast.boundingBox();
+  const header = await phone.getByTestId('sound').boundingBox();
+  expect(box && header && box.y > header.y + header.height).toBe(true);
+  expect(box && box.y + box.height <= 844 && box.x >= 0 && box.x + box.width <= 390).toBe(true);
+  await phone.screenshot({ path: path.join(shots, 'player-ding-390x844.png') });
 
   // Canary: nothing GM-only or meant for Miranda reached Jake's browser.
   const all = frames.join('\n');

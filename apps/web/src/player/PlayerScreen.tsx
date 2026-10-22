@@ -14,8 +14,9 @@ import { LiveClient, type LiveSnapshot } from '../live';
 import { playChime, unlockChime } from './chime';
 import {
   HISTORY_FILTERS,
-  arrivals,
   filterHistory,
+  nextArrival,
+  notificationKey,
   readSound,
   whenLabel,
   writeSound,
@@ -361,13 +362,13 @@ const DING_MS = 2600;
  * Older history never pops up; it is in the Notifications list.
  */
 function DingQueue({ live, sound }: { live: LiveSnapshot; sound: boolean }) {
-  const queue = arrivals(live.notifications, live.liveSince);
-  const [shown, setShown] = useState(0);
-  const current = queue[shown];
-  const key = current ? `${current.seq}:${shown}` : null;
+  const [shown, setShown] = useState<ReadonlySet<string>>(() => new Set());
+  const { current, waiting } = nextArrival(live.notifications, live.liveSince, shown);
+  const key = current ? notificationKey(current) : null;
+  const done = (k: string) => setShown((s) => new Set(s).add(k));
   useEffect(() => {
     if (key === null) return;
-    const timer = setTimeout(() => setShown((s) => s + 1), DING_MS);
+    const timer = setTimeout(() => done(key), DING_MS);
     return () => clearTimeout(timer);
   }, [key]);
   // The chime plays once per DING, not again when sound is toggled.
@@ -377,24 +378,24 @@ function DingQueue({ live, sound }: { live: LiveSnapshot; sound: boolean }) {
     chimed.current = key;
     if (sound) playChime();
   }, [key, sound]);
-  if (!current) return null;
-  const waiting = queue.length - shown - 1;
   return (
-    <div className="ding-layer">
-      <button
-        type="button"
-        className="ding-toast"
-        key={key}
-        data-testid="ding-toast"
-        onClick={() => setShown((s) => s + 1)}
-      >
-        <span role="status">{notificationText(current.notification)}</span>
-        {waiting > 0 && (
-          <span className="ding-more" data-testid="ding-more">
-            +{waiting} more
-          </span>
-        )}
-      </button>
+    <div className="ding-layer" aria-live="polite">
+      {current && (
+        <button
+          type="button"
+          className="ding-toast"
+          key={key}
+          data-testid="ding-toast"
+          onClick={() => key !== null && done(key)}
+        >
+          <span>{notificationText(current.notification)}</span>
+          {waiting > 0 && (
+            <span className="ding-more" data-testid="ding-more">
+              +{waiting} more
+            </span>
+          )}
+        </button>
+      )}
     </div>
   );
 }

@@ -63,6 +63,36 @@ describe('LiveHub', () => {
         }),
       ]),
     });
+    // An undo while Jake's phone was offline: rejoining replaces his history.
+    const awardId = store.campaign.events[2]?.id;
+    conn.receive(
+      JSON.stringify({
+        type: 'command',
+        requestId: 'u1',
+        command: { type: 'event.undo', eventId: awardId },
+      }),
+    );
+    expect(got.find((m) => m.type === 'result' && m.requestId === 'u1')).toMatchObject({
+      ok: true,
+    });
+    const phone: ServerMessage[] = [];
+    const back = hub.connect((m) => phone.push(m));
+    back.receive(JSON.stringify({ type: 'join', role: 'player', characterId: 'jake', lastSeq: 3 }));
+    const replaced = phone.find((m) => m.type === 'notifications');
+    expect(replaced).toMatchObject({ reset: true });
+    expect(replaced?.type === 'notifications' && replaced.items).toEqual([]);
+    // Up to date: no reset, nothing new.
+    const fresh: ServerMessage[] = [];
+    const later = hub.connect((m) => fresh.push(m));
+    later.receive(
+      JSON.stringify({ type: 'join', role: 'player', characterId: 'jake', lastSeq: hub.seq }),
+    );
+    expect(fresh.find((m) => m.type === 'notifications')).toEqual({
+      type: 'notifications',
+      items: [],
+    });
+    back.close();
+    later.close();
     // A failed re-join drops the GM role.
     conn.receive(JSON.stringify({ type: 'join', role: 'player', characterId: 'ghost' }));
     conn.receive(

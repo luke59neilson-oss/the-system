@@ -4,6 +4,8 @@ import {
   SOUND_KEY,
   arrivals,
   filterHistory,
+  nextArrival,
+  notificationKey,
   readSound,
   whenLabel,
   writeSound,
@@ -87,5 +89,19 @@ describe('notification history (M3.3)', () => {
     expect(readSound(blocked)).toBe(false);
     expect(() => writeSound(blocked, true)).not.toThrow();
     expect(readSound(null)).toBe(false);
+  });
+
+  it('picks the next DING by identity, so an undo cannot skip or swallow one', () => {
+    const a = level(10, 'class', 'Archer', 5);
+    const b = level(11, 'class', 'Archer', 6);
+    const c = level(12, 'class', 'Archer', 7);
+    const shown = new Set([notificationKey(a), notificationKey(b)]);
+    // b was undone (history reset without it); a new DING c arrives.
+    const after = nextArrival([...items, a, c], 9, shown);
+    expect(after.current?.seq).toBe(12);
+    expect(after.waiting).toBe(0);
+    // An earlier unseen arrival removed: the next one is still found.
+    expect(nextArrival([...items, b, c], 9, new Set([notificationKey(b)])).current?.seq).toBe(12);
+    expect(nextArrival([...items, a, b, c], 9, new Set()).waiting).toBe(2);
   });
 });
