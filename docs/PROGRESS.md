@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0, MS, M1 and M2 done; M3 started (M3.1–M3.9)
-**Next item:** M3.10 Notes
+**Status:** in progress: M0, MS, M1 and M2 done; M3 started (M3.1–M3.11)
+**Next item:** M3.12 Party view
 **Blockers:** none.
 
 ## Run log
@@ -329,4 +329,28 @@ next item, blockers. -->
 - New decision D84. New question Q33 (Identify level gap; per-character knowledge).
 - Open `wip/*` branches: none unfinished.
 - Next: M3.10 Notes. Not started: at 34 min, an item plus two review rounds would not fit before the 60-minute stop.
+- Blockers: none.
+
+### Run b7215e54 · 2026-10-22 07:07–07:58 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD and a stale local `main`), so `main` was reset to `origin/main`.
+  - The lock was pushed to main.
+  - `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md. The latest completed CI run on main was green (98b5742).
+- Finished M3.10 Notes. Reviewed by sonnet in 1 round: 0 High, 0 Medium, 8 Low (3 fixed).
+  - `PlayerView.notes`: own journal (shared or not) and party notes, never GM notes or other players' journals; the canary is extended.
+  - Player note ids are server-generated, and hidden notes answer "unknown note", so players cannot probe for them.
+  - The GM's View-as panes join with `viewAs` (read-only; unshared journal entries left out).
+  - A Notes window: new/edit/delete, share with the GM, Markdown subset rendered safely, tags, search and filters. The demo has journal, party and GM notes.
+- Finished M3.11 Practice and montage (on `wip/M3.11`, merged to main by fast-forward). Reviewed by sonnet in 1 round: 0 High, 1 Medium (fixed), 5 Low (1 fixed).
+  - Montages in the engine: offer on a qualifying clock, one focus per offered character (also a "montage" practice entry), close. State v12, new golden log `montage.jsonl`.
+  - `PlayerView` adds own practice entries (no tags) and open montages offered to the viewer.
+  - A Practice window under Quests: montage focus form, a collapsible Log practice form, recent entries. The demo has an open montage for Jake and Miranda.
+  - The property test now runs 2,000 random commands (was 1,200) so every command type, montages included, is accepted at least once with the new generator.
+- Tests: 599 unit/integration tests (53 files). All 25 e2e specs green; screenshot re-renders of earlier items were discarded. Engine line coverage 99.36% at the start of the run (floor 90%).
+- CI: green on 148d3f4 and 6c3b0c0; f2c68e3 running at the end of the run.
+- New decisions D85, D86. New questions Q34 (who edits party notes), Q35 (montage focus and marks).
+- Open `wip/*` branches: none unfinished (`wip/M3.11` is merged).
+- Next: M3.12 Party view.
 - Blockers: none.
