@@ -9,7 +9,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: true,
   retries: 0,
-  reporter: process.env['CI'] ? [['list'], ['html', { open: 'never' }]] : 'list',
+  // `github` turns failures into job annotations, which runs can read through
+  // the repo API (job logs are not reachable from the build sessions).
+  reporter: process.env['CI'] ? [['list'], ['github'], ['html', { open: 'never' }]] : 'list',
   use: {
     trace: 'retain-on-failure',
     ...devices['Desktop Chrome'],

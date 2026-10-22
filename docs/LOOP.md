@@ -74,6 +74,13 @@ them whole costs about 30k tokens per run for history you do not need):
   `GH_TOKEN= gh api "repos/luke59neilson-oss/the-system/actions/runs?branch=main&status=completed&per_page=1"`.
   If it failed, fixing it is your first task. After 3 runs in a row fail to
   fix it, log a Blocker and continue with roadmap work.
+- **Red CI: read the failures first.** Job logs are not reachable from here;
+  failing tests appear as annotations:
+  `GH_TOKEN= gh api repos/luke59neilson-oss/the-system/actions/runs/<id>/jobs --jq '.jobs[].id'`,
+  then `.../check-runs/<job id>/annotations`. If that commit passes the same
+  tests locally, it is a flake: add it to "Flakes" in `docs/QUALITY.md` and
+  carry on (your next push re-runs CI). Never add retries or loosen a check
+  to hide a flake; a flake that repeats becomes a QF item.
 - **CI that never ran is not a code failure.** If the failed run's jobs have
   no steps (`.../actions/runs/<id>/jobs --jq '.jobs[].steps|length'` is 0)
   or its messages mention billing, a spending limit or minutes, the Actions
@@ -85,7 +92,8 @@ them whole costs about 30k tokens per run for history you do not need):
 
 1. **Resume first:** if PROGRESS.md names a `wip/<item>` branch, check it out,
    `git merge origin/main` (merge, never rebase), and finish it.
-2. Otherwise take the first unchecked item in ROADMAP.md.
+2. Otherwise take the first unchecked QF item marked **(High)**, wherever it
+   sits; then the first unchecked item in ROADMAP.md.
 3. Tests first where practical, then code. Before every push to main run
    `npm run check` and the relevant e2e specs; main must stay green.
 4. Commit small. End every commit message with the attribution lines from your
@@ -187,7 +195,8 @@ react to a single run.
    verdict as a D-entry.
 3. **Ask a fresh eye.** Launch one background auditor (`model: "sonnet"`, or
    another model that is not yours) with the scorecard, the last 3 PROGRESS
-   entries, this file and `.github/workflows/ci.yml`. Ask for at most 2
+   entries, the sweep log in `docs/QUALITY.md`, this file and
+   `.github/workflows/ci.yml`. Ask for at most 2
    proposals, each with evidence, the metric it should move and by how much,
    its risk, and its tier. Keep building while it works.
 4. **Apply at most one Tier 1 proposal per check**, at close-out: edit the
@@ -206,6 +215,37 @@ react to a single run.
    golden logs, propose a second lane (Tier 2) with the item split.
 6. If three checks in a row keep nothing, run the check every 12th run
    instead (hours 00 and 12) and note it in EFFICIENCY.md.
+
+## 10. Quality sweep (every 6th run; the reviewers work in the background)
+
+Per-item reviews (§6) see one diff at a time. A sweep has several models,
+each on a different lens, look across items for what those reviews missed.
+Lens briefs, the model rotation and the sweep log are in `docs/QUALITY.md`.
+
+1. Runs that take the lock in UTC hour 03, 09, 15 or 21 launch a sweep right
+   after Orient, then build as usual. Scope: `<Last sweep SHA>..HEAD` on main
+   (from QUALITY.md), plus each lens's whole area.
+2. Launch the 3 reviewers that QUALITY.md's rotation names for this sweep,
+   each with `run_in_background: true` and `isolation: "worktree"`, never on
+   your own model. Each prompt is the common rules plus that lens's brief from
+   QUALITY.md, and the scope.
+3. **Verify before fixing.** Confirm every High and Medium yourself (write the
+   failing test, run the reviewer's probe, or trace the code path). Record
+   unconfirmed ones as "not reproduced". Never change code on a reviewer's
+   word alone.
+4. **Triage confirmed findings:**
+   - High: fix it this run, ahead of the current item (hand that item to
+     `wip/*` if needed); if it cannot be fixed by minute 44, add it to
+     "QF — Quality fixes" in ROADMAP.md marked **(High)**.
+   - Medium: a new QF item.
+   - Low: the Backlog in QUALITY.md (M11.5 goes through it).
+5. Close-out: add a row to the sweep log (scope, lens and model, findings by
+   severity, confirmed, not reproduced, the reviewer's token count if
+   reported), set "Last sweep" to HEAD and advance the rotation. Log in
+   REVIEW-LOG.md only the fixes you made.
+6. Every QF fix gets its own §6 review like any item.
+7. The rotation is part of this protocol. Dropping a lens or a model, adding
+   reviewers, or changing how often sweeps run is Tier 2 (§9.4).
 
 ## Hard rules
 

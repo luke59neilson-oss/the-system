@@ -230,6 +230,73 @@ They touch finished engine and player items, so they come before M4.4.
   cycles never raise a non-full pool's current value.
 - [ ] **MQ.A Batch acceptance and review.**
 
+## QF — Quality fixes (from sweeps, LOOP §10)
+
+Confirmed findings from quality sweeps (`docs/QUALITY.md`). Items marked
+**(High)** are taken before any other new item, wherever they sit (LOOP §5.2);
+the rest follow in file order. Each gets its own §6 review.
+
+- [ ] **QF.1 (High) Chosen options never return as passed-over options.**
+  `passedOverOptions` (`packages/engine/src/evolution/model.ts` ~276) drops a
+  menu's chosen option only while a skill of that name is owned, so after an
+  evolution transform renames it, the old name comes back on every later menu,
+  can be chosen again (the character then holds both forms), and the GM cannot
+  withdraw it. DESIGN §6: an option leaves the list when chosen. *Accept:*
+  engine test for the sweep's sequence (choose Piercing Shot at 5, transform it
+  to Storm Pierce at evolution, offer the level-15 menu): it is not passed-over,
+  `selection.choose` refuses it, and the player view does not list it; golden
+  logs still replay.
+- [ ] **QF.2 (High) Item definitions reach players only for items they can
+  see.** A player's own `trade.propose` may name any library item on the `get`
+  side, and the player projection then sends its full definition (name, GM
+  description, bonuses) to both sides; equip and gift errors also name items
+  the player does not hold (`events/reducer.ts` ~800-835,
+  `projection/player.ts` ~743, `economy/model.ts` ~124, ~150). *Accept:* a
+  proposal may ask only for items the counterparty holds; "unknown item" and
+  "not held" errors are identical and name nothing; the projection canary
+  builds trades with non-empty item bundles and a GM-only item no player holds,
+  and finds none of its fields in any player frame or HTTP body.
+- [ ] **QF.3 Limits on player-made data.** One phone can post 200 × 20 KB party
+  notes in about a second, after which every command pushes a 4 MB view to
+  every client (`apps/server/src/hub.ts` ~93-226). *Accept:* a per-connection
+  command rate limit in the hub, and per-character caps on note count and
+  total note size and on open trades, all from the rules or server config;
+  clients whose projected view did not change get no new snapshot; server
+  tests for each limit, with the error players see.
+- [ ] **QF.4 Golden logs are pinned.** A commit can edit a `.jsonl` golden and
+  regenerate its `.state.json`, and the golden test still passes. *Accept:* a
+  manifest pins each `.jsonl` and `.state.json` by SHA-256 together with the
+  `CAMPAIGN_STATE_SCHEMA_VERSION` it was recorded at; the test fails when a
+  `.jsonl` changes, or when a `.state.json` changes without a higher schema
+  version; a script re-records the manifest and refuses to do so without a
+  version bump.
+- [ ] **QF.5 Engine purity lint has no bypasses.** `export function f(clock =
+  Date)`, `rng = Math` default parameters, `{ clock: Date }` and `() => Date`
+  pass the engine lint (`eslint.config.js` ~52-59). *Accept:* each of these is
+  rejected; `scripts/lint-rules.test.ts` asserts the rule id
+  (`no-restricted-syntax`), not just "some message".
+- [ ] **QF.6 Desktop smoke specs run in CI.** `apps/desktop/test/*.spec.ts`
+  (GM window connects with the injected key, key leaves the address bar,
+  busy-port fallback) run in no workflow. *Accept:* a CI job (public repo, so
+  free minutes) installs the Electron binary and runs `npm run desktop:smoke`
+  under xvfb on pushes to main; a test asserts the desktop app never prints
+  its GM key.
+- [ ] **QF.7 Store failure paths are tested.** The rollback after a failed
+  write and the stop-writing latch after a failed fsync
+  (`apps/server/src/store.ts` ~403-420) have no tests. *Accept:* fault-
+  injection tests: a failed write leaves the log at its last good length; a
+  failed fsync refuses every later append and the error says why.
+- [ ] **QF.8 Latency checks that don't flake.** Main CI went red on
+  2026-10-22 (5e72abe) while the same commit passed locally; e2e specs bound
+  click-to-render wall time (`e2e/MS.A.spec.ts` ~80-86 and ~157,
+  `e2e/MS.2.spec.ts` ~81-87, `e2e/MS.3.spec.ts` ~118-126,
+  `apps/server/test/sessionLog.test.ts` ~448) with `retries: 0` under fully
+  parallel workers. *Accept:* the "within 1 s" criteria (MS.3, M7.x) still
+  hold but are measured without depending on CI load (e.g. a serial
+  Playwright project for latency specs, or timing from the server's send to
+  the client's render); no retries added; the full suite passes 10 times in a
+  row with `--repeat-each` on the latency specs.
+
 ## M1 (continued) — Rules engine
 
 - [x] **M1.6 Titles and bonuses.** Flat and percentage bonuses, percentage
