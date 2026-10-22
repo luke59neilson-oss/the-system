@@ -11,7 +11,14 @@ import { notificationText } from '../format';
 import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
 import { browserStorage, remember } from './join';
-import { cssToken, formatStatValue, rarityName, themeClass, unassignedPoints } from './sheet';
+import {
+  cssToken,
+  formatStatValue,
+  poolPercent,
+  rarityName,
+  themeClass,
+  unassignedPoints,
+} from './sheet';
 
 /**
  * Player status screen (MS.2 walking skeleton; the full M3 screens build on it).
@@ -89,13 +96,13 @@ function Status({ view }: { view: PlayerView }) {
         <dt>Name</dt>
         <dd data-testid="name">{me.name}</dd>
         <dt>Race</dt>
-        <Live testId="race" value={`[${me.race} (${me.grade}) – lvl ${me.raceLevel}]`} />
+        <Track testId="race" name={`${me.race} (${me.grade})`} level={me.raceLevel} />
         <dt>Class</dt>
-        <Live testId="class" value={`[${me.className} – lvl ${me.classLevel}]`} />
+        <Track testId="class" name={me.className} level={me.classLevel} />
         {me.profession !== null && (
           <>
             <dt>Profession</dt>
-            <Live testId="profession" value={`[${me.profession} – lvl ${me.professionLevel}]`} />
+            <Track testId="profession" name={me.profession} level={me.professionLevel} />
           </>
         )}
         {me.pools.map((p) => (
@@ -103,7 +110,10 @@ function Status({ view }: { view: PlayerView }) {
             <dt>{poolName(p.id)}</dt>
             <Live testId={`pool-${p.id}`} value={`${p.current}/${p.max}`}>
               <span className="pool-bar" aria-hidden="true">
-                <span style={{ width: `${p.max > 0 ? (100 * p.current) / p.max : 0}%` }} />
+                <span
+                  data-testid={`pool-bar-${p.id}`}
+                  style={{ width: `${poolPercent(p.current, p.max)}%` }}
+                />
               </span>
             </Live>
           </div>
@@ -177,35 +187,46 @@ function SkillList({
 }
 
 /**
- * A value that glows briefly whenever it changes after the screen opened
- * (DESIGN §9 "values update live"). Re-keying replays the CSS animation.
+ * Counts changes to `value` after the first render (React's "adjust state
+ * while rendering" pattern, no refs or effects). Used as a key, it remounts
+ * the element so the CSS glow replays on every change (DESIGN §9 "values
+ * update live"), including a change back to an earlier value.
+ */
+function useChangeCount(value: string): number {
+  const [seen, setSeen] = useState(value);
+  const [count, setCount] = useState(0);
+  if (value !== seen) {
+    setSeen(value);
+    setCount(count + 1);
+  }
+  return count;
+}
+
+/**
+ * A live row value. `parts` (default: the whole value) are kept unbroken, so
+ * narrow screens wrap between them, never inside a bracketed name.
  */
 function Live({
   value,
+  parts = [value],
   testId,
   children,
 }: {
   value: string;
+  parts?: readonly string[];
   testId: string;
   children?: ReactNode;
 }) {
-  const [initial] = useState(value);
+  const changes = useChangeCount(value);
   return (
-    <dd className={value !== initial ? 'flash' : undefined} key={value}>
+    <dd className={changes > 0 ? 'flash' : undefined} key={changes}>
       <span data-testid={testId}>
-        {value.split(' – ').map((part, i) =>
-          // Narrow screens wrap at the dash, never inside a bracketed name.
-          i === 0 ? (
-            <span className="nowrap" key={i}>
-              {part}
-            </span>
-          ) : (
-            <Fragment key={i}>
-              {' '}
-              <span className="nowrap">– {part}</span>
-            </Fragment>
-          ),
-        )}
+        {parts.map((part, i) => (
+          <Fragment key={i}>
+            {i > 0 && ' '}
+            <span className="nowrap">{part}</span>
+          </Fragment>
+        ))}
       </span>
       {children}
     </dd>
@@ -213,11 +234,22 @@ function Live({
 }
 
 function LiveStrong({ value }: { value: string }) {
-  const [initial] = useState(value);
+  const changes = useChangeCount(value);
   return (
-    <strong key={value} className={value !== initial ? 'flash' : undefined}>
+    <strong key={changes} className={changes > 0 ? 'flash' : undefined}>
       {value}
     </strong>
+  );
+}
+
+/** A `[Name – lvl N]` track row that wraps only before the dash. */
+function Track({ testId, name, level }: { testId: string; name: string; level: number }) {
+  return (
+    <Live
+      testId={testId}
+      value={`[${name} – lvl ${level}]`}
+      parts={[`[${name}`, `– lvl ${level}]`]}
+    />
   );
 }
 

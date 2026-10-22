@@ -728,3 +728,15 @@ button.secondary:hover {
 .nowrap {
   white-space: nowrap;
 }
+.pane-mode h3 {
+  margin: 6px 0 2px;
+  font-size: 0.85rem;
+}
+.pane-mode .skills {
+  gap: 0 8px;
+  font-size: 12px;
+}
+.pane-mode .pool-bar {
+  margin-top: 1px;
+  height: 3px;
+}

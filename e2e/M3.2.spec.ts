@@ -108,6 +108,9 @@ test('status screens follow DESIGN §9 and update live', async ({ browser }) => 
   await expect(sultan.getByTestId('titles')).toHaveCount(0);
   await expect(sultan.getByTestId('class')).toHaveText('[Archer – lvl 0]');
   await expect(sultan.locator('.flash')).toHaveCount(0);
+  await expect(sultan.getByTestId('free-points')).toHaveText('0');
+  await expect(sultan.getByTestId('pool-stamina')).toHaveText('100/100');
+  await expect(sultan.getByTestId('stat-endurance')).toContainText('1.0');
 
   // Live: the GM awards Sultan XP; his level changes and glows, nothing reloads.
   for (const name of ['Jake', 'Miranda', 'Casper']) {
@@ -120,10 +123,41 @@ test('status screens follow DESIGN §9 and update live', async ({ browser }) => 
   await expect(sultan.locator('dd.flash').filter({ has: sultan.getByTestId('class') })).toHaveCount(
     1,
   );
+  // The level's class spread and free points land too: stats, pool maximum,
+  // pool bar and free points, each glowing.
+  await expect(sultan.getByTestId('stat-endurance')).toContainText('1.1');
+  await expect(sultan.getByTestId('stat-endurance').locator('strong.flash')).toHaveCount(1);
+  await expect(sultan.getByTestId('pool-stamina')).toHaveText('100/110');
+  await expect(sultan.getByTestId('pool-bar-stamina')).toHaveAttribute(
+    'style',
+    /width: 90\.90\d*%/,
+  );
+  await expect(
+    sultan.locator('dd.flash').filter({ has: sultan.getByTestId('pool-stamina') }),
+  ).toHaveCount(1);
+  await expect(sultan.getByTestId('free-points')).toHaveText('2');
+  await expect(
+    sultan.locator('dd.flash').filter({ has: sultan.getByTestId('free-points') }),
+  ).toHaveCount(1);
   await sultan.screenshot({ path: path.join(shots, 'sultan-live-390x844.png'), fullPage: true });
   // Jake's screen did not change.
   await expect(laptop.getByTestId('class')).toHaveText('[Tempest Warden – lvl 52]');
   await expect(laptop.locator('.flash')).toHaveCount(0);
+
+  // The GM's View-as pane (MS.3, compact) shows the same sheet without
+  // sideways scrolling, even in a quarter-width Table-view pane.
+  const pane = await browser.newPage({ viewport: { width: 340, height: 600 } });
+  const paneErrors = watchErrors(pane);
+  await pane.goto(`${server.url}/play/demo-jake?pane=1`);
+  await expect(pane.getByTestId('class')).toHaveText('[Tempest Warden – lvl 52]');
+  await expect(pane.getByTestId('skills-class').getByTestId('skill')).toHaveCount(10);
+  expect(
+    await pane.evaluate<number>(
+      'document.documentElement.scrollWidth - document.documentElement.clientWidth',
+    ),
+  ).toBeLessThanOrEqual(0);
+  await pane.screenshot({ path: path.join(shots, 'pane-340x600.png'), fullPage: true });
+  expect(paneErrors).toEqual([]);
 
   expect(gmErrors).toEqual([]);
   expect(laptopErrors).toEqual([]);

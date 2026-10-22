@@ -26,3 +26,9 @@ export function themeClass(theme: string | null | undefined): string {
   const token = cssToken(theme ?? '');
   return token ? ` theme-${token}` : '';
 }
+
+/** Pool fill for the bar, clamped to 0–100 (0 when the maximum is 0). */
+export function poolPercent(current: number, max: number): number {
+  if (!(max > 0)) return 0;
+  return Math.min(100, Math.max(0, (100 * current) / max));
+}
