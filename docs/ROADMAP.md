@@ -165,7 +165,7 @@ They touch finished engine and player items, so they come before M4.4.
   rises (level, item, title, evolution bonus); otherwise current is
   unchanged; never refill on level-up; clamp when a maximum falls.
   *Accept:* tests incl. DESIGN §2's 85/100 → 85/120 and 100/100 → 120/120.
-- [ ] **MQ.3 Passed-over options.** Unchosen menu options stay eligible and
+- [x] **MQ.3 Passed-over options.** Unchosen menu options stay eligible and
   appear in later menus below the new ones; one pick per selection;
   eligibility rules from DESIGN §6. Player selection screen scrolls through
   older options. *Accept:* engine tests; e2e.

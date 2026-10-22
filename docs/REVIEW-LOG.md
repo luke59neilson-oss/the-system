@@ -453,3 +453,15 @@
   - L accepted: two effective-stat computations per changed character (bounded, LAN scale).
   - L fixed: a test for item edits that raise an equipped bonus (full stays full; 90 stays 90). Evolution's interplay is covered by the MQ.1 refill tests.
 - No round 2 (no High, fewer than two Mediums).
+
+## 2026-10-22 · MQ.3 Passed-over options · sonnet
+- Round 1 (origin/main...64a5968): 0 High, 4 Medium, 5 Low. `npm run check` green (708); M3.6 e2e green. No GM-only data reaches players (`withdrawn` is not projected).
+  - M fixed (22a9d0c): the eligibility rules (ceiling at the selection's grade, profession options, retired names, unknown rarity, case-insensitive dedupe) had no tests; a new describe covers each.
+  - M fixed: choosing matched names case-sensitively while withdraw did not; both are case-insensitive now.
+  - M fixed: loosened e2e text checks are exact again (3 + passed-over count), and the spec now asserts the new menu precedes the passed-over list, the dialog scrolls with Close in view, and a GM withdraw mid-review.
+  - M fixed: long lists: sticky dialog header (title and Close), compact rows.
+  - L fixed: withdrawing a skill the character already owns is refused; a notice says when the option under review was withdrawn.
+  - L accepted: a pending lower menu does not feed a later pending menu ("passed over" means a chosen menu's leftovers); the GM button waits for M5.1 (D112); the D-number churn was undone after Luke's L-numbering (D110/D111 keep their numbers; MQ.3 is D112).
+- Round 2 (64a5968..22a9d0c), sonnet: 0 High, 0 Medium, 3 Low, all accepted: the sticky header hard-codes the dialog background and padding; withdrawing a retired name succeeds with no visible effect; the withdrawn notice stays until the player picks again or closes.
+- Builder ran the full e2e suite (35) green after merging into main.
+
