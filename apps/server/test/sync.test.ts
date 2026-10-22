@@ -296,10 +296,18 @@ describe('live protocol and authority', () => {
       .filter((m) => m.type === 'notifications')
       .flatMap((m) => m.items as { notification: { kind: string } }[]);
     expect(replayed.filter((i) => i.notification.kind === 'level')).toEqual([]);
-    // A lastSeq inside this server's history is fully covered (no gap).
+    // lastSeq 0 is the whole history (M3.3): Casper's own, the undone award gone.
     const old = await connect();
     old.send({ type: 'join', role: 'player', characterId: 'casper', lastSeq: 0 });
-    expect(await old.waitFor((m) => m.type === 'notifications')).toMatchObject({ gap: false });
+    const all = (await old.waitFor((m) => m.type === 'notifications')).items as {
+      seq: number;
+      at: string;
+      day: number;
+      notification: { characterId: string; kind: string };
+    }[];
+    expect(all.length).toBeGreaterThan(0);
+    expect(all.every((i) => i.notification.characterId === 'casper')).toBe(true);
+    expect(all.every((i) => i.seq <= lastSeq && i.day >= 1 && i.at.endsWith('Z'))).toBe(true);
 
     // Broadcasts: one to Jake alone reaches only Jake; one to all reaches both.
     const jakeAt = jake.frames.length;

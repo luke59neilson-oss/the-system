@@ -69,6 +69,8 @@ describe('feedRows', () => {
   } as unknown as CampaignState;
   const b = (seq: number, characterId: string, text: string) => ({
     seq,
+    at: '2026-10-21T00:00:00.000Z',
+    day: 1,
     notification: { kind: 'broadcast' as const, characterId, text },
   });
 
@@ -81,7 +83,12 @@ describe('feedRows', () => {
         b(4, 'j', 'Two'),
         b(4, 'm', 'Two'),
         b(5, 'c', 'One'),
-        { seq: 6, notification: { kind: 'freePoints', characterId: 'j', unassigned: 2 } },
+        {
+          seq: 6,
+          at: '2026-10-21T00:00:00.000Z',
+          day: 1,
+          notification: { kind: 'freePoints', characterId: 'j', unassigned: 2 },
+        },
       ],
       state,
     );

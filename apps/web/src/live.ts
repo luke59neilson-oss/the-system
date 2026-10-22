@@ -21,6 +21,10 @@ export type LiveNotification =
 
 export interface SeqNotification {
   seq: number;
+  /** Time of the causing event (ISO-8601 UTC). */
+  at: string;
+  /** In-game day after the causing event. */
+  day: number;
   notification: LiveNotification;
 }
 
@@ -29,7 +33,7 @@ type ServerMessage =
   | { type: 'joined'; role: 'gm' | 'player'; characterId: string | null; seq: number }
   | { type: 'view'; seq: number; view: PlayerView }
   | { type: 'state'; seq: number; state: CampaignState | null }
-  | { type: 'notifications'; items: SeqNotification[]; gap: boolean }
+  | { type: 'notifications'; items: SeqNotification[]; reset?: true }
   | { type: 'result'; requestId: string; ok: true }
   | { type: 'result'; requestId: string; ok: false; error: string }
   | { type: 'error'; error: string };
@@ -42,9 +46,14 @@ export interface LiveSnapshot {
   seq: number;
   state: CampaignState | null;
   view: PlayerView | null;
+  /** Every notification back to day 1 (M3.3), oldest first. */
   notifications: SeqNotification[];
-  /** The server could not resend everything since our last seq (restart or history cap). */
-  gap: boolean;
+  /**
+   * Seq of the first view or state this page received for the campaign:
+   * notifications after it arrived while this page was open (queued as
+   * DINGs, M3.3); older ones are history. Null until then.
+   */
+  liveSince: number | null;
   /** Campaign id the server says this connection serves (`demo` for the demo, MS.4). */
   campaign: string | null;
 }
@@ -64,17 +73,14 @@ export class LiveClient {
     state: null,
     view: null,
     notifications: [],
-    gap: false,
+    liveSince: null,
     campaign: null,
   };
   private readonly listeners = new Set<(s: LiveSnapshot) => void>();
   private readonly pending = new Map<string, (r: CommandResult) => void>();
   private nextRequest = 0;
-  /** 0 on first join: the server resends this run's notifications, so a fresh page still has its DINGs. */
+  /** 0 on first join: the server sends the whole history back to day 1 (M3.3). */
   private lastSeq = 0;
-  /** Joined at least once on this page: only then can a gap mean this page missed something. */
-  private everJoined = false;
-  private rejoining = false;
   /** The campaign changed since this page last joined (MS.4 demo switch). */
   private campaignChanged = false;
   private closed = false;
@@ -170,44 +176,49 @@ export class LiveClient {
           // The GM switched campaigns (real ↔ demo, MS.4), maybe while we were
           // offline: nothing from the other campaign may carry over.
           this.lastSeq = 0;
-          this.everJoined = false;
           this.campaignChanged = true;
-          this.update({ notifications: [], gap: false, state: null, view: null, seq: 0 });
+          this.update({ notifications: [], liveSince: null, state: null, view: null, seq: 0 });
         }
         if (campaign !== this.snapshot.campaign) this.update({ campaign });
         const join =
           this.join.role === 'gm'
             ? { type: 'join', role: 'gm', gmKey: this.join.gmKey }
             : { type: 'join', role: 'player', characterId: this.join.characterId };
-        this.rejoining = this.everJoined;
         socket.send(JSON.stringify({ ...join, lastSeq: this.lastSeq }));
         return;
       }
       case 'joined':
-        this.everJoined = true;
         this.campaignChanged = false;
         this.update({ status: 'joined', error: null, seq: message.seq });
         return;
       case 'state':
         this.lastSeq = message.seq;
-        this.update({ state: message.state, seq: message.seq });
+        this.update({
+          state: message.state,
+          seq: message.seq,
+          liveSince: this.snapshot.liveSince ?? message.seq,
+        });
         return;
       case 'view':
         this.lastSeq = message.seq;
-        this.update({ view: message.view, seq: message.seq });
+        this.update({
+          view: message.view,
+          seq: message.seq,
+          liveSince: this.snapshot.liveSince ?? message.seq,
+        });
         return;
       case 'notifications': {
+        if (message.reset) {
+          // An undo: the server's history replaces ours (undone DINGs vanish).
+          for (const n of message.items) this.lastSeq = Math.max(this.lastSeq, n.seq);
+          this.update({ notifications: message.items });
+          return;
+        }
         const known = new Set(this.snapshot.notifications.map(keyOf));
         const fresh = message.items.filter((n) => !known.has(keyOf(n)));
         for (const n of message.items) this.lastSeq = Math.max(this.lastSeq, n.seq);
-        // On a first join a gap only means the server started after older events;
-        // after a reconnect it means this page really missed notifications.
-        const missed = message.gap && this.rejoining;
-        if (fresh.length || missed) {
-          this.update({
-            notifications: [...this.snapshot.notifications, ...fresh],
-            gap: this.snapshot.gap || missed,
-          });
+        if (fresh.length) {
+          this.update({ notifications: [...this.snapshot.notifications, ...fresh] });
         }
         return;
       }

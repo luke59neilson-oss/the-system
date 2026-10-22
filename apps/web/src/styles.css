@@ -740,3 +740,82 @@ button.secondary:hover {
   margin-top: 1px;
   height: 3px;
 }
+
+/* Notifications history and the DING queue (M3.3). */
+.history-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.history-tools label {
+  margin: 0;
+}
+.history-tools input[type='search'] {
+  flex: 1 1 10em;
+  min-width: 0;
+}
+.feed ol.history {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.feed .when {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.sound-toggle {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid rgba(90, 127, 184, 0.5);
+  padding: 3px 10px;
+  font-size: 0.8rem;
+}
+.sound-toggle[aria-pressed='true'] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.ding-layer {
+  position: fixed;
+  top: 12px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+  z-index: 10;
+}
+.ding-toast {
+  pointer-events: auto;
+  max-width: min(560px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+  color: #fff;
+  background: rgba(14, 21, 36, 0.96);
+  border: 1px solid var(--accent);
+  box-shadow:
+    0 0 18px var(--glow),
+    0 6px 24px rgba(0, 0, 0, 0.5);
+  padding: 12px 18px;
+  font-style: italic;
+  animation: ding-in 0.35s ease-out;
+}
+.ding-more {
+  font-style: normal;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+@keyframes ding-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.97);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ding-toast {
+    animation: none;
+  }
+}

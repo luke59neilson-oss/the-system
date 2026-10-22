@@ -1,9 +1,13 @@
 import { z } from 'zod';
-import { ENGINE_API_VERSION, type CampaignState, type PlayerView } from '@the-system/engine';
-import type { Notification } from './notify';
+import {
+  ENGINE_API_VERSION,
+  type CampaignState,
+  type HistoryItem,
+  type PlayerView,
+} from '@the-system/engine';
 
 /** Live protocol version; bumped on incompatible message changes. */
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 /** First frame the server sends on every WebSocket connection. */
 export interface HelloMessage {
@@ -36,7 +40,7 @@ export const clientMessageSchema = z.union([
     type: z.literal('join'),
     role: z.literal('player'),
     characterId: z.string().min(1).max(100),
-    /** Last notification seq this client saw; missed notifications are resent. */
+    /** Last notification seq this client saw; later ones are sent (0 = the whole history, M3.3). */
     lastSeq: seq.optional(),
   }),
   z.strictObject({
@@ -53,10 +57,8 @@ export const clientMessageSchema = z.union([
 ]);
 export type ClientMessage = z.output<typeof clientMessageSchema>;
 
-export interface SeqNotification {
-  readonly seq: number;
-  readonly notification: Notification;
-}
+/** A notification with its seq, time and in-game day (v3: `at` and `day`). */
+export type SeqNotification = HistoryItem;
 
 /** Messages the server sends after hello. Player sockets get only projected data. */
 export type ServerMessage =
@@ -65,10 +67,11 @@ export type ServerMessage =
   | { type: 'view'; seq: number; view: PlayerView }
   | { type: 'state'; seq: number; state: CampaignState | null }
   | {
+      /** The history is derived from the event log, so it always reaches back to day 1. */
       type: 'notifications';
       items: readonly SeqNotification[];
-      /** True when the server could not cover everything after the client's lastSeq. */
-      gap: boolean;
+      /** After an undo: `items` is the whole history and replaces what the client holds. */
+      reset?: true;
     }
   | { type: 'result'; requestId: string; ok: true }
   | { type: 'result'; requestId: string; ok: false; error: string }

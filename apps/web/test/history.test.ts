@@ -1,0 +1,91 @@
+import { describe, expect, it } from 'vitest';
+import type { SeqNotification } from '../src/live';
+import {
+  SOUND_KEY,
+  arrivals,
+  filterHistory,
+  readSound,
+  whenLabel,
+  writeSound,
+} from '../src/player/history';
+
+const at = '2026-10-21T14:05:00.000Z';
+const level = (
+  seq: number,
+  track: 'class' | 'profession' | 'race',
+  name: string,
+  to: number,
+  day = 1,
+): SeqNotification => ({
+  seq,
+  at,
+  day,
+  notification: { kind: 'level', characterId: 'j', track, name, from: to - 1, to, freePoints: 0 },
+});
+const items: SeqNotification[] = [
+  level(2, 'class', 'Archer', 1),
+  level(2, 'race', 'Human', 1),
+  { seq: 2, at, day: 1, notification: { kind: 'freePoints', characterId: 'j', unassigned: 2 } },
+  {
+    seq: 5,
+    at,
+    day: 3,
+    notification: { kind: 'broadcast', characterId: 'j', text: 'Day 3 dawns' },
+  },
+  level(7, 'profession', 'Cook', 5, 4),
+];
+
+describe('notification history (M3.3)', () => {
+  it('filters by kind and track, newest first', () => {
+    const seqs = (f: Parameters<typeof filterHistory>[1]) =>
+      filterHistory(items, f, '').map((n) => n.notification.kind + n.seq);
+    expect(seqs('dings')).toEqual(['level7', 'level2', 'level2']);
+    expect(seqs('all')).toHaveLength(5);
+    expect(seqs('class')).toEqual(['level2']);
+    expect(seqs('profession')).toEqual(['level7']);
+    expect(seqs('race')).toEqual(['level2']);
+    expect(seqs('freePoints')).toEqual(['freePoints2']);
+    expect(seqs('broadcast')).toEqual(['broadcast5']);
+  });
+
+  it('searches the book text and the day, ignoring case', () => {
+    expect(filterHistory(items, 'all', 'ARCHER').map((n) => n.seq)).toEqual([2]);
+    expect(filterHistory(items, 'all', '  dawns ').map((n) => n.seq)).toEqual([5]);
+    expect(filterHistory(items, 'all', 'day 4').map((n) => n.seq)).toEqual([7]);
+    expect(filterHistory(items, 'dings', 'dawns')).toEqual([]);
+  });
+
+  it('labels the in-game day and time', () => {
+    expect(whenLabel({ at, day: 3 })).toMatch(/^Day 3 · \d{1,2}:\d{2}/);
+    expect(whenLabel({ at: 'nonsense', day: 2 })).toBe('Day 2');
+  });
+
+  it('queues only DINGs and messages that arrived after the page joined', () => {
+    expect(arrivals(items, null)).toEqual([]);
+    expect(arrivals(items, 2).map((n) => n.seq)).toEqual([5, 7]);
+    expect(arrivals(items, 0).map((n) => n.notification.kind)).not.toContain('freePoints');
+  });
+
+  it('remembers the sound choice and survives blocked storage', () => {
+    const data = new Map<string, string>();
+    const store = {
+      getItem: (k: string) => data.get(k) ?? null,
+      setItem: (k: string, v: string) => void data.set(k, v),
+    };
+    expect(readSound(store)).toBe(false);
+    writeSound(store, true);
+    expect(data.get(SOUND_KEY)).toBe('on');
+    expect(readSound(store)).toBe(true);
+    const blocked = {
+      getItem: () => {
+        throw new Error('blocked');
+      },
+      setItem: () => {
+        throw new Error('blocked');
+      },
+    };
+    expect(readSound(blocked)).toBe(false);
+    expect(() => writeSound(blocked, true)).not.toThrow();
+    expect(readSound(null)).toBe(false);
+  });
+});

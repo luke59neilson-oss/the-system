@@ -11,7 +11,7 @@ let dataDir = '';
 afterEach(() => rmSync(dataDir, { recursive: true, force: true }));
 
 describe('LiveHub', () => {
-  it('flags a gap when lastSeq predates this hub, and resets the role on a failed join', () => {
+  it('sends the history from before this hub started, and resets the role on a failed join', () => {
     dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-hub-'));
     const store = CampaignStore.open('main', { dataDir, now: () => '2026-10-21T00:00:00.000Z' });
     let n = 0;
@@ -28,11 +28,41 @@ describe('LiveHub', () => {
     );
     if (!created.ok) throw new Error(created.error);
     store.appendAll(created.events);
+    for (const command of [
+      {
+        type: 'character.create',
+        id: 'jake',
+        name: 'Jake',
+        className: 'Archer',
+        classSkills: [
+          { name: 'Basic Archery', rarity: 'inferior' },
+          { name: 'Basic Stealth', rarity: 'inferior' },
+          { name: 'Archer’s Eye', rarity: 'common' },
+        ],
+      },
+      { type: 'xp.award', track: 'class', amount: 1000, participants: [{ characterId: 'jake' }] },
+    ]) {
+      const r = execute(store.campaign, command as never, ctx);
+      if (!r.ok) throw new Error(r.error);
+      store.appendAll(r.events);
+    }
     const hub = new LiveHub(store, { gmKey: 'k'.repeat(32), now: ctx.now, newId: ctx.newId });
     const got: ServerMessage[] = [];
     const conn = hub.connect((m) => got.push(m));
     conn.receive(JSON.stringify({ type: 'join', role: 'gm', gmKey: 'k'.repeat(32), lastSeq: 0 }));
-    expect(got.find((m) => m.type === 'notifications')).toMatchObject({ items: [], gap: true });
+    // The hub started after the level-up; the history still has it (no gaps, M3.3).
+    const first = got.find((m) => m.type === 'notifications');
+    expect(first?.type === 'notifications' && first.items.length).toBeGreaterThan(0);
+    expect(first).toMatchObject({
+      items: expect.arrayContaining([
+        expect.objectContaining({
+          seq: 3,
+          day: 1,
+          at: '2026-10-21T00:00:00.000Z',
+          notification: expect.objectContaining({ kind: 'level', characterId: 'jake' }),
+        }),
+      ]),
+    });
     // A failed re-join drops the GM role.
     conn.receive(JSON.stringify({ type: 'join', role: 'player', characterId: 'ghost' }));
     conn.receive(

@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
   Fragment,
@@ -10,6 +11,16 @@ import type { OwnSheet, PlayerView } from '@the-system/engine';
 import { notificationText } from '../format';
 import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
+import { playChime, unlockChime } from './chime';
+import {
+  HISTORY_FILTERS,
+  arrivals,
+  filterHistory,
+  readSound,
+  whenLabel,
+  writeSound,
+  type HistoryFilter,
+} from './history';
 import { browserStorage, remember } from './join';
 import {
   cssToken,
@@ -38,6 +49,14 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
   useEffect(() => {
     if (!pane && live.status === 'joined') remember(browserStorage(), characterId);
   }, [pane, live.status, characterId]);
+  // M3.3: the optional DING sound, remembered per browser (off by default).
+  const [sound, setSound] = useState(() => readSound(browserStorage()));
+  const toggleSound = () => {
+    const next = !sound;
+    if (next) unlockChime();
+    writeSound(browserStorage(), next);
+    setSound(next);
+  };
   return (
     <main className={pane ? 'player pane-mode' : 'player'}>
       <header className="gm-header">
@@ -52,11 +71,23 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
                 : 'Connecting…'}
         </span>
         {!pane && (
+          <button
+            type="button"
+            className="sound-toggle"
+            aria-pressed={sound}
+            data-testid="sound"
+            onClick={toggleSound}
+          >
+            Sound: {sound ? 'on' : 'off'}
+          </button>
+        )}
+        {!pane && (
           <a className="muted" href="/">
             Switch character
           </a>
         )}
       </header>
+      {!pane && view && <DingQueue key={live.campaign ?? ''} live={live} sound={sound} />}
       {live.campaign === 'demo' && (
         <p className="demo-badge" data-testid="demo-badge">
           Demo campaign: for trying the app out
@@ -254,27 +285,52 @@ function Track({ testId, name, level }: { testId: string; name: string; level: n
 }
 
 function Feed({ live, view }: { live: LiveSnapshot; view: PlayerView }) {
-  const dings = live.notifications
-    .filter((n) => n.notification.kind === 'level')
-    .slice()
-    .reverse();
+  const [filter, setFilter] = useState<HistoryFilter>('dings');
+  const [query, setQuery] = useState('');
+  const rows = filterHistory(live.notifications, filter, query);
   const messages = [...view.messages].reverse();
   return (
     <div className="feeds">
-      <section className="window feed" aria-labelledby="dings">
+      <section className="window feed" aria-labelledby="dings" data-testid="history">
         <h2 id="dings">Notifications</h2>
-        {live.gap && (
-          <p className="muted" data-testid="gap">
-            Some notifications were missed while you were disconnected; your sheet is up to date.
-          </p>
-        )}
-        {dings.length === 0 ? (
+        <div className="history-tools">
+          <label>
+            <span className="sr-only">Show</span>
+            <select
+              aria-label="Show"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as HistoryFilter)}
+            >
+              {HISTORY_FILTERS.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <input
+            type="search"
+            aria-label="Search notifications"
+            placeholder="Search…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+        {live.notifications.length === 0 ? (
           <p className="muted">Level-ups appear here as they happen.</p>
+        ) : rows.length === 0 ? (
+          <p className="muted" data-testid="history-empty">
+            No notifications match.
+          </p>
         ) : (
-          <ol data-testid="dings">
-            {dings.map((n, i) => (
-              <li key={`${n.seq}-${dings.length - i}`} className={i === 0 ? 'fresh' : undefined}>
-                {notificationText(n.notification)}
+          <ol data-testid="dings" className="history">
+            {rows.map((n, i) => (
+              <li
+                key={`${n.seq}-${rows.length - i}`}
+                className={i === 0 && filter === 'dings' && query === '' ? 'fresh' : undefined}
+              >
+                <span className="when">{whenLabel(n)}</span>{' '}
+                <span className="ding-text">{notificationText(n.notification)}</span>
               </li>
             ))}
           </ol>
@@ -292,6 +348,53 @@ function Feed({ live, view }: { live: LiveSnapshot; view: PlayerView }) {
           </ol>
         )}
       </section>
+    </div>
+  );
+}
+
+/** How long each queued DING stays up (ms). UI timing, not a rule number. */
+const DING_MS = 2600;
+
+/**
+ * Book-style DINGs that arrive while the page is open pop up one at a time
+ * (M3.3), oldest first, each with the optional chime. Click to skip ahead.
+ * Older history never pops up; it is in the Notifications list.
+ */
+function DingQueue({ live, sound }: { live: LiveSnapshot; sound: boolean }) {
+  const queue = arrivals(live.notifications, live.liveSince);
+  const [shown, setShown] = useState(0);
+  const current = queue[shown];
+  const key = current ? `${current.seq}:${shown}` : null;
+  useEffect(() => {
+    if (key === null) return;
+    const timer = setTimeout(() => setShown((s) => s + 1), DING_MS);
+    return () => clearTimeout(timer);
+  }, [key]);
+  // The chime plays once per DING, not again when sound is toggled.
+  const chimed = useRef<string | null>(null);
+  useEffect(() => {
+    if (key === null || chimed.current === key) return;
+    chimed.current = key;
+    if (sound) playChime();
+  }, [key, sound]);
+  if (!current) return null;
+  const waiting = queue.length - shown - 1;
+  return (
+    <div className="ding-layer">
+      <button
+        type="button"
+        className="ding-toast"
+        key={key}
+        data-testid="ding-toast"
+        onClick={() => setShown((s) => s + 1)}
+      >
+        <span role="status">{notificationText(current.notification)}</span>
+        {waiting > 0 && (
+          <span className="ding-more" data-testid="ding-more">
+            +{waiting} more
+          </span>
+        )}
+      </button>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import {
   EventRejectedError,
   ProjectionError,
   execute,
+  notificationHistory,
   projectForGm,
   projectForPlayer,
   type Actor,
@@ -31,8 +32,6 @@ export interface HubOptions {
   readonly now: () => string;
   readonly newId: () => string;
   readonly sessionId?: string | null;
-  /** Notifications kept in memory for reconnects. */
-  readonly notificationHistory?: number;
 }
 
 type Role = { role: 'none' } | { role: 'gm' } | { role: 'player'; characterId: string };
@@ -49,18 +48,23 @@ interface Client {
 
 export class LiveHub {
   private readonly clients = new Set<Client>();
-  private readonly history: (SeqNotification & { eventId: string })[] = [];
-  /** Event seq when this hub started: older notifications are not in memory. */
-  private readonly startSeq: number;
-  /** Highest seq whose notifications were dropped by the history cap. */
-  private trimmedThrough = -1;
+  /**
+   * Every notification back to day 1 (M3.3), derived from the event log on
+   * first use, appended live, and rebuilt after an undo so undone events'
+   * notifications vanish.
+   */
+  private historyCache: SeqNotification[] | null = null;
   private readonly store: CampaignStore;
   private readonly options: HubOptions;
 
   constructor(store: CampaignStore, options: HubOptions) {
     this.store = store;
     this.options = options;
-    this.startSeq = store.campaign.events.length;
+  }
+
+  private get history(): SeqNotification[] {
+    this.historyCache ??= notificationHistory(this.store.campaign);
+    return this.historyCache;
   }
 
   get seq(): number {
@@ -149,30 +153,34 @@ export class LiveHub {
     client.send({ type: 'result', requestId: message.requestId, ok: true });
     // Every command is one event (D44): its notifications share that event's seq.
     const event = result.events[result.events.length - 1];
+    const after = this.store.campaign.state;
+    const fresh: SeqNotification[] = notificationsFor(before, after, event).map((notification) => ({
+      seq: this.seq,
+      at: event?.timestamp ?? this.options.now(),
+      day: after?.day ?? 1,
+      notification,
+    }));
     if (event?.type === 'event.undone') {
-      // An undone event's notifications must not be replayed on reconnect.
-      const target = event.payload.eventId;
-      for (let i = this.history.length - 1; i >= 0; i--) {
-        if (this.history[i]?.eventId === target) this.history.splice(i, 1);
-      }
+      // Rebuild: the undone event's notifications must vanish from the history.
+      this.historyCache = null;
+    } else if (this.historyCache) {
+      this.historyCache.push(...fresh);
     }
-    const fresh = notificationsFor(before, this.store.campaign.state, event).map(
-      (notification) => ({
-        seq: this.seq,
-        notification,
-      }),
-    );
-    if (event) this.history.push(...fresh.map((n) => ({ ...n, eventId: event.id })));
-    const cap = this.options.notificationHistory ?? 5000;
-    if (this.history.length > cap) {
-      const dropped = this.history.splice(0, this.history.length - cap);
-      this.trimmedThrough = Math.max(this.trimmedThrough, ...dropped.map((n) => n.seq));
-    }
+    const undo = event?.type === 'event.undone';
     for (const other of this.clients) {
       if (other.role.role === 'none') continue;
       try {
-        const mine = this.filter(other.role, fresh);
-        if (mine.length) other.send({ type: 'notifications', items: mine, gap: false });
+        if (undo) {
+          // The undone event's DINGs leave every open history too.
+          other.send({
+            type: 'notifications',
+            items: this.filter(other.role, this.history),
+            reset: true,
+          });
+        } else {
+          const mine = this.filter(other.role, fresh);
+          if (mine.length) other.send({ type: 'notifications', items: mine });
+        }
         this.sendSnapshot(other);
       } catch {
         // One failing socket must not stop the others from updating.
@@ -203,26 +211,22 @@ export class LiveHub {
   }
 
   private filter(role: Role, items: readonly SeqNotification[]): SeqNotification[] {
-    const strip = (n: SeqNotification) => ({ seq: n.seq, notification: n.notification });
-    if (role.role === 'gm') return items.map(strip);
+    if (role.role === 'gm') return [...items];
     if (role.role !== 'player') return [];
-    return items.filter((n) => n.notification.characterId === role.characterId).map(strip);
+    return items.filter((n) => n.notification.characterId === role.characterId);
   }
 
   /**
-   * Resends notifications after `lastSeq` (reconnect without gaps). `gap` is
-   * set when the history no longer reaches back that far (server restart or
-   * the history cap), so the client knows to rely on the view alone.
+   * Sends the notifications after `lastSeq`: the whole history on a first
+   * join (`lastSeq` 0), the missed ones on a reconnect. The history comes
+   * from the event log, so it never has gaps (restarts included).
    */
   private sendMissed(client: Client, lastSeq: number | undefined): void {
     if (lastSeq === undefined || client.role.role === 'none') return;
-    const covered = lastSeq >= this.startSeq && lastSeq >= this.trimmedThrough;
-    const missed = this.filter(
+    const items = this.filter(
       client.role,
       this.history.filter((n) => n.seq > lastSeq),
     );
-    if (missed.length || !covered) {
-      client.send({ type: 'notifications', items: missed, gap: !covered });
-    }
+    client.send({ type: 'notifications', items });
   }
 }

@@ -130,3 +130,8 @@ answer under any question and the next run will follow it.
     jump, so "Switch character" always reaches the list (D74). Alternative:
     opening the join URL goes straight to the last character.
     Answer:
+29. **What pops up as a DING?** New level-ups and System messages pop up
+    one at a time; free-point changes only go to the history. Sound is off
+    until a player turns it on. Default: as described (D76). Alternative:
+    sound on by default, or pop-ups for free points too.
+    Answer:
