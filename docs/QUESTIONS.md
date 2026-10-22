@@ -51,7 +51,7 @@ DESIGN/ROADMAP; do not re-apply them.
     (Basic Archery, Basic Stealth, Archer’s Eye; Agility and Perception
     weighted 3, Strength 2, others 1). Default: keep it until the class
     library (M4.2) lets you define your own. Want different starter classes?
-    Answer (Luke, 2026-10-22): A pool of starter classes from the class library; see Q38. (open)
+    Answer (Luke, 2026-10-22): A pool of starter classes from the class library: the books' six (Q38). (applied, D114)
 14. **Refill pools on level-up?** When a level raises max HP/MP/Stamina
     (e.g. Endurance up → Stamina 100/110), current values stay where they
     were. Default: no refill (the GM heals or rests the party). Alternative:
@@ -111,7 +111,7 @@ DESIGN/ROADMAP; do not re-apply them.
     applies (Cook 14 while class jumps to 24, race 19). Default: before
     (D64 order). Alternative: after, so the profession starts at the new
     class level.
-    Answer (Luke, 2026-10-22): Asked for examples; discussing in chat. (open)
+    Answer (Luke, 2026-10-22): Moot: there is no banked XP. XP for a capped track levels the other track. (applied, D112)
 25. **Declining an offered profession.** When an evolution offers
     professions, the player must pick one. Default: must pick (the GM can
     re-release with none). Alternative: allow "none for now".
@@ -192,7 +192,7 @@ DESIGN/ROADMAP; do not re-apply them.
     Alternatives: one entry per name and rarity; library edits update every
     character's copy that has not been individually edited; show effects to
     the skill's owner.
-    Answer (Luke, 2026-10-22): Asked for examples; discussing in chat. (open)
+    Answer (Luke, 2026-10-22): All three alternatives: entries per name and rarity; edits update unedited copies; effects shown to the owner. (applied, D113)
 
 38. **Default classes, races and professions.** New campaigns start with six
     starting classes (Archer, Warrior, Mage, Healer, Rogue, Brawler), the
@@ -203,7 +203,7 @@ DESIGN/ROADMAP; do not re-apply them.
     described (D91). Alternatives: a different starting set; races with
     their own stat weights or skills; show the descriptions to players on
     the status screen or the evolution profession picker.
-    Answer (Luke, 2026-10-22): Match the book's starting classes (discussing in chat, open). No default professions: tailored per player once unlocked. (professions applied, D105)
+    Answer (Luke, 2026-10-22): Replace the six with the books' six (Warrior Light/Medium/Heavy, Archer, Caster, Healer). No default professions: tailored per player once unlocked. (applied, D105, D114)
 
 39. **Session log between sessions.** The running log now covers only a
     started session; changes made between sessions (prep, XP awarded after

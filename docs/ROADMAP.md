@@ -201,6 +201,21 @@ They touch finished engine and player items, so they come before M4.4.
   Windows (portable + installer) and Linux (kept for the automated smoke
   test); drop macOS (macOS Actions minutes count 10×). *Accept:* release
   dry run green with exactly 3 files.
+- [ ] **MQ.11 XP overflow, no banking.** Replace banked XP: XP for a capped
+  track levels the other track; when both are capped (or the class is capped
+  with no profession) the XP is lost and the GM's award preview says so.
+  Schema bump + upcaster for logs that banked XP. *Accept:* engine tests
+  (class capped → profession levels; profession capped → class levels; both
+  capped → lost and reported); 40-session simulation still passes.
+- [ ] **MQ.12 Skill library rules.** Library entries keyed by name and rarity;
+  an upgrade takes the higher rarity's text; library edits update every copy
+  not individually edited by the GM; effects visible to the skill's owner
+  only. *Accept:* engine and projection tests (other players never see
+  effects); e2e for an upgrade picking up new text and an edit propagating.
+- [ ] **MQ.13 The books' starting classes.** Replace the default class set
+  with DESIGN §10 (weights and starting skills, original text); update the
+  built-in Archer, the demo campaign and screenshots. *Accept:* seed tests;
+  demo e2e still green.
 - [ ] **MQ.A Batch acceptance and review.**
 
 ## M1 (continued) — Rules engine
