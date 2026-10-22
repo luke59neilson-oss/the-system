@@ -489,6 +489,36 @@ describe('evolution', () => {
     expect(skillPairCounts(c.state?.practice ?? [], 'jake')[0]?.count).toBe(3);
   });
 
+  it('a renaming transform clears the System text; a same-name one keeps it (M3.5)', () => {
+    let c = atGTop();
+    for (const skill of [archery, stealth]) {
+      c = ok(c, {
+        type: 'skill.describe',
+        characterId: 'jake',
+        skill,
+        description: 'Old text.',
+        flavor: 'Old flavour.',
+      });
+    }
+    c = ok(c, {
+      type: 'evolution.release',
+      characterId: 'jake',
+      options: [
+        {
+          className: 'Hunter',
+          transforms: [
+            { skill: archery, name: 'Hunter’s Archery', rarity: 'uncommon' },
+            { skill: stealth, name: stealth, rarity: 'uncommon' },
+          ],
+        },
+      ],
+    });
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    const byName = (n: string) => char(c).skills.find((s) => s.name === n);
+    expect(byName('Hunter’s Archery')).toMatchObject({ description: null, flavor: null });
+    expect(byName(stealth)).toMatchObject({ description: 'Old text.', flavor: 'Old flavour.' });
+  });
+
   it('rejects bad releases', () => {
     const c = atGTop();
     const bad = (

@@ -148,14 +148,16 @@ test('a player reads a skill and nicknames it; the official name stays', async (
     'The System has not described this skill yet.',
   );
   await expect(detail.getByTestId('skill-detail-flavor')).toHaveCount(0);
-  // The GM describes it; the open detail updates live.
-  await gmCommand(gm, {
-    type: 'skill.describe',
-    characterId,
-    skill: 'Identify',
-    description: 'Reveals what the System knows.',
-    flavor: 'Knowledge first.',
-  });
+  // The GM writes it in the console's Skill text form; the open detail updates live.
+  const form = gm.locator('form[aria-labelledby="skill-text"]');
+  await form.getByLabel('Skill').selectOption('Identify');
+  await expect(form.getByLabel('Description')).toHaveValue('');
+  await form.getByLabel('Description').fill('Reveals what the System knows.');
+  await form.getByLabel('Flavour').fill('Knowledge first.');
+  await form.getByRole('button', { name: 'Save skill text' }).click();
+  await expect(form.getByRole('status')).toHaveText('Skill text saved');
+  await form.scrollIntoViewIfNeeded();
+  await gm.screenshot({ path: path.join(shots, 'gm-skill-text-1366x768.png') });
   await expect(detail.getByTestId('skill-detail-description')).toHaveText(
     'Reveals what the System knows.',
   );
@@ -181,11 +183,18 @@ test('a player reads a skill and nicknames it; the official name stays', async (
   await pane.close();
 
   // Phone: 390 wide, the dialog fits with no sideways scroll.
+  await gmCommand(gm, {
+    type: 'skill.setUnique',
+    characterId,
+    skill: 'Archer’s Eye',
+    unique: true,
+  });
   const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const phoneErrors = watchErrors(phone);
   await phone.goto(laptop.url());
   await phone.getByRole('button', { name: /\[Archer’s Eye \(Common\)\]/ }).click();
   const phoneDetail = phone.getByTestId('skill-detail');
+  await expect(phoneDetail.getByTestId('skill-detail-unique')).toBeVisible();
   await expect(phoneDetail.getByTestId('skill-detail-marks')).toHaveText(
     '0 / 4 marks toward Uncommon.',
   );
@@ -217,9 +226,14 @@ test('a player reads a skill and nicknames it; the official name stays', async (
   await expect(phone.getByTestId('skill-notice')).toHaveText(
     '[Basic Archery] changed, so its details were closed.',
   );
-  await expect(
-    phone.getByRole('button', { name: /\[Hunter’s Archery \(Common\)\]/ }),
-  ).toBeVisible();
+  // The renamed skill starts without the old skill's text.
+  await phone.getByRole('button', { name: /\[Hunter’s Archery \(Common\)\]/ }).click();
+  await expect(phoneDetail.getByTestId('skill-detail-description')).toHaveText(
+    'The System has not described this skill yet.',
+  );
+  await expect(phoneDetail.getByTestId('skill-detail-marks')).toHaveText(
+    '0 / 4 marks toward Uncommon.',
+  );
 
   expect(errors).toEqual([]);
   expect(phoneErrors).toEqual([]);

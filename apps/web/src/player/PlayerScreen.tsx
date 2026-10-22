@@ -176,6 +176,15 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
     setSkillOpen(null);
   }
   const statusSection = useRef<HTMLElement | null>(null);
+  const statusHeading = useRef<HTMLHeadingElement | null>(null);
+  useEffect(() => {
+    if (skillNotice === null) return;
+    // The dialog unmounted without closing itself: put focus somewhere sane,
+    // and let the notice fade after a while.
+    if (document.activeElement === document.body) statusHeading.current?.focus();
+    const timer = setTimeout(() => setSkillNotice(null), 8000);
+    return () => clearTimeout(timer);
+  }, [skillNotice]);
   const openSkill = (name: string) => {
     setSkillNotice(null);
     setSkillOpen(name);
@@ -199,7 +208,9 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
       aria-labelledby="status"
       data-testid="status"
     >
-      <h2 id="status">Status</h2>
+      <h2 id="status" tabIndex={-1} ref={statusHeading}>
+        Status
+      </h2>
       <dl className="rows">
         <dt>Name</dt>
         <dd data-testid="name">{me.name}</dd>

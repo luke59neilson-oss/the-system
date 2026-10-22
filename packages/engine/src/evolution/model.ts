@@ -453,7 +453,11 @@ export function chooseEvolution(
     // A rarity gain spends the banked marks (as an upgrade would); a transform
     // that keeps the rarity keeps them (DESIGN §6: they bank until the evolution).
     const marks = t.rarity === s.rarity ? s.marks : 0;
-    return { ...s, name: t.name.trim(), rarity: t.rarity, marks };
+    // A renamed skill is a new skill to the System: the old text would
+    // describe the wrong thing, so it clears until the GM writes new text (M3.5).
+    const name = t.name.trim();
+    const text = name === s.name ? {} : { description: null, flavor: null };
+    return { ...s, name, rarity: t.rarity, marks, ...text };
   });
   let next: Character = {
     ...character,

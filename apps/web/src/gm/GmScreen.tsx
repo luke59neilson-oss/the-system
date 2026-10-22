@@ -125,6 +125,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <CreateCharacter client={client} />
               <AwardXp client={client} state={state} />
               <Broadcast client={client} state={state} />
+              <SkillText client={client} state={state} />
               <Feed live={live} state={state} />
             </div>
           </div>
@@ -363,6 +364,103 @@ function AwardXp({ client, state }: { client: LiveClient; state: CampaignState }
         Award XP
       </button>
       <Outcome result={result} okText="XP awarded" />
+    </form>
+  );
+}
+
+/**
+ * Writes a skill's System description and flavour (M3.5, D78) until the skill
+ * library (M4.1) does it on grant. Picking a skill loads its current text.
+ */
+function SkillText({ client, state }: { client: LiveClient; state: CampaignState }) {
+  const [characterId, setCharacterId] = useState('');
+  const [skill, setSkill] = useState('');
+  const [description, setDescription] = useState('');
+  const [flavor, setFlavor] = useState('');
+  const { busy, result, run } = useCommand(client);
+  const character =
+    state.characters[characterId] ?? state.characters[state.characterOrder[0] ?? ''];
+  const skills = character?.skills ?? [];
+  const current = skills.find((s) => s.name === skill) ?? skills[0];
+  const load = (s: (typeof skills)[number] | undefined) => {
+    setSkill(s?.name ?? '');
+    setDescription(s?.description ?? '');
+    setFlavor(s?.flavor ?? '');
+  };
+  // Until the GM edits, the fields show the picked skill's stored text.
+  const loaded = skill === current?.name;
+  const shownDescription = loaded ? description : (current?.description ?? '');
+  const shownFlavor = loaded ? flavor : (current?.flavor ?? '');
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!character || !current) return;
+    await run({
+      type: 'skill.describe',
+      characterId: character.id,
+      skill: current.name,
+      description: shownDescription,
+      flavor: shownFlavor,
+    });
+  };
+  return (
+    <form className="window" onSubmit={(e) => void submit(e)} aria-labelledby="skill-text">
+      <h2 id="skill-text">Skill text</h2>
+      <label>
+        Character
+        <select
+          value={character?.id ?? ''}
+          onChange={(e) => {
+            setCharacterId(e.target.value);
+            load(state.characters[e.target.value]?.skills[0]);
+          }}
+        >
+          {state.characterOrder.map((id) => (
+            <option key={id} value={id}>
+              {state.characters[id]?.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Skill
+        <select
+          value={current?.name ?? ''}
+          onChange={(e) => load(skills.find((s) => s.name === e.target.value))}
+        >
+          {skills.map((s) => (
+            <option key={s.name} value={s.name}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Description
+        <textarea
+          value={shownDescription}
+          onChange={(e) => {
+            if (!loaded) load(current);
+            setDescription(e.target.value);
+          }}
+          maxLength={2000}
+          rows={3}
+        />
+      </label>
+      <label>
+        Flavour
+        <input
+          value={shownFlavor}
+          onChange={(e) => {
+            if (!loaded) load(current);
+            setFlavor(e.target.value);
+          }}
+          maxLength={1000}
+        />
+      </label>
+      <button type="submit" disabled={busy || !current}>
+        Save skill text
+      </button>
+      <Outcome result={result} okText="Skill text saved" />
     </form>
   );
 }
