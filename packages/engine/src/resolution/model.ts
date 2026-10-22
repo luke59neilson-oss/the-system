@@ -31,6 +31,8 @@ export interface ContestResult {
   readonly chance: number;
   /** The roll drawn, 0..1 (wins when below `chance`); null when a grade wall decides it unrolled. */
   readonly roll: number | null;
+  /** True when a grade wall settled it with no roll (two or more grades apart). */
+  readonly walled: boolean;
   readonly success: boolean;
 }
 
@@ -123,7 +125,7 @@ export function rollContest(
   if (walled(rules, a, b, mode)) {
     // No roll and no RNG draw: the higher grade simply succeeds.
     const win = gradeGap(rules, a.grade, b.grade) < 0;
-    return { yours, theirs, chance: win ? 1 : 0, roll: null, success: win };
+    return { yours, theirs, chance: win ? 1 : 0, roll: null, walled: true, success: win };
   }
   const total = yours + theirs;
   const chance = total === 0 ? 0.5 : yours / total;
@@ -131,7 +133,7 @@ export function rollContest(
   if (!Number.isFinite(roll) || roll < 0 || roll >= 1) {
     throw new CharacterRuleError(`The RNG must return a number in [0, 1) (got ${roll})`);
   }
-  return { yours, theirs, chance, roll, success: roll < chance };
+  return { yours, theirs, chance, roll, walled: false, success: roll < chance };
 }
 
 /**
@@ -165,7 +167,8 @@ export interface GroupPlan<T extends ContestSide = ContestSide> {
  * No strength in numbers across grades (DESIGN §7, "gradeWalls" mode): only
  * members at or above the opponent's grade may pool their power; one grade
  * below, each acts alone; two or more below, they cannot affect it at all. In
- * the other modes every member pools.
+ * the other modes every member pools. Against several opponents, plan once
+ * per opponent. Combine the pooled members with `pooledSide`.
  */
 export function planGroup<T extends ContestSide>(
   rules: RulesConfig,
@@ -184,6 +187,23 @@ export function planGroup<T extends ContestSide>(
     else powerless.push(m);
   }
   return { pooled, alone, powerless };
+}
+
+/**
+ * The pooled members as one contest side: their values summed, at the lowest
+ * of their grades (a pooled side is only as high a grade as its weakest
+ * member, so a higher-grade helper adds stat, not a grade wall). Null for an
+ * empty pool.
+ */
+export function pooledSide(rules: RulesConfig, pooled: readonly ContestSide[]): ContestSide | null {
+  let best: ContestSide | null = null;
+  let value = 0;
+  for (const m of pooled) {
+    checkSide(m, 'A member’s value');
+    value += m.value;
+    if (best === null || gradeIndexOf(rules, m.grade) < gradeIndexOf(rules, best.grade)) best = m;
+  }
+  return best === null ? null : { value, grade: best.grade };
 }
 
 /** A progress clock with N segments (DESIGN §7). */

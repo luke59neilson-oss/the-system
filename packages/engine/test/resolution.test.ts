@@ -6,6 +6,7 @@ import {
   damageFactor,
   defaultRules,
   planGroup,
+  pooledSide,
   walled,
   execute,
   montageAvailable,
@@ -21,6 +22,7 @@ import { kit, rawRules, run, seededRandom, testContext } from './helpers/events'
 
 const rules = defaultRules();
 const MODES: readonly GradeGapMode[] = ['none', 'multiplier', 'lowerGradeFraction'];
+const ALL_MODES: readonly GradeGapMode[] = [...MODES, 'gradeWalls'];
 const none = { ...rules, resolution: { ...rules.resolution, gradeGapMode: 'none' as const } };
 
 describe('contest odds (DESIGN §7)', () => {
@@ -55,6 +57,12 @@ describe('contest odds (DESIGN §7)', () => {
 
   it('rejects bad inputs', () => {
     const g = (value: number) => ({ value, grade: 'G' });
+    for (const mode of ALL_MODES) {
+      expect(() => contestChance(rules, g(-1), { value: 1, grade: 'A' }, mode)).toThrow(/≥ 0/);
+      expect(() => rollContest(rules, g(1), { value: -1, grade: 'A' }, () => 0, mode)).toThrow(
+        /≥ 0/,
+      );
+    }
     expect(() => contestChance(rules, g(-1), g(1))).toThrow(/≥ 0/);
     expect(() => contestChance(rules, g(Number.NaN), g(1))).toThrow(/≥ 0/);
     expect(() => contestChance(rules, { value: 1, grade: 'Z' }, g(1))).toThrow(/Unknown grade/);
@@ -284,7 +292,14 @@ describe('grade walls (MQ.5, DESIGN §7, D115)', () => {
     ] as const) {
       // Even a huge lower-grade value cannot win.
       const up = rollContest(rules, side(10_000, low), side(1, high), rng);
-      expect(up).toEqual({ yours: 0, theirs: 1, chance: 0, roll: null, success: false });
+      expect(up).toEqual({
+        yours: 0,
+        theirs: 1,
+        chance: 0,
+        roll: null,
+        walled: true,
+        success: false,
+      });
       const down = rollContest(rules, side(1, high), side(10_000, low), rng);
       expect(down).toMatchObject({ chance: 1, roll: null, success: true });
       expect(contestChance(rules, side(10_000, low), side(1, high))).toBe(0);
@@ -295,8 +310,12 @@ describe('grade walls (MQ.5, DESIGN §7, D115)', () => {
     expect(draws).toBe(0);
     // Other modes still roll across the same gap.
     expect(walled(rules, side(1, 'G'), side(1, 'E'), 'lowerGradeFraction')).toBe(false);
-    expect(rollContest(rules, side(1, 'G'), side(1, 'E'), rng, 'none').roll).toBe(0);
-    expect(draws).toBe(1);
+    expect(rollContest(rules, side(1, 'G'), side(1, 'E'), rng, 'none')).toMatchObject({
+      roll: 0,
+      walled: false,
+    });
+    expect(rollContest(rules, side(3, 'F'), side(1, 'E'), rng).walled).toBe(false);
+    expect(draws).toBe(2);
   });
 
   it('damage: ⅓ from one grade below, none from two or more below, full otherwise', () => {
@@ -334,5 +353,12 @@ describe('grade walls (MQ.5, DESIGN §7, D115)', () => {
     // Other modes pool everyone.
     for (const mode of MODES) expect(planGroup(rules, party, opp, mode).pooled).toHaveLength(6);
     expect(() => planGroup(rules, [side(-1, 'D')], opp)).toThrow(/≥ 0/);
+    // The pool is one side at its lowest member's grade, values summed.
+    expect(pooledSide(rules, plan.pooled)).toEqual({ value: 80, grade: 'D' });
+    expect(pooledSide(rules, [])).toBeNull();
+    expect(contestChance(rules, pooledSide(rules, plan.pooled) ?? opp, opp)).toBeCloseTo(
+      80 / 130,
+      12,
+    );
   });
 });
