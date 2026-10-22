@@ -13,8 +13,9 @@ import {
 
 /**
  * GM skill library (ROADMAP M4.1): browse, create and edit skills. A character
- * who gains a skill by this official name gets its description and flavour
- * (D90). Effects text stays GM-only.
+ * who gains a skill by this official name and rarity gets its text, and later
+ * edits follow to copies the GM has not hand-edited (MQ.12). Effects reach the
+ * skill's owner only; on rules stored before MQ.12 they stay GM-only (D90).
  */
 export function SkillLibrary({ client, state }: { client: LiveClient; state: CampaignState }) {
   const rarities = state.rules.skills.rarities.filter((r) => !r.reserved);
