@@ -1,4 +1,5 @@
 import type { OwnSheet, PlayerRules } from '@the-system/engine';
+import { friendlyError } from '../format';
 import { rarityName } from './sheet';
 
 /**
@@ -38,4 +39,16 @@ export function closedReason(
   const now = pending.find((s) => s.level === level);
   if (now === undefined) return 'gone';
   return now.offerId === offerId ? null : 'changed';
+}
+
+/** True for the errors after which a command may or may not have been applied. */
+export function isConnectionError(error: string | undefined): boolean {
+  return error === 'Connection lost' || error === 'Not connected to the System';
+}
+
+/** The sheet notice for a choice refused after its dialog had closed. */
+export function settleNotice(level: number, error: string | undefined): string {
+  if (isConnectionError(error))
+    return `Connection lost. Check your skills once you are back: the level ${level} choice may already be saved.`;
+  return `Your level ${level} skill choice was not saved: ${friendlyError(error ?? 'refused')}`;
 }

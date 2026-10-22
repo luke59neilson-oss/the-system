@@ -26,7 +26,7 @@ import { allocationText, assignedBatches, nextBatch, spent, step } from './freeP
 import { browserStorage, remember } from './join';
 import { SkillDetail } from './SkillDetail';
 import { SkillSelection } from './SkillSelection';
-import { closedReason, pendingSelections, pendingText } from './selection';
+import { closedReason, pendingSelections, pendingText, settleNotice } from './selection';
 import {
   cssToken,
   formatStatValue,
@@ -230,9 +230,15 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
       setSelFocus((f) => ({ n: f.n + 1, skill: null }));
     }
   }
+  // After this screen's own choice, until the sheet shows it chosen (the
+  // result can land before the new view): [Choose] stays hidden and focus
+  // waits for the new skill.
+  const [justChose, setJustChose] = useState<{ level: number; skill: string } | null>(null);
+  const settling = justChose !== null && pending.some((s) => s.level === justChose.level);
+  if (justChose !== null && !settling) setJustChose(null);
   const chooseButton = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
-    if (selFocus.n === 0) return;
+    if (selFocus.n === 0 || settling) return;
     requestAnimationFrame(() => {
       // After a choice, land on the new skill; otherwise on [Choose] if still
       // there, else the Status heading.
@@ -246,20 +252,26 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
             ].find((b) => b.dataset['skill'] === selFocus.skill);
       (skill ?? chooseButton.current ?? statusHeading.current)?.focus();
     });
-  }, [selFocus]);
+  }, [selFocus, settling]);
+  useEffect(() => {
+    if (selNotice === null) return;
+    const timer = setTimeout(() => setSelNotice(null), 10_000);
+    return () => clearTimeout(timer);
+  }, [selNotice]);
   const selOpenNow = useRef<number | null>(null);
   useEffect(() => {
     selOpenNow.current = selOpen?.level ?? null;
   });
-  const selSettled = (level: number, ok: boolean, skill: string) => {
+  const selSettled = (level: number, ok: boolean, skill: string, error: string | undefined) => {
     setSelConfirming(null);
     if (ok) {
       setSelOpen(null);
+      setJustChose({ level, skill });
       setSelFocus((f) => ({ n: f.n + 1, skill }));
     } else if (selOpenNow.current !== level) {
-      setSelNotice(
-        `The level ${level} skill menu was changed by the GM; your choice was not saved.`,
-      );
+      // The dialog was closed during the confirm. If the GM changed the menu
+      // meanwhile, the render-time check above replaces this with that reason.
+      setSelNotice(settleNotice(level, error));
     }
   };
   return (
@@ -337,7 +349,7 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
           <span className="badge" data-testid="selection-badge">
             {pendingText(pending.length)}
           </span>
-          {client && selOpen === null && (
+          {client && selOpen === null && !settling && (
             <button
               type="button"
               className="assign-btn"
@@ -368,7 +380,7 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
           view={view}
           client={client}
           onConfirming={() => setSelConfirming(selection.level)}
-          onSettled={(ok, skill) => selSettled(selection.level, ok, skill)}
+          onSettled={(ok, skill, error) => selSettled(selection.level, ok, skill, error)}
           onClose={() => {
             setSelOpen(null);
             setSelFocus((f) => ({ n: f.n + 1, skill: null }));

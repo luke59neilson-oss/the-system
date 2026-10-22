@@ -3,7 +3,7 @@ import type { PlayerView } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 import { cssToken, rarityName } from './sheet';
-import { offerKindLabel, offerLabel, type Selection } from './selection';
+import { isConnectionError, offerKindLabel, offerLabel, type Selection } from './selection';
 
 /**
  * Skill selection (M3.6, DESIGN §6): the offered options side by side, pick
@@ -26,7 +26,7 @@ export function SkillSelection({
   client: LiveClient;
   onConfirming: () => void;
   /** Called with the outcome and the skill taken; a refusal after close becomes a notice. */
-  onSettled: (ok: boolean, skill: string) => void;
+  onSettled: (ok: boolean, skill: string, error: string | undefined) => void;
   onClose: () => void;
 }) {
   const rules = view.rules;
@@ -68,9 +68,9 @@ export function SkillSelection({
     });
     setBusy(false);
     // On success the menu is no longer pending and the parent unmounts this.
-    onSettled(result.ok, name);
+    onSettled(result.ok, name, result.ok ? undefined : result.error);
     if (result.ok) return;
-    if (result.error === 'Connection lost' || result.error === 'Not connected to the System')
+    if (isConnectionError(result.error))
       setError(
         'Connection lost. Check your skills once you are back: the choice may already be saved.',
       );
@@ -82,6 +82,10 @@ export function SkillSelection({
       className="skill-detail skill-selection window"
       aria-labelledby="selection-heading"
       data-testid="selection"
+      onCancel={(e) => {
+        // Escape cannot abandon a choice in flight; the result decides.
+        if (busy) e.preventDefault();
+      }}
       onClose={onClose}
     >
       <div className="skill-detail-head">

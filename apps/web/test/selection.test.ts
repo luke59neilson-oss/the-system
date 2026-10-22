@@ -6,6 +6,7 @@ import {
   offerLabel,
   pendingSelections,
   pendingText,
+  settleNotice,
   type Selection,
 } from '../src/player/selection';
 
@@ -51,5 +52,16 @@ describe('skill selection (M3.6)', () => {
     expect(closedReason(pending, 10, 'e3')).toBe('changed');
     expect(closedReason(pending, 20, 'e9')).toBe('gone');
     expect(closedReason([], 10, 'e7')).toBe('gone');
+  });
+
+  it('words a refusal that lands after the dialog closed', () => {
+    expect(settleNotice(20, 'Connection lost')).toBe(
+      'Connection lost. Check your skills once you are back: the level 20 choice may already be saved.',
+    );
+    expect(settleNotice(20, 'Not connected to the System')).toContain('may already be saved');
+    expect(settleNotice(20, 'the level 20 menu was offered again')).toBe(
+      'Your level 20 skill choice was not saved: The level 20 menu was offered again',
+    );
+    expect(settleNotice(5, undefined)).toBe('Your level 5 skill choice was not saved: Refused');
   });
 });
