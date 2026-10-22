@@ -20,11 +20,23 @@ export function SessionPanel({ client, state }: { client: LiveClient; state: Cam
   const [outcome, setOutcome] = useState<Outcome>(null);
   // An end confirmed for a session that is no longer running (another tab, an undo) is dropped.
   if (confirming && running === null) setConfirming(false);
+  // A message about an earlier session goes once the session changes.
+  // Our own start or end keeps its message: the result arrives before the new state.
+  const [shownFor, setShownFor] = useState<string | null>(running?.id ?? null);
+  const [keepNext, setKeepNext] = useState(false);
+  if (shownFor !== (running?.id ?? null)) {
+    setShownFor(running?.id ?? null);
+    if (keepNext || busy) setKeepNext(false);
+    else setOutcome(null);
+  }
 
   const run = async (command: { type: string } & Record<string, unknown>, okText: string) => {
     setBusy(true);
     const r = await client.command(command);
     setBusy(false);
+    if (r.ok && (command.type === 'session.start' || command.type === 'session.end')) {
+      setKeepNext(true);
+    }
     if (!r.ok) setOutcome({ kind: 'err', text: friendlyError(r.error) });
     else if (r.warning) setOutcome({ kind: 'warn', text: r.warning });
     else setOutcome({ kind: 'ok', text: okText });
@@ -147,7 +159,7 @@ export function SessionPanel({ client, state }: { client: LiveClient; state: Cam
             {summary.past.map((s) => (
               <tr key={s.id}>
                 <td>{s.number}</td>
-                <td>{shortTime(s.startedAt)}</td>
+                <td className="wrap">{shortTime(s.startedAt)}</td>
                 <td>{s.endedAt ? duration(s.startedAt, s.endedAt) : ''}</td>
                 <td>{daySpan(s, state.day)}</td>
               </tr>

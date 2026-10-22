@@ -1732,6 +1732,12 @@ button.danger {
   border-collapse: collapse;
   font-size: 0.9rem;
 }
+.session-past td {
+  white-space: nowrap;
+}
+.session-past td.wrap {
+  white-space: normal;
+}
 .session-past th,
 .session-past td {
   text-align: left;

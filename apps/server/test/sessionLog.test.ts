@@ -177,6 +177,46 @@ describe('SessionLogWriter', () => {
 });
 
 describe('SessionLogWriter edge cases', () => {
+  it('follows undos of a session end (running again) and start (marked undone)', () => {
+    const dataDir = tempDir('log-undo');
+    const now = clock();
+    const store = CampaignStore.open('main', { dataDir, now });
+    let n = 0;
+    const gm: CommandContext = {
+      actor: { role: 'gm' },
+      sessionId: null,
+      now,
+      newId: () => `u${++n}`,
+    };
+    apply(store, { type: 'campaign.create', name: 'Whale', rules: rules() }, gm);
+    const writer = new SessionLogWriter(store, {
+      exportsDir: exportsDirFor(dataDir),
+      now,
+      every: () => () => undefined,
+    });
+    apply(store, { type: 'session.start' }, gm);
+    const startId = store.campaign.events.at(-1)?.id ?? '';
+    apply(store, { type: 'session.end' }, gm);
+    const endId = store.campaign.events.at(-1)?.id ?? '';
+    const file = writer.file ?? '';
+    expect(writer.flush()).toBe(true);
+    expect(readFileSync(file, 'utf8')).toMatch(/^# Session 1 report/m);
+    apply(store, { type: 'event.undo', eventId: endId }, gm);
+    expect(writer.flush()).toBe(true);
+    expect(readFileSync(file, 'utf8')).toMatch(/^# Session 1 log \(running\)/m);
+    apply(store, { type: 'event.undo', eventId: startId }, gm);
+    expect(writer.file).toBeNull();
+    expect(writer.flush()).toBe(true);
+    expect(readFileSync(file, 'utf8')).toMatch(/^# Session 1: undone/m);
+    expect(writer.flush()).toBe(false);
+    // A new session 1 takes the file over.
+    apply(store, { type: 'session.start' }, gm);
+    expect(writer.flush()).toBe(true);
+    expect(readFileSync(file, 'utf8')).toMatch(/^# Session 1 log \(running\)/m);
+    writer.close();
+    store.close();
+  });
+
   it('leaves no temp file when the final rename fails, and follows an undo of a pre-session event', () => {
     const dataDir = tempDir('log-edge');
     const now = clock();
@@ -555,7 +595,17 @@ describe('session log during a scripted session (M2.4 acceptance)', () => {
       await again.send({ type: 'session.start' });
       const warned = await again.send({ type: 'session.end' });
       expect(warned.warning).toMatch(/the backup could not be saved/);
-      expect(existsSync(path.join(app.exportsDir, 'main', 'session-02.md'))).toBe(true);
+      const second = path.join(app.exportsDir, 'main', 'session-02.md');
+      expect(readFileSync(second, 'utf8')).toMatch(/^# Session 2 report/m);
+      // Undoing the end rewrites the file at once, not on the next tick.
+      const exported = (await (
+        await fetch(`http://127.0.0.1:${app.port}/api/gm/export`, { headers: { 'x-gm-key': KEY } })
+      ).json()) as { events: { id: string; type: string }[] };
+      const endId = exported.events.filter((e) => e.type === 'session.ended').at(-1)?.id ?? '';
+      await again.send({ type: 'event.undo', eventId: endId });
+      expect(readFileSync(second, 'utf8')).toMatch(/^# Session 2 log \(running\)/m);
+      await again.send({ type: 'session.end' });
+
       again.ws.close();
     } finally {
       await app.close();

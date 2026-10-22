@@ -1,6 +1,14 @@
-import { closeSync, fsyncSync, mkdirSync, openSync, renameSync, rmSync, writeSync } from 'node:fs';
+import {
+  closeSync,
+  existsSync,
+  fsyncSync,
+  mkdirSync,
+  openSync,
+  renameSync,
+  rmSync,
+  writeSync,
+} from 'node:fs';
 import path from 'node:path';
-import { existsSync } from 'node:fs';
 import {
   buildSessionLog,
   renderSessionLog,
@@ -89,6 +97,8 @@ export class SessionLogWriter {
   private readonly options: SessionLogOptions;
   /** What the file of the target session last held (session, range, log length/undos). */
   private writtenKey: string | null = null;
+  /** The session this writer last wrote, to mark its file when its start is undone. */
+  private lastWritten: { id: string; number: number; file: string } | null = null;
   /** Fold of the events before the session, reused while still valid. */
   private base: SessionLogBase | null = null;
   private cancel: (() => void) | null;
@@ -148,6 +158,19 @@ export class SessionLogWriter {
    */
   flush(): boolean {
     const plan = this.plan();
+    const gone = this.lastWritten;
+    if (gone && !this.store.campaign.state?.sessions.some((x) => x.id === gone.id)) {
+      // Its start was undone: the file would otherwise still claim a running session.
+      this.lastWritten = null;
+      if (plan?.file !== gone.file) {
+        mkdirSync(path.dirname(gone.file), { recursive: true });
+        writeAtomic(
+          gone.file,
+          `# Session ${gone.number}: undone\n\nThe GM undid the start of this session (${this.options.now()}); its events now belong to no session.\n`,
+        );
+        if (!plan || plan.key === this.writtenKey) return true;
+      }
+    }
     if (!plan || plan.key === this.writtenKey) return false;
     const campaign = this.store.campaign;
     // Fold the pre-session events once (and again only after an undo reaches
@@ -168,6 +191,7 @@ export class SessionLogWriter {
     mkdirSync(path.dirname(plan.file), { recursive: true });
     writeAtomic(plan.file, text);
     this.writtenKey = plan.key;
+    this.lastWritten = { id: plan.session.id, number: plan.session.number, file: plan.file };
     return true;
   }
 

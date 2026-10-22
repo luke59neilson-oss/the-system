@@ -82,7 +82,20 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     writer: SessionLogWriter | null,
   ): string | null => {
     const ended = events.find((e) => e.type === 'session.ended');
-    if (!ended) return null;
+    if (!ended) {
+      // An undo of a session's start or end changes what its file must say: rewrite it now.
+      const undo = events.find((e) => e.type === 'event.undone');
+      const target = undo && store.campaign.events.find((e) => e.id === undo.payload.eventId);
+      if (target && (target.type === 'session.started' || target.type === 'session.ended')) {
+        try {
+          writer?.flush();
+        } catch (error) {
+          app.log.error(error);
+          return 'The change was saved, but the session log could not be rewritten. See the server log.';
+        }
+      }
+      return null;
+    }
     const problems: string[] = [];
     const number =
       store.campaign.state?.sessions.find((x) => x.id === ended.payload.sessionId)?.number ?? 0;
