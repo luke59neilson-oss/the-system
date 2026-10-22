@@ -118,6 +118,19 @@ test('inventory: gear, effective stats, gifts and trades', async ({ browser }) =
   );
   await inv.getByRole('button', { name: 'Equip Amulet of Vigor' }).click();
   await expect(hp).toContainText(`/${Number(hpMaxBefore) + 100}`);
+  // Equipping never heals; unequipping clamps current HP to the new maximum.
+  const [, hpNow] = ((await hp.textContent()) ?? '').match(/^(\d+)\//) ?? [];
+  expect(Number(hpNow)).toBe(Number(hpMaxBefore));
+  await gmCommand(gm, {
+    type: 'character.setPools',
+    characterId: 'demo-jake',
+    pools: { hp: Number(hpMaxBefore) + 90 },
+  });
+  await expect(hp).toHaveText(`${Number(hpMaxBefore) + 90}/${Number(hpMaxBefore) + 100}`);
+  await inv.getByRole('button', { name: 'Unequip Amulet of Vigor' }).click();
+  await expect(hp).toHaveText(`${hpMaxBefore}/${hpMaxBefore}`);
+  // Focus stays in the window after the clicked button disappears.
+  await expect(jake.locator('#inventory-heading')).toBeFocused();
 
   // Jake gives Miranda a potion; she is told.
   const miranda = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -153,6 +166,10 @@ test('inventory: gear, effective stats, gifts and trades', async ({ browser }) =
   await tf.getByLabel('and item').selectOption({ label: '[Healing Potion (Common)]' });
   await tf.getByLabel('How many').fill('1');
   await tf.getByLabel(/You ask for/).fill('10');
+  await miranda.screenshot({
+    path: path.join(shots, 'player-trade-form-390x844.png'),
+    fullPage: true,
+  });
   await tf.getByRole('button', { name: 'Offer' }).click();
   await expect(mInv.getByTestId('trade-outgoing')).toContainText(
     'You offer Jake [Healing Potion (Common)] for 10 Credits',

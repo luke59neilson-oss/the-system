@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PlayerTrade, PlayerView } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
@@ -30,6 +30,21 @@ export function Inventory({ view, client }: { view: PlayerView; client: LiveClie
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const heading = useRef<HTMLHeadingElement | null>(null);
+  useEffect(() => {
+    if (done === null) return;
+    // The clicked button may be gone (equipped, unequipped, form closed):
+    // keep keyboard users in the window, then let the message fade.
+    requestAnimationFrame(() => {
+      if (document.activeElement === document.body) heading.current?.focus();
+    });
+    const timer = setTimeout(() => setDone(null), 8000);
+    return () => clearTimeout(timer);
+  }, [done]);
+  useEffect(() => {
+    // The view that removes the clicked button can land after the result.
+    if (done !== null && document.activeElement === document.body) heading.current?.focus();
+  }, [inv, done]);
   const send = async (command: { type: string } & Record<string, unknown>, ok: string) => {
     if (!client) return false;
     setBusy(true);
@@ -56,7 +71,9 @@ export function Inventory({ view, client }: { view: PlayerView; client: LiveClie
       aria-labelledby="inventory-heading"
       data-testid="inventory"
     >
-      <h2 id="inventory-heading">Inventory</h2>
+      <h2 id="inventory-heading" tabIndex={-1} ref={heading}>
+        Inventory
+      </h2>
       <dl className="rows">
         <dt>{rules.currencyName}</dt>
         <dd data-testid="currency">{inv.currency}</dd>

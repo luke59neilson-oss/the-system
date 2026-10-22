@@ -247,10 +247,18 @@ function clampToEffective(
       continue;
     }
     const stats = rule(event, () => effectiveOf(after, c));
-    const pools = rule(event, () => clampPools(after.rules, stats, c.pools));
-    if (after.rules.pools.some((p) => pools[p.id] !== c.pools[p.id])) {
-      out = withCharacter(out, { ...c, pools });
+    // Only lowers pools that exist; never fills a missing one (D81).
+    const capped = rule(event, () => clampPools(after.rules, stats, {}));
+    let pools: Record<string, number> | null = null;
+    for (const p of after.rules.pools) {
+      const current = hasOwn(c.pools, p.id) ? c.pools[p.id] : undefined;
+      const max = capped[p.id] ?? 0;
+      if (current !== undefined && current > max) {
+        pools ??= { ...c.pools };
+        pools[p.id] = max;
+      }
     }
+    if (pools !== null) out = withCharacter(out, { ...c, pools });
   }
   return out;
 }

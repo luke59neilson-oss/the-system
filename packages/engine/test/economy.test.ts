@@ -627,3 +627,36 @@ describe('pool maxima use effective stats (M3.7, D81)', () => {
     expect(pools(c)['hp']).toBe(150);
   });
 });
+
+describe('pool clamp edge cases (M3.7 review)', () => {
+  it('level-ups and gifts with gear equipped keep effective maxima', () => {
+    let c = run(
+      [
+        {
+          type: 'item.define',
+          id: 'amulet',
+          name: 'Amulet',
+          rarity: 'rare',
+          slot: 'necklace',
+          bonuses: [{ stat: 'vitality', flat: 10 }],
+        },
+        { type: 'holdings.adjust', characterId: 'jake', items: { amulet: 1 } },
+        { type: 'item.equip', characterId: 'jake', itemId: 'amulet', slot: 'necklace' },
+        { type: 'character.setPools', characterId: 'jake', pools: { hp: 200 } },
+        {
+          type: 'xp.award',
+          track: 'class',
+          amount: 500,
+          participants: [{ characterId: 'jake' }],
+        },
+      ],
+      ctx,
+      base(),
+    );
+    // XP raised base stats; the gear-raised pool stays (never clamped to base).
+    expect(c.state?.characters['jake']?.pools['hp']).toBe(200);
+    // A gift of another item touches holdings; the pools stay as they are.
+    c = ok(c, { type: 'gift.give', characterId: 'jake', to: 'kim', items: { potion: 1 } });
+    expect(c.state?.characters['jake']?.pools['hp']).toBe(200);
+  });
+});

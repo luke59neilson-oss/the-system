@@ -1070,6 +1070,7 @@ button.skill-open:hover .skill-name {
   min-width: 0;
 }
 .items {
+  font-family: var(--mono);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1090,9 +1091,6 @@ button.skill-open:hover .skill-name {
 }
 .item-bonus {
   font-size: 0.85rem;
-}
-.items {
-  font-family: var(--mono);
 }
 .stats li {
   flex-wrap: wrap;
