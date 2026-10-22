@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0, M1, M2 and M3 done; MS done except MS.7 (added 2026-10-22); M4 under way (M4.1–M4.4 done)
-**Next item:** MS.7 Launch polish (marked "do next"), then M4.5 Party dashboard
+**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.9 done, MQ.1 built, awaiting review round 2); M4.1–M4.4 done
+**Next item:** MQ.1 review round 2 (code is on main), then MQ.2 Pools follow maxima
 **Blockers:** none.
 
 ## Run log
@@ -464,4 +464,18 @@ next item, blockers. -->
 - New decision D95. New question Q40 (where portraits show; exports and backups do not carry them; removal does not unpublish).
 - Open `wip/*` branches: none unfinished.
 - Next: MS.7 Launch polish. Not started: under the new timebox it could not be finished and reviewed by minute 52.
+- Blockers: none.
+
+### Run e081d05f · 2026-10-22 14:09–14:56 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD, stale local `main`), so `main` was reset to `origin/main`.
+  - The lock was pushed to main. `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work in the background on worktrees.
+- Orient: no new answers in ANSWERS.md beyond batch 1, which Luke's commit 06151e3 (landed mid-run) had already applied (MQ milestone, D97–D109, new LOOP rule: answers in ANSWERS.md). CI on main was green (03fbbd8).
+- Finished:
+  - MS.7 Launch polish: splash within ~0.3 s of process start, a second launch focuses the running window (or the splash), a taken or reserved port falls back to the next free one with a dialog, a quit while starting closes the server and lock, release files `TheSystem-preview-<date>-<run>-…`, notes list commits since the previous preview (D96). Sonnet: round 1 3 Medium (1 fixed, 1 resolved by the dry run, 1 accepted), round 2 0 Medium.
+  - MQ.9 Windows-first releases (taken early because it shared the dry run with MS.7): Windows and Linux only, exactly 3 files. Sonnet: 0 High/Medium. Dry runs green: 39794644988 (new names, four files) and 39796128748 (three files). The `release-dry-run` branch had unrelated history, so it was joined with an `-s ours` merge (no force push).
+- Built, not checked: MQ.1 Evolution rules (fefa7d7, b3c1f84; D110). Round 1 had 3 Medium: the refill now uses effective stats (fixed); open for round 2: no GM UI for the bonus until M5.2, and the gate re-running on replay after a rules edit. Next run: run round 2 on 835717c..HEAD for MQ.1, fix, then check the box.
+- Tests: 691 unit/integration tests; full e2e suite (35) green before the default-transform change, M3.13 and MS.4 re-run after it; 6 desktop specs green. Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/MQ.1` (same as main at fefa7d7; nothing to resume from it).
 - Blockers: none.

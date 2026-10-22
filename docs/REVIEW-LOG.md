@@ -422,3 +422,21 @@
   - L fixed: portrait changes appear in the session log (unit test); only the latest pick counts in the new-character picker, which is disabled while reading; the picker's Remove has an aria-label.
   - L accepted: a well-formed but missing file name is accepted (the badge falls back to the monogram); orphan files after a failed create (files are never deleted); `readFileSync` per request with an immutable cache; server 400/413 paths covered by unit tests only; portraits not on the own status window (Q40).
 - Round 2 (e5d4e74..18cefa8, required by two Mediums): 0 High, 0 Medium, 2 Low. Accepted: a decode that never settles leaves the picker on "Reading…". Fixed: the reviewer worktree pointer committed by mistake in 18cefa8 was removed and `.claude/worktrees/` ignored (03fbbd8).
+
+## 2026-10-22 · MS.7 Launch polish · sonnet
+- Round 1 (935d7e8..b868d1e): 0 High, 3 Medium, 6 Low. Check and all 4 desktop specs pass; splash screenshot clear.
+  - M fixed: a quit or splash close while starting exited without closing the server and campaign lock (before-quit now holds the exit and start() closes what it opened; test proves the LOCK file is gone). Tests now check focus, a second launch during start (splash comes forward) and closing the splash while starting.
+  - M resolved: the workflow was unverified; both release-dry-run runs were green (39794644988 with the four new names, 39796128748 after MQ.9 with three).
+  - M accepted: the "within 1 s" figure is measured from process start (325 ms locally); the portable exe's own unpack time is outside Electron's control (D96).
+  - L accepted: a re-run picks the previous attempt as the "previous preview"; a program bound only to 127.0.0.1:30333 on Windows does not trigger the fallback; `did-fail-load` can reveal early; the port+1 assertion can race; desktop specs re-render screenshots; packaged smoke shares the real profile.
+- Round 2 (c841cba, required by three Mediums): 0 High, 0 Medium, 3 Low, accepted for now: a second quit while the server is closing can exit before the lock is released; no exit timeout while a start hangs; the test hold sets `running` only after the delay.
+
+## 2026-10-22 · MQ.9 Windows-first releases · sonnet
+- Round 1 (835717c): 0 High, 0 Medium, 3 Low (D55 and older ROADMAP lines still mention macOS as history; header wrap; mac section kept for local builds). Accepted. Dry run 39796128748 green: meta, build (linux), build (win), collect with exactly three files.
+
+## 2026-10-22 · MQ.1 Evolution rules · sonnet
+- Round 1 (835717c..fefa7d7): 0 High, 3 Medium, 4 Low.
+  - M fixed (b3c1f84): the refill used base stats; it now fills to the effective maximum (items and titles count; unit test).
+  - M open for round 2: no GM UI sets the stat bonus (there is no GM evolution builder until M5.2; D110 says so); the pending-selection gate re-runs on replay, so a later rules edit that adds a selection slot could make a stored v2 release fail to replay.
+  - L open: `statValues` accepts unknown stat ids at the schema (the reducer rejects them); `legacy: true` is accepted on hand-written v2 events; the refill sentence hard-codes pool names; `bonusText` edge cases fine.
+- Round 2 required (3 Mediums); not run this run (timebox). The box stays unchecked.

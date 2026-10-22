@@ -137,7 +137,7 @@ the full ones.
 - [x] **MS.A Milestone acceptance and review.** Then push `main` to
   `release` so Luke gets the first build.
 
-- [ ] **MS.7 Launch polish (do next).** Luke's first try of the preview
+- [x] **MS.7 Launch polish (do next).** Luke's first try of the preview
   failed to open. Make launching foolproof on Windows: a "Starting The
   System…" window appears within 1 s of double-clicking; a second launch
   brings the running window to the front instead of erroring; if port 30333
@@ -187,7 +187,7 @@ They touch finished engine and player items, so they come before M4.4.
 - [ ] **MQ.8 Identify range.** Lower grade always; higher grade never; same
   grade only if level ≤ 1.5 × the viewer's level; otherwise
   `[??? – lvl ???]`. *Accept:* engine and projection tests; e2e.
-- [ ] **MQ.9 Windows-first releases.** Luke uses Windows. Release builds
+- [x] **MQ.9 Windows-first releases.** Luke uses Windows. Release builds
   Windows (portable + installer) and Linux (kept for the automated smoke
   test); drop macOS (macOS Actions minutes count 10×). *Accept:* release
   dry run green with exactly 3 files.
