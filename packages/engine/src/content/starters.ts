@@ -182,7 +182,7 @@ export const STARTER_CLASSES: readonly StarterClass[] = [
         rarity: 'inferior',
         tags: ['Caster', 'Mana', 'Ranged'],
         description:
-          'Shape raw mana into a bolt and throw it. Costs mana; damage grows with Intelligence.',
+          'Shape raw mana into a bolt and throw it. Costs mana; it hits harder as your magic grows.',
         flavor: 'Crude, loud and effective.',
       },
       {

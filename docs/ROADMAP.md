@@ -214,7 +214,7 @@ They touch finished engine and player items, so they come before M4.4.
   not individually edited by the GM; effects visible to the skill's owner
   only. *Accept:* engine and projection tests (other players never see
   effects); e2e for an upgrade picking up new text and an edit propagating.
-- [ ] **MQ.13 The books' starting classes.** Replace the default class set
+- [x] **MQ.13 The books' starting classes.** Replace the default class set
   with DESIGN §10 (weights and starting skills, original text); update the
   built-in Archer, the demo campaign and screenshots. *Accept:* seed tests;
   demo e2e still green.

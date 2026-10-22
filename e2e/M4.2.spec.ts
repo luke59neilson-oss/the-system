@@ -198,7 +198,7 @@ test('the GM manages classes, races and professions; characters start from them'
     });
     await player.getByRole('button', { name: /\[Mana Bolt \(Inferior\)\]/ }).click();
     await expect(player.getByTestId('skill-detail-description')).toHaveText(
-      'Shape raw mana into a bolt and throw it. Costs mana; damage grows with Intelligence.',
+      'Shape raw mana into a bolt and throw it. Costs mana; it hits harder as your magic grows.',
     );
     await player.screenshot({
       path: path.join(shots, `player-skill-${viewport.width}x${viewport.height}.png`),

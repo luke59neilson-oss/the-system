@@ -87,9 +87,7 @@ async function noSidewaysScroll(page: Page) {
   expect(overflow).toBeLessThanOrEqual(0);
 }
 
-test('the GM starts a character from each of the six classes; the demo still loads', async ({
-  browser,
-}) => {
+test('the GM starts a character from each of the six classes', async ({ browser }) => {
   const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const gmErrors = watchErrors(gm);
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
@@ -152,20 +150,37 @@ test('the GM starts a character from each of the six classes; the demo still loa
   await noSidewaysScroll(phone);
   await phone.screenshot({ path: path.join(shots, 'player-heavy-390x844.png'), fullPage: true });
 
-  // The demo still loads; its level-0 character starts with the new Archer kit.
-  gm.on('dialog', (d) => void d.accept());
-  await gm.getByRole('button', { name: 'Load demo campaign' }).click();
-  await expect(gm.getByTestId('demo-badge')).toBeVisible();
-  await phone.goto(server.url);
-  await phone.getByRole('link', { name: /^Sultan\b/ }).click();
-  await expect(phone.getByTestId('class')).toHaveText('[Archer – lvl 0]');
-  await expect(
-    phone.getByRole('button', { name: '[Basic One-Handed Weapon (Inferior)]' }),
-  ).toBeVisible();
-  await phone.screenshot({ path: path.join(shots, 'player-demo-sultan-390x844.png') });
-  await gm.screenshot({ path: path.join(shots, 'gm-demo-1366x768.png') });
-
   expect(gmErrors).toEqual([]);
   expect(playerErrors).toEqual([]);
   expect(phoneErrors).toEqual([]);
+});
+
+test('the demo still loads; its level-0 character starts with the new Archer kit', async ({
+  browser,
+}) => {
+  const own = await startBuiltServer({ GM_KEY });
+  try {
+    const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+    const gmErrors = watchErrors(gm);
+    gm.on('dialog', (d) => void d.accept());
+    await gm.goto(`${own.url}/gm#key=${GM_KEY}`);
+    await gm.getByLabel('Campaign name').fill('Before the demo');
+    await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await gm.getByRole('button', { name: 'Load demo campaign' }).click();
+    await expect(gm.getByTestId('demo-badge')).toBeVisible();
+    const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    const phoneErrors = watchErrors(phone);
+    await phone.goto(own.url);
+    await phone.getByRole('link', { name: /^Sultan\b/ }).click();
+    await expect(phone.getByTestId('class')).toHaveText('[Archer – lvl 0]');
+    await expect(
+      phone.getByRole('button', { name: '[Basic One-Handed Weapon (Inferior)]' }),
+    ).toBeVisible();
+    await phone.screenshot({ path: path.join(shots, 'player-demo-sultan-390x844.png') });
+    await gm.screenshot({ path: path.join(shots, 'gm-demo-1366x768.png') });
+    expect(gmErrors).toEqual([]);
+    expect(phoneErrors).toEqual([]);
+  } finally {
+    await own.stop();
+  }
 });
