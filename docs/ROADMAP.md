@@ -209,7 +209,7 @@ They touch finished engine and player items, so they come before M4.4.
   unchanged until M4.9 switches them). *Accept:* engine tests
   (class capped → profession levels; profession capped → class levels; both
   capped → lost and reported); 40-session simulation still passes.
-- [ ] **MQ.12 Skill library rules.** Library entries keyed by name and rarity;
+- [x] **MQ.12 Skill library rules.** Library entries keyed by name and rarity;
   an upgrade takes the higher rarity's text; library edits update every copy
   not individually edited by the GM; effects visible to the skill's owner
   only. *Accept:* engine and projection tests (other players never see

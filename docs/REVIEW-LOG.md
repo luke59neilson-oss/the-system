@@ -533,3 +533,10 @@
 - Low fixed: a comment at the post-evolution `gainXp(…, 0)` calls says they are no-ops under overflow.
 - Low accepted: `previewXpAward` throws for a profession award to a character without a profession, like the award itself (M4.6 filters participants); the extra edge cases the reviewer traced (lagging profession batches, partial XP, bonuses) were found correct; the `overflow` golden covers the lost path, the overflow path is in progression tests; older banking comments describe `gainXp`, still the banking primitive.
 - One Medium only, so no round 2.
+
+## 2026-10-22 · MQ.12 Skill library rules · reviewer: sonnet (rounds 1 and 2)
+- Round 1: 0 High, 2 Medium, 6 Low.
+- Medium fixed: "Add the default set" (`library.seeded`) did not sync copies that already existed; it now counts every seeded skill entry as just defined (D126). Medium fixed: the default seed matched skills by name only, so an existing other-rarity entry blocked a default one; under `libraryByRarity` it matches name and rarity, stored rules keep name-only. Two engine tests, both seen failing before the fix.
+- Low fixed: the GM "Skill text" form says a hand edit stops later library edits reaching that copy.
+- Low to the QUALITY backlog: hand-edited copies keep their text through upgrades and the mark cannot be cleared; renaming an entry or changing its rarity orphans copies silently; switching the flag on for a stored campaign (M4.9) would overwrite earlier hand edits. Low accepted: a copy upgraded to a rarity with no entry keeps its old text (D125 says so); grant-with-explicit-text overwrite is moot (no grant path carries text).
+- Round 2 (6bf36a5): 0 High, 0 Medium, 0 Low.
