@@ -351,6 +351,7 @@ exports[`default rules > match the snapshot 1`] = `
       0.3333333333333333,
       0,
     ],
+    "overflow": true,
   },
 }
 `;

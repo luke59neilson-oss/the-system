@@ -164,6 +164,7 @@
       "aboveLevelBonusPerLevel": 0.1,
       "aboveLevelBonusCap": 1,
       "gradeBelowFactors": [],
+      "overflow": false,
       "defaultSplit": "even"
     },
     "bonuses": {

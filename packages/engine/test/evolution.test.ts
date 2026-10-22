@@ -21,8 +21,18 @@ import {
 } from '../src';
 import { kit, rawRules, run, testContext } from './helpers/events';
 
+/**
+ * These evolution tests stage levels by banking XP at the cap, so they run on
+ * banking rules (`xp.overflow` off: campaigns stored before MQ.11, which keep
+ * that behaviour). Overflow has its own tests in progression.test.ts.
+ */
+const bankingRules = () => {
+  const raw = rawRules() as { xp: Record<string, unknown> };
+  raw.xp.overflow = false;
+  return raw;
+};
 const rules = defaultRules();
-const created: Command = { type: 'campaign.create', name: 'Whale', rules: rawRules() };
+const created: Command = { type: 'campaign.create', name: 'Whale', rules: bankingRules() };
 const make = (id: string, name: string): Command => ({
   type: 'character.create',
   id,
@@ -745,7 +755,7 @@ describe('evolution gate (config tracks.evolutionGate)', () => {
   });
 
   it('class gate end to end through commands', () => {
-    const raw = rawRules() as { tracks: { evolutionGate: string } };
+    const raw = bankingRules() as unknown as { tracks: { evolutionGate: string } };
     raw.tracks.evolutionGate = 'class';
     let c = run(
       [{ type: 'campaign.create', name: 'Gate', rules: raw }, make('jake', 'Jake')],
@@ -844,7 +854,7 @@ describe('review fixes (M1.10 round 1)', () => {
   });
 
   it('class gate: a lagging profession evolves with its level and banked XP repriced at the new grade', () => {
-    const raw = rawRules() as { tracks: { evolutionGate: string } };
+    const raw = bankingRules() as unknown as { tracks: { evolutionGate: string } };
     raw.tracks.evolutionGate = 'class';
     let c = run(
       [{ type: 'campaign.create', name: 'Gate', rules: raw }, make('jake', 'Jake')],

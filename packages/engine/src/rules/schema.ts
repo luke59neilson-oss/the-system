@@ -111,6 +111,12 @@ export const rulesConfigSchema = z
        * campaigns from before MQ.10) means no reduction.
        */
       gradeBelowFactors: z.array(fraction.max(1)).max(10).default([]),
+      /**
+       * DESIGN §2 (MQ.11, L3): XP a capped track cannot use goes to the other
+       * track, and is lost when neither can use it. Rules stored before it
+       * read false (XP banks at the grade's top), so older logs replay unchanged.
+       */
+      overflow: z.boolean().default(false),
       defaultSplit: z.literal('even'),
     }),
     bonuses: z.strictObject({

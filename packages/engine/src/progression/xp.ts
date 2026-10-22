@@ -329,6 +329,81 @@ export function gainXp(
   };
 }
 
+export interface AwardResult extends XpResult {
+  /** XP that went to the other track because this one was at the grade's top (MQ.11). */
+  readonly overflowed: number;
+  /** XP with nowhere to go: both tracks at the top, or the class with no profession. */
+  readonly lost: number;
+}
+
+/**
+ * Applies awarded XP (MQ.11, DESIGN §2 "No banked XP; XP overflows"). With
+ * `rules.xp.overflow` on, XP a track cannot use because it is at the grade's
+ * top goes to the other track, and whatever neither can use is lost; nothing
+ * is held. With it off (rules stored before MQ.11) XP banks at the top as
+ * before, so older logs replay unchanged.
+ */
+export function awardXp(
+  rules: RulesConfig,
+  character: Character,
+  track: XpTrack,
+  amount: number,
+): AwardResult {
+  if (!rules.xp.overflow)
+    return { ...gainXp(rules, character, track, amount), overflowed: 0, lost: 0 };
+  const first = gainXp(rules, character, track, amount);
+  let next = first.character;
+  const levelUps = [...first.levelUps];
+  const trackLevel = (c: Character, t: XpTrack) =>
+    t === 'class' ? c.classLevel : c.professionLevel;
+  let left = 0;
+  if (isAtCap(rules, next.grade, trackLevel(next, track))) {
+    left = next.xp[track];
+    next = { ...next, xp: { ...next.xp, [track]: 0 } };
+  }
+  const other: XpTrack = track === 'class' ? 'profession' : 'class';
+  let overflowed = 0;
+  if (left > 0 && (other === 'class' || next.profession !== null)) {
+    if (!isAtCap(rules, next.grade, trackLevel(next, other))) {
+      overflowed = left;
+      const second = gainXp(rules, next, other, left);
+      next = second.character;
+      levelUps.push(...second.levelUps);
+      left = 0;
+      if (isAtCap(rules, next.grade, trackLevel(next, other))) {
+        left = next.xp[other];
+        overflowed -= left;
+        next = { ...next, xp: { ...next.xp, [other]: 0 } };
+      }
+    }
+  }
+  return { character: next, levelUps, overflowed, lost: left };
+}
+
+/** One participant's outcome in the GM's award preview (MQ.11). */
+export interface XpPreview extends XpShare {
+  readonly overflowed: number;
+  readonly lost: number;
+  readonly levelUps: readonly LevelUp[];
+}
+
+/**
+ * What an award would do before the GM confirms it (MQ.11): each
+ * participant's gain, what overflows to the other track and what is lost.
+ */
+export function previewXpAward(
+  rules: RulesConfig,
+  characters: Readonly<Record<string, Character>>,
+  track: XpTrack,
+  input: SplitInput,
+): XpPreview[] {
+  return splitXp(rules, characters, input).map((s) => {
+    const character = characters[s.characterId] as Character;
+    const r = awardXp(rules, character, track, s.gained);
+    return { ...s, overflowed: r.overflowed, lost: r.lost, levelUps: r.levelUps };
+  });
+}
+
 /** XP needed for `levels` more levels on a track at the current grade (the GM's pacing helper). */
 export function xpForLevels(
   rules: RulesConfig,

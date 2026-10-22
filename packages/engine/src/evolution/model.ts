@@ -583,6 +583,8 @@ export function chooseEvolution(
   if (!legacy) next = applyStatBonus(next, option.statBonus ?? {});
   if (profession !== null) next = grantProfession(rules, next, profession);
   const levelUps: LevelUp[] = [];
+  // Spends XP banked at the old top (banking rules only); with `xp.overflow`
+  // on, capped tracks hold 0 XP, so these are no-ops (MQ.11).
   const cls = gainXp(rules, next, 'class', 0);
   next = cls.character;
   levelUps.push(...cls.levelUps);

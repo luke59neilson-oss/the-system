@@ -11,6 +11,7 @@ import {
   poolMax,
   projectForGm,
   projectForPlayer,
+  previewXpAward,
   raceLevel,
   replay,
   selectionSlots,
@@ -95,8 +96,9 @@ interface Tally {
   montages: number;
   professionPicks: number;
   deferredChoices: number;
-  banked: number;
-  bankedProfession: number;
+  /** Awards made while an evolution was held: lost, since nothing banks (MQ.11). */
+  lostWhileHeld: number;
+  lostProfession: number;
   plans: Record<string, number[]>;
 }
 
@@ -140,8 +142,8 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
     montages: 0,
     professionPicks: 0,
     deferredChoices: 0,
-    banked: 0,
-    bankedProfession: 0,
+    lostWhileHeld: 0,
+    lostProfession: 0,
     plans: {},
   };
 
@@ -250,23 +252,27 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
   /** Held evolution: GM releases (1–4 options), the player chooses. */
   const evolve = (id: string, target: GradeRules, bankLevels: number, bankTrack: XpTrack) => {
     if (bankLevels > 0) {
-      // Held: more XP only banks, levels stay at the cap (DESIGN §3).
+      // Held with both tracks at the top: more XP has nowhere to go and is
+      // lost; nothing banks (DESIGN §2-3, MQ.11).
       const held = char(id);
-      const amount = bankLevels * target.xpPerLevel - held.xp[bankTrack];
+      const amount = bankLevels * target.xpPerLevel;
+      const preview = previewXpAward(rules, c.state?.characters ?? {}, bankTrack, {
+        amount,
+        participants: [{ characterId: id }],
+      });
+      expect(preview[0]?.lost, `seed ${seed}: ${id} preview says the XP is lost`).toBe(amount);
       exec({
         type: 'xp.award',
         track: bankTrack,
         amount,
         participants: [{ characterId: id }],
       });
-      const banked = char(id);
-      expect(banked.classLevel, `seed ${seed}: ${id} held at the cap`).toBe(held.classLevel);
-      expect(banked.professionLevel, `seed ${seed}: ${id} held`).toBe(held.professionLevel);
-      expect(banked.xp[bankTrack], `seed ${seed}: ${id} XP banks`).toBe(
-        held.xp[bankTrack] + amount,
-      );
-      tally.banked++;
-      if (bankTrack === 'profession') tally.bankedProfession++;
+      const after = char(id);
+      expect(after.classLevel, `seed ${seed}: ${id} held at the cap`).toBe(held.classLevel);
+      expect(after.professionLevel, `seed ${seed}: ${id} held`).toBe(held.professionLevel);
+      expect(after.xp, `seed ${seed}: ${id} XP is lost, not banked`).toEqual(held.xp);
+      tally.lostWhileHeld++;
+      if (bankTrack === 'profession') tally.lostProfession++;
     }
     const before = char(id);
     const race = raceLevel(rules, before);
@@ -317,9 +323,7 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
       t === 'class'
         ? ch.classLevel - before.classLevel
         : ch.professionLevel - before.professionLevel;
-    expect(gained(after, bankTrack), `seed ${seed}: ${id} banked XP applies at the new grade`).toBe(
-      bankLevels,
-    );
+    expect(gained(after, bankTrack), `seed ${seed}: ${id} nothing banked to apply`).toBe(0);
     if (!unlock) {
       const other: XpTrack = bankTrack === 'class' ? 'profession' : 'class';
       expect(gained(after, other), `seed ${seed}: ${id} other track unchanged`).toBe(0);
@@ -886,8 +890,8 @@ describe('campaign simulation (ROADMAP M1.14)', () => {
       }
     }
     expect(tally.professionPicks, `seed ${SEED}`).toBe(PARTY.length);
-    expect(tally.banked, `seed ${SEED}: XP banked while held`).toBeGreaterThan(5);
-    expect(tally.bankedProfession, `seed ${SEED}: profession XP banked`).toBeGreaterThan(1);
+    expect(tally.lostWhileHeld, `seed ${SEED}: XP lost while held`).toBeGreaterThan(5);
+    expect(tally.lostProfession, `seed ${SEED}: profession XP lost`).toBeGreaterThan(1);
   });
 
   it(`the whole run is valid play that exercises the systems (seed ${SEED})`, () => {

@@ -124,6 +124,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
     aboveLevelBonusCap: 1,
     // §5 XP across grades: one grade below ⅓, two or more below 0 (MQ.10, L2).
     gradeBelowFactors: [1 / 3, 0],
+    overflow: true, // §2 no banked XP, MQ.11
     defaultSplit: 'even',
   },
   bonuses: { percentCapPerStat: 0.25 }, // §4

@@ -526,3 +526,10 @@
 - Findings: 0 High, 0 Medium, 4 Low.
 - Low accepted: an out-of-range target keeps its player-facing label (D123; the label is separate from the GM name, and M7.2 now notes a warning when a label gives too much away); "Identify: <label>" repeats the label above the rank line (cosmetic); no GM UI for grade/level until M7.2 (roadmap note added); no per-grade level range check (the GM may set it freely).
 - Clean round 1, so no round 2.
+
+## 2026-10-22 · MQ.11 XP overflow, no banking · reviewer: sonnet (round 1)
+- Findings: 0 High, 1 Medium, 4 Low.
+- Medium: the rules flag replaces the roadmap's "schema bump + upcaster" without saying so, and switching an old campaign later leaves its banks unhandled. Fixed in docs: the MQ.11 accept line records the replacement (D124); M4.9 now owns moving banked XP when the flag is turned on; Q49 asks Luke whether old campaigns should switch automatically.
+- Low fixed: a comment at the post-evolution `gainXp(…, 0)` calls says they are no-ops under overflow.
+- Low accepted: `previewXpAward` throws for a profession award to a character without a profession, like the award itself (M4.6 filters participants); the extra edge cases the reviewer traced (lagging profession batches, partial XP, bonuses) were found correct; the `overflow` golden covers the lost path, the overflow path is in progression tests; older banking comments describe `gainXp`, still the banking primitive.
+- One Medium only, so no round 2.
