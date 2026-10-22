@@ -553,3 +553,77 @@ describe('trades', () => {
     expect(held(c, 'kim')).toMatchObject({ currency: 550, inventory: {} });
   });
 });
+
+describe('pool maxima use effective stats (M3.7, D81)', () => {
+  const amulet: Command = {
+    type: 'item.define',
+    id: 'amulet',
+    name: 'Amulet of Vigor',
+    rarity: 'rare',
+    slot: 'necklace',
+    bonuses: [{ stat: 'vitality', flat: 5 }],
+  };
+  const pools = (c: Campaign, id = 'jake') => c.state?.characters[id]?.pools ?? {};
+  const setup = () =>
+    run(
+      [amulet, { type: 'holdings.adjust', characterId: 'jake', items: { amulet: 1 } }],
+      ctx,
+      base(),
+    );
+  const equipAmulet: Command = {
+    type: 'item.equip',
+    characterId: 'jake',
+    itemId: 'amulet',
+    slot: 'necklace',
+  };
+
+  it('equipping raises the maximum but never refills the pool', () => {
+    let c = setup();
+    expect(pools(c)['hp']).toBe(100);
+    c = ok(c, equipAmulet);
+    expect(pools(c)['hp']).toBe(100);
+    // Vitality 10 + 5 = 15 → max 150: a pool set up to 150 is now valid.
+    c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: { hp: 150 } });
+    expect(pools(c)['hp']).toBe(150);
+    expect(
+      reject(c, { type: 'character.setPools', characterId: 'jake', pools: { hp: 151 } }),
+    ).toContain('between 0 and 150');
+  });
+
+  it('unequipping or weakening the item clamps the pool down', () => {
+    let c = ok(setup(), equipAmulet);
+    c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: { hp: 140 } });
+    c = ok(c, { type: 'item.edit', itemId: 'amulet', bonuses: [{ stat: 'vitality', flat: 2 }] });
+    expect(pools(c)['hp']).toBe(120);
+    c = ok(c, { type: 'item.unequip', characterId: 'jake', slot: 'necklace' });
+    expect(pools(c)['hp']).toBe(100);
+    // Other pools and other characters are untouched.
+    expect(pools(c)['mp']).toBe(100);
+    expect(pools(c, 'kim')['hp']).toBe(100);
+  });
+
+  it('base stat changes clamp against effective maxima, not base ones', () => {
+    let c = ok(setup(), equipAmulet);
+    c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: { hp: 150 } });
+    // Base vitality 10 → 8; effective 13 → max 130 (a base-only clamp would give 80).
+    c = ok(c, { type: 'character.setStats', characterId: 'jake', stats: { vitality: 8 } });
+    expect(pools(c)['hp']).toBe(130);
+  });
+
+  it('an undo of an equip that a later pool set depends on is refused (D31)', () => {
+    let c = ok(setup(), equipAmulet);
+    const equipId = c.events[c.events.length - 1]?.id ?? '';
+    c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: { hp: 150 } });
+    expect(reject(c, { type: 'event.undo', eventId: equipId })).toContain('depends on it');
+  });
+
+  it('an undo of an unequip restores the higher maximum without refilling', () => {
+    let c = ok(setup(), equipAmulet);
+    c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: { hp: 150 } });
+    c = ok(c, { type: 'item.unequip', characterId: 'jake', slot: 'necklace' });
+    const unequipId = c.events[c.events.length - 1]?.id ?? '';
+    expect(pools(c)['hp']).toBe(100);
+    c = ok(c, { type: 'event.undo', eventId: unequipId });
+    expect(pools(c)['hp']).toBe(150);
+  });
+});

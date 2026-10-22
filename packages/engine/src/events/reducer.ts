@@ -217,8 +217,50 @@ const partyName = (id: string | null) => (id === null ? 'the GM' : `"${id}"`);
  * Applies one domain event (not `event.undone`; the log handles undo).
  * Validates the event against the state and throws EventRejectedError when it
  * does not apply. Pure: never mutates `state`.
+ *
+ * Invariant (M3.7, D81): no current pool is ever above its maximum from the
+ * character's effective stats (base + equipped items). After every event, a
+ * character whose stats, holdings or item definitions changed has its pools
+ * clamped down; a rising maximum never refills a pool.
  */
 export function applyEvent(state: CampaignState | null, event: DomainEvent): CampaignState {
+  const next = applyEventRaw(state, event);
+  return state === null ? next : clampToEffective(state, next, event);
+}
+
+function clampToEffective(
+  before: CampaignState,
+  after: CampaignState,
+  event: DomainEvent,
+): CampaignState {
+  const itemsChanged = before.items !== after.items || before.rules !== after.rules;
+  let out = after;
+  for (const id of after.characterOrder) {
+    const c = hasOwn(after.characters, id) ? after.characters[id] : undefined;
+    if (!c) continue;
+    if (
+      !itemsChanged &&
+      hasOwn(before.characters, id) &&
+      before.characters[id] === c &&
+      holdingsOf(before, id) === holdingsOf(after, id)
+    ) {
+      continue;
+    }
+    const stats = rule(event, () => effectiveOf(after, c));
+    const pools = rule(event, () => clampPools(after.rules, stats, c.pools));
+    if (after.rules.pools.some((p) => pools[p.id] !== c.pools[p.id])) {
+      out = withCharacter(out, { ...c, pools });
+    }
+  }
+  return out;
+}
+
+/** Effective stats of a character in this state (base + equipped items). */
+function effectiveOf(state: CampaignState, c: Character): Record<string, number> {
+  return itemEffectiveStats(state.rules, c.stats, holdingsOf(state, c.id), state.items);
+}
+
+function applyEventRaw(state: CampaignState | null, event: DomainEvent): CampaignState {
   if (event.type === 'campaign.created') {
     if (state !== null) fail(event, 'the campaign already exists');
     const parsed = parseRulesConfig(event.payload.rules);
@@ -287,7 +329,9 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
       // Out-of-range values are rejected, not clamped, so an undo that would
       // change what a later pool set meant is refused (D31).
       for (const [poolId, value] of Object.entries(pools)) {
-        const max = rule(event, () => poolMax(state.rules, character.stats, poolId));
+        const max = rule(event, () =>
+          poolMax(state.rules, effectiveOf(state, character), poolId),
+        );
         if (value < 0 || value > max) fail(event, `${poolId} must be between 0 and ${max}`);
       }
       return withCharacter(state, {
@@ -305,11 +349,8 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
         'stat',
       );
       const merged = { ...character.stats, ...stats };
-      return withCharacter(state, {
-        ...character,
-        stats: merged,
-        pools: rule(event, () => clampPools(state.rules, merged, character.pools)),
-      });
+      // Pools are clamped to the new effective maxima after the event (D81).
+      return withCharacter(state, { ...character, stats: merged });
     }
     case 'xp.awarded': {
       const { track, amount, shares, enemyLevel } = event.payload;
@@ -369,7 +410,6 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
         ...character,
         stats,
         freePointBatches: batches,
-        pools: rule(event, () => clampPools(state.rules, stats, character.pools)),
       });
     }
     case 'system.broadcast': {
@@ -928,7 +968,7 @@ function toItemDef(
 
 /**
  * A character's effective stats: base stats plus equipped item bonuses in the
- * M1.6 order (titles join in M6.4). Pools and the screen switch to these in M3.7 (D58).
+ * M1.6 order (titles join in M6.4). Pool maxima and the player screen use these (M3.7, D81).
  */
 export function characterEffectiveStats(
   state: CampaignState,

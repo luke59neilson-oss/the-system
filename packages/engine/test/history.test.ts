@@ -105,3 +105,104 @@ describe('notificationHistory (M3.3)', () => {
     for (const i of items) expect(demo.state?.characters[i.notification.characterId]).toBeDefined();
   });
 });
+
+describe('gift and trade notices (M3.7)', () => {
+  const ctx = testContext('g');
+  const player = (characterId: string) => ({
+    ...ctx,
+    actor: { role: 'player' as const, characterId },
+  });
+  const notices = (c: Campaign) =>
+    notificationHistory(c)
+      .map((h) => h.notification)
+      .filter((n) => n.kind === 'gift' || n.kind === 'trade');
+
+  it('tells only the recipient of a gift, with names and the currency name', () => {
+    let c = run(
+      [
+        ...setup,
+        { type: 'item.define', id: 'potion', name: 'Potion', rarity: 'common' },
+        { type: 'gift.give', characterId: null, to: 'jake', currency: 30, items: { potion: 2 } },
+      ],
+      ctx,
+    );
+    const r = execute(
+      c,
+      { type: 'gift.give', characterId: 'jake', to: 'casper', items: { potion: 1 } },
+      player('jake'),
+    );
+    if (!r.ok) throw new Error(r.error);
+    c = r.campaign;
+    expect(notices(c)).toEqual([
+      {
+        kind: 'gift',
+        characterId: 'jake',
+        from: null,
+        currency: 30,
+        currencyName: 'Credits',
+        items: [{ name: 'Potion', count: 2 }],
+      },
+      {
+        kind: 'gift',
+        characterId: 'casper',
+        from: 'Jake',
+        currency: 0,
+        currencyName: 'Credits',
+        items: [{ name: 'Potion', count: 1 }],
+      },
+    ]);
+  });
+
+  it('tells the party who did not act on each trade step; never the GM', () => {
+    let c = run(
+      [...setup, { type: 'gift.give', characterId: null, to: 'jake', currency: 30 }],
+      ctx,
+    );
+    const step = (command: Command, who: string) => {
+      const r = execute(c, command, player(who));
+      if (!r.ok) throw new Error(r.error);
+      c = r.campaign;
+    };
+    step(
+      {
+        type: 'trade.propose',
+        tradeId: 't1',
+        characterId: 'jake',
+        to: 'casper',
+        give: { currency: 10 },
+        get: {},
+      },
+      'jake',
+    );
+    step({ type: 'trade.accept', tradeId: 't1', characterId: 'casper' }, 'casper');
+    step(
+      {
+        type: 'trade.propose',
+        tradeId: 't2',
+        characterId: 'jake',
+        to: 'casper',
+        give: { currency: 5 },
+        get: {},
+      },
+      'jake',
+    );
+    step({ type: 'trade.cancel', tradeId: 't2', characterId: 'jake' }, 'jake');
+    step(
+      {
+        type: 'trade.propose',
+        tradeId: 't3',
+        characterId: 'jake',
+        to: null,
+        give: { currency: 5 },
+        get: {},
+      },
+      'jake',
+    );
+    expect(notices(c).filter((n) => n.kind === 'trade')).toEqual([
+      { kind: 'trade', characterId: 'casper', action: 'proposed', other: 'Jake' },
+      { kind: 'trade', characterId: 'jake', action: 'accepted', other: 'Casper' },
+      { kind: 'trade', characterId: 'casper', action: 'proposed', other: 'Jake' },
+      { kind: 'trade', characterId: 'casper', action: 'cancelled', other: 'Jake' },
+    ]);
+  });
+});

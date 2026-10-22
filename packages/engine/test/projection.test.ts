@@ -159,7 +159,10 @@ describe('player projection', () => {
     const ownFields = Object.entries(CHARACTER_FIELD_VISIBILITY)
       .filter(([, v]) => v !== 'gm')
       .map(([k]) => k);
-    expect(Object.keys(view.me).sort()).toEqual([...ownFields, 'raceLevel'].sort());
+    // Derived: race level and effective stats (base + equipped items, D81).
+    expect(Object.keys(view.me).sort()).toEqual(
+      [...ownFields, 'raceLevel', 'effectiveStats'].sort(),
+    );
   });
 
   it('sends players only the display rules', () => {
@@ -497,5 +500,41 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
     expect(projections, `seed ${SEED}`).toBeGreaterThan(STATES * 2);
     expect(multiParty, `seed ${SEED}`).toBeGreaterThan(STATES * 0.9);
     expect(c.state?.characterOrder.length ?? 0, `seed ${SEED}`).toBeGreaterThan(3);
+  });
+});
+
+describe('effective stats on the player sheet (M3.7, D81)', () => {
+  it('shows effective stats and pool maxima; party bars use the same maxima', () => {
+    const c = run(
+      [
+        { type: 'campaign.create', name: 'Eff', rules: rawRules() },
+        {
+          type: 'character.create',
+          id: 'jake',
+          name: 'Jake',
+          className: 'Archer',
+          classSkills: kit,
+        },
+        { type: 'character.create', id: 'kim', name: 'Kim', className: 'Archer', classSkills: kit },
+        {
+          type: 'item.define',
+          id: 'amulet',
+          name: 'Amulet',
+          rarity: 'rare',
+          slot: 'necklace',
+          bonuses: [{ stat: 'vitality', flat: 10 }],
+        },
+        { type: 'gift.give', characterId: null, to: 'jake', items: { amulet: 1 } },
+        { type: 'item.equip', characterId: 'jake', itemId: 'amulet', slot: 'necklace' },
+      ],
+      testContext('eff'),
+    );
+    const state = c.state ?? (null as never);
+    const me = projectForPlayer(state, 'jake').me;
+    expect(me.stats['vitality']).toBe(10);
+    expect(me.effectiveStats['vitality']).toBe(20);
+    expect(me.pools.find((p) => p.id === 'hp')).toEqual({ id: 'hp', current: 100, max: 200 });
+    const bar = projectForPlayer(state, 'kim').party.find((m) => m.id === 'jake');
+    expect(bar?.pools.find((p) => p.id === 'hp')?.percent).toBe(50);
   });
 });

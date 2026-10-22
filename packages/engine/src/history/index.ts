@@ -31,6 +31,24 @@ export type SystemNotification =
       readonly kind: 'broadcast';
       readonly characterId: string;
       readonly text: string;
+    }
+  | {
+      /** Currency and/or items arrived as a gift (M3.7); only the recipient is told. */
+      readonly kind: 'gift';
+      readonly characterId: string;
+      /** The giver's name, or null for the GM. */
+      readonly from: string | null;
+      readonly currency: number;
+      readonly currencyName: string;
+      readonly items: readonly { readonly name: string; readonly count: number }[];
+    }
+  | {
+      /** A trade changed by the other party (M3.7); only the party who did not act is told. */
+      readonly kind: 'trade';
+      readonly characterId: string;
+      readonly action: 'proposed' | 'accepted' | 'declined' | 'cancelled';
+      /** The other party's name, or null for the GM. */
+      readonly other: string | null;
     };
 
 /** A notification with where it sits in the campaign. */
@@ -48,6 +66,13 @@ const granted = (c: Character) => c.freePointBatches.reduce((a, b) => a + b.poin
 const open = (c: Character) =>
   c.freePointBatches.filter((b) => b.allocation === null).reduce((a, b) => a + b.points, 0);
 
+const TRADE_ACTION = {
+  'trade.proposed': 'proposed',
+  'trade.accepted': 'accepted',
+  'trade.declined': 'declined',
+  'trade.cancelled': 'cancelled',
+} as const;
+
 /** Notifications caused by one event, comparing the states before and after it. */
 export function notificationsBetween(
   before: CampaignState | null,
@@ -61,6 +86,44 @@ export function notificationsBetween(
     const recipients = event.payload.characterIds ?? after.characterOrder;
     for (const characterId of recipients) {
       out.push({ kind: 'broadcast', characterId, text: event.payload.text });
+    }
+  }
+  if (event?.type === 'gift.given' && event.payload.to !== null) {
+    const { characterId: giver, to, bundle } = event.payload;
+    out.push({
+      kind: 'gift',
+      characterId: to,
+      from: giver === null ? null : (after.characters[giver]?.name ?? giver),
+      currency: bundle.currency,
+      currencyName: after.rules.economy.currencyName,
+      items: Object.entries(bundle.items).map(([itemId, count]) => ({
+        name: after.items[itemId]?.name ?? itemId,
+        count,
+      })),
+    });
+  }
+  if (
+    event?.type === 'trade.proposed' ||
+    event?.type === 'trade.accepted' ||
+    event?.type === 'trade.declined' ||
+    event?.type === 'trade.cancelled'
+  ) {
+    const trade = has(after.trades, event.payload.tradeId)
+      ? after.trades[event.payload.tradeId]
+      : undefined;
+    if (trade) {
+      // The proposer acts on proposed/cancelled; the counterparty on accept/decline.
+      const proposerActs = event.type === 'trade.proposed' || event.type === 'trade.cancelled';
+      const told = proposerActs ? trade.to : trade.from;
+      const actor = proposerActs ? trade.from : trade.to;
+      if (told !== null) {
+        out.push({
+          kind: 'trade',
+          characterId: told,
+          action: TRADE_ACTION[event.type],
+          other: actor === null ? null : (after.characters[actor]?.name ?? actor),
+        });
+      }
     }
   }
   for (const id of after.characterOrder) {

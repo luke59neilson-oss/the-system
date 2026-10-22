@@ -8,6 +8,7 @@ import {
 import type { CampaignState } from '../events';
 import {
   EMPTY_HOLDINGS,
+  itemEffectiveStats,
   type Bundle,
   type Holdings,
   type ItemDef,
@@ -150,7 +151,10 @@ export interface OwnSheet {
   readonly xp: Readonly<{ class: number; profession: number }>;
   readonly classWeights: Readonly<Record<string, number>>;
   readonly classSpreadTotals: Readonly<Record<string, number>>;
+  /** Base stats (class spread + free points); the free-point dialog adds to these. */
   readonly stats: Readonly<Record<string, number>>;
+  /** Stats after equipped item bonuses (M3.7, D60/D81): the Stats block and pool maxima. */
+  readonly effectiveStats: Readonly<Record<string, number>>;
   readonly pools: readonly OwnPool[];
   readonly freePointBatches: readonly FreePointBatch[];
   readonly titles: readonly string[];
@@ -322,8 +326,18 @@ export function poolPercent(current: number, max: number): number {
   return Math.min(99, Math.max(1, Math.round((current / max) * 100)));
 }
 
-function ownSheet(rules: RulesConfig, c: Character): OwnSheet {
+/** Effective stats (base + equipped items) of a character, for pool maxima. */
+function effectiveFor(state: CampaignState, c: Character): Record<string, number> {
+  const h = hasOwnKey(state.holdings, c.id)
+    ? (state.holdings[c.id] ?? EMPTY_HOLDINGS)
+    : EMPTY_HOLDINGS;
+  return itemEffectiveStats(state.rules, c.stats, h, state.items);
+}
+
+function ownSheet(state: CampaignState, c: Character): OwnSheet {
+  const rules = state.rules;
   const statIds = rules.stats.list.map((s) => s.id);
+  const effective = effectiveFor(state, c);
   return {
     schemaVersion: c.schemaVersion,
     id: c.id,
@@ -339,10 +353,11 @@ function ownSheet(rules: RulesConfig, c: Character): OwnSheet {
     classWeights: copyRecord(c.classWeights, statIds),
     classSpreadTotals: copyRecord(c.classSpreadTotals, statIds),
     stats: copyRecord(c.stats, statIds),
+    effectiveStats: copyRecord(effective, statIds),
     pools: rules.pools.map((p) => ({
       id: p.id,
       current: own(c.pools, p.id) ?? 0,
-      max: poolMax(rules, c.stats, p.id),
+      max: poolMax(rules, effective, p.id),
     })),
     freePointBatches: c.freePointBatches.map((b) => ({
       raceLevel: b.raceLevel,
@@ -413,7 +428,9 @@ const copyOption = (o: SkillOption): SkillOption => ({
   description: o.description,
 });
 
-function partyMember(rules: RulesConfig, c: Character): PartyMember {
+function partyMember(state: CampaignState, c: Character): PartyMember {
+  const rules = state.rules;
+  const effective = effectiveFor(state, c);
   return {
     id: c.id,
     name: c.name,
@@ -426,7 +443,7 @@ function partyMember(rules: RulesConfig, c: Character): PartyMember {
     grade: c.grade,
     pools: rules.pools.map((p) => ({
       id: p.id,
-      percent: poolPercent(own(c.pools, p.id) ?? 0, poolMax(rules, c.stats, p.id)),
+      percent: poolPercent(own(c.pools, p.id) ?? 0, poolMax(rules, effective, p.id)),
     })),
   };
 }
@@ -443,13 +460,13 @@ export function projectForPlayer(state: CampaignState, characterId: string): Pla
   const party: PartyMember[] = [];
   for (const id of state.characterOrder) {
     const other = state.characters[id];
-    if (id !== characterId && other) party.push(partyMember(state.rules, other));
+    if (id !== characterId && other) party.push(partyMember(state, other));
   }
   return {
     viewerId: viewer.id,
     campaignName: state.name,
     rules: projectRules(state.rules),
-    me: ownSheet(state.rules, viewer),
+    me: ownSheet(state, viewer),
     party,
     messages: state.broadcasts
       .filter((b) => b.characterIds === null || b.characterIds.includes(viewer.id))
