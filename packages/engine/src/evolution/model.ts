@@ -295,10 +295,14 @@ export function passedOverOptions(
  * The GM withdraws a passed-over option (DESIGN §6 "withdrawn by the GM",
  * MQ.3): every chosen menu that left it unpicked records the withdrawal, so it
  * no longer appears in later menus. Refused when no chosen menu still holds it
- * unpicked. A pending menu's own options are changed by offering it again.
+ * unpicked, or when the character already has the skill. A pending menu's own
+ * options are changed by offering it again.
  */
 export function withdrawPassedOver(character: Character, name: string): Character {
   const key = lower(name);
+  if (character.skills.some((s) => lower(s.name) === key)) {
+    throw new CharacterRuleError(`${character.name} already has [${name.trim()}]`);
+  }
   let hit = false;
   const selections = character.selections.map((r) => {
     if (r.chosen === null || lower(r.chosen) === key) return r;
@@ -337,8 +341,8 @@ export function chooseSelection(
   }
   // A passed-over option from an earlier menu is a valid pick too (MQ.3).
   const option =
-    record.options.find((o) => o.name === name) ??
-    passedOverOptions(rules, character, level, retired).find((o) => o.name === name);
+    record.options.find((o) => lower(o.name) === lower(name)) ??
+    passedOverOptions(rules, character, level, retired).find((o) => lower(o.name) === lower(name));
   if (!option) throw new CharacterRuleError(`"${name}" is not on the level ${level} menu`);
   // The character may have gained the name since the offer (a transform, a merge).
   checkFreeName(character, option.name, retired);

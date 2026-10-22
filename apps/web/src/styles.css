@@ -1078,6 +1078,16 @@ button.skill-open:hover .skill-name {
 .offer button {
   align-self: flex-start;
 }
+/* MQ.3: the title and Close stay put while a long list scrolls. */
+.skill-selection .skill-detail-head {
+  position: sticky;
+  top: -16px;
+  z-index: 1;
+  margin: -16px -18px 0;
+  padding: 16px 18px 8px;
+  background: #111a2b;
+  border-bottom: 1px solid color-mix(in srgb, var(--metal, var(--border)) 35%, transparent);
+}
 /* MQ.3: passed-over options are compact rows, so a long list stays scannable. */
 .passed-over .offers {
   grid-template-columns: 1fr;

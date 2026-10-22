@@ -143,6 +143,11 @@ export function SkillSelection({
         skills{older.length > 0 ? ` (${selection.options.length} new)` : ''}
         {more > 0 ? ` (${more} more ${more === 1 ? 'selection' : 'selections'} waiting)` : ''}
       </p>
+      {picked !== null && !offer && (
+        <p className="err" role="alert" data-testid="selection-gone">
+          [{picked}] is no longer on offer. Choose another skill.
+        </p>
+      )}
       {offer ? (
         <div className="selection-review">
           <p id="selection-review" data-testid="selection-review">

@@ -85,9 +85,12 @@ test('a player chooses a skill from the offered menu', async ({ browser }) => {
   const dialog = laptop.getByRole('dialog', { name: 'Skill selection' });
   await expect(dialog).toBeVisible();
   await expect.poll(() => focusedText(laptop)).toBe('Skill selection');
-  // The demo Jake passed options over at earlier selections (MQ.3).
+  // The demo Jake passed options over at earlier selections (MQ.3); the
+  // count covers them too.
+  const olderAt50 = await dialog.getByTestId('passed-over-offer').count();
+  expect(olderAt50).toBeGreaterThan(0);
   await expect(dialog.getByTestId('selection-level')).toHaveText(
-    /^Class level 50: choose one of \d+ skills \(3 new\)$/u,
+    `Class level 50: choose one of ${3 + olderAt50} skills (3 new)`,
   );
   const offers = dialog.getByTestId('offer');
   await expect(offers).toHaveCount(3);
@@ -167,12 +170,31 @@ test('a player chooses a skill from the offered menu', async ({ browser }) => {
   await expect(dialog.getByTestId('selection-level')).toHaveText(
     `Class level 60: choose one of ${3 + total} skills (3 new)`,
   );
-  // The GM withdraws one passed-over option; it leaves the open list live.
+  // Older options sit below the new menu, and the long list scrolls with the
+  // title and Close kept in view.
+  const order = await dialog.evaluate((el) => {
+    const fresh = el.querySelector('[data-testid="offers"]');
+    const old = el.querySelector('[data-testid="passed-over"]');
+    return fresh && old ? fresh.compareDocumentPosition(old) : 0;
+  });
+  expect(order & 4).toBe(4); // DOCUMENT_POSITION_FOLLOWING
+  expect(await dialog.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+  await older.last().scrollIntoViewIfNeeded();
+  await expect(older.last()).toBeInViewport();
+  await expect(dialog.getByRole('button', { name: 'Close' })).toBeInViewport();
+  await dialog.evaluate((el) => el.scrollTo(0, 0));
+  // The GM withdraws the option the player is reviewing: the review closes
+  // with a notice, and the option leaves the open list live.
+  await dialog.getByRole('button', { name: `Choose ${names[2]}` }).click();
+  await expect(dialog.getByRole('button', { name: 'Confirm' })).toBeVisible();
   await gmCommand(gm, {
     type: 'selection.withdrawOption',
     characterId: 'demo-jake',
     skill: names[2],
   });
+  await expect(dialog.getByTestId('selection-gone')).toContainText(
+    `[${names[2]}] is no longer on offer`,
+  );
   await expect(older.filter({ hasText: `[${names[2]} ` })).toHaveCount(0);
   await expect(older).toHaveCount(total - 1);
   await laptop.screenshot({ path: path.join(shots, 'player-passed-over-1366x768.png') });
@@ -197,8 +219,10 @@ test('a player chooses a skill from the offered menu', async ({ browser }) => {
 
   await phone.getByRole('button', { name: '[Choose]' }).click();
   const phoneDialog = phone.getByRole('dialog', { name: 'Skill selection' });
+  const olderAt20 = await phoneDialog.getByTestId('passed-over-offer').count();
+  expect(olderAt20).toBeGreaterThan(0);
   await expect(phoneDialog.getByTestId('selection-level')).toHaveText(
-    /^Class level 20: choose one of \d+ skills \(3 new\)$/u,
+    `Class level 20: choose one of ${3 + olderAt20} skills (3 new)`,
   );
   // Escape leaves the choice for later.
   await phone.keyboard.press('Escape');

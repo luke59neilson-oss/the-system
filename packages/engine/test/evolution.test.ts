@@ -1266,10 +1266,14 @@ describe('the GM withdraws a passed-over option (MQ.3, DESIGN §6)', () => {
     const withdraw = (skill: string) =>
       reject(c, { type: 'selection.withdrawOption', characterId: 'jake', skill });
     expect(withdraw('Skill 99')).toMatch(/not a passed-over option/);
-    expect(withdraw('Skill 5b')).toMatch(/not a passed-over option/);
+    expect(withdraw('Skill 5b')).toMatch(/already has \[Skill 5b\]/);
     expect(withdraw('Skill 10a')).toMatch(/not a passed-over option/);
     c = ok(c, { type: 'selection.withdrawOption', characterId: 'jake', skill: 'Skill 5a' });
     expect(withdraw('Skill 5a')).toMatch(/not a passed-over option/);
+    // Picked later from a newer menu: owned now, so not withdrawable.
+    c = ok(c, { type: 'selection.choose', characterId: 'jake', level: 10, skill: 'skill 5C' });
+    expect(char(c).selections.find((s) => s.level === 10)?.chosen).toBe('Skill 5c');
+    expect(withdraw('Skill 5c')).toMatch(/already has \[Skill 5c\]/);
   });
 
   it('is GM only, can be undone, and is logged', () => {
@@ -1297,5 +1301,80 @@ describe('the GM withdraws a passed-over option (MQ.3, DESIGN §6)', () => {
       'Skill 5c',
     ]);
     expect(char(undone).selections.find((s) => s.level === 5)?.withdrawn).toBeUndefined();
+  });
+});
+
+describe('passed-over eligibility rules (MQ.3 review, DESIGN §6)', () => {
+  const opt = (name: string, rarity: string, kind: 'class' | 'profession' = 'class') => ({
+    name,
+    rarity,
+    kind,
+    description: '',
+  });
+  const jake = (profession: string | null = null): Character => {
+    const c = ok(ok(atGTop(), release(archery, 'Volley', 'common')), {
+      type: 'evolution.choose',
+      characterId: 'jake',
+      optionId: 'o1',
+    });
+    const me = char(c);
+    const skill = me.skills[0];
+    if (!skill) throw new Error('no skill');
+    return {
+      ...me,
+      profession,
+      // The chosen options are owned, as after real picks.
+      skills: [...me.skills, { ...skill, name: 'Kept' }, { ...skill, name: 'Newer' }],
+      selections: [
+        {
+          level: 5,
+          offerId: 'a',
+          chosen: 'Kept',
+          options: [
+            opt('Kept', 'common'),
+            opt('dup skill', 'common'),
+            opt('Epic One', 'epic'),
+            opt('Craft One', 'rare', 'profession'),
+            opt('Retired One', 'rare'),
+            opt('Odd One', 'no-such-rarity'),
+          ],
+        },
+        {
+          level: 10,
+          offerId: 'b',
+          chosen: 'Newer',
+          options: [opt('Newer', 'common'), opt('Dup Skill', 'rare')],
+        },
+      ],
+    };
+  };
+  const names = (c: Character, level: number, retired: string[] = []) =>
+    passedOverOptions(rules, c, level, new Set(retired.map((n) => n.toLowerCase()))).map(
+      (o) => o.name,
+    );
+
+  it('drops options above the ceiling of the selection being chosen; they return at a higher grade', () => {
+    // Level 15 is an E-grade selection (ceiling Epic); level 10 is F (ceiling Rare).
+    expect(names(jake(), 15)).toContain('Epic One');
+    const f = jake();
+    expect(
+      passedOverOptions(rules, { ...f, selections: f.selections.slice(0, 1) }, 10).map(
+        (o) => o.name,
+      ),
+    ).not.toContain('Epic One');
+  });
+
+  it('keeps profession options back until a profession exists', () => {
+    expect(names(jake(), 15)).not.toContain('Craft One');
+    expect(names(jake('Smith'), 15)).toContain('Craft One');
+  });
+
+  it('drops retired names, unknown rarities and case-insensitive duplicates (newest menu wins)', () => {
+    const list = names(jake(), 15, ['Retired One']);
+    expect(list).not.toContain('Retired One');
+    expect(list).not.toContain('Odd One');
+    expect(list.filter((n) => n.toLowerCase() === 'dup skill')).toEqual(['Dup Skill']);
+    expect(list).toEqual(['Dup Skill', 'Epic One']);
+    expect(names(jake(), 15)).toContain('Retired One');
   });
 });
