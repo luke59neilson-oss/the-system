@@ -5,6 +5,7 @@ import {
   effectiveStats,
   execute,
   holdingsOf,
+  projectForPlayer,
   type Campaign,
   type Command,
   type CommandContext,
@@ -577,11 +578,18 @@ describe('pool maxima use effective stats (M3.7, D81)', () => {
     slot: 'necklace',
   };
 
-  it('equipping raises the maximum but never refills the pool', () => {
+  it('equipping raises the maximum: a full pool stays full, any other keeps its value (D100)', () => {
     let c = setup();
     expect(pools(c)['hp']).toBe(100);
     c = ok(c, equipAmulet);
+    // 100/100 → 150/150 (DESIGN §2).
+    expect(pools(c)['hp']).toBe(150);
+    c = ok(c, { type: 'item.unequip', characterId: 'jake', slot: 'necklace' });
     expect(pools(c)['hp']).toBe(100);
+    // 85/100 → 85/150 (DESIGN §2).
+    c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: { hp: 85 } });
+    c = ok(c, equipAmulet);
+    expect(pools(c)['hp']).toBe(85);
     // Vitality 10 + 5 = 15 → max 150: a pool set up to 150 is now valid.
     c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: { hp: 150 } });
     expect(pools(c)['hp']).toBe(150);
@@ -653,10 +661,15 @@ describe('pool clamp edge cases (M3.7 review)', () => {
       ctx,
       base(),
     );
-    // XP raised base stats; the gear-raised pool stays (never clamped to base).
-    expect(c.state?.characters['jake']?.pools['hp']).toBe(200);
+    // XP raised base stats; the full gear-raised pool stays full (never
+    // clamped to base; D100).
+    const hpMax = (): number | undefined =>
+      projectForPlayer(c.state ?? (null as never), 'jake').me.pools.find((p) => p.id === 'hp')?.max;
+    const full = hpMax() ?? 0;
+    expect(full).toBeGreaterThan(200);
+    expect(c.state?.characters['jake']?.pools['hp']).toBe(full);
     // A gift of another item touches holdings; the pools stay as they are.
     c = ok(c, { type: 'gift.give', characterId: 'jake', to: 'kim', items: { potion: 1 } });
-    expect(c.state?.characters['jake']?.pools['hp']).toBe(200);
+    expect(c.state?.characters['jake']?.pools['hp']).toBe(full);
   });
 });

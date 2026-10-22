@@ -152,7 +152,8 @@
       }
     ],
     "character": {
-      "defaultRace": "Human"
+      "defaultRace": "Human",
+      "fullPoolsStayFull": false
     },
     "tracks": {
       "professionUnlockGrade": "E",

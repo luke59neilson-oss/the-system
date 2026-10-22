@@ -112,7 +112,8 @@ export const DEFAULT_RULES: RulesConfigInput = {
       theme: 'diamond',
     },
   ],
-  character: { defaultRace: 'Human' },
+  // §2 pools follow maxima: a full pool stays full when its maximum rises (D100).
+  character: { defaultRace: 'Human', fullPoolsStayFull: true },
   tracks: {
     professionUnlockGrade: 'E', // §2
     evolutionGate: 'race', // §2, QUESTIONS 6

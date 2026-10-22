@@ -222,3 +222,15 @@ DESIGN/ROADMAP; do not re-apply them.
     Default: as described (D95). Alternatives: a portrait at the top of the
     status window; bundle the portraits folder into backups and exports.
     Answer:
+
+41. **Pools after a maximum falls and rises again.** DESIGN §2 read
+    literally: a falling maximum clamps the pool, and a pool at its maximum
+    is full, so it rises with the maximum next time. Example: 110/120 HP with
+    a +20 charm; take the charm off → 100/100; put it back on → 120/120. A
+    player could heal a little by swapping gear. Older campaigns (created
+    before this build) keep the old rule (a rising maximum never changes the
+    pool) until the GM turns the rule on in the rules settings (M4.9).
+    Default: as described (D111). Alternatives: remember that a pool was
+    clamped and do not treat it as full; apply the new rule to old campaigns
+    too.
+    Answer:

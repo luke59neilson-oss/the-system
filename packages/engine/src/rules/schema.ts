@@ -86,6 +86,12 @@ export const rulesConfigSchema = z
     character: z.strictObject({
       /** Race every new character starts as (DESIGN §2: Earth's humans). */
       defaultRace: z.string().min(1),
+      /**
+       * DESIGN §2 (MQ.2, D100): when a pool maximum rises, a full pool stays
+       * full. Rules stored before it read false (D81: a rising maximum never
+       * changes the pool), so older campaigns replay unchanged.
+       */
+      fullPoolsStayFull: z.boolean().default(false),
     }),
     tracks: z.strictObject({
       /** Grade at whose evolution professions are first offered. */

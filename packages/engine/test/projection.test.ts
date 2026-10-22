@@ -92,10 +92,11 @@ describe('player projection', () => {
     expect(view.me.freePointBatches).toEqual(jake?.freePointBatches);
     expect(view.me.classLevel).toBe(3);
     expect(view.me.raceLevel).toBe(3);
+    // Full pools stay full as level-ups raise the maxima (MQ.2, D100).
     expect(view.me.pools).toEqual([
-      { id: 'hp', current: 100, max: 110 },
-      { id: 'mp', current: 100, max: 110 },
-      { id: 'stamina', current: 100, max: 120 },
+      { id: 'hp', current: 110, max: 110 },
+      { id: 'mp', current: 110, max: 110 },
+      { id: 'stamina', current: 120, max: 120 },
     ]);
   });
 
@@ -714,6 +715,8 @@ describe('effective stats on the player sheet (M3.7, D81)', () => {
           bonuses: [{ stat: 'vitality', flat: 10 }],
         },
         { type: 'gift.give', characterId: null, to: 'jake', items: { amulet: 1 } },
+        // Not full, so the rising maximum leaves it as it is (MQ.2, D100).
+        { type: 'character.setPools', characterId: 'jake', pools: { hp: 90 } },
         { type: 'item.equip', characterId: 'jake', itemId: 'amulet', slot: 'necklace' },
       ],
       testContext('eff'),
@@ -722,8 +725,8 @@ describe('effective stats on the player sheet (M3.7, D81)', () => {
     const me = projectForPlayer(state, 'jake').me;
     expect(me.stats['vitality']).toBe(10);
     expect(me.effectiveStats['vitality']).toBe(20);
-    expect(me.pools.find((p) => p.id === 'hp')).toEqual({ id: 'hp', current: 100, max: 200 });
+    expect(me.pools.find((p) => p.id === 'hp')).toEqual({ id: 'hp', current: 90, max: 200 });
     const bar = projectForPlayer(state, 'kim').party.find((m) => m.id === 'jake');
-    expect(bar?.pools.find((p) => p.id === 'hp')?.percent).toBe(50);
+    expect(bar?.pools.find((p) => p.id === 'hp')?.percent).toBe(45);
   });
 });

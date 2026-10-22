@@ -270,7 +270,9 @@ const partyName = (id: string | null) => (id === null ? 'the GM' : `"${id}"`);
  * Invariant (M3.7, D81): no current pool is ever above its maximum from the
  * character's effective stats (base + equipped items). After every event, a
  * character whose stats, holdings or item definitions changed has its pools
- * clamped down; a rising maximum never refills a pool.
+ * clamped down. Pools follow maxima (MQ.2, D100): when a maximum rises, a
+ * pool that was full stays full; any other pool keeps its value, so a rising
+ * maximum alone never heals.
  */
 export function applyEvent(state: CampaignState | null, event: DomainEvent): CampaignState {
   const next = applyEventRaw(state, event);
@@ -382,13 +384,36 @@ function clampToEffective(
       continue;
     }
     const stats = rule(event, () => effectiveOf(after, c));
-    // Only lowers pools that exist; never fills a missing one (D81).
+    // Only changes pools that exist; never fills a missing one (D81).
     const capped = rule(event, () => clampPools(after.rules, stats, {}));
+    const old = hasOwn(before.characters, id) ? before.characters[id] : undefined;
+    const oldMax =
+      old && after.rules.character.fullPoolsStayFull
+        ? rule(event, () => maximaOf(before, old))
+        : null;
     let pools: Record<string, number> | null = null;
     for (const p of after.rules.pools) {
       const current = hasOwn(c.pools, p.id) ? c.pools[p.id] : undefined;
       const max = capped[p.id] ?? 0;
-      if (current !== undefined && current > max) {
+      if (current === undefined) continue;
+      if (current > max) {
+        pools ??= { ...c.pools };
+        pools[p.id] = max;
+        continue;
+      }
+      // A full pool stays full when its maximum rises (D100), unless this
+      // event set the pool itself.
+      const was = old && hasOwn(old.pools, p.id) ? old.pools[p.id] : undefined;
+      const wasMax = oldMax && hasOwn(oldMax, p.id) ? oldMax[p.id] : undefined;
+      if (
+        after.rules.character.fullPoolsStayFull &&
+        was !== undefined &&
+        wasMax !== undefined &&
+        current === was &&
+        wasMax > 0 &&
+        was >= wasMax &&
+        max > wasMax
+      ) {
         pools ??= { ...c.pools };
         pools[p.id] = max;
       }
@@ -396,6 +421,11 @@ function clampToEffective(
     if (pools !== null) out = withCharacter(out, { ...c, pools });
   }
   return out;
+}
+
+/** Every pool maximum of a character in this state, from effective stats. */
+function maximaOf(state: CampaignState, c: Character): Readonly<Record<string, number>> {
+  return clampPools(state.rules, effectiveOf(state, c), {});
 }
 
 /** Effective stats of a character in this state (base + equipped items). */
