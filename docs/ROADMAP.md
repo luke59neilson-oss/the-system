@@ -190,7 +190,7 @@ the full ones.
   Claude") written to the exports folder every 5 minutes and on shutdown.
   *Accept:* file appears and grows during a scripted session; contains no
   GM-private notes unless GM-flagged for export.
-- [ ] **M2.A Milestone acceptance and review.**
+- [x] **M2.A Milestone acceptance and review.**
 
 ## M3 — Player app (browser)
 

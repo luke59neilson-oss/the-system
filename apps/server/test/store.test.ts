@@ -242,6 +242,11 @@ describe('CampaignStore', () => {
     const info = JSON.parse(readFileSync(lock, 'utf8')) as Record<string, unknown>;
     writeFileSync(lock, JSON.stringify({ ...info, host: 'other-laptop', machine: 'other-laptop' }));
     expect(() => CampaignStore.open('main', options)).toThrow(/open on other-laptop/);
+    // A lock from before machine ids: judged by host name.
+    const legacy: Record<string, unknown> = { ...info, host: 'old-laptop' };
+    delete legacy['machine'];
+    writeFileSync(lock, JSON.stringify(legacy));
+    expect(() => CampaignStore.open('main', options)).toThrow(/open on old-laptop/);
     // Same machine, live pid, but an earlier boot: the pid was reused.
     writeFileSync(lock, JSON.stringify({ ...info, boot: (info.boot as number) - 600 }));
     const store = CampaignStore.open('main', options);

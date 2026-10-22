@@ -242,3 +242,21 @@
 - Round 2 (be60158..9bf0d6d): 0 High, 0 Medium, 5 Low.
   - L fixed (test gaps): temp-file cleanup, and the writer reusing its base across a pre-sitting undo.
   - L accepted: the cached state relies on reducer immutability (true today); the validity check costs O(sitting) per write; the `closeSync` EIO edge.
+
+## 2026-10-22 · M2.A Milestone acceptance and review · fable (fresh context, 2 rounds)
+- Acceptance: `npm run check` green; engine line coverage 99.34%; all 12 e2e specs pass, including the new `e2e/M2.A.spec.ts`. That spec runs a GM and 2 browser players through a torn write and a restart on the same port. Both phones reconnect, the session log is written on a real SIGTERM, the export is checked, and a canary is run. Every M2.1–M2.4 criterion was traced to a non-gamed test.
+- Round 1 (main 9818e4f): 1 High, 1 Medium, 7 Low.
+  - H fixed: when a socket never answered the close handshake (a sleeping phone), shutdown went past the 5 s exit guard. No session log was written, no snapshot was taken, and LOCK was left behind. A `preClose` hook now writes the logs and terminates the sockets (D73a), with a raw zombie-socket test that fails without the fix.
+  - M fixed: a host name that changed with the network made a crash-left lock look foreign. Locks now carry a machine id, kept by the desktop in `<userData>/machine-id` (D73b), with tests.
+  - L noted:
+    - (1) The boot-minute tolerance can be fooled by a large clock step.
+    - (2) `normalizeAddress`/`isLoopback` are tested but unused.
+    - (3) Windows log-off skips the close steps.
+    - (4) `backup()` and `importCampaign` have no callers yet; M4.3 and M10.1 wire them.
+    - (5) A new campaign's files are not directory-fsynced.
+    - (6) A poisoned store is invisible to the GM.
+    - (7) `/api/gm/export` with no campaign answers 200 `{error}`.
+- Round 2 (9818e4f..bb892f4): 0 High, 0 Medium, 3 Low.
+  - The legacy no-machine lock path is not tested since the test edit: fixed by adding a case.
+  - `machine-id` is written non-atomically: accepted.
+  - Terminal and desktop ids differ on a shared data dir: accepted, dev-only.
