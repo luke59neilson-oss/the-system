@@ -118,6 +118,9 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   montages: 'owner',
   montageOrder: 'gm',
   day: 'party',
+  // M4.3: session bookkeeping is the GM's.
+  sessions: 'gm',
+  currentSession: 'gm',
 };
 
 /** The rules subset a player screen needs to draw the sheet (no GM tuning, no stability). */

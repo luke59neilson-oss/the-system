@@ -1,5 +1,6 @@
-// Session log autosave (M2.4): unit tests with a manual timer, and a scripted
-// session against the real server writing on a short interval and on close.
+// Session log autosave (M2.4) following play sessions (M4.3): unit tests with
+// a manual timer, and a scripted session against the real server writing on a
+// short interval, at session end (report + backup) and on close.
 import {
   existsSync,
   mkdirSync,
@@ -54,7 +55,7 @@ function apply(store: CampaignStore, command: Command, ctx: CommandContext) {
 }
 
 describe('SessionLogWriter', () => {
-  it('writes nothing for an empty sitting, then appears, grows, skips unchanged ticks and writes on close', () => {
+  it('writes nothing before a session, then appears, grows, skips unchanged ticks, writes on close and becomes the report', () => {
     const dataDir = tempDir('log');
     const now = clock();
     const store = CampaignStore.open('main', { dataDir, now });
@@ -81,22 +82,24 @@ describe('SessionLogWriter', () => {
       },
     });
     expect(interval).toBe(SESSION_LOG_INTERVAL_MS);
-    expect(writer.file.startsWith(path.join(dataDir, 'exports', 'main', 'session-log-'))).toBe(
-      true,
-    );
-    timer.tick();
-    expect(existsSync(writer.file)).toBe(false); // The campaign creation predates the sitting.
-
+    expect(writer.file).toBeNull();
     apply(
       store,
       { type: 'character.create', id: 'jake', name: 'Jake', className: 'Archer', classSkills: kit },
       gm,
     );
     timer.tick();
-    expect(existsSync(writer.file)).toBe(true);
-    const first = readFileSync(writer.file, 'utf8');
-    expect(first).toContain('New character Jake');
-    expect(first).not.toContain('XP');
+    // Prep between sessions writes nothing.
+    expect(existsSync(path.join(dataDir, 'exports'))).toBe(false);
+
+    apply(store, { type: 'session.start' }, gm);
+    const file = writer.file ?? '';
+    expect(file).toBe(path.join(dataDir, 'exports', 'main', 'session-01.md'));
+    timer.tick();
+    const first = readFileSync(file, 'utf8');
+    expect(first).toMatch(/^# Session 1 log \(running\): Whale$/m);
+    expect(first).toContain('Session 1 started (day 1)');
+    expect(first).not.toContain('New character Jake'); // Before the session.
 
     expect(writer.flush()).toBe(false); // Nothing changed since the last write.
     apply(
@@ -111,16 +114,30 @@ describe('SessionLogWriter', () => {
       gm,
     );
     timer.tick();
-    const second = readFileSync(writer.file, 'utf8');
+    const second = readFileSync(file, 'utf8');
     expect(second.length).toBeGreaterThan(first.length);
     expect(second).toContain('300 class XP for Pale hunters');
 
+    apply(store, { type: 'campaign.advanceDay', days: 2 }, gm);
+    apply(store, { type: 'session.end' }, gm);
+    expect(writer.flush()).toBe(true);
+    const report = readFileSync(file, 'utf8');
+    expect(report).toMatch(/^# Session 1 report: Whale$/m);
+    expect(report).toContain('- In-game days: 1–3');
+    // Between sessions the report stays as it was.
     apply(store, { type: 'title.award', characterId: 'jake', title: 'Early Bird' }, gm);
+    expect(writer.flush()).toBe(false);
+    expect(readFileSync(file, 'utf8')).toBe(report);
+
+    apply(store, { type: 'session.start' }, gm);
+    apply(store, { type: 'title.award', characterId: 'jake', title: 'Late Bird' }, gm);
     writer.close();
     expect(cancelled).toBe(true);
-    expect(readFileSync(writer.file, 'utf8')).toContain('Jake earned the title Early Bird');
+    const two = readFileSync(path.join(dataDir, 'exports', 'main', 'session-02.md'), 'utf8');
+    expect(two).toContain('Jake earned the title Late Bird');
+    expect(two).not.toContain('Early Bird');
     // No temp files left behind.
-    expect(readdirSync(path.dirname(writer.file))).toEqual([path.basename(writer.file)]);
+    expect(readdirSync(path.dirname(file)).sort()).toEqual(['session-01.md', 'session-02.md']);
     store.close();
   });
 
@@ -128,7 +145,13 @@ describe('SessionLogWriter', () => {
     const dataDir = tempDir('log-fail');
     const now = clock();
     const store = CampaignStore.open('main', { dataDir, now });
-    const gm: CommandContext = { actor: { role: 'gm' }, sessionId: null, now, newId: () => 'c1' };
+    let id = 0;
+    const gm: CommandContext = {
+      actor: { role: 'gm' },
+      sessionId: null,
+      now,
+      newId: () => `c${++id}`,
+    };
     // A plain file where the exports folder should be: every write fails.
     const blocked = path.join(dataDir, 'not-a-dir');
     writeFileSync(blocked, 'x');
@@ -144,6 +167,7 @@ describe('SessionLogWriter', () => {
       onError: (error) => errors.push(error),
     });
     apply(store, { type: 'campaign.create', name: 'Whale', rules: rules() }, gm);
+    apply(store, { type: 'session.start', sessionId: 's1' }, gm);
     expect(() => timer.tick()).not.toThrow();
     expect(() => writer.close()).not.toThrow();
     expect(errors).toHaveLength(2);
@@ -153,7 +177,7 @@ describe('SessionLogWriter', () => {
 });
 
 describe('SessionLogWriter edge cases', () => {
-  it('leaves no temp file when the final rename fails, and follows an undo of a pre-sitting event', () => {
+  it('leaves no temp file when the final rename fails, and follows an undo of a pre-session event', () => {
     const dataDir = tempDir('log-edge');
     const now = clock();
     const store = CampaignStore.open('main', { dataDir, now });
@@ -181,13 +205,14 @@ describe('SessionLogWriter edge cases', () => {
       now,
       every: () => () => undefined,
     });
+    apply(store, { type: 'session.start' }, gm);
     apply(
       store,
       { type: 'xp.award', track: 'class', amount: 100, participants: [{ characterId: 'jake' }] },
       gm,
     );
     expect(writer.flush()).toBe(true);
-    expect(readFileSync(writer.file, 'utf8')).toContain('Jake: class Archer 3 → 4');
+    expect(readFileSync(writer.file ?? '', 'utf8')).toContain('Jake: class Archer 3 → 4');
     // Undo the pre-sitting award: the cached base must be refolded.
     apply(store, { type: 'event.undo', eventId: earlier }, gm);
     apply(
@@ -196,16 +221,17 @@ describe('SessionLogWriter edge cases', () => {
       gm,
     );
     expect(writer.flush()).toBe(true);
-    const text = readFileSync(writer.file, 'utf8');
+    const text = readFileSync(writer.file ?? '', 'utf8');
     expect(text).toContain('GM undid an earlier change');
     expect(text).toContain('Jake: class Archer 0 → 1');
     expect(text).toContain('Jake: class Archer 1 → 2');
     // A directory where the log file goes makes the rename fail: no temp file stays.
-    rmSync(writer.file);
-    mkdirSync(writer.file);
+    const file = writer.file ?? '';
+    rmSync(file);
+    mkdirSync(file);
     apply(store, { type: 'title.award', characterId: 'jake', title: 'Blocked' }, gm);
     expect(() => writer.flush()).toThrow();
-    expect(readdirSync(path.dirname(writer.file)).filter((f) => f.includes('.tmp-'))).toEqual([]);
+    expect(readdirSync(path.dirname(file)).filter((f) => f.includes('.tmp-'))).toEqual([]);
     store.close();
   });
 });
@@ -273,6 +299,7 @@ describe('session log during a scripted session (M2.4 acceptance)', () => {
         className: 'Archer',
         classSkills: kit,
       });
+      await gm({ type: 'session.start' });
       await waitFor(() => logFile() !== null, 'the session log file');
       const file = logFile() ?? '';
       const size1 = statSync(file).size;
@@ -364,8 +391,11 @@ describe('session log during a scripted session (M2.4 acceptance)', () => {
         command: { type: 'campaign.create', name: 'Z', rules: rules() },
       }),
     );
+    ws.send(
+      JSON.stringify({ type: 'command', requestId: 'b', command: { type: 'session.start' } }),
+    );
     const until = Date.now() + 5000;
-    while (!done.has('a') && Date.now() < until) await new Promise((r) => setTimeout(r, 10));
+    while (!done.has('b') && Date.now() < until) await new Promise((r) => setTimeout(r, 10));
     ws.close();
     // A "sleeping phone": completes the upgrade, then never reads or answers again.
     const zombie = connect(app.port, '127.0.0.1');
@@ -431,12 +461,108 @@ describe('session log during a scripted session (M2.4 acceptance)', () => {
         command: { type: 'system.broadcast', text: 'Welcome' },
       }),
     );
-    expect(results).toEqual(['ok', 'ok', 'ok']);
+    conn.receive(
+      JSON.stringify({ type: 'command', requestId: 'd', command: { type: 'session.start' } }),
+    );
+    conn.receive(
+      JSON.stringify({
+        type: 'command',
+        requestId: 'e',
+        command: { type: 'system.broadcast', text: 'Session begins' },
+      }),
+    );
+    expect(results).toEqual(['ok', 'ok', 'ok', 'ok', 'ok']);
     const before = readFileSync(path.join(store.dir, 'events.jsonl'), 'utf8');
     writer.close();
-    expect(readFileSync(writer.file, 'utf8')).toContain('System message to everyone: Welcome');
+    const text = readFileSync(writer.file ?? '', 'utf8');
+    expect(text).toContain('System message to everyone: Session begins');
+    expect(text).not.toContain('Welcome');
     expect(readFileSync(path.join(store.dir, 'events.jsonl'), 'utf8')).toBe(before);
     conn.close();
     store.close();
+  });
+
+  it('backs up and writes the report when the GM ends a session, keeps it on reopen, and warns when the backup fails', async () => {
+    const dataDir = tempDir('log-end');
+    const webRoot = tempDir('log-end-web');
+    writeFileSync(path.join(webRoot, 'index.html'), '<!doctype html><title>shell</title>');
+    const start = () => startApp({ port: 0, host: '127.0.0.1', webRoot, dataDir, gmKey: KEY });
+    const session = async (port: number) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+      const results = new Map<string, { ok: boolean; error?: string; warning?: string }>();
+      ws.addEventListener('message', (event) => {
+        const m = JSON.parse(String(event.data)) as { type: string; requestId?: string };
+        if (m.type === 'result' && m.requestId) results.set(m.requestId, m as never);
+      });
+      await new Promise<void>((resolve) => ws.addEventListener('open', () => resolve()));
+      ws.send(JSON.stringify({ type: 'join', role: 'gm', gmKey: KEY }));
+      let r = 0;
+      const send = async (command: Command) => {
+        const requestId = `r${++r}`;
+        ws.send(JSON.stringify({ type: 'command', requestId, command }));
+        const until = Date.now() + 5000;
+        while (!results.has(requestId)) {
+          if (Date.now() > until) throw new Error(`timed out on ${command.type}`);
+          await new Promise((res) => setTimeout(res, 10));
+        }
+        const result = results.get(requestId);
+        if (!result?.ok) throw new Error(`${command.type}: ${result?.error}`);
+        return result;
+      };
+      return { ws, send };
+    };
+    let app = await start();
+    const report = path.join(app.exportsDir, 'main', 'session-01.md');
+    const backups = path.join(dataDir, 'campaigns', 'main', 'backups');
+    try {
+      const gm = await session(app.port);
+      await gm.send({ type: 'campaign.create', name: 'Whale', rules: rules() });
+      await gm.send({
+        type: 'character.create',
+        id: 'jake',
+        name: 'Jake',
+        className: 'Archer',
+        classSkills: kit,
+      });
+      await gm.send({ type: 'session.start' });
+      await gm.send({ type: 'system.broadcast', text: 'Into the canyons' });
+      await gm.send({ type: 'campaign.advanceDay' });
+      const ended = await gm.send({ type: 'session.end' });
+      expect(ended.warning).toBeUndefined();
+      // Written at once, not on the next tick.
+      const text = readFileSync(report, 'utf8');
+      expect(text).toMatch(/^# Session 1 report: Whale$/m);
+      expect(text).toContain('Into the canyons');
+      expect(text).toContain('- In-game days: 1–2');
+      const [backup] = readdirSync(backups);
+      expect(backup).toMatch(/-session-1-end$/);
+      const copied = readFileSync(path.join(backups, backup ?? '', 'events.jsonl'), 'utf8');
+      expect(copied).toContain('session.ended');
+      gm.ws.close();
+      await app.close();
+
+      // Reopening does not rewrite the finished report.
+      const mtime = statSync(report).mtimeMs;
+      app = await start();
+      await app.close();
+      expect(statSync(report).mtimeMs).toBe(mtime);
+
+      // A plain file where the backups folder goes: the end is saved, the GM is warned.
+      app = await start();
+      rmSync(backups, { recursive: true });
+      writeFileSync(backups, 'x');
+      const again = await session(app.port);
+      await again.send({ type: 'session.start' });
+      const warned = await again.send({ type: 'session.end' });
+      expect(warned.warning).toMatch(/the backup could not be saved/);
+      expect(existsSync(path.join(app.exportsDir, 'main', 'session-02.md'))).toBe(true);
+      again.ws.close();
+    } finally {
+      await app.close();
+    }
+    rmSync(backups, { force: true });
+    const reopened = CampaignStore.open('main', { dataDir, now: clock() });
+    expect(reopened.campaign.state?.sessions.map((x) => x.endedAt !== null)).toEqual([true, true]);
+    reopened.close();
   });
 });

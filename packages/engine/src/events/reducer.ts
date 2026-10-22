@@ -54,8 +54,8 @@ import {
 } from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 14;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 15;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -125,6 +125,22 @@ export interface CampaignState {
   readonly montageOrder: readonly string[];
   /** In-game day counter, from 1 (quest timers count against it). */
   readonly day: number;
+  /** Play sessions in start order (M4.3). GM-only. */
+  readonly sessions: readonly SessionRecord[];
+  /** Id of the running session; null between sessions. */
+  readonly currentSession: string | null;
+}
+
+/** One play session (M4.3): numbered from 1 in start order. */
+export interface SessionRecord {
+  readonly id: string;
+  readonly number: number;
+  /** ISO-8601 UTC. */
+  readonly startedAt: string;
+  readonly startDay: number;
+  /** Null while it runs. */
+  readonly endedAt: string | null;
+  readonly endDay: number | null;
 }
 
 const hasOwn = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
@@ -427,6 +443,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       montages: {},
       montageOrder: [],
       day: 1,
+      sessions: [],
+      currentSession: null,
     };
   }
   if (state === null) return fail(event, 'the log must start with campaign.created');
@@ -1293,6 +1311,34 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
     }
     case 'campaign.dayAdvanced':
       return { ...state, day: state.day + event.payload.days };
+    case 'session.started': {
+      const { sessionId } = event.payload;
+      if (state.currentSession !== null) fail(event, 'a session is already running');
+      if (state.sessions.some((x) => x.id === sessionId)) {
+        fail(event, `session "${sessionId}" already exists`);
+      }
+      const record: SessionRecord = {
+        id: sessionId,
+        number: state.sessions.length + 1,
+        startedAt: event.timestamp,
+        startDay: state.day,
+        endedAt: null,
+        endDay: null,
+      };
+      return { ...state, sessions: [...state.sessions, record], currentSession: sessionId };
+    }
+    case 'session.ended': {
+      const { sessionId } = event.payload;
+      if (state.currentSession === null) fail(event, 'no session is running');
+      if (state.currentSession !== sessionId) fail(event, `session "${sessionId}" is not running`);
+      return {
+        ...state,
+        sessions: state.sessions.map((x) =>
+          x.id === sessionId ? { ...x, endedAt: event.timestamp, endDay: state.day } : x,
+        ),
+        currentSession: null,
+      };
+    }
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');
   }

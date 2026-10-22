@@ -386,6 +386,10 @@ export type Command =
       characterIds?: readonly string[] | null | undefined;
     }
   | { type: 'campaign.advanceDay'; days?: number | undefined }
+  /** Starts a play session (M4.3); the id is generated when omitted. */
+  | { type: 'session.start'; sessionId?: string | undefined }
+  /** Ends the running play session. */
+  | { type: 'session.end' }
   | { type: 'event.undo'; eventId: string };
 
 export interface StatBonusInput {
@@ -495,6 +499,8 @@ const commandSchema = z.discriminatedUnion('type', [
     characterIds: z.array(z.string()).nullable().optional(),
   }),
   z.object({ type: z.literal('campaign.advanceDay') }),
+  z.object({ type: z.literal('session.start'), sessionId: z.string().optional() }),
+  z.object({ type: z.literal('session.end') }),
   z.object({ type: z.literal('event.undo') }),
 ]);
 
@@ -825,7 +831,7 @@ function toEvent(
         payload: { characterId: command.characterId, skill: command.skill, unique: command.unique },
       };
     case 'skill.awardMark': {
-      const session = command.session ?? ctx.sessionId;
+      const session = command.session ?? campaign.state?.currentSession ?? ctx.sessionId;
       if (session === null) throw new EventRejectedError('A mark needs a play session');
       return {
         type: 'skill.markAwarded',
@@ -1108,6 +1114,16 @@ function toEvent(
       };
     case 'campaign.advanceDay':
       return { type: 'campaign.dayAdvanced', payload: { days: command.days ?? 1 } };
+    case 'session.start':
+      if ((campaign.state?.currentSession ?? null) !== null) {
+        throw new EventRejectedError('A session is already running; end it first');
+      }
+      return { type: 'session.started', payload: { sessionId: command.sessionId ?? ctx.newId() } };
+    case 'session.end': {
+      const running = campaign.state?.currentSession ?? null;
+      if (running === null) throw new EventRejectedError('No session is running');
+      return { type: 'session.ended', payload: { sessionId: running } };
+    }
     case 'event.undo':
       return { type: 'event.undone', payload: { eventId: command.eventId } };
   }
@@ -1127,12 +1143,17 @@ export function execute(campaign: Campaign, command: Command, ctx: CommandContex
   if (denied) return { ok: false, error: `Not allowed: ${denied}` };
   try {
     const { type, payload } = toEvent(command, ctx, campaign);
+    // Events carry the running session (M4.3); a session's own start and end carry its id.
+    const sessionId =
+      type === 'session.started' || type === 'session.ended'
+        ? (payload as { sessionId: string }).sessionId
+        : (campaign.state?.currentSession ?? ctx.sessionId);
     const event = parseEvent({
       id: ctx.newId(),
       type,
       timestamp: ctx.now(),
       actor: ctx.actor,
-      sessionId: ctx.sessionId,
+      sessionId,
       schemaVersion: EVENT_SCHEMA_VERSIONS[type],
       payload,
     });

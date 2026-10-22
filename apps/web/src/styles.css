@@ -1669,3 +1669,72 @@ button.danger {
 .library-weights legend {
   grid-column: 1 / -1;
 }
+
+/* The party table scrolls inside its window on phones instead of the page. */
+.party {
+  overflow-x: auto;
+}
+
+/* Play sessions and the in-game day (M4.3). */
+.session-chip {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--muted);
+  border: 1px dashed #3b5682;
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+.session-chip.running {
+  color: var(--ok);
+  border: 1px solid var(--ok);
+}
+.session-now {
+  border-left: 3px solid #3b5682;
+  padding-left: 10px;
+  margin-bottom: 12px;
+}
+.session-now.running {
+  border-left-color: var(--ok);
+}
+.nowrap {
+  white-space: nowrap;
+}
+.session-now p {
+  margin: 0 0 8px;
+}
+.session-now .confirm .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.day-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 4px 12px;
+}
+.day-form .day-now {
+  flex-basis: 100%;
+  margin: 0 0 4px;
+}
+.day-form label {
+  margin-bottom: 0;
+  max-width: 10rem;
+}
+.day-form button {
+  margin-bottom: 1px;
+}
+.session-past-heading {
+  margin-top: 14px;
+}
+.session-past {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.session-past th,
+.session-past td {
+  text-align: left;
+  padding: 3px 6px;
+  border-bottom: 1px solid rgba(90, 127, 184, 0.25);
+}

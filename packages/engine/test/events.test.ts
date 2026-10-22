@@ -861,6 +861,10 @@ describe('property: replay equals incremental state', () => {
       'professionDef.defined',
       'professionDef.edited',
       'library.seeded',
+      // M4.3 sessions have their own tests (sessions.test.ts) and golden log;
+      // starting one here would change every later event's session stamp.
+      'session.started',
+      'session.ended',
     ]);
     const seen = new Set(c.events.map((e) => e.type));
     expect(

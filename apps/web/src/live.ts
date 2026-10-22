@@ -48,7 +48,8 @@ type ServerMessage =
   | { type: 'view'; seq: number; view: PlayerView }
   | { type: 'state'; seq: number; state: CampaignState | null }
   | { type: 'notifications'; items: SeqNotification[]; reset?: true }
-  | { type: 'result'; requestId: string; ok: true }
+  /** `warning`: the change was saved, but something after it failed (e.g. a session-end backup). */
+  | { type: 'result'; requestId: string; ok: true; warning?: string }
   | { type: 'result'; requestId: string; ok: false; error: string }
   | { type: 'error'; error: string };
 
@@ -75,7 +76,7 @@ export interface LiveSnapshot {
   campaign: string | null;
 }
 
-export type CommandResult = { ok: true } | { ok: false; error: string };
+export type CommandResult = { ok: true; warning?: string } | { ok: false; error: string };
 
 const RECONNECT_MS = 1000;
 /** While the GM has another campaign open, a player keeps trying to rejoin at this pace. */
@@ -247,7 +248,13 @@ export class LiveClient {
       case 'result': {
         const resolve = this.pending.get(message.requestId);
         this.pending.delete(message.requestId);
-        resolve?.(message.ok ? { ok: true } : { ok: false, error: message.error });
+        resolve?.(
+          message.ok
+            ? message.warning
+              ? { ok: true, warning: message.warning }
+              : { ok: true }
+            : { ok: false, error: message.error },
+        );
         return;
       }
       case 'error':

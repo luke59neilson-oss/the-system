@@ -78,7 +78,8 @@ export type ServerMessage =
       /** After an undo: `items` is the whole history and replaces what the client holds. */
       reset?: true;
     }
-  | { type: 'result'; requestId: string; ok: true }
+  /** `warning`: the change was saved, but something after it failed (e.g. a session-end backup). */
+  | { type: 'result'; requestId: string; ok: true; warning?: string }
   | { type: 'result'; requestId: string; ok: false; error: string }
   | { type: 'error'; error: string };
 

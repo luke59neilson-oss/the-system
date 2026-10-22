@@ -1,22 +1,28 @@
 import { closeSync, fsyncSync, mkdirSync, openSync, renameSync, rmSync, writeSync } from 'node:fs';
 import path from 'node:path';
+import { existsSync } from 'node:fs';
 import {
   buildSessionLog,
   renderSessionLog,
+  sessionEventRange,
   sessionLogBase,
   sessionLogBaseIsCurrent,
+  type CampaignState,
   type SessionLogBase,
+  type SessionRecord,
 } from '@the-system/engine';
 import type { CampaignStore } from './store';
 
 /**
- * Running session log autosave (ROADMAP M2.4, DESIGN §7 "Logging for
- * Claude"). One writer per open campaign: it covers the events appended
- * since the campaign was opened (this sitting; M4.3 sessions will narrow it)
- * and rewrites `<exportsDir>/<campaignId>/session-log-<opened stamp>.md`
+ * Session log autosave and session report (ROADMAP M2.4, M4.3; DESIGN §7
+ * "Logging for Claude"). One writer per open campaign. It follows the play
+ * session the GM started: while one runs, it rewrites
+ * `<exportsDir>/<campaignId>/session-<NN>.md` (that session's events so far)
  * every `intervalMs` (default 5 minutes) when something changed, and once
- * more on close. Nothing is written for a sitting with no events. Each write
- * is atomic (temp file, fsync, rename), so a reader never sees half a log.
+ * more on close. When the session ends, the same file is rewritten one last
+ * time as the session report (its events up to the end). Between sessions
+ * nothing is written. Each write is atomic (temp file, fsync, rename), so a
+ * reader never sees half a log.
  */
 
 export const SESSION_LOG_INTERVAL_MS = 5 * 60_000;
@@ -40,8 +46,6 @@ const defaultEvery = (fn: () => void, ms: number) => {
   timer.unref();
   return () => clearInterval(timer);
 };
-
-const stamp = (iso: string) => iso.replace(/[:.]/g, '-');
 
 function writeAtomic(file: string, text: string): void {
   const tmp = `${file}.tmp-${process.pid}`;
@@ -70,52 +74,100 @@ function writeAtomic(file: string, text: string): void {
   }
 }
 
+/** `session-01.md`, `session-12.md`, `session-140.md`. */
+export const sessionFileName = (n: number) => `session-${String(n).padStart(2, '0')}.md`;
+
+/** The running session, else the last one (its report); null before the first. */
+function targetSession(state: CampaignState | null): SessionRecord | null {
+  if (!state) return null;
+  const id = state.currentSession;
+  return (id === null ? state.sessions.at(-1) : state.sessions.find((x) => x.id === id)) ?? null;
+}
+
 export class SessionLogWriter {
-  /** Where the log is (or will be) written. */
-  readonly file: string;
   private readonly store: CampaignStore;
   private readonly options: SessionLogOptions;
-  private readonly fromSeq: number;
-  private readonly startedAt: string;
-  /** Event count at the last write; -1 = never written. */
-  private writtenSeq = -1;
-  /** Fold of the events before the sitting, reused while still valid. */
+  /** What the file of the target session last held (session, range, log length/undos). */
+  private writtenKey: string | null = null;
+  /** Fold of the events before the session, reused while still valid. */
   private base: SessionLogBase | null = null;
   private cancel: (() => void) | null;
 
   constructor(store: CampaignStore, options: SessionLogOptions) {
     this.store = store;
     this.options = options;
-    this.fromSeq = store.campaign.events.length;
-    this.startedAt = options.now();
-    this.file = path.join(options.exportsDir, store.id, `session-log-${stamp(this.startedAt)}.md`);
+    // A report already on disk for a session that ended before this opening is
+    // not rewritten just because the campaign was opened again.
+    const target = targetSession(store.campaign.state);
+    if (target && target.endedAt !== null) {
+      const plan = this.plan();
+      if (plan && existsSync(plan.file)) this.writtenKey = plan.key;
+    }
     this.cancel = (options.every ?? defaultEvery)(
       () => this.flushQuietly(),
       options.intervalMs ?? SESSION_LOG_INTERVAL_MS,
     );
   }
 
+  /** The file of the running (or last) session; null before the first session. */
+  get file(): string | null {
+    const target = targetSession(this.store.campaign.state);
+    return target ? this.fileFor(target.number) : null;
+  }
+
+  fileFor(sessionNumber: number): string {
+    return path.join(this.options.exportsDir, this.store.id, sessionFileName(sessionNumber));
+  }
+
+  private plan() {
+    const campaign = this.store.campaign;
+    const session = targetSession(campaign.state);
+    if (!session) return null;
+    const range = sessionEventRange(campaign, session.id);
+    if (!range) return null;
+    const toSeq = range.toSeq ?? campaign.events.length;
+    // A running log changes with every event; an ended session's report only
+    // when an undo changes which of its events count.
+    const version =
+      range.toSeq === null
+        ? `open:${campaign.events.length}`
+        : `ended:${Object.keys(campaign.undone).length}`;
+    return {
+      session,
+      fromSeq: range.fromSeq,
+      toSeq,
+      file: this.fileFor(session.number),
+      key: `${session.id}|${range.fromSeq}|${toSeq}|${version}`,
+    };
+  }
+
   /**
-   * Writes the log when the campaign changed since the last write. Returns
-   * true when it wrote. Throws on a failed write.
+   * Writes the running session's log, or the last session's report, when it
+   * changed since the last write. Returns true when it wrote. Throws on a
+   * failed write.
    */
   flush(): boolean {
-    const seq = this.store.campaign.events.length;
-    if (seq <= this.fromSeq || seq === this.writtenSeq) return false;
+    const plan = this.plan();
+    if (!plan || plan.key === this.writtenKey) return false;
     const campaign = this.store.campaign;
-    // Fold the pre-sitting events once (and again only after an undo reaches
-    // back into them), so a write costs the sitting's events, not the campaign's.
-    if (this.base === null || !sessionLogBaseIsCurrent(campaign, this.base)) {
-      this.base = sessionLogBase(campaign, this.fromSeq);
+    // Fold the pre-session events once (and again only after an undo reaches
+    // back into them), so a write costs the session's events, not the campaign's.
+    if (
+      this.base === null ||
+      this.base.fromSeq !== plan.fromSeq ||
+      !sessionLogBaseIsCurrent(campaign, this.base)
+    ) {
+      this.base = sessionLogBase(campaign, plan.fromSeq);
     }
-    const log = buildSessionLog(campaign, this.fromSeq, this.base);
+    const log = buildSessionLog(campaign, plan.fromSeq, this.base, plan.toSeq);
     const text = renderSessionLog(log, {
-      startedAt: this.startedAt,
+      startedAt: plan.session.startedAt,
       writtenAt: this.options.now(),
+      session: plan.session,
     });
-    mkdirSync(path.dirname(this.file), { recursive: true });
-    writeAtomic(this.file, text);
-    this.writtenSeq = seq;
+    mkdirSync(path.dirname(plan.file), { recursive: true });
+    writeAtomic(plan.file, text);
+    this.writtenKey = plan.key;
     return true;
   }
 

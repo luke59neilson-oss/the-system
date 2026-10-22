@@ -7,8 +7,9 @@ import { startBuiltServer, type RunningServer } from './helpers/server';
 // M2.A Milestone acceptance (server and sync): a GM and two players play over
 // the real server; the laptop "loses power" mid-write (torn last line in the
 // event log) and restarts; both phones reconnect with nothing lost; the
-// shutdown writes the running session log (M2.4) to the exports folder on a
-// real SIGTERM; and no GM-only data reaches either phone.
+// shutdown writes the running session log (M2.4; since M4.3 the started
+// session's) to the exports folder on a real SIGTERM, and the session survives
+// the restart; and no GM-only data reaches either phone.
 
 const GM_KEY = 'e2e-gm-key-m2a-0123456789abcdef';
 const REASON = 'GM-SECRET-reason-m2a-pale-hunters';
@@ -42,7 +43,7 @@ const sessionLogs = () => {
   const dir = path.join(dataDir, 'exports', 'main');
   try {
     return readdirSync(dir)
-      .filter((f) => f.startsWith('session-log-') && f.endsWith('.md'))
+      .filter((f) => f.startsWith('session-') && f.endsWith('.md'))
       .sort()
       .map((f) => path.join(dir, f));
   } catch {
@@ -61,6 +62,8 @@ test('GM and two players through a torn write and a restart; session log on shut
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Milestone Two');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await gm.getByRole('button', { name: 'Start session 1' }).click();
+  await expect(gm.getByTestId('session-chip')).toHaveText('Session 1 · Day 1');
   for (const name of ['Jake', 'Miranda']) {
     await gm.getByLabel('Name', { exact: true }).fill(name);
     await gm.getByRole('button', { name: 'Create character' }).click();
@@ -96,7 +99,7 @@ test('GM and two players through a torn write and a restart; session log on shut
   const logs = sessionLogs();
   expect(logs).toHaveLength(1);
   const first = readFileSync(logs[0] ?? '', 'utf8');
-  expect(first).toContain('# Session log: Milestone Two');
+  expect(first).toContain('# Session 1 log (running): Milestone Two');
   expect(first).toContain('New character Jake');
   expect(first).toContain(`for ${REASON}`);
   expect(first).toContain('Jake: class Archer 0 → 1');
@@ -114,8 +117,9 @@ test('GM and two players through a torn write and a restart; session log on shut
   const campaignFiles = readdirSync(path.dirname(eventLog));
   expect(campaignFiles.some((f) => f.startsWith('events.jsonl.torn-'))).toBe(true);
 
-  // Play goes on; the next shutdown writes a second sitting's log.
+  // Play goes on in the same session; the next shutdown rewrites its log.
   await expect(gm.getByRole('heading', { name: /Milestone Two/ })).toBeVisible({ timeout: 10_000 });
+  await expect(gm.getByTestId('session-chip')).toHaveText('Session 1 · Day 1');
   await gm.getByRole('checkbox', { name: 'Miranda' }).first().uncheck();
   await gm.getByLabel('Amount').fill('300');
   await gm.getByRole('button', { name: 'Award XP' }).click();
@@ -134,11 +138,11 @@ test('GM and two players through a torn write and a restart; session log on shut
 
   await server.stop();
   server = null;
-  const both = sessionLogs();
-  expect(both).toHaveLength(2);
-  const second = readFileSync(both[1] ?? '', 'utf8');
+  const after = sessionLogs();
+  expect(after).toEqual(logs);
+  const second = readFileSync(after[0] ?? '', 'utf8');
   expect(second).toContain('Jake: class Archer 1 → 4');
-  expect(second).not.toContain('New character Jake');
+  expect(second).toContain('New character Jake');
 
   // Canary: no GM-only data or Miranda's whisper reached Jake; nothing GM-only reached either phone.
   for (const { watched } of [jake, miranda]) {

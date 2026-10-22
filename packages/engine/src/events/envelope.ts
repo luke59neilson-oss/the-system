@@ -465,6 +465,10 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   }),
   /** The in-game day counter moves forward (quest timers count down). */
   'campaign.dayAdvanced': z.strictObject({ days: z.number().int().min(1).max(1000) }),
+  /** GM starts a play session (M4.3); events until its end carry its id. */
+  'session.started': z.strictObject({ sessionId: recordId }),
+  /** GM ends the running play session (the server backs up and writes the report). */
+  'session.ended': z.strictObject({ sessionId: recordId }),
   /** Compensating event: the target stops counting, as if it had never happened. */
   'event.undone': z.strictObject({ eventId: recordId }),
 } as const;
@@ -535,6 +539,8 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'entity.edited': 1,
   'entity.revealed': 1,
   'campaign.dayAdvanced': 1,
+  'session.started': 1,
+  'session.ended': 1,
   'event.undone': 1,
 };
 

@@ -202,3 +202,11 @@ answer under any question and the next run will follow it.
     their own stat weights or skills; show the descriptions to players on
     the status screen or the evolution profession picker.
     Answer:
+
+39. **Session log between sessions.** The running log now covers only a
+    started session; changes made between sessions (prep, XP awarded after
+    the session ended) appear in no session file, only in the event log.
+    Default: nothing is written between sessions, and the GM console nudges
+    the GM to start a session (D92). Alternatives: a "between sessions"
+    file; fold between-session changes into the next session's report.
+    Answer:

@@ -17,6 +17,8 @@ import { OriginLibrary } from './OriginLibrary';
 import { entriesOf } from './originLibraryModel';
 import { resolvePerspective, type PartyMember, type Perspective } from './perspective';
 import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
+import { SessionPanel } from './SessionPanel';
+import { sessionSummary } from './sessionModel';
 
 /**
  * Minimal GM screen (ROADMAP MS.1): create a campaign and characters from a
@@ -114,6 +116,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               ? 'Reconnecting…'
               : 'Connecting…'}
         </span>
+        {state && <SessionChip state={state} />}
         {state && <PerspectiveBar party={party} current={view} onChange={setWanted} />}
       </header>
       {live.status === 'joined' && <CampaignSwitch gmKey={gmKey} stateName={state?.name ?? null} />}
@@ -124,6 +127,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
           <div className="gm-pane" hidden={view.kind === 'character'}>
             <div className="gm-grid">
               <Party state={state} />
+              <SessionPanel client={client} state={state} />
               <JoinPanel gmKey={gmKey} />
               <CreateCharacter client={client} state={state} />
               <AwardXp client={client} state={state} />
@@ -147,6 +151,20 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
         </div>
       )}
     </main>
+  );
+}
+
+/** Header reminder of the play session and day (M4.3), visible from every view. */
+function SessionChip({ state }: { state: CampaignState }) {
+  const { running } = sessionSummary(state);
+  return (
+    <span
+      className={`session-chip${running ? ' running' : ''}`}
+      data-testid="session-chip"
+      title={running ? undefined : 'Start a session in the Session window'}
+    >
+      {running ? `Session ${running.number}` : 'No session'} · Day {state.day}
+    </span>
   );
 }
 

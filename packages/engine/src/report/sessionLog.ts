@@ -29,6 +29,7 @@ export type SessionLogKind =
   | 'quest'
   | 'stability'
   | 'day'
+  | 'session'
   | 'undo';
 
 export interface SessionLogEntry {
@@ -319,6 +320,15 @@ function describe(
     case 'campaign.dayAdvanced':
       add('day', `Day ${before?.day ?? after.day - event.payload.days} → ${after.day}`);
       break;
+    case 'session.started':
+    case 'session.ended': {
+      const s = after.sessions.find((x) => x.id === event.payload.sessionId);
+      if (s) {
+        const what = event.type === 'session.started' ? 'started' : 'ended';
+        add('session', `Session ${s.number} ${what} (day ${after.day})`);
+      }
+      break;
+    }
     default:
       break;
   }
@@ -389,6 +399,8 @@ export function buildSessionLog(
   campaign: Campaign,
   fromSeq: number,
   base?: SessionLogBase,
+  /** Stop before this index (an ended session's report); the end of the log when omitted. */
+  toSeq?: number,
 ): SessionLog {
   const entries: SessionLogEntry[] = [];
   const practiceIds = new Set<string>();
@@ -398,7 +410,8 @@ export function buildSessionLog(
   const reuse =
     base !== undefined && base.fromSeq === start && sessionLogBaseIsCurrent(campaign, base);
   let state: CampaignState | null = reuse ? base.state : null;
-  for (let seq = reuse ? start : 0; seq < campaign.events.length; seq++) {
+  const end = Math.min(campaign.events.length, Math.max(start, toSeq ?? campaign.events.length));
+  for (let seq = reuse ? start : 0; seq < end; seq++) {
     const event = campaign.events[seq];
     if (!event) continue;
     if (event.type === 'event.undone') {
@@ -460,7 +473,7 @@ export function buildSessionLog(
   return {
     campaignName: line(final?.name ?? ''),
     fromSeq: start,
-    toSeq: campaign.events.length,
+    toSeq: end,
     day: final?.day ?? null,
     entries,
     practice,
@@ -481,17 +494,74 @@ const quoteBody = (body: string) =>
         .map((l) => (l === '' ? '>' : `> ${l}`))
         .join('\n');
 
-/** Renders the log as markdown for the exports folder. */
+/**
+ * Where a play session's events are in the log (M4.3): from its counting
+ * `session.started` to just after its counting `session.ended` (`toSeq` null
+ * while it runs). Null when no counting start exists.
+ */
+export function sessionEventRange(
+  campaign: Campaign,
+  sessionId: string,
+): { readonly fromSeq: number; readonly toSeq: number | null } | null {
+  let fromSeq = -1;
+  for (let seq = 0; seq < campaign.events.length; seq++) {
+    const e = campaign.events[seq];
+    if (!e || has(campaign.undone, e.id)) continue;
+    if (e.type === 'session.started' && e.payload.sessionId === sessionId) fromSeq = seq;
+    if (e.type === 'session.ended' && e.payload.sessionId === sessionId && fromSeq >= 0) {
+      return { fromSeq, toSeq: seq + 1 };
+    }
+  }
+  return fromSeq >= 0 ? { fromSeq, toSeq: null } : null;
+}
+
+/** Header facts about the play session a log covers (M4.3). */
+export interface SessionLogSessionMeta {
+  readonly number: number;
+  readonly startedAt: string;
+  readonly endedAt: string | null;
+  readonly startDay: number;
+  readonly endDay: number | null;
+}
+
+/**
+ * Renders the log as markdown for the exports folder. With `session`, it is
+ * that session's running log, or its report once the session has ended.
+ */
 export function renderSessionLog(
   log: SessionLog,
-  meta: { readonly startedAt: string; readonly writtenAt: string },
+  meta: {
+    readonly startedAt: string;
+    readonly writtenAt: string;
+    readonly session?: SessionLogSessionMeta | undefined;
+  },
 ): string {
   const out: string[] = [];
-  out.push(`# Session log: ${log.campaignName || 'Campaign'}`);
-  out.push('');
-  out.push(`- Sitting started: ${meta.startedAt}`);
-  out.push(`- Last written: ${meta.writtenAt}`);
-  if (log.day !== null) out.push(`- In-game day: ${log.day}`);
+  const name = log.campaignName || 'Campaign';
+  const s = meta.session;
+  if (s) {
+    out.push(
+      s.endedAt === null
+        ? `# Session ${s.number} log (running): ${name}`
+        : `# Session ${s.number} report: ${name}`,
+    );
+    out.push('');
+    out.push(`- Session started: ${s.startedAt}`);
+    out.push(s.endedAt === null ? '- Session still running' : `- Session ended: ${s.endedAt}`);
+    out.push(`- Last written: ${meta.writtenAt}`);
+    const lastDay = s.endDay ?? log.day ?? s.startDay;
+    out.push(
+      lastDay === s.startDay
+        ? `- In-game day: ${lastDay}`
+        : `- In-game days: ${s.startDay}–${lastDay}`,
+    );
+  } else {
+    out.push(`# Session log: ${name}`);
+    out.push('');
+    out.push(`- Sitting started: ${meta.startedAt}`);
+    out.push(`- Last written: ${meta.writtenAt}`);
+    if (log.day !== null) out.push(`- In-game day: ${log.day}`);
+  }
   out.push(`- Events: ${log.fromSeq}–${Math.max(log.fromSeq, log.toSeq - 1)} of the campaign log`);
   out.push('- GM-only file: it includes hidden quests and GM reasons. Do not show it to players.');
   out.push(

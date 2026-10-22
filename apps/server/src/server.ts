@@ -3,7 +3,7 @@ import path from 'node:path';
 import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { buildDemoEvents } from '@the-system/engine';
+import { buildDemoEvents, type DomainEvent } from '@the-system/engine';
 import { LiveHub, type HubOptions } from './hub';
 import type { JoinInfo } from './join';
 import { helloMessage } from './protocol';
@@ -55,26 +55,60 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   // The active campaign. Switching (real ↔ demo) closes every socket; clients
   // reconnect and join the new campaign's hub, so no frame ever mixes the two.
   const realId = options.live?.store.id ?? null;
-  let active = options.live
-    ? { store: options.live.store, hub: new LiveHub(options.live.store, options.live) }
-    : null;
+  const logWriters: SessionLogWriter[] = [];
+  /** One hub (and session log writer) per campaign for the server's life. */
+  const openLive = (store: CampaignStore, live: { store: CampaignStore } & HubOptions) => {
+    const writer = options.sessionLog
+      ? new SessionLogWriter(store, {
+          ...options.sessionLog,
+          onError: (error) => app.log.error(error),
+        })
+      : null;
+    if (writer) logWriters.push(writer);
+    const hub = new LiveHub(store, {
+      ...live,
+      afterAppend: (s, events) => sessionEnded(s, events, writer),
+    });
+    return { store, hub };
+  };
+  /**
+   * Session end (M4.3): back up the campaign and write the session report.
+   * The end itself is already saved; a failure here is reported to the GM
+   * who ended it and logged, never undone.
+   */
+  const sessionEnded = (
+    store: CampaignStore,
+    events: readonly DomainEvent[],
+    writer: SessionLogWriter | null,
+  ): string | null => {
+    const ended = events.find((e) => e.type === 'session.ended');
+    if (!ended) return null;
+    const problems: string[] = [];
+    const number =
+      store.campaign.state?.sessions.find((x) => x.id === ended.payload.sessionId)?.number ?? 0;
+    try {
+      store.backup(`session-${number}-end`);
+    } catch (error) {
+      app.log.error(error);
+      problems.push('the backup');
+    }
+    try {
+      writer?.flush();
+    } catch (error) {
+      app.log.error(error);
+      problems.push('the session report');
+    }
+    return problems.length
+      ? `Session ended, but ${problems.join(' and ')} could not be saved. See the server log.`
+      : null;
+  };
+  let active = options.live ? openLive(options.live.store, options.live) : null;
   const opened = new Map<string, { store: CampaignStore; hub: LiveHub }>();
   if (active && options.live) opened.set(options.live.store.id, active);
   const sockets = new Set<{
     close: (code: number, reason: string) => void;
     terminate: () => void;
   }>();
-  const logWriters: SessionLogWriter[] = [];
-  const startLog = (store: CampaignStore) => {
-    if (!options.sessionLog) return;
-    logWriters.push(
-      new SessionLogWriter(store, {
-        ...options.sessionLog,
-        onError: (error) => app.log.error(error),
-      }),
-    );
-  };
-  if (options.live) startLog(options.live.store);
 
   // Only /ws may be upgraded, and only from this server's own pages (or a
   // listed origin); refuse anything else before the handshake.
@@ -175,9 +209,8 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       }
       // One hub per campaign for the server's life, so switching back keeps its
       // in-memory notification history.
-      next = { store, hub: new LiveHub(store, live) };
+      next = openLive(store, live);
       opened.set(id, next);
-      startLog(store);
     }
     active = next;
     for (const socket of [...sockets]) socket.close(1012, 'Campaign changed');

@@ -7,6 +7,7 @@ import {
   projectForPlayer,
   type Actor,
   type Command,
+  type DomainEvent,
 } from '@the-system/engine';
 import { notificationsFor } from './notify';
 import {
@@ -32,6 +33,12 @@ export interface HubOptions {
   readonly now: () => string;
   readonly newId: () => string;
   readonly sessionId?: string | null;
+  /**
+   * Runs after a command's events are saved, before anyone is told (e.g. the
+   * session-end backup and report, M4.3). Returns a warning for the acting
+   * client, or null. Must not throw.
+   */
+  readonly afterAppend?: (store: CampaignStore, events: readonly DomainEvent[]) => string | null;
 }
 
 type Role =
@@ -169,7 +176,18 @@ export class LiveHub {
         error instanceof EventRejectedError ? error.message : 'Could not save the change',
       );
     }
-    client.send({ type: 'result', requestId: message.requestId, ok: true });
+    let warning: string | null;
+    try {
+      warning = this.options.afterAppend?.(this.store, result.events) ?? null;
+    } catch {
+      warning = 'The change was saved, but a follow-up step failed';
+    }
+    client.send({
+      type: 'result',
+      requestId: message.requestId,
+      ok: true,
+      ...(warning ? { warning } : {}),
+    });
     // Every command is one event (D44): its notifications share that event's seq.
     const event = result.events[result.events.length - 1];
     const after = this.store.campaign.state;

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 14,
+  "schemaVersion": 15,
   "name": "Skill library",
   "rules": {
     "configVersion": 1,
@@ -605,5 +605,7 @@
   "raceLibrary": {},
   "raceLibraryOrder": [],
   "professionLibrary": {},
-  "professionLibraryOrder": []
+  "professionLibraryOrder": [],
+  "sessions": [],
+  "currentSession": null
 }
