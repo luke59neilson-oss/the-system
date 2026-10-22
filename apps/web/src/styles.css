@@ -1294,6 +1294,11 @@ button.skill-open:hover .skill-name {
 .identify-of {
   margin: 0 0 4px;
 }
+.identify-header {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  color: var(--accent);
+}
 .identify-text {
   margin: 0;
   white-space: pre-line;

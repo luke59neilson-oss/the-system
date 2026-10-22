@@ -148,6 +148,13 @@ export const rulesConfigSchema = z
       /** Stat (and, in "gradeWalls", damage) factor for a side one grade lower (⅓). */
       lowerGradeFraction: z.number().positive().max(1),
     }),
+    /**
+     * DESIGN §7 Identify range (MQ.8, D107): a same-grade target is
+     * identifiable only up to this many times the viewer's race level.
+     */
+    identify: z
+      .strictObject({ sameGradeLevelRatio: z.number().positive().max(100) })
+      .default({ sameGradeLevelRatio: 1.5 }),
     montage: z.strictObject({
       /** Clock fill fraction needed before a montage is offered. */
       minClockFill: z.number().min(0).max(1),

@@ -69,6 +69,7 @@ const stabilityRules = z.record(
 );
 const questText = z.string().trim().max(5000);
 const questDays = z.number().int().min(1).max(10_000).nullable();
+const entityLevel = z.number().int().min(0).max(10_000);
 const questNoticeTo = z.array(recordId).max(200).nullable();
 /** Identify tiers (M3.9, DESIGN §7): one text per minimum Identify rarity. */
 const identifyTiers = z
@@ -485,6 +486,9 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     label: nonBlank,
     tiers: identifyTiers,
     knownBy: z.array(recordId).max(200),
+    /** MQ.8: grade id and level for the Identify range; absent (older logs) = none. */
+    grade: recordId.nullable().optional(),
+    level: entityLevel.nullable().optional(),
   }),
   /** GM edits an entity; omitted fields stay. */
   'entity.edited': z.strictObject({
@@ -492,6 +496,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     name: nonBlank.optional(),
     label: nonBlank.optional(),
     tiers: identifyTiers.optional(),
+    grade: recordId.nullable().optional(),
+    level: entityLevel.nullable().optional(),
   }),
   /** These characters now know the entity and can Identify it. */
   'entity.revealed': z.strictObject({

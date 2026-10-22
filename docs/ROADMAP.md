@@ -194,7 +194,7 @@ They touch finished engine and player items, so they come before M4.4.
 - [x] **MQ.7 Hidden quest notice.** Creating a hidden quest sends the
   affected players a System notice that a hidden quest exists, with no
   details. *Accept:* canary test still passes; notice e2e.
-- [ ] **MQ.8 Identify range.** Lower grade always; higher grade never; same
+- [x] **MQ.8 Identify range.** Lower grade always; higher grade never; same
   grade only if level ≤ 1.5 × the viewer's level; otherwise
   `[??? – lvl ???]`. *Accept:* engine and projection tests; e2e.
 - [x] **MQ.9 Windows-first releases.** Luke uses Windows. Release builds
@@ -453,6 +453,8 @@ the rest follow in file order. Each gets its own §6 review.
   Offer to apply a quest's stability rule when a practice entry
   carries one of its action tags (D67).
 - [ ] **M7.2 Bestiary and NPCs.** Grade, level, stats, Identify tiers, notes.
+  Sets an entity's grade and level for the Identify range (D123); warn when a
+  label names what an out-of-range target is.
 - [ ] **M7.3 Encounter panel.** Ratio-odds roller (stats + mode), pool
   damage/heal, progress clocks, montage trigger. Rolls the GM shares become
   events, and the players involved get a contest result pop-up (from M3.13,

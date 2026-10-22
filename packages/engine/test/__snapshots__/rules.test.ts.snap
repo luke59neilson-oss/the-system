@@ -173,6 +173,9 @@ exports[`default rules > match the snapshot 1`] = `
     "enabledByDefault": false,
     "fadesAtGrade": "E",
   },
+  "identify": {
+    "sameGradeLevelRatio": 1.5,
+  },
   "logging": {
     "autosaveMinutes": 5,
   },

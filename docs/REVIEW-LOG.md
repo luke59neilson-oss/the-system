@@ -521,3 +521,8 @@
 - Low fixed: the "Every id must be a character" comment sat above the new `checkNoticeTo`; moved back.
 - Low accepted: no character removal exists, so no other event changes who is told; DESIGN §7 left as Luke's text (model in D122/Q47); toast overlap is existing behaviour; GM control for `noticeTo` comes with M7.1.
 - One Medium only, so no round 2 (LOOP §6.4); fix verified by the new test, `npm run check` and the MQ.7 e2e.
+
+## 2026-10-22 · MQ.8 Identify range · reviewer: sonnet (round 1)
+- Findings: 0 High, 0 Medium, 4 Low.
+- Low accepted: an out-of-range target keeps its player-facing label (D123; the label is separate from the GM name, and M7.2 now notes a warning when a label gives too much away); "Identify: <label>" repeats the label above the rank line (cosmetic); no GM UI for grade/level until M7.2 (roadmap note added); no per-grade level range check (the GM may set it freely).
+- Clean round 1, so no round 2.

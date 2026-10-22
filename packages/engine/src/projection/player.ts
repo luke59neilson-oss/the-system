@@ -23,6 +23,7 @@ import {
   type SkillOption,
 } from '../evolution';
 import { canReadNote } from '../practice';
+import { identifyInRange } from '../entities';
 import { daysLeft, hiddenQuestNoticed, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
 import { identifyRarity, resolveIdentify } from './identify';
@@ -333,7 +334,16 @@ export interface PlayerProjectionOptions {
 export interface PlayerIdentify {
   readonly id: string;
   readonly label: string;
-  /** The best tier the viewer's Identify rarity unlocks, or null for none. */
+  /**
+   * False when the target is out of the viewer's Identify range (MQ.8,
+   * DESIGN §7): a higher grade, or the same grade above 1.5 × their level.
+   * The player then sees `[??? – lvl ???]` and gets no text, grade or level.
+   */
+  readonly inRange: boolean;
+  /** Grade and level shown when in range and the GM gave them, else null. */
+  readonly grade: string | null;
+  readonly level: number | null;
+  /** The best tier the viewer's Identify rarity unlocks, or null for none (or out of range). */
   readonly text: string | null;
 }
 
@@ -696,10 +706,22 @@ function playerNotes(state: CampaignState, viewerId: string, viewAs: boolean): P
 /** Known entities with the viewer's tier text only (D40: resolved here, never the tier list). */
 function playerIdentify(state: CampaignState, viewer: Character): PlayerIdentify[] {
   const rarity = identifyRarity(state.rules, viewer);
-  return state.entityOrder.flatMap((id) => {
+  return state.entityOrder.flatMap((id): PlayerIdentify[] => {
     const e = hasOwnKey(state.entities, id) ? state.entities[id] : undefined;
     if (!e || !e.knownBy.includes(viewer.id)) return [];
-    return [{ id: e.id, label: e.label, text: resolveIdentify(state.rules, e.tiers, rarity) }];
+    if (!identifyInRange(state.rules, viewer, e)) {
+      return [{ id: e.id, label: e.label, inRange: false, grade: null, level: null, text: null }];
+    }
+    return [
+      {
+        id: e.id,
+        label: e.label,
+        inRange: true,
+        grade: e.grade,
+        level: e.level,
+        text: resolveIdentify(state.rules, e.tiers, rarity),
+      },
+    ];
   });
 }
 

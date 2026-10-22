@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { PlayerView } from '@the-system/engine';
-import { NOTHING_REVEALED, identifyResult } from './identify';
+import { NOTHING_REVEALED, identifyHeader, identifyResult } from './identify';
 
 /** Identify (ROADMAP M3.9): choose a known entity and read what the System tells you. */
 export function IdentifyPanel({ view }: { view: PlayerView }) {
@@ -35,7 +35,12 @@ export function IdentifyPanel({ view }: { view: PlayerView }) {
         {result.kind === 'shown' && (
           <div className="identify-result">
             <p className="muted identify-of">Identify: {result.entry.label}</p>
-            {result.entry.text === null ? (
+            {identifyHeader(result.entry) !== null && (
+              <p className="identify-header" data-testid="identify-header">
+                {identifyHeader(result.entry)}
+              </p>
+            )}
+            {!result.entry.inRange ? null : result.entry.text === null ? (
               <p className="muted" data-testid="identify-text">
                 {NOTHING_REVEALED}
               </p>

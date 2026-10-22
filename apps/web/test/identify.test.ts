@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { identifyResult } from '../src/player/identify';
+import { OUT_OF_RANGE, identifyHeader, identifyResult } from '../src/player/identify';
 
 const known = [
-  { id: 'curse', label: 'The black miasma', text: '[Fever]' },
-  { id: 'drum', label: 'The Drum', text: null },
+  {
+    id: 'curse',
+    label: 'The black miasma',
+    inRange: true,
+    grade: null,
+    level: null,
+    text: '[Fever]',
+  },
+  { id: 'drum', label: 'The Drum', inRange: true, grade: null, level: null, text: null },
 ];
 
 describe('identifyResult (M3.9)', () => {
@@ -25,5 +32,21 @@ describe('identifyResult (M3.9)', () => {
       kind: 'gone',
       label: 'The black miasma',
     });
+  });
+});
+
+describe('identifyHeader (MQ.8)', () => {
+  const base = { id: 'h', label: 'Pale hunter', text: null };
+  it('hides everything out of range', () => {
+    expect(identifyHeader({ ...base, inRange: false, grade: null, level: null })).toBe(
+      OUT_OF_RANGE,
+    );
+    expect(OUT_OF_RANGE).toBe('[??? – lvl ???]');
+  });
+  it('shows grade and level in the books’ format when the GM gave them', () => {
+    expect(identifyHeader({ ...base, inRange: true, grade: 'F', level: 7 })).toBe(
+      '[Pale hunter (F) – lvl 7]',
+    );
+    expect(identifyHeader({ ...base, inRange: true, grade: null, level: null })).toBeNull();
   });
 });

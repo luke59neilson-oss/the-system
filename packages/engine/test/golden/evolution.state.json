@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 19,
+  "schemaVersion": 20,
   "name": "Golden: evolution",
   "rules": {
     "configVersion": 1,
@@ -254,6 +254,9 @@
     "resolution": {
       "gradeGapMode": "none",
       "lowerGradeFraction": 0.3333333333333333
+    },
+    "identify": {
+      "sameGradeLevelRatio": 1.5
     },
     "montage": {
       "minClockFill": 0.5,
