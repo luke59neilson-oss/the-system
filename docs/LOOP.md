@@ -67,12 +67,22 @@ Read `CLAUDE.md`, `docs/PROGRESS.md`, `docs/QUESTIONS.md`,
 4. Commit small. End every commit message with the attribution lines from your
    session's system reminder. `git fetch && git rebase origin/main` before
    pushing main (never rebase `wip/*` branches). Never force-push.
-5. **Timebox:** start no new item after **35 minutes**; hard stop at **60
-   minutes** whatever the state. Unfinished work: push it to
-   `wip/<item-id>` (`git push -u origin wip/<item-id>`) and record the branch
-   and its base SHA in PROGRESS.md. Remote branches cannot be deleted from
-   here; leave finished `wip/*` branches alone.
-6. Banned in committed code: `.skip`, `.only`, `@ts-ignore`,
+5. **Timebox (no idle time).** All times are minutes after you took the lock.
+   - Never stop early: always start the next item, even a large one.
+   - At **45**, if the current item cannot be finished and reviewed by 52,
+     push it to `wip/<item-id>` (`git push -u origin wip/<item-id>`) with a
+     short "where I stopped" note in PROGRESS.md (branch, base SHA, next
+     step). The next run resumes it first.
+   - **Hard stop at 52**: write PROGRESS, release the lock, push. This frees
+     the lock before the next hourly run checks it; a run that holds the lock
+     past the hour makes the next run exit and wastes a whole hour.
+   - Remote branches cannot be deleted from here; leave finished `wip/*`
+     branches alone.
+6. **Test scope.** Before each push to main: `npm run check` plus the e2e
+   specs for the items you touched. Run the full e2e suite before every
+   `Mx.A` and whenever you change shared server or UI code. CI runs the full
+   suite on every push; a red main is the next run's first task.
+7. Banned in committed code: `.skip`, `.only`, `@ts-ignore`,
    `@ts-expect-error` without a reason, `eslint-disable`, lowering the
    coverage threshold. Property and simulation tests use fixed seeds and
    print the seed on failure. Tests that start servers use random ports.
@@ -91,15 +101,21 @@ Read `CLAUDE.md`, `docs/PROGRESS.md`, `docs/QUESTIONS.md`,
    instructions: run `npm run check` and the item's e2e spec; for UI items,
    open the item's screenshots with the Read tool and judge them against
    DESIGN §9; look for bugs, mismatches with DESIGN.md, missing or gamed
-   tests (banned patterns in §5.6), GM-only data reaching players, and UX
+   tests (banned patterns in §5.7), GM-only data reaching players, and UX
    problems; report High / Medium / Low with file:line and a concrete failure
    scenario; do not edit files.
-3. Fix every High and Medium, re-run checks. **At most 2 review rounds per
+3. **Review in parallel.** Launch the reviewer with `run_in_background: true`
+   and `isolation: "worktree"` (so it tests the item's commit, not your
+   working tree), then start the next item while it works. When it reports,
+   fix the findings on the reviewed item before continuing.
+4. Fix every High and Medium, re-run checks. A **second review round only
+   if round 1 found a High or two or more Mediums**; otherwise verify your
+   fixes yourself and log them. **At most 2 review rounds per
    item.** If a High remains after round 2, push to `wip/<item-id>`, log a
    Blocker, and move to the next item that does not depend on it.
-4. Append to `docs/REVIEW-LOG.md`: date, item, reviewer model, findings,
+5. Append to `docs/REVIEW-LOG.md`: date, item, reviewer model, findings,
    fixes.
-5. Only then check the box.
+6. Only then check the box.
 
 ## 7. Decisions
 

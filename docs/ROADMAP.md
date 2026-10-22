@@ -137,6 +137,19 @@ the full ones.
 - [x] **MS.A Milestone acceptance and review.** Then push `main` to
   `release` so Luke gets the first build.
 
+- [ ] **MS.7 Launch polish (do next).** Luke's first try of the preview
+  failed to open. Make launching foolproof on Windows: a "Starting The
+  System…" window appears within 1 s of double-clicking; a second launch
+  brings the running window to the front instead of erroring; if port 30333
+  is taken by another program, use the next free port and show it; release
+  file names carry the preview date and run number
+  (`TheSystem-preview-<date>-<run>-win-x64-portable.exe`) so a new download
+  never collides with an older copy that is still open; release notes list
+  what changed since the previous preview.
+  *Accept:* desktop tests for double launch (second instance exits and
+  focuses the first), busy-port fallback and the splash; the release
+  workflow's dry run produces the new file names.
+
 ## M1 (continued) — Rules engine
 
 - [x] **M1.6 Titles and bonuses.** Flat and percentage bonuses, percentage

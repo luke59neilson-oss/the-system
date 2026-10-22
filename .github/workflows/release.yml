@@ -7,9 +7,12 @@ name: Release
 #   `preview-<date>-<run number>`; build sessions cannot push tags, the
 #   workflow creates it).
 # - Push to `release-dry-run`: the same builds and checks, no Release.
+# - Manual: Actions → Release → Run workflow (Luke's one-click publish,
+#   D93). Publishes a preview from the chosen branch, normally main.
 on:
   push:
     branches: [release, release-dry-run]
+  workflow_dispatch:
 
 concurrency:
   group: release-${{ github.ref }}
@@ -121,7 +124,7 @@ jobs:
             if [ "$count" -ne 1 ]; then echo "expected one $pattern, found $count"; exit 1; fi
           done
       - name: Publish the preview release
-        if: github.ref == 'refs/heads/release'
+        if: github.ref == 'refs/heads/release' || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
