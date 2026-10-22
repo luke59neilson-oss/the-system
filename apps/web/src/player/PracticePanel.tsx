@@ -191,7 +191,7 @@ function PracticeForm({
           type="text"
           value={action}
           maxLength={MAX_ACTION}
-          placeholder="Shot at moving targets from the trees"
+          placeholder="What did you do?"
           data-testid={`${testId}-action`}
           onChange={(e) => setAction(e.target.value)}
         />
@@ -209,7 +209,8 @@ function PracticeForm({
                 )
               }
             />{' '}
-            {s.nickname ?? s.name}
+            {s.name}
+            {s.nickname && <span className="nickname"> “{s.nickname}”</span>}
           </label>
         ))}
       </fieldset>

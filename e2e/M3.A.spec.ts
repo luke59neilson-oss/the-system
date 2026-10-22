@@ -50,6 +50,10 @@ const GM_ONLY = [
   'Heart of the World',
   'Drum reveal',
   'tutorial boss',
+  // The GM-only montage clock (D86) and the stability rule tags (D83).
+  'Cross the marsh',
+  'demo-clock-marsh',
+  'pale hunter',
 ];
 /** Jake's unshared journal entry: only Jake's own screen may receive it. */
 const JAKE_PRIVATE = ['Something is watching', 'Not telling the others yet'];
@@ -116,6 +120,13 @@ for (const viewport of VIEWPORTS) {
       );
       await expect(page.getByTestId('quests').getByTestId('stability-value')).toHaveText('89%');
       await noSidewaysScroll(page, viewport.width);
+
+      // Practice forms name skills officially, with the nickname beside (D78).
+      if (name === 'Jake') {
+        await expect(page.locator('.practice-skills').first()).toContainText(
+          'Expert Archery “Old Faithful”',
+        );
+      }
 
       // M3.5: the first skill's detail opens as a dialog and Escape closes it.
       const firstSkill = page.getByTestId('skill').first().getByRole('button').first();

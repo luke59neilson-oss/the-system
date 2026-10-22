@@ -799,6 +799,7 @@ button.secondary:hover {
 .feed ol.history {
   max-height: 60vh;
   overflow-y: auto;
+  overflow-wrap: anywhere;
 }
 .feed .when {
   display: block;
@@ -828,6 +829,7 @@ button.secondary:hover {
   z-index: 10;
 }
 .ding-toast {
+  overflow-wrap: anywhere;
   pointer-events: auto;
   max-width: min(560px, 100%);
   display: flex;
