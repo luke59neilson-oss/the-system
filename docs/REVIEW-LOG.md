@@ -311,3 +311,14 @@
 - Round 2 (f6f895e..329c3f7): 0 High, 0 Medium, 4 Low.
   - L fixed: the Skill text draft is tied to one character's skill and resets after a save; Save is disabled while the text is unchanged.
   - L accepted: a draft does not follow an outside change to the same skill while it is being edited; an identical notice twice within 8 s does not restart its timer.
+
+## 2026-10-22 · M3.6 Skill selection · reviewer: sonnet (fresh context)
+- Round 1 (a250b31..078936c): 0 High, 3 Medium, 6 Low.
+  - M: Escape during an in-flight confirm closed the dialog, and a later refusal was always reported as a GM change. Fixed: the dialog's cancel is blocked while busy. A refusal after close names the real reason, or for a lost connection says "may already be saved" (`settleNotice`, unit tested).
+  - M: focus after a successful choice could fall to `<body>` when the result arrived before the new view. Fixed: `justChose` keeps [Choose] hidden and holds focus until the sheet shows the new skill.
+  - M: the in-flight races had no tests. Partly fixed: the notice logic is unit tested. The timing-dependent races have no e2e (accepted, as for M3.4).
+  - L fixed: the selection notice fades after 10 s.
+  - L accepted: the review step hides the other cards; there is no hint that Escape defers the choice; the demo uses placeholder text; the e2e is one long test; aria-labels use the plain name.
+- Round 2 (078936c..167999d): 0 High, 0 Medium, 4 Low.
+  - L fixed: the connection-lost notice no longer fades.
+  - L accepted: [Choose] stays hidden until the reconnect snapshot if the view frame is lost after an ok; `isConnectionError` matches the two `live.ts` strings; the in-flight race is still untested.

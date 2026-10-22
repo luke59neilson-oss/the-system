@@ -203,7 +203,7 @@ the full ones.
 - [x] **M3.4 Free points.** Allocate a batch, confirm, locked.
 - [x] **M3.5 Skill detail.** Rarity color, description, flavor, marks
   progress, nickname edit (official name always shown).
-- [ ] **M3.6 Skill selection.** Pending badge, offers side by side, choose.
+- [x] **M3.6 Skill selection.** Pending badge, offers side by side, choose.
   The e2e uses the demo's open menu (Jake, level 50; D70).
 - [ ] **M3.7 Inventory, gifts, trades.** Equip; give items/currency to a
   character or the GM; propose/accept/decline trades; incoming notices.

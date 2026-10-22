@@ -254,7 +254,8 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
     });
   }, [selFocus, settling]);
   useEffect(() => {
-    if (selNotice === null) return;
+    // The "may already be saved" warning stays until the next [Choose].
+    if (selNotice === null || selNotice.startsWith('Connection lost')) return;
     const timer = setTimeout(() => setSelNotice(null), 10_000);
     return () => clearTimeout(timer);
   }, [selNotice]);
