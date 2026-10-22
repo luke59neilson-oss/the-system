@@ -3,8 +3,8 @@ import type { SkillDef } from '../skills';
 import { STARTER_CLASSES } from './starters';
 
 /**
- * The default library set (ROADMAP M4.2): starting classes, the Human race and
- * professions, plus skill-library text for every starting class skill. Content,
+ * The default library set (ROADMAP M4.2): starting classes and the Human race
+ * (no professions, MQ.6), plus skill-library text for every starting class skill. Content,
  * not rules: `library.seedDefaults` copies it into a campaign's libraries as
  * one event, so editing this file never changes an existing campaign.
  */
@@ -215,48 +215,12 @@ const RACES: readonly Omit<RaceDef, 'id'>[] = [
   },
 ];
 
-const PROFESSIONS: readonly Omit<ProfessionDef, 'id'>[] = [
-  {
-    name: 'Alchemist',
-    description: 'Brews potions, poisons and reagents from what the world offers.',
-    skills: [
-      { name: 'Basic Brewing', rarity: 'common' },
-      { name: 'Herbalism', rarity: 'uncommon' },
-    ],
-  },
-  {
-    name: 'Cook',
-    description: 'Turns monster meat into meals that heal, fortify and keep morale up.',
-    skills: [
-      { name: 'Basic Cooking', rarity: 'common' },
-      { name: 'Monster Butchery', rarity: 'uncommon' },
-    ],
-  },
-  {
-    name: 'Blacksmith',
-    description: 'Forges and repairs weapons and armour.',
-    skills: [
-      { name: 'Basic Smithing', rarity: 'common' },
-      { name: 'Appraise Metal', rarity: 'uncommon' },
-    ],
-  },
-  {
-    name: 'Tailor',
-    description: 'Works hide, cloth and silk into gear and cloaks.',
-    skills: [
-      { name: 'Basic Sewing', rarity: 'common' },
-      { name: 'Hide Working', rarity: 'uncommon' },
-    ],
-  },
-  {
-    name: 'Scribe',
-    description: 'Records knowledge and inscribes runes and scrolls.',
-    skills: [
-      { name: 'Basic Inscription', rarity: 'common' },
-      { name: 'Copy Rune', rarity: 'uncommon' },
-    ],
-  },
-];
+/**
+ * No default professions (MQ.6, D105): the GM offers each character
+ * professions tailored to what they have done, at the E-grade evolution.
+ * The profession library holds only the GM's own entries.
+ */
+const PROFESSIONS: readonly Omit<ProfessionDef, 'id'>[] = [];
 
 export const DEFAULT_LIBRARY: DefaultLibrary = {
   skills: SKILLS,

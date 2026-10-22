@@ -22,6 +22,13 @@ export type SystemNotification =
       readonly freePoints: number;
     }
   | {
+      /** A profession taken (MQ.6): it starts at the class level, not a level-up from 0. */
+      readonly kind: 'profession';
+      readonly characterId: string;
+      readonly name: string;
+      readonly level: number;
+    }
+  | {
       readonly kind: 'freePoints';
       readonly characterId: string;
       readonly unassigned: number;
@@ -141,7 +148,14 @@ export function notificationsBetween(
         freePoints: 0,
       });
     }
-    if (now.profession !== null && now.professionLevel > was.professionLevel) {
+    if (now.profession !== null && was.profession === null) {
+      out.push({
+        kind: 'profession',
+        characterId: id,
+        name: now.profession,
+        level: now.professionLevel,
+      });
+    } else if (now.profession !== null && now.professionLevel > was.professionLevel) {
       out.push({
         kind: 'level',
         characterId: id,

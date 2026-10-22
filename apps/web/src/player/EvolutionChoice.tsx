@@ -69,7 +69,8 @@ export function EvolutionChoice({
       type: 'evolution.choose',
       characterId: me.id,
       optionId,
-      profession: profession === '' ? null : profession,
+      // A profession that arrived while the dialog was open hides the picker (MQ.6).
+      profession: profession === '' || me.profession !== null ? null : profession,
       releaseId: evolution.releaseId,
     });
     setBusy(false);
@@ -123,7 +124,7 @@ export function EvolutionChoice({
               <li key={w}>{w}</li>
             ))}
           </ul>
-          {evolution.professions.length > 0 && (
+          {evolution.professions.length > 0 && me.profession === null && (
             <label className="evolution-profession">
               Profession
               <select
@@ -138,6 +139,9 @@ export function EvolutionChoice({
                   </option>
                 ))}
               </select>
+              <span className="muted">
+                &ldquo;None for now&rdquo; keeps the offers: take one later from Professions.
+              </span>
             </label>
           )}
           <div className="assign-actions">

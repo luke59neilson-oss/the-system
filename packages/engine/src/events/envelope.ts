@@ -115,6 +115,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     portrait: portraitRef.nullable(),
   }),
   'character.professionGranted': z.strictObject({ characterId: recordId, profession: nonBlank }),
+  /** The player takes one of their offered professions later (MQ.6; the Professions tab). */
+  'profession.chosen': z.strictObject({ characterId: recordId, profession: nonBlank }),
   /** GM awards a title by name (M1.15; the title library, bonuses and System text are M6.4). */
   'title.awarded': z.strictObject({ characterId: recordId, title: nonBlank.max(80) }),
   /** GM sets current pool values; each must be within 0..max (D31). */
@@ -511,6 +513,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'character.renamed': 1,
   'character.portraitSet': 1,
   'character.professionGranted': 1,
+  'profession.chosen': 1,
   'title.awarded': 1,
   'character.poolsSet': 1,
   'character.statsSet': 1,
@@ -659,6 +662,7 @@ export const PLAYER_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   'skill.nicknamed',
   'selection.chosen',
   'evolution.chosen',
+  'profession.chosen',
 ]);
 
 /** Throws when a player-recorded event is not one a player may cause. */

@@ -504,3 +504,13 @@
   - M fixed (5dbaacf): docs (D120, ROADMAP M4.6). Also fixed from my own full e2e run: `e2e/M3.6.spec.ts` awarded eight D levels at the old 400.
   - L accepted: factor before bonus (D120 says why); unconstrained factor lists; the 0→240 test now chooses due selections before its exit check (the level-240 menu was skipped once awards grew); a bare `award(400)` at G in evolution.test.ts.
 - Round 2 (5dbaacf): 0 High, 0 Medium, 1 Low (MS.A's 400 XP → level 4 looked old-curve; it is G at 100, unchanged). `npm run check` and e2e M3.6, MS.4, MS.A, M3.5 green.
+
+## 2026-10-22 · MQ.6 Tailored professions · sonnet
+- Round 1 (40c20b1..083d0a4): 0 High, 2 Medium, 5 Low. `npm run check` green (754); e2e MQ.6, M3.13, M4.2 green; screenshots judged fine against §9.
+  - M fixed: a profession taken from the tab while a later release waited left the evolution dialog's profession picker stale (any pick failed with a generic error) and merged that release's names into the locked list. `chooseEvolution` now refuses a pick with a clear "already has the profession [X]; evolve with none" and leaves the locked offers alone; the dialog hides the picker once a profession exists. Engine test added.
+  - M deferred to M5.2 (ROADMAP note): no GM console UI releases evolutions or offers professions yet (raw commands and the demo only); M5.2 now also lists withdrawing an untaken offer.
+  - L accepted: exact-match take vs case-insensitive merge (D121; the UI sends stored names); no "Chosen" badge after a GM grant of an unoffered name (the locked line names it); ~22 px phone tap targets (same as other [Take]/[Choose] buttons; M8.3 accessibility); window vs "tab" naming (D121).
+- Round 2: see below (two Mediums in round 1).
+- Round 2 (083d0a4..b94eb65): 0 High, 0 Medium, 2 Low. Vitest (engine evolution + web) and typecheck green.
+  - L fixed: a picker value chosen before a profession arrived live was still sent after the picker hid; the dialog now sends none once a profession exists.
+  - L accepted: states saved on the unreleased branch before the fix keep merged names (nothing shipped).

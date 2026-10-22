@@ -17,6 +17,8 @@ export function notificationText(n: LiveNotification): string {
             : '';
       return `*'DING!' ${label}: [${n.name}] ${reached}${extra}*`;
     }
+    case 'profession':
+      return `*'DING!' Profession acquired: [${n.name}] – lvl ${n.level}*`;
     case 'freePoints':
       return n.unassigned > 0
         ? `Free points waiting to be assigned: ${n.unassigned}`

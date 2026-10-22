@@ -252,6 +252,7 @@ describe('free points', () => {
       'skill.nickname': 'skill.nicknamed',
       'selection.choose': 'selection.chosen',
       'evolution.choose': 'evolution.chosen',
+      'profession.choose': 'profession.chosen',
     };
     expect([...PLAYER_COMMANDS].map((t) => past[t] ?? t)).toEqual([...PLAYER_EVENT_TYPES]);
   });

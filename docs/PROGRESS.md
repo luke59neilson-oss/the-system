@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1–MQ.5, MQ.9, MQ.10 done); QF.1–QF.2 done; M4.1–M4.4 done
-**Next item:** MQ.6 Tailored professions
+**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1–MQ.5, MQ.6, MQ.9, MQ.10 done); QF.1–QF.2 done; M4.1–M4.4 done
+**Next item:** MQ.7 Hidden quest notice
 **Blockers:** none.
 
 ## Run log
@@ -555,4 +555,16 @@ next item, blockers. -->
   - MQ.10 Steep XP curve (D120): ×3 per grade for new campaigns, `xp.gradeBelowFactors` [⅓, 0], optional `enemyGrade` on `xp.awarded`, `typicalSessionXp`; campaign state v17 (golden states bumped additively). Rounds 1–2 (sonnet): round 2 clean.
 - Tests: 743 unit (65 files). Full e2e 35/35 green on QF.2 and on MQ.10 after the M3.6 fix (M3.6 re-run alone). Engine coverage not re-measured.
 - Open `wip/*` branches: none unfinished (`wip/QF.2`, `wip/MQ.10` merged).
+- Blockers: none.
+
+### Run 181c9c28 · 2026-10-22 19:06–19:51 UTC (ended at minute 45: MQ.6 merged and reviewed at minute 43; MQ.7 needs a design choice on "affected players" and an e2e, too large to start usefully in the minute before the 44 hand-off)
+- Preflight:
+  - `add_repo` was not offered; the repo was already cloned (detached HEAD), reset to `origin/main`.
+  - Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work on worktrees (they block this session until they report).
+- Orient: no new answers in ANSWERS.md. Latest main CI (f68620a) green. Hour 19: no efficiency check or sweep.
+- Finished:
+  - MQ.6 Tailored professions (D121): no default professions; "none for now" at the evolution keeps the offers (character v7 `professionOffers`, owner-only; campaign state v18; golden states bumped additively; new `professions` golden log); player `profession.choose` takes one later at class level; Professions window under Status, greyed once locked; "Profession acquired" DING and session-log line instead of a 0 → N level-up. New Q46 (more offers at later evolutions; default allowed). Review: round 1 (sonnet) 0 High, 2 Medium (one fixed: a profession taken while a later release waits; one deferred to M5.2: no GM release UI yet), round 2 clean (2 Low, one fixed).
+- Tests: 754+ unit (65 files). Full e2e 37/37 green on the round-1 fix. Engine coverage not re-measured.
+- Open `wip/*` branches: none unfinished (`wip/MQ.6` merged).
+- Next item: MQ.7 Hidden quest notice (quests have no participant list yet: "affected players" needs a design choice).
 - Blockers: none.

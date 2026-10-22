@@ -184,7 +184,7 @@ They touch finished engine and player items, so they come before M4.4.
   "typical session" helper per grade. Config migration with an upcaster for
   existing campaigns. *Accept:* engine tests; the 40-session simulation
   still reaches the DESIGN check values with awards scaled per grade.
-- [ ] **MQ.6 Tailored professions.** Remove the default profession list from
+- [x] **MQ.6 Tailored professions.** Remove the default profession list from
   the library seed. The GM offers each character their own professions at
   the E evolution; the player may choose "none for now"; a Professions tab
   lists the offers and lets the player take one later; once chosen the list
@@ -426,7 +426,8 @@ the rest follow in file order. Each gets its own §6 review.
   whether a selection was taken.
 - [ ] **M5.2 Evolution builder.** Options, warnings, one-time stat bonus per
   option, optional transforms with merge prompts, spread reshape, tailored
-  profession offers (E evolution); release. Warn when a selection (esp. the capstone) is still
+  profession offers (E evolution, or later after "none for now"; withdrawing an
+  untaken offer, MQ.6 review); release. Warn when a selection (esp. the capstone) is still
   pending (Q21).
 - [ ] **M5.3 Marks review.** End-of-session queue; upgrade prompts.
 - [ ] **M5.4 Merges.** Alert, build, send.

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 17,
+  "schemaVersion": 18,
   "name": "Free points golden",
   "rules": {
     "configVersion": 1,
@@ -346,12 +346,13 @@
   },
   "characters": {
     "jake": {
-      "schemaVersion": 6,
+      "schemaVersion": 7,
       "id": "jake",
       "name": "Jake",
       "race": "Human",
       "className": "Archer",
       "profession": null,
+      "professionOffers": [],
       "classLevel": 3,
       "professionLevel": 0,
       "grade": "G",

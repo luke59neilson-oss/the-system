@@ -4,6 +4,12 @@ import { friendlyError, notificationText } from '../src/format';
 import { feedRows } from '../src/gm/feed';
 
 describe('notificationText', () => {
+  it('a new profession is acquired at a level, not gained from level 1 (MQ.6)', () => {
+    expect(
+      notificationText({ kind: 'profession', characterId: 'j', name: 'Beast Tamer', level: 17 }),
+    ).toBe("*'DING!' Profession acquired: [Beast Tamer] – lvl 17*");
+  });
+
   it('uses the books wording for class and race level-ups', () => {
     expect(
       notificationText({

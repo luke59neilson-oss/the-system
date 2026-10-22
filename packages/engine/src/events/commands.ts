@@ -39,6 +39,8 @@ export type Command =
   | { type: 'character.rename'; characterId: string; name: string }
   | { type: 'character.setPortrait'; characterId: string; portrait: string | null }
   | { type: 'character.grantProfession'; characterId: string; profession: string }
+  /** Player: take one of the professions the GM offered (MQ.6). */
+  | { type: 'profession.choose'; characterId: string; profession: string }
   | { type: 'title.award'; characterId: string; title: string }
   | { type: 'character.setPools'; characterId: string; pools: Readonly<Record<string, number>> }
   | { type: 'character.setStats'; characterId: string; stats: Readonly<Record<string, number>> }
@@ -435,6 +437,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('character.rename') }),
   z.object({ type: z.literal('character.setPortrait') }),
   z.object({ type: z.literal('character.grantProfession') }),
+  z.object({ type: z.literal('profession.choose') }),
   z.object({ type: z.literal('title.award') }),
   z.object({ type: z.literal('character.setPools'), pools: anyRecord }),
   z.object({ type: z.literal('character.setStats'), stats: anyRecord }),
@@ -542,6 +545,7 @@ export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>([
   'skill.nickname',
   'selection.choose',
   'evolution.choose',
+  'profession.choose',
 ]);
 
 /** Returns why the actor may not issue the command, or null when allowed. */
@@ -667,6 +671,11 @@ function toEvent(
     case 'character.grantProfession':
       return {
         type: 'character.professionGranted',
+        payload: { characterId: command.characterId, profession: command.profession },
+      };
+    case 'profession.choose':
+      return {
+        type: 'profession.chosen',
         payload: { characterId: command.characterId, profession: command.profession },
       };
     case 'title.award':

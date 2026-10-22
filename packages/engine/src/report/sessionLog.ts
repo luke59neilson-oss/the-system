@@ -136,9 +136,11 @@ function levelLines(before: CampaignState | null, after: CampaignState): string[
       out.push(`${who}: class ${line(now.className)} ${was.classLevel} → ${now.classLevel}`);
     }
     if (now.profession !== null && was.profession === null) {
-      out.push(`${who} gained the profession ${line(now.profession)}`);
-    }
-    if (now.profession !== null && now.professionLevel > was.professionLevel) {
+      // It starts at the class level, not a level-up from 0 (MQ.6).
+      out.push(
+        `${who} gained the profession ${line(now.profession)} at level ${now.professionLevel}`,
+      );
+    } else if (now.profession !== null && now.professionLevel > was.professionLevel) {
       out.push(
         `${who}: profession ${line(now.profession)} ${was.professionLevel} → ${now.professionLevel}`,
       );
@@ -238,7 +240,12 @@ function describe(
       const now = after.characters[id];
       if (!now) break;
       const grade = was && was.grade !== now.grade ? `, grade ${was.grade} → ${now.grade}` : '';
-      const prof = event.payload.profession ? `, profession ${line(event.payload.profession)}` : '';
+      const offered = (was?.evolution?.professions.length ?? 0) > 0;
+      const prof = event.payload.profession
+        ? `, profession ${line(event.payload.profession)}`
+        : offered
+          ? ', no profession for now'
+          : '';
       add('evolution', `${who(id)} evolved into ${line(now.className)}${grade}${prof}`);
       break;
     }

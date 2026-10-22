@@ -3,6 +3,7 @@ import {
   clampPools,
   createCharacter,
   grantProfession,
+  takeOfferedProfession,
   poolMax,
   type Character,
 } from '../character';
@@ -55,8 +56,8 @@ import {
 } from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 17;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 18;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -511,6 +512,13 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       return withCharacter(
         state,
         rule(event, () => grantProfession(state.rules, character, event.payload.profession)),
+      );
+    }
+    case 'profession.chosen': {
+      const character = characterOf(state, event, event.payload.characterId);
+      return withCharacter(
+        state,
+        rule(event, () => takeOfferedProfession(state.rules, character, event.payload.profession)),
       );
     }
     case 'title.awarded': {
