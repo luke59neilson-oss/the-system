@@ -41,7 +41,12 @@ export function SkillSelection({
     if (el && !el.open) el.showModal();
     heading.current?.focus();
   }, []);
-  const offer = picked === null ? null : selection.options.find((o) => o.name === picked);
+  // Passed-over options from earlier menus are valid picks too (MQ.3, DESIGN §6).
+  const older = selection.passedOver;
+  const offer =
+    picked === null
+      ? null
+      : (selection.options.find((o) => o.name === picked) ?? older.find((o) => o.name === picked));
   // Keyboard users land on Confirm in the review, and back on the card they
   // picked when they go Back.
   const [backTo, setBackTo] = useState<string | null>(null);
@@ -76,6 +81,37 @@ export function SkillSelection({
       );
     else setError(friendlyError(result.error));
   };
+  const renderOffer = (o: Selection['options'][number], id: string, testId = 'offer') => (
+    <li
+      key={o.name}
+      className={`offer rarity-${cssToken(o.rarity)}`}
+      data-testid={testId}
+      aria-labelledby={id}
+    >
+      <h4 id={id}>
+        <span className="skill-name">{offerLabel(rules, o)}</span>
+      </h4>
+      <p className="muted offer-kind">
+        {offerKindLabel(o.kind)} · {rarityName(rules, o.rarity)}
+      </p>
+      {o.description ? (
+        <p className="offer-description">{o.description}</p>
+      ) : (
+        <p className="muted offer-description">No description.</p>
+      )}
+      <button
+        type="button"
+        data-offer={o.name}
+        aria-label={`Choose ${o.name}`}
+        onClick={() => {
+          setError(null);
+          setPicked(o.name);
+        }}
+      >
+        Choose
+      </button>
+    </li>
+  );
   return (
     <dialog
       ref={dialog}
@@ -113,7 +149,7 @@ export function SkillSelection({
             <span className={`rarity-${cssToken(offer.rarity)}`}>
               <span className="skill-name">{offerLabel(rules, offer)}</span>
             </span>
-            ? The choice is final; the other options will be gone.
+            ? The choice is final; the skills you pass over stay on offer for later selections.
           </p>
           <div className="assign-actions">
             <button
@@ -140,41 +176,18 @@ export function SkillSelection({
         </div>
       ) : (
         <ul className="offers" aria-label="Offered skills" data-testid="offers">
-          {selection.options.map((o, i) => {
-            const id = `offer-${i}`;
-            return (
-              <li
-                key={o.name}
-                className={`offer rarity-${cssToken(o.rarity)}`}
-                data-testid="offer"
-                aria-labelledby={id}
-              >
-                <h4 id={id}>
-                  <span className="skill-name">{offerLabel(rules, o)}</span>
-                </h4>
-                <p className="muted offer-kind">
-                  {offerKindLabel(o.kind)} · {rarityName(rules, o.rarity)}
-                </p>
-                {o.description ? (
-                  <p className="offer-description">{o.description}</p>
-                ) : (
-                  <p className="muted offer-description">No description.</p>
-                )}
-                <button
-                  type="button"
-                  data-offer={o.name}
-                  aria-label={`Choose ${o.name}`}
-                  onClick={() => {
-                    setError(null);
-                    setPicked(o.name);
-                  }}
-                >
-                  Choose
-                </button>
-              </li>
-            );
-          })}
+          {selection.options.map((o, i) => renderOffer(o, `offer-${i}`))}
         </ul>
+      )}
+      {!offer && older.length > 0 && (
+        <section className="passed-over" aria-labelledby="passed-over-heading">
+          <h4 id="passed-over-heading" className="muted">
+            Passed over earlier ({older.length})
+          </h4>
+          <ul className="offers" aria-label="Passed-over skills" data-testid="passed-over">
+            {older.map((o, i) => renderOffer(o, `older-${i}`, 'passed-over-offer'))}
+          </ul>
+        </section>
       )}
       {error && (
         <p className="err" role="alert">

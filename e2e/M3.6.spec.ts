@@ -114,7 +114,7 @@ test('a player chooses a skill from the offered menu', async ({ browser }) => {
   // Pick the second, go Back (focus returns to it), then take the first.
   await dialog.getByRole('button', { name: `Choose ${names[1]}` }).click();
   await expect(dialog.getByTestId('selection-review')).toContainText(
-    `Take [${names[1]} (Epic)]? The choice is final; the other options will be gone.`,
+    `Take [${names[1]} (Epic)]? The choice is final; the skills you pass over stay on offer for later selections.`,
   );
   await expect.poll(() => focusedText(laptop)).toBe('Confirm');
   await dialog.getByRole('button', { name: 'Back' }).click();
@@ -137,6 +137,36 @@ test('a player chooses a skill from the offered menu', async ({ browser }) => {
   // It stays chosen after a reload.
   await laptop.reload();
   await expect(laptop.getByTestId('skills-class')).toContainText(`[${names[0]} (Epic)]`);
+  await expect(laptop.getByTestId('selection-badge')).toHaveCount(0);
+
+  // MQ.3: at his next selection the options he passed over are listed below
+  // the new menu, and one of them can fill it.
+  await gmCommand(gm, {
+    type: 'xp.award',
+    track: 'class',
+    amount: 3200,
+    participants: [{ characterId: 'demo-jake' }],
+  });
+  await gmCommand(gm, {
+    type: 'selection.offer',
+    characterId: 'demo-jake',
+    level: 60,
+    options: [
+      { name: 'Squall Lance', rarity: 'epic' },
+      { name: 'Cloud Read', rarity: 'rare' },
+      { name: 'Drizzle Veil', rarity: 'uncommon' },
+    ],
+  });
+  await laptop.getByRole('button', { name: '[Choose]' }).click();
+  await expect(dialog.getByTestId('offer')).toHaveCount(3);
+  const older = dialog.getByTestId('passed-over').getByTestId('passed-over-offer');
+  await expect(older.filter({ hasText: `[${names[1]} (Epic)]` })).toHaveCount(1);
+  await expect(older.filter({ hasText: `[${names[0]} (Epic)]` })).toHaveCount(0);
+  await laptop.screenshot({ path: path.join(shots, 'player-passed-over-1366x768.png') });
+  await dialog.getByRole('button', { name: `Choose ${names[1]}` }).click();
+  await dialog.getByRole('button', { name: 'Confirm' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(laptop.getByTestId('skills-class')).toContainText(`[${names[1]} (Epic)]`);
   await expect(laptop.getByTestId('selection-badge')).toHaveCount(0);
 
   // Miranda (E, level 22) on a phone. The GM's View-as pane shows the badge

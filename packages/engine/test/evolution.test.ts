@@ -3,6 +3,7 @@ import {
   createCharacter,
   defaultRules,
   dueSelections,
+  passedOverOptions,
   evolutionTarget,
   execute,
   nextSelectionLevel,
@@ -782,7 +783,9 @@ describe('projection', () => {
     c = ok(c, { type: 'selection.offer', characterId: 'jake', level: 5, options: menu(5, 'rare') });
     const after = c.state;
     if (!after) throw new Error('no state');
-    expect(projectForPlayer(after, 'jake').me.selections).toEqual(char(c).selections);
+    expect(projectForPlayer(after, 'jake').me.selections).toEqual(
+      char(c).selections.map((r) => ({ ...r, passedOver: [] })),
+    );
     expect(JSON.stringify(projectForPlayer(after, 'kim'))).not.toContain('Skill 5');
   });
 });
@@ -1158,5 +1161,67 @@ describe('evolution refill counts items and titles (MQ.1 review)', () => {
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
     const base = char(c).stats['vitality'] ?? 0;
     expect(char(c).pools['hp']).toBe(10 * (base + 10));
+  });
+});
+
+describe('passed-over options stay eligible (MQ.3, DESIGN §6, D103)', () => {
+  const toF = () =>
+    ok(ok(atGTop(), release(archery, 'Volley', 'common')), {
+      type: 'evolution.choose',
+      characterId: 'jake',
+      optionId: 'o1',
+    });
+  const offer = (c: Campaign, level: number): Campaign =>
+    ok(c, { type: 'selection.offer', characterId: 'jake', level, options: menu(level, 'rare') });
+  const choose = (c: Campaign, level: number, skill: string): Campaign =>
+    ok(c, { type: 'selection.choose', characterId: 'jake', level, skill });
+
+  it('unchosen options appear for later selections, newest menu first, and can be picked', () => {
+    let c = ok(toF(), award(10 * 150));
+    c = choose(offer(c, 5), 5, 'Skill 5b');
+    expect(passedOverOptions(rules, char(c), 10).map((o) => o.name)).toEqual([
+      'Skill 5a',
+      'Skill 5c',
+    ]);
+    c = offer(c, 10);
+    // One pick per selection: the older option fills the level 10 selection.
+    c = choose(c, 10, 'Skill 5a');
+    expect(char(c).skills.some((s) => s.name === 'Skill 5a')).toBe(true);
+    expect(char(c).selections.find((s) => s.level === 10)?.chosen).toBe('Skill 5a');
+    expect(dueSelections(rules, char(c))).toEqual([]);
+    // The owner's view lists them under the pending menu (MQ.3).
+    expect(
+      projectForPlayer(c.state ?? (null as never), 'jake').me.selections.find((r) => r.level === 10)
+        ?.passedOver,
+    ).toEqual([]);
+    // Owned now, so it leaves the list; the level 10 leftovers come first.
+    c = ok(c, award(5 * 150));
+    expect(passedOverOptions(rules, char(c), 15).map((o) => o.name)).toEqual([
+      'Skill 10a',
+      'Skill 10b',
+      'Skill 10c',
+      'Skill 5c',
+    ]);
+  });
+
+  it('a name on no menu, old or new, is still refused', () => {
+    let c = ok(toF(), award(10 * 150));
+    c = offer(choose(offer(c, 5), 5, 'Skill 5b'), 10);
+    expect(
+      reject(c, { type: 'selection.choose', characterId: 'jake', level: 10, skill: 'Skill 99' }),
+    ).toMatch(/not on the level 10 menu/);
+    const mine = projectForPlayer(c.state ?? (null as never), 'jake').me.selections;
+    expect(mine.find((r) => r.level === 10)?.passedOver.map((o) => o.name)).toEqual([
+      'Skill 5a',
+      'Skill 5c',
+    ]);
+    expect(JSON.stringify(projectForPlayer(c.state ?? (null as never), 'kim'))).not.toContain(
+      'Skill 5a',
+    );
+    // Options of an unchosen (pending) menu are not passed over yet.
+    expect(passedOverOptions(rules, char(c), 15).map((o) => o.name)).toEqual([
+      'Skill 5a',
+      'Skill 5c',
+    ]);
   });
 });
