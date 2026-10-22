@@ -476,3 +476,16 @@
 - Round 2 (c81a313, fixes on top of 1bc57bf + merge of origin/main): 0 High, 0 Medium, 3 Low. `npm run check` green (731); M3.13 e2e green; full e2e (35) green locally.
   - Round-1 H and both M verified fixed: transforms now go through `marksAfterRarityChange` (D114), tests run `evolution.choose` including banked marks applied after G→F→E, and the evolution screen says what marks spend, carry or reset.
   - L accepted: "reset to 0" wording when a rarity gain spends every mark (it reads the same to a player); `marksAfterRarityChange` ignores the reserved flag (transforms cannot target reserved rarities in practice); D114 is an interpretation, asked as Q43.
+
+## 2026-10-22 · MQ.5 Grade walls · sonnet
+- Round 1 (d244b21..bc3fb97): 0 High, 3 Medium, 5 Low. `npm run check` green (738).
+  - M fixed: `planGroup` left pooled mixed grades and several opponents unspecified → `pooledSide` (values summed at the lowest pooled grade), "one plan per opponent" in the docstring and D115.
+  - M fixed: `roll: null` on walled contests undocumented for M7.3 → D115 says the roll log must allow a null roll.
+  - M fixed: no explicit flag for a walled result → `ContestResult.walled`.
+  - L fixed: the bad-input test now runs every mode. L accepted: the 24% test's constants come from DESIGN §4 check values typed in; one sign convention repeated across helpers; D66/Q3 still mention the old default (history).
+- Round 2 (fc84bf9): 0 High, 0 Medium, 5 Low, accepted (opponent value unchecked in `planGroup`, `walled` name used for a function and a field, adjusted 0 for the walled side, no replay test of a stored pre-MQ.5 mode, box unchecked at the reviewed commit).
+
+## 2026-10-22 · QF.1 Chosen options never return as passed-over · sonnet
+- Round 1 (fc84bf9..6ca3e7e): 0 High, 0 Medium, 2 Low. `npm run check` green (739); the reviewer confirmed the new test fails without the fix.
+  - L accepted for now: the GM can still offer a chosen-then-renamed name fresh on a later menu (`offerSelection`/`checkFreeName` ~214); a GM action, not a leak; noted for the QUALITY backlog.
+  - L accepted: no test pins `withdrawPassedOver` on the old name or a case variant.

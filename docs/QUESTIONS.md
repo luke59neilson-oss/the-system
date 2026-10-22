@@ -250,3 +250,13 @@ DESIGN/ROADMAP; do not re-apply them.
     keeps every mark (the gain is free); or it resets them to 0 (the old
     rule).
     Answer:
+
+44. **Asking the GM for items in a trade.** A player can propose a trade with
+    the GM side ("40 Credits for the Bow"). Because the GM holds the whole
+    item library, a player who guesses an item id could name an item they
+    have never seen and get its definition sent to their screen (QF.2). Draft
+    default on `wip/QF.2`: a player's trade with the GM may ask only for
+    currency; the GM offers items by proposing the trade from the GM side.
+    Alternative: a player may ask the GM only for items they have already
+    seen (held, equipped, or in an earlier trade).
+    Answer:
