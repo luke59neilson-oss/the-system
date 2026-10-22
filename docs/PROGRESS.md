@@ -1,8 +1,8 @@
 # Progress
 
-**Status:** in progress: M0, MS and M1 done; M2.1-M2.3 done
-**Next item:** M2.4 Session log autosave
-**Blockers:** first preview build not published: `git push origin main:release` was refused by this session's permission classifier ("Production Deploy"). Luke: push `main` to `release` yourself (or allow it) to get the preview-<date> Release.
+**Status:** in progress: M0, MS, M1 and M2 done
+**Next item:** M3.1 Join screen
+**Blockers:** none. The first preview build was pushed to `release` at 3151482 (Release run 39701983963 started); the next run should confirm that it published.
 
 ## Run log
 
@@ -169,3 +169,24 @@ next item, blockers. -->
 - Next: M2.4 Session log autosave, then M2.A (stopped at 47 min, past the 35-minute start limit).
 - Blockers: the preview release push still needs Luke (see header).
 
+
+### Run 6ffe29f6 · 2026-10-22 00:06–00:52 UTC
+- Preflight: `add_repo` was not offered in this session. The repo was already cloned (detached HEAD), so `main` was reset to `origin/main`. Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` and `fable` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md. The latest CI run on main was green (56b2db6).
+- Finished:
+  - M2.4 Session log autosave (sonnet, 2 rounds; 2 Medium: one fixed, one decided as D72/Q27).
+  - M2.A Milestone acceptance and review (fable, 2 rounds). 1 High fixed: shutdown waited on sockets that never answered, so a sleeping phone skipped the last session-log write and left the lock. 1 Medium fixed: a host name change made a crash-left lock look foreign (D73).
+  - See REVIEW-LOG.md for both.
+- Built:
+  - Engine `report/sessionLog` (pure; cached pre-sitting fold).
+  - Server `SessionLogWriter`, writing `<dataDir>/exports/<campaign>/session-log-<stamp>.md` every 5 min and on close.
+  - A `preClose` hook that writes the logs and then terminates sockets.
+  - Machine-id campaign locks (desktop `<userData>/machine-id`).
+  - New `e2e/M2.A.spec.ts`.
+- Tests: 512 unit/integration tests (38 files), including a raw zombie-socket shutdown test. All 12 e2e specs green; screenshot re-renders discarded. Engine line coverage 99.34% (floor 90%).
+- CI: green on be60158, 9bf0d6d, 0b9be95, 9818e4f and bb892f4. 3151482 was still running at the end of the run.
+- Release: `git push origin main:release` worked this time (M2.A, LOOP §8.2). Release run 39701983963 was in progress at the end of the run; the next run checks that it published `preview-<date>`.
+- New decisions D72–D73; new questions Q26 (GM notes in logs: `export` tag) and Q27 (hidden quests in the GM-only log). Roadmap note on M4.3: point the session log at the started session.
+- Open `wip/*` branches: none unfinished.
+- Next: M3.1 Join screen. Stopped at 43 min, past the 35-minute start limit.
+- Blockers: none.
