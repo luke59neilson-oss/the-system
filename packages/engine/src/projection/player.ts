@@ -27,7 +27,7 @@ import { identifyInRange } from '../entities';
 import { daysLeft, hiddenQuestNoticed, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
 import { identifyRarity, resolveIdentify } from './identify';
-import { atCeiling, markRules, marksToUpgrade, type MarkRules } from '../skills';
+import { atCeiling, entryForSkill, markRules, marksToUpgrade, type MarkRules } from '../skills';
 
 /**
  * Player projection (ROADMAP M1.13): what one player's browser may receive.
@@ -211,6 +211,11 @@ export interface OwnSheet {
     /** System description and flavour (M3.5), or null for none yet. */
     readonly description: string | null;
     readonly flavor: string | null;
+    /**
+     * The library entry's effects text, shown to the skill's owner only
+     * (MQ.12, L4; never on party views); null for none or on older rules.
+     */
+    readonly effects: string | null;
     /** Marks the next upgrade needs, or null when the ladder has no next step. */
     readonly marksNeeded: number | null;
     /** The rarity id a mark upgrade leads to, or null. */
@@ -510,6 +515,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
       markSessions: [...s.markSessions],
       description: s.description,
       flavor: s.flavor,
+      effects: ownEffects(state, s),
       ...markProgress(rules, c, s),
     })),
     merges: copyRecord(
@@ -561,6 +567,13 @@ function practiced(state: CampaignState, c: Character): string[] {
 /** Where browsers fetch a stored portrait (M4.4); the server serves `/portraits/<file>`. */
 export function portraitUrl(portrait: string | null): string | null {
   return portrait === null ? null : `/portraits/${portrait}`;
+}
+
+/** MQ.12: the owner sees their skill's library effects (new rules only). */
+function ownEffects(state: CampaignState, s: CharacterSkill): string | null {
+  if (!state.rules.skills.libraryByRarity) return null;
+  const text = entryForSkill(state.rules, state.skillLibrary, s)?.effects.trim() ?? '';
+  return text === '' ? null : text;
 }
 
 /** Where a skill stands on the mark ladder (DESIGN §6), from the rules config. */

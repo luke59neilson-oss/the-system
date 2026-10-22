@@ -20,6 +20,11 @@ export interface CharacterSkill {
   readonly description: string | null;
   /** Flavour text shown under the description (M3.5); null for none. */
   readonly flavor: string | null;
+  /**
+   * The GM wrote this copy's text by hand (MQ.12): library edits no longer
+   * reach it. Absent = false, so stored states keep their shape.
+   */
+  readonly textEdited?: true;
 }
 
 /** One level-up's free points (DESIGN §4): assigned once, then locked (M1.5). */

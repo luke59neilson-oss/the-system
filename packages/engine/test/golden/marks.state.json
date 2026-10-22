@@ -242,6 +242,7 @@
       },
       "maxMarksPerSkillPerSession": 1,
       "marksCarryOver": true,
+      "libraryByRarity": false,
       "merge": {
         "requiredJointUses": 3,
         "minRarity": "uncommon",

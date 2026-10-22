@@ -7,7 +7,18 @@ const player = (characterId: string) => ({
   ...ctx,
   actor: { role: 'player' as const, characterId },
 });
-const created = { type: 'campaign.create', name: 'Whale', rules: rawRules() } as const;
+/**
+ * These tests pin D90's behaviour on rules stored before MQ.12 (no
+ * `libraryByRarity`, read as false): name-only fill of empty text, effects
+ * GM-only. MQ.12's rules are in `skillLibraryRarity.test.ts`.
+ */
+function storedRules(): unknown {
+  const raw = rawRules() as { skills: Record<string, unknown> };
+  const { libraryByRarity: _dropped, ...skills } = raw.skills;
+  void _dropped;
+  return { ...raw, skills };
+}
+const created = { type: 'campaign.create', name: 'Whale', rules: storedRules() } as const;
 const jake = {
   type: 'character.create',
   id: 'jake',

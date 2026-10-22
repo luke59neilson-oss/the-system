@@ -9,7 +9,8 @@ type Skill = OwnSheet['skills'][number];
 
 /**
  * Skill detail (M3.5, DESIGN §6): official name in its rarity colour (always
- * shown), nickname with an editor, the System description and flavour, and
+ * shown), nickname with an editor, the System description and flavour, the
+ * library effects (owner only, MQ.12), and
  * mastery-mark progress. A modal <dialog>: Escape or Close returns focus to
  * the skill that opened it. `client` is null in the GM's View-as panes, which
  * may look but not edit.
@@ -80,6 +81,14 @@ export function SkillDetail({
           </p>
         )}
       </section>
+      {skill.effects && (
+        <section aria-labelledby="skill-detail-effects">
+          <h4 id="skill-detail-effects">Effects</h4>
+          <p className="skill-effects" data-testid="skill-detail-effects">
+            {skill.effects}
+          </p>
+        </section>
+      )}
       <section aria-labelledby="skill-detail-marks">
         <h4 id="skill-detail-marks">Mastery marks</h4>
         <p data-testid="skill-detail-marks">{progress.text}</p>

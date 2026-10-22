@@ -566,8 +566,12 @@ export function chooseEvolution(
     // A renamed skill is a new skill to the System: the old text would
     // describe the wrong thing, so it clears until the GM writes new text (M3.5).
     const name = t.name.trim();
-    const text = name === s.name ? {} : { description: null, flavor: null };
-    return { ...s, name, rarity: t.rarity, marks, ...text };
+    // Its hand-written mark goes too, so library text can reach it (MQ.12).
+    const kept: CharacterSkill = { ...s, name, rarity: t.rarity, marks };
+    if (name === s.name) return kept;
+    const { textEdited, ...fresh } = kept;
+    void textEdited;
+    return { ...fresh, description: null, flavor: null };
   });
   let next: Character = {
     ...character,

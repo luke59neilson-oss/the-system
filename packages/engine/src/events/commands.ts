@@ -618,21 +618,28 @@ function pendingOf(campaign: Campaign, characterId: string) {
     : undefined;
 }
 
-/** The default library entries the campaign lacks (by name, ignoring case), with fresh ids. */
+/**
+ * The default library entries the campaign lacks, with fresh ids: matched by
+ * name (ignoring case), and for skills under `libraryByRarity` by name and
+ * rarity (MQ.12), since that is what makes two skill entries distinct.
+ */
 function defaultSeed(campaign: Campaign, ctx: CommandContext) {
   const state = campaign.state;
   if (!state) throw new EventRejectedError('Create a campaign first');
+  const byName = (d: { name: string }) => d.name.trim().toLowerCase();
   const missing = <T extends { name: string }>(
     defaults: readonly T[],
-    library: Readonly<Record<string, { name: string }>>,
+    library: Readonly<Record<string, T | { name: string }>>,
+    key: (d: { name: string; rarity?: string }) => string = byName,
   ) => {
-    const have = new Set(Object.values(library).map((d) => d.name.trim().toLowerCase()));
-    return defaults
-      .filter((d) => !have.has(d.name.trim().toLowerCase()))
-      .map((d) => ({ id: ctx.newId(), ...d }));
+    const have = new Set(Object.values(library).map(key));
+    return defaults.filter((d) => !have.has(key(d))).map((d) => ({ id: ctx.newId(), ...d }));
   };
+  const skillKey = state.rules.skills.libraryByRarity
+    ? (d: { name: string; rarity?: string }) => `${byName(d)}\u0000${d.rarity ?? ''}`
+    : byName;
   const seed = {
-    skills: missing(DEFAULT_LIBRARY.skills, state.skillLibrary),
+    skills: missing(DEFAULT_LIBRARY.skills, state.skillLibrary, skillKey),
     classes: missing(DEFAULT_LIBRARY.classes, state.classLibrary),
     races: missing(DEFAULT_LIBRARY.races, state.raceLibrary),
     professions: missing(DEFAULT_LIBRARY.professions, state.professionLibrary),

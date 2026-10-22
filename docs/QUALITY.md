@@ -113,6 +113,9 @@ reviewers ran 15–20 minutes each in the background.
 
 ## Backlog (Lows; M11.5 goes through these)
 
+- Skills (MQ.12 review): a hand-edited copy (`textEdited`) keeps its text through an upgrade, and the GM has no way to clear the mark and return the copy to library text.
+- Skills (MQ.12 review): renaming a library entry or changing its rarity orphans copies at the old key (they keep their text; effects drop to null) with no GM warning; a copy upgraded to a rarity with no entry keeps the old text silently.
+- Skills (MQ.12 review): if M4.9 switches `libraryByRarity` on for a stored campaign, earlier `skill.describe` edits lack `textEdited` and would be overwritten by the next library edit.
 - Boundaries: the QF.2 canary is engine-level (projection); no server-level
   test drives a player's refused item command through the hub and scans the
   frames (the hub sends only `projectForPlayer` output).

@@ -1010,6 +1010,10 @@ button.skill-open:hover .skill-name {
 .skill-description {
   margin: 12px 0 6px;
 }
+.skill-effects {
+  margin: 0 0 6px;
+  white-space: pre-wrap;
+}
 .skill-flavor {
   margin: 0 0 6px;
   color: var(--muted);
