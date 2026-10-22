@@ -430,7 +430,7 @@ next item, blockers. -->
 - Next: M4.3 Campaign and sessions. Not started: too little of the timebox left to finish and review it.
 - Blockers: none.
 
-### Run 1506f1ae · 2026-10-22 12:12–12:50 UTC
+### Run 1506f1ae · 2026-10-22 12:12–12:47 UTC
 - Preflight:
   - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD and a stale local `main`, kept locally as `stale-local-main`), so `main` was reset to `origin/main`.
   - The lock was pushed to main.
