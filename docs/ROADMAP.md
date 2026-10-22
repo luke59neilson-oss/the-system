@@ -201,10 +201,12 @@ They touch finished engine and player items, so they come before M4.4.
   Windows (portable + installer) and Linux (kept for the automated smoke
   test); drop macOS (macOS Actions minutes count 10×). *Accept:* release
   dry run green with exactly 3 files.
-- [ ] **MQ.11 XP overflow, no banking.** Replace banked XP: XP for a capped
+- [x] **MQ.11 XP overflow, no banking.** Replace banked XP: XP for a capped
   track levels the other track; when both are capped (or the class is capped
   with no profession) the XP is lost and the GM's award preview says so.
-  Schema bump + upcaster for logs that banked XP. *Accept:* engine tests
+  Schema bump + upcaster for logs that banked XP (replaced by the
+  `rules.xp.overflow` flag, D124: stored campaigns keep banking and replay
+  unchanged until M4.9 switches them). *Accept:* engine tests
   (class capped → profession levels; profession capped → class levels; both
   capped → lost and reported); 40-session simulation still passes.
 - [ ] **MQ.12 Skill library rules.** Library entries keyed by name and rarity;
@@ -412,7 +414,9 @@ the rest follow in file order. Each gets its own §6 review.
 - [ ] **M4.8 Change log and undo.** Filterable event list; undo with M1.3
   rules.
 - [ ] **M4.9 Rules settings.** Edit every config value as events, with
-  validation and reset to defaults.
+  validation and reset to defaults. Turning on `xp.overflow` (D124) for a
+  campaign that banked XP moves each capped track's bank per the overflow
+  rule, and says what was lost.
 - [ ] **M4.A Milestone acceptance and review.** GM creates 3 characters,
   awards XP with a custom split; each player screen shows the DING within
   1 s; undo reverts it everywhere.

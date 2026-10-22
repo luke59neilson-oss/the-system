@@ -295,3 +295,10 @@ DESIGN/ROADMAP; do not re-apply them.
     instead of its text. Alternatives: class level; hide out-of-range
     targets from the list entirely.
     Answer:
+
+49. **Existing campaigns and the no-banking rule.** XP overflow (MQ.11)
+    is on for new campaigns. Campaigns created before it keep banking XP at
+    the grade top, so their logs replay exactly as played. Default (D124):
+    they keep banking until the GM switches the rule in Rules settings
+    (M4.9). Alternative: switch every campaign over automatically.
+    Answer:
