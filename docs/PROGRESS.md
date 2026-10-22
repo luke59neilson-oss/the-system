@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1–MQ.5, MQ.6, MQ.9, MQ.10 done); QF.1–QF.2 done; M4.1–M4.4 done
-**Next item:** MQ.7 Hidden quest notice
+**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1–MQ.11 done); QF.1–QF.2 done; M4.1–M4.4 done
+**Next item:** MQ.12 Skill library rules
 **Blockers:** none.
 
 ## Run log
@@ -567,4 +567,18 @@ next item, blockers. -->
 - Tests: 754+ unit (65 files). Full e2e 37/37 green on the round-1 fix. Engine coverage not re-measured.
 - Open `wip/*` branches: none unfinished (`wip/MQ.6` merged).
 - Next item: MQ.7 Hidden quest notice (quests have no participant list yet: "affected players" needs a design choice).
+- Blockers: none.
+
+### Run 7df0b6d4 · 2026-10-22 20:07–20:50 UTC (ended at minute 42: MQ.11 merged and main re-checked at minute 41; MQ.12 (library keys, propagation, owner-only effects, e2e) cannot start usefully before the 44 hand-off)
+- Preflight:
+  - `add_repo` was not offered; the repo was already cloned (detached HEAD, stale diverged local `main`), reset to `origin/main`.
+  - Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work in the background on worktrees.
+- Orient: no new answers in ANSWERS.md. Latest main CI (ed93de6) green. Hour 20: no efficiency check or sweep.
+- Finished:
+  - MQ.7 Hidden quest notice (D122): per-quest GM-only `noticeTo` (null = everyone; campaign state v19); players get a bare `hiddenQuests` count, a "[Hidden quest]" line in the quest log and a "Hidden quest detected" notice when newly included (also a character created later). New `hidden-quests` golden log; canary extended. Q47. Review round 1 (sonnet): 0 High, 1 Medium fixed, 4 Low.
+  - MQ.8 Identify range (D123): entities get an optional grade and level; `rules.identify.sameGradeLevelRatio` (1.5) × race level for the same grade; out of range shows `[??? – lvl ???]` with no text, grade or level (campaign state v20, new `identify-range` golden, canary extended). Q48. Review round 1: clean (4 Low).
+  - MQ.11 XP overflow, no banking (D124): `awardXp` behind `rules.xp.overflow` (on for new campaigns; stored campaigns keep banking and replay unchanged); `previewXpAward` reports overflow and loss; the simulation checks held XP is lost. New `overflow` golden. Q49. Review round 1: 0 High, 1 Medium (docs) fixed.
+- Tests: 777 unit (65 files). e2e run: MQ.7, MQ.8, M3.3, M3.8, M3.9 green locally (full suite not run; CI runs it on 6ca27d0). Engine coverage not re-measured.
+- Open `wip/*` branches: none unfinished (`wip/MQ.7`, `wip/MQ.8`, `wip/MQ.11` merged).
+- Next item: MQ.12 Skill library rules.
 - Blockers: none.
