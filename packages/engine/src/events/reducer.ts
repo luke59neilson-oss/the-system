@@ -33,7 +33,7 @@ import {
   validateSkillDef,
   type SkillDef,
 } from '../skills';
-import { gainXp, shareXp } from '../progression';
+import { awardXp, shareXp } from '../progression';
 import {
   chooseEvolution,
   chooseSelection,
@@ -576,7 +576,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         const character = characterOf(state, event, characterId);
         const gained = shareXp(state.rules, character, share, enemyLevel, enemyGrade);
         const { character: leveled } = rule(event, () =>
-          gainXp(state.rules, character, track, gained),
+          awardXp(state.rules, character, track, gained),
         );
         next = withCharacter(next, leveled);
       }

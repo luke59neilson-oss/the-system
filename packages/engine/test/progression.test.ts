@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   aboveLevelBonus,
+  buildDemoEvents,
+  previewXpAward,
+  replay,
+  type Campaign,
+  type XpTrack,
   classSpread,
   createCharacter,
   defaultRules,
@@ -485,5 +490,128 @@ describe('xp.award command and event', () => {
     expect(c.state?.characters['a']).toMatchObject({ classLevel: 1, xp: { class: 50 } });
     const undone = run([{ type: 'event.undo', eventId: 'y1' }], testContext('u'), c);
     expect(undone.state).toEqual(before.state);
+  });
+});
+
+describe('XP overflow, no banking (MQ.11, DESIGN §2)', () => {
+  // The demo party (default rules, overflow on): Miranda E-grade class 22 /
+  // Cook 18 (top 49), Casper F-grade class 7 with no profession (top 14).
+  const demo = (): Campaign => {
+    let n = 0;
+    return replay(
+      buildDemoEvents({ now: () => '2026-10-21T00:00:00.000Z', newId: () => `d-${++n}` }),
+    );
+  };
+  const gm = testContext('ov');
+  const award = (c: Campaign, characterId: string, track: XpTrack, amount: number): Campaign => {
+    const r = execute(c, { type: 'xp.award', track, amount, participants: [{ characterId }] }, gm);
+    if (!r.ok) throw new Error(r.error);
+    return r.campaign;
+  };
+  const ch = (c: Campaign, id: string): Character => {
+    const found = c.state?.characters[id];
+    if (!found) throw new Error(`no ${id}`);
+    return found;
+  };
+  const preview = (c: Campaign, id: string, track: XpTrack, amount: number) =>
+    previewXpAward(c.state?.rules ?? rules, c.state?.characters ?? {}, track, {
+      amount,
+      participants: [{ characterId: id }],
+    })[0];
+  const E = 900;
+
+  it('a capped class levels the profession', () => {
+    let c = demo();
+    const m = ch(c, 'demo-miranda');
+    const toTop = (49 - m.classLevel) * E - m.xp.class;
+    const p = preview(c, 'demo-miranda', 'class', toTop + 3 * E);
+    expect(p).toMatchObject({ overflowed: 3 * E, lost: 0 });
+    c = award(c, 'demo-miranda', 'class', toTop + 3 * E);
+    const after = ch(c, 'demo-miranda');
+    expect(after.classLevel).toBe(49);
+    expect(after.xp.class).toBe(0);
+    expect(after.professionLevel).toBe(
+      m.professionLevel + Math.floor((m.xp.profession + 3 * E) / E),
+    );
+    expect(after.xp.profession).toBe((m.xp.profession + 3 * E) % E);
+    expect(raceLevel(rules, after)).toBe(Math.floor((49 + after.professionLevel) / 2));
+    expect(p?.levelUps.filter((l) => l.track === 'profession')).toHaveLength(
+      after.professionLevel - m.professionLevel,
+    );
+  });
+
+  it('a capped profession levels the class; with both capped the XP is lost and the preview says so', () => {
+    let c = demo();
+    const m = ch(c, 'demo-miranda');
+    const profTop = (49 - m.professionLevel) * E - m.xp.profession;
+    c = award(c, 'demo-miranda', 'profession', profTop + 2 * E);
+    let after = ch(c, 'demo-miranda');
+    expect(after.professionLevel).toBe(49);
+    expect(after.xp.profession).toBe(0);
+    expect(after.classLevel).toBe(m.classLevel + Math.floor((m.xp.class + 2 * E) / E));
+    // Fill the class to the top, with 500 more than it can take: lost.
+    const classTop = (49 - after.classLevel) * E - after.xp.class;
+    expect(preview(c, 'demo-miranda', 'class', classTop + 500)).toMatchObject({
+      overflowed: 0,
+      lost: 500,
+    });
+    c = award(c, 'demo-miranda', 'class', classTop + 500);
+    after = ch(c, 'demo-miranda');
+    expect([after.classLevel, after.professionLevel, after.xp.class, after.xp.profession]).toEqual([
+      49, 49, 0, 0,
+    ]);
+    expect(preview(c, 'demo-miranda', 'profession', 4000)).toMatchObject({ lost: 4000 });
+    const held = award(c, 'demo-miranda', 'class', 4000);
+    expect(ch(held, 'demo-miranda')).toEqual(after);
+  });
+
+  it('a capped class with no profession loses the rest', () => {
+    let c = demo();
+    const k = ch(c, 'demo-casper');
+    expect(k.profession).toBeNull();
+    const toTop = (14 - k.classLevel) * 300 - k.xp.class;
+    expect(preview(c, 'demo-casper', 'class', toTop + 250)).toMatchObject({
+      overflowed: 0,
+      lost: 250,
+    });
+    c = award(c, 'demo-casper', 'class', toTop + 250);
+    expect(ch(c, 'demo-casper')).toMatchObject({ classLevel: 14, xp: { class: 0 } });
+  });
+
+  it('overflow that tops out the other track too is partly lost', () => {
+    let c = demo();
+    const m = ch(c, 'demo-miranda');
+    const classTop = (49 - m.classLevel) * E - m.xp.class;
+    const profTop = (49 - m.professionLevel) * E - m.xp.profession;
+    const p = preview(c, 'demo-miranda', 'class', classTop + profTop + 77);
+    expect(p).toMatchObject({ overflowed: profTop, lost: 77 });
+    c = award(c, 'demo-miranda', 'class', classTop + profTop + 77);
+    expect(ch(c, 'demo-miranda')).toMatchObject({
+      classLevel: 49,
+      professionLevel: 49,
+      xp: { class: 0, profession: 0 },
+    });
+  });
+
+  it('rules stored before MQ.11 still bank at the top (old logs replay unchanged)', () => {
+    const raw = rawRules() as { xp: Record<string, unknown> };
+    delete raw.xp.overflow;
+    let c = run(
+      [
+        { type: 'campaign.create', name: 'Old', rules: raw },
+        {
+          type: 'character.create',
+          id: 'jake',
+          name: 'Jake',
+          className: 'Archer',
+          classSkills: kit,
+        },
+      ],
+      testContext('old'),
+    );
+    expect(c.state?.rules.xp.overflow).toBe(false);
+    c = award(c, 'jake', 'class', 4 * 100 + 250);
+    expect(ch(c, 'jake')).toMatchObject({ classLevel: 4, xp: { class: 250 } });
+    expect(rules.xp.overflow).toBe(true);
   });
 });
