@@ -210,7 +210,7 @@ the full ones.
   Project holdings, own trades and the definitions of held/offered items;
   switch pool maxima and the stats block to effective stats (D60). The e2e
   checks the demo's equipped ring and bow on Jake's screen (D70).
-- [ ] **M3.8 Quest log.** Text, days left, stability gauge when visible.
+- [x] **M3.8 Quest log.** Text, days left, stability gauge when visible.
   The e2e checks the demo quest's visible gauge (89) on a player screen (D70).
 - [ ] **M3.9 Identify.** Choose a known entity; show tier text.
 - [ ] **M3.10 Notes.** Private journal (markdown, shareable toggle), live

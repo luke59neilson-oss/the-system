@@ -264,8 +264,14 @@ function clampToEffective(
 }
 
 /** Effective stats of a character in this state (base + equipped items). */
-function effectiveOf(state: CampaignState, c: Character): Record<string, number> {
-  return itemEffectiveStats(state.rules, c.stats, holdingsOf(state, c.id), state.items);
+function effectiveOf(
+  state: CampaignState,
+  c: Character,
+): Readonly<Record<string, number>> {
+  const held = holdingsOf(state, c.id);
+  // Fast path: nothing worn means no item bonuses (the common case per event).
+  if (Object.keys(held.equipped).length === 0) return c.stats;
+  return itemEffectiveStats(state.rules, c.stats, held, state.items);
 }
 
 function applyEventRaw(state: CampaignState | null, event: DomainEvent): CampaignState {

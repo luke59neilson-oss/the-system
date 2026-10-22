@@ -340,3 +340,15 @@
   - L accepted:
     - A DING toast can cover part of an open form on a 390 px phone. This is the existing toast position; M8 theming can move it.
     - Focus is not rescued after Cancel or a refused command (the button stays in those cases).
+
+## 2026-10-22 · M3.8 Quest log · reviewer: sonnet (fresh context)
+- Round 1 (1ac9417..23e69c2): 0 High, 1 Medium, 4 Low.
+  - M: on phones the Quests window came after Status and the whole Inventory, so deadlines were buried. Fixed: in one column the order is Status, Quests, Inventory, then the feeds (`display: contents` plus `order`). The e2e asserts the order.
+  - L fixed:
+    - The gauge label shows the percent (DESIGN "World Stability %"), so it agrees with the bar on any configured range.
+    - `aria-valuetext` is set and checked after a live change.
+    - The `.quest` border selectors are scoped.
+  - L accepted:
+    - Failed and expired quests are covered by helper unit tests only.
+    - The e2e drives the GM over a raw WebSocket, as in earlier specs.
+- Round 2 (23e69c2..6bf8fdf): 0 High, 0 Medium, 3 Low, all accepted. The order is measured once; the label can show one decimal; the failed-quest rendering gap stands.

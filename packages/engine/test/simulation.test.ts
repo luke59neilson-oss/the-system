@@ -812,7 +812,9 @@ describe('campaign simulation (ROADMAP M1.14)', () => {
       expect(evolutionTarget(rules, ch), `seed ${SEED}: ${id}`).toBeNull();
     }
     expect(sim().tally.levelsPerSession, `seed ${SEED}`).toHaveLength(SESSIONS);
-  });
+    // This test runs the whole 40-session simulation (the others reuse it);
+    // under coverage instrumentation on CI it takes about 5 s, the default limit.
+  }, 60_000);
 
   it(`race levels per session follow a random 4–8 plan averaging 6 (seed ${SEED})`, () => {
     const { tally } = sim();
