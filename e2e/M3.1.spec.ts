@@ -146,7 +146,8 @@ test('players pick a character from the list and the browser remembers it', asyn
 test('the join screen works when the browser blocks localStorage', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => {
-    Object.defineProperty(window, 'localStorage', {
+    // Runs in the page; the e2e tsconfig has no DOM lib, hence globalThis.
+    Object.defineProperty(globalThis, 'localStorage', {
       configurable: true,
       get() {
         throw new DOMException('The operation is insecure.', 'SecurityError');
@@ -156,6 +157,15 @@ test('the join screen works when the browser blocks localStorage', async ({ brow
   const page = await context.newPage();
   const errors = watchErrors(page);
   await page.goto(server.url);
+  const access = await page.evaluate(() => {
+    try {
+      Reflect.get(globalThis, 'localStorage');
+      return 'open';
+    } catch {
+      return 'blocked';
+    }
+  });
+  expect(access).toBe('blocked');
   await expect(joinLinks(page)).toHaveText([/Ada Lovelace.*Grade G/]);
   await page.getByRole('link', { name: /Ada Lovelace/ }).click();
   await expect(page.getByTestId('connection')).toHaveText('Connected');

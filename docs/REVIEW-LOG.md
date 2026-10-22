@@ -260,3 +260,9 @@
   - The legacy no-machine lock path is not tested since the test edit: fixed by adding a case.
   - `machine-id` is written non-atomically: accepted.
   - Terminal and desktop ids differ on a shared data dir: accepted, dev-only.
+
+## 2026-10-22 · M3.1 Join screen · reviewer: sonnet (fresh context)
+- Round 1 (2bd81f3..de5a067): 1 High, 0 Medium, 4 Low.
+  - H: `npm run check` failed at typecheck: the e2e init script used `window`, but the tools tsconfig has no DOM lib. Fixed with `globalThis`, plus an in-page assertion that storage access really throws.
+  - L accepted: placeholder metal colours in CSS until M8.1; the portrait image branch is untested until M4.4 sends portraits; overlapping Refresh clicks can resolve out of order; no fresh-state 1366×768 shot (the 390×844 one covers it).
+- Round 2: 0 High, 0 Medium; check and spec green.

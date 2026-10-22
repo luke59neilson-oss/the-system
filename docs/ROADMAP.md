@@ -194,7 +194,7 @@ the full ones.
 
 ## M3 — Player app (browser)
 
-- [ ] **M3.1 Join screen.** Character list (portrait, name, grade); pick one;
+- [x] **M3.1 Join screen.** Character list (portrait, name, grade); pick one;
   remembered in localStorage (try/catch).
 - [ ] **M3.2 Status screen.** DESIGN §9 layout, live updates.
 - [ ] **M3.3 Notifications and history.** Book-style DING feed, queued
