@@ -67,7 +67,7 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
   const pick = <T>(items: readonly T[]): T => items[Math.floor(rand() * items.length)] as T;
   const ids = c.state?.characterOrder ?? [];
   const someId = () => (ids.length && rand() < 0.95 ? pick(ids) : 'ghost');
-  if (rand() < 0.1) {
+  if (rand() < 0.14) {
     const kind = rand();
     if (kind < 0.35) return randomClockCommand(rand, c, pick);
     if (kind < 0.7) return randomQuestCommand(rand, c, pick);
@@ -366,7 +366,7 @@ function randomClockCommand(
       segments: pick([4, 6, 8, 0]),
     };
   }
-  if (roll < 0.9) {
+  if (roll < 0.66) {
     return {
       type: 'clock.tick',
       clockId: someClock(),
@@ -374,6 +374,33 @@ function randomClockCommand(
       amount: pick([1, 1, 2, 3]),
     };
   }
+  // M3.11 montages on clocks.
+  const montages = c.state?.montageOrder ?? [];
+  const someMontage = () => (montages.length && rand() < 0.9 ? pick(montages) : 'no-montage');
+  const characters = c.state?.characterOrder ?? [];
+  const someCharacter = () => (characters.length ? pick(characters) : 'nobody');
+  if (roll < 0.74) {
+    return {
+      type: 'montage.offer',
+      montageId: `mo${Math.floor(rand() * 4)}`,
+      clockId: someClock(),
+      label: rand() < 0.5 ? pick(['Crossing the swamp', ' ']) : undefined,
+      characterIds: rand() < 0.8 ? [someCharacter()] : [someCharacter(), someCharacter()],
+    };
+  }
+  if (roll < 0.82) {
+    const montageId = someMontage();
+    const offered = c.state?.montages[montageId]?.characterIds ?? [];
+    return {
+      type: 'montage.focus',
+      montageId,
+      characterId: offered.length && rand() < 0.9 ? pick(offered) : someCharacter(),
+      action: pick(['Scout ahead', ' ']),
+      stat: pick([null, 'strength', 'luck']),
+      skills: rand() < 0.5 ? ['Basic Archery'] : undefined,
+    };
+  }
+  if (roll < 0.87) return { type: 'montage.close', montageId: someMontage() };
   return { type: 'clock.remove', clockId: someClock() };
 }
 

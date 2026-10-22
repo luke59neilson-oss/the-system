@@ -82,7 +82,8 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   holdings: 'owner',
   trades: 'owner',
   tradeOrder: 'gm',
-  // M1.8. Practice is not projected yet (M3.11). Notes (M3.10): each player
+  // M1.8/M3.11: each player gets their own practice entries (without tags,
+  // which may name hidden quests' action tags). Notes (M3.10): each player
   // gets their own journal and the party notes (canReadNote), never GM notes
   // or another player's journal, shared or not. Journal entries a player has
   // not shared are hidden from the GM too (projectForGm, View-as panes).
@@ -102,6 +103,10 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   // else knows it.
   entities: 'owner',
   entityOrder: 'gm',
+  // M3.11: each player gets the open montages offered to them, by label, with
+  // their own focus; never the clock, the other participants or their focuses.
+  montages: 'owner',
+  montageOrder: 'gm',
   day: 'party',
 };
 
@@ -226,6 +231,28 @@ export interface PlayerView {
   readonly identify: readonly PlayerIdentify[];
   /** The viewer's own journal and the party notes, in creation order (M3.10). */
   readonly notes: readonly PlayerNote[];
+  /** The viewer's own practice entries, oldest first (M3.11). */
+  readonly practice: readonly PlayerPractice[];
+  /** Open montages offered to the viewer, in offer order (M3.11). */
+  readonly montages: readonly PlayerMontage[];
+}
+
+/** One of the viewer's practice entries (tags left out: they may name GM-only action tags). */
+export interface PlayerPractice {
+  readonly id: string;
+  readonly at: string;
+  readonly action: string;
+  readonly skills: readonly string[];
+  readonly stat: string | null;
+  readonly source: 'gm' | 'player' | 'montage';
+}
+
+/** An open montage offered to the viewer (M3.11). */
+export interface PlayerMontage {
+  readonly id: string;
+  readonly label: string;
+  /** The viewer's focus once given, else null. */
+  readonly focus: string | null;
 }
 
 /** A note one player may read (M3.10, DESIGN §7 Notes): own journal or party. */
@@ -525,6 +552,24 @@ export function projectForPlayer(
     inventory: playerInventory(state, viewer.id),
     identify: playerIdentify(state, viewer),
     notes: playerNotes(state, viewer.id, options.viewAs === true),
+    practice: state.practice
+      .filter((p) => p.characterId === viewer.id)
+      .map((p) => ({
+        id: p.id,
+        at: p.at,
+        action: p.action,
+        skills: [...p.skills],
+        stat: p.stat,
+        source: p.source,
+      })),
+    montages: state.montageOrder.flatMap((id) => {
+      const m = hasOwnKey(state.montages, id) ? state.montages[id] : undefined;
+      if (!m || m.status !== 'open' || !m.characterIds.includes(viewer.id)) return [];
+      const entryId = hasOwnKey(m.focuses, viewer.id) ? m.focuses[viewer.id] : undefined;
+      const entry =
+        entryId === undefined ? undefined : state.practice.find((p) => p.id === entryId);
+      return [{ id: m.id, label: m.label, focus: entry?.action ?? null }];
+    }),
     quests: state.questOrder.flatMap((id) => {
       const q = Object.prototype.hasOwnProperty.call(state.quests, id)
         ? state.quests[id]

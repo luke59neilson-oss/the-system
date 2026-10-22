@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 11,
+  "schemaVersion": 12,
   "name": "Golden: entities",
   "rules": {
     "configVersion": 1,
@@ -602,5 +602,7 @@
     }
   },
   "entityOrder": ["curse", "drum"],
+  "montages": {},
+  "montageOrder": [],
   "day": 1
 }

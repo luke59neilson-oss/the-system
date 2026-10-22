@@ -309,6 +309,23 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     amount: z.number().int().min(1).max(24),
   }),
   'clock.removed': z.strictObject({ clockId: recordId }),
+  /** GM offers a montage on a clock that qualifies (M3.11, DESIGN §7). */
+  'montage.offered': z.strictObject({
+    montageId: recordId,
+    clockId: recordId,
+    label: nonBlank,
+    characterIds: z.array(recordId).min(1).max(200),
+  }),
+  /** A player's one-line montage focus; also a practice entry (source "montage"). */
+  'montage.focused': z.strictObject({
+    montageId: recordId,
+    characterId: recordId,
+    action: nonBlank,
+    skills: z.array(nonBlank).max(10),
+    stat: recordId.nullable(),
+  }),
+  /** GM closes a montage (narrated, cost added); no more focuses. */
+  'montage.closed': z.strictObject({ montageId: recordId }),
   /** GM creates a quest (M1.12, DESIGN §7), optionally with a day timer and World Stability. */
   'quest.created': z.strictObject({
     questId: recordId,
@@ -427,6 +444,9 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'clock.created': 1,
   'clock.ticked': 1,
   'clock.removed': 1,
+  'montage.offered': 1,
+  'montage.focused': 1,
+  'montage.closed': 1,
   'quest.created': 1,
   'quest.edited': 1,
   'quest.statusSet': 1,
@@ -501,6 +521,7 @@ export const PLAYER_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   'trade.declined',
   'trade.cancelled',
   'practice.logged',
+  'montage.focused',
   'note.created',
   'note.edited',
   'note.deleted',

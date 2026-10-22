@@ -236,6 +236,24 @@ export type Command =
     }
   | { type: 'clock.remove'; clockId: string }
   | {
+      type: 'montage.offer';
+      /** Optional; a fresh id is generated when omitted. */
+      montageId?: string | undefined;
+      clockId: string;
+      /** What players see; default: the clock's name. */
+      label?: string | undefined;
+      characterIds: readonly string[];
+    }
+  | {
+      type: 'montage.focus';
+      montageId: string;
+      characterId: string;
+      action: string;
+      skills?: readonly string[] | undefined;
+      stat?: string | null | undefined;
+    }
+  | { type: 'montage.close'; montageId: string }
+  | {
       type: 'quest.create';
       /** Optional; a fresh id is generated when omitted. */
       questId?: string | undefined;
@@ -376,6 +394,9 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('clock.create') }),
   z.object({ type: z.literal('clock.tick') }),
   z.object({ type: z.literal('clock.remove') }),
+  z.object({ type: z.literal('montage.offer'), characterIds: z.array(z.string()) }),
+  z.object({ type: z.literal('montage.focus') }),
+  z.object({ type: z.literal('montage.close') }),
   z.object({ type: z.literal('quest.create') }),
   z.object({ type: z.literal('quest.edit') }),
   z.object({ type: z.literal('quest.setStatus') }),
@@ -408,6 +429,7 @@ export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>([
   'trade.decline',
   'trade.cancel',
   'practice.log',
+  'montage.focus',
   'note.create',
   'note.edit',
   'note.delete',
@@ -777,6 +799,35 @@ function toEvent(
         type: 'clock.ticked',
         payload: { clockId: command.clockId, result: command.result, amount: command.amount ?? 1 },
       };
+    case 'montage.offer': {
+      const state = campaign.state;
+      const clock =
+        state && Object.prototype.hasOwnProperty.call(state.clocks, command.clockId)
+          ? state.clocks[command.clockId]
+          : undefined;
+      return {
+        type: 'montage.offered',
+        payload: {
+          montageId: command.montageId ?? ctx.newId(),
+          clockId: command.clockId,
+          label: command.label ?? clock?.name ?? command.clockId,
+          characterIds: [...command.characterIds],
+        },
+      };
+    }
+    case 'montage.focus':
+      return {
+        type: 'montage.focused',
+        payload: {
+          montageId: command.montageId,
+          characterId: command.characterId,
+          action: command.action,
+          skills: command.skills ?? [],
+          stat: command.stat ?? null,
+        },
+      };
+    case 'montage.close':
+      return { type: 'montage.closed', payload: { montageId: command.montageId } };
     case 'clock.remove':
       return { type: 'clock.removed', payload: { clockId: command.clockId } };
     case 'quest.create': {

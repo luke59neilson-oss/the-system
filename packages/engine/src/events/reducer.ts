@@ -37,14 +37,14 @@ import {
   releaseEvolution,
   retiredSkillNames,
 } from '../evolution';
-import { newClock, tickClock, type Clock } from '../resolution';
+import { montageAvailable, newClock, tickClock, type Clock, type Montage } from '../resolution';
 import { applyAction, checkStabilityRules, nudge, type Quest } from '../quests';
 import { parseRulesConfig, type RulesConfig } from '../rules';
 import { tierProblem, type Entity } from '../entities';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 11;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 12;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -95,6 +95,10 @@ export interface CampaignState {
   readonly entities: Readonly<Record<string, Entity>>;
   /** Entity ids in definition order. */
   readonly entityOrder: readonly string[];
+  /** Montages offered on clocks (M3.11). Players see only their own open offers. */
+  readonly montages: Readonly<Record<string, Montage>>;
+  /** Montage ids in offer order. */
+  readonly montageOrder: readonly string[];
   /** In-game day counter, from 1 (quest timers count against it). */
   readonly day: number;
 }
@@ -302,6 +306,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       questOrder: [],
       entities: {},
       entityOrder: [],
+      montages: {},
+      montageOrder: [],
       day: 1,
     };
   }
@@ -637,6 +643,91 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         source,
       };
       return { ...state, practice: [...state.practice, entry] };
+    }
+    case 'montage.offered': {
+      const { montageId, clockId, label, characterIds } = event.payload;
+      if (hasOwn(state.montages, montageId)) fail(event, `montage "${montageId}" already exists`);
+      const clock = hasOwn(state.clocks, clockId) ? state.clocks[clockId] : undefined;
+      if (!clock) return fail(event, `unknown clock "${clockId}"`);
+      if (!montageAvailable(state.rules, clock)) {
+        fail(event, `"${clock.name}" does not qualify for a montage yet`);
+      }
+      if (new Set(characterIds).size !== characterIds.length) {
+        fail(event, 'a character is listed twice');
+      }
+      for (const id of characterIds) characterOf(state, event, id);
+      const montage: Montage = {
+        id: montageId,
+        clockId,
+        label,
+        characterIds: [...characterIds],
+        focuses: {},
+        status: 'open',
+        offeredAt: event.timestamp,
+      };
+      return {
+        ...state,
+        montages: { ...state.montages, [montageId]: montage },
+        montageOrder: [...state.montageOrder, montageId],
+      };
+    }
+    case 'montage.focused': {
+      const { montageId, characterId, action, skills, stat } = event.payload;
+      const montage = hasOwn(state.montages, montageId) ? state.montages[montageId] : undefined;
+      // A player cannot tell another character's montage from a missing one.
+      if (
+        !montage ||
+        (event.actor.role === 'player' && !montage.characterIds.includes(characterId))
+      ) {
+        return fail(event, `unknown montage "${montageId}"`);
+      }
+      if (!montage.characterIds.includes(characterId)) {
+        fail(event, 'this montage was not offered to that character');
+      }
+      if (montage.status !== 'open') fail(event, 'this montage is closed');
+      if (hasOwn(montage.focuses, characterId)) fail(event, 'a focus was already given');
+      const character = characterOf(state, event, characterId);
+      if (new Set(skills).size !== skills.length) fail(event, 'a skill is listed twice');
+      const known = new Set(character.skills.map((sk) => sk.name));
+      for (const name of skills) {
+        if (!known.has(name)) fail(event, `${character.name} has no skill "${name}"`);
+      }
+      if (stat !== null)
+        checkKeys(
+          event,
+          [stat],
+          state.rules.stats.list.map((st) => st.id),
+          'stat',
+        );
+      const entry: PracticeEntry = {
+        id: event.id,
+        at: event.timestamp,
+        sessionId: event.sessionId,
+        characterId,
+        action,
+        skills: [...skills],
+        stat,
+        tags: [],
+        source: 'montage',
+      };
+      return {
+        ...state,
+        practice: [...state.practice, entry],
+        montages: {
+          ...state.montages,
+          [montageId]: { ...montage, focuses: { ...montage.focuses, [characterId]: event.id } },
+        },
+      };
+    }
+    case 'montage.closed': {
+      const { montageId } = event.payload;
+      const montage = hasOwn(state.montages, montageId) ? state.montages[montageId] : undefined;
+      if (!montage) return fail(event, `unknown montage "${montageId}"`);
+      if (montage.status === 'closed') fail(event, 'this montage is already closed');
+      return {
+        ...state,
+        montages: { ...state.montages, [montageId]: { ...montage, status: 'closed' } },
+      };
     }
     case 'note.created': {
       const { noteId, kind, title, body, tags, shareable } = event.payload;

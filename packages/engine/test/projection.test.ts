@@ -137,8 +137,10 @@ describe('player projection', () => {
       'inventory',
       'me',
       'messages',
+      'montages',
       'notes',
       'party',
+      'practice',
       'quests',
       'rules',
       'viewerId',
@@ -493,8 +495,50 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
       },
     };
     econ.tradeOrder = ['t', `${GM}-tradeorder`];
-    // Practice (M1.8) is not projected yet.
-    econ.practice = [{ id: 'pr', characterId: ids[0], action: `${GM}-practice`, skills: [] }];
+    // Practice (M3.11): own entries only, without tags or unknown keys.
+    econ.practice = ids.map((id) => {
+      owner.get(id)?.strings.push(`OWNER-${id}-practice`);
+      return {
+        id: `pr-${id}`,
+        at: '2026-10-21T12:00:00.000Z',
+        sessionId: null,
+        characterId: id,
+        action: `OWNER-${id}-practice`,
+        skills: [],
+        stat: null,
+        tags: [`${GM}-practicetag`],
+        source: 'montage',
+        gmNote: `${GM}-practice`,
+      };
+    });
+    // Montages (M3.11): open offers to the viewer, by label, with the own
+    // focus only; never the clock, the other participants or closed ones.
+    const montages: Record<string, unknown> = {
+      closed: {
+        id: 'closed',
+        clockId: `${GM}-clock-id`,
+        label: `${GM}-closed-montage`,
+        characterIds: ids,
+        focuses: {},
+        status: 'closed',
+        offeredAt: '2026-10-21T12:00:00.000Z',
+      },
+    };
+    for (const id of ids) {
+      owner.get(id)?.strings.push(`OWNER-${id}-montage`);
+      montages[`m-${id}`] = {
+        id: `m-${id}`,
+        clockId: `${GM}-clock-id`,
+        label: `OWNER-${id}-montage`,
+        characterIds: [id],
+        focuses: { [id]: `pr-${id}` },
+        status: 'open',
+        offeredAt: '2026-10-21T12:00:00.000Z',
+        gmNote: `${GM}-montage`,
+      };
+    }
+    econ.montages = montages;
+    econ.montageOrder = ['closed', ...ids.map((id) => `m-${id}`), `${GM}-montageorder`];
     // Notes (M3.10): own journal (shared or not) and party notes only; never
     // GM notes, another player's journal, or unknown keys on a note.
     const note = (

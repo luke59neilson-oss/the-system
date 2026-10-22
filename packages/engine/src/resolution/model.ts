@@ -114,6 +114,22 @@ export interface Clock {
 
 export const MAX_CLOCK_SEGMENTS = 24;
 
+/**
+ * A montage the GM offers on a clock (M3.11, DESIGN §7): each listed player
+ * gives a one-line focus, saved to the practice log as a "montage" entry.
+ * `label` is what players see (the clock itself stays GM-only).
+ */
+export interface Montage {
+  readonly id: string;
+  readonly clockId: string;
+  readonly label: string;
+  readonly characterIds: readonly string[];
+  /** Practice entry id of each character's focus, once given. */
+  readonly focuses: Readonly<Record<string, string>>;
+  readonly status: 'open' | 'closed';
+  readonly offeredAt: string;
+}
+
 export function newClock(id: string, name: string, segments: number, at: string): Clock {
   if (!Number.isInteger(segments) || segments < 1 || segments > MAX_CLOCK_SEGMENTS) {
     throw new CharacterRuleError(`A clock has 1–${MAX_CLOCK_SEGMENTS} segments`);

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 11,
+  "schemaVersion": 12,
   "name": "XP golden",
   "rules": {
     "configVersion": 1,
@@ -740,5 +740,7 @@
   "questOrder": [],
   "entities": {},
   "entityOrder": [],
+  "montages": {},
+  "montageOrder": [],
   "day": 1
 }

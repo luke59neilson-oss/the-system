@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 11,
+  "schemaVersion": 12,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -646,5 +646,7 @@
   "questOrder": [],
   "entities": {},
   "entityOrder": [],
+  "montages": {},
+  "montageOrder": [],
   "day": 1
 }

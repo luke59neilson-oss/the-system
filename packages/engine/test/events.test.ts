@@ -723,7 +723,7 @@ describe('replay', () => {
 
 describe('property: replay equals incremental state', () => {
   const SEED = 20261021;
-  const STEPS = 1200;
+  const STEPS = 2000;
 
   it(`holds over ${STEPS} random commands (seed ${SEED})`, () => {
     const rand = seededRandom(SEED);
@@ -828,6 +828,9 @@ describe('property: replay equals incremental state', () => {
       'entity.define',
       'entity.edit',
       'entity.reveal',
+      'montage.offer',
+      'montage.focus',
+      'montage.close',
     ]) {
       expect(acceptedByType[type] ?? 0, `seed ${SEED}: accepted ${type}`).toBeGreaterThan(0);
     }
