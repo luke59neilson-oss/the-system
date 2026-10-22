@@ -178,10 +178,13 @@ describe('player projection', () => {
       'currencyName',
       'equipmentSlots',
       'grades',
+      'marks',
       'pools',
       'rarities',
       'stats',
     ]);
+    // Mark costs are already on each owned skill (marksNeeded); nothing else rides along.
+    expect(Object.keys(rules.marks).sort()).toEqual(['carryOver', 'order', 'upgrades']);
     const json = JSON.stringify(rules);
     for (const hidden of ['stability', 'evolutionGate', 'multiplier', 'gradeGapMultiplier'])
       expect(json).not.toContain(hidden);

@@ -26,7 +26,7 @@ import { canReadNote } from '../practice';
 import { daysLeft, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
 import { identifyRarity, resolveIdentify } from './identify';
-import { atCeiling, marksToUpgrade } from '../skills';
+import { atCeiling, markRules, marksToUpgrade, type MarkRules } from '../skills';
 
 /**
  * Player projection (ROADMAP M1.13): what one player's browser may receive.
@@ -148,6 +148,8 @@ export interface PlayerRules {
     readonly theme: string;
   }[];
   readonly rarities: readonly { readonly id: string; readonly name: string }[];
+  /** Mark costs and carry-over, so the evolution screen can say what marks keep (MQ.4). */
+  readonly marks: MarkRules;
   readonly currencyName: string;
   readonly equipmentSlots: readonly {
     readonly id: string;
@@ -404,6 +406,7 @@ export function projectRules(rules: RulesConfig): PlayerRules {
       theme: g.theme,
     })),
     rarities: rules.skills.rarities.map((r) => ({ id: r.id, name: r.name })),
+    marks: markRules(rules),
     currencyName: rules.economy.currencyName,
     equipmentSlots: rules.economy.equipmentSlots.map((s) => ({
       id: s.id,

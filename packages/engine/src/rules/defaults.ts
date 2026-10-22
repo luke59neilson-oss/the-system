@@ -153,6 +153,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
       legendary: 15,
     },
     maxMarksPerSkillPerSession: 1,
+    marksCarryOver: true, // §6, MQ.4
     merge: {
       requiredJointUses: 3,
       minRarity: 'uncommon',

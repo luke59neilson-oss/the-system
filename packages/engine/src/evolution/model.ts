@@ -11,6 +11,7 @@ import {
 } from '../character';
 import { gainXp, reshapeClassWeights, type LevelUp } from '../progression';
 import type { GradeRules, RulesConfig } from '../rules';
+import { markRules, marksAfterRarityChange } from '../skills/model';
 
 /**
  * Skill selections and evolutions (ROADMAP M1.10, DESIGN §2, §3, §6). Pure;
@@ -538,12 +539,14 @@ export function chooseEvolution(
   }
 
   const byName = new Map(option.transforms.map((t) => [t.skill, t]));
+  const marking = markRules(rules);
   const skills: CharacterSkill[] = character.skills.map((s) => {
     const t = byName.get(s.name);
     if (!t) return s;
-    // A rarity gain spends the banked marks (as an upgrade would); a transform
-    // that keeps the rarity keeps them (DESIGN §6: they bank until the evolution).
-    const marks = t.rarity === s.rarity ? s.marks : 0;
+    // A rarity gain spends the banked marks as that many upgrades would, and
+    // the rest carry on (MQ.4, D114); a transform that keeps the rarity keeps
+    // them (DESIGN §6: they bank until the evolution).
+    const marks = marksAfterRarityChange(marking, s.rarity, t.rarity, s.marks);
     // A renamed skill is a new skill to the System: the old text would
     // describe the wrong thing, so it clears until the GM writes new text (M3.5).
     const name = t.name.trim();

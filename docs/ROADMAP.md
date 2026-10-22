@@ -169,7 +169,7 @@ They touch finished engine and player items, so they come before M4.4.
   appear in later menus below the new ones; one pick per selection;
   eligibility rules from DESIGN §6. Player selection screen scrolls through
   older options. *Accept:* engine tests; e2e.
-- [ ] **MQ.4 Marks carry over.** Excess marks carry into the next rarity
+- [x] **MQ.4 Marks carry over.** Excess marks carry into the next rarity
   after an upgrade (incl. banked marks applied after an evolution).
   *Accept:* tests.
 - [ ] **MQ.5 Grade walls.** New default grade-gap mode per DESIGN §7: same
