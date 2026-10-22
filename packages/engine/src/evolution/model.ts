@@ -47,6 +47,12 @@ export interface SelectionRecord {
   readonly chosen: string | null;
   /** Id of the offer event; a choice names it, so undoing a re-offer cannot re-aim a pick. */
   readonly offerId: string;
+  /**
+   * Unchosen options of this menu the GM withdrew afterwards (MQ.3, DESIGN §6):
+   * they no longer appear as passed-over options. Absent when none, so states
+   * from before MQ.3 are unchanged.
+   */
+  readonly withdrawn?: readonly string[];
 }
 
 /** One skill an evolution option rewrites (DESIGN §6 "Evolutions transform 1–2 skills"). */
@@ -271,9 +277,10 @@ export function passedOverOptions(
     .filter((s) => s.level < level && s.chosen !== null)
     .sort((a, b) => b.level - a.level);
   for (const r of earlier) {
+    const gone = new Set((r.withdrawn ?? []).map(lower));
     for (const o of r.options) {
       const key = lower(o.name);
-      if (seen.has(key) || owned.has(key) || retired.has(key)) continue;
+      if (gone.has(key) || seen.has(key) || owned.has(key) || retired.has(key)) continue;
       if (o.kind === 'profession' && character.profession === null) continue;
       const rank = rules.skills.rarities.findIndex((x) => x.id === o.rarity);
       if (rank === -1 || rank > ceiling) continue;
@@ -282,6 +289,30 @@ export function passedOverOptions(
     }
   }
   return out;
+}
+
+/**
+ * The GM withdraws a passed-over option (DESIGN §6 "withdrawn by the GM",
+ * MQ.3): every chosen menu that left it unpicked records the withdrawal, so it
+ * no longer appears in later menus. Refused when no chosen menu still holds it
+ * unpicked. A pending menu's own options are changed by offering it again.
+ */
+export function withdrawPassedOver(character: Character, name: string): Character {
+  const key = lower(name);
+  let hit = false;
+  const selections = character.selections.map((r) => {
+    if (r.chosen === null || lower(r.chosen) === key) return r;
+    const option = r.options.find((o) => lower(o.name) === key);
+    if (!option || (r.withdrawn ?? []).some((w) => lower(w) === key)) return r;
+    hit = true;
+    return { ...r, withdrawn: [...(r.withdrawn ?? []), option.name] };
+  });
+  if (!hit) {
+    throw new CharacterRuleError(
+      `[${name.trim()}] is not a passed-over option of ${character.name}`,
+    );
+  }
+  return { ...character, selections };
 }
 
 /** The player (or GM) picks one option of an offered selection; the skill is granted. */

@@ -139,7 +139,8 @@ export function SkillSelection({
         </button>
       </div>
       <p className="muted" data-testid="selection-level">
-        Class level {selection.level}: choose one of {selection.options.length} skills
+        Class level {selection.level}: choose one of {selection.options.length + older.length}{' '}
+        skills{older.length > 0 ? ` (${selection.options.length} new)` : ''}
         {more > 0 ? ` (${more} more ${more === 1 ? 'selection' : 'selections'} waiting)` : ''}
       </p>
       {offer ? (

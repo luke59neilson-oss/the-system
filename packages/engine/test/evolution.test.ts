@@ -4,6 +4,7 @@ import {
   defaultRules,
   dueSelections,
   passedOverOptions,
+  buildSessionLog,
   evolutionTarget,
   execute,
   nextSelectionLevel,
@@ -1223,5 +1224,78 @@ describe('passed-over options stay eligible (MQ.3, DESIGN §6, D103)', () => {
       'Skill 5a',
       'Skill 5c',
     ]);
+  });
+});
+
+describe('the GM withdraws a passed-over option (MQ.3, DESIGN §6)', () => {
+  const toF = () =>
+    ok(ok(atGTop(), release(archery, 'Volley', 'common')), {
+      type: 'evolution.choose',
+      characterId: 'jake',
+      optionId: 'o1',
+    });
+  const setUp = () => {
+    let c = ok(toF(), award(10 * 150));
+    c = ok(c, { type: 'selection.offer', characterId: 'jake', level: 5, options: menu(5, 'rare') });
+    c = ok(c, { type: 'selection.choose', characterId: 'jake', level: 5, skill: 'Skill 5b' });
+    return ok(c, {
+      type: 'selection.offer',
+      characterId: 'jake',
+      level: 10,
+      options: menu(10, 'rare'),
+    });
+  };
+
+  it('removes it from later menus and refuses it as a pick', () => {
+    let c = setUp();
+    c = ok(c, { type: 'selection.withdrawOption', characterId: 'jake', skill: ' skill 5A ' });
+    expect(passedOverOptions(rules, char(c), 10).map((o) => o.name)).toEqual(['Skill 5c']);
+    expect(char(c).selections.find((s) => s.level === 5)?.withdrawn).toEqual(['Skill 5a']);
+    const mine = projectForPlayer(c.state ?? (null as never), 'jake').me.selections;
+    expect(mine.find((r) => r.level === 10)?.passedOver.map((o) => o.name)).toEqual(['Skill 5c']);
+    expect(
+      reject(c, { type: 'selection.choose', characterId: 'jake', level: 10, skill: 'Skill 5a' }),
+    ).toMatch(/not on the level 10 menu/);
+    // The other leftover is still a valid pick.
+    c = ok(c, { type: 'selection.choose', characterId: 'jake', level: 10, skill: 'Skill 5c' });
+    expect(char(c).selections.find((s) => s.level === 10)?.chosen).toBe('Skill 5c');
+  });
+
+  it('refuses names that are not passed over, twice, chosen, or from a pending menu', () => {
+    let c = setUp();
+    const withdraw = (skill: string) =>
+      reject(c, { type: 'selection.withdrawOption', characterId: 'jake', skill });
+    expect(withdraw('Skill 99')).toMatch(/not a passed-over option/);
+    expect(withdraw('Skill 5b')).toMatch(/not a passed-over option/);
+    expect(withdraw('Skill 10a')).toMatch(/not a passed-over option/);
+    c = ok(c, { type: 'selection.withdrawOption', characterId: 'jake', skill: 'Skill 5a' });
+    expect(withdraw('Skill 5a')).toMatch(/not a passed-over option/);
+  });
+
+  it('is GM only, can be undone, and is logged', () => {
+    const c = setUp();
+    expect(
+      reject(
+        c,
+        { type: 'selection.withdrawOption', characterId: 'jake', skill: 'Skill 5a' },
+        player('jake'),
+      ),
+    ).toMatch(/only the GM/);
+    const done = ok(c, {
+      type: 'selection.withdrawOption',
+      characterId: 'jake',
+      skill: 'Skill 5a',
+    });
+    const last = done.events.at(-1);
+    expect(last?.type).toBe('selection.optionWithdrawn');
+    expect(buildSessionLog(done, done.events.length - 1).entries.map((e) => e.text)).toEqual([
+      "Skill 5a withdrawn from Jake's passed-over options",
+    ]);
+    const undone = ok(done, { type: 'event.undo', eventId: last?.id ?? '' });
+    expect(passedOverOptions(rules, char(undone), 10).map((o) => o.name)).toEqual([
+      'Skill 5a',
+      'Skill 5c',
+    ]);
+    expect(char(undone).selections.find((s) => s.level === 5)?.withdrawn).toBeUndefined();
   });
 });

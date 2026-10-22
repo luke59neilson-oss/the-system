@@ -1078,6 +1078,27 @@ button.skill-open:hover .skill-name {
 .offer button {
   align-self: flex-start;
 }
+/* MQ.3: passed-over options are compact rows, so a long list stays scannable. */
+.passed-over .offers {
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-top: 8px;
+}
+.passed-over .offer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 12px;
+  row-gap: 2px;
+  padding: 8px 12px;
+}
+.passed-over .offer > * {
+  grid-column: 1;
+}
+.passed-over .offer button {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+}
 .selection-review p {
   overflow-wrap: anywhere;
 }

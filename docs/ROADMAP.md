@@ -339,7 +339,9 @@ They touch finished engine and player items, so they come before M4.4.
 ## M5 — Skills and practice tools (GM)
 
 - [ ] **M5.1 Offer builder.** Per-character menu builder beside the practice
-  log; capstone check; profession options; send. Show due selections
+  log; capstone check; profession options; send. Lists the character's
+  passed-over options with a Withdraw button (`selection.withdrawOption`,
+  MQ.3, D117). Show due selections
   (`dueSelections`) next to the M1.8 selection alert, which does not know
   whether a selection was taken.
 - [ ] **M5.2 Evolution builder.** Options, warnings, one-time stat bonus per

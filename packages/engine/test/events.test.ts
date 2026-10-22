@@ -850,6 +850,7 @@ describe('property: replay equals incremental state', () => {
       'skill.merged',
       'selection.offered',
       'selection.chosen',
+      'selection.optionWithdrawn',
       'evolution.released',
       'evolution.chosen',
       // M4.2 libraries have their own property test (libraries.test.ts), so

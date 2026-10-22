@@ -85,8 +85,9 @@ test('a player chooses a skill from the offered menu', async ({ browser }) => {
   const dialog = laptop.getByRole('dialog', { name: 'Skill selection' });
   await expect(dialog).toBeVisible();
   await expect.poll(() => focusedText(laptop)).toBe('Skill selection');
+  // The demo Jake passed options over at earlier selections (MQ.3).
   await expect(dialog.getByTestId('selection-level')).toHaveText(
-    'Class level 50: choose one of 3 skills',
+    /^Class level 50: choose one of \d+ skills \(3 new\)$/u,
   );
   const offers = dialog.getByTestId('offer');
   await expect(offers).toHaveCount(3);
@@ -162,6 +163,18 @@ test('a player chooses a skill from the offered menu', async ({ browser }) => {
   const older = dialog.getByTestId('passed-over').getByTestId('passed-over-offer');
   await expect(older.filter({ hasText: `[${names[1]} (Epic)]` })).toHaveCount(1);
   await expect(older.filter({ hasText: `[${names[0]} (Epic)]` })).toHaveCount(0);
+  const total = await older.count();
+  await expect(dialog.getByTestId('selection-level')).toHaveText(
+    `Class level 60: choose one of ${3 + total} skills (3 new)`,
+  );
+  // The GM withdraws one passed-over option; it leaves the open list live.
+  await gmCommand(gm, {
+    type: 'selection.withdrawOption',
+    characterId: 'demo-jake',
+    skill: names[2],
+  });
+  await expect(older.filter({ hasText: `[${names[2]} ` })).toHaveCount(0);
+  await expect(older).toHaveCount(total - 1);
   await laptop.screenshot({ path: path.join(shots, 'player-passed-over-1366x768.png') });
   await dialog.getByRole('button', { name: `Choose ${names[1]}` }).click();
   await dialog.getByRole('button', { name: 'Confirm' }).click();
@@ -185,7 +198,7 @@ test('a player chooses a skill from the offered menu', async ({ browser }) => {
   await phone.getByRole('button', { name: '[Choose]' }).click();
   const phoneDialog = phone.getByRole('dialog', { name: 'Skill selection' });
   await expect(phoneDialog.getByTestId('selection-level')).toHaveText(
-    'Class level 20: choose one of 3 skills',
+    /^Class level 20: choose one of \d+ skills \(3 new\)$/u,
   );
   // Escape leaves the choice for later.
   await phone.keyboard.press('Escape');

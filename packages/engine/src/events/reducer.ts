@@ -36,6 +36,7 @@ import { gainXp, shareBonus } from '../progression';
 import {
   chooseEvolution,
   chooseSelection,
+  withdrawPassedOver,
   offerSelection,
   releaseEvolution,
   retiredSkillNames,
@@ -1108,6 +1109,13 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         rule(event, () => mergeSkills(state.rules, character, first, second, name, joint)),
       );
     }
+    case 'selection.optionWithdrawn': {
+      const character = characterOf(state, event, event.payload.characterId);
+      return withCharacter(
+        state,
+        rule(event, () => withdrawPassedOver(character, event.payload.skill)),
+      );
+    }
     case 'selection.offered':
     case 'selection.chosen': {
       const { characterId, level } = event.payload;
@@ -1179,7 +1187,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
                 : entry,
             );
       // Evolution refills every pool to its effective maximum, titles and
-      // items included (D99); old events keep the old rules (D110).
+      // items included (D99); old events keep the old rules (D115).
       let evolved = result.character;
       if (event.payload.legacy !== true) {
         const stats = rule(event, () => effectiveOf(state, evolved));
