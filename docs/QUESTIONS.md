@@ -240,3 +240,13 @@ DESIGN/ROADMAP; do not re-apply them.
     (default +25%). Default: keep the +25% cap. Alternative: no cap on title
     percentages, or a different cap.
     Answer (Luke, 2026-10-22): No cap; titles will be few, far between and hard to earn. (applied, L8)
+
+43. **Marks when an evolution transform raises a skill's rarity.** A
+    transform is the System's gift at an evolution, not an upgrade the player
+    paid for. Built default: the gain spends the marks each skipped step
+    would cost, and the rest carry on (10 marks on an Inferior skill that
+    becomes Uncommon keep 3; 5 marks keep 0). Same-rarity transforms keep
+    every mark. Default: as described (D114). Alternatives: a transform
+    keeps every mark (the gain is free); or it resets them to 0 (the old
+    rule).
+    Answer:
