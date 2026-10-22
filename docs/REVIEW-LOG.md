@@ -266,3 +266,12 @@
   - H: `npm run check` failed at typecheck: the e2e init script used `window`, but the tools tsconfig has no DOM lib. Fixed with `globalThis`, plus an in-page assertion that storage access really throws.
   - L accepted: placeholder metal colours in CSS until M8.1; the portrait image branch is untested until M4.4 sends portraits; overlapping Refresh clicks can resolve out of order; no fresh-state 1366×768 shot (the 390×844 one covers it).
 - Round 2: 0 High, 0 Medium; check and spec green.
+
+## 2026-10-22 · M3.2 Status screen · reviewer: sonnet (fresh context)
+- Round 1 (b0e1210..eeed569): 0 High, 3 Medium, 6 Low.
+  - M: live updates were tested only for levels. Fixed: the e2e now checks a stat, a pool maximum and its bar width, and free points, each with the glow.
+  - M: the compact View-as pane was not checked with the new skill lists. Fixed: compact pane CSS, plus a 340×600 `?pane=1` check with no sideways scroll and a screenshot.
+  - M: the glow compared against the first value, so a change back to it did not glow. Fixed: a change counter (adjust state during render) keys the remount.
+  - L fixed: pool bars clamped to 0–100 (`poolPercent`, unit-tested); track rows pass unbreakable parts instead of splitting on " – ".
+  - L accepted: rarity colours are CSS placeholders keyed by config ids (M8.1); no `aria-live` on status values (the feed announces changes); pool labels wrap at 390; duplicate skill names cannot occur (D63).
+- Round 2 (eeed569..351c49a): 0 High, 0 Medium. Lows: the change counter does not reset if a pane reuses its instance for another character (panes are keyed per character), labels wrap, no 1920×1080 shot.
