@@ -402,7 +402,8 @@ function clampToEffective(
         continue;
       }
       // A full pool stays full when its maximum rises (D100), unless this
-      // event set the pool itself.
+      // event set the pool itself (detected by value: no event both raises a
+      // maximum and writes a pool, except evolution, which fills it anyway).
       const was = old && hasOwn(old.pools, p.id) ? old.pools[p.id] : undefined;
       const wasMax = oldMax && hasOwn(oldMax, p.id) ? oldMax[p.id] : undefined;
       if (

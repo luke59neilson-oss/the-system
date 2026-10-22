@@ -105,6 +105,18 @@ describe('pools follow maxima (MQ.2, D100)', () => {
     expect(pool(c)).toEqual({ current: 120, max: 120 });
   });
 
+  it('an item edit that raises an equipped bonus keeps a full pool full (MQ.2 review)', () => {
+    let c = ok(start(), equip);
+    c = ok(c, { type: 'item.edit', itemId: 'charm', bonuses: [{ stat: 'vitality', flat: 4 }] });
+    expect(pool(c)).toEqual({ current: 140, max: 140 });
+    c = ok(ok(c, setHp(90)), {
+      type: 'item.edit',
+      itemId: 'charm',
+      bonuses: [{ stat: 'vitality', flat: 6 }],
+    });
+    expect(pool(c)).toEqual({ current: 90, max: 160 });
+  });
+
   it('a GM pool set is never overridden by the rule', () => {
     const c = ok(ok(start(), equip), setHp(120));
     expect(pool(ok(c, setHp(60)))).toEqual({ current: 60, max: 120 });

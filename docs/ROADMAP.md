@@ -161,7 +161,7 @@ They touch finished engine and player items, so they come before M4.4.
   Transforms are optional (config `skills.evolutionTransforms` minimum 0).
   *Accept:* engine tests for each rule (new event versions + upcasters,
   golden logs); evolution screen shows the bonus; e2e.
-- [ ] **MQ.2 Pools follow maxima.** A full pool stays full when its maximum
+- [x] **MQ.2 Pools follow maxima.** A full pool stays full when its maximum
   rises (level, item, title, evolution bonus); otherwise current is
   unchanged; never refill on level-up; clamp when a maximum falls.
   *Accept:* tests incl. DESIGN §2's 85/100 → 85/120 and 100/100 → 120/120.

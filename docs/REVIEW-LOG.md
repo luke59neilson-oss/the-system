@@ -445,3 +445,11 @@
   - Round-1 "no GM UI for the bonus" stays accepted by design (M5.2 evolution builder; D110).
   - M fixed (66033ea): the evolution screen called waiting selections a warning, though choosing is refused. The player view now carries `selectionsDue` (earned and unchosen, offered or not), and the screen shows "Choose your waiting skill selection first…" and disables Evolve. There are engine projection and web unit tests.
   - L accepted: `chooseEvolution` refills from base stats when called directly (the reducer refills from effective stats; only unit tests call it directly); `bonusText` edge cases are fine; `legacy: true` on a hand-written v2 event also skips the bonus (commands never set it).
+
+## 2026-10-22 · MQ.2 Pools follow maxima · sonnet
+- Round 1 (5619f9b..717e33c): 0 High, 0 Medium, 4 Low. `npm run check` green (701); M3.2 and M3.7 e2e green. Full e2e suite (35) run by the builder before the e2e updates: 3 failures, all expected under D100 (M3.2 stamina, M3.7 amulet, and a cascade from it), fixed in 717e33c.
+  - L accepted (Q41): the literal reading lets a clamped pool count as full, so swapping gear can top up a pool. It is documented and pinned by a test.
+  - L fixed: the comment now explains why "the event did not set the pool" is detected by value.
+  - L accepted: two effective-stat computations per changed character (bounded, LAN scale).
+  - L fixed: a test for item edits that raise an equipped bonus (full stays full; 90 stays 90). Evolution's interplay is covered by the MQ.1 refill tests.
+- No round 2 (no High, fewer than two Mediums).
