@@ -918,6 +918,19 @@ describe('review fixes (M1.10 round 1)', () => {
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
     expect(char(c).grade).toBe('E');
   });
+
+  it('the owner sees how many earned selections wait, offered or not (MQ.1 review)', () => {
+    const due = (c: Campaign): number => {
+      if (!c.state) throw new Error('no state');
+      return projectForPlayer(c.state, 'jake').me.selectionsDue;
+    };
+    let c = ok(toF(), award(10 * 150));
+    expect(due(c)).toBe(2);
+    c = ok(c, { type: 'selection.offer', characterId: 'jake', level: 5, options: menu(5, 'rare') });
+    expect(due(c)).toBe(2);
+    c = ok(c, { type: 'selection.choose', characterId: 'jake', level: 5, skill: 'Skill 5b' });
+    expect(due(c)).toBe(1);
+  });
 });
 
 describe('review fixes (M1.10 round 2)', () => {

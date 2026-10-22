@@ -14,7 +14,12 @@ import {
   type ItemDef,
   type TradeStatus,
 } from '../economy';
-import type { PendingEvolution, SelectionRecord, SkillOption } from '../evolution';
+import {
+  dueSelections,
+  type PendingEvolution,
+  type SelectionRecord,
+  type SkillOption,
+} from '../evolution';
 import { canReadNote } from '../practice';
 import { daysLeft, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
@@ -208,6 +213,11 @@ export interface OwnSheet {
   readonly merges: Readonly<Record<string, number>>;
   /** Selection menus offered to this character, with the pick once chosen (M1.10). */
   readonly selections: readonly SelectionRecord[];
+  /**
+   * Earned selections not chosen yet, offered or not (MQ.1, D103): while any
+   * wait, the evolution cannot be chosen.
+   */
+  readonly selectionsDue: number;
   /** A released evolution waiting for this character's choice (M1.10). */
   readonly evolution: PendingEvolution | null;
   /** Portrait URL path (`/portraits/<file>`), or null for the monogram (M4.4). */
@@ -480,6 +490,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
       chosen: r.chosen,
       offerId: r.offerId,
     })),
+    selectionsDue: dueSelections(rules, c).length,
     evolution:
       c.evolution === null
         ? null

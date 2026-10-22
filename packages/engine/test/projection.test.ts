@@ -164,9 +164,10 @@ describe('player projection', () => {
     const ownFields = Object.entries(CHARACTER_FIELD_VISIBILITY)
       .filter(([, v]) => v !== 'gm')
       .map(([k]) => k);
-    // Derived: race level and effective stats (base + equipped items, D81).
+    // Derived: race level, effective stats (base + equipped items, D81) and
+    // the count of earned selections still to choose (MQ.1, D103).
     expect(Object.keys(view.me).sort()).toEqual(
-      [...ownFields, 'raceLevel', 'effectiveStats'].sort(),
+      [...ownFields, 'raceLevel', 'effectiveStats', 'selectionsDue'].sort(),
     );
   });
 

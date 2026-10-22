@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import type { PendingEvolution, PlayerView } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
-import { bonusText, evolutionWarnings, transformText, weightsText } from './evolution';
+import {
+  bonusText,
+  evolutionBlocked,
+  evolutionWarnings,
+  transformText,
+  weightsText,
+} from './evolution';
 import { isConnectionError } from './selection';
 
 /**
@@ -31,6 +37,9 @@ export function EvolutionChoice({
   const dialog = useRef<HTMLDialogElement | null>(null);
   const heading = useRef<HTMLHeadingElement | null>(null);
   const confirmButton = useRef<HTMLButtonElement | null>(null);
+  const backButton = useRef<HTMLButtonElement | null>(null);
+  // Waiting selections block the choice (MQ.1, D103); the player can still look.
+  const blocked = evolutionBlocked(me);
   const [picked, setPicked] = useState<string | null>(null);
   const [profession, setProfession] = useState<string>('');
   const [busy, setBusy] = useState(false);
@@ -42,8 +51,8 @@ export function EvolutionChoice({
   }, []);
   const option = picked === null ? null : evolution.options.find((o) => o.id === picked);
   useEffect(() => {
-    if (option) confirmButton.current?.focus();
-  }, [option]);
+    if (option) (blocked === null ? confirmButton : backButton).current?.focus();
+  }, [option, blocked]);
   // Back returns keyboard focus to the path that was picked.
   const [backTo, setBackTo] = useState<string | null>(null);
   useEffect(() => {
@@ -99,6 +108,11 @@ export function EvolutionChoice({
         Evolve into {evolution.toGrade}-grade: choose one of {evolution.options.length}{' '}
         {evolution.options.length === 1 ? 'path' : 'paths'}. Evolving refills HP, MP and Stamina.
       </p>
+      {blocked && (
+        <p className="err" role="status" data-testid="evolution-blocked">
+          {blocked}
+        </p>
+      )}
       {option ? (
         <div className="selection-review">
           <p id="evolution-review" data-testid="evolution-review">
@@ -130,7 +144,7 @@ export function EvolutionChoice({
             <button
               type="button"
               ref={confirmButton}
-              disabled={busy}
+              disabled={busy || blocked !== null}
               aria-describedby="evolution-review"
               onClick={() => void confirm(option.id)}
             >
@@ -139,6 +153,7 @@ export function EvolutionChoice({
             <button
               type="button"
               className="secondary"
+              ref={backButton}
               disabled={busy}
               onClick={() => {
                 setBackTo(option.id);

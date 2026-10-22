@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { EvolutionOption, OwnSheet, PlayerRules } from '@the-system/engine';
-import { bonusText, evolutionWarnings, transformText, weightsText } from '../src/player/evolution';
+import {
+  bonusText,
+  evolutionBlocked,
+  evolutionWarnings,
+  transformText,
+  weightsText,
+} from '../src/player/evolution';
 
 const rules = {
   stats: {
@@ -31,9 +37,8 @@ const option = (over: Partial<EvolutionOption> = {}): EvolutionOption => ({
   ...over,
 });
 
-const me = (over: Partial<Pick<OwnSheet, 'skills' | 'selections'>> = {}) => ({
+const me = (over: Partial<Pick<OwnSheet, 'skills'>> = {}) => ({
   skills: [skill('Basic Archery', 3)],
-  selections: [],
   ...over,
 });
 
@@ -56,19 +61,10 @@ describe('evolution screen helpers (M3.13)', () => {
     expect(weightsText(rules, { strength: 0 })).toBeNull();
   });
 
-  it('warns about lost marks, waiting choices, a reshape, and finality', () => {
-    const w = evolutionWarnings(
-      me({
-        selections: [
-          { level: 10, options: [], chosen: null, offerId: 'x' },
-          { level: 5, options: [], chosen: 'A', offerId: 'y' },
-        ],
-      }),
-      option({ classWeights: { agility: 2 } }),
-    );
+  it('warns about lost marks, a reshape, and finality', () => {
+    const w = evolutionWarnings(me(), option({ classWeights: { agility: 2 } }));
     expect(w).toEqual([
       '[Basic Archery] becomes [Expert Archery]: its 3 mastery marks reset to 0.',
-      'You have 1 skill selection still waiting.',
       'Your class stat spread changes for every class level from now on.',
       'The choice is final; the other options will be gone.',
     ]);
@@ -80,6 +76,18 @@ describe('evolution screen helpers (M3.13)', () => {
     ]);
     expect(evolutionWarnings(me({ skills: [skill('Basic Archery', 1)] }), option())[0]).toBe(
       '[Basic Archery] becomes [Expert Archery]: its 1 mastery mark resets to 0.',
+    );
+  });
+});
+
+describe('evolution waits for selections (MQ.1, D103)', () => {
+  it('blocks while any earned selection is unchosen, offered or not', () => {
+    expect(evolutionBlocked({ selectionsDue: 0 })).toBeNull();
+    expect(evolutionBlocked({ selectionsDue: 1 })).toBe(
+      'Choose your waiting skill selection first: you cannot evolve until it is picked.',
+    );
+    expect(evolutionBlocked({ selectionsDue: 2 })).toBe(
+      'Choose your 2 waiting skill selections first: you cannot evolve until they are picked.',
     );
   });
 });

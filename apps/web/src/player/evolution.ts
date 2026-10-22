@@ -1,5 +1,4 @@
 import type { EvolutionOption, OwnSheet, PlayerRules } from '@the-system/engine';
-import { pendingSelections } from './selection';
 import { rarityName } from './sheet';
 
 /**
@@ -54,14 +53,24 @@ export function bonusText(
 }
 
 /**
- * What the player should know before confirming an option: marks the
- * transforms reset (D64), selections still waiting, a reshaped spread, and
- * that it is final. Free points are untouched by evolving, so not listed.
+ * Why the player cannot evolve yet, or null: every earned skill selection,
+ * offered or not, must be chosen first (MQ.1, D103).
  */
-export function evolutionWarnings(
-  me: Pick<OwnSheet, 'skills' | 'selections'>,
-  option: EvolutionOption,
-): string[] {
+export function evolutionBlocked(me: Pick<OwnSheet, 'selectionsDue'>): string | null {
+  const due = me.selectionsDue;
+  if (due <= 0) return null;
+  return due === 1
+    ? 'Choose your waiting skill selection first: you cannot evolve until it is picked.'
+    : `Choose your ${due} waiting skill selections first: you cannot evolve until they are picked.`;
+}
+
+/**
+ * What the player should know before confirming an option: marks the
+ * transforms reset (D64), a reshaped spread, and that it is final. Free
+ * points are untouched by evolving, so not listed. Waiting selections block
+ * the choice instead (evolutionBlocked).
+ */
+export function evolutionWarnings(me: Pick<OwnSheet, 'skills'>, option: EvolutionOption): string[] {
   const out: string[] = [];
   for (const t of option.transforms) {
     const s = me.skills.find((k) => k.name === t.skill);
@@ -70,11 +79,6 @@ export function evolutionWarnings(
         `[${s.name}] becomes [${t.name}]: its ${s.marks} mastery ${s.marks === 1 ? 'mark resets' : 'marks reset'} to 0.`,
       );
   }
-  const waiting = pendingSelections(me.selections).length;
-  if (waiting > 0)
-    out.push(
-      `You have ${waiting} skill ${waiting === 1 ? 'selection' : 'selections'} still waiting.`,
-    );
   if (option.classWeights !== null)
     out.push('Your class stat spread changes for every class level from now on.');
   out.push('The choice is final; the other options will be gone.');
