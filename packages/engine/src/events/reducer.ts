@@ -44,10 +44,18 @@ import { montageAvailable, newClock, tickClock, type Clock, type Montage } from 
 import { applyAction, checkStabilityRules, nudge, type Quest } from '../quests';
 import { parseRulesConfig, type RulesConfig } from '../rules';
 import { tierProblem, type Entity } from '../entities';
+import {
+  validateClassDef,
+  validateProfessionDef,
+  validateRaceDef,
+  type ClassDef,
+  type ProfessionDef,
+  type RaceDef,
+} from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 13;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 14;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -78,6 +86,15 @@ export interface CampaignState {
   readonly skillLibrary: Readonly<Record<string, SkillDef>>;
   /** Skill library ids in definition order. */
   readonly skillLibraryOrder: readonly string[];
+  /** Starting class library by id (M4.2). GM-only. */
+  readonly classLibrary: Readonly<Record<string, ClassDef>>;
+  readonly classLibraryOrder: readonly string[];
+  /** Race library by id (M4.2). GM-only. */
+  readonly raceLibrary: Readonly<Record<string, RaceDef>>;
+  readonly raceLibraryOrder: readonly string[];
+  /** Profession library by id (M4.2). GM-only. */
+  readonly professionLibrary: Readonly<Record<string, ProfessionDef>>;
+  readonly professionLibraryOrder: readonly string[];
   /** Currency, inventory and equipment per character id; absent = nothing held. */
   readonly holdings: Readonly<Record<string, Holdings>>;
   /** Every trade ever proposed, by id (closed ones keep their outcome). */
@@ -258,6 +275,71 @@ function fillFromLibrary(before: CampaignState, after: CampaignState): CampaignS
   return characters === null ? after : { ...after, characters };
 }
 
+function defineSkill(state: CampaignState, event: DomainEvent, def: SkillDef): CampaignState {
+  if (hasOwn(state.skillLibrary, def.id)) fail(event, `library skill "${def.id}" already exists`);
+  rule(event, () => validateSkillDef(state.rules, def, state.skillLibrary));
+  return {
+    ...state,
+    skillLibrary: { ...state.skillLibrary, [def.id]: def },
+    skillLibraryOrder: [...state.skillLibraryOrder, def.id],
+  };
+}
+
+function defineClass(state: CampaignState, event: DomainEvent, def: ClassDef): CampaignState {
+  if (hasOwn(state.classLibrary, def.id)) fail(event, `library class "${def.id}" already exists`);
+  rule(event, () => validateClassDef(state.rules, def, state.classLibrary));
+  return {
+    ...state,
+    classLibrary: { ...state.classLibrary, [def.id]: def },
+    classLibraryOrder: [...state.classLibraryOrder, def.id],
+  };
+}
+
+function defineRace(state: CampaignState, event: DomainEvent, def: RaceDef): CampaignState {
+  if (hasOwn(state.raceLibrary, def.id)) fail(event, `library race "${def.id}" already exists`);
+  rule(event, () => validateRaceDef(def, state.raceLibrary));
+  return {
+    ...state,
+    raceLibrary: { ...state.raceLibrary, [def.id]: def },
+    raceLibraryOrder: [...state.raceLibraryOrder, def.id],
+  };
+}
+
+function defineProfession(
+  state: CampaignState,
+  event: DomainEvent,
+  def: ProfessionDef,
+): CampaignState {
+  if (hasOwn(state.professionLibrary, def.id)) {
+    fail(event, `library profession "${def.id}" already exists`);
+  }
+  rule(event, () => validateProfessionDef(state.rules, def, state.professionLibrary));
+  return {
+    ...state,
+    professionLibrary: { ...state.professionLibrary, [def.id]: def },
+    professionLibraryOrder: [...state.professionLibraryOrder, def.id],
+  };
+}
+
+function entryOf<T>(
+  event: DomainEvent,
+  library: Readonly<Record<string, T>>,
+  id: string,
+  kind: string,
+): T {
+  const def = hasOwn(library, id) ? library[id] : undefined;
+  if (def === undefined) return fail(event, `unknown library ${kind} "${id}"`);
+  return def;
+}
+
+/** Refuses an edit that changes nothing (compared field by field as JSON). */
+function unchanged<T extends object>(event: DomainEvent, def: T, old: T): void {
+  const same = (Object.keys(def) as (keyof T)[]).every(
+    (k) => JSON.stringify(def[k]) === JSON.stringify(old[k]),
+  );
+  if (same) fail(event, 'nothing to change');
+}
+
 function clampToEffective(
   before: CampaignState,
   after: CampaignState,
@@ -317,6 +399,12 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       itemOrder: [],
       skillLibrary: {},
       skillLibraryOrder: [],
+      classLibrary: {},
+      classLibraryOrder: [],
+      raceLibrary: {},
+      raceLibraryOrder: [],
+      professionLibrary: {},
+      professionLibraryOrder: [],
       holdings: {},
       trades: {},
       tradeOrder: [],
@@ -511,17 +599,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       }
       return { ...state, items: { ...state.items, [itemId]: def } };
     }
-    case 'skillDef.defined': {
-      const { id, ...fields } = event.payload;
-      if (hasOwn(state.skillLibrary, id)) fail(event, `library skill "${id}" already exists`);
-      const def: SkillDef = { id, ...fields };
-      rule(event, () => validateSkillDef(state.rules, def, state.skillLibrary));
-      return {
-        ...state,
-        skillLibrary: { ...state.skillLibrary, [id]: def },
-        skillLibraryOrder: [...state.skillLibraryOrder, id],
-      };
-    }
+    case 'skillDef.defined':
+      return defineSkill(state, event, event.payload);
     case 'skillDef.edited': {
       const { skillDefId, ...changes } = event.payload;
       const old = hasOwn(state.skillLibrary, skillDefId)
@@ -543,6 +622,66 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       if (same) fail(event, 'nothing to change');
       rule(event, () => validateSkillDef(state.rules, def, state.skillLibrary));
       return { ...state, skillLibrary: { ...state.skillLibrary, [skillDefId]: def } };
+    }
+    case 'classDef.defined':
+      return defineClass(state, event, event.payload);
+    case 'classDef.edited': {
+      const { classDefId, ...changes } = event.payload;
+      const old = entryOf(event, state.classLibrary, classDefId, 'class');
+      const def: ClassDef = {
+        id: classDefId,
+        name: changes.name ?? old.name,
+        description: changes.description ?? old.description,
+        skills: changes.skills ?? old.skills,
+        weights: changes.weights ?? old.weights,
+      };
+      unchanged(event, def, old);
+      rule(event, () => validateClassDef(state.rules, def, state.classLibrary));
+      return { ...state, classLibrary: { ...state.classLibrary, [classDefId]: def } };
+    }
+    case 'raceDef.defined':
+      return defineRace(state, event, event.payload);
+    case 'raceDef.edited': {
+      const { raceDefId, ...changes } = event.payload;
+      const old = entryOf(event, state.raceLibrary, raceDefId, 'race');
+      const def: RaceDef = {
+        id: raceDefId,
+        name: changes.name ?? old.name,
+        description: changes.description ?? old.description,
+      };
+      unchanged(event, def, old);
+      rule(event, () => validateRaceDef(def, state.raceLibrary));
+      return { ...state, raceLibrary: { ...state.raceLibrary, [raceDefId]: def } };
+    }
+    case 'professionDef.defined':
+      return defineProfession(state, event, event.payload);
+    case 'professionDef.edited': {
+      const { professionDefId, ...changes } = event.payload;
+      const old = entryOf(event, state.professionLibrary, professionDefId, 'profession');
+      const def: ProfessionDef = {
+        id: professionDefId,
+        name: changes.name ?? old.name,
+        description: changes.description ?? old.description,
+        skills: changes.skills ?? old.skills,
+      };
+      unchanged(event, def, old);
+      rule(event, () => validateProfessionDef(state.rules, def, state.professionLibrary));
+      return {
+        ...state,
+        professionLibrary: { ...state.professionLibrary, [professionDefId]: def },
+      };
+    }
+    case 'library.seeded': {
+      const { skills, classes, races, professions } = event.payload;
+      if (skills.length + classes.length + races.length + professions.length === 0) {
+        fail(event, 'nothing to add');
+      }
+      let next = state;
+      for (const def of skills) next = defineSkill(next, event, def);
+      for (const def of classes) next = defineClass(next, event, def);
+      for (const def of races) next = defineRace(next, event, def);
+      for (const def of professions) next = defineProfession(next, event, def);
+      return next;
     }
     case 'holdings.adjusted': {
       const { characterId, currency, items } = event.payload;

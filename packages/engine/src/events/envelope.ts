@@ -46,6 +46,20 @@ const skillDefFields = {
   flavor: skillFlavor.trim(),
   effects: z.string().trim().max(4000),
 };
+/** Class, race and profession library fields (M4.2). */
+const librarySkillRef = z.strictObject({ name: nonBlank, rarity: recordId });
+const classDefFields = {
+  name: nonBlank,
+  description: skillDescription.trim(),
+  skills: z.array(librarySkillRef).max(20),
+  weights: statValues,
+};
+const raceDefFields = { name: nonBlank, description: skillDescription.trim() };
+const professionDefFields = {
+  name: nonBlank,
+  description: skillDescription.trim(),
+  skills: z.array(librarySkillRef).max(10),
+};
 const stabilityRules = z.record(
   z.string().min(1).max(60),
   z.number().finite().min(-1_000).max(1_000),
@@ -266,6 +280,41 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     flavor: skillDefFields.flavor.optional(),
     effects: skillDefFields.effects.optional(),
   }),
+  /** GM adds a starting class to the class library (M4.2; GM-only). */
+  'classDef.defined': z.strictObject({ id: recordId, ...classDefFields }),
+  /** GM edits a library class; omitted fields stay. Existing characters are untouched. */
+  'classDef.edited': z.strictObject({
+    classDefId: recordId,
+    name: classDefFields.name.optional(),
+    description: classDefFields.description.optional(),
+    skills: classDefFields.skills.optional(),
+    weights: classDefFields.weights.optional(),
+  }),
+  /** GM adds a race to the race library (M4.2; GM-only). */
+  'raceDef.defined': z.strictObject({ id: recordId, ...raceDefFields }),
+  'raceDef.edited': z.strictObject({
+    raceDefId: recordId,
+    name: raceDefFields.name.optional(),
+    description: raceDefFields.description.optional(),
+  }),
+  /** GM adds a profession to the profession library (M4.2; GM-only). */
+  'professionDef.defined': z.strictObject({ id: recordId, ...professionDefFields }),
+  'professionDef.edited': z.strictObject({
+    professionDefId: recordId,
+    name: professionDefFields.name.optional(),
+    description: professionDefFields.description.optional(),
+    skills: professionDefFields.skills.optional(),
+  }),
+  /**
+   * GM adds the default library set in one go (M4.2): the entries are stored
+   * in full, so changing the built-in defaults never changes a campaign.
+   */
+  'library.seeded': z.strictObject({
+    skills: z.array(z.strictObject({ id: recordId, ...skillDefFields })).max(200),
+    classes: z.array(z.strictObject({ id: recordId, ...classDefFields })).max(100),
+    races: z.array(z.strictObject({ id: recordId, ...raceDefFields })).max(100),
+    professions: z.array(z.strictObject({ id: recordId, ...professionDefFields })).max(100),
+  }),
   /** GM offers (or re-offers) the skill menu for a reached selection level (M1.10). */
   'selection.offered': z.strictObject({
     characterId: recordId,
@@ -460,6 +509,13 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'skill.merged': 1,
   'skillDef.defined': 1,
   'skillDef.edited': 1,
+  'classDef.defined': 1,
+  'classDef.edited': 1,
+  'raceDef.defined': 1,
+  'raceDef.edited': 1,
+  'professionDef.defined': 1,
+  'professionDef.edited': 1,
+  'library.seeded': 1,
   'selection.offered': 1,
   'selection.chosen': 1,
   'evolution.released': 1,

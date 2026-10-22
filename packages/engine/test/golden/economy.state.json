@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 13,
+  "schemaVersion": 14,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -680,5 +680,11 @@
   "montageOrder": [],
   "day": 1,
   "skillLibrary": {},
-  "skillLibraryOrder": []
+  "skillLibraryOrder": [],
+  "classLibrary": {},
+  "classLibraryOrder": [],
+  "raceLibrary": {},
+  "raceLibraryOrder": [],
+  "professionLibrary": {},
+  "professionLibraryOrder": []
 }

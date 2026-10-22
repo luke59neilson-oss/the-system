@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 13,
+  "schemaVersion": 14,
   "name": "Golden: quests",
   "rules": {
     "configVersion": 1,
@@ -498,5 +498,11 @@
   "montageOrder": [],
   "day": 3,
   "skillLibrary": {},
-  "skillLibraryOrder": []
+  "skillLibraryOrder": [],
+  "classLibrary": {},
+  "classLibraryOrder": [],
+  "raceLibrary": {},
+  "raceLibraryOrder": [],
+  "professionLibrary": {},
+  "professionLibraryOrder": []
 }

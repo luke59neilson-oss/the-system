@@ -21,5 +21,6 @@ export * from './evolution';
 export * from './resolution';
 export * from './quests';
 export * from './entities';
+export * from './library';
 export * from './report';
 export * from './history';

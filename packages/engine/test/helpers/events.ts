@@ -328,6 +328,83 @@ export function randomLibraryCommand(rand: () => number, c: Campaign): Command {
   };
 }
 
+/**
+ * M4.2 class, race and profession libraries: defines (clashing names, bad
+ * rarities and weights), edits and the default seed. Its own random stream.
+ */
+export function randomOriginLibraryCommand(rand: () => number, c: Campaign): Command {
+  const pick = <T>(items: readonly T[]): T => items[Math.floor(rand() * items.length)] as T;
+  const state = c.state;
+  const roll = rand();
+  if (roll < 0.05) return { type: 'library.seedDefaults' };
+  const skills = () =>
+    pick([
+      [
+        { name: 'Cut', rarity: 'inferior' },
+        { name: 'Parry', rarity: 'common' },
+        { name: 'Shout', rarity: 'common' },
+      ],
+      [
+        { name: 'Cut', rarity: 'inferior' },
+        { name: 'cut', rarity: 'common' },
+        { name: 'Shout', rarity: 'common' },
+      ],
+      [{ name: 'Cut', rarity: 'epic' }],
+      [{ name: 'Brew', rarity: 'divine' }],
+    ]);
+  const weights = () =>
+    pick([{ strength: 3, agility: 1 }, { strength: 0 }, { luck: 2 }, { perception: 2 }]);
+  const name = () => pick(['Warrior', 'warrior ', 'Mage', 'Human', 'Elf', ' ']);
+  const kind = pick(['class', 'race', 'profession'] as const);
+  const order =
+    kind === 'class'
+      ? (state?.classLibraryOrder ?? [])
+      : kind === 'race'
+        ? (state?.raceLibraryOrder ?? [])
+        : (state?.professionLibraryOrder ?? []);
+  const id = rand() < 0.8 ? `${kind}${Math.floor(rand() * 4)}` : undefined;
+  if (order.length === 0 || roll < 0.5) {
+    if (kind === 'class') {
+      return { type: 'classDef.define', id, name: name(), skills: skills(), weights: weights() };
+    }
+    if (kind === 'race') {
+      return { type: 'raceDef.define', id, name: name(), description: pick(['Folk.', undefined]) };
+    }
+    return {
+      type: 'professionDef.define',
+      id,
+      name: name(),
+      skills: rand() < 0.5 ? skills() : undefined,
+    };
+  }
+  const target = rand() < 0.9 ? pick(order) : 'no-def';
+  if (kind === 'class') {
+    return {
+      type: 'classDef.edit',
+      classDefId: target,
+      name: rand() < 0.3 ? name() : undefined,
+      description: rand() < 0.5 ? pick(['Edited.', '']) : undefined,
+      skills: rand() < 0.3 ? skills() : undefined,
+      weights: rand() < 0.3 ? weights() : undefined,
+    };
+  }
+  if (kind === 'race') {
+    return {
+      type: 'raceDef.edit',
+      raceDefId: target,
+      name: rand() < 0.4 ? name() : undefined,
+      description: rand() < 0.6 ? pick(['Edited.', '']) : undefined,
+    };
+  }
+  return {
+    type: 'professionDef.edit',
+    professionDefId: target,
+    name: rand() < 0.4 ? name() : undefined,
+    description: rand() < 0.5 ? pick(['Edited.', '']) : undefined,
+    skills: rand() < 0.3 ? skills() : undefined,
+  };
+}
+
 function randomSkillCommand(
   rand: () => number,
   c: Campaign,

@@ -191,3 +191,14 @@ answer under any question and the next run will follow it.
     character's copy that has not been individually edited; show effects to
     the skill's owner.
     Answer:
+
+38. **Default classes, races and professions.** New campaigns start with six
+    starting classes (Archer, Warrior, Mage, Healer, Rogue, Brawler), the
+    Human race and five professions (Alchemist, Cook, Blacksmith, Tailor,
+    Scribe), each with short GM-facing descriptions; a race is a name and
+    description only (no race stat lean or extra race skill), and players do
+    not see class, race or profession descriptions yet. Default: as
+    described (D91). Alternatives: a different starting set; races with
+    their own stat weights or skills; show the descriptions to players on
+    the status screen or the evolution profession picker.
+    Answer:

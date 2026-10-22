@@ -57,6 +57,8 @@ test('the GM builds the skill library; granted skills take its text', async ({ b
   const gmErrors = watchErrors(gm);
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Library Test');
+  // An empty skill library (M4.2 would otherwise add the default set).
+  await gm.getByLabel(/Start with the default classes/).uncheck();
   await gm.getByRole('button', { name: 'Create campaign' }).click();
 
   const library = gm.locator('section[aria-labelledby="skill-library"]');

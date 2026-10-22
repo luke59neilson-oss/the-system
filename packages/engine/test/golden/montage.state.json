@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 13,
+  "schemaVersion": 14,
   "name": "Golden: montage",
   "rules": {
     "configVersion": 1,
@@ -625,5 +625,11 @@
   "montageOrder": ["m1", "m2"],
   "day": 1,
   "skillLibrary": {},
-  "skillLibraryOrder": []
+  "skillLibraryOrder": [],
+  "classLibrary": {},
+  "classLibraryOrder": [],
+  "raceLibrary": {},
+  "raceLibraryOrder": [],
+  "professionLibrary": {},
+  "professionLibraryOrder": []
 }

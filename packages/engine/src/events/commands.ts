@@ -9,6 +9,7 @@ import {
 } from './envelope';
 import { CharacterRuleError } from '../character';
 import { normalizeTags } from '../skills/library';
+import { DEFAULT_LIBRARY } from '../content/defaults';
 import { largestRemainderSplit } from '../progression';
 import { appendEvent, type Campaign } from './log';
 
@@ -315,6 +316,51 @@ export type Command =
       effects?: string | undefined;
     }
   | {
+      type: 'classDef.define';
+      /** Optional; a fresh id is generated when omitted. */
+      id?: string | undefined;
+      name: string;
+      description?: string | undefined;
+      skills: readonly { name: string; rarity: string }[];
+      weights: Readonly<Record<string, number>>;
+    }
+  | {
+      type: 'classDef.edit';
+      classDefId: string;
+      name?: string | undefined;
+      description?: string | undefined;
+      skills?: readonly { name: string; rarity: string }[] | undefined;
+      weights?: Readonly<Record<string, number>> | undefined;
+    }
+  | {
+      type: 'raceDef.define';
+      id?: string | undefined;
+      name: string;
+      description?: string | undefined;
+    }
+  | {
+      type: 'raceDef.edit';
+      raceDefId: string;
+      name?: string | undefined;
+      description?: string | undefined;
+    }
+  | {
+      type: 'professionDef.define';
+      id?: string | undefined;
+      name: string;
+      description?: string | undefined;
+      skills?: readonly { name: string; rarity: string }[] | undefined;
+    }
+  | {
+      type: 'professionDef.edit';
+      professionDefId: string;
+      name?: string | undefined;
+      description?: string | undefined;
+      skills?: readonly { name: string; rarity: string }[] | undefined;
+    }
+  /** Adds every default library entry whose name the campaign's libraries lack (M4.2). */
+  | { type: 'library.seedDefaults' }
+  | {
       type: 'entity.define';
       /** Optional; a fresh id is generated when omitted. */
       entityId?: string | undefined;
@@ -427,6 +473,21 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('stability.nudge') }),
   z.object({ type: z.literal('skillDef.define'), tags: z.array(z.string()).optional() }),
   z.object({ type: z.literal('skillDef.edit'), tags: z.array(z.string()).optional() }),
+  z.object({
+    type: z.literal('classDef.define'),
+    skills: z.array(z.unknown()),
+    weights: anyRecord,
+  }),
+  z.object({
+    type: z.literal('classDef.edit'),
+    skills: z.array(z.unknown()).optional(),
+    weights: anyRecord.optional(),
+  }),
+  z.object({ type: z.literal('raceDef.define') }),
+  z.object({ type: z.literal('raceDef.edit') }),
+  z.object({ type: z.literal('professionDef.define'), skills: z.array(z.unknown()).optional() }),
+  z.object({ type: z.literal('professionDef.edit'), skills: z.array(z.unknown()).optional() }),
+  z.object({ type: z.literal('library.seedDefaults') }),
   z.object({ type: z.literal('entity.define'), tiers: z.array(z.unknown()) }),
   z.object({ type: z.literal('entity.edit') }),
   z.object({
@@ -520,6 +581,31 @@ function pendingOf(campaign: Campaign, characterId: string) {
   return characters && Object.prototype.hasOwnProperty.call(characters, characterId)
     ? characters[characterId]
     : undefined;
+}
+
+/** The default library entries the campaign lacks (by name, ignoring case), with fresh ids. */
+function defaultSeed(campaign: Campaign, ctx: CommandContext) {
+  const state = campaign.state;
+  if (!state) throw new EventRejectedError('Create a campaign first');
+  const missing = <T extends { name: string }>(
+    defaults: readonly T[],
+    library: Readonly<Record<string, { name: string }>>,
+  ) => {
+    const have = new Set(Object.values(library).map((d) => d.name.trim().toLowerCase()));
+    return defaults
+      .filter((d) => !have.has(d.name.trim().toLowerCase()))
+      .map((d) => ({ id: ctx.newId(), ...d }));
+  };
+  const seed = {
+    skills: missing(DEFAULT_LIBRARY.skills, state.skillLibrary),
+    classes: missing(DEFAULT_LIBRARY.classes, state.classLibrary),
+    races: missing(DEFAULT_LIBRARY.races, state.raceLibrary),
+    professions: missing(DEFAULT_LIBRARY.professions, state.professionLibrary),
+  };
+  if (Object.values(seed).every((list) => list.length === 0)) {
+    throw new EventRejectedError('The libraries already hold every default entry');
+  }
+  return seed;
 }
 
 export type CommandResult =
@@ -915,6 +1001,57 @@ function toEvent(
         },
       };
     }
+    case 'classDef.define':
+      return {
+        type: 'classDef.defined',
+        payload: {
+          id: command.id ?? ctx.newId(),
+          name: command.name,
+          description: command.description ?? '',
+          skills: command.skills,
+          weights: command.weights,
+        },
+      };
+    case 'classDef.edit': {
+      const { classDefId, name, description, skills, weights } = command;
+      // Undefined fields vanish in the event's JSON round trip (= unchanged).
+      return {
+        type: 'classDef.edited',
+        payload: { classDefId, name, description, skills, weights },
+      };
+    }
+    case 'raceDef.define':
+      return {
+        type: 'raceDef.defined',
+        payload: {
+          id: command.id ?? ctx.newId(),
+          name: command.name,
+          description: command.description ?? '',
+        },
+      };
+    case 'raceDef.edit': {
+      const { raceDefId, name, description } = command;
+      return { type: 'raceDef.edited', payload: { raceDefId, name, description } };
+    }
+    case 'professionDef.define':
+      return {
+        type: 'professionDef.defined',
+        payload: {
+          id: command.id ?? ctx.newId(),
+          name: command.name,
+          description: command.description ?? '',
+          skills: command.skills ?? [],
+        },
+      };
+    case 'professionDef.edit': {
+      const { professionDefId, name, description, skills } = command;
+      return {
+        type: 'professionDef.edited',
+        payload: { professionDefId, name, description, skills },
+      };
+    }
+    case 'library.seedDefaults':
+      return { type: 'library.seeded', payload: defaultSeed(campaign, ctx) };
     case 'entity.define':
       return {
         type: 'entity.defined',

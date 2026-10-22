@@ -81,6 +81,13 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   // M4.1: the library may hold skills nobody has; granted skills carry their own text.
   skillLibrary: 'gm',
   skillLibraryOrder: 'gm',
+  // M4.2: class, race and profession libraries are the GM's catalogue.
+  classLibrary: 'gm',
+  classLibraryOrder: 'gm',
+  raceLibrary: 'gm',
+  raceLibraryOrder: 'gm',
+  professionLibrary: 'gm',
+  professionLibraryOrder: 'gm',
   itemOrder: 'gm',
   holdings: 'owner',
   trades: 'owner',

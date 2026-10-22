@@ -525,6 +525,10 @@ export function buildDemoEvents(ctx: DemoContext): DomainEvent[] {
     );
   }
 
+  // The default class, race, profession and skill libraries (M4.2), so the GM
+  // console has entries to browse; added last, so no demo character's text changes.
+  run({ type: 'library.seedDefaults' });
+
   for (const text of DEMO_BROADCASTS) {
     run({ type: 'system.broadcast', text, characterIds: null });
   }

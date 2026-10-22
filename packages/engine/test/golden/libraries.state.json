@@ -1,0 +1,892 @@
+{
+  "schemaVersion": 14,
+  "name": "Libraries",
+  "rules": {
+    "configVersion": 1,
+    "campaign": {
+      "levelCap": 240,
+      "typicalLevelsPerSession": 6,
+      "typicalLevelsPerSessionRange": [4, 8],
+      "plannedSessions": 40
+    },
+    "stats": {
+      "list": [
+        {
+          "id": "strength",
+          "name": "Strength"
+        },
+        {
+          "id": "agility",
+          "name": "Agility"
+        },
+        {
+          "id": "endurance",
+          "name": "Endurance"
+        },
+        {
+          "id": "vitality",
+          "name": "Vitality"
+        },
+        {
+          "id": "toughness",
+          "name": "Toughness"
+        },
+        {
+          "id": "wisdom",
+          "name": "Wisdom"
+        },
+        {
+          "id": "intelligence",
+          "name": "Intelligence"
+        },
+        {
+          "id": "perception",
+          "name": "Perception"
+        },
+        {
+          "id": "willpower",
+          "name": "Willpower"
+        }
+      ],
+      "startingValue": 10,
+      "displayDivisor": 10,
+      "displayDecimals": 1
+    },
+    "pools": [
+      {
+        "id": "hp",
+        "name": "Health Points (HP)",
+        "stat": "vitality",
+        "multiplier": 10
+      },
+      {
+        "id": "mp",
+        "name": "Mana Points (MP)",
+        "stat": "wisdom",
+        "multiplier": 10
+      },
+      {
+        "id": "stamina",
+        "name": "Stamina",
+        "stat": "endurance",
+        "multiplier": 10
+      }
+    ],
+    "grades": [
+      {
+        "id": "G",
+        "topLevel": 4,
+        "selectionInterval": null,
+        "rarityCeiling": "rare",
+        "classSpreadPerLevel": 4,
+        "freePointsPerRaceLevel": 2,
+        "xpPerLevel": 100,
+        "gradeGapMultiplier": 1,
+        "theme": "aluminum"
+      },
+      {
+        "id": "F",
+        "topLevel": 14,
+        "selectionInterval": 5,
+        "rarityCeiling": "rare",
+        "classSpreadPerLevel": 5,
+        "freePointsPerRaceLevel": 3,
+        "xpPerLevel": 150,
+        "gradeGapMultiplier": 3,
+        "theme": "bronze"
+      },
+      {
+        "id": "E",
+        "topLevel": 49,
+        "selectionInterval": 5,
+        "rarityCeiling": "epic",
+        "classSpreadPerLevel": 8,
+        "freePointsPerRaceLevel": 4,
+        "xpPerLevel": 250,
+        "gradeGapMultiplier": 5,
+        "theme": "copper"
+      },
+      {
+        "id": "D",
+        "topLevel": 99,
+        "selectionInterval": 10,
+        "rarityCeiling": "ancient",
+        "classSpreadPerLevel": 12,
+        "freePointsPerRaceLevel": 6,
+        "xpPerLevel": 400,
+        "gradeGapMultiplier": 10,
+        "theme": "silver"
+      },
+      {
+        "id": "C",
+        "topLevel": 149,
+        "selectionInterval": 10,
+        "rarityCeiling": "legendary",
+        "classSpreadPerLevel": 18,
+        "freePointsPerRaceLevel": 9,
+        "xpPerLevel": 650,
+        "gradeGapMultiplier": 20,
+        "theme": "gold"
+      },
+      {
+        "id": "B",
+        "topLevel": 199,
+        "selectionInterval": 10,
+        "rarityCeiling": "legendary",
+        "classSpreadPerLevel": 27,
+        "freePointsPerRaceLevel": 13,
+        "xpPerLevel": 1000,
+        "gradeGapMultiplier": 40,
+        "theme": "platinum"
+      },
+      {
+        "id": "A",
+        "topLevel": 240,
+        "selectionInterval": 10,
+        "rarityCeiling": "mythical",
+        "classSpreadPerLevel": 40,
+        "freePointsPerRaceLevel": 20,
+        "xpPerLevel": 1500,
+        "gradeGapMultiplier": 80,
+        "theme": "diamond"
+      }
+    ],
+    "character": {
+      "defaultRace": "Human"
+    },
+    "tracks": {
+      "professionUnlockGrade": "E",
+      "evolutionGate": "race",
+      "raceLevelRounding": "floor"
+    },
+    "xp": {
+      "aboveLevelBonusPerLevel": 0.1,
+      "aboveLevelBonusCap": 1,
+      "defaultSplit": "even"
+    },
+    "bonuses": {
+      "percentCapPerStat": 0.25
+    },
+    "skills": {
+      "rarities": [
+        {
+          "id": "inferior",
+          "name": "Inferior",
+          "reserved": false
+        },
+        {
+          "id": "common",
+          "name": "Common",
+          "reserved": false
+        },
+        {
+          "id": "uncommon",
+          "name": "Uncommon",
+          "reserved": false
+        },
+        {
+          "id": "rare",
+          "name": "Rare",
+          "reserved": false
+        },
+        {
+          "id": "epic",
+          "name": "Epic",
+          "reserved": false
+        },
+        {
+          "id": "ancient",
+          "name": "Ancient",
+          "reserved": false
+        },
+        {
+          "id": "legendary",
+          "name": "Legendary",
+          "reserved": false
+        },
+        {
+          "id": "mythical",
+          "name": "Mythical",
+          "reserved": false
+        },
+        {
+          "id": "divine",
+          "name": "Divine",
+          "reserved": true
+        }
+      ],
+      "startingClassSkillCount": 3,
+      "startingRaceSkill": {
+        "name": "Identify",
+        "rarity": "common"
+      },
+      "menuSize": {
+        "min": 3,
+        "max": 4
+      },
+      "evolutionTransforms": {
+        "min": 1,
+        "max": 2
+      },
+      "markUpgrades": {
+        "inferior": 3,
+        "common": 4,
+        "uncommon": 6,
+        "rare": 8,
+        "epic": 10,
+        "ancient": 12,
+        "legendary": 15
+      },
+      "maxMarksPerSkillPerSession": 1,
+      "merge": {
+        "requiredJointUses": 3,
+        "minRarity": "uncommon",
+        "maxPerCharacterPerGrade": 1,
+        "rarityStepsAboveHigher": 1
+      }
+    },
+    "practice": {
+      "selectionAlertWithinLevels": 5
+    },
+    "resolution": {
+      "gradeGapMode": "none",
+      "lowerGradeFraction": 0.3333333333333333
+    },
+    "montage": {
+      "minClockFill": 0.5,
+      "requireNoFailures": true
+    },
+    "stability": {
+      "min": 0,
+      "max": 100,
+      "initial": 100,
+      "visibleToPlayersByDefault": false
+    },
+    "hunger": {
+      "enabledByDefault": false,
+      "fadesAtGrade": "E"
+    },
+    "economy": {
+      "currencyName": "Credits",
+      "equipmentSlots": [
+        {
+          "id": "ring",
+          "name": "Ring",
+          "count": 2,
+          "kind": "jewelry"
+        },
+        {
+          "id": "necklace",
+          "name": "Necklace",
+          "count": 1,
+          "kind": "jewelry"
+        },
+        {
+          "id": "chest",
+          "name": "Chest",
+          "count": 1,
+          "kind": "armor"
+        },
+        {
+          "id": "legs",
+          "name": "Legs",
+          "count": 1,
+          "kind": "armor"
+        },
+        {
+          "id": "boots",
+          "name": "Boots",
+          "count": 1,
+          "kind": "armor"
+        },
+        {
+          "id": "bracers",
+          "name": "Bracers",
+          "count": 1,
+          "kind": "armor"
+        },
+        {
+          "id": "mask",
+          "name": "Mask",
+          "count": 1,
+          "kind": "armor"
+        },
+        {
+          "id": "cloak",
+          "name": "Cloak",
+          "count": 1,
+          "kind": "armor"
+        },
+        {
+          "id": "gloves",
+          "name": "Gloves",
+          "count": 1,
+          "kind": "armor"
+        },
+        {
+          "id": "mainHand",
+          "name": "Main hand",
+          "count": 1,
+          "kind": "weapon"
+        },
+        {
+          "id": "offHand",
+          "name": "Off hand",
+          "count": 1,
+          "kind": "weapon"
+        }
+      ]
+    },
+    "logging": {
+      "autosaveMinutes": 5
+    }
+  },
+  "characters": {
+    "c1": {
+      "schemaVersion": 5,
+      "id": "c1",
+      "name": "Jake",
+      "race": "Human",
+      "className": "Archer",
+      "profession": null,
+      "classLevel": 0,
+      "professionLevel": 0,
+      "grade": "G",
+      "xp": {
+        "class": 0,
+        "profession": 0
+      },
+      "classWeights": {
+        "strength": 1,
+        "agility": 1,
+        "endurance": 1,
+        "vitality": 1,
+        "toughness": 1,
+        "wisdom": 1,
+        "intelligence": 1,
+        "perception": 1,
+        "willpower": 1
+      },
+      "classSpreadTotals": {
+        "strength": 0,
+        "agility": 0,
+        "endurance": 0,
+        "vitality": 0,
+        "toughness": 0,
+        "wisdom": 0,
+        "intelligence": 0,
+        "perception": 0,
+        "willpower": 0
+      },
+      "stats": {
+        "strength": 10,
+        "agility": 10,
+        "endurance": 10,
+        "vitality": 10,
+        "toughness": 10,
+        "wisdom": 10,
+        "intelligence": 10,
+        "perception": 10,
+        "willpower": 10
+      },
+      "pools": {
+        "hp": 100,
+        "mp": 100,
+        "stamina": 100
+      },
+      "freePointBatches": [],
+      "titles": [],
+      "skills": [
+        {
+          "name": "Basic Archery",
+          "rarity": "inferior",
+          "kind": "class",
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": [],
+          "description": "Grants a basic understanding of the bow. Slightly improves draw strength, aim and the speed of nocking an arrow.",
+          "flavor": "Every hunter starts with a string and a stick."
+        },
+        {
+          "name": "Basic Stealth",
+          "rarity": "inferior",
+          "kind": "class",
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": [],
+          "description": "Move with less sound and draw less attention while unseen. Slightly harder to notice while standing still.",
+          "flavor": "The prey that never hears you never runs."
+        },
+        {
+          "name": "Archer’s Eye",
+          "rarity": "common",
+          "kind": "class",
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": [],
+          "description": "Sharpens sight at range. Distant targets are easier to track, and the path of a shot is easier to judge.",
+          "flavor": "See it first. Hit it first."
+        },
+        {
+          "name": "Identify",
+          "rarity": "common",
+          "kind": "race",
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": [],
+          "description": null,
+          "flavor": null
+        }
+      ],
+      "merges": {},
+      "selections": [],
+      "evolution": null
+    }
+  },
+  "characterOrder": ["c1"],
+  "broadcasts": [],
+  "items": {},
+  "itemOrder": [],
+  "skillLibrary": {
+    "lb8": {
+      "id": "lb8",
+      "name": "Basic Archery",
+      "rarity": "inferior",
+      "tags": ["Archer"],
+      "description": "Grants a basic understanding of the bow. Slightly improves draw strength, aim and the speed of nocking an arrow.",
+      "flavor": "Every hunter starts with a string and a stick.",
+      "effects": ""
+    },
+    "lb9": {
+      "id": "lb9",
+      "name": "Basic Stealth",
+      "rarity": "inferior",
+      "tags": ["Archer"],
+      "description": "Move with less sound and draw less attention while unseen. Slightly harder to notice while standing still.",
+      "flavor": "The prey that never hears you never runs.",
+      "effects": ""
+    },
+    "lb10": {
+      "id": "lb10",
+      "name": "Archer’s Eye",
+      "rarity": "common",
+      "tags": ["Archer"],
+      "description": "Sharpens sight at range. Distant targets are easier to track, and the path of a shot is easier to judge.",
+      "flavor": "See it first. Hit it first.",
+      "effects": ""
+    },
+    "lb11": {
+      "id": "lb11",
+      "name": "Basic One-Handed Weapons",
+      "rarity": "inferior",
+      "tags": ["Warrior", "Melee"],
+      "description": "Grants a basic understanding of swords, axes and maces held in one hand. Slightly improves balance, edge alignment and recovery after a swing.",
+      "flavor": "Point the sharp end at the problem.",
+      "effects": ""
+    },
+    "lb12": {
+      "id": "lb12",
+      "name": "Basic Shield Defense",
+      "rarity": "inferior",
+      "tags": ["Warrior", "Defense"],
+      "description": "Read incoming blows and meet them with a shield. Slightly reduces the force that gets through.",
+      "flavor": "A wall that walks.",
+      "effects": ""
+    },
+    "lb13": {
+      "id": "lb13",
+      "name": "Battle Cry",
+      "rarity": "common",
+      "tags": ["Warrior", "Stamina"],
+      "description": "Let out a roar that steadies allies who hear it and rattles weaker foes. Costs Stamina.",
+      "flavor": "Loud is a tactic.",
+      "effects": ""
+    },
+    "lb14": {
+      "id": "lb14",
+      "name": "Basic Mana Manipulation",
+      "rarity": "inferior",
+      "tags": ["Mage", "Healer", "Mana"],
+      "description": "Feel the mana inside you and move it where you want it. The foundation of every spell.",
+      "flavor": "First you learn it is there. Then you learn it listens.",
+      "effects": ""
+    },
+    "lb15": {
+      "id": "lb15",
+      "name": "Mana Bolt",
+      "rarity": "common",
+      "tags": ["Mage", "Mana", "Ranged"],
+      "description": "Shape mana into a bolt and throw it. Costs Mana; harder hits cost more.",
+      "flavor": "Raw, blunt, and very much yours.",
+      "effects": ""
+    },
+    "lb16": {
+      "id": "lb16",
+      "name": "Basic Meditation",
+      "rarity": "inferior",
+      "tags": ["Mage", "Mana"],
+      "description": "Sit still and breathe to recover Mana faster while out of danger.",
+      "flavor": "The quiet is a well.",
+      "effects": ""
+    },
+    "lb17": {
+      "id": "lb17",
+      "name": "Minor Heal",
+      "rarity": "common",
+      "tags": ["Healer", "Mana"],
+      "description": "Push mana into a wound to close it. Costs Mana; works best on fresh injuries.",
+      "flavor": "Hold still. This will only sting a little.",
+      "effects": ""
+    },
+    "lb18": {
+      "id": "lb18",
+      "name": "Soothing Presence",
+      "rarity": "inferior",
+      "tags": ["Healer", "Support"],
+      "description": "Those near you calm a little faster: panic fades and breathing slows.",
+      "flavor": "Somebody has to keep their head.",
+      "effects": ""
+    },
+    "lb19": {
+      "id": "lb19",
+      "name": "Basic Daggers",
+      "rarity": "inferior",
+      "tags": ["Rogue", "Melee"],
+      "description": "Grants a basic understanding of short blades. Slightly improves grip, quick strikes and throws.",
+      "flavor": "Small blade, short story.",
+      "effects": ""
+    },
+    "lb20": {
+      "id": "lb20",
+      "name": "Find Weakness",
+      "rarity": "common",
+      "tags": ["Rogue", "Perception"],
+      "description": "Study a target for a moment to spot a gap in its guard or armour.",
+      "flavor": "Everything has a soft spot. Everything.",
+      "effects": ""
+    },
+    "lb21": {
+      "id": "lb21",
+      "name": "Basic Unarmed Combat",
+      "rarity": "inferior",
+      "tags": ["Brawler", "Melee"],
+      "description": "Grants a basic understanding of fists, knees and elbows. Slightly improves footwork and how hard a punch lands.",
+      "flavor": "Never unarmed.",
+      "effects": ""
+    },
+    "lb22": {
+      "id": "lb22",
+      "name": "Iron Skin",
+      "rarity": "common",
+      "tags": ["Brawler", "Defense", "Stamina"],
+      "description": "Tense your body to shrug off a blow. Costs Stamina while held.",
+      "flavor": "Bruises are just opinions.",
+      "effects": ""
+    },
+    "lb23": {
+      "id": "lb23",
+      "name": "Second Wind",
+      "rarity": "inferior",
+      "tags": ["Brawler", "Stamina"],
+      "description": "Once a fight, catch your breath and recover some Stamina.",
+      "flavor": "Not yet.",
+      "effects": ""
+    }
+  },
+  "skillLibraryOrder": [
+    "lb8",
+    "lb9",
+    "lb10",
+    "lb11",
+    "lb12",
+    "lb13",
+    "lb14",
+    "lb15",
+    "lb16",
+    "lb17",
+    "lb18",
+    "lb19",
+    "lb20",
+    "lb21",
+    "lb22",
+    "lb23"
+  ],
+  "classLibrary": {
+    "warrior": {
+      "id": "warrior",
+      "name": "Warrior",
+      "description": "Holds the line.",
+      "skills": [
+        {
+          "name": "Cut",
+          "rarity": "inferior"
+        },
+        {
+          "name": "Parry",
+          "rarity": "common"
+        },
+        {
+          "name": "Shout",
+          "rarity": "common"
+        }
+      ],
+      "weights": {
+        "strength": 3,
+        "toughness": 2,
+        "vitality": 1
+      }
+    },
+    "lb24": {
+      "id": "lb24",
+      "name": "Archer",
+      "description": "Strikes from range; sharp eyes and quick feet.",
+      "skills": [
+        {
+          "name": "Basic Archery",
+          "rarity": "inferior"
+        },
+        {
+          "name": "Basic Stealth",
+          "rarity": "inferior"
+        },
+        {
+          "name": "Archer’s Eye",
+          "rarity": "common"
+        }
+      ],
+      "weights": {
+        "strength": 2,
+        "agility": 3,
+        "endurance": 1,
+        "vitality": 1,
+        "toughness": 1,
+        "wisdom": 1,
+        "intelligence": 1,
+        "perception": 3,
+        "willpower": 1
+      }
+    },
+    "lb25": {
+      "id": "lb25",
+      "name": "Mage",
+      "description": "Shapes raw mana into attacks; fragile but dangerous at range.",
+      "skills": [
+        {
+          "name": "Basic Mana Manipulation",
+          "rarity": "inferior"
+        },
+        {
+          "name": "Mana Bolt",
+          "rarity": "common"
+        },
+        {
+          "name": "Basic Meditation",
+          "rarity": "inferior"
+        }
+      ],
+      "weights": {
+        "strength": 1,
+        "agility": 1,
+        "endurance": 1,
+        "vitality": 1,
+        "toughness": 1,
+        "wisdom": 3,
+        "intelligence": 3,
+        "perception": 1,
+        "willpower": 2
+      }
+    },
+    "lb26": {
+      "id": "lb26",
+      "name": "Healer",
+      "description": "Keeps the party standing; mends wounds and steadies nerves.",
+      "skills": [
+        {
+          "name": "Minor Heal",
+          "rarity": "common"
+        },
+        {
+          "name": "Basic Mana Manipulation",
+          "rarity": "inferior"
+        },
+        {
+          "name": "Soothing Presence",
+          "rarity": "inferior"
+        }
+      ],
+      "weights": {
+        "strength": 1,
+        "agility": 1,
+        "endurance": 1,
+        "vitality": 2,
+        "toughness": 1,
+        "wisdom": 3,
+        "intelligence": 2,
+        "perception": 1,
+        "willpower": 2
+      }
+    },
+    "lb27": {
+      "id": "lb27",
+      "name": "Rogue",
+      "description": "Quick, quiet and precise; strikes where it hurts most.",
+      "skills": [
+        {
+          "name": "Basic Daggers",
+          "rarity": "inferior"
+        },
+        {
+          "name": "Basic Stealth",
+          "rarity": "inferior"
+        },
+        {
+          "name": "Find Weakness",
+          "rarity": "common"
+        }
+      ],
+      "weights": {
+        "strength": 2,
+        "agility": 3,
+        "endurance": 1,
+        "vitality": 1,
+        "toughness": 1,
+        "wisdom": 1,
+        "intelligence": 1,
+        "perception": 2,
+        "willpower": 1
+      }
+    },
+    "lb28": {
+      "id": "lb28",
+      "name": "Brawler",
+      "description": "Fights with fists and grit; tough to put down.",
+      "skills": [
+        {
+          "name": "Basic Unarmed Combat",
+          "rarity": "inferior"
+        },
+        {
+          "name": "Iron Skin",
+          "rarity": "common"
+        },
+        {
+          "name": "Second Wind",
+          "rarity": "inferior"
+        }
+      ],
+      "weights": {
+        "strength": 3,
+        "agility": 2,
+        "endurance": 2,
+        "vitality": 2,
+        "toughness": 2,
+        "wisdom": 1,
+        "intelligence": 1,
+        "perception": 1,
+        "willpower": 1
+      }
+    }
+  },
+  "classLibraryOrder": ["warrior", "lb24", "lb25", "lb26", "lb27", "lb28"],
+  "raceLibrary": {
+    "human": {
+      "id": "human",
+      "name": "Human",
+      "description": "Earth’s own, newly integrated."
+    }
+  },
+  "raceLibraryOrder": ["human"],
+  "professionLibrary": {
+    "cook": {
+      "id": "cook",
+      "name": "Cook",
+      "description": "Feeds the party.",
+      "skills": [
+        {
+          "name": "Basic Cooking",
+          "rarity": "common"
+        }
+      ]
+    },
+    "lb29": {
+      "id": "lb29",
+      "name": "Alchemist",
+      "description": "Brews potions, poisons and reagents from what the world offers.",
+      "skills": [
+        {
+          "name": "Basic Brewing",
+          "rarity": "common"
+        },
+        {
+          "name": "Herbalism",
+          "rarity": "uncommon"
+        }
+      ]
+    },
+    "lb30": {
+      "id": "lb30",
+      "name": "Blacksmith",
+      "description": "Forges and repairs weapons and armour.",
+      "skills": [
+        {
+          "name": "Basic Smithing",
+          "rarity": "common"
+        },
+        {
+          "name": "Appraise Metal",
+          "rarity": "uncommon"
+        }
+      ]
+    },
+    "lb31": {
+      "id": "lb31",
+      "name": "Tailor",
+      "description": "Works hide, cloth and silk into gear and cloaks.",
+      "skills": [
+        {
+          "name": "Basic Sewing",
+          "rarity": "common"
+        },
+        {
+          "name": "Hide Working",
+          "rarity": "uncommon"
+        }
+      ]
+    },
+    "lb32": {
+      "id": "lb32",
+      "name": "Scribe",
+      "description": "Records knowledge and inscribes runes and scrolls.",
+      "skills": [
+        {
+          "name": "Basic Inscription",
+          "rarity": "common"
+        },
+        {
+          "name": "Copy Rune",
+          "rarity": "uncommon"
+        }
+      ]
+    }
+  },
+  "professionLibraryOrder": ["cook", "lb29", "lb30", "lb31", "lb32"],
+  "holdings": {},
+  "trades": {},
+  "tradeOrder": [],
+  "practice": [],
+  "notes": {},
+  "noteOrder": [],
+  "clocks": {},
+  "clockOrder": [],
+  "quests": {},
+  "questOrder": [],
+  "entities": {},
+  "entityOrder": [],
+  "montages": {},
+  "montageOrder": [],
+  "day": 1
+}

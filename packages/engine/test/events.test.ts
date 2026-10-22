@@ -852,6 +852,15 @@ describe('property: replay equals incremental state', () => {
       'selection.chosen',
       'evolution.released',
       'evolution.chosen',
+      // M4.2 libraries have their own property test (libraries.test.ts), so
+      // this stream (and the coverage it proves) stays as it was.
+      'classDef.defined',
+      'classDef.edited',
+      'raceDef.defined',
+      'raceDef.edited',
+      'professionDef.defined',
+      'professionDef.edited',
+      'library.seeded',
     ]);
     const seen = new Set(c.events.map((e) => e.type));
     expect(

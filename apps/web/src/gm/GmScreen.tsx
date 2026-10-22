@@ -13,6 +13,8 @@ import { CampaignSwitch } from './CampaignSwitch';
 import { feedRows } from './feed';
 import { JoinPanel } from './JoinPanel';
 import { SkillLibrary } from './SkillLibrary';
+import { OriginLibrary } from './OriginLibrary';
+import { entriesOf } from './originLibraryModel';
 import { resolvePerspective, type PartyMember, type Perspective } from './perspective';
 import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
 
@@ -123,11 +125,12 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
             <div className="gm-grid">
               <Party state={state} />
               <JoinPanel gmKey={gmKey} />
-              <CreateCharacter client={client} />
+              <CreateCharacter client={client} state={state} />
               <AwardXp client={client} state={state} />
               <Broadcast client={client} state={state} />
               <SkillText client={client} state={state} />
               <SkillLibrary client={client} state={state} />
+              <OriginLibrary client={client} state={state} />
               <Feed live={live} state={state} />
             </div>
           </div>
@@ -176,17 +179,25 @@ function Outcome({ result, okText }: { result: CommandResult | null; okText: str
 
 function CreateCampaign({ client }: { client: LiveClient }) {
   const [name, setName] = useState('');
+  const [defaults, setDefaults] = useState(true);
   const { busy, result, run } = useCommand(client);
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    void run({ type: 'campaign.create', name, rules: DEFAULT_RULES });
+    const r = await run({ type: 'campaign.create', name, rules: DEFAULT_RULES });
+    // The default class, race, profession and skill libraries (M4.2); if this
+    // fails or is left out, the library window offers it again.
+    if (r.ok && defaults) await client.command({ type: 'library.seedDefaults' });
   };
   return (
-    <form className="window" onSubmit={submit} aria-labelledby="new-campaign">
+    <form className="window" onSubmit={(e) => void submit(e)} aria-labelledby="new-campaign">
       <h2 id="new-campaign">New campaign</h2>
       <label>
         Campaign name
         <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={200} />
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={defaults} onChange={(e) => setDefaults(e.target.checked)} />
+        Start with the default classes, Human race, professions and their skills
       </label>
       <button type="submit" disabled={busy}>
         Create campaign
@@ -239,20 +250,40 @@ function Party({ state }: { state: CampaignState }) {
   );
 }
 
-function CreateCharacter({ client }: { client: LiveClient }) {
+/** A class the form can start a character with: the library's, else the built-in starters. */
+interface ClassChoice {
+  id: string;
+  name: string;
+  description: string;
+  skills: readonly { name: string; rarity: string; description?: string; flavor?: string }[];
+  weights: Readonly<Record<string, number>>;
+}
+
+function CreateCharacter({ client, state }: { client: LiveClient; state: CampaignState }) {
   const [name, setName] = useState('');
-  const [starterId, setStarterId] = useState(STARTER_CLASSES[0]?.id ?? '');
+  const library = entriesOf(state, 'class') as ClassChoice[];
+  // Campaigns made before M4.2 may have no classes yet; the built-in Archer keeps working.
+  const classes: readonly ClassChoice[] = library.length > 0 ? library : STARTER_CLASSES;
+  const races = entriesOf(state, 'race').map((r) => r.name);
+  const raceChoices = races.length > 0 ? races : [state.rules.character.defaultRace];
+  const [classId, setClassId] = useState('');
+  const [race, setRace] = useState('');
   const { busy, result, run } = useCommand(client);
-  const starter = STARTER_CLASSES.find((s) => s.id === starterId);
+  const chosen = classes.find((c) => c.id === classId) ?? classes[0];
+  const chosenRace = raceChoices.includes(race) ? race : (raceChoices[0] ?? '');
+  const rarityName = (id: string) =>
+    state.rules.skills.rarities.find((r) => r.id === id)?.name ?? id;
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!starter) return;
+    if (!chosen) return;
     const r = await run({
       type: 'character.create',
       name,
-      className: starter.name,
-      classSkills: starter.skills,
-      classWeights: starter.weights,
+      className: chosen.name,
+      race: chosenRace,
+      // Built-in starters carry their own skill text; library classes take it from the skill library.
+      classSkills: chosen.skills,
+      classWeights: chosen.weights,
     });
     if (r.ok) setName('');
   };
@@ -265,21 +296,31 @@ function CreateCharacter({ client }: { client: LiveClient }) {
       </label>
       <label>
         Starting class
-        <select value={starterId} onChange={(e) => setStarterId(e.target.value)}>
-          {STARTER_CLASSES.map((s) => (
+        <select value={chosen?.id ?? ''} onChange={(e) => setClassId(e.target.value)}>
+          {classes.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
             </option>
           ))}
         </select>
       </label>
-      {starter && (
+      <label>
+        Race
+        <select value={chosenRace} onChange={(e) => setRace(e.target.value)}>
+          {raceChoices.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+      </label>
+      {chosen && (
         <p className="muted">
-          {starter.description} Skills:{' '}
-          {starter.skills.map((s) => `[${s.name} (${s.rarity})]`).join(' ')}
+          {chosen.description} Skills:{' '}
+          {chosen.skills.map((s) => `[${s.name} (${rarityName(s.rarity)})]`).join(' ')}
         </p>
       )}
-      <button type="submit" disabled={busy}>
+      <button type="submit" disabled={busy || !chosen}>
         Create character
       </button>
       <Outcome result={result} okText="Character created" />

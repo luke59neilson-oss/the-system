@@ -49,7 +49,7 @@ test('GM creates a campaign and characters, awards XP, and broadcasts', async ({
 
   const createCharacter = async (name: string) => {
     await page.getByLabel('Name', { exact: true }).fill(name);
-    await expect(page.getByLabel('Starting class')).toHaveValue('archer');
+    await expect(page.getByLabel('Starting class').locator('option:checked')).toHaveText('Archer');
     await page.getByRole('button', { name: 'Create character' }).click();
   };
   for (const name of ['Jake', 'Miranda']) {
