@@ -69,6 +69,7 @@ const stabilityRules = z.record(
 );
 const questText = z.string().trim().max(5000);
 const questDays = z.number().int().min(1).max(10_000).nullable();
+const questNoticeTo = z.array(recordId).max(200).nullable();
 /** Identify tiers (M3.9, DESIGN §7): one text per minimum Identify rarity. */
 const identifyTiers = z
   .array(z.strictObject({ minRarity: recordId, text: z.string().trim().min(1).max(1000) }))
@@ -439,6 +440,11 @@ export const EVENT_PAYLOAD_SCHEMAS = {
         rules: stabilityRules,
       })
       .nullable(),
+    /**
+     * MQ.7: who gets the hidden-quest notice (character ids); null or absent
+     * (logs before MQ.7) = every character.
+     */
+    noticeTo: questNoticeTo.optional(),
   }),
   /** GM edits a quest; omitted fields stay. */
   'quest.edited': z.strictObject({
@@ -449,6 +455,7 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     days: questDays.optional(),
     stabilityVisible: z.boolean().optional(),
     stabilityRules: stabilityRules.optional(),
+    noticeTo: questNoticeTo.optional(),
   }),
   'quest.statusSet': z.strictObject({
     questId: recordId,

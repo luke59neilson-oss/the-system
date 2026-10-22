@@ -23,7 +23,7 @@ import {
   type SkillOption,
 } from '../evolution';
 import { canReadNote } from '../practice';
-import { daysLeft, type QuestStatus } from '../quests';
+import { daysLeft, hiddenQuestNoticed, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
 import { identifyRarity, resolveIdentify } from './identify';
 import { atCeiling, markRules, marksToUpgrade, type MarkRules } from '../skills';
@@ -269,6 +269,11 @@ export interface PlayerView {
   readonly day: number;
   /** Visible quests in creation order. */
   readonly quests: readonly PlayerQuest[];
+  /**
+   * Active hidden quests whose notice reaches the viewer (MQ.7, DESIGN §7):
+   * only how many exist, never which quest, its text or who else knows.
+   */
+  readonly hiddenQuests: number;
   /** The viewer's own currency, items, equipment and trades (M3.7). */
   readonly inventory: PlayerInventory;
   /** Entities the viewer knows, in definition order (M3.9). */
@@ -636,6 +641,10 @@ export function projectForPlayer(
         entryId === undefined ? undefined : state.practice.find((p) => p.id === entryId);
       return [{ id: m.id, label: m.label, focus: entry?.action ?? null }];
     }),
+    hiddenQuests: state.questOrder.filter((id) => {
+      const q = hasOwnKey(state.quests, id) ? state.quests[id] : undefined;
+      return q !== undefined && hiddenQuestNoticed(q, state.characterOrder).includes(viewer.id);
+    }).length,
     quests: state.questOrder.flatMap((id) => {
       const q = Object.prototype.hasOwnProperty.call(state.quests, id)
         ? state.quests[id]

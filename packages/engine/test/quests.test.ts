@@ -4,6 +4,7 @@ import {
   daysLeft,
   defaultRules,
   execute,
+  notificationHistory,
   projectForPlayer,
   type Campaign,
   type Command,
@@ -245,5 +246,123 @@ describe('quests and World Stability (DESIGN §7)', () => {
     c = ok(c, { type: 'stability.applyAction', questId: 'whale', tag: 'cleanse', count: 2 });
     c = ok(c, { type: 'event.undo', eventId: c.events.at(-1)?.id ?? '' });
     expect(quest(c).stability?.value).toBe(100);
+  });
+});
+
+describe('hidden quest notice (MQ.7, DESIGN §7)', () => {
+  const party = (): Campaign =>
+    ok(base(), {
+      type: 'character.create',
+      id: 'mira',
+      name: 'Miranda',
+      className: 'Archer',
+      classSkills: kit,
+    });
+  const seen = (c: Campaign, id: string) => {
+    if (!c.state) throw new Error('no state');
+    return projectForPlayer(c.state, id);
+  };
+  /** Hidden-quest notices per character, from the folded history. */
+  const told = (c: Campaign) =>
+    notificationHistory(c)
+      .filter((h) => h.notification.kind === 'hiddenQuest')
+      .map((h) => h.notification.characterId);
+  const secret = (extra: Partial<Extract<Command, { type: 'quest.create' }>> = {}): Command => ({
+    type: 'quest.create',
+    questId: 'secret',
+    title: 'SECRET-title',
+    text: 'SECRET-text',
+    visible: false,
+    days: 3,
+    stability: { visible: true, rules: { 'secret-tag': -4 } },
+    ...extra,
+  });
+
+  it('tells every character by default, with a count and nothing else', () => {
+    const c = ok(party(), secret());
+    expect(quest(c, 'secret').noticeTo).toBeNull();
+    expect(told(c)).toEqual(['jake', 'mira']);
+    for (const id of ['jake', 'mira']) {
+      const v = seen(c, id);
+      expect(v.hiddenQuests).toBe(1);
+      expect(v.quests).toEqual([]);
+      expect(JSON.stringify(v)).not.toMatch(/SECRET|secret-tag/);
+      expect(JSON.stringify(v)).not.toContain('"secret"');
+    }
+  });
+
+  it('tells only the affected players when the GM names them', () => {
+    const c = ok(party(), secret({ noticeTo: ['mira'] }));
+    expect(told(c)).toEqual(['mira']);
+    expect(seen(c, 'mira').hiddenQuests).toBe(1);
+    expect(seen(c, 'jake').hiddenQuests).toBe(0);
+  });
+
+  it('a visible quest sends no notice; hiding it later does', () => {
+    let c = ok(party(), secret({ visible: true }));
+    expect(told(c)).toEqual([]);
+    expect(seen(c, 'jake').hiddenQuests).toBe(0);
+    c = ok(c, { type: 'quest.edit', questId: 'secret', visible: false });
+    expect(told(c)).toEqual(['jake', 'mira']);
+  });
+
+  it('widening the notice list tells only the newly affected; narrowing tells nobody', () => {
+    let c = ok(party(), secret({ noticeTo: ['jake'] }));
+    c = ok(c, { type: 'quest.edit', questId: 'secret', noticeTo: ['jake', 'mira'] });
+    expect(told(c)).toEqual(['jake', 'mira']);
+    c = ok(c, { type: 'quest.edit', questId: 'secret', noticeTo: ['mira'] });
+    expect(told(c)).toEqual(['jake', 'mira']);
+    expect(seen(c, 'jake').hiddenQuests).toBe(0);
+    c = ok(c, { type: 'quest.edit', questId: 'secret', noticeTo: null });
+    expect(quest(c, 'secret').noticeTo).toBeNull();
+    expect(told(c)).toEqual(['jake', 'mira', 'jake']);
+  });
+
+  it('a revealed, completed or failed quest is no longer counted; reopening tells again', () => {
+    let c = ok(party(), secret());
+    c = ok(c, { type: 'quest.setStatus', questId: 'secret', status: 'completed' });
+    expect(seen(c, 'jake').hiddenQuests).toBe(0);
+    c = ok(c, { type: 'quest.setStatus', questId: 'secret', status: 'active' });
+    expect(seen(c, 'jake').hiddenQuests).toBe(1);
+    expect(told(c)).toEqual(['jake', 'mira', 'jake', 'mira']);
+    c = ok(c, { type: 'quest.edit', questId: 'secret', visible: true });
+    expect(seen(c, 'jake').hiddenQuests).toBe(0);
+    expect(seen(c, 'jake').quests.map((q) => q.title)).toEqual(['SECRET-title']);
+  });
+
+  it('counts several hidden quests; a character created later is counted under "everyone"', () => {
+    let c = ok(base(), secret());
+    c = ok(c, secret({ questId: 'other', noticeTo: ['jake'] }));
+    c = ok(c, {
+      type: 'character.create',
+      id: 'mira',
+      name: 'Miranda',
+      className: 'Archer',
+      classSkills: kit,
+    });
+    expect(seen(c, 'jake').hiddenQuests).toBe(2);
+    expect(seen(c, 'mira').hiddenQuests).toBe(1);
+  });
+
+  it('refuses unknown or repeated characters and an empty edit; undo removes the notice', () => {
+    const c = party();
+    expect(reject(c, secret({ noticeTo: ['ghost'] }))).toMatch(/ghost/);
+    expect(reject(c, secret({ noticeTo: ['jake', 'jake'] }))).toMatch(/listed twice/);
+    let d = ok(c, secret({ noticeTo: ['jake'] }));
+    expect(reject(d, { type: 'quest.edit', questId: 'secret', noticeTo: ['ghost'] })).toMatch(
+      /ghost/,
+    );
+    expect(reject(d, { type: 'quest.edit', questId: 'secret' })).toMatch(/nothing to change/);
+    d = ok(d, { type: 'event.undo', eventId: d.events.at(-1)?.id ?? '' });
+    expect(told(d)).toEqual([]);
+    expect(seen(d, 'jake').hiddenQuests).toBe(0);
+  });
+
+  it('only the GM sets who is told', () => {
+    const c = ok(party(), secret());
+    const asJake: CommandContext = { ...ctx, actor: { role: 'player', characterId: 'jake' } };
+    expect(
+      reject(c, { type: 'quest.edit', questId: 'secret', noticeTo: ['jake'] }, asJake),
+    ).toMatch(/only the GM|own character/);
   });
 });

@@ -287,6 +287,8 @@ export type Command =
           }
         | null
         | undefined;
+      /** MQ.7: who gets the hidden-quest notice; default null = every character. */
+      noticeTo?: readonly string[] | null | undefined;
     }
   | {
       type: 'quest.edit';
@@ -297,6 +299,7 @@ export type Command =
       days?: number | null | undefined;
       stabilityVisible?: boolean | undefined;
       stabilityRules?: Readonly<Record<string, number>> | undefined;
+      noticeTo?: readonly string[] | null | undefined;
     }
   | { type: 'quest.setStatus'; questId: string; status: 'active' | 'completed' | 'failed' }
   | {
@@ -1000,15 +1003,32 @@ function toEvent(
                     false,
                   rules: st.rules ?? {},
                 },
+          noticeTo:
+            command.noticeTo === undefined || command.noticeTo === null
+              ? null
+              : [...command.noticeTo],
         },
       };
     }
     case 'quest.edit': {
       const { questId, title, text, visible, days, stabilityVisible, stabilityRules } = command;
+      const noticeTo =
+        command.noticeTo === undefined || command.noticeTo === null
+          ? command.noticeTo
+          : [...command.noticeTo];
       // Undefined fields vanish in the event's JSON round trip (= unchanged).
       return {
         type: 'quest.edited',
-        payload: { questId, title, text, visible, days, stabilityVisible, stabilityRules },
+        payload: {
+          questId,
+          title,
+          text,
+          visible,
+          days,
+          stabilityVisible,
+          stabilityRules,
+          noticeTo,
+        },
       };
     }
     case 'quest.setStatus':

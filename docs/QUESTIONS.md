@@ -277,3 +277,12 @@ DESIGN/ROADMAP; do not re-apply them.
     has none; they join the same list. The GM can also grant any profession
     directly. Alternative: offers happen only at the E-grade evolution.
     Answer:
+
+47. **Who gets a hidden quest's notice.** DESIGN §7 says the "affected
+    players" get a detail-free notice that a hidden quest exists. Quests have
+    no participant list, so each quest now has a GM-chosen notice list.
+    Default (used now): everyone in the party, unless the GM names
+    characters; the notice appears again if the quest is hidden again or
+    reopened. Alternative: notify only characters the GM names (default
+    nobody), or tie it to who is in the scene. (D122)
+    Answer:
