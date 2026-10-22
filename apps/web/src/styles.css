@@ -1744,3 +1744,43 @@ button.danger {
   padding: 3px 6px;
   border-bottom: 1px solid rgba(90, 127, 184, 0.25);
 }
+
+/* Portraits (M4.4) */
+.portrait.portrait-small {
+  width: 32px;
+  height: 32px;
+  border-width: 2px;
+  font-size: 0.75rem;
+}
+.portrait-picker {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 8px 0;
+}
+.portrait-picker button + button {
+  margin-left: 6px;
+}
+.portrait-cell {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+button.small {
+  padding: 2px 8px;
+  font-size: 0.8rem;
+}
+p.small {
+  font-size: 0.8rem;
+  margin: 4px 0 0;
+}
+.party-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 4px;
+}
+.party-head .party-name {
+  margin: 0;
+}

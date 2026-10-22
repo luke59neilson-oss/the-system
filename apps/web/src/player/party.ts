@@ -31,6 +31,8 @@ export interface PartyRow {
   /** The grade's metal token from the rules config (frame colour), or null. */
   readonly theme: string | null;
   readonly pools: readonly PartyPoolRow[];
+  /** Portrait URL path, or null for the monogram (M4.4). */
+  readonly portrait: string | null;
 }
 
 /** A bar at or below this percent reads as "low" (display only, not a rule). */
@@ -72,6 +74,7 @@ export function partyRows(
     professionLevel: m.professionLevel,
     grade: m.grade,
     theme: rules.grades.find((g) => g.id === m.grade)?.theme ?? null,
+    portrait: m.portrait,
     pools: rules.pools.flatMap((rp) => {
       const bar = m.pools.find((b) => b.id === rp.id);
       if (!bar) return [];

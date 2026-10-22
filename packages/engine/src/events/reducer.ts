@@ -55,7 +55,7 @@ import {
 import { EventRejectedError, type DomainEvent } from './envelope';
 
 /** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 15;
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 16;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -461,6 +461,18 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
     case 'character.renamed': {
       const character = characterOf(state, event, event.payload.characterId);
       return withCharacter(state, { ...character, name: event.payload.name });
+    }
+    case 'character.portraitSet': {
+      const character = characterOf(state, event, event.payload.characterId);
+      if (character.portrait === event.payload.portrait) {
+        fail(
+          event,
+          event.payload.portrait === null
+            ? `${character.name} has no portrait`
+            : `${character.name} already has that portrait`,
+        );
+      }
+      return withCharacter(state, { ...character, portrait: event.payload.portrait });
     }
     case 'character.professionGranted': {
       const character = characterOf(state, event, event.payload.characterId);

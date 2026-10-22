@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PORTRAIT_REF } from '../character/model';
 
 /**
  * Event envelope and payload schemas (ROADMAP M1.3). Events are the only source
@@ -17,6 +18,8 @@ const recordId = z.string().min(1).max(100);
 /** Skill System text (M3.5): trimmed by the engine; blank means none. */
 const skillDescription = z.string().max(2000);
 const skillFlavor = z.string().max(1000);
+/** A portrait file name the server stored (M4.4); the bytes never enter the log. */
+const portraitRef = z.string().regex(PORTRAIT_REF, 'must be a stored portrait file name');
 const statValues = z.record(z.string().min(1), z.number().int().nonnegative());
 /** A party in a gift or trade: a character id, or null for the GM. */
 const party = recordId.nullable();
@@ -102,8 +105,15 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     ),
     /** Optional since M1.4 (absent = equal weights), so v1 payloads stay valid. */
     classWeights: statValues.optional(),
+    /** Optional since M4.4, so older payloads stay valid. */
+    portrait: portraitRef.optional(),
   }),
   'character.renamed': z.strictObject({ characterId: recordId, name: nonBlank }),
+  /** GM sets or clears (null) a character's portrait (M4.4). */
+  'character.portraitSet': z.strictObject({
+    characterId: recordId,
+    portrait: portraitRef.nullable(),
+  }),
   'character.professionGranted': z.strictObject({ characterId: recordId, profession: nonBlank }),
   /** GM awards a title by name (M1.15; the title library, bonuses and System text are M6.4). */
   'title.awarded': z.strictObject({ characterId: recordId, title: nonBlank.max(80) }),
@@ -483,6 +493,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'campaign.created': 1,
   'character.created': 1,
   'character.renamed': 1,
+  'character.portraitSet': 1,
   'character.professionGranted': 1,
   'title.awarded': 1,
   'character.poolsSet': 1,

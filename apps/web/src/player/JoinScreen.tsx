@@ -3,13 +3,13 @@ import { ENGINE_NAME } from '@the-system/engine';
 import { isHostBrowser } from '../gm/perspective';
 import {
   browserStorage,
-  initials,
   parseJoinList,
   readRemembered,
   rememberedEntry,
   type JoinEntry,
 } from './join';
 import { themeClass } from './sheet';
+import { PortraitBadge } from '../PortraitBadge';
 
 const playUrl = (id: string) => `/play/${encodeURIComponent(id)}`;
 
@@ -112,12 +112,6 @@ export function PlayerHome() {
 /** Portrait image, or a monogram framed in the character's grade metal. */
 function Portrait({ entry }: { entry: JoinEntry }) {
   return (
-    <span
-      className={`portrait${themeClass(entry.theme)}`}
-      aria-hidden="true"
-      data-testid="portrait"
-    >
-      {entry.portrait ? <img src={entry.portrait} alt="" /> : initials(entry.name)}
-    </span>
+    <PortraitBadge name={entry.name} src={entry.portrait} className={themeClass(entry.theme)} />
   );
 }

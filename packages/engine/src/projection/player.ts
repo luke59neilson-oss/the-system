@@ -62,6 +62,8 @@ export const CHARACTER_FIELD_VISIBILITY: Readonly<Record<keyof Character, Visibi
   // (M3.6 and M3.13 draw them); party members never do.
   selections: 'owner',
   evolution: 'owner',
+  // M4.4: the portrait file name; the join list already shows it to anyone.
+  portrait: 'party',
 };
 
 /** Every campaign field, classified (`owner` is not used at this level). */
@@ -208,6 +210,8 @@ export interface OwnSheet {
   readonly selections: readonly SelectionRecord[];
   /** A released evolution waiting for this character's choice (M1.10). */
   readonly evolution: PendingEvolution | null;
+  /** Portrait URL path (`/portraits/<file>`), or null for the monogram (M4.4). */
+  readonly portrait: string | null;
 }
 
 /** Another party member as the viewer sees them (D5). */
@@ -222,6 +226,8 @@ export interface PartyMember {
   readonly raceLevel: number;
   readonly grade: string;
   readonly pools: readonly PoolBar[];
+  /** Portrait URL path, or null (M4.4). */
+  readonly portrait: string | null;
 }
 
 /** Everything one player's browser receives. */
@@ -493,7 +499,13 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
             })),
             professions: [...c.evolution.professions],
           },
+    portrait: portraitUrl(c.portrait),
   };
+}
+
+/** Where browsers fetch a stored portrait (M4.4); the server serves `/portraits/<file>`. */
+export function portraitUrl(portrait: string | null): string | null {
+  return portrait === null ? null : `/portraits/${portrait}`;
 }
 
 /** Where a skill stands on the mark ladder (DESIGN §6), from the rules config. */
@@ -531,6 +543,7 @@ function partyMember(state: CampaignState, c: Character): PartyMember {
       id: p.id,
       percent: poolPercent(own(c.pools, p.id) ?? 0, poolMax(rules, effective, p.id)),
     })),
+    portrait: portraitUrl(c.portrait),
   };
 }
 

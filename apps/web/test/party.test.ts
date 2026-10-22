@@ -35,6 +35,7 @@ const member = (over: Partial<PartyMember> = {}): PartyMember => ({
     { id: 'hp', percent: 100 },
     { id: 'mp', percent: 0 },
   ],
+  portrait: null,
   ...over,
 });
 
@@ -109,6 +110,7 @@ describe('party view helpers (M3.12)', () => {
         'id',
         'name',
         'pools',
+        'portrait',
         'profession',
         'professionLevel',
         'race',

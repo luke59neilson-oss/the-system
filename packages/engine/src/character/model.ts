@@ -2,7 +2,7 @@ import type { PendingEvolution, SelectionRecord } from '../evolution/model';
 import type { GradeRules, RulesConfig } from '../rules';
 
 /** Bumped when the serialized character shape changes; M1.3 upcasts old states. */
-export const CHARACTER_SCHEMA_VERSION = 5;
+export const CHARACTER_SCHEMA_VERSION = 6;
 
 /** Skill as held by a character (the full skill system arrives in M1.9). */
 export interface CharacterSkill {
@@ -62,7 +62,15 @@ export interface Character {
   readonly selections: readonly SelectionRecord[];
   /** Evolution the GM has released and the player has not chosen yet (M1.10). */
   readonly evolution: PendingEvolution | null;
+  /**
+   * Portrait image file name (`<sha256>.<ext>`, PORTRAIT_REF) the server keeps
+   * beside the campaign, or null for the monogram (M4.4).
+   */
+  readonly portrait: string | null;
 }
+
+/** A stored portrait: the SHA-256 of the image bytes and its extension (M4.4). */
+export const PORTRAIT_REF = /^[0-9a-f]{64}\.(png|jpg|webp)$/;
 
 export interface NewCharacter {
   id: string;
@@ -72,6 +80,8 @@ export interface NewCharacter {
   classSkills: readonly SkillGrant[];
   /** Stat weights of the starting class; equal weights when omitted. */
   classWeights?: Readonly<Record<string, number>> | undefined;
+  /** Portrait file name (PORTRAIT_REF); none when omitted. */
+  portrait?: string | null | undefined;
 }
 
 /** A skill as granted at creation: name and rarity, with optional System text (M3.5). */
@@ -202,6 +212,7 @@ export function createCharacter(rules: RulesConfig, input: NewCharacter): Charac
     merges: {},
     selections: [],
     evolution: null,
+    portrait: input.portrait ?? null,
   };
 }
 

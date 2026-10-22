@@ -1,11 +1,19 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { buildDemoEvents, type DomainEvent } from '@the-system/engine';
+import { buildDemoEvents, portraitUrl, type DomainEvent } from '@the-system/engine';
 import { LiveHub, type HubOptions } from './hub';
 import type { JoinInfo } from './join';
+import {
+  PORTRAIT_MAX_BYTES,
+  PORTRAIT_TYPES,
+  PortraitError,
+  portraitFile,
+  portraitType,
+  savePortrait,
+} from './portraits';
 import { helloMessage } from './protocol';
 import { SessionLogWriter, type SessionLogOptions } from './sessionLog';
 import { authPath, gmKeyMatches, isAllowedHost, isAllowedOrigin } from './security';
@@ -158,6 +166,40 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
 
   app.get('/health', () => ({ status: 'ok' }));
 
+  // Portrait uploads (M4.4) arrive as raw image bytes; the onRequest hook has
+  // already refused anyone without the GM key before the body is read.
+  app.addContentTypeParser(
+    Object.values(PORTRAIT_TYPES),
+    { parseAs: 'buffer', bodyLimit: PORTRAIT_MAX_BYTES },
+    (_request, body, done) => done(null, body),
+  );
+  app.post('/api/gm/portraits', (request, reply) => {
+    if (!active) return reply.code(404).send({ error: 'No campaign open' });
+    if (!Buffer.isBuffer(request.body)) {
+      return reply.code(415).send({ error: 'Send a PNG, JPEG or WebP image' });
+    }
+    try {
+      return { portrait: savePortrait(active.store.dir, request.body) };
+    } catch (error) {
+      if (error instanceof PortraitError) return reply.code(400).send({ error: error.message });
+      app.log.error(error);
+      return reply.code(500).send({ error: 'Could not save the portrait' });
+    }
+  });
+  // Stored portraits are public like the join list that shows them: names are
+  // content hashes, files never change, and only image types are ever stored.
+  app.get('/portraits/:file', (request, reply) => {
+    const { file } = request.params as { file: string };
+    const found = active ? portraitFile(active.store.dir, file) : null;
+    if (!found) return reply.code(404).send({ error: 'Not found' });
+    return reply
+      .header('cache-control', 'public, max-age=31536000, immutable')
+      .header('x-content-type-options', 'nosniff')
+      .header('content-security-policy', "default-src 'none'")
+      .type(portraitType(file))
+      .send(readFileSync(found));
+  });
+
   app.get(WS_PATH, { websocket: true }, (socket) => {
     if (!active) {
       socket.send(JSON.stringify(helloMessage()));
@@ -267,7 +309,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       if (!c) return [];
       // Grade metal for the join-list portrait ring (M3.1); public like the grade.
       const theme = state.rules.grades.find((g) => g.id === c.grade)?.theme ?? null;
-      return [{ id: c.id, name: c.name, grade: c.grade, theme }];
+      return [{ id: c.id, name: c.name, grade: c.grade, theme, portrait: portraitUrl(c.portrait) }];
     });
   });
 
@@ -301,7 +343,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
 
 export const WS_PATH = '/ws';
 
-const RESERVED_PREFIXES = ['/api', '/health', '/ws'];
+const RESERVED_PREFIXES = ['/api', '/health', '/ws', '/portraits'];
 
 /** Paths owned by the server; never answered with the app shell. */
 export function isReservedPath(pathname: string): boolean {

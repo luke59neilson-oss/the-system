@@ -33,8 +33,11 @@ export type Command =
         flavor?: string | undefined;
       }[];
       classWeights?: Readonly<Record<string, number>> | undefined;
+      /** Portrait file name the server stored (M4.4). */
+      portrait?: string | undefined;
     }
   | { type: 'character.rename'; characterId: string; name: string }
+  | { type: 'character.setPortrait'; characterId: string; portrait: string | null }
   | { type: 'character.grantProfession'; characterId: string; profession: string }
   | { type: 'title.award'; characterId: string; title: string }
   | { type: 'character.setPools'; characterId: string; pools: Readonly<Record<string, number>> }
@@ -421,6 +424,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('campaign.create') }),
   z.object({ type: z.literal('character.create'), classSkills: z.array(z.unknown()) }),
   z.object({ type: z.literal('character.rename') }),
+  z.object({ type: z.literal('character.setPortrait') }),
   z.object({ type: z.literal('character.grantProfession') }),
   z.object({ type: z.literal('title.award') }),
   z.object({ type: z.literal('character.setPools'), pools: anyRecord }),
@@ -634,12 +638,18 @@ function toEvent(
       };
       if (command.race !== undefined) payload['race'] = command.race;
       if (command.classWeights !== undefined) payload['classWeights'] = command.classWeights;
+      if (command.portrait !== undefined) payload['portrait'] = command.portrait;
       return { type: 'character.created', payload };
     }
     case 'character.rename':
       return {
         type: 'character.renamed',
         payload: { characterId: command.characterId, name: command.name },
+      };
+    case 'character.setPortrait':
+      return {
+        type: 'character.portraitSet',
+        payload: { characterId: command.characterId, portrait: command.portrait },
       };
     case 'character.grantProfession':
       return {

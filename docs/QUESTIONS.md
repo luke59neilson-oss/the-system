@@ -210,3 +210,11 @@ answer under any question and the next run will follow it.
     the GM to start a session (D92). Alternatives: a "between sessions"
     file; fold between-session changes into the next session's report.
     Answer:
+
+40. **Portraits: where they show and travel.** Portraits show on the join
+    list, the GM party table and players' party views, not on a player's
+    own status window (DESIGN §9 has no portrait row). Exports and backups
+    carry the event log only, so portraits do not travel with an export.
+    Default: as described (D95). Alternatives: a portrait at the top of the
+    status window; bundle the portraits folder into backups and exports.
+    Answer:

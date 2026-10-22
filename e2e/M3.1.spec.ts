@@ -79,11 +79,11 @@ test('players pick a character from the list and the browser remembers it', asyn
   await expect(phone.getByTestId('continue')).toHaveCount(0);
   await phone.screenshot({ path: path.join(shots, 'join-390x844.png'), fullPage: true });
 
-  // The public list carries only id, name, grade and grade theme.
+  // The public list carries only id, name, grade, grade theme and portrait URL.
   expect(listBodies.length).toBeGreaterThan(0);
   for (const body of listBodies) {
     for (const row of JSON.parse(body) as Record<string, unknown>[]) {
-      expect(Object.keys(row).sort()).toEqual(['grade', 'id', 'name', 'theme']);
+      expect(Object.keys(row).sort()).toEqual(['grade', 'id', 'name', 'portrait', 'theme']);
     }
   }
 

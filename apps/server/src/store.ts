@@ -151,7 +151,7 @@ function writeAll(fd: number, data: Buffer): void {
   }
 }
 
-function writeFileDurable(file: string, data: Buffer | string): void {
+export function writeFileDurable(file: string, data: Buffer | string): void {
   const tmp = `${file}.tmp-${process.pid}`;
   const fd = openSync(tmp, 'w');
   try {

@@ -865,6 +865,8 @@ describe('property: replay equals incremental state', () => {
       // starting one here would change every later event's session stamp.
       'session.started',
       'session.ended',
+      // M4.4 portraits have their own tests (portraits.test.ts) and golden log.
+      'character.portraitSet',
     ]);
     const seen = new Set(c.events.map((e) => e.type));
     expect(

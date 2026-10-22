@@ -117,6 +117,7 @@ describe('player projection', () => {
         { id: 'mp', percent: 100 },
         { id: 'stamina', percent: 100 },
       ],
+      portrait: null,
     });
   });
 

@@ -18,6 +18,8 @@ import { entriesOf } from './originLibraryModel';
 import { resolvePerspective, type PartyMember, type Perspective } from './perspective';
 import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
 import { SessionPanel } from './SessionPanel';
+import { PortraitCell, PortraitPicker } from './PortraitControls';
+import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
 
 /**
@@ -126,10 +128,10 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
           {/* Kept mounted while viewing as a character so half-filled GM forms survive. */}
           <div className="gm-pane" hidden={view.kind === 'character'}>
             <div className="gm-grid">
-              <Party state={state} />
+              <Party client={client} gmKey={gmKey} state={state} />
               <SessionPanel client={client} state={state} />
               <JoinPanel gmKey={gmKey} />
-              <CreateCharacter client={client} state={state} />
+              <CreateCharacter client={client} gmKey={gmKey} state={state} />
               <AwardXp client={client} state={state} />
               <Broadcast client={client} state={state} />
               <SkillText client={client} state={state} />
@@ -225,7 +227,15 @@ function CreateCampaign({ client }: { client: LiveClient }) {
   );
 }
 
-function Party({ state }: { state: CampaignState }) {
+function Party({
+  client,
+  gmKey,
+  state,
+}: {
+  client: LiveClient;
+  gmKey: string;
+  state: CampaignState;
+}) {
   const characters = state.characterOrder.flatMap((id) => state.characters[id] ?? []);
   return (
     <section className="window party" aria-labelledby="party">
@@ -236,6 +246,7 @@ function Party({ state }: { state: CampaignState }) {
         <table>
           <thead>
             <tr>
+              <th scope="col">Portrait</th>
               <th scope="col">Name</th>
               <th scope="col">Class</th>
               <th scope="col">Class lvl</th>
@@ -248,7 +259,10 @@ function Party({ state }: { state: CampaignState }) {
           <tbody>
             {characters.map((c) => (
               <tr key={c.id} data-testid={`row-${c.id}`}>
-                <td>{c.name}</td>
+                <td>
+                  <PortraitCell client={client} gmKey={gmKey} state={state} characterId={c.id} />
+                </td>
+                <td data-testid={`party-name-${c.id}`}>{c.name}</td>
                 <td>[{c.className}]</td>
                 <td data-testid={`class-level-${c.id}`}>{c.classLevel}</td>
                 <td>{raceLevel(state.rules, c)}</td>
@@ -277,8 +291,19 @@ interface ClassChoice {
   weights: Readonly<Record<string, number>>;
 }
 
-function CreateCharacter({ client, state }: { client: LiveClient; state: CampaignState }) {
+function CreateCharacter({
+  client,
+  gmKey,
+  state,
+}: {
+  client: LiveClient;
+  gmKey: string;
+  state: CampaignState;
+}) {
   const [name, setName] = useState('');
+  const [image, setImage] = useState<Blob | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const library = entriesOf(state, 'class') as ClassChoice[];
   // Campaigns made before M4.2 may have no classes yet; the built-in Archer keeps working.
   const classes: readonly ClassChoice[] = library.length > 0 ? library : STARTER_CLASSES;
@@ -294,6 +319,18 @@ function CreateCharacter({ client, state }: { client: LiveClient; state: Campaig
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!chosen) return;
+    setUploadError(null);
+    let portrait: string | undefined;
+    if (image) {
+      setUploading(true);
+      const uploaded = await uploadPortrait(gmKey, image);
+      setUploading(false);
+      if (!uploaded.ok) {
+        setUploadError(uploaded.error);
+        return;
+      }
+      portrait = uploaded.portrait;
+    }
     const r = await run({
       type: 'character.create',
       name,
@@ -302,8 +339,12 @@ function CreateCharacter({ client, state }: { client: LiveClient; state: Campaig
       // Built-in starters carry their own skill text; library classes take it from the skill library.
       classSkills: chosen.skills,
       classWeights: chosen.weights,
+      ...(portrait === undefined ? {} : { portrait }),
     });
-    if (r.ok) setName('');
+    if (r.ok) {
+      setName('');
+      setImage(null);
+    }
   };
   return (
     <form className="window" onSubmit={(e) => void submit(e)} aria-labelledby="new-character">
@@ -336,12 +377,20 @@ function CreateCharacter({ client, state }: { client: LiveClient; state: Campaig
         <p className="muted">
           {chosen.description} Skills:{' '}
           {chosen.skills.map((s) => `[${s.name} (${rarityName(s.rarity)})]`).join(' ')}
+          {` [${state.rules.skills.startingRaceSkill.name} (${rarityName(state.rules.skills.startingRaceSkill.rarity)})] (race skill, added automatically)`}
         </p>
       )}
-      <button type="submit" disabled={busy || !chosen}>
-        Create character
+      <PortraitPicker name={name} image={image} onImage={setImage} />
+      <button type="submit" disabled={busy || uploading || !chosen}>
+        {uploading ? 'Uploading portrait…' : 'Create character'}
       </button>
-      <Outcome result={result} okText="Character created" />
+      {uploadError ? (
+        <p className="err" role="alert">
+          {uploadError}
+        </p>
+      ) : (
+        <Outcome result={result} okText="Character created" />
+      )}
     </form>
   );
 }

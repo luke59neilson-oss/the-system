@@ -2,6 +2,7 @@ import type { PlayerView } from '@the-system/engine';
 import { useChangeCount } from './changeCount';
 import { partyRows, type PartyPoolRow, type PartyRow } from './party';
 import { themeClass } from './sheet';
+import { PortraitBadge } from '../PortraitBadge';
 
 /**
  * The party view (ROADMAP M3.12, D5, D39, D87): every other character's name,
@@ -32,9 +33,12 @@ function Member({ member: m }: { member: PartyRow }) {
       data-testid="party-member"
       aria-labelledby={`party-member-${m.id}`}
     >
-      <h3 className="party-name" id={`party-member-${m.id}`}>
-        {m.name}
-      </h3>
+      <div className="party-head">
+        <PortraitBadge name={m.name} src={m.portrait} className=" portrait-small" />
+        <h3 className="party-name" id={`party-member-${m.id}`}>
+          {m.name}
+        </h3>
+      </div>
       <dl className="party-tracks">
         <dt>Race</dt>
         <Track testId="party-race" name={`${m.race} (${m.grade})`} level={m.raceLevel} />

@@ -28,7 +28,7 @@ function watchErrors(page: Page) {
   return errors;
 }
 
-const partyNames = (gm: Page) => gm.locator('[data-testid^="row-"] td:first-child').allInnerTexts();
+const partyNames = (gm: Page) => gm.locator('[data-testid^="party-name-"]').allInnerTexts();
 
 test('the GM loads the demo campaign and returns to the real one untouched', async ({
   browser,

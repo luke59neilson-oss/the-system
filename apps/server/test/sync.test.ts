@@ -178,8 +178,8 @@ describe('live protocol and authority', () => {
     const listBody = await list.text();
     httpBodies.push(listBody);
     expect(JSON.parse(listBody)).toEqual([
-      { id: 'jake', name: 'jake', grade: 'G', theme: 'aluminum' },
-      { id: 'casper', name: 'casper', grade: 'G', theme: 'aluminum' },
+      { id: 'jake', name: 'jake', grade: 'G', theme: 'aluminum', portrait: null },
+      { id: 'casper', name: 'casper', grade: 'G', theme: 'aluminum', portrait: null },
     ]);
 
     const jake = await connect();

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 15,
+  "schemaVersion": 16,
   "name": "Golden: evolution",
   "rules": {
     "configVersion": 1,
@@ -343,7 +343,7 @@
   },
   "characters": {
     "jake": {
-      "schemaVersion": 5,
+      "schemaVersion": 6,
       "id": "jake",
       "name": "Jake",
       "race": "Human",
@@ -572,7 +572,8 @@
           "offerId": "ev7"
         }
       ],
-      "evolution": null
+      "evolution": null,
+      "portrait": null
     }
   },
   "characterOrder": ["jake"],

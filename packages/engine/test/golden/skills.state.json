@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 15,
+  "schemaVersion": 16,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -343,7 +343,7 @@
   },
   "characters": {
     "jake": {
-      "schemaVersion": 5,
+      "schemaVersion": 6,
       "id": "jake",
       "name": "Jake",
       "race": "Human",
@@ -435,7 +435,8 @@
         "G": 1
       },
       "selections": [],
-      "evolution": null
+      "evolution": null,
+      "portrait": null
     }
   },
   "characterOrder": ["jake"],
