@@ -29,6 +29,7 @@ const menu = (level: number, chosen: string | null, offerId = `e${level}`): Sele
   options: [option('A'), option('B'), option('C')],
   chosen,
   offerId,
+  passedOver: [],
 });
 
 describe('skill selection (M3.6)', () => {

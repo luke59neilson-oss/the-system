@@ -216,6 +216,12 @@ function describe(
       );
       break;
     }
+    case 'selection.optionWithdrawn':
+      add(
+        'selection',
+        `${line(event.payload.skill)} withdrawn from ${who(event.payload.characterId)}'s passed-over options`,
+      );
+      break;
     case 'evolution.released':
       add(
         'evolution',

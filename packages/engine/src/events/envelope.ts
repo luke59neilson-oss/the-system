@@ -349,6 +349,14 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     /** The offer chosen from (its event id); absent only in logs from before it existed. */
     offerId: recordId.optional(),
   }),
+  /**
+   * GM withdraws a passed-over option (MQ.3, DESIGN §6): it stops appearing in
+   * later menus. The name matches case-insensitively.
+   */
+  'selection.optionWithdrawn': z.strictObject({
+    characterId: recordId,
+    skill: nonBlank,
+  }),
   /** GM releases an available evolution with its options (DESIGN §3 "held until released"). */
   'evolution.released': z.strictObject({
     characterId: recordId,
@@ -539,6 +547,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'library.seeded': 1,
   'selection.offered': 1,
   'selection.chosen': 1,
+  'selection.optionWithdrawn': 1,
   'evolution.released': 2,
   'evolution.chosen': 2,
   'clock.created': 1,

@@ -3,6 +3,8 @@ import {
   createCharacter,
   defaultRules,
   dueSelections,
+  passedOverOptions,
+  buildSessionLog,
   evolutionTarget,
   execute,
   nextSelectionLevel,
@@ -782,7 +784,9 @@ describe('projection', () => {
     c = ok(c, { type: 'selection.offer', characterId: 'jake', level: 5, options: menu(5, 'rare') });
     const after = c.state;
     if (!after) throw new Error('no state');
-    expect(projectForPlayer(after, 'jake').me.selections).toEqual(char(c).selections);
+    expect(projectForPlayer(after, 'jake').me.selections).toEqual(
+      char(c).selections.map((r) => ({ ...r, passedOver: [] })),
+    );
     expect(JSON.stringify(projectForPlayer(after, 'kim'))).not.toContain('Skill 5');
   });
 });
@@ -1158,5 +1162,219 @@ describe('evolution refill counts items and titles (MQ.1 review)', () => {
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
     const base = char(c).stats['vitality'] ?? 0;
     expect(char(c).pools['hp']).toBe(10 * (base + 10));
+  });
+});
+
+describe('passed-over options stay eligible (MQ.3, DESIGN §6, D103)', () => {
+  const toF = () =>
+    ok(ok(atGTop(), release(archery, 'Volley', 'common')), {
+      type: 'evolution.choose',
+      characterId: 'jake',
+      optionId: 'o1',
+    });
+  const offer = (c: Campaign, level: number): Campaign =>
+    ok(c, { type: 'selection.offer', characterId: 'jake', level, options: menu(level, 'rare') });
+  const choose = (c: Campaign, level: number, skill: string): Campaign =>
+    ok(c, { type: 'selection.choose', characterId: 'jake', level, skill });
+
+  it('unchosen options appear for later selections, newest menu first, and can be picked', () => {
+    let c = ok(toF(), award(10 * 150));
+    c = choose(offer(c, 5), 5, 'Skill 5b');
+    expect(passedOverOptions(rules, char(c), 10).map((o) => o.name)).toEqual([
+      'Skill 5a',
+      'Skill 5c',
+    ]);
+    c = offer(c, 10);
+    // One pick per selection: the older option fills the level 10 selection.
+    c = choose(c, 10, 'Skill 5a');
+    expect(char(c).skills.some((s) => s.name === 'Skill 5a')).toBe(true);
+    expect(char(c).selections.find((s) => s.level === 10)?.chosen).toBe('Skill 5a');
+    expect(dueSelections(rules, char(c))).toEqual([]);
+    // The owner's view lists them under the pending menu (MQ.3).
+    expect(
+      projectForPlayer(c.state ?? (null as never), 'jake').me.selections.find((r) => r.level === 10)
+        ?.passedOver,
+    ).toEqual([]);
+    // Owned now, so it leaves the list; the level 10 leftovers come first.
+    c = ok(c, award(5 * 150));
+    expect(passedOverOptions(rules, char(c), 15).map((o) => o.name)).toEqual([
+      'Skill 10a',
+      'Skill 10b',
+      'Skill 10c',
+      'Skill 5c',
+    ]);
+  });
+
+  it('a name on no menu, old or new, is still refused', () => {
+    let c = ok(toF(), award(10 * 150));
+    c = offer(choose(offer(c, 5), 5, 'Skill 5b'), 10);
+    expect(
+      reject(c, { type: 'selection.choose', characterId: 'jake', level: 10, skill: 'Skill 99' }),
+    ).toMatch(/not on the level 10 menu/);
+    const mine = projectForPlayer(c.state ?? (null as never), 'jake').me.selections;
+    expect(mine.find((r) => r.level === 10)?.passedOver.map((o) => o.name)).toEqual([
+      'Skill 5a',
+      'Skill 5c',
+    ]);
+    expect(JSON.stringify(projectForPlayer(c.state ?? (null as never), 'kim'))).not.toContain(
+      'Skill 5a',
+    );
+    // Options of an unchosen (pending) menu are not passed over yet.
+    expect(passedOverOptions(rules, char(c), 15).map((o) => o.name)).toEqual([
+      'Skill 5a',
+      'Skill 5c',
+    ]);
+  });
+});
+
+describe('the GM withdraws a passed-over option (MQ.3, DESIGN §6)', () => {
+  const toF = () =>
+    ok(ok(atGTop(), release(archery, 'Volley', 'common')), {
+      type: 'evolution.choose',
+      characterId: 'jake',
+      optionId: 'o1',
+    });
+  const setUp = () => {
+    let c = ok(toF(), award(10 * 150));
+    c = ok(c, { type: 'selection.offer', characterId: 'jake', level: 5, options: menu(5, 'rare') });
+    c = ok(c, { type: 'selection.choose', characterId: 'jake', level: 5, skill: 'Skill 5b' });
+    return ok(c, {
+      type: 'selection.offer',
+      characterId: 'jake',
+      level: 10,
+      options: menu(10, 'rare'),
+    });
+  };
+
+  it('removes it from later menus and refuses it as a pick', () => {
+    let c = setUp();
+    c = ok(c, { type: 'selection.withdrawOption', characterId: 'jake', skill: ' skill 5A ' });
+    expect(passedOverOptions(rules, char(c), 10).map((o) => o.name)).toEqual(['Skill 5c']);
+    expect(char(c).selections.find((s) => s.level === 5)?.withdrawn).toEqual(['Skill 5a']);
+    const mine = projectForPlayer(c.state ?? (null as never), 'jake').me.selections;
+    expect(mine.find((r) => r.level === 10)?.passedOver.map((o) => o.name)).toEqual(['Skill 5c']);
+    expect(
+      reject(c, { type: 'selection.choose', characterId: 'jake', level: 10, skill: 'Skill 5a' }),
+    ).toMatch(/not on the level 10 menu/);
+    // The other leftover is still a valid pick.
+    c = ok(c, { type: 'selection.choose', characterId: 'jake', level: 10, skill: 'Skill 5c' });
+    expect(char(c).selections.find((s) => s.level === 10)?.chosen).toBe('Skill 5c');
+  });
+
+  it('refuses names that are not passed over, twice, chosen, or from a pending menu', () => {
+    let c = setUp();
+    const withdraw = (skill: string) =>
+      reject(c, { type: 'selection.withdrawOption', characterId: 'jake', skill });
+    expect(withdraw('Skill 99')).toMatch(/not a passed-over option/);
+    expect(withdraw('Skill 5b')).toMatch(/already has \[Skill 5b\]/);
+    expect(withdraw('Skill 10a')).toMatch(/not a passed-over option/);
+    c = ok(c, { type: 'selection.withdrawOption', characterId: 'jake', skill: 'Skill 5a' });
+    expect(withdraw('Skill 5a')).toMatch(/not a passed-over option/);
+    // Picked later from a newer menu: owned now, so not withdrawable.
+    c = ok(c, { type: 'selection.choose', characterId: 'jake', level: 10, skill: 'skill 5C' });
+    expect(char(c).selections.find((s) => s.level === 10)?.chosen).toBe('Skill 5c');
+    expect(withdraw('Skill 5c')).toMatch(/already has \[Skill 5c\]/);
+  });
+
+  it('is GM only, can be undone, and is logged', () => {
+    const c = setUp();
+    expect(
+      reject(
+        c,
+        { type: 'selection.withdrawOption', characterId: 'jake', skill: 'Skill 5a' },
+        player('jake'),
+      ),
+    ).toMatch(/only the GM/);
+    const done = ok(c, {
+      type: 'selection.withdrawOption',
+      characterId: 'jake',
+      skill: 'Skill 5a',
+    });
+    const last = done.events.at(-1);
+    expect(last?.type).toBe('selection.optionWithdrawn');
+    expect(buildSessionLog(done, done.events.length - 1).entries.map((e) => e.text)).toEqual([
+      "Skill 5a withdrawn from Jake's passed-over options",
+    ]);
+    const undone = ok(done, { type: 'event.undo', eventId: last?.id ?? '' });
+    expect(passedOverOptions(rules, char(undone), 10).map((o) => o.name)).toEqual([
+      'Skill 5a',
+      'Skill 5c',
+    ]);
+    expect(char(undone).selections.find((s) => s.level === 5)?.withdrawn).toBeUndefined();
+  });
+});
+
+describe('passed-over eligibility rules (MQ.3 review, DESIGN §6)', () => {
+  const opt = (name: string, rarity: string, kind: 'class' | 'profession' = 'class') => ({
+    name,
+    rarity,
+    kind,
+    description: '',
+  });
+  const jake = (profession: string | null = null): Character => {
+    const c = ok(ok(atGTop(), release(archery, 'Volley', 'common')), {
+      type: 'evolution.choose',
+      characterId: 'jake',
+      optionId: 'o1',
+    });
+    const me = char(c);
+    const skill = me.skills[0];
+    if (!skill) throw new Error('no skill');
+    return {
+      ...me,
+      profession,
+      // The chosen options are owned, as after real picks.
+      skills: [...me.skills, { ...skill, name: 'Kept' }, { ...skill, name: 'Newer' }],
+      selections: [
+        {
+          level: 5,
+          offerId: 'a',
+          chosen: 'Kept',
+          options: [
+            opt('Kept', 'common'),
+            opt('dup skill', 'common'),
+            opt('Epic One', 'epic'),
+            opt('Craft One', 'rare', 'profession'),
+            opt('Retired One', 'rare'),
+            opt('Odd One', 'no-such-rarity'),
+          ],
+        },
+        {
+          level: 10,
+          offerId: 'b',
+          chosen: 'Newer',
+          options: [opt('Newer', 'common'), opt('Dup Skill', 'rare')],
+        },
+      ],
+    };
+  };
+  const names = (c: Character, level: number, retired: string[] = []) =>
+    passedOverOptions(rules, c, level, new Set(retired.map((n) => n.toLowerCase()))).map(
+      (o) => o.name,
+    );
+
+  it('drops options above the ceiling of the selection being chosen; they return at a higher grade', () => {
+    // Level 15 is an E-grade selection (ceiling Epic); level 10 is F (ceiling Rare).
+    expect(names(jake(), 15)).toContain('Epic One');
+    const f = jake();
+    expect(
+      passedOverOptions(rules, { ...f, selections: f.selections.slice(0, 1) }, 10).map(
+        (o) => o.name,
+      ),
+    ).not.toContain('Epic One');
+  });
+
+  it('keeps profession options back until a profession exists', () => {
+    expect(names(jake(), 15)).not.toContain('Craft One');
+    expect(names(jake('Smith'), 15)).toContain('Craft One');
+  });
+
+  it('drops retired names, unknown rarities and case-insensitive duplicates (newest menu wins)', () => {
+    const list = names(jake(), 15, ['Retired One']);
+    expect(list).not.toContain('Retired One');
+    expect(list).not.toContain('Odd One');
+    expect(list.filter((n) => n.toLowerCase() === 'dup skill')).toEqual(['Dup Skill']);
+    expect(list).toEqual(['Dup Skill', 'Epic One']);
+    expect(names(jake(), 15)).toContain('Retired One');
   });
 });

@@ -16,6 +16,8 @@ import {
 } from '../economy';
 import {
   dueSelections,
+  passedOverOptions,
+  retiredSkillNames,
   type PendingEvolution,
   type SelectionRecord,
   type SkillOption,
@@ -211,8 +213,15 @@ export interface OwnSheet {
   }[];
   /** Merges done per grade id. */
   readonly merges: Readonly<Record<string, number>>;
-  /** Selection menus offered to this character, with the pick once chosen (M1.10). */
-  readonly selections: readonly SelectionRecord[];
+  /**
+   * Selection menus offered to this character, with the pick once chosen
+   * (M1.10). An unchosen menu also lists the passed-over options of earlier
+   * menus that are still eligible, newest first (MQ.3, DESIGN §6); empty once
+   * chosen.
+   */
+  readonly selections: readonly (SelectionRecord & {
+    readonly passedOver: readonly SkillOption[];
+  })[];
   /**
    * Earned selections not chosen yet, offered or not (MQ.1, D103): while any
    * wait, the evolution cannot be chosen.
@@ -489,6 +498,12 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
       options: r.options.map(copyOption),
       chosen: r.chosen,
       offerId: r.offerId,
+      passedOver:
+        r.chosen === null
+          ? passedOverOptions(rules, c, r.level, retiredSkillNames(c, practiced(state, c))).map(
+              copyOption,
+            )
+          : [],
     })),
     selectionsDue: dueSelections(rules, c).length,
     evolution:
@@ -513,6 +528,11 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
           },
     portrait: portraitUrl(c.portrait),
   };
+}
+
+/** Skill names the character practised (retired names count, D64). */
+function practiced(state: CampaignState, c: Character): string[] {
+  return state.practice.filter((e) => e.characterId === c.id).flatMap((e) => e.skills);
 }
 
 /** Where browsers fetch a stored portrait (M4.4); the server serves `/portraits/<file>`. */

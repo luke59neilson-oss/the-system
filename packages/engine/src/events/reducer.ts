@@ -36,6 +36,7 @@ import { gainXp, shareBonus } from '../progression';
 import {
   chooseEvolution,
   chooseSelection,
+  withdrawPassedOver,
   offerSelection,
   releaseEvolution,
   retiredSkillNames,
@@ -1106,6 +1107,13 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       return withCharacter(
         state,
         rule(event, () => mergeSkills(state.rules, character, first, second, name, joint)),
+      );
+    }
+    case 'selection.optionWithdrawn': {
+      const character = characterOf(state, event, event.payload.characterId);
+      return withCharacter(
+        state,
+        rule(event, () => withdrawPassedOver(character, event.payload.skill)),
       );
     }
     case 'selection.offered':

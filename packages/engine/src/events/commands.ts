@@ -204,6 +204,12 @@ export type Command =
       offerId?: string | undefined;
     }
   | {
+      /** GM only: a passed-over option leaves later menus (MQ.3). */
+      type: 'selection.withdrawOption';
+      characterId: string;
+      skill: string;
+    }
+  | {
       type: 'evolution.release';
       characterId: string;
       options: readonly {
@@ -464,6 +470,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('skill.merge'), skills: z.array(z.unknown()) }),
   z.object({ type: z.literal('selection.offer'), options: z.array(z.unknown()) }),
   z.object({ type: z.literal('selection.choose') }),
+  z.object({ type: z.literal('selection.withdrawOption') }),
   z.object({
     type: z.literal('evolution.release'),
     options: z.array(z.record(z.string(), z.unknown())),
@@ -886,6 +893,11 @@ function toEvent(
               (s) => s.level === command.level,
             )?.offerId,
         },
+      };
+    case 'selection.withdrawOption':
+      return {
+        type: 'selection.optionWithdrawn',
+        payload: { characterId: command.characterId, skill: command.skill },
       };
     case 'evolution.release':
       return {

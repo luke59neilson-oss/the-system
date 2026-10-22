@@ -47,6 +47,12 @@ export interface SelectionRecord {
   readonly chosen: string | null;
   /** Id of the offer event; a choice names it, so undoing a re-offer cannot re-aim a pick. */
   readonly offerId: string;
+  /**
+   * Unchosen options of this menu the GM withdrew afterwards (MQ.3, DESIGN §6):
+   * they no longer appear as passed-over options. Absent when none, so states
+   * from before MQ.3 are unchanged.
+   */
+  readonly withdrawn?: readonly string[];
 }
 
 /** One skill an evolution option rewrites (DESIGN §6 "Evolutions transform 1–2 skills"). */
@@ -245,6 +251,74 @@ export function offerSelection(
   return { ...character, selections };
 }
 
+/**
+ * Passed-over options (DESIGN §6, D103, MQ.3): options of earlier, chosen
+ * selections that were not picked stay eligible for later selections, newest
+ * menu first. An option drops out when the character already has (or had)
+ * the skill, it is above the rarity ceiling of the selection being chosen,
+ * it is on that selection's own menu, or it is a profession option and the
+ * character has no profession. Pure; derived from the selection records, so
+ * logs from before MQ.3 replay unchanged.
+ */
+export function passedOverOptions(
+  rules: RulesConfig,
+  character: Character,
+  level: number,
+  retired: ReadonlySet<string> = new Set(),
+): SkillOption[] {
+  const slot = selectionAt(rules, level);
+  if (!slot) return [];
+  const ceiling = rarityIndex(rules, gradeRules(rules, slot.grade).rarityCeiling);
+  const record = character.selections.find((s) => s.level === level);
+  const seen = new Set((record?.options ?? []).map((o) => lower(o.name)));
+  const owned = new Set(character.skills.map((s) => lower(s.name)));
+  const out: SkillOption[] = [];
+  const earlier = character.selections
+    .filter((s) => s.level < level && s.chosen !== null)
+    .sort((a, b) => b.level - a.level);
+  for (const r of earlier) {
+    const gone = new Set((r.withdrawn ?? []).map(lower));
+    for (const o of r.options) {
+      const key = lower(o.name);
+      if (gone.has(key) || seen.has(key) || owned.has(key) || retired.has(key)) continue;
+      if (o.kind === 'profession' && character.profession === null) continue;
+      const rank = rules.skills.rarities.findIndex((x) => x.id === o.rarity);
+      if (rank === -1 || rank > ceiling) continue;
+      seen.add(key);
+      out.push(o);
+    }
+  }
+  return out;
+}
+
+/**
+ * The GM withdraws a passed-over option (DESIGN §6 "withdrawn by the GM",
+ * MQ.3): every chosen menu that left it unpicked records the withdrawal, so it
+ * no longer appears in later menus. Refused when no chosen menu still holds it
+ * unpicked, or when the character already has the skill. A pending menu's own
+ * options are changed by offering it again.
+ */
+export function withdrawPassedOver(character: Character, name: string): Character {
+  const key = lower(name);
+  if (character.skills.some((s) => lower(s.name) === key)) {
+    throw new CharacterRuleError(`${character.name} already has [${name.trim()}]`);
+  }
+  let hit = false;
+  const selections = character.selections.map((r) => {
+    if (r.chosen === null || lower(r.chosen) === key) return r;
+    const option = r.options.find((o) => lower(o.name) === key);
+    if (!option || (r.withdrawn ?? []).some((w) => lower(w) === key)) return r;
+    hit = true;
+    return { ...r, withdrawn: [...(r.withdrawn ?? []), option.name] };
+  });
+  if (!hit) {
+    throw new CharacterRuleError(
+      `[${name.trim()}] is not a passed-over option of ${character.name}`,
+    );
+  }
+  return { ...character, selections };
+}
+
 /** The player (or GM) picks one option of an offered selection; the skill is granted. */
 export function chooseSelection(
   rules: RulesConfig,
@@ -265,7 +339,10 @@ export function chooseSelection(
   if (record.chosen !== null) {
     throw new CharacterRuleError(`The level ${level} selection was already chosen`);
   }
-  const option = record.options.find((o) => o.name === name);
+  // A passed-over option from an earlier menu is a valid pick too (MQ.3).
+  const option =
+    record.options.find((o) => lower(o.name) === lower(name)) ??
+    passedOverOptions(rules, character, level, retired).find((o) => lower(o.name) === lower(name));
   if (!option) throw new CharacterRuleError(`"${name}" is not on the level ${level} menu`);
   // The character may have gained the name since the offer (a transform, a merge).
   checkFreeName(character, option.name, retired);
