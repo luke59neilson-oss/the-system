@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** 5e72abe (2026-10-22, pilot) · **Next rotation:** B
+**Last sweep:** 520f6ce (2026-10-22, B) · **Next rotation:** C
 
 ## Lenses and rotation
 
@@ -90,6 +90,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-22 17:30 | pilot A, whole repo @ 5e72abe | Rules · fable | 1 | 0 | 1 | 1 H (QF.1) | 0 | 381k |
 | 2026-10-22 17:30 | pilot A, whole repo @ 5e72abe | Boundaries · sonnet | 0 | 2 | 3 | 2 M, one raised to High as a hard-rule leak (QF.2, QF.3) | 0 | 327k |
 | 2026-10-22 17:30 | pilot A, whole repo @ 5e72abe | Tests · haiku | 0 | 5 | 4 | 4 M (QF.4–QF.7); 1 M lowered to Low (latency checks are acceptance criteria, now QF.8) | 0 | 343k |
+| 2026-10-22 21:10 | B, 5e72abe..520f6ce | Boundaries · haiku | 0 | 2 | 0 | 1 M (QF.9: trade probe and item definitions); 1 M is a known gap (`previewXpAward` UI belongs to unchecked M4.6) | 0 | 187k |
+| 2026-10-22 21:10 | B, 5e72abe..520f6ce | Tests · fable | 0 | 0 | 5 | 5 L to Backlog (18 engine mutations, 17 caught) | 0 | 233k |
+| 2026-10-22 21:10 | B, 5e72abe..520f6ce | UX · sonnet | 0 | 0 | 4 | 2 L to Backlog; 2 already accepted in REVIEW-LOG | 0 | 74k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -134,3 +137,17 @@ reviewers ran 15–20 minutes each in the background.
 - Tests: `e2e/M3.1.spec.ts` test 2 depends on test 1's end state.
 - Tests: `apps/server/test/sessionLog.test.ts` ~437 waits up to 5 s with no
   assertion, so a failure shows up later as a length mismatch.
+- Tests (sweep B): `shareXp`/`splitXp` floor in grade-gap scaling is
+  unpinned (`progression/xp.ts` ~174, ~238): `Math.floor`→`Math.round`
+  survives; add a share like 200 × ⅓ → 66.
+- Tests (sweep B): `e2e/MQ.8.spec.ts` ~128-130 and `e2e/MQ.7.spec.ts`
+  ~158-161 cut frame scans at the first leaking frame, so they cannot fail;
+  cut by frame count taken before the command (as M3.9 ~135 does).
+- Tests (sweep B): `e2e/MQ.7.spec.ts` ~131-133 checks Miranda's toast after
+  it has expired; assert her history has no NOTICE.
+- Tests (sweep B): `randomCommand` (`test/helpers/events.ts`) generates no
+  selection/evolution/profession, `noticeTo`, ranked-entity or `enemyGrade`
+  commands, so replay and canary properties never combine them with undo.
+- UX (sweep B): MQ.8 demo tier text reads "TIER A storm-bred…" (fixture
+  wording); out-of-range Identify could say why ("too powerful to read").
+- UX (sweep B): MQ.6 [Take] buttons misalign between offer rows on a phone.

@@ -299,6 +299,19 @@ the rest follow in file order. Each gets its own §6 review.
   the client's render); no retries added; the full suite passes 10 times in a
   row with `--repeat-each` on the latency specs.
 
+- [ ] **QF.9 Trade proposals reveal nothing the proposer cannot see.**
+  `trade.propose` refuses a `get` bundle the counterparty does not hold
+  (`events/commands.ts` ~1250, QF.2), so a player can probe another
+  character's exact item counts (accepted for 1–3, refused at 4), and the
+  open trade then puts the asked-for item's full definition (GM description,
+  bonuses) in the proposer's `inventory.itemDefs` (`projection/player.ts`
+  ~782-800) for an item they never held (D82: players never see other
+  inventories). Sweep B, Boundaries. *Accept:* proposing never depends on the
+  counterparty's holdings (accept re-checks, with the same name-free error);
+  the proposer's view carries definitions only for items they hold or offer,
+  and the counterparty's for items they hold or are offered; engine tests for
+  the 1–3/4 probe and the definition; canary still passes.
+
 ## M1 (continued) — Rules engine
 
 - [x] **M1.6 Titles and bonuses.** Flat and percentage bonuses, percentage
