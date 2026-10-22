@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0, MS, M1, M2 and M3 done; M4 under way (M4.1–M4.3 done)
-**Next item:** M4.4 Character creation
+**Status:** in progress: M0, M1, M2 and M3 done; MS done except MS.7 (added 2026-10-22); M4 under way (M4.1–M4.4 done)
+**Next item:** MS.7 Launch polish (marked "do next"), then M4.5 Party dashboard
 **Blockers:** none.
 
 ## Run log
@@ -446,4 +446,22 @@ next item, blockers. -->
 - New decision D92. New question Q39 (nothing is logged between sessions).
 - Open `wip/*` branches: none unfinished.
 - Next: M4.4 Character creation. Not started: the run was past the 35-minute mark.
+- Blockers: none.
+
+### Run 54be8ae4 · 2026-10-22 13:09–13:47 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD), so `main` was reset to `origin/main`.
+  - The lock was pushed to main.
+  - `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work, including in the background on a separate worktree.
+- Orient: no answers in QUESTIONS.md. The latest completed CI run on main was green (1351fca). Mid-run, c1d2115 landed on main (new LOOP timebox and parallel reviews, release workflow on demand, new item MS.7 "do next"); this run's decision was renumbered D95 after D93/D94.
+- Finished M4.4 Character creation. Reviewed by sonnet in 2 rounds: round 1 had 0 High and 2 Medium (both fixed); round 2 had 0 High, 0 Medium and 2 Low (one fixed, one accepted).
+  - Engine: character `portrait` (character state v6, campaign state v16; golden states bumped additively, new `portraits` golden log). There is an optional `portrait` in `character.created` and a new GM-only `character.portraitSet` (undoable). The player view carries `/portraits/<file>` for self and party, and portrait changes go into the session log.
+  - Server: GM-gated `POST /api/gm/portraits` (PNG, JPEG or WebP by magic bytes; 2 MB cap; stored once by SHA-256 in `<campaign>/portraits/`). There is a public `GET /portraits/<file>` (nosniff, CSP, immutable), and the join list now carries `portrait`.
+  - Web: the new-character form has a portrait picker with a preview, shrunk to 512 px in the browser, and says Identify is added automatically. The GM party table has a portrait column with Change and Remove. Portraits show on the join list and the player party view, with a monogram fallback when the image fails.
+- Tests: 671 unit/integration tests (62 files). The full e2e suite (35 specs) passed after one fix: MS.4 read party names from the first table cell, so name cells now have test ids. M4.4, MS.4 and M3.1 were re-run after the review fixes, and screenshot re-renders of earlier items were discarded. Engine coverage was not re-measured this run (floor 90%; the last measurement was 99.3%).
+- Slip: commit 18cefa8 included the background reviewer's worktree as a gitlink. 03fbbd8 removed it and now ignores `.claude/worktrees/`.
+- New decision D95. New question Q40 (where portraits show; exports and backups do not carry them; removal does not unpublish).
+- Open `wip/*` branches: none unfinished.
+- Next: MS.7 Launch polish. Not started: under the new timebox it could not be finished and reviewed by minute 52.
 - Blockers: none.

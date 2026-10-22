@@ -415,3 +415,10 @@
   - L fixed: Session window messages clear when the session changes; past-sessions cells no longer wrap mid-value at 390 px; duplicate `node:fs` import merged.
   - L accepted: any undo rewrites an ended session's report once (harmless churn); button size and window position; a GM may choose a session id (validated, duplicates refused).
 - Round 2 (b5a7d9e..1351fca): 0 High, 0 Medium, 2 Low, accepted: an undo of a start right after a restart, before any write by the new process, leaves the old file saying "(running)" until the number is reused; the keep-message flag relies on the result frame arriving before the state frame (the hub's order).
+
+### 2026-10-22 · M4.4 Character creation (D95) · reviewer: sonnet (fresh context, background worktree)
+- Round 1 (c1d2115..e5d4e74): 0 High, 2 Medium, 6 Low. Check, build, M4.4 and M3.1 e2e pass; upload is GM-gated before the body is read; no path traversal; served files are image-typed with nosniff and a `default-src 'none'` CSP; undo/replay sound; no GM-only data reaches players.
+  - M fixed: screenshots lacked a player's status window at 390 px and the GM console at 390 px (both added; party shot full page); D95/Q40 now say removing a portrait does not unpublish its file.
+  - L fixed: portrait changes appear in the session log (unit test); only the latest pick counts in the new-character picker, which is disabled while reading; the picker's Remove has an aria-label.
+  - L accepted: a well-formed but missing file name is accepted (the badge falls back to the monogram); orphan files after a failed create (files are never deleted); `readFileSync` per request with an immutable cache; server 400/413 paths covered by unit tests only; portraits not on the own status window (Q40).
+- Round 2 (e5d4e74..18cefa8, required by two Mediums): 0 High, 0 Medium, 2 Low. Accepted: a decode that never settles leaves the picker on "Reading…". Fixed: the reviewer worktree pointer committed by mistake in 18cefa8 was removed and `.claude/worktrees/` ignored (03fbbd8).

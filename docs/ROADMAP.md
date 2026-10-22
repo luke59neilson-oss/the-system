@@ -250,7 +250,7 @@ the full ones.
   = backup + full session report); in-game day counter. Point the running
   session log (M2.4, D72) at the started session's events instead of "since
   the server opened the campaign".
-- [ ] **M4.4 Character creation.** Name, starting class, portrait; Identify
+- [x] **M4.4 Character creation.** Name, starting class, portrait; Identify
   added automatically.
 - [ ] **M4.5 Party dashboard.** Card per character with flags (pending
   selection/evolution/marks/merges); full sheet edit as audited events.
