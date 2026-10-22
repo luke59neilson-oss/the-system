@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1–MQ.11 done); QF.1–QF.2 done; M4.1–M4.4 done
-**Next item:** MQ.12 Skill library rules (resume `wip/MQ.12`)
+**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1–MQ.12 done); QF.1–QF.2 done; M4.1–M4.4 done
+**Next item:** MQ.13 The books' starting classes (resume `wip/MQ.13`)
 **Blockers:** none.
 
 ## Run log
@@ -594,4 +594,18 @@ next item, blockers. -->
 - Tests: 784 unit (66 files) on `wip/MQ.12`; main unchanged at 777. Engine coverage not re-measured.
 - Open `wip/*` branches: `wip/MQ.12` (unfinished).
 - Next item: MQ.12 (resume `wip/MQ.12`).
+- Blockers: none.
+
+### Run dc36334a · 2026-10-22 22:06–22:52 UTC (hand-off at minute 44, close-out to 46)
+- Preflight:
+  - `add_repo` was not offered; the repo was already cloned (shallow; stale diverged local `main`), reset to `origin/main`.
+  - Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work on worktrees; the Agent tool has no background option here, so each review blocked the run for about 4–5 minutes.
+- Orient: no new answers in ANSWERS.md. Latest main CI (6ca27d0) green. Hour 22: no efficiency check or sweep.
+- MQ.12 Skill library rules: finished `wip/MQ.12` (e2e `e2e/MQ.12.spec.ts`: upgrade takes the Uncommon entry's text and effects live; a library edit reaches the owner's open dialog; another player's frames and page never carry the effects; screenshots in `docs/screens/MQ.12/`). Review round 1 (sonnet): 0 High, 2 Medium, 6 Low; both Mediums fixed (seeding defaults now syncs existing copies; default seed matches skills by name and rarity, D126) with tests seen failing first; round 2 clean. Merged to main (eb8d7f6), box checked. Sibling found afterwards: the GM's "missing defaults" count still matched by name only; now shares `missingDefaultEntries` with the seed command (2676e61, web test added).
+- Full e2e on main: 40/40 green locally.
+- Started MQ.13 The books' starting classes on `wip/MQ.13` (base 2676e61, head 440b61e): `STARTER_CLASSES` is DESIGN §10's six with original text (Archer first), default library derived from them (D127), demo and GM form pass skills without tags; new `starters.test.ts` checks the table; `npm run check`-level unit tests green (789).
+  - Where I stopped / next step: full e2e on the branch has 3 failures from the old class names: `M4.2.spec.ts` (both tests) and `M4.4.spec.ts` (portraits test). Update those specs to the six classes, add `e2e/MQ.13.spec.ts` (GM picks each class; the demo still loads) with screenshots, refresh demo/class screenshots, then the sonnet review and merge.
+- Tests: 787 unit on main; 789 on `wip/MQ.13`. Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/MQ.13` (unfinished).
+- Next item: MQ.13 (resume `wip/MQ.13`).
 - Blockers: none.
