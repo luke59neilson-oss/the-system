@@ -435,8 +435,9 @@ function randomSkillCommand(
       type: 'skill.describe',
       characterId,
       skill: someSkill(),
-      description: pick(['Shoots true.', null, ' ', 'x'.repeat(2001)]),
-      flavor: pick([null, 'Old hands.', '']),
+      // Mostly valid text, so accepted describes do not hinge on luck.
+      description: pick(['Shoots true.', 'Shoots true.', null, ' ', 'x'.repeat(2001)]),
+      flavor: pick([null, 'Old hands.', 'Old hands.', '']),
     };
   }
   if (roll < 0.75) {
@@ -463,6 +464,42 @@ function randomClockCommand(
 ): Command {
   const ids = c.state?.clockOrder ?? [];
   const someClock = () => (ids.length && rand() < 0.9 ? pick(ids) : 'no-clock');
+  // Clocks that can take a montage (half filled, no failures) are rare in a
+  // random walk, so offer on one half the time one exists; accepted offers
+  // then do not hinge on a lucky run of ticks (QF.2 shifted that run).
+  const ready = ids.filter((id) => {
+    const k = c.state?.clocks[id];
+    return (
+      k !== undefined && k.failures === 0 && k.filled * 2 >= k.segments && k.filled < k.segments
+    );
+  });
+  if (ready.length && rand() < 0.5) {
+    return {
+      type: 'montage.offer',
+      montageId: `mo${Math.floor(rand() * 4)}`,
+      clockId: pick(ready),
+      characterIds: [pick(c.state?.characterOrder ?? ['nobody'])],
+    };
+  }
+  // Likewise answer an open montage (a focus, or closing it) a third of the
+  // time one exists.
+  const open = (c.state?.montageOrder ?? []).filter(
+    (id) => c.state?.montages[id]?.status === 'open',
+  );
+  if (open.length && rand() < 0.33) {
+    const montage = c.state?.montages[pick(open)];
+    const waiting = (montage?.characterIds ?? []).filter((id) => !(id in (montage?.focuses ?? {})));
+    if (waiting.length && rand() < 0.6) {
+      return {
+        type: 'montage.focus',
+        montageId: montage?.id ?? 'no-montage',
+        characterId: pick(waiting),
+        action: 'Scout ahead',
+        stat: null,
+      };
+    }
+    return { type: 'montage.close', montageId: montage?.id ?? 'no-montage' };
+  }
   const roll = rand();
   if (roll < 0.3) {
     return {

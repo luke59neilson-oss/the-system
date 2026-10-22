@@ -1162,7 +1162,8 @@ const countOf = (inventory: Readonly<Record<string, number>>, id: string): numbe
 /**
  * Items a command may name (QF.2): each side of a trade only what that side
  * holds now (the proposer's give, the counterparty's get); a character asking
- * the GM for items is refused (the GM offers items); equip only a held item.
+ * the GM for items is refused (the GM offers items); gift and equip only held
+ * items.
  * Unknown and not held read the same and name nothing, so a player cannot
  * probe the GM's item library. Checked on commands, not in the reducer, so
  * stored logs replay unchanged.
@@ -1182,7 +1183,19 @@ function itemOutOfReach(state: NonNullable<Campaign['state']>, command: Command)
       ? null
       : ITEM_NOT_AVAILABLE;
   }
+  if (command.type === 'gift.give') {
+    const giver = command.characterId;
+    if (giver === null || !Object.prototype.hasOwnProperty.call(state.characters, giver)) {
+      return null;
+    }
+    return holds(giver, command.items ?? {}) ? null : ITEM_NOT_AVAILABLE;
+  }
   if (command.type === 'trade.propose') {
+    // Malformed parties get the reducer's own message (they name no item).
+    const isCharacter = (id: string | null) =>
+      id === null || Object.prototype.hasOwnProperty.call(state.characters, id);
+    if (command.characterId === command.to) return null;
+    if (!isCharacter(command.characterId) || !isCharacter(command.to)) return null;
     const give = command.give.items ?? {};
     const get = command.get.items ?? {};
     if (command.characterId !== null && !holds(command.characterId, give))

@@ -486,14 +486,46 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
       }),
     );
     const first = ids[0] ?? null;
+    const second = ids[1] ?? null;
     const tradeCurrency = sentinel();
     if (first !== null) owner.get(first)?.numbers.push(tradeCurrency);
+    // QF.2: trades carry item bundles. The first character holds a swap item
+    // and offers it to the GM and to the second character; both parties see
+    // its definition (checked below), nobody else does, and the GM-only
+    // `secret` item (held by no one, in no trade) reaches no player.
+    (econ.items as Record<string, unknown>).swap = {
+      id: 'swap',
+      name: 'TRADE-swap',
+      rarity: 'rare',
+      description: 'TRADE-swapdesc',
+      slot: null,
+      bonuses: [],
+      gmNote: `${GM}-swapnote`,
+    };
+    if (first !== null) {
+      const h = (econ.holdings as Record<string, { inventory: Record<string, number> }>)[first];
+      if (h) h.inventory.swap = 1;
+    }
     econ.trades = {
+      ...(second !== null
+        ? {
+            t2: {
+              id: 't2',
+              from: first,
+              to: second,
+              give: { currency: 0, items: { swap: 1 } },
+              get: { currency: 0, items: {} },
+              status: 'open',
+              proposedAt: '2026-10-21T12:00:00.000Z',
+              closedAt: null,
+            },
+          }
+        : {}),
       t: {
         id: 't',
         from: first,
         to: null,
-        give: { currency: tradeCurrency, items: {} },
+        give: { currency: tradeCurrency, items: { swap: 1 } },
         get: { currency: 0, items: {} },
         status: 'open',
         proposedAt: '2026-10-21T12:00:00.000Z',
@@ -501,7 +533,7 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         gmNote: `${GM}-trade`,
       },
     };
-    econ.tradeOrder = ['t', `${GM}-tradeorder`];
+    econ.tradeOrder = [...(second !== null ? ['t2'] : []), 't', `${GM}-tradeorder`];
     // Practice (M3.11): own entries only, without tags or unknown keys.
     econ.practice = ids.map((id) => {
       owner.get(id)?.strings.push(`OWNER-${id}-practice`);
@@ -667,6 +699,12 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         const nums = numbersIn(json);
         projections++;
         if (json.includes(GM)) problems.push(`${viewer}: GM canary leaked`);
+        // QF.2: an item in a trade reaches exactly the trade's parties.
+        const party = viewer === state.characterOrder[0] || viewer === state.characterOrder[1];
+        for (const field of ['TRADE-swap', 'TRADE-swapdesc']) {
+          if (json.includes(field) !== party)
+            problems.push(`${viewer}: ${field} present=${!party}`);
+        }
         // Non-vacuous: party notes reach every player, in full.
         for (const part of ['title', 'body', 'tag']) {
           if (!json.includes(`PARTY-note-${part}`))
