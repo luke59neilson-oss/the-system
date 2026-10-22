@@ -440,3 +440,8 @@
   - M open for round 2: no GM UI sets the stat bonus (there is no GM evolution builder until M5.2; D110 says so); the pending-selection gate re-runs on replay, so a later rules edit that adds a selection slot could make a stored v2 release fail to replay.
   - L open: `statValues` accepts unknown stat ids at the schema (the reducer rejects them); `legacy: true` is accepted on hand-written v2 events; the refill sentence hard-codes pool names; `bonusText` edge cases fine.
 - Round 2 required (3 Mediums); not run this run (timebox). The box stays unchecked.
+- Round 2 (2026-10-22, run 451e9851, 835717c..e5ba69f), sonnet: 0 High, 1 Medium, 3 Low. `npm run check` green (691); M3.13 e2e green; evolution screenshots judged fine against DESIGN §9.
+  - Round-1 replay Medium confirmed as no defect: replay folds in log order and an undo that breaks a later release is refused. Caveat for M4.9: test that undoing a rules edit cannot re-gate a stored release.
+  - Round-1 "no GM UI for the bonus" stays accepted by design (M5.2 evolution builder; D110).
+  - M fixed (66033ea): the evolution screen called waiting selections a warning, though choosing is refused. The player view now carries `selectionsDue` (earned and unchosen, offered or not), and the screen shows "Choose your waiting skill selection first…" and disables Evolve. There are engine projection and web unit tests.
+  - L accepted: `chooseEvolution` refills from base stats when called directly (the reducer refills from effective stats; only unit tests call it directly); `bonusText` edge cases are fine; `legacy: true` on a hand-written v2 event also skips the bonus (commands never set it).

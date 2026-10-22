@@ -155,7 +155,7 @@ the full ones.
 Rule changes from Luke's answers (DESIGN §2, §4, §6, §7 updated; D97–D109).
 They touch finished engine and player items, so they come before M4.4.
 
-- [ ] **MQ.1 Evolution rules.** Evolution cannot be released, and a player
+- [x] **MQ.1 Evolution rules.** Evolution cannot be released, and a player
   cannot evolve, while any skill selection is pending. Evolution refills
   all pools. Each evolution option carries a GM-set one-time stat bonus.
   Transforms are optional (config `skills.evolutionTransforms` minimum 0).
