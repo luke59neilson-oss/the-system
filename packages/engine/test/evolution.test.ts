@@ -51,6 +51,10 @@ const char = (c: Campaign, id = 'jake'): Character => {
   if (!found) throw new Error(`no ${id}`);
   return found;
 };
+/** XP per level at F, E and D (DESIGN §5: ×3 per grade, MQ.10). */
+const XP_F = 300;
+const XP_E = 900;
+const XP_D = 2700;
 const award = (amount: number, track: 'class' | 'profession' = 'class', id = 'jake'): Command => ({
   type: 'xp.award',
   track,
@@ -124,8 +128,8 @@ describe('0→240 campaign (ROADMAP M1.10 acceptance)', () => {
     const capstoneMenus: number[] = [];
     let evolutions = 0;
     for (let step = 0; step < 2000; step++) {
+      // Choose what is due first, so the level-240 selection is never skipped.
       const j = char(c);
-      if (j.classLevel >= 240 && j.professionLevel >= 240) break;
       for (const slot of dueSelections(rules, j)) {
         const ceiling = rules.grades.find((g) => g.id === slot.grade)?.rarityCeiling ?? '';
         c = ok(c, {
@@ -148,6 +152,7 @@ describe('0→240 campaign (ROADMAP M1.10 acceptance)', () => {
         chosenLevels.push(slot.level);
       }
       const now = char(c);
+      if (now.classLevel >= 240 && now.professionLevel >= 240) break;
       const target = evolutionTarget(rules, now);
       if (target) {
         // Held: more XP only banks, levels stay at the cap.
@@ -219,7 +224,7 @@ describe('selections', () => {
       characterId: 'jake',
       optionId: 'o1',
     });
-  const reached5 = () => ok(at5(), award(150));
+  const reached5 = () => ok(at5(), award(XP_F));
 
   it('offer then choose grants the skill; the player chooses for their own character', () => {
     let c = ok(reached5(), {
@@ -336,7 +341,7 @@ describe('selections', () => {
   });
 
   it('a capstone menu must offer the grade ceiling', () => {
-    const c = ok(reached5(), award(5 * 150));
+    const c = ok(reached5(), award(5 * XP_F));
     expect(char(c).classLevel).toBe(10);
     const plain = [
       { name: 'a', rarity: 'uncommon' },
@@ -403,9 +408,9 @@ describe('evolution', () => {
   });
 
   it('held at the cap until released; the player chooses; banked XP then applies', () => {
-    let c = ok(atGTop(), award(450));
+    let c = ok(atGTop(), award(3 * XP_F));
     expect(char(c).classLevel).toBe(4);
-    expect(char(c).xp.class).toBe(450);
+    expect(char(c).xp.class).toBe(3 * XP_F);
     expect(
       reject(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' }, player('jake')),
     ).toMatch(/No evolution is released/);
@@ -459,7 +464,7 @@ describe('evolution', () => {
     expect(j.grade).toBe('F');
     expect(j.className).toBe('Ranger');
     expect(j.evolution).toBeNull();
-    expect(j.classLevel).toBe(7); // 450 banked / 150 per F level
+    expect(j.classLevel).toBe(7); // three F levels banked
     expect(j.xp.class).toBe(0);
     expect(j.skills.map((s) => [s.name, s.rarity])).toEqual([
       ['Twin Shot', 'rare'],
@@ -657,7 +662,7 @@ describe('evolution', () => {
   it('profession unlock at E: offered professions, chosen with the evolution, starting at class level', () => {
     let c = ok(atGTop(), release(archery, 'Volley', 'common'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
-    c = ok(c, award(10 * 150 + 500)); // class 14 (F top) + 500 banked
+    c = ok(c, award(10 * XP_F + 2 * XP_E)); // class 14 (F top) + two E levels banked
     expect(char(c).classLevel).toBe(14);
     c = pickAll(c);
     expect(evolutionTarget(rules, char(c))?.id).toBe('E');
@@ -682,7 +687,7 @@ describe('evolution', () => {
     expect(j.grade).toBe('E');
     expect(j.profession).toBe('Smith');
     expect(j.professionLevel).toBe(14); // the System credits what it already saw
-    expect(j.classLevel).toBe(16); // 500 banked / 250 per E level
+    expect(j.classLevel).toBe(16); // two E levels banked
     expect(raceLevel(rules, j)).toBe(15);
     // Profession options are now allowed in menus (level 15 is reached).
     c = ok(c, {
@@ -701,7 +706,7 @@ describe('evolution', () => {
   it('an E-grade release may offer no profession; the GM can grant one later', () => {
     let c = ok(atGTop(), release(archery, 'Volley', 'common'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
-    c = pickAll(ok(c, award(10 * 150)));
+    c = pickAll(ok(c, award(10 * XP_F)));
     c = ok(c, release('Volley', 'Volley II', 'uncommon'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
     expect(char(c).profession).toBeNull();
@@ -756,7 +761,7 @@ describe('evolution gate (config tracks.evolutionGate)', () => {
 
 describe('projection', () => {
   it('the owner sees their menus and released options; party members never do', () => {
-    let c = ok(atGTop(), award(150));
+    let c = ok(atGTop(), award(XP_F));
     c = ok(c, {
       type: 'evolution.release',
       characterId: 'jake',
@@ -821,7 +826,7 @@ describe('review fixes (M1.10 round 1)', () => {
         releaseId: first,
       }),
     ).toMatch(/released again/);
-    c = ok(ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' }), award(150));
+    c = ok(ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' }), award(XP_F));
     c = ok(c, { type: 'selection.offer', characterId: 'jake', level: 5, options: menu(5, 'rare') });
     const offer1 = c.events.at(-1)?.id ?? '';
     c = ok(c, { type: 'selection.offer', characterId: 'jake', level: 5, options: menu(5, 'rare') });
@@ -849,7 +854,7 @@ describe('review fixes (M1.10 round 1)', () => {
     c = ok(c, award(400));
     c = ok(c, release(archery, 'Volley', 'common'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
-    c = pickAll(ok(c, award(10 * 150)));
+    c = pickAll(ok(c, award(10 * XP_F)));
     c = ok(c, release('Volley', 'Volley II', 'uncommon', { professions: ['Smith'] }));
     c = ok(c, {
       type: 'evolution.choose',
@@ -858,26 +863,26 @@ describe('review fixes (M1.10 round 1)', () => {
       profession: 'Smith',
     });
     // E: class to 49, profession only to 30 (+ 100 XP into level 31).
-    c = ok(c, award(35 * 250));
-    c = ok(c, award(16 * 250 + 100, 'profession'));
+    c = ok(c, award(35 * XP_E));
+    c = ok(c, award(16 * XP_E + 100, 'profession'));
     expect(char(c)).toMatchObject({ classLevel: 49, professionLevel: 30, grade: 'E' });
     expect(raceLevel(rules, char(c))).toBe(39);
     // Profession XP beyond what it needs is not banked: it is below its cap.
     expect(char(c).xp.profession).toBe(100);
-    c = pickAll(ok(c, award(1000))); // banks on the class track
+    c = pickAll(ok(c, award(2 * XP_D + 100))); // banks on the class track
     c = ok(c, release('Volley II', 'Volley III', 'epic'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
     const j = char(c);
     expect(j.grade).toBe('D');
-    expect(j.classLevel).toBe(51); // 1000 banked / 400 per D level, 200 left
-    expect(j.xp.class).toBe(200);
+    expect(j.classLevel).toBe(51); // two D levels banked, 100 left
+    expect(j.xp.class).toBe(100);
     expect(j.professionLevel).toBe(30);
-    expect(j.xp.profession).toBe(100); // kept; now toward a D level (400)
+    expect(j.xp.profession).toBe(100); // kept; now toward a D level
   });
 
   it('race gate: banked profession XP applies after the evolution', () => {
     let c = toF();
-    c = pickAll(ok(c, award(10 * 150)));
+    c = pickAll(ok(c, award(10 * XP_F)));
     c = ok(c, release('Volley', 'Volley II', 'uncommon', { professions: ['Smith'] }));
     c = ok(c, {
       type: 'evolution.choose',
@@ -885,10 +890,10 @@ describe('review fixes (M1.10 round 1)', () => {
       optionId: 'o1',
       profession: 'Smith',
     });
-    c = ok(c, award(35 * 250));
-    c = ok(c, award(35 * 250 + 900, 'profession'));
+    c = ok(c, award(35 * XP_E));
+    c = ok(c, award(35 * XP_E + 2 * XP_D + 100, 'profession'));
     expect(char(c)).toMatchObject({ classLevel: 49, professionLevel: 49 });
-    expect(char(c).xp.profession).toBe(900);
+    expect(char(c).xp.profession).toBe(2 * XP_D + 100);
     c = pickAll(c);
     c = ok(c, release('Volley II', 'Volley III', 'epic'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
@@ -897,7 +902,7 @@ describe('review fixes (M1.10 round 1)', () => {
   });
 
   it('an evolution waits for every earned selection (D103, replaces Q21)', () => {
-    let c = ok(toF(), award(10 * 150));
+    let c = ok(toF(), award(10 * XP_F));
     expect(dueSelections(rules, char(c)).map((s) => s.level)).toEqual([5, 10]);
     expect(reject(c, release('Volley', 'Volley II', 'uncommon'))).toMatch(
       /skill selection to choose first \(class level 5, 10\)/,
@@ -928,7 +933,7 @@ describe('review fixes (M1.10 round 1)', () => {
       if (!c.state) throw new Error('no state');
       return projectForPlayer(c.state, 'jake').me.selectionsDue;
     };
-    let c = ok(toF(), award(10 * 150));
+    let c = ok(toF(), award(10 * XP_F));
     expect(due(c)).toBe(2);
     c = ok(c, { type: 'selection.offer', characterId: 'jake', level: 5, options: menu(5, 'rare') });
     expect(due(c)).toBe(2);
@@ -944,7 +949,7 @@ describe('review fixes (M1.10 round 2)', () => {
       characterId: 'jake',
       optionId: 'o1',
     });
-    c = pickAll(ok(c, award(10 * 150)));
+    c = pickAll(ok(c, award(10 * XP_F)));
     c = ok(c, release('Volley', 'Volley II', 'uncommon'));
     const pickEvent = c.events.findLast((e) => e.type === 'selection.chosen');
     if (!pickEvent) throw new Error('no pick');
@@ -1082,7 +1087,7 @@ describe('evolution rules from Luke (MQ.1: D98, D99, D102, D103)', () => {
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
     const hurt = Object.fromEntries(Object.keys(pools(c)).map((id) => [id, 1]));
     c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: hurt });
-    c = ok(c, award(150 * 3));
+    c = ok(c, award(3 * XP_F));
     expect(char(c).classLevel).toBeGreaterThan(4);
     expect(Object.values(pools(c)).every((v) => v === 1)).toBe(true);
   });
@@ -1101,7 +1106,7 @@ describe('evolution rules from Luke (MQ.1: D98, D99, D102, D103)', () => {
 
   it('events stored before MQ.1 replay under the old rules (upcast, no gate, no refill)', () => {
     // A v1 log: an evolution released and chosen while selections were pending.
-    const legacy = ok(toFLegacy(), award(10 * 150));
+    const legacy = ok(toFLegacy(), award(10 * XP_F));
     expect(dueSelections(rules, char(legacy)).length).toBeGreaterThan(0);
     const events = legacy.events.map((e) => ({ ...e }));
     const relId = 'v-legacy-rel';
@@ -1178,7 +1183,7 @@ describe('passed-over options stay eligible (MQ.3, DESIGN §6, D103)', () => {
     ok(c, { type: 'selection.choose', characterId: 'jake', level, skill });
 
   it('unchosen options appear for later selections, newest menu first, and can be picked', () => {
-    let c = ok(toF(), award(10 * 150));
+    let c = ok(toF(), award(10 * XP_F));
     c = choose(offer(c, 5), 5, 'Skill 5b');
     expect(passedOverOptions(rules, char(c), 10).map((o) => o.name)).toEqual([
       'Skill 5a',
@@ -1196,7 +1201,7 @@ describe('passed-over options stay eligible (MQ.3, DESIGN §6, D103)', () => {
         ?.passedOver,
     ).toEqual([]);
     // Owned now, so it leaves the list; the level 10 leftovers come first.
-    c = ok(c, award(5 * 150));
+    c = ok(c, award(5 * XP_F));
     expect(passedOverOptions(rules, char(c), 15).map((o) => o.name)).toEqual([
       'Skill 10a',
       'Skill 10b',
@@ -1206,7 +1211,7 @@ describe('passed-over options stay eligible (MQ.3, DESIGN §6, D103)', () => {
   });
 
   it('a name on no menu, old or new, is still refused', () => {
-    let c = ok(toF(), award(10 * 150));
+    let c = ok(toF(), award(10 * XP_F));
     c = offer(choose(offer(c, 5), 5, 'Skill 5b'), 10);
     expect(
       reject(c, { type: 'selection.choose', characterId: 'jake', level: 10, skill: 'Skill 99' }),
@@ -1235,7 +1240,7 @@ describe('the GM withdraws a passed-over option (MQ.3, DESIGN §6)', () => {
       optionId: 'o1',
     });
   const setUp = () => {
-    let c = ok(toF(), award(10 * 150));
+    let c = ok(toF(), award(10 * XP_F));
     c = ok(c, { type: 'selection.offer', characterId: 'jake', level: 5, options: menu(5, 'rare') });
     c = ok(c, { type: 'selection.choose', characterId: 'jake', level: 5, skill: 'Skill 5b' });
     return ok(c, {
@@ -1467,7 +1472,7 @@ describe('a chosen option never returns as passed-over (QF.1, DESIGN §6)', () =
       characterId: 'jake',
       optionId: 'o1',
     });
-    c = ok(c, award(10 * 150));
+    c = ok(c, award(10 * XP_F));
     c = ok(c, {
       type: 'selection.offer',
       characterId: 'jake',

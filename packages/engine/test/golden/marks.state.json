@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 16,
+  "schemaVersion": 17,
   "name": "Golden: marks carry over (MQ.4)",
   "rules": {
     "configVersion": 1,
@@ -163,6 +163,7 @@
     "xp": {
       "aboveLevelBonusPerLevel": 0.1,
       "aboveLevelBonusCap": 1,
+      "gradeBelowFactors": [],
       "defaultSplit": "even"
     },
     "bonuses": {

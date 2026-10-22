@@ -740,14 +740,14 @@ function checkLeaks(c: Campaign, where: string): void {
 
 /** DESIGN §3–§5 tables as written, so the config the simulation reads is pinned to DESIGN. */
 const DESIGN_GRADES = [
-  // id, top level, class spread, free points, XP per level, selection interval, rarity ceiling
+  // id, top level, class spread, free points, XP per level (×3 per grade, MQ.10), selection interval, rarity ceiling
   ['G', 4, 4, 2, 100, null, 'rare'],
-  ['F', 14, 5, 3, 150, 5, 'rare'],
-  ['E', 49, 8, 4, 250, 5, 'epic'],
-  ['D', 99, 12, 6, 400, 10, 'ancient'],
-  ['C', 149, 18, 9, 650, 10, 'legendary'],
-  ['B', 199, 27, 13, 1000, 10, 'legendary'],
-  ['A', 240, 40, 20, 1500, 10, 'mythical'],
+  ['F', 14, 5, 3, 300, 5, 'rare'],
+  ['E', 49, 8, 4, 900, 5, 'epic'],
+  ['D', 99, 12, 6, 2700, 10, 'ancient'],
+  ['C', 149, 18, 9, 8100, 10, 'legendary'],
+  ['B', 199, 27, 13, 24300, 10, 'legendary'],
+  ['A', 240, 40, 20, 72900, 10, 'mythical'],
 ] as const;
 
 /** First session (1-based) whose cumulative planned levels reach `level`. */

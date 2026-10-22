@@ -32,7 +32,7 @@ import {
   validateSkillDef,
   type SkillDef,
 } from '../skills';
-import { gainXp, shareBonus } from '../progression';
+import { gainXp, shareXp } from '../progression';
 import {
   chooseEvolution,
   chooseSelection,
@@ -56,7 +56,7 @@ import {
 import { EventRejectedError, type DomainEvent } from './envelope';
 
 /** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 16;
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 17;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -555,7 +555,10 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       return withCharacter(state, { ...character, stats: merged });
     }
     case 'xp.awarded': {
-      const { track, amount, shares, enemyLevel } = event.payload;
+      const { track, amount, shares, enemyLevel, enemyGrade } = event.payload;
+      if (enemyGrade !== undefined && !state.rules.grades.some((g) => g.id === enemyGrade)) {
+        fail(event, `unknown grade "${enemyGrade}"`);
+      }
       const ids = shares.map((s) => s.characterId);
       if (new Set(ids).size !== ids.length) fail(event, 'a participant is listed twice');
       const sum = shares.reduce((a, s) => a + s.share, 0);
@@ -563,9 +566,9 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       let next = state;
       for (const { characterId, share } of shares) {
         const character = characterOf(state, event, characterId);
-        const bonus = shareBonus(state.rules, character, share, enemyLevel);
+        const gained = shareXp(state.rules, character, share, enemyLevel, enemyGrade);
         const { character: leveled } = rule(event, () =>
-          gainXp(state.rules, character, track, share + bonus),
+          gainXp(state.rules, character, track, gained),
         );
         next = withCharacter(next, leveled);
       }

@@ -403,8 +403,9 @@ the rest follow in file order. Each gets its own §6 review.
   selection/evolution/marks/merges); full sheet edit as audited events.
 - [ ] **M4.6 XP award dialog.** Amount, class or profession, participant
   checkboxes, even integer split by default with auto-balanced last share,
-  editable shares, above-level bonus toggle, level-up preview, "typical
-  session ≈ 6 levels" helper, confirm.
+  editable shares, above-level bonus toggle, target grade (⅓ / no XP for
+  lower grades, MQ.10: `enemyGrade`), level-up preview, "typical
+  session ≈ 6 levels" helper (`typicalSessionXp`), confirm.
 - [ ] **M4.7 System broadcast.** System-style message to one or all; now or
   scheduled.
 - [ ] **M4.8 Change log and undo.** Filterable event list; undo with M1.3

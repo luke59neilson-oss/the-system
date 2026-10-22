@@ -105,6 +105,12 @@ export const rulesConfigSchema = z
       /** Bonus per level the enemy is above the character (0.10 = +10%). */
       aboveLevelBonusPerLevel: fraction,
       aboveLevelBonusCap: fraction,
+      /**
+       * XP factor for defeating a target 1, 2, … grades below the character
+       * (MQ.10, DESIGN §5); gaps past the end use the last entry. Empty (stored
+       * campaigns from before MQ.10) means no reduction.
+       */
+      gradeBelowFactors: z.array(fraction.max(1)).max(10).default([]),
       defaultSplit: z.literal('even'),
     }),
     bonuses: z.strictObject({

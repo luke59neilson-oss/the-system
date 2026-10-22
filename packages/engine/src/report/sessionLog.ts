@@ -188,7 +188,9 @@ function describe(
     case 'xp.awarded': {
       const p = event.payload;
       const shares = p.shares.map((s) => `${who(s.characterId)} ${s.share}`).join(', ');
-      const enemy = p.enemyLevel === null ? '' : `, enemy level ${p.enemyLevel}`;
+      const enemy =
+        (p.enemyLevel === null ? '' : `, enemy level ${p.enemyLevel}`) +
+        (p.enemyGrade === undefined ? '' : `, enemy grade ${p.enemyGrade}`);
       const reason = p.reason ? ` for ${line(p.reason)}` : '';
       add('xp', `${p.amount} ${p.track} XP${reason}${enemy}: ${shares}`);
       break;

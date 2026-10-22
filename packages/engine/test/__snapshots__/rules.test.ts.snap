@@ -111,7 +111,7 @@ exports[`default rules > match the snapshot 1`] = `
       "selectionInterval": 5,
       "theme": "bronze",
       "topLevel": 14,
-      "xpPerLevel": 150,
+      "xpPerLevel": 300,
     },
     {
       "classSpreadPerLevel": 8,
@@ -122,7 +122,7 @@ exports[`default rules > match the snapshot 1`] = `
       "selectionInterval": 5,
       "theme": "copper",
       "topLevel": 49,
-      "xpPerLevel": 250,
+      "xpPerLevel": 900,
     },
     {
       "classSpreadPerLevel": 12,
@@ -133,7 +133,7 @@ exports[`default rules > match the snapshot 1`] = `
       "selectionInterval": 10,
       "theme": "silver",
       "topLevel": 99,
-      "xpPerLevel": 400,
+      "xpPerLevel": 2700,
     },
     {
       "classSpreadPerLevel": 18,
@@ -144,7 +144,7 @@ exports[`default rules > match the snapshot 1`] = `
       "selectionInterval": 10,
       "theme": "gold",
       "topLevel": 149,
-      "xpPerLevel": 650,
+      "xpPerLevel": 8100,
     },
     {
       "classSpreadPerLevel": 27,
@@ -155,7 +155,7 @@ exports[`default rules > match the snapshot 1`] = `
       "selectionInterval": 10,
       "theme": "platinum",
       "topLevel": 199,
-      "xpPerLevel": 1000,
+      "xpPerLevel": 24300,
     },
     {
       "classSpreadPerLevel": 40,
@@ -166,7 +166,7 @@ exports[`default rules > match the snapshot 1`] = `
       "selectionInterval": 10,
       "theme": "diamond",
       "topLevel": 240,
-      "xpPerLevel": 1500,
+      "xpPerLevel": 72900,
     },
   ],
   "hunger": {
@@ -344,6 +344,10 @@ exports[`default rules > match the snapshot 1`] = `
     "aboveLevelBonusCap": 1,
     "aboveLevelBonusPerLevel": 0.1,
     "defaultSplit": "even",
+    "gradeBelowFactors": [
+      0.3333333333333333,
+      0,
+    ],
   },
 }
 `;

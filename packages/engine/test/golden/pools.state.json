@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 16,
+  "schemaVersion": 17,
   "name": "Golden: pools follow maxima (MQ.2)",
   "rules": {
     "configVersion": 1,
@@ -163,6 +163,7 @@
     "xp": {
       "aboveLevelBonusPerLevel": 0.1,
       "aboveLevelBonusCap": 1,
+      "gradeBelowFactors": [],
       "defaultSplit": "even"
     },
     "bonuses": {
