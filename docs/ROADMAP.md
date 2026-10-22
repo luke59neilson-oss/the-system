@@ -227,7 +227,7 @@ the full ones.
 
 ## M4 — GM console
 
-- [ ] **M4.1 Skill library.** Create/edit skills: rarity, tags, description,
+- [x] **M4.1 Skill library.** Create/edit skills: rarity, tags, description,
   flavor, effects text. Character skills already carry `description` and
   `flavor` (M3.5, D78; `skill.described`); the library should fill them when
   a skill is granted, including the starting race skill (Identify).

@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0, MS, M1, M2 and M3 done; M4 next
-**Next item:** M4.1 Skill library
+**Status:** in progress: M0, MS, M1, M2 and M3 done; M4 under way (M4.1 done)
+**Next item:** M4.2 Class, race and profession libraries
 **Blockers:** none.
 
 ## Run log
@@ -395,3 +395,20 @@ next item, blockers. -->
 - Open `wip/*` branches: none unfinished.
 - Next: M4.1 Skill library. Not started: the run was at the 35-minute mark.
 - Blockers: none.
+
+### Run 5d1c0a4e · 2026-10-22 10:06–10:47 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD and a stale local `main`), so `main` was reset to `origin/main`.
+  - The lock was pushed to main (its `run` field went out empty; this entry's id is the run's).
+  - `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md. The latest completed CI run on main was green (25ea479).
+- Release fix: the Release workflow for M3.A (25ea479) failed on Windows and macOS: `./Inventory` and `./SkillDetail` resolved to `inventory.ts` and `skillDetail.ts` on case-insensitive file systems. Renamed them to `*Model.ts`; `npm run banned` now fails on any such collision (it caught a third one in this run's own code). `main` is pushed to `release` again at the end of this run so the M3 preview build is published (D90).
+- Finished M4.1 Skill library. Reviewed by sonnet in 2 rounds: round 1 had 3 Medium (all fixed); round 2 had 0 High, 0 Medium, 4 Low (1 fixed, rest accepted).
+  - Engine: `skillDef.defined`/`skillDef.edited` events, GM-only `skillLibrary` in state v13 (golden `.state.json` files bumped, new `skilllibrary` golden log). A skill a character newly gains takes empty description/flavour from the entry with that name, Identify included; granted text is never overwritten and later edits do not touch it.
+  - GM console: a Skill library window with search (name, rarity, tag), New skill, and a form for name, rarity, tags, description, flavour and GM-only effects. It follows edits from other tabs and warns on conflicting local edits.
+- Tests: 623 unit/integration tests (56 files). All 31 e2e tests green; screenshot re-renders of earlier items were discarded. Engine line coverage 99.3% (floor 90%).
+- New decision D90. New question Q37 (what the library fills, and when).
+- Open `wip/*` branches: none unfinished.
+- Next: M4.2 Class, race and profession libraries. Not started: the run was past the 35-minute mark.
+- Blockers: none. The next run should check that the Release workflow on `release` published a preview.

@@ -33,8 +33,10 @@ export function SkillLibrary({ client, state }: { client: LiveClient; state: Cam
   // Follow the entry when it changes elsewhere (another tab, an undo).
   if (base !== null && stored === null) {
     setBase(null);
-    setDraft(emptyDraft(rarities));
-    setResult({ ok: false, text: `[${base.name}] is no longer in the library` });
+    setResult({
+      ok: false,
+      text: `[${base.name}] is no longer in the library; the form now adds it as a new skill`,
+    });
   } else if (base !== null && stored !== null && stored !== base) {
     // No local edits, or the draft now matches (our own save): adopt the new entry.
     if (saveCommand(draft, base) === null || saveCommand(draft, stored) === null) {

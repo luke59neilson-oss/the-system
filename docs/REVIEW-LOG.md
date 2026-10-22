@@ -394,3 +394,9 @@
   - L accepted: the sweep opens only the detail, selection and Identify interactions (each M3.x spec covers its own forms at 390×844); bracket buttons are ~22 px tall and the DING toast sits over the bottom of phone forms (M8 look and feel); the Assign panel shows base stats while the Stats block shows effective ones; item definitions from closed trades stay visible (D89); the race DING reads "- +6 free points".
 - No round 2 (no High; the one Medium was a label fix, re-checked with `npm run check` and the M3.A and M3.11 specs).
 
+
+### 2026-10-22 · M4.1 Skill library (D90) · reviewer: sonnet (fresh context)
+- Round 1 (80aac0a..1defc7e): 0 High, 3 Medium, 4 Low. Check, build, M4.1 e2e and screenshots pass; no GM-only leak (canary in frames and page).
+  - M fixed: no test of undoing a library event (engine test added; semantics in D90); the form kept a stale draft when its entry was undone, and did not follow edits made elsewhere, so a save could revert another tab's change (the form now diffs against the entry as loaded, adopts outside changes when untouched, warns with Reload otherwise; e2e covers a second GM tab).
+  - L fixed: stronger selected-entry outline; focus moves to the form on open. L recorded: name-only matching ignores the entry's rarity (Q37).
+- Round 2 (1defc7e..cb5f823): 0 High, 0 Medium, 4 Low. Fixed: an entry removed elsewhere keeps the GM's draft as a new skill instead of blanking it. Accepted: render-time state adoption (terminates; conventional in this codebase), focus on open for pointer users, last-writer-wins when both sides change the same field.
