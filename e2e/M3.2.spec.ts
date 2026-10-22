@@ -127,11 +127,9 @@ test('status screens follow DESIGN §9 and update live', async ({ browser }) => 
   // pool bar and free points, each glowing.
   await expect(sultan.getByTestId('stat-endurance')).toContainText('1.1');
   await expect(sultan.getByTestId('stat-endurance').locator('strong.flash')).toHaveCount(1);
-  await expect(sultan.getByTestId('pool-stamina')).toHaveText('100/110');
-  await expect(sultan.getByTestId('pool-bar-stamina')).toHaveAttribute(
-    'style',
-    /width: 90\.90\d*%/,
-  );
+  // A full pool stays full as the maximum rises (MQ.2, D100).
+  await expect(sultan.getByTestId('pool-stamina')).toHaveText('110/110');
+  await expect(sultan.getByTestId('pool-bar-stamina')).toHaveAttribute('style', /width: 100%/);
   await expect(
     sultan.locator('dd.flash').filter({ has: sultan.getByTestId('pool-stamina') }),
   ).toHaveCount(1);

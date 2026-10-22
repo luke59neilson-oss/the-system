@@ -116,11 +116,16 @@ test('inventory: gear, effective stats, gifts and trades', async ({ browser }) =
   await expect(jake.getByTestId('ding-toast')).toContainText(
     'You received [Amulet of Vigor] from the GM',
   );
+  // A pool that is not full keeps its value when the maximum rises (MQ.2,
+  // D100); unequipping clamps current HP to the new maximum.
+  await gmCommand(gm, {
+    type: 'character.setPools',
+    characterId: 'demo-jake',
+    pools: { hp: Number(hpMaxBefore) - 15 },
+  });
+  await expect(hp).toHaveText(`${Number(hpMaxBefore) - 15}/${hpMaxBefore}`);
   await inv.getByRole('button', { name: 'Equip Amulet of Vigor' }).click();
-  await expect(hp).toContainText(`/${Number(hpMaxBefore) + 100}`);
-  // Equipping never heals; unequipping clamps current HP to the new maximum.
-  const [, hpNow] = ((await hp.textContent()) ?? '').match(/^(\d+)\//) ?? [];
-  expect(Number(hpNow)).toBe(Number(hpMaxBefore));
+  await expect(hp).toHaveText(`${Number(hpMaxBefore) - 15}/${Number(hpMaxBefore) + 100}`);
   await gmCommand(gm, {
     type: 'character.setPools',
     characterId: 'demo-jake',
