@@ -148,7 +148,7 @@ test('a player chooses a skill from the offered menu', async ({ browser }) => {
   await gmCommand(gm, {
     type: 'xp.award',
     track: 'class',
-    amount: 3200,
+    amount: 8 * 2700, // eight D levels (DESIGN §5: 2,700 per D level, MQ.10)
     participants: [{ characterId: 'demo-jake' }],
   });
   await gmCommand(gm, {
