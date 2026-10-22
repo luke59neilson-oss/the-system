@@ -11,14 +11,25 @@ const GM_KEY = 'e2e-gm-key-m37-0123456789abcdef';
 const shots = path.resolve(import.meta.dirname, '../docs/screens/M3.7');
 let server: RunningServer;
 
-test.beforeAll(async () => {
+// One server per test: tests in a file may run in different workers (CI has
+// more than one), so no test may depend on another's campaign state.
+test.beforeEach(async () => {
   mkdirSync(shots, { recursive: true });
   server = await startBuiltServer({ GM_KEY });
 });
 
-test.afterAll(async () => {
+test.afterEach(async () => {
   await server.stop();
 });
+
+/** A fresh campaign with the demo loaded (D70: Jake wears the ring and bow). */
+async function loadDemo(gm: Page): Promise<void> {
+  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
+  await gm.getByLabel('Campaign name').fill('Inventory Test');
+  await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await gm.getByRole('button', { name: 'Load demo campaign' }).click();
+  await expect(gm.getByTestId('demo-badge')).toBeVisible();
+}
 
 function watchErrors(page: Page) {
   const errors: string[] = [];
@@ -57,11 +68,7 @@ test('inventory: gear, effective stats, gifts and trades', async ({ browser }) =
   const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const gmErrors = watchErrors(gm);
   gm.on('dialog', (d) => void d.accept());
-  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
-  await gm.getByLabel('Campaign name').fill('Inventory Test');
-  await gm.getByRole('button', { name: 'Create campaign' }).click();
-  await gm.getByRole('button', { name: 'Load demo campaign' }).click();
-  await expect(gm.getByTestId('demo-badge')).toBeVisible();
+  await loadDemo(gm);
 
   const jake = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const errors = watchErrors(jake);
@@ -202,7 +209,8 @@ test('inventory: gear, effective stats, gifts and trades', async ({ browser }) =
 test('the GM View-as panes show the inventory read-only', async ({ browser }) => {
   const gm = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   const gmErrors = watchErrors(gm);
-  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
+  gm.on('dialog', (d) => void d.accept());
+  await loadDemo(gm);
   const bar = gm.getByRole('navigation', { name: 'View as' });
   await bar.getByRole('button', { name: 'Jake' }).click();
   const pane = gm.frameLocator('iframe[title="Jake (player view)"]:visible');

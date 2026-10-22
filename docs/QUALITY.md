@@ -60,7 +60,9 @@ Least-covered logic files in server and web; assertions that cannot fail;
 missing rejected-input cases; un-awaited async; order-dependent tests;
 fixed sleeps in e2e; fixed ports; unseeded property tests; goldens that can
 silently regenerate; one or more concrete mutations that no test would
-catch. High = a test guarding a hard rule (no GM data to players,
+catch. Run the e2e suite with `--workers=4` and every failing test alone
+(`-g`): a test that fails alone depends on another test's state.
+High = a test guarding a hard rule (no GM data to players,
 determinism, replay) cannot actually fail.
 
 ### UX (player and GM screens against DESIGN §9)
@@ -95,13 +97,16 @@ reviewers ran 15–20 minutes each in the background.
 
 ## Flakes
 
-- 2026-10-22 16:55 · CI on 5e72abe red in E2E; the same commit passed the
-  full suite locally (35/35). Failing test unknown (job logs are not
-  reachable from runs; CI now reports failures as annotations). See QF.8.
-- 2026-10-22 18:10 · CI on 6ca3e7e red in E2E: `e2e/M3.7.spec.ts:202` (GM
-  View-as panes) timed out waiting for the View-as `Jake` button. The same
-  commit passed that spec 3× locally (`--repeat-each=3`). Watch for a repeat;
-  a second occurrence becomes a QF item.
+- 2026-10-22 16:55–17:38 · CI on main red four times (5e72abe, d244b21,
+  176523f, 6ca3e7e). Not a flake: `e2e/M3.7.spec.ts` "View-as panes" relied
+  on the previous test having loaded the demo. It passed locally (1 worker)
+  and failed in CI once the repo went public (bigger runners, 2 workers).
+  Fixed with one server and demo per test; LOOP §4 now says how to reproduce
+  CI's parallelism. (The 18:10 run logged it as a flake: `--repeat-each` on
+  one worker always ran the tests in order, so it passed.)
+- 2026-10-22 · Under 4 workers on 2 CPUs, `e2e/M3.3.spec.ts` (DING history)
+  and `e2e/MS.3.spec.ts` (View-as, live) fail; each passes alone. Load
+  sensitivity, see QF.8.
 
 ## Backlog (Lows; M11.5 goes through these)
 

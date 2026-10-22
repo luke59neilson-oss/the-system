@@ -77,10 +77,15 @@ them whole costs about 30k tokens per run for history you do not need):
 - **Red CI: read the failures first.** Job logs are not reachable from here;
   failing tests appear as annotations:
   `GH_TOKEN= gh api repos/luke59neilson-oss/the-system/actions/runs/<id>/jobs --jq '.jobs[].id'`,
-  then `.../check-runs/<job id>/annotations`. If that commit passes the same
-  tests locally, it is a flake: add it to "Flakes" in `docs/QUALITY.md` and
-  carry on (your next push re-runs CI). Never add retries or loosen a check
-  to hide a flake; a flake that repeats becomes a QF item.
+  then `.../check-runs/<job id>/annotations`. Reproduce it the way CI runs:
+  CI has 4 CPUs and 2 Playwright workers, this workspace 2 CPUs and 1, so a
+  test that needs another test's state passes here and fails there. Run the
+  failing test alone (`npx playwright test -g "<title>"`) and its file with
+  `--workers=2`. Failing alone = a real bug in the test: fix it now. Passing
+  both ways = a flake: add it to "Flakes" in `docs/QUALITY.md` and carry on
+  (your next push re-runs CI). Never add retries or loosen a check to hide a
+  flake; a flake that repeats becomes a QF item. No e2e test may depend on
+  another test's state: one server per test, or a serial file with a reason.
 - **CI that never ran is not a code failure.** If the failed run's jobs have
   no steps (`.../actions/runs/<id>/jobs --jq '.jobs[].steps|length'` is 0)
   or its messages mention billing, a spending limit or minutes, the Actions

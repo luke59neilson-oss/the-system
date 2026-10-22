@@ -286,12 +286,12 @@ the rest follow in file order. Each gets its own §6 review.
   (`apps/server/src/store.ts` ~403-420) have no tests. *Accept:* fault-
   injection tests: a failed write leaves the log at its last good length; a
   failed fsync refuses every later append and the error says why.
-- [ ] **QF.8 Latency checks that don't flake.** Main CI went red on
-  2026-10-22 (5e72abe) while the same commit passed locally; e2e specs bound
+- [ ] **QF.8 Latency checks that don't flake.** e2e specs bound
   click-to-render wall time (`e2e/MS.A.spec.ts` ~80-86 and ~157,
   `e2e/MS.2.spec.ts` ~81-87, `e2e/MS.3.spec.ts` ~118-126,
   `apps/server/test/sessionLog.test.ts` ~448) with `retries: 0` under fully
-  parallel workers. *Accept:* the "within 1 s" criteria (MS.3, M7.x) still
+  parallel workers; under 4 workers on 2 CPUs `e2e/MS.3.spec.ts` and
+  `e2e/M3.3.spec.ts` fail while each passes alone (QUALITY.md, Flakes). *Accept:* the "within 1 s" criteria (MS.3, M7.x) still
   hold but are measured without depending on CI load (e.g. a serial
   Playwright project for latency specs, or timing from the server's send to
   the client's render); no retries added; the full suite passes 10 times in a
