@@ -179,7 +179,7 @@ They touch finished engine and player items, so they come before M4.4.
   *Accept:* statistical test for the one-grade case (24% ±2% for DESIGN's
   peak-E vs fresh-D example); deterministic tests for two-plus grades,
   damage scaling and the no-pooling rule.
-- [ ] **MQ.10 Steep XP curve.** XP per level ×3 per grade (G 100 … A 72,900);
+- [x] **MQ.10 Steep XP curve.** XP per level ×3 per grade (G 100 … A 72,900);
   XP for defeating a target one grade below ×⅓, two or more below 0; the
   "typical session" helper per grade. Config migration with an upcaster for
   existing campaigns. *Accept:* engine tests; the 40-session simulation

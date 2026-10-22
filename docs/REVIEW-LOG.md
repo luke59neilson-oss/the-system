@@ -495,3 +495,12 @@
   - M fixed (97d0ff2): a zero, negative or fractional count on a known id reached the payload schema, whose error named the id, so a player could scan for ids that exist. Every bad count now reads `That item is not available`; test over 0, -1, 0.5 × known/unknown ids for trades and gifts, confirmed failing without the fix. No round 2 (one Medium).
   - L to Q45: asking another player for an item they hold shows its definition (a guessed id probes their inventory); by Accept's design.
   - L accepted: a stale trade's accept error names an item both parties already saw. L fixed: canary failure text read inverted.
+
+## 2026-10-22 · MQ.10 Steep XP curve · sonnet
+- Round 1 (5d2a6e0..2e433ea): 0 High, 4 Medium, 5 Low. `npm run check` green (743).
+  - M deferred to M4.6 (ROADMAP note, D120): the GM award form cannot send a target grade yet; every award is full XP until the dialog item.
+  - M resolved: an unknown `enemyGrade` is refused in the reducer and surfaces as a normal command error (tested).
+  - M resolved by D120: no upcaster; stored rules get `gradeBelowFactors: []` by default and keep their saved curve (D113 pattern).
+  - M fixed (5dbaacf): docs (D120, ROADMAP M4.6). Also fixed from my own full e2e run: `e2e/M3.6.spec.ts` awarded eight D levels at the old 400.
+  - L accepted: factor before bonus (D120 says why); unconstrained factor lists; the 0→240 test now chooses due selections before its exit check (the level-240 menu was skipped once awards grew); a bare `award(400)` at G in evolution.test.ts.
+- Round 2 (5dbaacf): 0 High, 0 Medium, 1 Low (MS.A's 400 XP → level 4 looked old-curve; it is G at 100, unchanged). `npm run check` and e2e M3.6, MS.4, MS.A, M3.5 green.

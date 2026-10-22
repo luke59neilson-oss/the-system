@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1–MQ.5, MQ.9 done); QF.1 done, QF.2 on `wip/QF.2`; M4.1–M4.4 done
-**Next item:** resume QF.2 (High) Item definitions reach players only for items they can see, from `wip/QF.2` (update 6 tests, projection canary, review)
+**Status:** in progress: M0–M3 and MS done; MQ (Luke's answers) under way (MQ.1–MQ.5, MQ.9, MQ.10 done); QF.1–QF.2 done; M4.1–M4.4 done
+**Next item:** MQ.6 Tailored professions
 **Blockers:** none.
 
 ## Run log
@@ -542,4 +542,17 @@ next item, blockers. -->
   4. Review, then merge.
 - Tests: 739 on main (65 files). Full e2e (35) green locally after MQ.4's player-projection change. Engine coverage not re-measured.
 - Open `wip/*` branches: `wip/QF.2` (unfinished). `wip/MQ.4` is merged.
+- Blockers: none.
+
+### Run 74982dab · 2026-10-22 18:06–18:52 UTC (ended at minute 46: MQ.10 finished and reviewed at minute 43; MQ.6 (engine, UI and e2e) cannot start meaningfully in the 1 minute left before the 44 hand-off)
+- Preflight:
+  - `add_repo` was not offered; the repo was already cloned with a stale, diverged local `main` (detached HEAD), reset to `origin/main`.
+  - Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work on worktrees (they block this session until they report, so reviews ran between items).
+- Orient: no new answers in ANSWERS.md. Latest main CI (6ca3e7e) red in E2E: `e2e/M3.7.spec.ts:202` timed out; the same commit passed it 3× locally, logged as a flake in QUALITY.md (a repeat makes it a QF item). Hour 18: efficiency check (§9).
+- Efficiency check: scorecard row added (end minute 41.3, items/run 1.7, round-2 7/10, Highs 1, CI 95 runs / 8 red per day, 4.6 min). L9 trials too young to judge. Auditor (sonnet) made 2 Tier 1 proposals; applied one in trial (D119: pre-review sibling self-check, LOOP §6.2); the other (fix the M3.7 flake now) waits for a repeat.
+- Finished:
+  - QF.2 (High) Item definitions reach players only for items they can see (D117, D118). Command-level `itemOutOfReach`: trade sides, gifts and equips name only held items; one message for unknown, not held and bad counts; a player's trade with the GM asks only for currency (Q44 default). Canary trades carry item bundles. The replay property test walks two seeds (QF.2 had reshuffled the single walk). Review round 1: 0 High, 1 Medium (zero-count id probe) fixed and confirmed failing without the fix. New Q45 (asking another player for items).
+  - MQ.10 Steep XP curve (D120): ×3 per grade for new campaigns, `xp.gradeBelowFactors` [⅓, 0], optional `enemyGrade` on `xp.awarded`, `typicalSessionXp`; campaign state v17 (golden states bumped additively). Rounds 1–2 (sonnet): round 2 clean.
+- Tests: 743 unit (65 files). Full e2e 35/35 green on QF.2 and on MQ.10 after the M3.6 fix (M3.6 re-run alone). Engine coverage not re-measured.
+- Open `wip/*` branches: none unfinished (`wip/QF.2`, `wip/MQ.10` merged).
 - Blockers: none.
