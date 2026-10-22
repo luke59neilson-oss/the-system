@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { OwnSheet, PlayerView } from '@the-system/engine';
-import { notificationText } from '../format';
+import { friendlyError, notificationText } from '../format';
 import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
 import { playChime, unlockChime } from './chime';
@@ -22,6 +22,7 @@ import {
   writeSound,
   type HistoryFilter,
 } from './history';
+import { allocationText, assignedBatches, nextBatch, spent, step } from './freePoints';
 import { browserStorage, remember } from './join';
 import {
   cssToken,
@@ -102,7 +103,7 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
       )}
       {view && live.status !== 'refused' && (
         <div className="player-grid">
-          <Status view={view} />
+          <Status view={view} client={pane ? null : client} />
           <Feed live={live} view={view} />
         </div>
       )}
@@ -110,13 +111,16 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
   );
 }
 
-function Status({ view }: { view: PlayerView }) {
+function Status({ view, client }: { view: PlayerView; client: LiveClient | null }) {
   const me: OwnSheet = view.me;
   const rules = view.rules;
   const poolName = (id: string) => rules.pools.find((p) => p.id === id)?.name ?? id;
   const metal = themeClass(rules.grades.find((g) => g.id === me.grade)?.theme);
   const skills = (kind: SkillKind) => me.skills.filter((s) => s.kind === kind);
   const free = unassignedPoints(me.freePointBatches);
+  const [assigning, setAssigning] = useState(false);
+  const batch = nextBatch(me.freePointBatches);
+  const locked = assignedBatches(me.freePointBatches);
   return (
     <section
       className={`window status-window${metal}`}
@@ -161,7 +165,13 @@ function Status({ view }: { view: PlayerView }) {
       </ul>
       <dl className="rows">
         <dt>Free points</dt>
-        <Live testId="free-points" value={String(free)} />
+        <Live testId="free-points" value={String(free)}>
+          {client && batch && !assigning && (
+            <button type="button" className="assign-btn" onClick={() => setAssigning(true)}>
+              [Assign]
+            </button>
+          )}
+        </Live>
         {me.titles.length > 0 && (
           <>
             <dt>Titles</dt>
@@ -169,6 +179,29 @@ function Status({ view }: { view: PlayerView }) {
           </>
         )}
       </dl>
+      {client && batch && assigning && (
+        <AssignPoints
+          key={batch.raceLevel}
+          client={client}
+          view={view}
+          raceLevel={batch.raceLevel}
+          points={batch.points}
+          more={me.freePointBatches.filter((b) => b.allocation === null).length - 1}
+          onClose={() => setAssigning(false)}
+        />
+      )}
+      {locked.length > 0 && (
+        <details className="locked-points" data-testid="locked-points">
+          <summary>Assigned points (locked)</summary>
+          <ul>
+            {locked.map((b) => (
+              <li key={b.raceLevel}>
+                Race level {b.raceLevel}: {allocationText(rules, b.allocation ?? {})}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       <SkillList title="Class Skills" kind="class" list={skills('class')} rules={rules} />
       {skills('profession').length > 0 && (
         <SkillList
@@ -179,6 +212,126 @@ function Status({ view }: { view: PlayerView }) {
         />
       )}
       <SkillList title="Race Skills" kind="race" list={skills('race')} rules={rules} />
+    </section>
+  );
+}
+
+/**
+ * Assign one free-point batch (M3.4): spread exactly its points, review,
+ * confirm. Assigned points lock; only the GM can change them (D38).
+ */
+function AssignPoints({
+  client,
+  view,
+  raceLevel,
+  points,
+  more,
+  onClose,
+}: {
+  client: LiveClient;
+  view: PlayerView;
+  raceLevel: number;
+  points: number;
+  more: number;
+  onClose: () => void;
+}) {
+  const rules = view.rules;
+  const [allocation, setAllocation] = useState<Record<string, number>>({});
+  const [review, setReview] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const left = points - spent(allocation);
+  const confirm = async () => {
+    setBusy(true);
+    setError(null);
+    const result = await client.command({
+      type: 'freePoints.assign',
+      characterId: view.me.id,
+      raceLevel,
+      allocation,
+    });
+    setBusy(false);
+    if (result.ok) onClose();
+    else setError(friendlyError(result.error));
+  };
+  return (
+    <section className="assign" aria-labelledby="assign-heading" data-testid="assign">
+      <h3 id="assign-heading">Assign free points</h3>
+      <p className="muted">
+        Race level {raceLevel}: {points} points
+        {more > 0 ? ` (${more} more ${more === 1 ? 'batch' : 'batches'} waiting)` : ''}
+      </p>
+      {!review ? (
+        <>
+          <ul className="assign-stats">
+            {rules.stats.list.map((s) => {
+              const added = allocation[s.id] ?? 0;
+              const base = view.me.stats[s.id] ?? 0;
+              return (
+                <li key={s.id} data-testid={`assign-${s.id}`}>
+                  <span className="assign-name">{s.name}</span>
+                  <span className="assign-value">
+                    {formatStatValue(rules, base + added)}
+                    {added > 0 && <span className="assign-added"> (+{added})</span>}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={`Remove a point from ${s.name}`}
+                    disabled={added === 0}
+                    onClick={() => setAllocation((a) => step(a, s.id, -1, points))}
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Add a point to ${s.name}`}
+                    disabled={left === 0}
+                    onClick={() => setAllocation((a) => step(a, s.id, 1, points))}
+                  >
+                    +
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <p data-testid="points-left" aria-live="polite">
+            Points left: {left}
+          </p>
+          <div className="assign-actions">
+            <button type="button" disabled={left !== 0} onClick={() => setReview(true)}>
+              Review
+            </button>
+            <button type="button" className="secondary" onClick={onClose}>
+              Cancel
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p data-testid="assign-review">
+            Assign {allocationText(rules, allocation)}? Assigned points lock; only the GM can change
+            them.
+          </p>
+          <div className="assign-actions">
+            <button type="button" disabled={busy} onClick={() => void confirm()}>
+              Confirm
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              disabled={busy}
+              onClick={() => setReview(false)}
+            >
+              Back
+            </button>
+          </div>
+        </>
+      )}
+      {error && (
+        <p className="err" role="alert">
+          {error}
+        </p>
+      )}
     </section>
   );
 }
