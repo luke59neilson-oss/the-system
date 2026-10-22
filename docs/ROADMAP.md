@@ -191,7 +191,7 @@ They touch finished engine and player items, so they come before M4.4.
   locks (greyed). Race level = class level until a profession is taken.
   *Accept:* engine tests; e2e for picking at evolution, declining, and
   picking later from the tab.
-- [ ] **MQ.7 Hidden quest notice.** Creating a hidden quest sends the
+- [x] **MQ.7 Hidden quest notice.** Creating a hidden quest sends the
   affected players a System notice that a hidden quest exists, with no
   details. *Accept:* canary test still passes; notice e2e.
 - [ ] **MQ.8 Identify range.** Lower grade always; higher grade never; same

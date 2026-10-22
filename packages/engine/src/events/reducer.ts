@@ -1424,7 +1424,6 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
   }
 }
 
-/** Every id must be a character, listed once. */
 /** A quest's notice list (MQ.7): null (every character) or existing characters, no repeats. */
 function checkNoticeTo(
   state: CampaignState,
@@ -1436,6 +1435,7 @@ function checkNoticeTo(
   return [...ids];
 }
 
+/** Every id must be a character, listed once. */
 function checkCharacters(state: CampaignState, event: DomainEvent, ids: readonly string[]): void {
   if (new Set(ids).size !== ids.length) fail(event, 'a character is listed twice');
   for (const id of ids) characterOf(state, event, id);

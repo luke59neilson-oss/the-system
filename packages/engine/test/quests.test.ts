@@ -342,6 +342,8 @@ describe('hidden quest notice (MQ.7, DESIGN §7)', () => {
     });
     expect(seen(c, 'jake').hiddenQuests).toBe(2);
     expect(seen(c, 'mira').hiddenQuests).toBe(1);
+    // Miranda joins after both: she is told of the one meant for everyone.
+    expect(told(c)).toEqual(['jake', 'jake', 'mira']);
   });
 
   it('refuses unknown or repeated characters and an empty edit; undo removes the notice', () => {

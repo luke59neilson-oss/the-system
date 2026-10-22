@@ -117,6 +117,16 @@ export function notificationsBetween(
       if (!told.includes(characterId)) out.push({ kind: 'hiddenQuest', characterId });
     }
   }
+  if (event?.type === 'character.created') {
+    // A newcomer is told of every hidden quest meant for everyone (noticeTo null).
+    const characterId = event.payload.id;
+    for (const id of after.questOrder) {
+      const q = has(after.quests, id) ? after.quests[id] : undefined;
+      if (q && hiddenQuestNoticed(q, after.characterOrder).includes(characterId)) {
+        out.push({ kind: 'hiddenQuest', characterId });
+      }
+    }
+  }
   if (event?.type === 'gift.given' && event.payload.to !== null) {
     const { characterId: giver, to, bundle } = event.payload;
     out.push({
