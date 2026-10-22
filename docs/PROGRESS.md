@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0, MS, M1 and M2 done; M3.1–M3.13 done (M3.A left)
-**Next item:** M3.A Milestone acceptance and review
+**Status:** in progress: M0, MS, M1, M2 and M3 done; M4 next
+**Next item:** M4.1 Skill library
 **Blockers:** none.
 
 ## Run log
@@ -376,4 +376,22 @@ next item, blockers. -->
 - New decisions D87, D88. New question Q36 (warnings before an evolution; warn-only default).
 - Open `wip/*` branches: none unfinished (`wip/M3.13` is merged).
 - Next: M3.A Milestone acceptance and review (fable reviewer; ends by pushing `main` to `release`). Not started: the run was past the 35-minute mark.
+- Blockers: none.
+
+### Run b4b5e178 · 2026-10-22 09:06–09:42 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD, shallow, and a stale local `main`), so `main` was reset to `origin/main` and the history unshallowed.
+  - The lock was pushed to main.
+  - `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `fable` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md. The latest completed CI run on main was green (8afc40b).
+- Finished M3.A Milestone acceptance and review. Reviewed by fable in 1 round: 0 High, 1 Medium (fixed), 8 Low (3 fixed, rest accepted; see REVIEW-LOG).
+  - New `e2e/M3.A.spec.ts`: every player window for Jake, Miranda, Casper and Sultan at 1366×768, 1920×1080 and 390×844; zero console errors, no sideways scroll, skill detail, selection and Identify open and close, and a WebSocket canary for GM-only text (D89). JPEG screenshots in `docs/screens/M3.A/`.
+  - Fix: practice forms show the official skill name with the nickname beside it (D78); long history/DING text wraps.
+- Tests: 610 unit/integration tests (53 files). All 30 e2e tests green (21 M3/MS/M0/M2 spec files plus M3.A's three viewports); screenshot re-renders of earlier items were discarded. Engine untouched this run (line coverage 99.36%, floor 90%).
+- CI: green on 1b74d2d; later commits running at the end of the run.
+- Release: `main` pushed to `release` (LOOP §8.2, M3.A). The next run checks that the Release workflow published `preview-<date>`.
+- New decision D89. No new questions.
+- Open `wip/*` branches: none unfinished.
+- Next: M4.1 Skill library. Not started: the run was at the 35-minute mark.
 - Blockers: none.

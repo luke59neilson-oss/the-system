@@ -385,3 +385,12 @@
   - L fixed: a settled or withdrawn release also closes with a notice; the free-points warning (evolving does not touch free points) is gone; a phone screenshot of the review step was added.
   - L accepted: options without transforms look sparse; no component-level unit test or View-as assertion (the pane has no client, so no button).
 - Round 2 (8f71d59..8afc40b): 0 High, 0 Medium, 2 new Low, accepted for now: an old evolution notice lingers until [Evolve] is clicked again; if a confirm is saved but its result is lost to a dropped connection, the player sees the "settled by the GM" notice instead of the connection message.
+
+### 2026-10-22 · M3.A Milestone acceptance and review · reviewer: fable (fresh context)
+- Scope: whole M3 milestone (3151482..1b74d2d) plus the new `e2e/M3.A.spec.ts`. The reviewer ran `npm run check` (610 tests), the build and all 18 M3 e2e tests (pass), judged screenshots at all three sizes against DESIGN §9 (holds), and ran its own leak probe on Jake's phone: player view keys exactly the allowlist, no GM-only clock, rule tags, tiers or `knownBy` in any frame.
+- Round 1: 0 High, 1 Medium, 8 Low.
+  - M fixed (a57d6bf): the practice forms labelled nicknamed skills by nickname only; they now show the official name with the nickname beside it (D78), asserted in M3.A.
+  - L fixed: the practice placeholder no longer copies the demo's real entry; history and DING text wrap long words; the canary also covers the GM-only clock name/id and the `pale hunter` rule tag.
+  - L accepted: the sweep opens only the detail, selection and Identify interactions (each M3.x spec covers its own forms at 390×844); bracket buttons are ~22 px tall and the DING toast sits over the bottom of phone forms (M8 look and feel); the Assign panel shows base stats while the Stats block shows effective ones; item definitions from closed trades stay visible (D89); the race DING reads "- +6 free points".
+- No round 2 (no High; the one Medium was a label fix, re-checked with `npm run check` and the M3.A and M3.11 specs).
+
