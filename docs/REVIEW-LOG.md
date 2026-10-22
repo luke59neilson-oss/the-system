@@ -275,3 +275,14 @@
   - L fixed: pool bars clamped to 0–100 (`poolPercent`, unit-tested); track rows pass unbreakable parts instead of splitting on " – ".
   - L accepted: rarity colours are CSS placeholders keyed by config ids (M8.1); no `aria-live` on status values (the feed announces changes); pool labels wrap at 390; duplicate skill names cannot occur (D63).
 - Round 2 (eeed569..351c49a): 0 High, 0 Medium. Lows: the change counter does not reset if a pane reuses its instance for another character (panes are keyed per character), labels wrap, no 1920×1080 shot.
+
+## 2026-10-22 · M3.3 Notifications and history · reviewer: sonnet (fresh context)
+- Round 1 (18b39ff..ccd68ac): 0 High, 3 Medium, 6 Low. No GM-only leak found.
+  - M: the DING queue counted positions, so an undo could make it skip or swallow a later DING. Fixed: the queue tracks what was shown by identity (`nextArrival`/`notificationKey`, unit-tested).
+  - M: an undo while a player was offline left the undone DINGs on their screen after a reconnect. Fixed: a rejoin whose `lastSeq` predates an undo gets the whole history with `reset: true` (hub and sync tests).
+  - M: an undo refolds the whole log. Measured about 20 ms for 3,000 events. Kept and documented in D76, since undo is rare.
+  - L fixed: the toast covered the header and Sound button, so it now sits at the bottom of the screen (phone check and a 390×844 screenshot added). The nested `role="status"` was replaced by an always-mounted `aria-live` wrapper.
+  - L accepted: missed DINGs queue after a reconnect (click through them); search covers the book text and day only; protocol v3 drops `gap`.
+- Round 2 (ccd68ac..1d400d3): 0 High, 0 Medium.
+  - Lows: a DING whose numbers change after an undo can pop again with corrected text, which is accepted as right.
+  - The shown-key set is never pruned, which is negligible.
