@@ -201,7 +201,7 @@ the full ones.
   animation, optional sound; full history back to day 1, searchable and
   filterable.
 - [x] **M3.4 Free points.** Allocate a batch, confirm, locked.
-- [ ] **M3.5 Skill detail.** Rarity color, description, flavor, marks
+- [x] **M3.5 Skill detail.** Rarity color, description, flavor, marks
   progress, nickname edit (official name always shown).
 - [ ] **M3.6 Skill selection.** Pending badge, offers side by side, choose.
   The e2e uses the demo's open menu (Jake, level 50; D70).

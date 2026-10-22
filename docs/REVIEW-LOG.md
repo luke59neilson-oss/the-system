@@ -301,3 +301,13 @@
   - The GM-forced close now returns focus too.
   - Lows accepted: the notice stays until the next [Assign]; no e2e for the confirm-versus-override race (timing-dependent).
 - LOOP §6.3 allows 2 rounds and no High remained, so the round-2 Mediums were fixed without a third review.
+
+## 2026-10-22 · M3.5 Skill detail · reviewer: sonnet (fresh context)
+- Round 1 (67d7cee..f6f895e): 0 High, 2 Medium, 5 Low.
+  - M: the GM had no way to write skill text (only a raw command). Fixed: a "Skill text" form in the GM console (D79); the e2e uses it.
+  - M: a renaming evolution transform kept the old skill's text. Fixed: a renamed skill's text clears; a same-name transform keeps it (unit test and e2e).
+  - L fixed: when an open skill disappears, focus goes to the Status heading and the notice clears after 8 s.
+  - L accepted: DING pop-ups sit under the open modal (they stay in the history); the dialog's `100vh` max height on mobile toolbars; page scroll behind the modal; colour checked for one rarity only (the others are CSS placeholders until M8.1); a live nickname change while editing keeps the draft.
+- Round 2 (f6f895e..329c3f7): 0 High, 0 Medium, 4 Low.
+  - L fixed: the Skill text draft is tied to one character's skill and resets after a save; Save is disabled while the text is unchanged.
+  - L accepted: a draft does not follow an outside change to the same skill while it is being edited; an identical notice twice within 8 s does not restart its timer.

@@ -374,33 +374,45 @@ function AwardXp({ client, state }: { client: LiveClient; state: CampaignState }
  */
 function SkillText({ client, state }: { client: LiveClient; state: CampaignState }) {
   const [characterId, setCharacterId] = useState('');
-  const [skill, setSkill] = useState('');
+  const [skillName, setSkillName] = useState('');
+  // The draft belongs to one character's skill (`<id>/<name>`); null means the
+  // fields show the stored text. It resets after a save (M3.5 review).
+  const [draftFor, setDraftFor] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [flavor, setFlavor] = useState('');
   const { busy, result, run } = useCommand(client);
   const character =
     state.characters[characterId] ?? state.characters[state.characterOrder[0] ?? ''];
   const skills = character?.skills ?? [];
-  const current = skills.find((s) => s.name === skill) ?? skills[0];
-  const load = (s: (typeof skills)[number] | undefined) => {
-    setSkill(s?.name ?? '');
-    setDescription(s?.description ?? '');
-    setFlavor(s?.flavor ?? '');
-  };
-  // Until the GM edits, the fields show the picked skill's stored text.
-  const loaded = skill === current?.name;
+  const current = skills.find((s) => s.name === skillName) ?? skills[0];
+  const draftKey = character && current ? `${character.id}/${current.name}` : '';
+  const loaded = draftFor !== null && draftFor === draftKey;
   const shownDescription = loaded ? description : (current?.description ?? '');
   const shownFlavor = loaded ? flavor : (current?.flavor ?? '');
+  const edit = (field: 'description' | 'flavor', value: string) => {
+    if (!loaded) {
+      setDescription(current?.description ?? '');
+      setFlavor(current?.flavor ?? '');
+      setDraftFor(draftKey);
+    }
+    if (field === 'description') setDescription(value);
+    else setFlavor(value);
+  };
+  const unchanged =
+    current !== undefined &&
+    shownDescription.trim() === (current.description ?? '') &&
+    shownFlavor.trim() === (current.flavor ?? '');
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!character || !current) return;
-    await run({
+    const r = await run({
       type: 'skill.describe',
       characterId: character.id,
       skill: current.name,
       description: shownDescription,
       flavor: shownFlavor,
     });
+    if (r.ok) setDraftFor(null);
   };
   return (
     <form className="window" onSubmit={(e) => void submit(e)} aria-labelledby="skill-text">
@@ -411,7 +423,8 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
           value={character?.id ?? ''}
           onChange={(e) => {
             setCharacterId(e.target.value);
-            load(state.characters[e.target.value]?.skills[0]);
+            setSkillName('');
+            setDraftFor(null);
           }}
         >
           {state.characterOrder.map((id) => (
@@ -425,7 +438,10 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
         Skill
         <select
           value={current?.name ?? ''}
-          onChange={(e) => load(skills.find((s) => s.name === e.target.value))}
+          onChange={(e) => {
+            setSkillName(e.target.value);
+            setDraftFor(null);
+          }}
         >
           {skills.map((s) => (
             <option key={s.name} value={s.name}>
@@ -438,10 +454,7 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
         Description
         <textarea
           value={shownDescription}
-          onChange={(e) => {
-            if (!loaded) load(current);
-            setDescription(e.target.value);
-          }}
+          onChange={(e) => edit('description', e.target.value)}
           maxLength={2000}
           rows={3}
         />
@@ -450,14 +463,11 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
         Flavour
         <input
           value={shownFlavor}
-          onChange={(e) => {
-            if (!loaded) load(current);
-            setFlavor(e.target.value);
-          }}
+          onChange={(e) => edit('flavor', e.target.value)}
           maxLength={1000}
         />
       </label>
-      <button type="submit" disabled={busy || !current}>
+      <button type="submit" disabled={busy || !current || unchanged}>
         Save skill text
       </button>
       <Outcome result={result} okText="Skill text saved" />

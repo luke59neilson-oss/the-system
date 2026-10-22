@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0, MS, M1 and M2 done; M3 started (M3.1–M3.4)
-**Next item:** M3.5 Skill detail
+**Status:** in progress: M0, MS, M1 and M2 done; M3 started (M3.1–M3.5)
+**Next item:** M3.6 Skill selection
 **Blockers:** none.
 
 ## Run log
@@ -234,4 +234,28 @@ next item, blockers. -->
 - New decisions D76–D77; new question Q29 (what pops up as a DING; sound default).
 - Open `wip/*` branches: none.
 - Next: M3.5 Skill detail. Not started: at 47 min this run was past the 35-minute start limit.
+- Blockers: none.
+
+### Run cfeff3e8 · 2026-10-22 03:06–03:41 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD and a stale local `main`), so `main` was reset to `origin/main`.
+  - The lock was pushed to main.
+  - `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work (fresh context, different model from the builder).
+- Orient: no answers in QUESTIONS.md. The latest CI run on main was green (db45aba).
+- Finished: M3.5 Skill detail (sonnet, 2 rounds; round 1 had 2 Medium, both fixed; round 2 had none). See REVIEW-LOG.md.
+- Built:
+  - Character skills carry the System `description` and `flavor` (character state v5, campaign state v10; golden states regenerated with an additive diff).
+  - Text comes from optional fields in `character.created` (the Archer starter skills have original text), from the offered description when a selection is chosen, and from a new GM-only `skill.described` event. A renaming evolution transform clears it.
+  - New golden log `skilltext.jsonl`.
+  - The projection adds per-skill `marksNeeded`, `nextRarity` and `atCeiling` from the rules config.
+  - Player skill detail dialog: rarity-coloured official name, kind, Unique tag, nickname Add/Edit/Remove (not in the GM's View-as panes), description, flavour, and mark progress with banking and ladder-top text.
+  - GM console "Skill text" form.
+  - The demo describes Identify and gives each character a mark.
+  - New `e2e/M3.5.spec.ts`.
+- Tests: 547 unit/integration tests (45 files). All 18 e2e specs green; screenshot re-renders of earlier items discarded. Engine line coverage 99.36% (floor 90%).
+- CI: green on f6f895e and 329c3f7.
+- New decisions D78–D79; new question Q30 (who writes skill text). Roadmap note on M4.1: fill skill text on grant, including Identify.
+- Open `wip/*` branches: none.
+- Next: M3.6 Skill selection. Not started: at 34 min, an item plus two review rounds would not fit before the 60-minute stop.
 - Blockers: none.
