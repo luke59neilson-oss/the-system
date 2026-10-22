@@ -1378,3 +1378,84 @@ describe('passed-over eligibility rules (MQ.3 review, DESIGN §6)', () => {
     expect(names(jake(), 15)).toContain('Retired One');
   });
 });
+
+describe('marks carry over through evolutions (MQ.4, D113, D114)', () => {
+  const markIn = (c: Campaign, skill: string, n: number, tag: string): Campaign => {
+    for (let i = 0; i < n; i++) {
+      c = ok(c, { type: 'skill.awardMark', characterId: 'jake', skill, session: `${tag}${i}` });
+    }
+    return c;
+  };
+  const skillOf = (c: Campaign, name: string) => char(c).skills.find((s) => s.name === name);
+
+  it('a rarity-raising transform spends each step’s cost and the rest carry on', () => {
+    // Inferior → Uncommon costs 3 + 4; 10 banked marks leave 3.
+    let c = markIn(atGTop(), archery, 10, 'm');
+    c = ok(c, release(archery, 'Hunter’s Archery', 'uncommon'));
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    expect(skillOf(c, 'Hunter’s Archery')).toMatchObject({ rarity: 'uncommon', marks: 3 });
+  });
+
+  it('a transform that costs more than the banked marks leaves 0', () => {
+    let c = markIn(atGTop(), archery, 5, 'm');
+    c = ok(c, release(archery, 'Hunter’s Archery', 'uncommon'));
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    expect(skillOf(c, 'Hunter’s Archery')).toMatchObject({ rarity: 'uncommon', marks: 0 });
+  });
+
+  it('a transform that keeps the rarity keeps every mark', () => {
+    let c = markIn(atGTop(), archery, 5, 'm');
+    c = ok(c, release(archery, 'Hunter’s Archery', 'inferior'));
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    expect(skillOf(c, 'Hunter’s Archery')).toMatchObject({ rarity: 'inferior', marks: 5 });
+  });
+
+  it('rules stored before MQ.4 (flag absent) still reset marks on a rarity gain', () => {
+    const raw = rawRules() as { skills: Record<string, unknown> };
+    const { marksCarryOver: _dropped, ...skills } = raw.skills;
+    void _dropped;
+    let c = run(
+      [{ type: 'campaign.create', name: 'Old', rules: { ...raw, skills } }, make('jake', 'Jake')],
+      ctx,
+    );
+    c = markIn(ok(c, award(400)), archery, 10, 'm');
+    c = ok(c, release(archery, 'Hunter’s Archery', 'uncommon'));
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    expect(skillOf(c, 'Hunter’s Archery')).toMatchObject({ rarity: 'uncommon', marks: 0 });
+  });
+
+  it('marks banked at the ceiling apply once an evolution raises it, and the rest carry on', () => {
+    // Basic Archery to Rare (the G and F ceiling), then 10 more marks bank.
+    let c = base();
+    let tag = 0;
+    for (const cost of [3, 4, 6]) {
+      c = markIn(c, archery, cost, `u${tag++}-`);
+      c = ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: archery });
+    }
+    c = markIn(c, archery, 10, 'bank');
+    expect(skillOf(c, archery)).toMatchObject({ rarity: 'rare', marks: 10 });
+    expect(reject(c, { type: 'skill.upgrade', characterId: 'jake', skill: archery })).toMatch(
+      /ceiling/,
+    );
+    // Evolve G → F (still Rare) → E (Epic), with no transforms.
+    for (let step = 0; step < 200 && char(c).grade !== 'E'; step++) {
+      c = pickAll(c);
+      const target = evolutionTarget(rules, char(c));
+      if (target) {
+        c = ok(c, {
+          type: 'evolution.release',
+          characterId: 'jake',
+          options: [{ className: 'Hunter', transforms: [] }],
+        });
+        c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+      } else {
+        c = ok(c, award(3 * (rules.grades.find((g) => g.id === char(c).grade)?.xpPerLevel ?? 0)));
+      }
+    }
+    expect(char(c).grade).toBe('E');
+    expect(skillOf(c, archery)).toMatchObject({ rarity: 'rare', marks: 10 });
+    // Rare → Epic costs 8; 2 carry toward Ancient.
+    c = ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: archery });
+    expect(skillOf(c, archery)).toMatchObject({ rarity: 'epic', marks: 2 });
+  });
+});

@@ -93,6 +93,51 @@ export function marksToUpgrade(rules: RulesConfig, skill: CharacterSkill): numbe
   return needed;
 }
 
+/** The mark rules a rarity change needs; also sent to players (no GM tuning in it). */
+export interface MarkRules {
+  /** Marks beyond a step's cost carry into the next rarity (MQ.4). */
+  readonly carryOver: boolean;
+  /** Marks to step up from each rarity id. */
+  readonly upgrades: Readonly<Record<string, number>>;
+  /** Rarity ids, lowest first. */
+  readonly order: readonly string[];
+}
+
+export function markRules(rules: RulesConfig): MarkRules {
+  return {
+    carryOver: rules.skills.marksCarryOver,
+    upgrades: { ...rules.skills.markUpgrades },
+    order: rules.skills.rarities.map((r) => r.id),
+  };
+}
+
+/**
+ * Marks a skill keeps when its rarity changes from `from` to `to` outside a
+ * mark upgrade (an evolution transform, MQ.4, D114). The same rarity keeps
+ * every mark. A rise spends each step's cost, as that many upgrades would,
+ * and the rest carry on (clamped at 0). With carry-over off (rules stored
+ * before MQ.4), or for a drop or an unknown rarity, marks reset to 0.
+ */
+export function marksAfterRarityChange(
+  m: MarkRules,
+  from: string,
+  to: string,
+  marks: number,
+): number {
+  if (from === to) return marks;
+  if (!m.carryOver) return 0;
+  const a = m.order.indexOf(from);
+  const b = m.order.indexOf(to);
+  if (a < 0 || b <= a) return 0;
+  let cost = 0;
+  for (let i = a; i < b; i++) {
+    const id = m.order[i] as string;
+    if (!Object.prototype.hasOwnProperty.call(m.upgrades, id)) return 0;
+    cost += m.upgrades[id] as number;
+  }
+  return Math.max(0, marks - cost);
+}
+
 /** True when the skill is at its grade's rarity ceiling (marks bank until the next evolution). */
 export function atCeiling(
   rules: RulesConfig,

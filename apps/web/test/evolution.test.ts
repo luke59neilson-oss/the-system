@@ -22,7 +22,9 @@ const rules = {
     { id: 'common', name: 'Common' },
     { id: 'rare', name: 'Rare' },
   ],
+  marks: { carryOver: false, upgrades: { common: 4 }, order: ['common', 'rare'] },
 } as unknown as PlayerRules;
+const carrying = { marks: { ...rules.marks, carryOver: true } };
 
 const skill = (name: string, marks: number) =>
   ({ name, rarity: 'common', marks }) as unknown as OwnSheet['skills'][number];
@@ -62,7 +64,7 @@ describe('evolution screen helpers (M3.13)', () => {
   });
 
   it('warns about lost marks, a reshape, and finality', () => {
-    const w = evolutionWarnings(me(), option({ classWeights: { agility: 2 } }));
+    const w = evolutionWarnings(rules, me(), option({ classWeights: { agility: 2 } }));
     expect(w).toEqual([
       '[Basic Archery] becomes [Expert Archery]: its 3 mastery marks reset to 0.',
       'Your class stat spread changes for every class level from now on.',
@@ -71,12 +73,41 @@ describe('evolution screen helpers (M3.13)', () => {
   });
 
   it('only warns of finality when nothing is lost', () => {
-    expect(evolutionWarnings(me({ skills: [skill('Basic Archery', 0)] }), option())).toEqual([
-      'The choice is final; the other options will be gone.',
-    ]);
-    expect(evolutionWarnings(me({ skills: [skill('Basic Archery', 1)] }), option())[0]).toBe(
+    expect(evolutionWarnings(rules, me({ skills: [skill('Basic Archery', 0)] }), option())).toEqual(
+      ['The choice is final; the other options will be gone.'],
+    );
+    expect(evolutionWarnings(rules, me({ skills: [skill('Basic Archery', 1)] }), option())[0]).toBe(
       '[Basic Archery] becomes [Expert Archery]: its 1 mastery mark resets to 0.',
     );
+  });
+});
+
+describe('evolution warnings with marks carrying over (MQ.4, D114)', () => {
+  const at = (marks: number) => me({ skills: [skill('Basic Archery', marks)] });
+  it('names the marks a rarity gain spends and the ones that carry on', () => {
+    // Common → Rare costs 4 (one step).
+    expect(evolutionWarnings(carrying, at(6), option())[0]).toBe(
+      '[Basic Archery] becomes [Expert Archery]: the rarity gain spends 4 mastery marks; 2 carry on.',
+    );
+    expect(evolutionWarnings(carrying, at(5), option())[0]).toBe(
+      '[Basic Archery] becomes [Expert Archery]: the rarity gain spends 4 mastery marks; 1 carries on.',
+    );
+  });
+  it('says marks reset when the gain costs all of them', () => {
+    expect(evolutionWarnings(carrying, at(3), option())[0]).toBe(
+      '[Basic Archery] becomes [Expert Archery]: its 3 mastery marks reset to 0.',
+    );
+  });
+  it('says nothing about marks when the transform keeps the rarity', () => {
+    const keep = option({
+      transforms: [{ skill: 'Basic Archery', name: 'Expert Archery', rarity: 'common' }],
+    });
+    expect(evolutionWarnings(carrying, at(3), keep)).toEqual([
+      'The choice is final; the other options will be gone.',
+    ]);
+    expect(evolutionWarnings(rules, at(3), keep)).toEqual([
+      'The choice is final; the other options will be gone.',
+    ]);
   });
 });
 

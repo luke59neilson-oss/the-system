@@ -121,7 +121,7 @@ export const rulesConfigSchema = z
       markUpgrades: z.record(z.string(), positiveInt),
       maxMarksPerSkillPerSession: positiveInt,
       /**
-       * DESIGN §6 (MQ.4, D101): marks beyond an upgrade's cost carry into the
+       * DESIGN §6 (MQ.4, D101, D113, D114): marks beyond an upgrade's cost carry into the
        * next rarity. Rules stored before it read false (marks reset to 0), so
        * older campaigns replay unchanged.
        */

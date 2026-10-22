@@ -119,7 +119,7 @@ export function EvolutionChoice({
             Become <span className="skill-name">[{option.className}]</span>?
           </p>
           <ul className="evolution-warnings" data-testid="evolution-warnings">
-            {evolutionWarnings(me, option).map((w) => (
+            {evolutionWarnings(rules, me, option).map((w) => (
               <li key={w}>{w}</li>
             ))}
           </ul>

@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   awardMark,
   canUpgrade,
+  defaultRules,
+  markRules,
+  marksAfterRarityChange,
   mergeSkills,
   upgradeSkill,
   execute,
@@ -388,18 +391,25 @@ describe('marks carry over (MQ.4, DESIGN §6, D101)', () => {
     expect(skill(c, archery)).toMatchObject({ rarity: 'common', marks: 2 });
   });
 
-  it('banked marks apply after an evolution and the rest carry on', () => {
-    // Rare at the G ceiling with 10 banked marks; once the grade's ceiling is
-    // Epic (E), the upgrade costs 8 and 2 carry toward Ancient.
-    let c = upgrade(base(), archery, 3);
-    for (let i = 0; i < 10; i++) c = ok(c, mark(archery, `carry${i}`));
-    const rules = c.state?.rules ?? (null as never);
-    const jake = c.state?.characters['jake'] ?? (null as never);
-    const evolved = upgradeSkill(rules, { ...jake, grade: 'E' }, archery);
-    expect(evolved.skills.find((s) => s.name === archery)).toMatchObject({
-      rarity: 'epic',
-      marks: 2,
-    });
+  it('carries twice through two upgrades in a row', () => {
+    // 3 + 4 = 7 for two steps; 9 marks leave 2 toward Rare (6).
+    let c = base();
+    for (let i = 0; i < 9; i++) c = ok(c, mark(archery, `d${i}`));
+    c = ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: archery });
+    expect(skill(c, archery)).toMatchObject({ rarity: 'common', marks: 6 });
+    c = ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: archery });
+    expect(skill(c, archery)).toMatchObject({ rarity: 'uncommon', marks: 2 });
+  });
+
+  it('a rarity change outside an upgrade spends the steps it skips (D114)', () => {
+    const m = markRules(defaultRules());
+    expect(marksAfterRarityChange(m, 'inferior', 'inferior', 5)).toBe(5);
+    expect(marksAfterRarityChange(m, 'inferior', 'uncommon', 10)).toBe(3);
+    expect(marksAfterRarityChange(m, 'inferior', 'uncommon', 6)).toBe(0);
+    expect(marksAfterRarityChange(m, 'rare', 'common', 5), 'a drop resets').toBe(0);
+    expect(marksAfterRarityChange(m, 'rare', 'nope', 5), 'unknown rarity resets').toBe(0);
+    expect(marksAfterRarityChange({ ...m, carryOver: false }, 'inferior', 'common', 9)).toBe(0);
+    expect(marksAfterRarityChange({ ...m, carryOver: false }, 'rare', 'rare', 9)).toBe(9);
   });
 
   it('rules stored before MQ.4 (flag absent) still reset marks, so old logs replay unchanged', () => {

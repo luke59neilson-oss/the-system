@@ -1,4 +1,9 @@
-import type { EvolutionOption, OwnSheet, PlayerRules } from '@the-system/engine';
+import {
+  marksAfterRarityChange,
+  type EvolutionOption,
+  type OwnSheet,
+  type PlayerRules,
+} from '@the-system/engine';
 import { rarityName } from './sheet';
 
 /**
@@ -65,19 +70,29 @@ export function evolutionBlocked(me: Pick<OwnSheet, 'selectionsDue'>): string | 
 }
 
 /**
- * What the player should know before confirming an option: marks the
- * transforms reset (D64), a reshaped spread, and that it is final. Free
- * points are untouched by evolving, so not listed. Waiting selections block
- * the choice instead (evolutionBlocked).
+ * What the player should know before confirming an option: marks a transform
+ * spends or resets (MQ.4, D114), a reshaped spread, and that it is final.
+ * Free points are untouched by evolving, so not listed. Waiting selections
+ * block the choice instead (evolutionBlocked).
  */
-export function evolutionWarnings(me: Pick<OwnSheet, 'skills'>, option: EvolutionOption): string[] {
+export function evolutionWarnings(
+  rules: Pick<PlayerRules, 'marks'>,
+  me: Pick<OwnSheet, 'skills'>,
+  option: EvolutionOption,
+): string[] {
   const out: string[] = [];
+  const marks = (n: number) => `${n} mastery ${n === 1 ? 'mark' : 'marks'}`;
   for (const t of option.transforms) {
     const s = me.skills.find((k) => k.name === t.skill);
-    if (s && s.marks > 0)
-      out.push(
-        `[${s.name}] becomes [${t.name}]: its ${s.marks} mastery ${s.marks === 1 ? 'mark resets' : 'marks reset'} to 0.`,
-      );
+    if (!s || s.marks <= 0) continue;
+    const kept = marksAfterRarityChange(rules.marks, s.rarity, t.rarity, s.marks);
+    if (kept === s.marks) continue;
+    const lead = `[${s.name}] becomes [${t.name}]: `;
+    out.push(
+      kept === 0
+        ? `${lead}its ${marks(s.marks)} ${s.marks === 1 ? 'resets' : 'reset'} to 0.`
+        : `${lead}the rarity gain spends ${marks(s.marks - kept)}; ${kept} ${kept === 1 ? 'carries' : 'carry'} on.`,
+    );
   }
   if (option.classWeights !== null)
     out.push('Your class stat spread changes for every class level from now on.');
