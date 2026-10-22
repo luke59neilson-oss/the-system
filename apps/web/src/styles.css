@@ -992,3 +992,73 @@ button.skill-open:hover .skill-name {
 .marks-bar.banked > span {
   background: var(--ok);
 }
+
+/* Skill selection (M3.6): pending badge and the offers side by side. */
+.badge {
+  display: inline-block;
+  padding: 0 8px;
+  margin-right: 8px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0b111c;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--glow);
+}
+.skill-selection {
+  width: min(880px, calc(100vw - 32px));
+}
+.offers {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.offer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #2b3d5c;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.offer h4 {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+.offer p {
+  margin: 0;
+}
+.offer-kind {
+  font-size: 0.85rem;
+}
+.offer-description {
+  flex: 1;
+}
+.offer button {
+  align-self: flex-start;
+}
+.selection-review p {
+  overflow-wrap: anywhere;
+}
+.selection-pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 0;
+  margin: 10px 0 0;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.selection-label {
+  margin-right: 10px;
+  font-family: var(--mono);
+}

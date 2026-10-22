@@ -141,3 +141,9 @@ answer under any question and the next run will follow it.
     skills ship with original text (D78). Alternative: players may write
     their own flavour line.
     Answer:
+31. **Should a skill selection DING?** When the GM offers a menu, the
+    player's sheet shows a "Skill selection · 1 waiting" badge, but no
+    pop-up or history line. Default: badge only (D80). Alternative: a
+    System notification such as *'DING!' Skill selection available* when a
+    menu is offered and *Skill acquired: [Name (Rarity)]* when chosen.
+    Answer:

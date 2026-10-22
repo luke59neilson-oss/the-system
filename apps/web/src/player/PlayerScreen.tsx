@@ -25,6 +25,8 @@ import {
 import { allocationText, assignedBatches, nextBatch, spent, step } from './freePoints';
 import { browserStorage, remember } from './join';
 import { SkillDetail } from './SkillDetail';
+import { SkillSelection } from './SkillSelection';
+import { closedReason, pendingSelections, pendingText } from './selection';
 import {
   cssToken,
   formatStatValue,
@@ -201,6 +203,65 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
       opener?.focus();
     });
   };
+  // M3.6: the selection menu the player opened (level + offer). A live change
+  // never swaps it: if the GM re-offers, chooses or undoes it, it closes with
+  // a notice (unless this screen's own choice closed it).
+  const pending = pendingSelections(me.selections);
+  const [selOpen, setSelOpen] = useState<{ level: number; offerId: string } | null>(null);
+  const [selConfirming, setSelConfirming] = useState<number | null>(null);
+  const [selNotice, setSelNotice] = useState<string | null>(null);
+  const [selFocus, setSelFocus] = useState<{ n: number; skill: string | null }>({
+    n: 0,
+    skill: null,
+  });
+  const selection =
+    selOpen === null
+      ? null
+      : (pending.find((s) => s.level === selOpen.level && s.offerId === selOpen.offerId) ?? null);
+  if (selOpen !== null) {
+    const why = closedReason(pending, selOpen.level, selOpen.offerId);
+    if (why !== null && selConfirming !== selOpen.level) {
+      setSelNotice(
+        why === 'changed'
+          ? `The GM changed the level ${selOpen.level} skill menu; open it again to see the new options.`
+          : `The level ${selOpen.level} skill selection was settled by the GM.`,
+      );
+      setSelOpen(null);
+      setSelFocus((f) => ({ n: f.n + 1, skill: null }));
+    }
+  }
+  const chooseButton = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (selFocus.n === 0) return;
+    requestAnimationFrame(() => {
+      // After a choice, land on the new skill; otherwise on [Choose] if still
+      // there, else the Status heading.
+      const skill =
+        selFocus.skill === null
+          ? undefined
+          : [
+              ...(statusSection.current?.querySelectorAll<HTMLButtonElement>(
+                'button[data-skill]',
+              ) ?? []),
+            ].find((b) => b.dataset['skill'] === selFocus.skill);
+      (skill ?? chooseButton.current ?? statusHeading.current)?.focus();
+    });
+  }, [selFocus]);
+  const selOpenNow = useRef<number | null>(null);
+  useEffect(() => {
+    selOpenNow.current = selOpen?.level ?? null;
+  });
+  const selSettled = (level: number, ok: boolean, skill: string) => {
+    setSelConfirming(null);
+    if (ok) {
+      setSelOpen(null);
+      setSelFocus((f) => ({ n: f.n + 1, skill }));
+    } else if (selOpenNow.current !== level) {
+      setSelNotice(
+        `The level ${level} skill menu was changed by the GM; your choice was not saved.`,
+      );
+    }
+  };
   return (
     <section
       ref={statusSection}
@@ -270,6 +331,50 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
           </>
         )}
       </dl>
+      {pending.length > 0 && (
+        <p className="selection-pending" data-testid="selection-pending">
+          <span className="selection-label">Skill selection</span>
+          <span className="badge" data-testid="selection-badge">
+            {pendingText(pending.length)}
+          </span>
+          {client && selOpen === null && (
+            <button
+              type="button"
+              className="assign-btn"
+              ref={chooseButton}
+              aria-haspopup="dialog"
+              onClick={() => {
+                const first = pending[0];
+                if (!first) return;
+                setSelNotice(null);
+                setSelOpen({ level: first.level, offerId: first.offerId });
+              }}
+            >
+              [Choose]
+            </button>
+          )}
+        </p>
+      )}
+      {selNotice && (
+        <p className="err" role="alert" data-testid="selection-notice">
+          {selNotice}
+        </p>
+      )}
+      {client && selection && selOpen && (
+        <SkillSelection
+          key={`${selection.level}-${selection.offerId}`}
+          selection={selection}
+          more={pending.length - 1}
+          view={view}
+          client={client}
+          onConfirming={() => setSelConfirming(selection.level)}
+          onSettled={(ok, skill) => selSettled(selection.level, ok, skill)}
+          onClose={() => {
+            setSelOpen(null);
+            setSelFocus((f) => ({ n: f.n + 1, skill: null }));
+          }}
+        />
+      )}
       {notice && (
         <p className="err" role="alert" data-testid="assign-notice">
           {notice}
