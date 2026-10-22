@@ -1153,6 +1153,48 @@ function toEvent(
   }
 }
 
+/** One message for an unknown item and one the character does not hold (QF.2). */
+export const ITEM_NOT_AVAILABLE = 'That item is not available';
+
+const countOf = (inventory: Readonly<Record<string, number>>, id: string): number =>
+  Object.prototype.hasOwnProperty.call(inventory, id) ? (inventory[id] ?? 0) : 0;
+
+/**
+ * Items a command may name (QF.2): each side of a trade only what that side
+ * holds now (the proposer's give, the counterparty's get); a character asking
+ * the GM for items is refused (the GM offers items); equip only a held item.
+ * Unknown and not held read the same and name nothing, so a player cannot
+ * probe the GM's item library. Checked on commands, not in the reducer, so
+ * stored logs replay unchanged.
+ */
+function itemOutOfReach(state: NonNullable<Campaign['state']>, command: Command): string | null {
+  const known = (id: string) => Object.prototype.hasOwnProperty.call(state.items, id);
+  const inv = (who: string) =>
+    Object.prototype.hasOwnProperty.call(state.holdings, who)
+      ? (state.holdings[who]?.inventory ?? {})
+      : {};
+  const holds = (who: string, items: Readonly<Record<string, unknown>>) =>
+    Object.entries(items).every(
+      ([id, n]) => known(id) && countOf(inv(who), id) >= (typeof n === 'number' ? n : 1),
+    );
+  if (command.type === 'item.equip') {
+    return known(command.itemId) && countOf(inv(command.characterId), command.itemId) >= 1
+      ? null
+      : ITEM_NOT_AVAILABLE;
+  }
+  if (command.type === 'trade.propose') {
+    const give = command.give.items ?? {};
+    const get = command.get.items ?? {};
+    if (command.characterId !== null && !holds(command.characterId, give))
+      return ITEM_NOT_AVAILABLE;
+    if (command.to !== null && !holds(command.to, get)) return ITEM_NOT_AVAILABLE;
+    if (command.to === null && command.characterId !== null && Object.keys(get).length > 0) {
+      return 'A trade with the GM can ask only for currency; the GM offers items';
+    }
+  }
+  return null;
+}
+
 /**
  * Validates a command, builds its event(s) and appends them. Never throws on a
  * bad or unauthorised command; the context (actor, clock, ids) is trusted.
@@ -1165,6 +1207,8 @@ export function execute(campaign: Campaign, command: Command, ctx: CommandContex
   }
   const denied = authorize(command, ctx.actor);
   if (denied) return { ok: false, error: `Not allowed: ${denied}` };
+  const unreachable = campaign.state ? itemOutOfReach(campaign.state, command) : null;
+  if (unreachable) return { ok: false, error: unreachable };
   try {
     const { type, payload } = toEvent(command, ctx, campaign);
     // Events carry the running session (M4.3); a session's own start and end carry its id.
