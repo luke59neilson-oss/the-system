@@ -123,7 +123,7 @@ export function EvolutionChoice({
               <li key={w}>{w}</li>
             ))}
           </ul>
-          {evolution.professions.length > 0 && (
+          {evolution.professions.length > 0 && me.profession === null && (
             <label className="evolution-profession">
               Profession
               <select

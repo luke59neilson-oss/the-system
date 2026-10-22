@@ -1603,6 +1603,29 @@ describe('tailored professions (MQ.6, DESIGN §2)', () => {
     expect(j.professionOffers).toEqual(['Smith', 'Cook', 'Warden']);
   });
 
+  it("a profession taken while a later release waits locks out that release's offers", () => {
+    let c = pickAll(ok(declined(), award(40 * XP_E)));
+    c = ok(c, {
+      type: 'evolution.release',
+      characterId: 'jake',
+      options: [{ className: 'Hunter III', transforms: [] }],
+      professions: ['Warden'],
+    });
+    c = ok(c, take('Smith'), player('jake'));
+    const pick = (profession: string | null): Command => ({
+      type: 'evolution.choose',
+      characterId: 'jake',
+      optionId: 'o1',
+      profession,
+    });
+    expect(reject(c, pick('Warden'), player('jake'))).toMatch(
+      /already has the profession \[Smith\]; evolve with none/,
+    );
+    c = ok(c, pick(null), player('jake'));
+    expect(char(c)).toMatchObject({ grade: 'D', profession: 'Smith' });
+    expect(char(c).professionOffers).toEqual(['Smith', 'Cook']);
+  });
+
   it('the offers reach only their owner', () => {
     const state = declined().state;
     if (!state) throw new Error('no state');

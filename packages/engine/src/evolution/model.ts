@@ -545,6 +545,14 @@ export function chooseEvolution(
   } else if (profession !== null) {
     throw new CharacterRuleError('No profession is offered with this evolution');
   }
+  // Taken from the Professions tab while this release waited: the list is
+  // locked, so the release's offers no longer apply (MQ.6 review).
+  const hasProfession = character.profession !== null;
+  if (hasProfession && profession !== null) {
+    throw new CharacterRuleError(
+      `${character.name} already has the profession [${character.profession}]; evolve with none`,
+    );
+  }
 
   const byName = new Map(option.transforms.map((t) => [t.skill, t]));
   const marking = markRules(rules);
@@ -567,7 +575,9 @@ export function chooseEvolution(
     className: option.className,
     skills,
     evolution: null,
-    professionOffers: mergeOffers(character.professionOffers, pending.professions),
+    professionOffers: hasProfession
+      ? character.professionOffers
+      : mergeOffers(character.professionOffers, pending.professions),
   };
   if (option.classWeights !== null) next = reshapeClassWeights(rules, next, option.classWeights);
   if (!legacy) next = applyStatBonus(next, option.statBonus ?? {});
