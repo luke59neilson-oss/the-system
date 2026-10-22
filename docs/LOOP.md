@@ -173,7 +173,8 @@ should weigh in on also go in `docs/QUESTIONS.md` with the default you used.
 
 ## Hard rules
 
-- No secrets, tokens, or personal data in the repo.
+- No secrets, tokens, or personal data in the repo. **The repo is public**
+  (L10): write nothing you would not post publicly.
 - Touch no other repositories. Use no paid services.
 - Never delete campaign data or Luke's files.
 - Players' browsers must never receive GM-only data.
