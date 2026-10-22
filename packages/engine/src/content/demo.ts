@@ -191,6 +191,10 @@ export const DEMO_ITEMS: readonly Command[] = [
   },
 ];
 
+/** The demo's montage (M3.11) and the GM-only clock it runs on. */
+export const DEMO_CLOCK_ID = 'demo-clock-marsh';
+export const DEMO_MONTAGE_ID = 'demo-montage-marsh';
+
 /** The demo's notes (M3.10), in creation order. `author` null = the GM. */
 export const DEMO_NOTES: readonly {
   author: string | null;
@@ -480,6 +484,27 @@ export function buildDemoEvents(ctx: DemoContext): DomainEvent[] {
       knownBy: entity.knownBy === 'all' ? DEMO_CHARACTERS.map((c) => c.id) : [...entity.knownBy],
     });
   }
+
+  // Practice and montage (M3.11): a GM-only clock half filled with no
+  // failures, and a montage on it offered to Jake and Miranda (open).
+  run({ type: 'clock.create', clockId: DEMO_CLOCK_ID, name: 'Cross the marsh', segments: 6 });
+  run({ type: 'clock.tick', clockId: DEMO_CLOCK_ID, result: 'success', amount: 3 });
+  run({
+    type: 'montage.offer',
+    montageId: DEMO_MONTAGE_ID,
+    clockId: DEMO_CLOCK_ID,
+    label: 'Crossing the black marsh',
+    characterIds: ['demo-jake', 'demo-miranda'],
+  });
+  run(
+    {
+      type: 'practice.log',
+      characterId: 'demo-jake',
+      action: 'Shot at moving targets from the trees',
+      stat: 'perception',
+    },
+    'demo-jake',
+  );
 
   // Notes (M3.10): written by whoever owns them. Jake keeps a private journal
   // entry and one he shares with the GM; Miranda and the GM leave party

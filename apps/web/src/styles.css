@@ -392,6 +392,10 @@ a {
   .player-grid .notes-window {
     order: 5;
   }
+  /* Montage offers wait on the player: right after the quests (M3.11). */
+  .player-grid .practice-window {
+    order: 2;
+  }
   .gm-header {
     flex-wrap: wrap;
   }
@@ -1275,13 +1279,9 @@ button.skill-open:hover .skill-name {
   padding: 10px;
   border: 1px solid rgba(90, 127, 184, 0.5);
 }
-.note-form label {
+.note-form label:not(.check) {
   display: grid;
   gap: 2px;
-}
-.note-form .note-share,
-.note-kind label {
-  display: block;
 }
 .note-kind {
   border: 0;
@@ -1393,4 +1393,58 @@ button.danger {
 }
 .notes-tag-filter {
   margin: 0 0 8px;
+}
+
+/* Practice and montage (M3.11). */
+.montage {
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 10px var(--glow);
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+.montage-title {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  color: var(--accent);
+}
+.practice-form {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.practice-form label:not(.check) {
+  display: grid;
+  gap: 2px;
+}
+.practice-skills {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+.practice-skills legend {
+  padding: 0;
+  margin-bottom: 2px;
+}
+.practice-form .practice-skills label {
+  margin-bottom: 2px;
+}
+.practice-sub {
+  font-size: 0.85rem;
+  margin: 8px 0 4px;
+  color: var(--muted);
+}
+.practice-list {
+  margin: 0;
+  padding-left: 18px;
+}
+.practice-action {
+  overflow-wrap: anywhere;
+}
+.practice-log > summary {
+  cursor: pointer;
+  color: var(--accent);
+  margin: 4px 0 8px;
 }

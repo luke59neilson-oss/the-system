@@ -28,6 +28,7 @@ import { Inventory } from './Inventory';
 import { QuestLog } from './QuestLog';
 import { IdentifyPanel } from './IdentifyPanel';
 import { NotesPanel } from './NotesPanel';
+import { PracticePanel } from './PracticePanel';
 import { SkillDetail } from './SkillDetail';
 import { SkillSelection } from './SkillSelection';
 import { closedReason, pendingSelections, pendingText, settleNotice } from './selection';
@@ -770,6 +771,7 @@ function Feed({
   return (
     <div className="feeds">
       <QuestLog view={view} />
+      <PracticePanel view={view} client={client} />
       <IdentifyPanel view={view} />
       <NotesPanel view={view} client={client} />
       <section className="window feed" aria-labelledby="dings" data-testid="history">

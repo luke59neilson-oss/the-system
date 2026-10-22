@@ -30,6 +30,7 @@ describe('demo campaign (MS.4, M1.15)', () => {
     const events = buildDemoEvents(ctx());
     // M3.10: journal entries and Miranda's party note are written by their players.
     expect(events.filter((e) => e.actor.role !== 'gm').map((e) => [e.type, e.actor])).toEqual([
+      ['practice.logged', { role: 'player', characterId: 'demo-jake' }],
       ['note.created', { role: 'player', characterId: 'demo-jake' }],
       ['note.created', { role: 'player', characterId: 'demo-jake' }],
       ['note.created', { role: 'player', characterId: 'demo-miranda' }],

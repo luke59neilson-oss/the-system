@@ -167,3 +167,9 @@ answer under any question and the next run will follow it.
     teammate's note. Default: author or GM only (D85). Alternative: any party
     member may edit party notes (a shared wiki), with the GM able to undo.
     Answer:
+35. **Montage focus and marks.** DESIGN §6 says a montage focus counts as
+    that skill's one mark for the session. The app logs the focus as a
+    "montage" practice entry but does not award a mark by itself. Default:
+    the GM awards the mark in the end-of-session review (D86). Alternative:
+    a focus naming a skill awards its mark automatically.
+    Answer:

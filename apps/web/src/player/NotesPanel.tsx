@@ -167,7 +167,7 @@ export function NotesPanel({ view, client }: { view: PlayerView; client: LiveCli
           {draft.id === null ? (
             <fieldset className="note-kind">
               <legend>Where</legend>
-              <label>
+              <label className="check">
                 <input
                   type="radio"
                   name="note-kind"
@@ -176,7 +176,7 @@ export function NotesPanel({ view, client }: { view: PlayerView; client: LiveCli
                 />{' '}
                 My journal
               </label>
-              <label>
+              <label className="check">
                 <input
                   type="radio"
                   name="note-kind"
@@ -231,7 +231,7 @@ export function NotesPanel({ view, client }: { view: PlayerView; client: LiveCli
             Separate tags with commas.
           </p>
           {draft.kind === 'journal' && (
-            <label className="note-share">
+            <label className="check note-share">
               <input
                 type="checkbox"
                 checked={draft.shareable}

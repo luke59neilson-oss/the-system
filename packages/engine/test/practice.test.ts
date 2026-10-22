@@ -399,3 +399,69 @@ describe('notes', () => {
     expect(searchNotes(notes, {}).map((n) => n.id)).toEqual(['c', 'b', 'a']);
   });
 });
+
+describe('montages (M3.11)', () => {
+  const clocked = (filled: number, failures = 0): Campaign => {
+    let c = ok(base(), {
+      type: 'clock.create',
+      clockId: 'k',
+      name: 'Cross the swamp',
+      segments: 4,
+    });
+    if (filled > 0)
+      c = ok(c, { type: 'clock.tick', clockId: 'k', result: 'success', amount: filled });
+    for (let i = 0; i < failures; i++) {
+      c = ok(c, { type: 'clock.tick', clockId: 'k', result: 'failure' });
+    }
+    return c;
+  };
+  const offer: Command = {
+    type: 'montage.offer',
+    montageId: 'm',
+    clockId: 'k',
+    characterIds: ['jake'],
+  };
+  const focus = (characterId: string, action = 'Scout ahead', skills = [archery]): Command => ({
+    type: 'montage.focus',
+    montageId: 'm',
+    characterId,
+    action,
+    skills,
+  });
+
+  it('is offered only on a clock at least half filled with no failures', () => {
+    expect(reject(clocked(1), offer)).toContain('does not qualify');
+    expect(reject(clocked(2, 1), offer)).toContain('does not qualify');
+    expect(reject(clocked(2), { ...offer, clockId: 'nope' })).toContain('unknown clock');
+    expect(reject(clocked(2), { ...offer, characterIds: ['jake', 'jake'] })).toContain('twice');
+    const c = ok(clocked(2), offer);
+    // The label defaults to the clock's name.
+    expect(c.state?.montages['m']).toMatchObject({ label: 'Cross the swamp', status: 'open' });
+    expect(reject(c, offer)).toContain('already exists');
+    expect(reject(c, offer, player('jake'))).toContain('only the GM');
+  });
+
+  it('takes one focus per offered player and logs it as montage practice', () => {
+    let c = ok(clocked(2), offer);
+    c = ok(c, focus('jake'), player('jake'));
+    const entry = c.state?.practice.at(-1);
+    expect(entry).toMatchObject({
+      characterId: 'jake',
+      action: 'Scout ahead',
+      skills: [archery],
+      source: 'montage',
+      tags: [],
+    });
+    expect(c.state?.montages['m']?.focuses).toEqual({ jake: entry?.id });
+    expect(reject(c, focus('jake', 'Again'), player('jake'))).toContain('already given');
+    // Kim was not offered it: to her it does not exist.
+    expect(reject(c, focus('kim'), player('kim'))).toContain('unknown montage');
+    expect(reject(c, focus('kim'))).toContain('not offered');
+    expect(reject(c, focus('kim'), player('jake'))).toContain('their own character');
+    c = ok(c, { type: 'montage.close', montageId: 'm' });
+    expect(reject(c, { type: 'montage.close', montageId: 'm' })).toContain('already closed');
+    const reopened = ok(ok(clocked(2), offer), { type: 'montage.close', montageId: 'm' });
+    expect(reject(reopened, focus('jake'), player('jake'))).toContain('closed');
+    expect(reject(ok(clocked(2), offer), focus('jake', 'x', ['Nope']))).toContain('no skill');
+  });
+});
