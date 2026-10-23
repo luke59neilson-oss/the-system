@@ -117,6 +117,14 @@ export const CHANGE_LOG_PHRASES: Readonly<Record<string, string>> = {
 const has = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
 const oneLine = (text: string) => text.replace(/\s+/g, ' ').trim();
 
+/** "quest.statusSet" → "quest status set": never a raw type in a row. */
+export function humanize(type: string): string {
+  return type
+    .replace(/\./g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .toLowerCase();
+}
+
 /**
  * A one-line summary for an event the session log has no words for: who it
  * touched, what happened and, where the payload names one, what. Notes never
@@ -124,7 +132,7 @@ const oneLine = (text: string) => text.replace(/\s+/g, ' ').trim();
  */
 function fallbackLine(state: CampaignState | null, event: DomainEvent): string {
   const p = event.payload as Record<string, unknown>;
-  const phrase = CHANGE_LOG_PHRASES[event.type] ?? event.type;
+  const phrase = CHANGE_LOG_PHRASES[event.type] ?? humanize(event.type);
   const parts: string[] = [];
   if (typeof p.characterId === 'string') {
     parts.push(oneLine(state?.characters[p.characterId]?.name ?? p.characterId));

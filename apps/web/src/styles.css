@@ -2039,9 +2039,20 @@ ol.change-log {
   gap: 4px;
 }
 ol.change-log li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
   overflow-wrap: anywhere;
 }
+ol.change-log .change-text {
+  flex: 1;
+}
+ol.change-log li > button {
+  flex: none;
+}
 ol.change-log li.undone {
-  opacity: 0.6;
+  opacity: 0.7;
+}
+ol.change-log li.undone .change-text {
   text-decoration: line-through;
 }
