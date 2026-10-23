@@ -3,6 +3,7 @@ import {
   aboveLevelBonus,
   buildDemoEvents,
   previewXpAward,
+  previewXpShares,
   replay,
   type Campaign,
   type XpTrack,
@@ -365,6 +366,24 @@ describe('xp helpers', () => {
         { amount: 90, participants: [{ characterId: 'c1' }], enemyGrade: 'F' },
       ),
     ).toEqual([{ characterId: 'c1', share: 90, bonus: 0, gained: 30 }]);
+    // The scaled share is floored, not rounded (D120): 200 × ⅓ = 66.67 → 66,
+    // and the bonus is reported on the floored 66 (QF.15).
+    expect(shareXp(rules, e, 200, null, 'F')).toBe(66);
+    expect(shareXp(rules, e, 200, 5, 'F')).toBe(66 + 33);
+    expect(
+      splitXp(
+        rules,
+        { c1: e },
+        { amount: 200, participants: [{ characterId: 'c1' }], enemyLevel: 5, enemyGrade: 'F' },
+      ),
+    ).toEqual([{ characterId: 'c1', share: 200, bonus: 33, gained: 99 }]);
+    const [manual] = previewXpShares(rules, { c1: e }, 'class', {
+      amount: 200,
+      shares: [{ characterId: 'c1', share: 200 }],
+      enemyLevel: 5,
+      enemyGrade: 'F',
+    });
+    expect(manual).toMatchObject({ share: 200, bonus: 33, gained: 99 });
   });
 
   it('xpForLevels counts XP already held', () => {

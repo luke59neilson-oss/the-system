@@ -247,6 +247,15 @@ the rest follow in file order. Each gets its own §6 review.
   holds the hand-over in a test-only way); `--repeat-each=20` on that test
   green under xvfb; no retries added. (Numbered 14 because `wip/M4.A` holds
   QF.13.)
+- [ ] **QF.15 Pin the grade-gap floor and scheduled broadcasts in the leak
+  property.** Sweep A (Tests, 2026-10-23): `Math.floor`→`Math.round` on the
+  grade-gap scaled share (`progression/xp.ts` ~175, ~274, ~496) left every
+  test green (200 × ⅓ gives 67, not 66, D120); and the random-state GM-leak
+  property (`projection.test.ts`) never seeded `scheduledBroadcasts`, so
+  merging them into a player's messages passed it. *Accept:* each of the three
+  floor sites mutated to `Math.round` fails a test; the property seeds
+  GM-only scheduled broadcasts (to everyone and to each character) and fails
+  when `projectForPlayer` includes them; no production code changes.
 - [x] **QF.1 (High) Chosen options never return as passed-over options.**
   `passedOverOptions` (`packages/engine/src/evolution/model.ts` ~276) drops a
   menu's chosen option only while a skill of that name is owned, so after an
