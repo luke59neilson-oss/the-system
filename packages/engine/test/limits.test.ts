@@ -3,6 +3,8 @@ import {
   DEFAULT_RULES,
   execute,
   replay,
+  resume,
+  snapshotOf,
   type Campaign,
   type Command,
   type CommandContext,
@@ -188,5 +190,20 @@ describe('rules.limits', () => {
     );
     c = step(c, log('a long GM entry well over the cap'), ctx);
     step(c, { ...log('kim'), characterId: 'kim' } as Command, as('kim'));
+  });
+
+  it('a snapshot from before rules.limits is replayed, not trusted (state schema v21)', () => {
+    const c = base();
+    const old = JSON.parse(JSON.stringify(snapshotOf(c))) as {
+      stateSchemaVersion: number;
+      state: { schemaVersion: number; rules: Record<string, unknown> };
+    };
+    delete old.state.rules['limits'];
+    old.stateSchemaVersion = 20;
+    old.state.schemaVersion = 20;
+    const { campaign, usedSnapshot } = resume(old as never, c.events);
+    expect(usedSnapshot).toBe(false);
+    expect(campaign.state?.rules.limits).toEqual(limits);
+    step(campaign, note('after'), as('jake'));
   });
 });
