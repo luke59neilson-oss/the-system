@@ -331,6 +331,7 @@ DESIGN/ROADMAP; do not re-apply them.
 53. **Note and trade limits.** To stop one phone flooding everyone's
     screen (QF.3), each character may keep up to 300 notes with 150,000
     characters in all (about 25,000 words), and have 10 trades they proposed
-    open at once. The GM has no limits. Default: these numbers (they live in
+    open at once; a player-logged practice entry is at most 500 characters
+    and 5,000 per character. The GM has no limits. Default: these numbers (they live in
     the rules config). Alternative: tell me other numbers.
     Answer:

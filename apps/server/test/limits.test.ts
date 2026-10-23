@@ -189,3 +189,58 @@ describe('QF.3 unchanged views are not re-sent', () => {
     expect(got.filter((m) => m.type === 'view')).toHaveLength(2);
   });
 });
+
+describe('QF.3 more limits through the hub', () => {
+  it('refuses a note edit that grows past the size cap, and a too-long practice entry', () => {
+    const { join, store } = setup(
+      rules({
+        notesPerCharacter: 5,
+        noteCharsPerCharacter: 50,
+        openTradesPerCharacter: 1,
+        practiceEntriesPerCharacter: 1,
+        practiceEntryChars: 10,
+      }),
+    );
+    const jake = join('jake');
+    expect(jake.send(journal('jake', 'x'.repeat(40)))).toMatchObject({ ok: true });
+    const id = Object.keys(store.campaign.state?.notes ?? {})[0];
+    expect(
+      jake.send({ type: 'note.edit', noteId: id, characterId: 'jake', body: 'x'.repeat(51) }),
+    ).toMatchObject({
+      ok: false,
+      error: 'Notes are full (50 characters in all); shorten or delete a note first',
+    });
+    const log = (action: string) => ({
+      type: 'practice.log',
+      characterId: 'jake',
+      action,
+      stat: 'agility',
+    });
+    expect(jake.send(log('x'.repeat(11)))).toMatchObject({
+      ok: false,
+      error: 'A practice entry can be at most 10 characters',
+    });
+    expect(jake.send(log('shot'))).toMatchObject({ ok: true });
+    expect(jake.send(log('shot'))).toMatchObject({
+      ok: false,
+      error: 'Practice log is full (1 entries); ask the GM',
+    });
+  });
+
+  it('counts unparseable messages against the budget, and refuses a budget a join cannot fit', () => {
+    const { hub, join } = setup(rules(), { rateLimit: { burst: 3, perSecond: 1 } });
+    const jake = join('jake');
+    // Reach the hub directly with garbage: two frames spend the rest of the budget.
+    const got: ServerMessage[] = [];
+    const conn = hub.connect((m) => got.push(m));
+    conn.receive('{nope');
+    conn.receive('{nope');
+    conn.receive(JSON.stringify({ type: 'join', role: 'player', characterId: 'kim' }));
+    conn.receive(JSON.stringify({ type: 'join', role: 'player', characterId: 'kim' }));
+    expect(got.filter((m) => m.type === 'joined')).toHaveLength(1);
+    expect(got.at(-1)).toEqual({ type: 'error', error: RATE_LIMITED });
+    expect(jake.got.some((m) => m.type === 'joined')).toBe(true);
+    expect(() => setup(rules(), { rateLimit: { burst: 1, perSecond: 1 } })).toThrow(/burst/);
+    expect(() => setup(rules(), { rateLimit: { burst: 5, perSecond: 0 } })).toThrow(/perSecond/);
+  });
+});

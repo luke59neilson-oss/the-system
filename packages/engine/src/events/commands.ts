@@ -1265,8 +1265,25 @@ const noteChars = (note: {
  * trusted). Checked on commands, not in the reducer, so stored logs replay
  * unchanged and a GM can lower a cap without breaking a campaign.
  */
-function overLimit(state: NonNullable<Campaign['state']>, command: Command): string | null {
+function overLimit(
+  state: NonNullable<Campaign['state']>,
+  command: Command,
+  actor: Actor,
+): string | null {
   const limits = state.rules.limits;
+  if (command.type === 'practice.log' && actor.role === 'player') {
+    const size =
+      command.action.length +
+      [...(command.skills ?? []), ...(command.tags ?? [])].reduce((n, t) => n + t.length, 0);
+    if (size > limits.practiceEntryChars) {
+      return `A practice entry can be at most ${limits.practiceEntryChars} characters`;
+    }
+    const logged = state.practice.filter((p) => p.characterId === command.characterId).length;
+    if (logged >= limits.practiceEntriesPerCharacter) {
+      return `Practice log is full (${limits.practiceEntriesPerCharacter.toLocaleString('en-US')} entries); ask the GM`;
+    }
+    return null;
+  }
   if (command.type === 'note.create' || command.type === 'note.edit') {
     const author = command.characterId;
     if (author === null) return null;
@@ -1325,7 +1342,7 @@ export function execute(campaign: Campaign, command: Command, ctx: CommandContex
   if (denied) return { ok: false, error: `Not allowed: ${denied}` };
   const unreachable = campaign.state ? itemOutOfReach(campaign.state, command) : null;
   if (unreachable) return { ok: false, error: unreachable };
-  const capped = campaign.state ? overLimit(campaign.state, command) : null;
+  const capped = campaign.state ? overLimit(campaign.state, command, ctx.actor) : null;
   if (capped) return { ok: false, error: capped };
   try {
     const { type, payload } = toEvent(command, ctx, campaign);

@@ -354,7 +354,9 @@
     "limits": {
       "notesPerCharacter": 300,
       "noteCharsPerCharacter": 150000,
-      "openTradesPerCharacter": 10
+      "openTradesPerCharacter": 10,
+      "practiceEntriesPerCharacter": 5000,
+      "practiceEntryChars": 500
     }
   },
   "characters": {

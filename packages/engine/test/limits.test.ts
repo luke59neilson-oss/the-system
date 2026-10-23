@@ -10,7 +10,13 @@ import {
 import { kit, run, testContext } from './helpers/events';
 
 // QF.3: per-character caps on notes and open trades, from `rules.limits`.
-const limits = { notesPerCharacter: 3, noteCharsPerCharacter: 100, openTradesPerCharacter: 2 };
+const limits = {
+  notesPerCharacter: 3,
+  noteCharsPerCharacter: 100,
+  openTradesPerCharacter: 2,
+  practiceEntriesPerCharacter: 2,
+  practiceEntryChars: 20,
+};
 const rules = () => JSON.parse(JSON.stringify({ ...DEFAULT_RULES, limits })) as unknown;
 const ctx = testContext('l');
 const make = (id: string): Command => ({
@@ -56,6 +62,8 @@ describe('rules.limits', () => {
       notesPerCharacter: 300,
       noteCharsPerCharacter: 150_000,
       openTradesPerCharacter: 10,
+      practiceEntriesPerCharacter: 5000,
+      practiceEntryChars: 500,
     });
   });
 
@@ -158,5 +166,27 @@ describe('rules.limits', () => {
     // A closed trade frees a slot.
     c = step(c, { type: 'trade.cancel', tradeId: 't1', characterId: 'jake' }, as('jake'));
     step(c, offer('t3'), as('jake'));
+  });
+
+  it('caps player practice entries by size and count; the GM is not capped', () => {
+    const log = (action: string, tags: string[] = []): Command => ({
+      type: 'practice.log',
+      characterId: 'jake',
+      action,
+      tags,
+      stat: 'agility',
+    });
+    let c = base();
+    expect(refuse(c, log('x'.repeat(21)), as('jake'))).toBe(
+      'A practice entry can be at most 20 characters',
+    );
+    expect(refuse(c, log('x'.repeat(10), ['y'.repeat(11)]), as('jake'))).toContain('at most 20');
+    c = step(c, log('x'.repeat(20)), as('jake'));
+    c = step(c, log('shot'), as('jake'));
+    expect(refuse(c, log('again'), as('jake'))).toBe(
+      'Practice log is full (2 entries); ask the GM',
+    );
+    c = step(c, log('a long GM entry well over the cap'), ctx);
+    step(c, { ...log('kim'), characterId: 'kim' } as Command, as('kim'));
   });
 });

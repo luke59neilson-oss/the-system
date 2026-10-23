@@ -183,6 +183,8 @@ exports[`default rules > match the snapshot 1`] = `
     "noteCharsPerCharacter": 150000,
     "notesPerCharacter": 300,
     "openTradesPerCharacter": 10,
+    "practiceEntriesPerCharacter": 5000,
+    "practiceEntryChars": 500,
   },
   "logging": {
     "autosaveMinutes": 5,

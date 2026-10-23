@@ -53,7 +53,7 @@ export interface RateLimit {
 }
 
 /** QF.3 (D136): far above a person tapping, far below a script flooding the hub. */
-export const DEFAULT_RATE_LIMIT: RateLimit = { burst: 30, perSecond: 10 };
+export const DEFAULT_RATE_LIMIT: RateLimit = { burst: 30, perSecond: 5 };
 
 export const RATE_LIMITED = 'Too many actions at once; wait a moment and try again';
 
@@ -87,6 +87,11 @@ export class LiveHub {
   private readonly options: HubOptions;
 
   constructor(store: CampaignStore, options: HubOptions) {
+    const limit = options.rateLimit;
+    if (limit && !(Number.isFinite(limit.burst) && limit.burst >= 2 && limit.perSecond > 0)) {
+      // A join must always fit, or a client could never get in.
+      throw new Error('rateLimit needs burst >= 2 and perSecond > 0');
+    }
     this.store = store;
     this.options = options;
   }
@@ -141,7 +146,11 @@ export class LiveHub {
 
   private receive(client: Client, raw: string): void {
     const parsed = parseClientMessage(raw);
-    if (!parsed.ok) return client.send({ type: 'error', error: parsed.error });
+    if (!parsed.ok) {
+      // Garbage costs from the same budget as commands.
+      this.allow(client);
+      return client.send({ type: 'error', error: parsed.error });
+    }
     const message = parsed.message;
     if (!this.allow(client)) {
       return client.send(

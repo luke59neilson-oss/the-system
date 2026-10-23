@@ -17,6 +17,8 @@ export const DEFAULT_LIMITS = {
   notesPerCharacter: 300,
   noteCharsPerCharacter: 150_000,
   openTradesPerCharacter: 10,
+  practiceEntriesPerCharacter: 5_000,
+  practiceEntryChars: 500,
 } as const;
 const nonNegativeInt = z.number().int().nonnegative();
 const fraction = z.number().min(0);
@@ -222,11 +224,17 @@ export const rulesConfigSchema = z
     limits: z
       .strictObject({
         /** Notes a character has written (journal and party). */
-        notesPerCharacter: positiveInt,
+        notesPerCharacter: positiveInt.default(DEFAULT_LIMITS.notesPerCharacter),
         /** Characters across those notes' titles, bodies and tags. */
-        noteCharsPerCharacter: positiveInt,
+        noteCharsPerCharacter: positiveInt.default(DEFAULT_LIMITS.noteCharsPerCharacter),
         /** Trades a character has proposed that are still open. */
-        openTradesPerCharacter: positiveInt,
+        openTradesPerCharacter: positiveInt.default(DEFAULT_LIMITS.openTradesPerCharacter),
+        /** Practice entries a player may log for their character (the GM is not capped). */
+        practiceEntriesPerCharacter: positiveInt.default(
+          DEFAULT_LIMITS.practiceEntriesPerCharacter,
+        ),
+        /** Characters in one player-logged practice entry (action, skills and tags). */
+        practiceEntryChars: positiveInt.default(DEFAULT_LIMITS.practiceEntryChars),
       })
       .default(DEFAULT_LIMITS),
   })
