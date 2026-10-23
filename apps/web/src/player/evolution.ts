@@ -72,7 +72,7 @@ export function evolutionBlocked(me: Pick<OwnSheet, 'selectionsDue'>): string | 
 
 /**
  * What the player should know before confirming an option: marks a transform
- * spends or resets (MQ.4, D114), a reshaped spread, and that it is final.
+ * spends or resets (MQ.4, D114; every transform resets them under MR.2), a reshaped spread, and that it is final.
  * Free points are untouched by evolving, so not listed. Waiting selections
  * block the choice instead (evolutionBlocked).
  */
@@ -91,7 +91,9 @@ export function evolutionWarnings(
     const lead = `[${s.name}] becomes [${t.name}]: `;
     out.push(
       kept === 0
-        ? `${lead}its ${marks(s.marks)} ${s.marks === 1 ? 'resets' : 'reset'} to 0.`
+        ? rules.marks.resetOnUpgrade
+          ? `${lead}a transformed skill starts at 0 marks, so its ${marks(s.marks)} ${s.marks === 1 ? 'resets' : 'reset'}.`
+          : `${lead}its ${marks(s.marks)} ${s.marks === 1 ? 'resets' : 'reset'} to 0.`
         : `${lead}the rarity gain spends ${marks(s.marks - kept)}; ${kept} ${kept === 1 ? 'carries' : 'carry'} on.`,
     );
   }

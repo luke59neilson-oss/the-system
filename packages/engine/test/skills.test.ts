@@ -379,6 +379,22 @@ describe('merges', () => {
 });
 
 describe('marks carry over (MQ.4, DESIGN §6, D101)', () => {
+  // Rules stored between MQ.4 and MR.2 (carry-over on, no reset on upgrade).
+  const mq4Rules = () => {
+    const raw = rawRules() as { skills: Record<string, unknown> };
+    raw.skills.marksCarryOver = true;
+    raw.skills.marksResetOnUpgrade = false;
+    return raw;
+  };
+  const base = (): Campaign =>
+    run(
+      [
+        { type: 'campaign.create', name: 'Whale', rules: mq4Rules() },
+        make('jake', 'Jake'),
+        make('kim', 'Kim'),
+      ],
+      ctx,
+    );
   const extraMarks = (c0: Campaign) => {
     let c = c0;
     for (const s of ['x1', 'x2', 'x3', 'x4', 'x5']) c = ok(c, mark(archery, s));
@@ -402,7 +418,7 @@ describe('marks carry over (MQ.4, DESIGN §6, D101)', () => {
   });
 
   it('a rarity change outside an upgrade spends the steps it skips (D114)', () => {
-    const m = markRules(defaultRules());
+    const m = { ...markRules(defaultRules()), carryOver: true, resetOnUpgrade: false };
     expect(marksAfterRarityChange(m, 'inferior', 'inferior', 5)).toBe(5);
     expect(marksAfterRarityChange(m, 'inferior', 'uncommon', 10)).toBe(3);
     expect(marksAfterRarityChange(m, 'inferior', 'uncommon', 6)).toBe(0);

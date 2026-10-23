@@ -623,3 +623,10 @@
 
 ## 2026-10-23 · MR.1 Evolutions re-rate skills · sonnet (1 round)
 - Round 1 (6baf6ff..bc42279): 0 High, 2 Medium, 5 Low. M: docs not updated (done at close-out, as LOOP §8 orders); a skill gained between release and choose (a merge) kept its rarity: fixed, any skill missing from the release's list takes the default drop (test through `execute` with a merge). Lows: overrides validated for skills every option transforms (accepted: harmless refusal); exact-case skill names (accepted: matches transforms); the re-rating list is per release, not per path (help text says a transformed skill follows its path; accepted); list spacing on phones (fixed); demo GM keeps every rarity (intended, D149); `textRarity` must be cleared by any future rarity-changing path (noted in D149). One Medium needing code, so no round 2 (LOOP §6.4); fix verified by the new test and `npm run check` (869), e2e MR.1 and M3.13 green. Box checked.
+
+## 2026-10-23 · MR.2 Every upgrade starts at 0 marks · reviewer: sonnet (1 round)
+
+- Range f4d07d9..76fcf7e. `npm run check` and e2e MR.2, M3.13, MR.1, M3.5 green; screenshots judged fine.
+- High: none. Medium: none.
+- Low (fixed): no test pinned reset winning over carry-over (added in `marksReset.test.ts`, incl. a lower-rarity transform); the re-rate note did not say the next upgrade starts at 0 (wording added, e2e updated); D152 understated the golden changes (corrected).
+- Low (kept): a transform to a lower rarity resets marks (a transform is a new skill; D152 says a GM wanting a lower label re-rates instead); the skill detail names the rule only when an upgrade is ready; no e2e for banked-at-ceiling notes (not in acceptance).

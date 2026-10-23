@@ -166,6 +166,14 @@ export const rulesConfigSchema = z
        */
       marksCarryOver: z.boolean().default(false),
       /**
+       * DESIGN §6 (MR.2, L15): every upgrade starts at 0 marks: an upgrade by
+       * marks keeps none beyond its cost and any evolution transform resets
+       * them (only an evolution re-rating keeps them, MR.1). Overrides
+       * `marksCarryOver`. Rules stored before it read false, so older
+       * campaigns replay as recorded.
+       */
+      marksResetOnUpgrade: z.boolean().default(false),
+      /**
        * DESIGN §6 skill library (MQ.12, L4): entries keyed by name and rarity;
        * library text follows to every copy the GM has not edited. Rules stored
        * before it read false (name-only fill of empty text, D90).

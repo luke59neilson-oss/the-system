@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 21,
+  "schemaVersion": 22,
   "name": "Golden: evolution",
   "rules": {
     "configVersion": 1,
@@ -245,6 +245,7 @@
       },
       "maxMarksPerSkillPerSession": 1,
       "marksCarryOver": false,
+      "marksResetOnUpgrade": false,
       "libraryByRarity": false,
       "merge": {
         "requiredJointUses": 3,
@@ -508,7 +509,7 @@
       "titles": [],
       "skills": [
         {
-          "name": "Hunter\u2019s Archery",
+          "name": "Hunter’s Archery",
           "rarity": "uncommon",
           "kind": "class",
           "nickname": null,
@@ -530,7 +531,7 @@
           "flavor": null
         },
         {
-          "name": "Archer\u2019s Eye",
+          "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -617,7 +618,7 @@
       "sessionId": "s1",
       "characterId": "jake",
       "action": "Pinned a pale hunter",
-      "skills": ["Hunter\u2019s Archery", "Basic Stealth"],
+      "skills": ["Hunter’s Archery", "Basic Stealth"],
       "stat": null,
       "tags": [],
       "source": "gm"
