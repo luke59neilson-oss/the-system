@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MS.5 Desktop wrapper (browser half): the GM console shows the players' join

@@ -218,7 +218,7 @@ They touch finished engine and player items, so they come before M4.4.
   with DESIGN §10 (weights and starting skills, original text); update the
   built-in Archer, the demo campaign and screenshots. *Accept:* seed tests;
   demo e2e still green.
-- [ ] **MQ.14 Bonus rules.** Items carry flat stat bonuses only (no
+- [x] **MQ.14 Bonus rules.** Items carry flat stat bonuses only (no
   percentages); total item bonus per stat capped at 20% of base; title
   percentages summed and applied once to (base + capped items); the existing
   title percentages uncapped by default (config may set a cap). Status screen shows a capped item
@@ -311,6 +311,14 @@ the rest follow in file order. Each gets its own §6 review.
   the proposer's view carries definitions only for items they hold or offer,
   and the counterparty's for items they hold or are offered; engine tests for
   the 1–3/4 probe and the definition; canary still passes.
+
+- [ ] **QF.10 e2e pages close with their test.** Specs open pages with
+  `browser.newPage()` and rarely close them; once a test's server stops, each
+  leftover page keeps reconnecting, so the worker's one browser slows until a
+  late spec times out at its first click (runs 4a0765f3 and 6fcb6693: MQ.13,
+  MQ.14 and MQ.6 specs, each green alone). *Accept:* every spec imports `test`
+  from `e2e/helpers/test.ts`, whose automatic fixture closes the contexts a
+  test opened; the full suite passes on one worker; no retries added.
 
 ## M1 (continued) — Rules engine
 

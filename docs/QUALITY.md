@@ -110,6 +110,11 @@ reviewers ran 15–20 minutes each in the background.
 - 2026-10-22 · Under 4 workers on 2 CPUs, `e2e/M3.3.spec.ts` (DING history)
   and `e2e/MS.3.spec.ts` (View-as, live) fail; each passes alone. Load
   sensitivity, see QF.8.
+- 2026-10-22/23 · Full local e2e (1 worker): the newest late spec timed out
+  at its first step (MQ.13, MQ.14, then MQ.6 "locks the list at once"), each
+  green alone. Not a flake: pages from earlier tests were never closed and
+  kept reconnecting to stopped servers. Fixed by QF.10 (full suite 5.4 → 4.1
+  min, green).
 
 ## Backlog (Lows; M11.5 goes through these)
 
