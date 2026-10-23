@@ -1,4 +1,4 @@
-import { RULES_CONFIG_VERSION, type RulesConfigInput } from './schema';
+import { DEFAULT_LIMITS, RULES_CONFIG_VERSION, type RulesConfigInput } from './schema';
 
 /** DESIGN.md defaults. Section numbers refer to DESIGN.md. */
 export const DEFAULT_RULES: RulesConfigInput = {
@@ -193,4 +193,5 @@ export const DEFAULT_RULES: RulesConfigInput = {
     ],
   },
   logging: { autosaveMinutes: 5 }, // ROADMAP M2.4
+  limits: { ...DEFAULT_LIMITS }, // QF.3, D136
 };

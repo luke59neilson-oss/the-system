@@ -350,6 +350,11 @@
     },
     "logging": {
       "autosaveMinutes": 5
+    },
+    "limits": {
+      "notesPerCharacter": 300,
+      "noteCharsPerCharacter": 150000,
+      "openTradesPerCharacter": 10
     }
   },
   "characters": {

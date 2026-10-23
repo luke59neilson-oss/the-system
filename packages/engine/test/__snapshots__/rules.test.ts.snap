@@ -179,6 +179,11 @@ exports[`default rules > match the snapshot 1`] = `
   "identify": {
     "sameGradeLevelRatio": 1.5,
   },
+  "limits": {
+    "noteCharsPerCharacter": 150000,
+    "notesPerCharacter": 300,
+    "openTradesPerCharacter": 10,
+  },
   "logging": {
     "autosaveMinutes": 5,
   },

@@ -1252,6 +1252,65 @@ function itemOutOfReach(state: NonNullable<Campaign['state']>, command: Command)
   return null;
 }
 
+/** Characters a note counts toward its author's `noteCharsPerCharacter` (QF.3). */
+const noteChars = (note: {
+  readonly title: string;
+  readonly body: string;
+  readonly tags: readonly string[];
+}): number => note.title.length + note.body.length + note.tags.reduce((n, t) => n + t.length, 0);
+
+/**
+ * Per-character caps from `rules.limits` (QF.3): notes written, their total
+ * size, and open proposed trades. Only characters are capped (the GM is
+ * trusted). Checked on commands, not in the reducer, so stored logs replay
+ * unchanged and a GM can lower a cap without breaking a campaign.
+ */
+function overLimit(state: NonNullable<Campaign['state']>, command: Command): string | null {
+  const limits = state.rules.limits;
+  if (command.type === 'note.create' || command.type === 'note.edit') {
+    const author = command.characterId;
+    if (author === null) return null;
+    const own = Object.values(state.notes).filter((n) => n.author === author);
+    let chars = own.reduce((n, note) => n + noteChars(note), 0);
+    if (command.type === 'note.create') {
+      if (own.length >= limits.notesPerCharacter) {
+        return `Note limit reached (${limits.notesPerCharacter} notes); delete one to add another`;
+      }
+      chars += noteChars({
+        title: (command.title ?? '').trim(),
+        body: command.body ?? '',
+        tags: command.tags ?? [],
+      });
+    } else {
+      const note = own.find((n) => n.id === command.noteId);
+      // Unknown or unreadable notes get the reducer's own message.
+      if (!note) return null;
+      const next = {
+        title: command.title === undefined ? note.title : command.title.trim(),
+        body: command.body ?? note.body,
+        tags: command.tags ?? note.tags,
+      };
+      // An edit that does not grow a note is always allowed (e.g. after a GM lowers the cap).
+      if (noteChars(next) <= noteChars(note)) return null;
+      chars += noteChars(next) - noteChars(note);
+    }
+    if (chars > limits.noteCharsPerCharacter) {
+      return `Notes are full (${limits.noteCharsPerCharacter.toLocaleString('en-US')} characters in all); shorten or delete a note first`;
+    }
+    return null;
+  }
+  if (command.type === 'trade.propose' && command.characterId !== null) {
+    const from = command.characterId;
+    const open = Object.values(state.trades).filter(
+      (t) => t.status === 'open' && t.from === from,
+    ).length;
+    if (open >= limits.openTradesPerCharacter) {
+      return `Too many open trades (${limits.openTradesPerCharacter}); cancel one first`;
+    }
+  }
+  return null;
+}
+
 /**
  * Validates a command, builds its event(s) and appends them. Never throws on a
  * bad or unauthorised command; the context (actor, clock, ids) is trusted.
@@ -1266,6 +1325,8 @@ export function execute(campaign: Campaign, command: Command, ctx: CommandContex
   if (denied) return { ok: false, error: `Not allowed: ${denied}` };
   const unreachable = campaign.state ? itemOutOfReach(campaign.state, command) : null;
   if (unreachable) return { ok: false, error: unreachable };
+  const capped = campaign.state ? overLimit(campaign.state, command) : null;
+  if (capped) return { ok: false, error: capped };
   try {
     const { type, payload } = toEvent(command, ctx, campaign);
     // Events carry the running session (M4.3); a session's own start and end carry its id.

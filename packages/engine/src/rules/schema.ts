@@ -11,6 +11,13 @@ const id = z
   .string()
   .regex(/^[a-z][a-zA-Z0-9]*$/, 'must be a camelCase identifier starting with a letter');
 const positiveInt = z.number().int().positive();
+
+/** QF.3 defaults (D136): roomy for a 40-session journal, small enough for every view. */
+export const DEFAULT_LIMITS = {
+  notesPerCharacter: 300,
+  noteCharsPerCharacter: 150_000,
+  openTradesPerCharacter: 10,
+} as const;
 const nonNegativeInt = z.number().int().nonnegative();
 const fraction = z.number().min(0);
 
@@ -207,6 +214,21 @@ export const rulesConfigSchema = z
     logging: z.strictObject({
       autosaveMinutes: positiveInt,
     }),
+    /**
+     * Caps on what one character can create (QF.3), so one phone cannot fill
+     * every client's view. Checked on commands, never on replay, so stored
+     * logs replay unchanged; rules stored before QF.3 read the defaults.
+     */
+    limits: z
+      .strictObject({
+        /** Notes a character has written (journal and party). */
+        notesPerCharacter: positiveInt,
+        /** Characters across those notes' titles, bodies and tags. */
+        noteCharsPerCharacter: positiveInt,
+        /** Trades a character has proposed that are still open. */
+        openTradesPerCharacter: positiveInt,
+      })
+      .default(DEFAULT_LIMITS),
   })
   .superRefine((config, ctx) => {
     const issue = (path: (string | number)[], message: string): void => {
