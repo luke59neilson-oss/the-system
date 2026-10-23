@@ -130,6 +130,9 @@ describe('practice log', () => {
       'unknown practice entry',
     );
 
+    // Reviewing one entry leaves the others pending (QF.16).
+    const one = ok(c, { type: 'practice.review', entryIds: [montage!.id] });
+    expect(one.state?.practice.map((e) => e.reviewed)).toEqual([false, true]);
     const reviewed = ok(c, { type: 'practice.review', entryIds: [first!.id, montage!.id] });
     expect(reviewed.state?.practice.map((e) => e.reviewed)).toEqual([true, true]);
     expect(reject(c, { type: 'practice.review', entryIds: ['nope'] })).toContain(

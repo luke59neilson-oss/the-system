@@ -10,7 +10,12 @@ import {
 import { evolutionPlan, releaseProblem, withdrawableOffers } from '../src/gm/evolutionBuilderModel';
 
 // M5.2: the evolution builder's model agrees with the engine.
-function campaign(classXp: number, extra: Command[] = [], rarity = 'inferior'): Campaign {
+function campaign(
+  classXp: number,
+  extra: Command[] = [],
+  rarity = 'inferior',
+  stealth = rarity,
+): Campaign {
   let n = 0;
   const ctx: CommandContext = {
     actor: { role: 'gm' },
@@ -27,7 +32,7 @@ function campaign(classXp: number, extra: Command[] = [], rarity = 'inferior'): 
       className: 'Archer',
       classSkills: [
         { name: 'Basic Archery', rarity },
-        { name: 'Basic Stealth', rarity },
+        { name: 'Basic Stealth', rarity: stealth },
         { name: 'Archer’s Eye', rarity: 'common' },
       ],
     },
@@ -93,6 +98,23 @@ describe('evolution builder model (M5.2)', () => {
       transforms: [{ skill: 'Basic Archery', merge: 'Basic Stealth', name: 'X', rarity: 'rare' }],
     };
     expect(releaseProblem(state, 'jake', [merge], [], [])).toMatch(/must be at least/);
+  });
+
+  it('judges a merge from the higher skill and needs both at the minimum (QF.16)', () => {
+    const log: Command[] = [1, 2, 3].map((i) => ({
+      type: 'practice.log',
+      characterId: 'jake',
+      action: `shot ${i}`,
+      skills: ['Basic Archery', 'Basic Stealth'],
+    }));
+    // Uncommon + Rare lands at Epic, above the F ceiling: no prompt.
+    expect(
+      evolutionPlan(campaign(400, log, 'uncommon', 'rare').state!, 'jake')!.mergePrompts,
+    ).toEqual([]);
+    // Uncommon + Inferior: the Inferior partner is below the merge minimum.
+    expect(
+      evolutionPlan(campaign(400, log, 'uncommon', 'inferior').state!, 'jake')!.mergePrompts,
+    ).toEqual([]);
   });
 
   it('prompts a ready merge at the new ceiling and flags a release made unchoosable', () => {

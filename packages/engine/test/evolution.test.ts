@@ -1781,6 +1781,22 @@ describe('merge transforms (M5.2, DESIGN §6 "offer that merge as part of the ev
     expect(char(undone).skills.map((s) => s.name)).toContain(stealth);
   });
 
+  it('lands one rarity above the higher skill when the two differ (QF.16)', () => {
+    let c = mergeReady();
+    // [Basic Archery] Uncommon → Rare; [Basic Stealth] stays Uncommon.
+    for (let m = 0; m < 6; m++) {
+      c = ok(c, {
+        type: 'skill.awardMark',
+        characterId: 'jake',
+        skill: archery,
+        session: `r${m}`,
+      });
+    }
+    c = ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: archery });
+    expect(char(c).skills.find((s) => s.name === archery)?.rarity).toBe('rare');
+    expect(reject(c, mergeRelease('Ghost Shot', 'rare'))).toMatch(/must be epic/);
+  });
+
   it('refuses a merge the merge rules refuse', () => {
     expect(reject(mergeReady(2), mergeRelease())).toMatch(/logged together 2 times \(need 3\)/);
     expect(reject(mergeReady(), mergeRelease('Ghost Shot', 'common'))).toMatch(
