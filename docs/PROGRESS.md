@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3, MS, MQ and MR done; QF.1–QF.12 done; M4.1–M4.7 done; M4.8 on `wip/M4.8`; Preview ready: Actions → Release → Run workflow (MR)
-**Next item:** resume `wip/M4.8` Change log and undo (see the last run entry), then M4.9 Rules settings
+**Status:** in progress: M0–M3, MS, MQ and MR done; QF.1–QF.12 done; M4.1–M4.8 done; M4.9 on `wip/M4.9`; Preview ready: Actions → Release → Run workflow (MR)
+**Next item:** resume `wip/M4.9` Rules settings (review round 1 Mediums, then round 2; see the last run entry), then M4.A
 **Blockers:** none
 
 ## Run log
@@ -741,4 +741,14 @@ next item, blockers. -->
 - Tests: 934 unit on main (`npm run check` green; 935 on wip); full e2e suite green locally at b3b663e (53 incl. latency); M4.6, M4.7, M4.3, MS.1, M2.A green after the last fixes. Engine coverage not re-measured.
 - Open `wip/*` branches: `wip/M4.8`.
 - Next item: resume `wip/M4.8`.
+- Blockers: none.
+
+### Run eed2b7e8 · 2026-10-23 12:18–13:07 UTC (end minute 49)
+- Preflight: `add_repo` not offered; repo already cloned (local main unrelated to origin/main, reset to origin/main eac4c8b). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer on sonnet works (worktree; the Agent call returns when done). No new answers. CI on main: latest completed 7c7523e green.
+- Efficiency check (hour 12): scorecard row appended; nothing in trial to judge; auditor (sonnet) gave 2 Tier 1 proposals; applied one as a trial (push main once per item after review fixes, LOOP §5.4/§6.3, D162); the other (`--only-changed` e2e) noted for a later check.
+- M4.8 Change log and undo: every event type has words (session-log wording or a summary phrase; test enforces it), Kind filter, notes never show title or text, live player rows, undo reaches the player. Sonnet round 1: 0 H, 3 M fixed; round 2: 0 H, 0 M, 3 L fixed. D160. **Checked.**
+- M4.9 Rules settings on `wip/M4.9` (base 7aa651b, head 5d4ec19): engine `rules.set`/`rules.reset` → `rules.edited` (whole config, validated; id lists fixed; overflow changes only via `rules.migrate`), golden log `rules-settings`, generated GM form (collapsible sections, ids read-only, Save/Discard/Reset with confirm), `e2e/M4.9.spec.ts` green, screenshots. D161 (on the branch). Round 1: 1 H fixed, 3 M open. Next: (1) reject edits that leave existing state invalid (a character above a grade's new top level or `levelCap`, a skill above a grade's new rarity ceiling; slot counts below what is equipped), with tests; (2) a test that undoing a loosening rules edit is refused when later events rely on it; (3) note in D161 that replay re-parses with the current schema like `campaign.created` (config migrations cover it); then review round 2, merge `wip/M4.9` into main (D161 follows D160/D162 there), full e2e, check the box.
+- Tests: 940 unit on main tree (`npm run check` green; 947 on `wip/M4.9`); full e2e suite green locally on d293b62 (56 incl. latency). Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/M4.9`.
+- Next item: resume `wip/M4.9`, then M4.A.
 - Blockers: none.

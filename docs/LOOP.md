@@ -102,8 +102,11 @@ them whole costs about 30k tokens per run for history you do not need):
 3. Tests first where practical, then code. Before every push to main run
    `npm run check` and the relevant e2e specs; main must stay green.
 4. Commit small. End every commit message with the attribution lines from your
-   session's system reminder. `git fetch && git rebase origin/main` before
-   pushing main (never rebase `wip/*` branches). Never force-push.
+   session's system reminder. Commit locally; push main once per item,
+   after its §6 review fixes are in, not once per commit or review round (the
+   reviewer tests the local commit in a worktree, so it needs no push). Push
+   main earlier only for a red-CI fix. `git fetch && git rebase origin/main`
+   before pushing main (never rebase `wip/*` branches). Never force-push.
 5. **Timebox: fixed clock, no forecasting.** All times are minutes after you
    took the lock. Runs have been ending around minute 39 because they guessed
    the next item would not fit; that guess is never a reason to stop.
@@ -155,7 +158,8 @@ them whole costs about 30k tokens per run for history you do not need):
 3. **Review in parallel.** Launch the reviewer with `run_in_background: true`
    and `isolation: "worktree"` (so it tests the item's commit, not your
    working tree), then start the next item while it works. When it reports,
-   fix the findings on the reviewed item before continuing.
+   fix the findings on the reviewed item before continuing. Do not push the
+   item to main to get it reviewed.
 4. Fix every High and Medium, re-run checks. A **second review round only
    if round 1 found a High or two or more Mediums**; otherwise verify your
    fixes yourself and log them. **At most 2 review rounds per

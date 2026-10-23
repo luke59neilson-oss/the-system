@@ -498,7 +498,7 @@ work: Q44–Q48 and Q52.
   session ≈ 6 levels" helper (`typicalSessionXp`), confirm.
 - [x] **M4.7 System broadcast.** System-style message to one or all; now or
   scheduled.
-- [ ] **M4.8 Change log and undo.** Filterable event list; undo with M1.3
+- [x] **M4.8 Change log and undo.** Filterable event list; undo with M1.3
   rules.
 - [ ] **M4.9 Rules settings.** Edit every config value as events, with
   validation and reset to defaults. Turning on `xp.overflow` (D124) for a
