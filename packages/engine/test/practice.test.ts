@@ -83,11 +83,66 @@ describe('practice log', () => {
         stat: 'perception',
         tags: ['combat'],
         source: 'player',
+        reviewed: false,
       },
     ]);
     const gm = ok(c, { ...log('kim', 'Montage: drills', [eye]), source: 'montage' });
     expect(gm.state?.practice[1]).toMatchObject({ source: 'montage', sessionId: 's1' });
     expect(ok(c, log('kim', 'Ran', [], 'agility')).state?.practice[1]?.source).toBe('gm');
+    // M5.5: the GM's own entries start reviewed; player and montage ones do not.
+    expect(gm.state?.practice[1]?.reviewed).toBe(false);
+    expect(ok(c, log('kim', 'Ran', [], 'agility')).state?.practice[1]?.reviewed).toBe(true);
+  });
+
+  it('the GM corrects, reviews and removes entries (M5.5)', () => {
+    const c = ok(
+      ok(base(), log('jake', 'Sniped the hunter', [archery], 'perception'), player('jake')),
+      { ...log('jake', 'Montage: drills', [archery]), source: 'montage' },
+    );
+    const [first, montage] = c.state!.practice;
+    const edited = ok(c, {
+      type: 'practice.edit',
+      entryId: first!.id,
+      action: 'Sniped the pale hunter',
+      skills: [archery, stealth],
+      stat: null,
+    });
+    expect(edited.state?.practice[0]).toMatchObject({
+      action: 'Sniped the pale hunter',
+      skills: [archery, stealth],
+      stat: null,
+      reviewed: true,
+      source: 'player',
+    });
+    // Omitted fields stay.
+    const kept = ok(c, { type: 'practice.edit', entryId: first!.id, action: 'Shot it' });
+    expect(kept.state?.practice[0]).toMatchObject({ skills: [archery], stat: 'perception' });
+    expect(
+      reject(c, { type: 'practice.edit', entryId: first!.id, skills: [], stat: null }),
+    ).toContain('name a skill or a stat');
+    expect(
+      reject(c, { type: 'practice.edit', entryId: first!.id, skills: ['Fireball'] }),
+    ).toContain('has no skill "Fireball"');
+    expect(
+      reject(c, { type: 'practice.edit', entryId: first!.id, skills: [archery, archery] }),
+    ).toContain('listed twice');
+    expect(reject(c, { type: 'practice.edit', entryId: 'nope' })).toContain(
+      'unknown practice entry',
+    );
+
+    const reviewed = ok(c, { type: 'practice.review', entryIds: [first!.id, montage!.id] });
+    expect(reviewed.state?.practice.map((e) => e.reviewed)).toEqual([true, true]);
+    expect(reject(c, { type: 'practice.review', entryIds: ['nope'] })).toContain(
+      'unknown practice entry',
+    );
+
+    const removed = ok(c, { type: 'practice.remove', entryId: first!.id });
+    expect(removed.state?.practice.map((e) => e.id)).toEqual([montage!.id]);
+    expect(reject(c, { type: 'practice.remove', entryId: montage!.id })).toContain(
+      'montage focus cannot be removed',
+    );
+    // Players cannot touch the log this way.
+    expect(reject(c, { type: 'practice.remove', entryId: first!.id }, player('jake'))).not.toBe('');
   });
 
   it.each([
@@ -125,6 +180,7 @@ describe('practice log', () => {
     stat: null,
     tags: [],
     source: 'gm',
+    reviewed: true,
   });
 
   it('flags repeats: same character, session, action and skills', () => {

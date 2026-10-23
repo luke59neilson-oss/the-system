@@ -164,6 +164,15 @@ export type Command =
       source?: 'gm' | 'player' | 'montage' | undefined;
     }
   | {
+      type: 'practice.edit';
+      entryId: string;
+      action?: string | undefined;
+      skills?: readonly string[] | undefined;
+      stat?: string | null | undefined;
+    }
+  | { type: 'practice.remove'; entryId: string }
+  | { type: 'practice.review'; entryIds: readonly string[] }
+  | {
       type: 'note.create';
       /** Optional; a fresh id is generated when omitted. */
       noteId?: string | undefined;
@@ -511,6 +520,9 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('trade.decline') }),
   z.object({ type: z.literal('trade.cancel') }),
   z.object({ type: z.literal('practice.log') }),
+  z.object({ type: z.literal('practice.edit') }),
+  z.object({ type: z.literal('practice.remove') }),
+  z.object({ type: z.literal('practice.review') }),
   z.object({ type: z.literal('note.create') }),
   z.object({ type: z.literal('note.edit') }),
   z.object({ type: z.literal('note.delete') }),
@@ -892,6 +904,15 @@ function toEvent(
           source: command.source ?? (ctx.actor.role === 'player' ? 'player' : 'gm'),
         },
       };
+    case 'practice.edit': {
+      const { entryId, action, skills, stat } = command;
+      // Undefined fields vanish in the event's JSON round trip (= unchanged).
+      return { type: 'practice.edited', payload: { entryId, action, skills, stat } };
+    }
+    case 'practice.remove':
+      return { type: 'practice.removed', payload: { entryId: command.entryId } };
+    case 'practice.review':
+      return { type: 'practice.reviewed', payload: { entryIds: [...command.entryIds] } };
     case 'note.create':
       return {
         type: 'note.created',

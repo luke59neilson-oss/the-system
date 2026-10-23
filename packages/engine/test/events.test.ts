@@ -774,7 +774,9 @@ describe('property: replay equals incremental state', () => {
   // reach every command path. One walk alone reaches some rare paths only a
   // handful of times, so any rule change that reshuffles it (QF.2) could drop
   // a path to zero without a bug; two walks keep coverage from hinging on luck.
-  const SEEDS = [20261021, 20261022] as const;
+  // Second seed moved 20261022 → 20261023 at M5.5: the new practice commands shift the
+  // stream, and 20261022 then never reached an accepted skill.useLibraryText.
+  const SEEDS = [20261021, 20261023] as const;
   const SEED = SEEDS.join('+');
   const STEPS = 2000;
 

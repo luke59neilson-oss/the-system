@@ -249,6 +249,17 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     tags: z.array(nonBlank).max(20),
     source: z.enum(['gm', 'player', 'montage']),
   }),
+  /** The GM corrects a practice entry (M5.5); omitted fields stay. Marks it reviewed. */
+  'practice.edited': z.strictObject({
+    entryId: recordId,
+    action: nonBlank.optional(),
+    skills: z.array(nonBlank).max(10).optional(),
+    stat: recordId.nullable().optional(),
+  }),
+  /** The GM removes a practice entry (M5.5); montage focuses cannot be removed. */
+  'practice.removed': z.strictObject({ entryId: recordId }),
+  /** The GM marks practice entries reviewed (M5.5). */
+  'practice.reviewed': z.strictObject({ entryIds: z.array(recordId).min(1).max(500) }),
   /** A note; `characterId` is the author as the actor acts (null = the GM). */
   'note.created': z.strictObject({
     noteId: recordId,
@@ -607,6 +618,9 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'trade.declined': 1,
   'trade.cancelled': 1,
   'practice.logged': 1,
+  'practice.edited': 1,
+  'practice.removed': 1,
+  'practice.reviewed': 1,
   'note.created': 1,
   'note.edited': 1,
   'note.deleted': 1,

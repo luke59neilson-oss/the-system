@@ -60,8 +60,8 @@ import {
 } from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 25;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 26;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -1167,8 +1167,59 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         stat,
         tags: [...tags],
         source,
+        reviewed: source === 'gm',
       };
       return { ...state, practice: [...state.practice, entry] };
+    }
+    case 'practice.edited': {
+      const { entryId, action, skills, stat } = event.payload;
+      const entry = state.practice.find((e) => e.id === entryId);
+      if (!entry) return fail(event, `unknown practice entry "${entryId}"`);
+      const character = characterOf(state, event, entry.characterId);
+      const nextSkills = skills ?? entry.skills;
+      const nextStat = stat === undefined ? entry.stat : stat;
+      if (nextSkills.length === 0 && nextStat === null) fail(event, 'name a skill or a stat');
+      if (new Set(nextSkills).size !== nextSkills.length) fail(event, 'a skill is listed twice');
+      // A skill the entry already names may stay even if it was merged away since.
+      const known = new Set([...character.skills.map((sk) => sk.name), ...entry.skills]);
+      for (const name of nextSkills) {
+        if (!known.has(name)) fail(event, `${character.name} has no skill "${name}"`);
+      }
+      if (nextStat !== null)
+        checkKeys(
+          event,
+          [nextStat],
+          state.rules.stats.list.map((st) => st.id),
+          'stat',
+        );
+      const edited: PracticeEntry = {
+        ...entry,
+        action: action ?? entry.action,
+        skills: [...nextSkills],
+        stat: nextStat,
+        reviewed: true,
+      };
+      return { ...state, practice: state.practice.map((e) => (e.id === entryId ? edited : e)) };
+    }
+    case 'practice.removed': {
+      const { entryId } = event.payload;
+      const entry = state.practice.find((e) => e.id === entryId);
+      if (!entry) return fail(event, `unknown practice entry "${entryId}"`);
+      // A montage keeps a pointer to its focus entry; edit it instead.
+      if (entry.source === 'montage') fail(event, 'a montage focus cannot be removed; edit it');
+      return { ...state, practice: state.practice.filter((e) => e.id !== entryId) };
+    }
+    case 'practice.reviewed': {
+      const ids = new Set(event.payload.entryIds);
+      for (const id of ids) {
+        if (!state.practice.some((e) => e.id === id)) fail(event, `unknown practice entry "${id}"`);
+      }
+      return {
+        ...state,
+        practice: state.practice.map((e) =>
+          ids.has(e.id) && !e.reviewed ? { ...e, reviewed: true } : e,
+        ),
+      };
     }
     case 'montage.offered': {
       const { montageId, clockId, label, characterIds } = event.payload;
@@ -1235,6 +1286,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         stat,
         tags: [],
         source: 'montage',
+        reviewed: false,
       };
       return {
         ...state,

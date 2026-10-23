@@ -23,6 +23,12 @@ export interface PracticeEntry {
   readonly stat: string | null;
   readonly tags: readonly string[];
   readonly source: PracticeSource;
+  /**
+   * The GM has looked at it (M5.5): true from the start for the GM's own
+   * entries, false for player and montage entries until the GM reviews or
+   * edits them.
+   */
+  readonly reviewed: boolean;
 }
 
 export type NoteKind = 'journal' | 'party' | 'gm';

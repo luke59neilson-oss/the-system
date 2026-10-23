@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 25,
+  "schemaVersion": 26,
   "name": "Golden: montage",
   "rules": {
     "configVersion": 1,
@@ -601,7 +601,8 @@
       "skills": ["Basic Stealth"],
       "stat": null,
       "tags": [],
-      "source": "montage"
+      "source": "montage",
+      "reviewed": false
     },
     {
       "id": "mt10",
@@ -612,7 +613,8 @@
       "skills": [],
       "stat": "strength",
       "tags": [],
-      "source": "montage"
+      "source": "montage",
+      "reviewed": false
     }
   ],
   "notes": {},

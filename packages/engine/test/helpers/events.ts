@@ -281,6 +281,25 @@ function randomNotesCommand(
       ...(rand() < 0.2 ? { source: pick(['gm', 'player', 'montage'] as const) } : {}),
     };
   }
+  if (roll < 0.48) {
+    // M5.5: the GM corrects, removes or reviews entries (sometimes unknown ones).
+    const entries = c.state?.practice ?? [];
+    const entryId = entries.length === 0 || rand() < 0.1 ? 'none' : pick(entries).id;
+    const kind = rand();
+    if (kind < 0.4) {
+      const entry = entries.find((e) => e.id === entryId);
+      const own = entry ? (c.state?.characters[entry.characterId]?.skills ?? []) : [];
+      return {
+        type: 'practice.edit',
+        entryId,
+        ...(rand() < 0.5 ? { action: pick(['Volley again', ' ', 'Long shot']) } : {}),
+        ...(rand() < 0.5 ? { skills: own.filter(() => rand() < 0.5).map((sk) => sk.name) } : {}),
+        ...(rand() < 0.3 ? { stat: pick(['agility', null, 'luck']) } : {}),
+      };
+    }
+    if (kind < 0.7) return { type: 'practice.remove', entryId };
+    return { type: 'practice.review', entryIds: [entryId] };
+  }
   const noteIds = c.state?.noteOrder ?? [];
   const author = () => (rand() < 0.4 ? null : someId());
   if (roll < 0.7 || noteIds.length === 0) {

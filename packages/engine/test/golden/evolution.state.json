@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 25,
+  "schemaVersion": 26,
   "name": "Golden: evolution",
   "rules": {
     "configVersion": 1,
@@ -623,7 +623,8 @@
       "skills": ["Hunter’s Archery", "Basic Stealth"],
       "stat": null,
       "tags": [],
-      "source": "gm"
+      "source": "gm",
+      "reviewed": true
     }
   ],
   "notes": {},

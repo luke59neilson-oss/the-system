@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 25,
+  "schemaVersion": 26,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -486,7 +486,8 @@
       "skills": ["Basic Archery", "Basic Stealth"],
       "stat": null,
       "tags": [],
-      "source": "player"
+      "source": "player",
+      "reviewed": false
     },
     {
       "id": "k24",
@@ -497,7 +498,8 @@
       "skills": ["Basic Archery", "Basic Stealth"],
       "stat": null,
       "tags": [],
-      "source": "player"
+      "source": "player",
+      "reviewed": false
     },
     {
       "id": "k25",
@@ -508,7 +510,8 @@
       "skills": ["Basic Archery", "Basic Stealth"],
       "stat": null,
       "tags": [],
-      "source": "player"
+      "source": "player",
+      "reviewed": false
     }
   ],
   "notes": {},

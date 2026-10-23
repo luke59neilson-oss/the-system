@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 25,
+  "schemaVersion": 26,
   "name": "Evolution builder golden",
   "rules": {
     "configVersion": 1,
@@ -649,7 +649,8 @@
       "skills": ["Ghost Shot", "Basic Stealth"],
       "stat": null,
       "tags": [],
-      "source": "gm"
+      "source": "gm",
+      "reviewed": true
     },
     {
       "id": "w4",
@@ -660,7 +661,8 @@
       "skills": ["Ghost Shot", "Basic Stealth"],
       "stat": null,
       "tags": [],
-      "source": "gm"
+      "source": "gm",
+      "reviewed": true
     },
     {
       "id": "w5",
@@ -671,7 +673,8 @@
       "skills": ["Ghost Shot", "Basic Stealth"],
       "stat": null,
       "tags": [],
-      "source": "gm"
+      "source": "gm",
+      "reviewed": true
     }
   ],
   "notes": {},
