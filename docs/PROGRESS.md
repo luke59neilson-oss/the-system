@@ -714,7 +714,7 @@ next item, blockers. -->
 - Next item: finish MR.4, then MR.A (fable review, then Preview ready).
 - Blockers: none.
 
-### Run a6822bf5 · 2026-10-23 09:08–09:53 UTC (ended at minute 45, not one of LOOP §5.5's reasons: the MR.A round-2 review came back at minute 42, too late to begin M4.5 usefully before the 44 hand-off)
+### Run a6822bf5 · 2026-10-23 09:08–09:50 UTC (ended at minute 42, not one of LOOP §5.5's reasons: the MR.A round-2 review came back at minute 42, too late to begin M4.5 usefully before the 44 hand-off)
 - Preflight: `add_repo` not offered; repo already cloned (local main unrelated to origin/main, reset to origin/main e9d8280). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewers on sonnet, fable and haiku work (blocking; four ran concurrently). No new answers. CI on main: latest completed 75e26f3 green. Hour 09: quality sweep D.
 - MR.4 finished: the property walk now reaches an accepted `skill.useLibraryText` (the library stream gives hand-written copies an entry with text at their name and rarity); round-1 fixes verified myself (round 2 not required); merged wip/MR.4 (34f6f14). **Checked.**
 - Sweep D (4cf9f1b..34f6f14; Rules · sonnet, Boundaries · fable, UX · haiku): 0 High, 2 Medium (both confirmed; the same two the MR.A review found, fixed under MR.A), 5 Lows to Backlog. No new QF items.
