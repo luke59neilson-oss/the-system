@@ -247,3 +247,4 @@ export function notificationHistory(campaign: Campaign): HistoryItem[] {
   });
   return out;
 }
+export * from './changeLog';
