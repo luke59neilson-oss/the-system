@@ -111,7 +111,7 @@ test('the GM builds and sends a merge; the player gets the DING and the new skil
   await expect(skills).toContainText('Dancing Blade (Rare)');
   await expect(skills).not.toContainText('Quick Cut');
   await player.screenshot({ path: path.join(shots, 'player-merge-390x844.png') });
-  await player.getByRole('button', { name: /\[Dancing Blade \(Rare\)\]/ }).click();
+  await skills.getByRole('button', { name: /\[Dancing Blade \(Rare\)\]/ }).click();
   await expect(player.getByTestId('skill-detail-description')).toHaveText(
     'Strike and slip away in one motion.',
   );
