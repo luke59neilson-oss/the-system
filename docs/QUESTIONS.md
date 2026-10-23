@@ -327,3 +327,10 @@ DESIGN/ROADMAP; do not re-apply them.
     tutorial-start creatures if you want them readable. Alternative: treat a
     level-0 viewer as level 1 for this rule.
     Answer:
+
+53. **Note and trade limits.** To stop one phone flooding everyone's
+    screen (QF.3), each character may keep up to 300 notes with 150,000
+    characters in all (about 25,000 words), and have 10 trades they proposed
+    open at once. The GM has no limits. Default: these numbers (they live in
+    the rules config). Alternative: tell me other numbers.
+    Answer:
