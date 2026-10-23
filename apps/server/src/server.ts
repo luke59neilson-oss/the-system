@@ -3,7 +3,7 @@ import path from 'node:path';
 import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { buildDemoEvents, portraitUrl, type DomainEvent } from '@the-system/engine';
+import { buildDemoEvents, changeLog, portraitUrl, type DomainEvent } from '@the-system/engine';
 import { LiveHub, type HubOptions } from './hub';
 import type { JoinInfo } from './join';
 import {
@@ -319,6 +319,12 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     const info = options.joinInfo?.() ?? null;
     if (!info) return reply.code(503).send({ error: 'Not listening yet' });
     return info;
+  });
+
+  // M4.8: the GM's change log (GM-only: every event, in words, with undo state).
+  app.get('/api/gm/changelog', (_request, reply) => {
+    if (!active) return reply.code(404).send({ error: 'No campaign open' });
+    return { rows: changeLog(active.store.campaign) };
   });
 
   app.get('/api/gm/export', () => {
