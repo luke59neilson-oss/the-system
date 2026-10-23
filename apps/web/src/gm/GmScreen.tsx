@@ -21,6 +21,7 @@ import { SessionPanel } from './SessionPanel';
 import { PortraitPicker } from './PortraitControls';
 import { PartyDashboard } from './PartyDashboard';
 import { XpAward } from './XpAward';
+import { ChangeLog } from './ChangeLog';
 import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
 
@@ -136,6 +137,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <CreateCharacter client={client} gmKey={gmKey} state={state} />
               <XpAward client={client} state={state} />
               <Broadcast client={client} state={state} />
+              <ChangeLog client={client} gmKey={gmKey} state={state} />
               <SkillText client={client} state={state} />
               <SkillLibrary client={client} state={state} />
               <OriginLibrary client={client} state={state} />
