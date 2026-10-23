@@ -632,7 +632,7 @@ next item, blockers. -->
 - Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
-### Run 26b985de · 2026-10-23 01:06–01:51 UTC (ended at minute 45)
+### Run 26b985de · 2026-10-23 01:06–01:49 UTC (ended at minute 42: MQ.A merged at minute 41; QF.3 not started, see Next item)
 - Preflight: `add_repo` not offered; repo already cloned (shallow; unshallowed), fast-forwarded. Lock pushed. `npm view vitest version` → 5.0.5. Reviewer subagents on `fable` with worktrees work (they block the caller). Latest main CI (0f9ff81) green. No new answers. Hour 01: no efficiency check or sweep.
 - MQ.A Batch acceptance and review: `npm run check` and full e2e on main (567d841) green (43/43, 7.5 min). Fable round 1 over the whole batch (06151e3..567d841): 0 H, 2 M, 6 L. Fixed both Mediums (D133 upgrade takes the new rarity's library text over a hand edit; D134 GM XP form shows overflow and loss before confirming, new `e2e/MQ.A.spec.ts` + screenshot) and two Lows (D135); others to Q52 and the QUALITY backlog. Round 2 (fable): 0 H, 0 M, 4 L; fixed the blank-entry case and D133 wording. Full e2e 44/44 on c3a35be; the later commits change only a hint string and the blank-entry gate (unit-tested), so not re-run. Merged (d7b9283), box checked. MQ milestone done.
 - Not done: preview release (`git push origin main:release` refused by the permission classifier; logged as a Blocker for Luke, not retried).
