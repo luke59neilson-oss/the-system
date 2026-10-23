@@ -166,6 +166,17 @@ jobs:
           Double-click starts the server and opens the GM console; players join at the URL or QR code it shows. If port 30333 is taken, The System uses the next free port and tells you.
 
           NOTES
+          # Each file's exact size and SHA-256, installer first (QF.11): a
+          # download that stops early is visible before it is run.
+          {
+            echo "Files (compare the size if a download seems broken):"
+            echo
+            for suffix in win-x64-setup.exe linux-x86_64.AppImage; do
+              f="out/TheSystem-${id}-${suffix}"
+              echo "- $(basename "$f"): $(stat -c %s "$f") bytes, SHA-256 \`$(sha256sum "$f" | cut -d' ' -f1)\`"
+            done
+            echo
+          } >> "$notes"
           cat changes.md >> "$notes"
           # Draft first, so a failed upload never leaves a half-filled public release.
           gh release create "$tag" out/* \
