@@ -180,7 +180,14 @@ describe('player projection', () => {
     // Derived: race level, effective stats (base + equipped items, D81) and
     // the count of earned selections still to choose (MQ.1, D103).
     expect(Object.keys(view.me).sort()).toEqual(
-      [...ownFields, 'raceLevel', 'effectiveStats', 'itemCappedStats', 'selectionsDue'].sort(),
+      [
+        ...ownFields,
+        'raceLevel',
+        'effectiveStats',
+        'itemCappedStats',
+        'selectionsDue',
+        'titleDetails',
+      ].sort(),
     );
   });
 
