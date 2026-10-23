@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3, MS, MQ and MR done; QF.1–QF.12 done; M4.1–M4.8 done; M4.9 on `wip/M4.9`; Preview ready: Actions → Release → Run workflow (MR)
-**Next item:** resume `wip/M4.9` Rules settings (review round 1 Mediums, then round 2; see the last run entry), then M4.A
+**Status:** in progress: M0–M3, MS, MQ and MR done; QF.1–QF.12 done; M4.1–M4.9 done; M4.A on `wip/M4.A` (round 1 fixed, QF.13 and round 2 open); Preview ready: Actions → Release → Run workflow (MR)
+**Next item:** resume `wip/M4.A`: QF.13 (bounded change log, on that branch's ROADMAP), then M4.A review round 2 (fable), then M5.1
 **Blockers:** none
 
 ## Run log
@@ -752,3 +752,13 @@ next item, blockers. -->
 - Open `wip/*` branches: `wip/M4.9`.
 - Next item: resume `wip/M4.9`, then M4.A.
 - Blockers: none.
+
+### Run c1c64270 · 2026-10-23 13:07–13:48 UTC (end minute ~42: hand-off at the fixed clock; close-out finished early, no §5.5 reason applies)
+- Preflight: `add_repo` not offered; repo already cloned (local main unrelated to origin/main, reset to it). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewers on sonnet and fable work (worktree). No new answers. CI on main: latest completed 7c7523e green. One transient 503 from the git credential service; the retry worked.
+- M4.9 Rules settings: resumed `wip/M4.9`, merged main (conflicts from M4.8 landing on main as different commits: kept both sides). Round-1 Mediums fixed (rules the campaign does not fit are refused, naming who; undo-of-loosening test; D161 replay note). Sonnet round 2: 0 H, 0 M, 6 L; overflow field read-only and plain-words refusals fixed. Full e2e 56/56 green. **Checked**; merged to main (b26e0a0).
+- M4.A GM console acceptance: `e2e/M4.A.spec.ts` (3 characters, custom split, DING on 3 player screens within 1 s, undo from the change log reverts every screen, reason never in player frames) + screenshots. Fable round 1: 0 H, 3 M, 5 L (full suite 57/57). Fixed M1 (nullable rules numbers) and M2 (Undo confirm on the row) in a8dd8f3; M3 (change-log cost) became QF.13 on `wip/M4.A`. Not checked.
+- Tests: 950 unit (`npm run check` green); e2e 57 incl. M4.A. Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/M4.A` (base b26e0a0, head 9244c61). Where I stopped: QF.13 not started; then round 2 (also add an M4.9 e2e step editing a nullable field and an M4.A check that the DING history drops the undone award).
+- Next item: resume `wip/M4.A` (QF.13, round 2), then M5.1.
+- Blockers: none.
+
