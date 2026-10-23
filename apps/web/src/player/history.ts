@@ -21,17 +21,22 @@ export const HISTORY_FILTERS: readonly { id: HistoryFilter; label: string }[] = 
   { id: 'items', label: 'Gifts and trades' },
 ];
 
+/** A DING: a level-up, a profession taken, a skill upgrade or a merge. */
+export function isDing(n: LiveNotification): boolean {
+  return (
+    n.kind === 'level' ||
+    n.kind === 'profession' ||
+    n.kind === 'skillUpgrade' ||
+    n.kind === 'skillMerge'
+  );
+}
+
 export function matchesFilter(n: LiveNotification, filter: HistoryFilter): boolean {
   switch (filter) {
     case 'all':
       return true;
     case 'dings':
-      return (
-        n.kind === 'level' ||
-        n.kind === 'profession' ||
-        n.kind === 'skillUpgrade' ||
-        n.kind === 'skillMerge'
-      );
+      return isDing(n);
     case 'profession':
       return n.kind === 'profession' || (n.kind === 'level' && n.track === filter);
     case 'class':

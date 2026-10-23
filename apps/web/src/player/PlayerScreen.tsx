@@ -15,6 +15,7 @@ import { playChime, unlockChime } from './chime';
 import {
   HISTORY_FILTERS,
   filterHistory,
+  isDing,
   nextArrival,
   notificationKey,
   readSound,
@@ -963,7 +964,7 @@ function DingQueue({ live, sound }: { live: LiveSnapshot; sound: boolean }) {
  * so the GM sees them land in a small Table-view pane without scrolling.
  */
 function PaneLatest({ live, view }: { live: LiveSnapshot; view: PlayerView | null }) {
-  const latest = live.notifications.filter((n) => n.notification.kind === 'level').at(-1);
+  const latest = live.notifications.filter((n) => isDing(n.notification)).at(-1);
   const message = view?.messages.at(-1);
   if (!latest && !message) return null;
   return (
