@@ -143,7 +143,9 @@ test('hand-written text survives an upgrade until the GM presses Use library tex
 
   // Upgrade to Uncommon: the hand-written text stays (L17), live on Jake's screen.
   await markAndUpgrade(gm, 1, 4);
-  await expect(jake.getByRole('button', { name: /\[Identify \(Uncommon\)\]/ })).toBeVisible();
+  await expect(
+    jake.getByTestId('skills-race').getByRole('button', { name: /\[Identify \(Uncommon\)\]/ }),
+  ).toBeVisible();
   await expect(detail.getByTestId('skill-detail-description')).toHaveText(HAND);
   await expect(form.getByLabel('Description')).toHaveValue(HAND);
   await expect(useLibrary).toBeEnabled();
@@ -173,7 +175,9 @@ test('hand-written text survives an upgrade until the GM presses Use library tex
   await form.getByRole('button', { name: 'Save skill text' }).click();
   await expect(form.getByRole('status')).toHaveText('Skill text saved');
   await markAndUpgrade(gm, 5, 6);
-  await expect(jake.getByRole('button', { name: /\[Identify \(Rare\)\]/ })).toBeVisible();
+  await expect(
+    jake.getByTestId('skills-race').getByRole('button', { name: /\[Identify \(Rare\)\]/ }),
+  ).toBeVisible();
   await expect(detail.getByTestId('skill-detail-description')).toHaveText(HAND);
   await expect(form.getByTestId('skill-text-source')).toHaveText('Hand-written text.');
   await expect(useLibrary).toBeDisabled();
@@ -187,7 +191,10 @@ test('hand-written text survives an upgrade until the GM presses Use library tex
   const phoneErrors = watchErrors(phone);
   await phone.goto(server.url);
   await phone.getByRole('link', { name: /Jake/ }).click();
-  await phone.getByRole('button', { name: /\[Identify \(Rare\)\]/ }).click();
+  await phone
+    .getByTestId('skills-race')
+    .getByRole('button', { name: /\[Identify \(Rare\)\]/ })
+    .click();
   await expect(phone.getByTestId('skill-detail-description')).toHaveText(HAND);
   await noSidewaysScroll(phone);
   await phone.screenshot({ path: path.join(shots, 'player-hand-text-390x844.png') });

@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M4, MS, MQ and MR done; QF.1–QF.15 done; M5.1–M5.2 done; Preview ready: Actions → Release → Run workflow (M4)
-**Next item:** M5.3 Marks review
+**Status:** in progress: M0–M4, MS, MQ and MR done; QF.1–QF.15 done; M5.1–M5.3 done; Preview ready: Actions → Release → Run workflow (M4)
+**Next item:** M5.4 Merges (resume `wip/M5.4`)
 **Blockers:** none
 
 ## Run log
@@ -802,4 +802,15 @@ next item, blockers. -->
 - Open `wip/*` branches: none new (wip/M5.2 merged).
 - Ended at minute 42, before 48 without a §5.5 reason: M5.2 was checked and merged at minute 41 after the full e2e run, and M5.3 was not started (protocol deviation, noted honestly).
 - Next item: M5.3 Marks review.
+- Blockers: none.
+
+### Run 2922f876 · 2026-10-23 18:07–18:5x UTC
+- Preflight: `add_repo` not offered; repo already cloned (local main reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer on sonnet works (worktree). No new answers. CI on main: 350d5f0 green.
+- Efficiency check (hour 18): scorecard row appended. D162 (one push per item) kept: main CI 66 → 48 runs/day, 12 → 8 red/day, guards flat. Auditor (sonnet) gave 2 Tier 1 ideas; applied the close-out gate (LOOP §5.5 gate, §8 step 0; trial, D170). Not a sweep hour.
+- M5.3 marks review **checked**: engine `marksReview`/`reviewSessionId` (skills used per play session, repeats flagged, pairs counted vs the merge rule, montage focus flagged, lost skills named, upgrade prompts and banked skills from the engine's own rules), GM "Marks review" window (any session; Confirm mark, Mark another skill, Upgrade), player skill-upgrade DING (`skillUpgrade`, owner only; in the "Level-ups and upgrades" filter). D169. e2e M5.3 1/1 with 3 screenshots.
+- Review (sonnet): round 1 0 H / 3 M / 7 L, round 2 0 H / 0 M / 3 L; all M and one round-2 L fixed, rest to the QUALITY Backlog.
+- Tests: 988 unit (`npm run check` green); full e2e: all passed except MQ.12 and MR.4 (strict-mode clash with the new DING toast), fixed and re-run with M5.3 and M3.3: 4/4.
+- Started M5.4 per the new gate: `wip/M5.4` (base 1ee9b9e on wip/M5.3, now on main). Done: engine `mergeCandidates` + tests, `skillMerge` DING, GM `MergeBuilder` window, draft e2e `e2e/M5.4.spec.ts` (not yet run), D171, Q62. Next step: merge origin/main, build, run `e2e/M5.4.spec.ts` and fix, `npm run check`, then review.
+- Open `wip/*` branches: wip/M5.4 (new).
+- Next item: M5.4 Merges (resume wip/M5.4).
 - Blockers: none.

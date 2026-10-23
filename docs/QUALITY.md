@@ -144,6 +144,7 @@ reviewers ran 15–20 minutes each in the background.
 
 ## Backlog (Lows; M11.5 goes through these)
 
+- UX (M5.3 review): the marks review's success text stays after an undo; `busy` is never reset if `client.command` throws; the window grows long with many characters; no UI assertion for the lost-skills and montage lines; `?? p.count` fallback in `marksReview` pairs is dead code; e2e reruns rewrite committed screenshots (repo-wide).
 - UX (M5.1 review): the offer builder's result banner stays after live updates; a draft is dropped without notice when the player chooses the selection being edited; practice dates show the UTC day; Withdraw uses a native confirm; no e2e for a repeat chip click or a declined confirm.
 - Tests (QF.8 review): `npm run e2e` chains `--project=e2e && --project=latency`, so locally a failing e2e spec skips the latency specs (CI runs both steps regardless).
 - Rules (MQ.14 review): a stat base under 5 units gives an item cap of 0, so any item bonus there shows "(+0.0, capped)"; consider a minimum cap of 1 unit.
