@@ -733,7 +733,7 @@ next item, blockers. -->
 - Next item: re-launch the M4.6 round-2 review, then M4.7 System broadcast.
 - Blockers: none.
 
-### Run ff3fd214 · 2026-10-23 11:14–11:59 UTC (ended at minute 45; close-out after the 44 hand-off)
+### Run ff3fd214 · 2026-10-23 11:14–11:57 UTC (ended at minute 43: M4.8 handed off to wip and close-out finished early; none of the §5.5 reasons applies, so this is an early stop to note)
 - Preflight: `add_repo` not offered; repo already cloned (local main unrelated to origin/main, reset to origin/main f5cfa3a, unshallowed). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer on sonnet works (worktree; the Agent call returns when the review is done). No new answers. CI on main: latest completed f5cfa3a green. Hour 11: no efficiency check or sweep.
 - M4.6 XP award dialog: sonnet round 2: 0 H, 2 M, fixed (typical-session suggestion capped by the room left: engine `xpRoom`, `typicalSessionAward`; button disabled with nobody to suggest for) plus 2 Lows. **Checked.**
 - M4.7 System broadcast: to everyone, one character or several; now or scheduled for a later in-game day (`broadcast.scheduled`/`unscheduled`, GM-only `scheduledBroadcasts`, campaign state v25, new golden log; `campaign.dayAdvanced` sends due ones). D159, Q60. Sonnet round 1: 0 H, 2 M fixed (day form warns and reports sends; hub test); round 2: 0 H, 0 M. **Checked.**
