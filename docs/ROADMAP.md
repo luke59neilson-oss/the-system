@@ -496,7 +496,7 @@ work: Q44–Q48 and Q52.
   lower grades, MQ.10: `enemyGrade`), level-up preview with overflow and
   "XP lost" warnings (`previewXpAward`, MQ.11), "typical
   session ≈ 6 levels" helper (`typicalSessionXp`), confirm.
-- [ ] **M4.7 System broadcast.** System-style message to one or all; now or
+- [x] **M4.7 System broadcast.** System-style message to one or all; now or
   scheduled.
 - [ ] **M4.8 Change log and undo.** Filterable event list; undo with M1.3
   rules.
