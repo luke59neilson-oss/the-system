@@ -36,4 +36,14 @@ test('the GM undoes a broadcast from the change log', async ({ page }) => {
   await expect(row).toHaveCount(1);
   await row.getByRole('button', { name: 'Undo' }).click();
   await expect(row).toContainText('(undone)');
+  // M1.3 rules: Jake's creation cannot be undone while later events depend on him.
+  await form.getByLabel('Message').fill('Only Jake.');
+  await form.getByLabel('Recipients').selectOption({ label: 'Jake' });
+  await form.getByRole('button', { name: 'Send broadcast' }).click();
+  await expect(log.getByRole('listitem').filter({ hasText: 'Only Jake.' })).toHaveCount(1);
+  const created = log.getByRole('listitem').filter({ hasText: 'Jake' }).last();
+  await created.getByRole('button', { name: 'Undo' }).click();
+  await expect(log.getByRole('alert')).toBeVisible();
+  await log.getByLabel('Filter').fill('only jake');
+  await expect(log.getByRole('listitem')).toHaveCount(1);
 });
