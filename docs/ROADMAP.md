@@ -320,6 +320,47 @@ the rest follow in file order. Each gets its own §6 review.
   from `e2e/helpers/test.ts`, whose automatic fixture closes the contexts a
   test opened; the full suite passes on one worker; no retries added.
 
+## MR — Luke's answers, batch 2 (2026-10-22)
+
+Answers to Q43–Q52 (DESIGN §2, §6, §7 updated; L14–L18). They change finished
+engine and player items, so they come before M4.5. Defaults Luke kept need no
+work: Q44–Q48 and Q52.
+
+- [ ] **MR.1 Evolutions re-rate skills.** An evolution release carries a new
+  rarity for every skill the character keeps: by default one step down
+  (never below Inferior), set per skill by the GM (raise within the new
+  grade's ceiling, keep, or lower). The copy's text and effects stay as they
+  are (library-linked or hand-written), and every mark is kept, so the next
+  upgrade uses the lower rarity's cost. Evolution events stored before this
+  item carry no re-rating and replay unchanged. The player's evolution
+  screen shows each skill's old → new rarity before release. The GM builder
+  controls come with M5.2; until then the default applies, with the override
+  available as a command. *Accept:* engine tests: default drop, raise, keep,
+  lower, the Inferior floor, a raise refused above the ceiling, marks kept,
+  text unchanged for library-linked and hand-written copies, an upgrade
+  right after the evolution at the lower rarity's cost; golden logs still
+  replay; e2e on the evolution screen.
+- [ ] **MR.2 A transform that raises rarity resets marks.** Replaces D114's
+  spend-and-carry: when an evolution transform raises a skill's rarity, its
+  marks go to 0; a same-rarity transform keeps them. The evolution screen's
+  marks note says so. *Accept:* engine tests through `evolution.choose`;
+  e2e text on the evolution screen.
+- [ ] **MR.3 XP overflow for every campaign.** Replaces D124: campaigns
+  created before MQ.11 switch to overflow automatically when loaded (a rules
+  migration, logged). How XP already banked is handled is the run's call
+  (no real campaigns exist yet), logged as a D-entry. *Accept:* a stored
+  campaign with banked XP loads with overflow on; the GM award preview warns
+  about lost XP for it; golden logs re-recorded under a schema bump.
+- [ ] **MR.4 Hand-written skill text survives upgrades; Use library text.**
+  Replaces D133 (keeps D125): a hand-written copy keeps its text when the
+  skill upgrades, and a downgrade (MR.1) never changes text. The GM's Skill
+  text form gets **Use library text**, which reconnects the copy to the
+  library entry for its current name and rarity (disabled when there is
+  none). *Accept:* engine tests for an upgrade with and without hand-written
+  text and for reconnecting; e2e on the form.
+- [ ] **MR.A Batch acceptance and review.** The batch's e2e specs and the full
+  suite green; `fable` review; then "Preview ready" (LOOP §8.2).
+
 ## M1 (continued) — Rules engine
 
 - [x] **M1.6 Titles and bonuses.** Flat and percentage bonuses, percentage
@@ -453,7 +494,8 @@ the rest follow in file order. Each gets its own §6 review.
 - [ ] **M5.2 Evolution builder.** Options, warnings, one-time stat bonus per
   option, optional transforms with merge prompts, spread reshape, tailored
   profession offers (E evolution, or later after "none for now"; withdrawing an
-  untaken offer, MQ.6 review); release. Warn when a selection (esp. the capstone) is still
+  untaken offer, MQ.6 review); per-skill re-rating at release (default one
+  rarity down, raise/keep/lower; MR.1); release. Warn when a selection (esp. the capstone) is still
   pending (Q21).
 - [ ] **M5.3 Marks review.** End-of-session queue; upgrade prompts.
 - [ ] **M5.4 Merges.** Alert, build, send.

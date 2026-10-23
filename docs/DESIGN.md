@@ -39,7 +39,8 @@ October 2026.
     what they have done (practice log). The player picks one or chooses
     "none for now"; offered professions stay listed in a Professions tab and
     can be taken later, until one is chosen and the list locks (greyed out).
-    A profession starts at the character's class level when taken.
+    While a character has none, the GM may add offers at any later evolution
+    (Q46). A profession starts at the character's class level when taken.
   - **Class levels** grant the class spread; **race levels** grant free
     points; **profession levels** grant no stats directly (they raise race
     level and add profession skill options).
@@ -49,6 +50,8 @@ October 2026.
   - **No banked XP; XP overflows.** XP for a track that is at the grade's top
     goes to the other track instead (class XP levels the profession, and
     profession XP levels the class), so whatever isn't ready yet catches up.
+    This applies to every campaign, including ones created before the rule
+    (Q49).
     When both tracks are at the top (or the class is at the top and there is
     no profession), the XP has nowhere to go and is lost; the GM's XP preview
     says so before the award is confirmed.
@@ -159,11 +162,21 @@ blue-white tint and a heavier brushed texture so the change is visible.
   minimum 0). When two compatible skills have been used together often enough
   (the merge alert), the evolution builder prompts the GM to offer that merge
   as part of the evolution.
+- **Evolutions re-rate skills (Luke, Q43).** What was Rare at D-grade is not
+  Rare at C-grade, so at each evolution every skill drops one rarity by
+  default (never below Inferior), and the GM raises, keeps or lowers each one
+  in the evolution builder before releasing it (a raise stays within the new
+  grade's ceiling). The skill's text and effects do not change (same power,
+  lower label), and it keeps all its marks, so a well-practised skill may
+  climb straight back with its next upgrade.
 - **Skill names:** the System gives the official name; the player may add a
   nickname ("Jake Juice"). Show both.
 - **Skill library (Luke, Q37):** one entry per skill name **and rarity**, so an
   upgrade picks up the higher rarity's text automatically. Editing a library
   entry updates every character's copy the GM has not personally edited. A
+  copy the GM has hand-written keeps its text through library edits and
+  upgrades until the GM presses **Use library text** (Q50, Q51). A downgrade
+  at evolution never changes a copy's text. A
   skill's **effects** text is shown to its owner (never to other players), like
   the books' skill descriptions.
 
@@ -186,6 +199,9 @@ turning point). GM confirms marks in the end-of-session review.
 - A skill at its grade's rarity ceiling banks marks until the next evolution.
 - After an upgrade, marks beyond the threshold **carry into the next
   rarity** (they are player effort; Luke's call).
+- An evolution transform that raises a skill's rarity **resets its marks to
+  0** (Q43); a same-rarity transform keeps them. A skill that drops a rarity
+  at evolution keeps all its marks.
 
 ### Merges
 
@@ -227,18 +243,28 @@ turning point). GM confirms marks in the end-of-session review.
   player sees the best tier their Identify rarity unlocks. **Who can be
   identified:** anything of a lower grade always; nothing of a higher grade;
   the same grade only if its level is at most 1.5 × the viewer's level.
-  Otherwise Identify shows `[??? – lvl ???]`.
+  Otherwise Identify shows `[??? – lvl ???]`. The viewer's level is their
+  race level; targets without a grade and level (a place, an energy) are
+  always in range; a known target out of range keeps its name in the
+  Identify list with `[??? – lvl ???]` instead of its text (Q48). So a
+  level-0 character identifies nothing of its own grade above level 0 until
+  its first level-up (Q52).
 - **Quests:** text, timer/day counter, and an optional **World Stability %**
   (starts at 100) with GM-defined rules (action tags → deltas) and a
   visible/hidden toggle. **Hidden quests:** when one exists, the affected
   players get a System notice that a hidden quest exists and can be
-  triggered, with no details.
+  triggered, with no details: the whole party, unless the GM names
+  characters; the notice appears again if the quest is hidden again or
+  reopened (Q47).
 - **Hunger tracker** (tutorial): optional per campaign; fades at E-grade.
 - **Items:** rarity, description, effects (flat stat bonuses only, capped per
   §4); equipment slots (Zogarth's 10):
   2 rings, necklace, chest, legs, boots, bracers, mask, cloak, gloves; plus
   weapon slots (main hand, off hand). Inventory, a configurable currency, and
-  giving/trading between players and the GM.
+  giving/trading between players and the GM. A player's trade with the GM
+  asks only for currency (the GM offers items from the GM side); between
+  players a proposal may ask for any item and reveals nothing about what the
+  other player holds (Q44, Q45).
 - **Notes:** player private journal, party shared notes, GM private notes;
   tags linking notes to characters, NPCs, regions, quests; search. The GM
   cannot read a private journal entry unless the player marks it shareable.
