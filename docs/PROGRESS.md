@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M5, MS, MQ and MR done; QF.1–QF.17 done; M6.1–M6.2 done; Preview ready: Actions → Release → Run workflow (M5)
-**Next item:** M6.3 Currency
+**Status:** in progress: M0–M5, MS, MQ and MR done; QF.1–QF.17 done; M6.1–M6.3 done; Preview ready: Actions → Release → Run workflow (M5)
+**Next item:** M6.4 Titles (resume `wip/M6.4`)
 **Blockers:** none
 
 ## Run log
@@ -856,3 +856,12 @@ next item, blockers. -->
 - Next item: M6.3 Currency.
 - Blockers: none.
 
+
+### Run 347c6c0d · 2026-10-23 23:07–23:50 UTC (end minute 45: hand-off at 44, close-out)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` reset to origin/main, unrelated history again). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Sonnet reviewers work (worktree; each Agent call blocks, 3–4 min). CI on main green (6dc8157). No new answers. Not a sweep or efficiency hour.
+- M6.3 Currency **checked** (D176, Q65): grants and fines are `holdings.adjust` with a reason; GM "Credits" window (toggle a character or Everyone, "<currency> each", reason the player sees, Grant/Fine; a party fine checks every balance first); GM-only state `ledger` (latest 300: grant, fine, gift, trade, loot, other party, reason, balance after) built in `applyEvent`, so undo/replay rebuild it; new `currency` notification to that player only. State schema v28, goldens re-recorded. Sonnet round 1 0 H / 2 M / 6 L → fixed; round 2 0 H / 0 M / 2 L (one fixed). The full e2e caught label clashes with the XP award (M3.2, M3.4, MR.3, MS.4) → fixed and re-run green.
+- Tests: 1,038 unit (`npm run check` green on main); full e2e 62/65 on the pre-fix build (the 3 failures were the label clash, re-run green with M6.3 after the fix) + latency 6/6.
+- **wip/M6.4** (base b1a723d, head 9f47e86): engine done and unit-tested: `titleDef.defined`/`titleDef.edited` (name ≤80, System text, flat/percent bonuses; unique names, any case), `titleLibrary`/`titleLibraryOrder` in state (schema v29, goldens re-recorded, new `title-library.jsonl`), held library titles count in effective stats everywhere (pools, sheet, party, dashboard), `title.award` uses the library's spelling, `me.titleDetails` for the holder only, `title` DING notification (`*'DING!' Title earned: [X] - text*`, counted by `isDing`). Next: run the full `npm run check` on the branch; GM "Titles" window (library define/edit with bonus fields, award from the library to a character); player Titles row shows each title's text and bonuses; `e2e/M6.4.spec.ts` + screenshots; D177; sonnet review.
+- Open `wip/*` branches: wip/M6.4 (resume). wip/M6.2 is merged; leave.
+- Next item: M6.4 Titles.
+- Blockers: none.
