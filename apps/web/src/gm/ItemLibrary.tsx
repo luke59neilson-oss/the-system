@@ -161,7 +161,7 @@ export function ItemLibrary({ client, state }: { client: LiveClient; state: Camp
           />
         </label>
         <fieldset className="item-bonuses">
-          <legend>Flat stat bonuses while equipped</legend>
+          <legend>Flat stat bonuses while equipped (stat points; sheets show tenths)</legend>
           {stats.map((s) => (
             <label key={s.id}>
               {s.name}

@@ -2266,3 +2266,41 @@ ol.change-log li.undone .change-text {
   margin: 0 0 0.5rem;
   padding: 0;
 }
+
+/* GM item library (M6.1) */
+.item-library {
+  grid-column: 1 / -1;
+}
+.item-library h3 {
+  margin: 4px 0 8px;
+  font-size: 1rem;
+}
+.item-bonuses {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 4px 10px;
+}
+.item-bonuses legend {
+  grid-column: 1 / -1;
+}
+.item-bonuses input {
+  width: 100%;
+}
+.item-give {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.item-give input {
+  width: 6em;
+}
+.item-give p {
+  margin: 0 0 10px;
+}
+.item-give button {
+  margin-bottom: 10px;
+}
