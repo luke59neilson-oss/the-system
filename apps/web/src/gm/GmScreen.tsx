@@ -638,7 +638,7 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
           )}
         </p>
       )}
-      <button type="submit" disabled={busy || !dayOk || noOne}>
+      <button type="submit" disabled={busy || !dayOk || noOne || text.trim() === ''}>
         {when === 'now' ? 'Send broadcast' : 'Schedule broadcast'}
       </button>
       {noOne && <p className="muted small">Tick at least one recipient.</p>}

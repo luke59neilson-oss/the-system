@@ -255,3 +255,93 @@ describe('LiveHub notes privacy (M1.8)', () => {
     expect(JSON.stringify(phone.filter((m) => m.type === 'view').at(-1))).toContain('PRIVATE-c1');
   });
 });
+
+describe('LiveHub scheduled broadcasts (M4.7)', () => {
+  it('sends nothing of a schedule to players, delivers it live on its day, and takes it back on undo', () => {
+    dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-hub-'));
+    const now = () => '2026-10-21T00:00:00.000Z';
+    const store = CampaignStore.open('main', { dataDir, now });
+    let n = 0;
+    const gm = { actor: { role: 'gm' as const }, sessionId: null, now, newId: () => `e${++n}` };
+    const kit = [
+      { name: 'Basic Archery', rarity: 'inferior' },
+      { name: 'Basic Stealth', rarity: 'inferior' },
+      { name: 'Archer’s Eye', rarity: 'common' },
+    ];
+    for (const command of [
+      { type: 'campaign.create', name: 'W', rules: JSON.parse(JSON.stringify(DEFAULT_RULES)) },
+      { type: 'character.create', id: 'jake', name: 'Jake', className: 'Archer', classSkills: kit },
+      { type: 'character.create', id: 'kim', name: 'Kim', className: 'Archer', classSkills: kit },
+    ]) {
+      const r = execute(store.campaign, command as never, gm);
+      if (!r.ok) throw new Error(r.error);
+      store.appendAll(r.events);
+    }
+    const SECRET = 'Ambush at dawn';
+    const hub = new LiveHub(store, { gmKey: 'k'.repeat(32), now, newId: gm.newId });
+    const gmOut: ServerMessage[] = [];
+    const gmConn = hub.connect((m) => gmOut.push(m));
+    gmConn.receive(JSON.stringify({ type: 'join', role: 'gm', gmKey: 'k'.repeat(32), lastSeq: 0 }));
+    const kimOut: string[] = [];
+    const kim = hub.connect((m) => kimOut.push(JSON.stringify(m)));
+    kim.receive(JSON.stringify({ type: 'join', role: 'player', characterId: 'kim', lastSeq: 0 }));
+    const jakeOut: string[] = [];
+    const jake = hub.connect((m) => jakeOut.push(JSON.stringify(m)));
+    jake.receive(JSON.stringify({ type: 'join', role: 'player', characterId: 'jake', lastSeq: 0 }));
+    const command = (requestId: string, c: Record<string, unknown>) => {
+      gmConn.receive(JSON.stringify({ type: 'command', requestId, command: c }));
+      expect(gmOut.find((m) => m.type === 'result' && m.requestId === requestId)).toMatchObject({
+        ok: true,
+      });
+    };
+    command('s1', {
+      type: 'broadcast.schedule',
+      id: 'amb',
+      text: SECRET,
+      characterIds: ['kim'],
+      day: 2,
+    });
+    expect(kimOut.join('\n')).not.toContain(SECRET);
+    expect(jakeOut.join('\n')).not.toContain(SECRET);
+    const seqBefore = hub.seq;
+    command('d1', { type: 'campaign.advanceDay' });
+    const live = kimOut.map((m) => JSON.parse(m) as ServerMessage);
+    expect(
+      live.some(
+        (m) =>
+          m.type === 'notifications' &&
+          m.items.some(
+            (i) => i.notification.kind === 'broadcast' && i.notification.text === SECRET,
+          ),
+      ),
+    ).toBe(true);
+    expect(jakeOut.join('\n')).not.toContain(SECRET);
+    // Kim's phone reconnects from before the day: the message is in the catch-up.
+    const phone: ServerMessage[] = [];
+    const back = hub.connect((m) => phone.push(m));
+    back.receive(
+      JSON.stringify({ type: 'join', role: 'player', characterId: 'kim', lastSeq: seqBefore }),
+    );
+    expect(JSON.stringify(phone.find((m) => m.type === 'notifications'))).toContain(SECRET);
+    back.close();
+    // Undoing the day takes the message back: a rejoin gets a history without it.
+    const dayId = store.campaign.events.at(-1)?.id;
+    command('u1', { type: 'event.undo', eventId: dayId });
+    expect(store.campaign.state?.scheduledBroadcasts.map((b) => b.id)).toEqual(['amb']);
+    const again: ServerMessage[] = [];
+    const rejoin = hub.connect((m) => again.push(m));
+    rejoin.receive(
+      JSON.stringify({ type: 'join', role: 'player', characterId: 'kim', lastSeq: hub.seq }),
+    );
+    const view = again.find((m) => m.type === 'view');
+    expect(JSON.stringify(view)).not.toContain(SECRET);
+    const reset: ServerMessage[] = [];
+    const fromStart = hub.connect((m) => reset.push(m));
+    fromStart.receive(
+      JSON.stringify({ type: 'join', role: 'player', characterId: 'kim', lastSeq: 0 }),
+    );
+    expect(JSON.stringify(reset)).not.toContain(SECRET);
+    for (const c of [rejoin, fromStart, kim, jake, gmConn]) c.close();
+    store.close();
+  });
+});

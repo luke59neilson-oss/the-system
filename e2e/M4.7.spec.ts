@@ -110,8 +110,14 @@ test('the GM sends to several now and schedules messages for later days', async 
 
   // Day 2: Kim gets her message; Jake's screen never does.
   const day = gm.getByRole('form', { name: 'In-game day' });
+  await expect(day.getByTestId('due-broadcasts')).toHaveText(
+    'Sends 1 scheduled System message (see System broadcast).',
+  );
   await day.getByRole('button', { name: /Advance/ }).click();
   await expect(gm.getByTestId('day')).toHaveText('2');
+  await expect(
+    gm.locator('section[aria-labelledby="session-heading"]').getByRole('status'),
+  ).toHaveText('It is now day 2; 1 scheduled System message sent');
   await expect(kim.getByTestId('messages')).toContainText(SECRET);
   await expect(list.getByRole('listitem')).toHaveCount(1);
   const jake = await browser.newPage({ viewport: { width: 1366, height: 768 } });

@@ -55,7 +55,10 @@ export function SessionPanel({ client, state }: { client: LiveClient; state: Cam
     e.preventDefault();
     if (advanceBy === null) return;
     const to = state.day + advanceBy;
-    if (await run({ type: 'campaign.advanceDay', days: advanceBy }, `It is now day ${to}`)) {
+    const sent = dueBroadcasts(state, to);
+    const note =
+      sent === 0 ? '' : `; ${sent} scheduled System message${sent === 1 ? '' : 's'} sent`;
+    if (await run({ type: 'campaign.advanceDay', days: advanceBy }, `It is now day ${to}${note}`)) {
       setDays('1');
     }
   };
@@ -133,6 +136,12 @@ export function SessionPanel({ client, state }: { client: LiveClient; state: Cam
         <button type="submit" disabled={busy || advanceBy === null}>
           {advanceBy === null ? 'Advance' : `Advance to day ${state.day + advanceBy}`}
         </button>
+        {advanceBy !== null && dueBroadcasts(state, state.day + advanceBy) > 0 && (
+          <p className="warn small" data-testid="due-broadcasts">
+            Sends {dueBroadcasts(state, state.day + advanceBy)} scheduled System message
+            {dueBroadcasts(state, state.day + advanceBy) === 1 ? '' : 's'} (see System broadcast).
+          </p>
+        )}
       </form>
       {outcome && (
         <p
@@ -169,4 +178,9 @@ export function SessionPanel({ client, state }: { client: LiveClient; state: Cam
       )}
     </section>
   );
+}
+
+/** Scheduled broadcasts that advancing to `day` would send (M4.7). */
+function dueBroadcasts(state: CampaignState, day: number): number {
+  return state.scheduledBroadcasts.filter((b) => b.day <= day).length;
 }
