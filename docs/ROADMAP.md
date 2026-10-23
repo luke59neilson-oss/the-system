@@ -238,6 +238,15 @@ Confirmed findings from quality sweeps (`docs/QUALITY.md`). Items marked
 **(High)** are taken before any other new item, wherever they sit (LOOP §5.2);
 the rest follow in file order. Each gets its own §6 review.
 
+- [ ] **QF.14 The desktop splash test does not race the hand-over.**
+  `apps/desktop/test/launch.spec.ts:33` screenshots the splash, which closes
+  by design once the GM console is ready, so CI's desktop-smoke job fails
+  with "Target page ... has been closed" (f4d07d9 at 06:43 and ab3f114 at
+  10:31 UTC on 2026-10-23; QUALITY.md, Flakes). *Accept:* the test asserts the
+  splash text and takes any screenshot before the hand-over can happen (or
+  holds the hand-over in a test-only way); `--repeat-each=20` on that test
+  green under xvfb; no retries added. (Numbered 14 because `wip/M4.A` holds
+  QF.13.)
 - [x] **QF.1 (High) Chosen options never return as passed-over options.**
   `passedOverOptions` (`packages/engine/src/evolution/model.ts` ~276) drops a
   menu's chosen option only while a skill of that name is owned, so after an

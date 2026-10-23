@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3, MS, MQ and MR done; QF.1–QF.12 done; M4.1–M4.9 done; M4.A on `wip/M4.A` (round 1 fixed, QF.13 and round 2 open); Preview ready: Actions → Release → Run workflow (MR)
-**Next item:** resume `wip/M4.A`: QF.13 (bounded change log, on that branch's ROADMAP), then M4.A review round 2 (fable), then M5.1
+**Status:** in progress: M0–M4, MS, MQ and MR done; QF.1–QF.13 done; M5.1 started on `wip/M5.1`; Preview ready: Actions → Release → Run workflow (M4)
+**Next item:** QF.14 (desktop splash test race), then resume `wip/M5.1` (offer builder UI)
 **Blockers:** none
 
 ## Run log
@@ -762,3 +762,14 @@ next item, blockers. -->
 - Next item: resume `wip/M4.A` (QF.13, round 2), then M5.1.
 - Blockers: none.
 
+### Run 14d82203 · 2026-10-23 14:13–14:55 UTC (end minute ~42: every gate passed and the hand-off point (minute 44) was reached early; no §5.5 reason needed beyond that, the next item is on `wip/M5.1`)
+- Preflight: `add_repo` not offered; repo already cloned (local main stale, reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewers on sonnet and fable work (worktree). No new answers. CI on main: latest completed b26e0a0 green. Not an efficiency or sweep hour.
+- Found and fixed: 9244c61 on `wip/M4.A` had truncated docs/ROADMAP.md (M4–M11 and MR gone); restored from main with QF.13 kept (9c68baa).
+- QF.13 change log stays cheap: incremental per-campaign cache (`updateChangeLog`, rebuild only on undo), `GET /api/gm/changelog` serves one filtered page (newest 100, max 500) with an `older` cursor, matching and undone counts; console shows the page with Load older (D163). Sonnet round 1: 0 H, 2 M, 4 L (stale older rows after an undo; pending marker), fixed in a92f252; round 2: 0 H, 0 M, 2 L. **Checked.**
+- M4.A GM console acceptance: added the DING-history check after undo and the M4.9 nullable-field step. Fable round 2: 0 H, 1 M (the same stale-row bug, fixed in a92f252), 6 L. Full e2e 58/58 on a92f252. **Checked**; M4 complete. Preview build pushed to `release` (via an `-s ours` merge: release had an unrelated history, D164).
+- M5.1 offer builder: started on `wip/M5.1` (base 105b8fa, head e77690d): `apps/web/src/gm/offerBuilderModel.ts` (due selections with capstone/ceiling/pending/passed-over; the engine's own refusal for a draft menu) with unit tests. Next step: the builder panel beside the practice log (send `selection.offer`, Withdraw for passed-over options via `selection.withdrawOption`), then e2e `M5.1.spec.ts` and screenshots.
+- Merged a810397 (QF.14 queued by another session while this run held the lock; docs only).
+- Tests: 960 unit (`npm run check` green); e2e 58 incl. QF.13. Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/M5.1`.
+- Next item: QF.14, then resume `wip/M5.1`.
+- Blockers: none.

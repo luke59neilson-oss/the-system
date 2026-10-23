@@ -36,7 +36,9 @@ test('a splash says "Starting The System…" at once, then hands over to the GM 
     THE_SYSTEM_PORT: '0',
     THE_SYSTEM_DATA_DIR: p.dataDir,
     THE_SYSTEM_USER_DATA_DIR: p.userData,
-    THE_SYSTEM_TEST_START_DELAY_MS: '3000',
+    // QF.14: the hand-over waits until this test releases it, so the
+    // splash cannot close under the screenshot on a slow runner.
+    THE_SYSTEM_TEST_HOLD_START: '1',
   });
   try {
     const splash = await app.firstWindow();
@@ -69,6 +71,18 @@ test('a splash says "Starting The System…" at once, then hands over to the GM 
     ).toEqual(['Starting The System…']);
     mkdirSync(shots, { recursive: true });
     await splash.screenshot({ path: path.join(shots, 'splash.png') });
+    // Release the hand-over once the server holds it; before that the hook
+    // does not exist yet.
+    await expect
+      .poll(() =>
+        app.evaluate(() => {
+          const g = globalThis as { theSystemReleaseStart?: () => void };
+          if (!g.theSystemReleaseStart) return false;
+          g.theSystemReleaseStart();
+          return true;
+        }),
+      )
+      .toBe(true);
 
     const gm = await gmWindow(app);
     await expect(gm.getByTestId('connection')).toHaveText('Connected');

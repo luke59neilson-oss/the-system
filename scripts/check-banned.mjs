@@ -6,6 +6,7 @@ import { findBanned, isTestFile } from './banned-patterns.mjs';
 
 const skipDirs = new Set([
   '.git',
+  '.claude',
   'node_modules',
   'dist',
   'build',

@@ -202,6 +202,17 @@ async function start(): Promise<void> {
     if (!app.isPackaged && hold > 0) {
       await new Promise((r) => setTimeout(r, Math.min(hold, 30_000)));
     }
+    // Tests only: hold the hand-over until the test releases it (or 30 s
+    // pass), so a test can check the splash without racing it (QF.14).
+    if (!app.isPackaged && process.env['THE_SYSTEM_TEST_HOLD_START'] === '1') {
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, 30_000);
+        (globalThis as { theSystemReleaseStart?: () => void }).theSystemReleaseStart = () => {
+          clearTimeout(timer);
+          resolve();
+        };
+      });
+    }
     running = started.value;
     if (started.fellBack) notice = portFallbackMessage(port, started.port);
   } catch (error) {
