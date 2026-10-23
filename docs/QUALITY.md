@@ -121,6 +121,10 @@ reviewers ran 15–20 minutes each in the background.
 - 2026-10-23 · Sweep C (Tests): under 4 workers on 2 CPUs `e2e/M4.1.spec.ts`
   ~56, `e2e/M4.2.spec.ts` ~54 and `e2e/MQ.13.spec.ts` ~90 hit the 30 s test
   timeout; each passes alone in about 10 s. Load sensitivity, see QF.8.
+- 2026-10-23 · CI `desktop-smoke` red on 0b417f0 and 90d9971: the MS.7
+  splash bound (< 1000 ms from process start) measured 1085 and 1020 ms.
+  Not our code's time: Electron's own cold start under xvfb on a loaded
+  runner. Measured from app-ready instead (D146, QF.8).
 
 ## Backlog (Lows; M11.5 goes through these)
 

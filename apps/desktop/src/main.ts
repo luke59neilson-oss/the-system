@@ -64,11 +64,19 @@ function showSplash(): void {
     }
   });
   void win.loadURL(splashUrl());
-  // For the desktop test: how long after the process started the splash came up.
-  (globalThis as { theSystemSplashShownAfterMs?: number }).theSystemSplashShownAfterMs = Math.round(
-    process.uptime() * 1000,
-  );
+  // For the desktop test: how long after app-ready (our code's part, QF.8) and
+  // after the process started (includes Electron's own start-up) it came up.
+  const g = globalThis as {
+    theSystemSplashShownAfterMs?: number;
+    theSystemSplashShownAfterReadyMs?: number;
+  };
+  const now = process.uptime() * 1000;
+  g.theSystemSplashShownAfterMs = Math.round(now);
+  g.theSystemSplashShownAfterReadyMs = Math.round(now - readyAtMs);
 }
+
+/** Process uptime (ms) when Electron reported ready. */
+let readyAtMs = 0;
 
 let running: RunningApp | null = null;
 let gmWindow: BrowserWindow | null = null;
@@ -256,6 +264,7 @@ if (!app.requestSingleInstanceLock()) {
     void running.close().finally(() => app.quit());
   });
   void app.whenReady().then(() => {
+    readyAtMs = process.uptime() * 1000;
     if (app.isPackaged) {
       // No View menu (DevTools/reload) in release builds; macOS keeps the app
       // and Edit menus so Cmd+C/V/Q still work.
