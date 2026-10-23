@@ -24,3 +24,4 @@ export * from './entities';
 export * from './library';
 export * from './report';
 export * from './history';
+export * from './dashboard';

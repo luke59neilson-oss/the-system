@@ -68,7 +68,7 @@ test(
     for (const name of ['Jake', 'Miranda']) {
       await gm.getByLabel('Name', { exact: true }).fill(name);
       await gm.getByRole('button', { name: 'Create character' }).click();
-      await expect(gm.getByRole('cell', { name, exact: true })).toBeVisible();
+      await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
     }
 
     const join = async (name: string) => {

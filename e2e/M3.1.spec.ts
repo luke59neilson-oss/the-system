@@ -41,7 +41,9 @@ test('players pick a character from the list and the browser remembers it', asyn
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   await gm.getByLabel('Name', { exact: true }).fill('Ada Lovelace');
   await gm.getByRole('button', { name: 'Create character' }).click();
-  await expect(gm.getByRole('cell', { name: 'Ada Lovelace', exact: true })).toBeVisible();
+  await expect(
+    gm.getByRole('heading', { level: 3, name: 'Ada Lovelace', exact: true }),
+  ).toBeVisible();
 
   // The demo party spans grades G–D, so the list shows four grade metals.
   await gm.getByRole('button', { name: 'Load demo campaign' }).click();

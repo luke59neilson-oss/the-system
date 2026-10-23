@@ -69,7 +69,7 @@ for (const viewport of [
     await gm.getByRole('button', { name: 'Create campaign' }).click();
     await gm.getByLabel('Name', { exact: true }).fill('Jake');
     await gm.getByRole('button', { name: 'Create character' }).click();
-    await expect(gm.getByRole('cell', { name: 'Jake', exact: true })).toBeVisible();
+    await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
 
     const page = await browser.newPage({ viewport });
     const errors = watchErrors(page);

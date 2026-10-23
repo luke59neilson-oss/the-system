@@ -177,8 +177,8 @@ test('the GM manages classes, races and professions; characters start from them'
   await create.getByLabel('Race').selectOption('Dwarf');
   await expect(create).toContainText('[Mana Bolt (Inferior)]');
   await create.getByRole('button', { name: 'Create character' }).click();
-  await expect(gm.getByRole('cell', { name: 'Miranda', exact: true })).toBeVisible();
-  await expect(gm.getByRole('cell', { name: '[Caster]' })).toBeVisible();
+  await expect(gm.getByRole('heading', { level: 3, name: 'Miranda', exact: true })).toBeVisible();
+  await expect(gm.getByTestId(/^party-class-/).filter({ hasText: /^Caster$/ })).toBeVisible();
   await gm.screenshot({ path: path.join(shots, 'gm-console-1366x768.png'), fullPage: true });
 
   for (const viewport of [

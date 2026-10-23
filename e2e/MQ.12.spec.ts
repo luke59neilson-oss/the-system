@@ -118,7 +118,7 @@ test('upgrades take the next rarity’s text; edits propagate; effects stay with
         { name: 'Archer’s Eye', rarity: 'common' },
       ],
     });
-    await expect(gm.getByRole('cell', { name, exact: true })).toBeVisible();
+    await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
   }
 
   // Jake on a laptop and a phone; Kim on a laptop, watching every frame.

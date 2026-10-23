@@ -82,7 +82,7 @@ test('the DING history reaches back to day 1 and new DINGs queue up', async ({ b
   for (const name of ['Jake', 'Miranda']) {
     await gm.getByLabel('Name', { exact: true }).fill(name);
     await gm.getByRole('button', { name: 'Create character' }).click();
-    await expect(gm.getByRole('cell', { name, exact: true })).toBeVisible();
+    await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
   }
   // Day 1: a level-up. Day 3: a broadcast, a whisper to Miranda, more levels.
   await award(gm, 202, REASON);
@@ -101,7 +101,7 @@ test('the DING history reaches back to day 1 and new DINGs queue up', async ({ b
   gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const gmWatch = watch(gm);
   await openGm(gm);
-  await expect(gm.getByRole('cell', { name: 'Jake', exact: true })).toBeVisible();
+  await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
 
   // Jake's laptop, with the chime counted instead of played.
   const laptop = await browser.newPage({ viewport: { width: 1366, height: 768 } });

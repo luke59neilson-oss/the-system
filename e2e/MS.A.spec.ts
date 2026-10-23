@@ -59,7 +59,7 @@ test(
     for (const name of ['Jake', 'Miranda']) {
       await gm.getByLabel('Name', { exact: true }).fill(name);
       await gm.getByRole('button', { name: 'Create character' }).click();
-      await expect(gm.getByRole('cell', { name, exact: true })).toBeVisible();
+      await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
     }
     // The console shows players where to go (address + QR), never the GM key.
     const joinUrl = await gm.getByTestId('join-url').innerText();
@@ -117,7 +117,9 @@ test(
     const second = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     await second.goto(await gmLink.inputValue());
     await expect(second.getByTestId('connection')).toHaveText('Connected');
-    await expect(second.getByRole('cell', { name: 'Jake', exact: true })).toBeVisible();
+    await expect(
+      second.getByRole('heading', { level: 3, name: 'Jake', exact: true }),
+    ).toBeVisible();
     await second.close();
     await expect(phone.getByText(/GM link|GM console/)).toHaveCount(0);
 

@@ -6,7 +6,6 @@ import {
   largestRemainderSplit,
   librarySkill,
   previewXpAward,
-  raceLevel,
   type CampaignState,
 } from '@the-system/engine';
 import { friendlyError } from '../format';
@@ -21,7 +20,8 @@ import { entriesOf } from './originLibraryModel';
 import { resolvePerspective, type PartyMember, type Perspective } from './perspective';
 import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
 import { SessionPanel } from './SessionPanel';
-import { PortraitCell, PortraitPicker } from './PortraitControls';
+import { PortraitPicker } from './PortraitControls';
+import { PartyDashboard } from './PartyDashboard';
 import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
 
@@ -131,7 +131,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
           {/* Kept mounted while viewing as a character so half-filled GM forms survive. */}
           <div className="gm-pane" hidden={view.kind === 'character'}>
             <div className="gm-grid">
-              <Party client={client} gmKey={gmKey} state={state} />
+              <PartyDashboard client={client} gmKey={gmKey} state={state} />
               <SessionPanel client={client} state={state} />
               <JoinPanel gmKey={gmKey} />
               <CreateCharacter client={client} gmKey={gmKey} state={state} />
@@ -227,61 +227,6 @@ function CreateCampaign({ client }: { client: LiveClient }) {
       </button>
       <Outcome result={result} okText="Campaign created" />
     </form>
-  );
-}
-
-function Party({
-  client,
-  gmKey,
-  state,
-}: {
-  client: LiveClient;
-  gmKey: string;
-  state: CampaignState;
-}) {
-  const characters = state.characterOrder.flatMap((id) => state.characters[id] ?? []);
-  return (
-    <section className="window party" aria-labelledby="party">
-      <h2 id="party">{state.name} · Party</h2>
-      {characters.length === 0 ? (
-        <p className="muted">No characters yet.</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Portrait</th>
-              <th scope="col">Name</th>
-              <th scope="col">Class</th>
-              <th scope="col">Class lvl</th>
-              <th scope="col">Race lvl</th>
-              <th scope="col">Grade</th>
-              <th scope="col">XP</th>
-              <th scope="col">Free pts</th>
-            </tr>
-          </thead>
-          <tbody>
-            {characters.map((c) => (
-              <tr key={c.id} data-testid={`row-${c.id}`}>
-                <td>
-                  <PortraitCell client={client} gmKey={gmKey} state={state} characterId={c.id} />
-                </td>
-                <td data-testid={`party-name-${c.id}`}>{c.name}</td>
-                <td>[{c.className}]</td>
-                <td data-testid={`class-level-${c.id}`}>{c.classLevel}</td>
-                <td>{raceLevel(state.rules, c)}</td>
-                <td>{c.grade}</td>
-                <td>{c.xp.class}</td>
-                <td>
-                  {c.freePointBatches
-                    .filter((b) => b.allocation === null)
-                    .reduce((a, b) => a + b.points, 0)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </section>
   );
 }
 

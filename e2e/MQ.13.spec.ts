@@ -118,7 +118,7 @@ test('the GM starts a character from each of the six classes', async ({ browser 
     for (const s of c.skills) await expect(create).toContainText(`[${s}]`);
     await create.getByRole('button', { name: 'Create character' }).click();
     await expect(create.getByRole('status')).toHaveText('Character created');
-    await expect(gm.getByRole('cell', { name: c.who, exact: true })).toBeVisible();
+    await expect(gm.getByRole('heading', { level: 3, name: c.who, exact: true })).toBeVisible();
   }
   await gm.screenshot({ path: path.join(shots, 'gm-party-1366x768.png'), fullPage: true });
 

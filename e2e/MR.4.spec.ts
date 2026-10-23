@@ -114,7 +114,7 @@ test('hand-written text survives an upgrade until the GM presses Use library tex
       { name: 'Archer’s Eye', rarity: 'common' },
     ],
   });
-  await expect(gm.getByRole('cell', { name: 'Jake', exact: true })).toBeVisible();
+  await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
 
   const jake = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const jakeErrors = watchErrors(jake);

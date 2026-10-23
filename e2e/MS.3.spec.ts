@@ -68,7 +68,7 @@ test(
     for (const name of PARTY) {
       await gm.getByLabel('Name', { exact: true }).fill(name);
       await gm.getByRole('button', { name: 'Create character' }).click();
-      await expect(gm.getByRole('cell', { name, exact: true })).toBeVisible();
+      await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
     }
 
     // The bar: [GM] [each character] [Table view].

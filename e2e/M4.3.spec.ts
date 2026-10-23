@@ -65,7 +65,7 @@ test(
     await expect(panel).toContainText('None yet.');
     await gm.getByLabel('Name', { exact: true }).fill('Jake');
     await gm.getByRole('button', { name: 'Create character' }).click();
-    await expect(gm.getByRole('cell', { name: 'Jake', exact: true })).toBeVisible();
+    await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
 
     const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
     const phoneWatch = watch(phone);

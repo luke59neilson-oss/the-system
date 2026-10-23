@@ -123,8 +123,8 @@ test('the GM creates characters with portraits; players see them live', async ({
   await create.getByLabel('Starting class').selectOption({ label: 'Caster' });
   await create.getByRole('button', { name: 'Create character' }).click();
   const party = gm.locator('section[aria-labelledby="party"]');
-  const jakeRow = party.locator('tr', { hasText: 'Jake Thayne' });
-  const kimRow = party.locator('tr', { hasText: 'Kim' });
+  const jakeRow = party.locator('[data-testid^="row-"]', { hasText: 'Jake Thayne' });
+  const kimRow = party.locator('[data-testid^="row-"]', { hasText: 'Kim' });
   await expect(kimRow).toBeVisible();
   const jakeImg = jakeRow.getByTestId('portrait').locator('img');
   await expect(jakeImg).toHaveAttribute('src', /^\/portraits\/[0-9a-f]{64}\.(webp|png)$/);

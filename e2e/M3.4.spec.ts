@@ -74,7 +74,7 @@ test('a player assigns a free-point batch, which then locks', async ({ browser }
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   await gm.getByLabel('Name', { exact: true }).fill('Jake');
   await gm.getByRole('button', { name: 'Create character' }).click();
-  await expect(gm.getByRole('cell', { name: 'Jake', exact: true })).toBeVisible();
+  await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
   // Two race levels: two batches of 2 points.
   await award(gm, 200);
 

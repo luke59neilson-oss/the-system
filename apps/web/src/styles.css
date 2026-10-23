@@ -1868,3 +1868,107 @@ p.small {
   align-items: center;
   gap: 0.4rem;
 }
+
+/* Party dashboard (M4.5). */
+.party-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  gap: 12px;
+}
+.party-card {
+  border: 1px solid rgba(90, 127, 184, 0.45);
+  border-left: 4px solid var(--metal, var(--accent));
+  border-radius: 4px;
+  padding: 10px 12px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.party-card-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.party-card-title {
+  min-width: 0;
+  flex: 1;
+  font-family: var(--mono);
+}
+.party-card h3.party-name {
+  font-size: 1rem;
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
+.party-card .party-tracks dd {
+  overflow-wrap: anywhere;
+}
+.party-card > button {
+  align-self: flex-start;
+}
+.flags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.flag {
+  font-size: 0.85rem;
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid rgba(90, 127, 184, 0.45);
+  overflow-wrap: anywhere;
+}
+.flag-gm {
+  border-color: #e7c25a;
+  background: rgba(231, 194, 90, 0.1);
+}
+.flag-owner {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.flag-gm .flag-owner {
+  color: #e7c25a;
+}
+.sheet-editor {
+  border-top: 1px dashed rgba(90, 127, 184, 0.45);
+  padding-top: 8px;
+}
+.sheet-stats,
+.sheet-pools {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 0 10px;
+}
+.sheet-stats legend,
+.sheet-pools legend {
+  grid-column: 1 / -1;
+}
+.sheet-stats input,
+.sheet-pools input {
+  width: 100%;
+}
+.sheet-skill {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0 10px;
+}
+.sheet-skill label:first-child {
+  flex: 1 1 180px;
+}
+.sheet-batches {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}

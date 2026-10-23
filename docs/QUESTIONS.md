@@ -389,3 +389,12 @@ DESIGN/ROADMAP; do not re-apply them.
     QF items, so two harmless changes (D119, D132) were reverted on noise
     (D150). Count only non-QF items for that guard? Default: no change.
     Answer:
+
+59. **GM sheet edits: levels, XP and grade.** The M4.5 sheet editor edits
+    name, base stats, current pools, skill nicknames and the Unique tag, and
+    can return an assigned free-point batch to the player. It does not set
+    class/profession level, XP or grade directly: those would skip the class
+    spread, free points, selections and evolutions, so they change only
+    through XP awards and evolutions (and undo). Should the GM have a raw
+    "set level" override anyway? Default: no (D157).
+    Answer:
