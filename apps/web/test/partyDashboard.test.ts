@@ -122,6 +122,7 @@ describe('flagView (M4.5)', () => {
       key: 'selection-5',
       text: 'Selection (lvl 5): build the menu',
       owner: 'gm',
+      selectionLevel: 5,
     });
     expect(flagView({ kind: 'selection', level: 10, capstone: true, offered: true }).text).toBe(
       'Capstone selection (lvl 10): player choosing',

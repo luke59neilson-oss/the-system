@@ -21,7 +21,7 @@ import { SessionPanel } from './SessionPanel';
 import { PortraitPicker } from './PortraitControls';
 import { PartyDashboard } from './PartyDashboard';
 import { XpAward } from './XpAward';
-import { OfferBuilder } from './OfferBuilder';
+import { OfferBuilder, type OfferTarget } from './OfferBuilder';
 import { ChangeLog } from './ChangeLog';
 import { RulesSettings } from './RulesSettings';
 import { uploadPortrait } from './portraitUpload';
@@ -83,6 +83,8 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
   const state = live.state;
   const [wanted, setWanted] = useState<Perspective>({ kind: 'gm' });
   const [picked, setPicked] = useState<string[] | null>(null);
+  // A dashboard selection chip asks the offer builder to open that selection (M5.1).
+  const [offerTarget, setOfferTarget] = useState<OfferTarget | null>(null);
   // Once opened, Table view's panes stay connected (hidden) across switches.
   const [tableOpened, setTableOpened] = useState(false);
   const party = useMemo(() => partyOf(state), [state]);
@@ -133,12 +135,19 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
           {/* Kept mounted while viewing as a character so half-filled GM forms survive. */}
           <div className="gm-pane" hidden={view.kind === 'character'}>
             <div className="gm-grid">
-              <PartyDashboard client={client} gmKey={gmKey} state={state} />
+              <PartyDashboard
+                client={client}
+                gmKey={gmKey}
+                state={state}
+                onBuildMenu={(characterId, level) =>
+                  setOfferTarget((t) => ({ characterId, level, n: (t?.n ?? 0) + 1 }))
+                }
+              />
               <SessionPanel client={client} state={state} />
               <JoinPanel gmKey={gmKey} />
               <CreateCharacter client={client} gmKey={gmKey} state={state} />
               <XpAward client={client} state={state} />
-              <OfferBuilder client={client} state={state} />
+              <OfferBuilder client={client} state={state} target={offerTarget} />
               <Broadcast client={client} state={state} />
               <ChangeLog client={client} gmKey={gmKey} state={state} />
               <SkillText client={client} state={state} />

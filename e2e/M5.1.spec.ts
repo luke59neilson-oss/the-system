@@ -73,9 +73,13 @@ test('the GM builds, checks and sends a menu, and withdraws a passed-over option
     'Selection (lvl 50) · ceiling Ancient · menu sent, player choosing',
   ]);
   await expect(builder.getByTestId('pending-menu')).toContainText('Sending again replaces it');
-  await expect(
-    builder.locator('section[aria-labelledby="offer-practice"]').getByRole('listitem').first(),
-  ).toBeVisible();
+  // His practice log sits beside the menu, with how often each skill came up.
+  const practice = builder.getByRole('complementary', { name: 'Practice log' });
+  await expect(practice.getByRole('listitem').first()).toBeVisible();
+  await expect(practice.getByTestId('practice-counts')).toHaveText('Used: Perception ×1');
+  const menuBox = await builder.getByRole('list', { name: 'Due selections' }).boundingBox();
+  const sideBox = await practice.boundingBox();
+  expect(sideBox!.x).toBeGreaterThan(menuBox!.x + menuBox!.width - 1);
 
   // Eight D levels: the level 60 selection comes due and is picked to build.
   await gmCommand(gm, {
@@ -142,12 +146,19 @@ test('the GM builds, checks and sends a menu, and withdraws a passed-over option
   await gm.screenshot({ path: path.join(shots, 'gm-withdrawn-1366x768.png') });
 
   // Profession options only once a profession exists: Miranda (E, Cook) has
-  // the Kind choice; Casper (F, no profession) does not.
+  // the Kind choice (Casper, with none, does not: the capstone test).
+  // Each character and selection gets its own draft: nothing carries over.
   await builder.getByLabel('Character').selectOption({ label: 'Miranda' });
-  await expect(menu.getByRole('group', { name: 'Option 1' }).getByLabel('Kind')).toBeVisible();
-  await builder.getByLabel('Character').selectOption({ label: 'Casper' });
-  await expect(builder.getByText(/Selection \(lvl|No selection due/).first()).toBeVisible();
-  await expect(menu.getByLabel('Kind')).toHaveCount(0);
+  const kind = menu.getByRole('group', { name: 'Option 1' }).getByLabel('Kind');
+  await expect(kind).toBeVisible();
+  await kind.selectOption('Profession');
+  await row(1).getByLabel('Name').fill('Draft for Miranda');
+  await builder.getByLabel('Character').selectOption({ label: 'Jake' });
+  await expect(menu).toBeVisible();
+  await expect(row(1).getByLabel('Name')).toHaveValue('');
+  await builder.getByLabel('Character').selectOption({ label: 'Miranda' });
+  await expect(row(1).getByLabel('Name')).toHaveValue('');
+  await expect(kind).toHaveValue('class');
 
   // The player sees both open menus, the new options, and not the withdrawn one.
   const laptop = await browser.newPage({ viewport: { width: 1366, height: 768 } });
@@ -162,6 +173,73 @@ test('the GM builds, checks and sends a menu, and withdraws a passed-over option
 
   expect(errors).toEqual([]);
   expect(playerErrors).toEqual([]);
+});
+
+test('the dashboard chip opens a capstone selection, which needs a ceiling option', async ({
+  browser,
+}) => {
+  const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  const errors = watchErrors(gm);
+  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
+  gm.on('dialog', (d) => void d.accept());
+  await gm.getByLabel('Campaign name').fill('Capstone');
+  await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await gm.getByRole('button', { name: 'Load demo campaign' }).click();
+  await expect(gm.getByTestId('demo-badge')).toBeVisible();
+
+  // Casper (F, level 7) gains three F levels: his level 10 capstone comes due.
+  await gmCommand(gm, {
+    type: 'xp.award',
+    track: 'class',
+    amount: 3 * 300,
+    participants: [{ characterId: 'demo-casper' }],
+  });
+  const chip = gm
+    .getByTestId('flags-demo-casper')
+    .getByRole('button', { name: 'Capstone selection (lvl 10): build the menu' });
+  await chip.click();
+
+  const builder = gm.locator('section[aria-labelledby="offer-builder"]');
+  await expect(builder.getByLabel('Character')).toHaveValue('demo-casper');
+  const due = builder.getByRole('list', { name: 'Due selections' }).getByRole('listitem');
+  const capstone = due.filter({ hasText: 'Capstone selection (lvl 10)' });
+  await expect(capstone).toHaveText('Capstone selection (lvl 10) · ceiling Rare · build the menu');
+  await expect(capstone.getByRole('radio')).toBeChecked();
+  await expect(builder.getByTestId('capstone-note')).toHaveText(
+    'Capstone: the menu needs at least one Rare option.',
+  );
+  await expect(builder).toBeInViewport();
+
+  const menu = builder.getByRole('form', { name: 'Selection menu' });
+  const send = menu.getByRole('button', { name: 'Send menu' });
+  const row = (n: number) => menu.getByRole('group', { name: `Option ${n}` });
+  await expect(menu.getByLabel('Kind')).toHaveCount(0);
+  await row(1).getByLabel('Name').fill('Gale Step');
+  await row(1).getByLabel('Rarity').selectOption({ label: 'Uncommon' });
+  await row(2).getByLabel('Name').fill('Rain of Needles');
+  await row(2).getByLabel('Rarity').selectOption({ label: 'Common' });
+  await row(3).getByLabel('Name').fill('Hunter’s Patience');
+  await row(3).getByLabel('Rarity').selectOption({ label: 'Uncommon' });
+  await expect(menu.getByTestId('offer-problem')).toHaveText(
+    'Level 10 is the F-grade capstone: offer at least one rare option',
+  );
+  await expect(send).toBeDisabled();
+  await row(2).getByLabel('Rarity').selectOption({ label: 'Rare' });
+  await expect(menu.getByTestId('offer-problem')).toHaveCount(0);
+  await builder.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await gm.screenshot({ path: path.join(shots, 'gm-capstone-1366x768.png') });
+  await send.click();
+  await expect(builder.getByRole('status')).toHaveText('Menu sent to Casper (lvl 10)');
+  await expect(capstone).toHaveText(
+    'Capstone selection (lvl 10) · ceiling Rare · menu sent, player choosing',
+  );
+  // The dashboard chip now waits on the player.
+  await expect(
+    gm
+      .getByTestId('flags-demo-casper')
+      .getByRole('button', { name: 'Capstone selection (lvl 10): player choosing' }),
+  ).toBeVisible();
+  expect(errors).toEqual([]);
 });
 
 test('a character with nothing due says so', async ({ browser }) => {

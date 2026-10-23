@@ -23,10 +23,13 @@ export function PartyDashboard({
   client,
   gmKey,
   state,
+  onBuildMenu,
 }: {
   client: LiveClient;
   gmKey: string;
   state: CampaignState;
+  /** Opens the offer builder on a character's selection (M5.1). */
+  onBuildMenu?: ((characterId: string, level: number) => void) | undefined;
 }) {
   const characters = state.characterOrder.flatMap((id) => state.characters[id] ?? []);
   return (
@@ -37,7 +40,14 @@ export function PartyDashboard({
       ) : (
         <ul className="party-cards">
           {characters.map((c) => (
-            <PartyCard key={c.id} client={client} gmKey={gmKey} state={state} character={c} />
+            <PartyCard
+              key={c.id}
+              client={client}
+              gmKey={gmKey}
+              state={state}
+              character={c}
+              onBuildMenu={onBuildMenu}
+            />
           ))}
         </ul>
       )}
@@ -68,11 +78,13 @@ function PartyCard({
   gmKey,
   state,
   character: c,
+  onBuildMenu,
 }: {
   client: LiveClient;
   gmKey: string;
   state: CampaignState;
   character: Character;
+  onBuildMenu?: ((characterId: string, level: number) => void) | undefined;
 }) {
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
@@ -141,7 +153,19 @@ function PartyCard({
         <ul className="flags" aria-label={`${c.name}: waiting`} data-testid={`flags-${c.id}`}>
           {flags.map((f) => (
             <li key={f.key} className={`flag flag-${f.owner}`}>
-              <span className="flag-owner">{f.owner === 'gm' ? 'GM' : 'Player'}</span> {f.text}
+              <span className="flag-owner">{f.owner === 'gm' ? 'GM' : 'Player'}</span>{' '}
+              {f.selectionLevel !== undefined && onBuildMenu ? (
+                <button
+                  type="button"
+                  className="flag-link"
+                  title="Open in Skill offers"
+                  onClick={() => onBuildMenu(c.id, f.selectionLevel!)}
+                >
+                  {f.text}
+                </button>
+              ) : (
+                f.text
+              )}
             </li>
           ))}
         </ul>

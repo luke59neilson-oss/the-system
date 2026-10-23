@@ -7,6 +7,8 @@ export interface FlagView {
   readonly key: string;
   readonly text: string;
   readonly owner: FlagOwner;
+  /** Selection flags: the class level, so the chip can open the offer builder (M5.1). */
+  readonly selectionLevel?: number;
 }
 
 /** A dashboard chip for one engine flag (M4.5). */
@@ -15,8 +17,18 @@ export function flagView(flag: CharacterFlag): FlagView {
     case 'selection': {
       const what = `${flag.capstone ? 'Capstone selection' : 'Selection'} (lvl ${flag.level})`;
       return flag.offered
-        ? { key: `selection-${flag.level}`, text: `${what}: player choosing`, owner: 'player' }
-        : { key: `selection-${flag.level}`, text: `${what}: build the menu`, owner: 'gm' };
+        ? {
+            key: `selection-${flag.level}`,
+            text: `${what}: player choosing`,
+            owner: 'player',
+            selectionLevel: flag.level,
+          }
+        : {
+            key: `selection-${flag.level}`,
+            text: `${what}: build the menu`,
+            owner: 'gm',
+            selectionLevel: flag.level,
+          };
     }
     case 'evolution': {
       const what = `Evolution to ${flag.toGrade}-grade`;

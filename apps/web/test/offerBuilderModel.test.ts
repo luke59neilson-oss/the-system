@@ -7,7 +7,13 @@ import {
   type Command,
   type CommandContext,
 } from '@the-system/engine';
-import { builderSlots, offerProblem, recentPractice } from '../src/gm/offerBuilderModel';
+import {
+  builderSlots,
+  offerProblem,
+  practiceSkillCounts,
+  practiceStatCounts,
+  recentPractice,
+} from '../src/gm/offerBuilderModel';
 
 // M5.1: the offer builder's model agrees with the engine.
 function campaign(): Campaign {
@@ -102,5 +108,62 @@ describe('offer builder model (M5.1)', () => {
     ]);
     expect(recentPractice(state.state!, 'jake', 2).map((e) => e.action)).toEqual(['three', 'two']);
     expect(recentPractice(state.state!, 'ghost')).toEqual([]);
+  });
+
+  it('counts each skill once per practice entry, most used first', () => {
+    let state = campaign();
+    let n = 200;
+    const ctx: CommandContext = {
+      actor: { role: 'gm' },
+      sessionId: null,
+      now: () => '2026-10-23T12:00:00.000Z',
+      newId: () => `q${++n}`,
+    };
+    const logs: string[][] = [
+      ['Basic Archery'],
+      ['Basic Archery', 'Basic Stealth'],
+      ['Basic Stealth', 'Basic Archery'],
+      ['Archer’s Eye'],
+    ];
+    for (const skills of logs) {
+      const r = execute(
+        state,
+        { type: 'practice.log', characterId: 'jake', action: 'shot', skills },
+        ctx,
+      );
+      if (!r.ok) throw new Error(r.error);
+      state = r.campaign;
+    }
+    expect(practiceSkillCounts(state.state!, 'jake')).toEqual([
+      { skill: 'Basic Archery', count: 3 },
+      { skill: 'Basic Stealth', count: 2 },
+      { skill: 'Archer’s Eye', count: 1 },
+    ]);
+    expect(practiceSkillCounts(state.state!, 'ghost')).toEqual([]);
+    expect(practiceStatCounts(state.state!, 'jake')).toEqual([]);
+  });
+
+  it('counts the stats exercised, most first', () => {
+    let state = campaign();
+    let n = 300;
+    const ctx: CommandContext = {
+      actor: { role: 'gm' },
+      sessionId: null,
+      now: () => '2026-10-23T12:00:00.000Z',
+      newId: () => `s${++n}`,
+    };
+    for (const stat of ['agility', 'perception', 'agility']) {
+      const r = execute(
+        state,
+        { type: 'practice.log', characterId: 'jake', action: 'x', stat },
+        ctx,
+      );
+      if (!r.ok) throw new Error(r.error);
+      state = r.campaign;
+    }
+    expect(practiceStatCounts(state.state!, 'jake')).toEqual([
+      { stat: 'agility', count: 2 },
+      { stat: 'perception', count: 1 },
+    ]);
   });
 });
