@@ -36,6 +36,8 @@ function hasBadNumber(value: Json): boolean {
 /** Keys that other data points at, or that only the app may change (D161). */
 // `overflow` stays on in every campaign (L16); the engine refuses a change.
 const LOCKED_KEYS = new Set(['id', 'configVersion', 'overflow']);
+/** Number values the config allows to be null ("none"); blank saves null. */
+const NULLABLE_NUMBER_KEYS = new Set(['selectionInterval', 'percentCapPerStat', 'itemCapOfBase']);
 
 function itemLabel(value: Json, index: number): string {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -115,21 +117,26 @@ function Field({
       </label>
     );
   }
+  const nullable = NULLABLE_NUMBER_KEYS.has(name);
+  const numeric = typeof value === 'number' || nullable;
   return (
     <label className="rules-field">
       {label}
       <input
         id={id}
-        type={typeof value === 'number' ? 'number' : 'text'}
+        type={numeric ? 'number' : 'text'}
         step="any"
+        placeholder={nullable ? 'none' : undefined}
         value={value === null ? '' : String(value)}
         readOnly={locked}
         onChange={(e) =>
           onChange(
             path,
-            typeof value === 'number'
+            numeric
               ? e.target.value === ''
-                ? Number.NaN
+                ? nullable
+                  ? null
+                  : Number.NaN
                 : Number(e.target.value)
               : e.target.value,
           )

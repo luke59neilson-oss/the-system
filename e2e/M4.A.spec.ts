@@ -109,6 +109,7 @@ test(
     const log = gm.locator('section[aria-labelledby="change-log"]');
     const row = log.getByRole('listitem').filter({ hasText: /XP/ }).last();
     await row.getByRole('button', { name: 'Undo' }).click();
+    await row.getByRole('button', { name: 'Confirm undo' }).click();
     await expect(row).toContainText('(undone)');
     for (const id of [jake, miranda, casper]) {
       await expect(gm.getByTestId(`class-level-${id}`)).toHaveText('0');

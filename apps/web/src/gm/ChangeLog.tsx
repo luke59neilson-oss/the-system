@@ -56,6 +56,7 @@ export function ChangeLog({
   const [who, setWho] = useState<'all' | 'gm' | 'player'>('all');
   const [kind, setKind] = useState<'all' | ChangeLogCategory>('all');
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
   useEffect(() => {
     let live = true;
@@ -150,22 +151,38 @@ export function ChangeLog({
             </span>
             {NO_UNDO.has(r.type) ? null : r.undoneBy ? (
               <span className="muted small">(undone)</span>
+            ) : confirming === r.id ? (
+              // Undo cannot itself be undone, so it takes a second click on
+              // this row (kept by event id, so a live refetch never shifts it).
+              <span className="row">
+                <button
+                  type="button"
+                  className="danger small"
+                  onClick={() => {
+                    setConfirming(null);
+                    void client.command({ type: 'event.undo', eventId: r.id }).then((res) => {
+                      setError(res.ok ? null : undoError(res.error));
+                      // Show it undone at once; the refetch brings the real marker.
+                      if (res.ok) {
+                        setRows((all) =>
+                          all.map((x) => (x.id === r.id ? { ...x, undoneBy: 'pending' } : x)),
+                        );
+                      }
+                    });
+                  }}
+                >
+                  Confirm undo
+                </button>
+                <button
+                  type="button"
+                  className="secondary small"
+                  onClick={() => setConfirming(null)}
+                >
+                  Keep
+                </button>
+              </span>
             ) : (
-              <button
-                type="button"
-                className="secondary small"
-                onClick={() =>
-                  void client.command({ type: 'event.undo', eventId: r.id }).then((res) => {
-                    setError(res.ok ? null : undoError(res.error));
-                    // Show it undone at once; the refetch brings the real marker.
-                    if (res.ok) {
-                      setRows((all) =>
-                        all.map((x) => (x.id === r.id ? { ...x, undoneBy: 'pending' } : x)),
-                      );
-                    }
-                  })
-                }
-              >
+              <button type="button" className="secondary small" onClick={() => setConfirming(r.id)}>
                 Undo
               </button>
             )}

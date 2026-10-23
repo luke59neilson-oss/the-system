@@ -37,6 +37,7 @@ test('the GM undoes a broadcast from the change log', async ({ page }) => {
   const row = log.getByRole('listitem').filter({ hasText: 'The Host stirs.' });
   await expect(row).toHaveCount(1);
   await row.getByRole('button', { name: 'Undo' }).click();
+  await row.getByRole('button', { name: 'Confirm undo' }).click();
   await expect(row).toContainText('(undone)');
   // M1.3 rules: Jake's creation cannot be undone while later events depend on him.
   await form.getByLabel('Message').fill('Only Jake.');
@@ -45,6 +46,7 @@ test('the GM undoes a broadcast from the change log', async ({ page }) => {
   await expect(log.getByRole('listitem').filter({ hasText: 'Only Jake.' })).toHaveCount(1);
   const created = log.getByRole('listitem').filter({ hasText: 'Jake' }).last();
   await created.getByRole('button', { name: 'Undo' }).click();
+  await created.getByRole('button', { name: 'Confirm undo' }).click();
   await expect(log.getByRole('alert')).toHaveText(
     "Can't undo this: a later change depends on it. Undo the later changes first.",
   );
@@ -95,6 +97,7 @@ test("a player's nickname shows up live in the log; the GM undoes it everywhere"
   ).toHaveCount(0);
 
   await row.getByRole('button', { name: 'Undo' }).click();
+  await row.getByRole('button', { name: 'Confirm undo' }).click();
   await expect(row).toContainText('(undone)');
   await expect(detail.getByTestId('skill-detail-nickname')).toHaveText('Nickname: none');
   await gm.screenshot({
