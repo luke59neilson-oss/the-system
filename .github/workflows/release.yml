@@ -1,7 +1,7 @@
 name: Release
 
 # Desktop builds (ROADMAP MS.6, MQ.9, D8, D15, D55, D97).
-# - Push to `release`: build Windows (installer + portable) and Linux
+# - Push to `release`: build Windows (installer only, QF.11) and Linux
 #   (AppImage, kept for the automated smoke test; macOS dropped, D97),
 #   smoke-test both packaged apps, then
 #   publish a GitHub Release named `preview-<date>-<run>` (tag
@@ -55,7 +55,6 @@ jobs:
             target: win
             files: |
               apps/desktop/release/*-setup.exe
-              apps/desktop/release/*-portable.exe
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     env:
@@ -129,9 +128,9 @@ jobs:
         run: |
           ls -la out
           total=$(find out -maxdepth 1 -type f | wc -l)
-          if [ "$total" -ne 3 ]; then echo "expected exactly 3 files, found $total"; exit 1; fi
-          # Exact names (MS.7): TheSystem-preview-<date>-<run>-win-x64-portable.exe and so on.
-          for suffix in win-x64-setup.exe win-x64-portable.exe linux-x86_64.AppImage; do
+          if [ "$total" -ne 2 ]; then echo "expected exactly 2 files, found $total"; exit 1; fi
+          # Exact names (MS.7): TheSystem-preview-<date>-<run>-win-x64-setup.exe and so on.
+          for suffix in win-x64-setup.exe linux-x86_64.AppImage; do
             name="TheSystem-${THE_SYSTEM_BUILD_ID}-${suffix}"
             if [ ! -f "out/$name" ]; then echo "missing $name"; exit 1; fi
             echo "ok $name"
@@ -161,7 +160,7 @@ jobs:
           cat > "$notes" <<NOTES
           Preview build of The System from ${GITHUB_SHA::7}.
 
-          - Windows: TheSystem-${id}-win-x64-setup.exe (installer) or TheSystem-${id}-win-x64-portable.exe (no install). Unsigned: if SmartScreen warns, choose More info, then Run anyway. A "Starting The System…" window appears while it starts; launching it again brings the running window to the front.
+          - Windows: TheSystem-${id}-win-x64-setup.exe (installer; it checks itself, so a partial download says so instead of starting). Unsigned: if SmartScreen warns, choose More info, then Run anyway. A "Starting The System…" window appears while it starts; launching it again brings the running window to the front.
           - Linux: TheSystem-${id}-linux-x86_64.AppImage. Make it executable (chmod +x), then run it.
 
           Double-click starts the server and opens the GM console; players join at the URL or QR code it shows. If port 30333 is taken, The System uses the next free port and tells you.

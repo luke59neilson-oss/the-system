@@ -26,7 +26,7 @@ lives in the OS app-data folder (`<userData>/data`). One instance at a time.
   `--win`) runs electron-builder (`electron-builder.yml`, through
   `package.mjs`, which names files `TheSystem-<THE_SYSTEM_BUILD_ID>-…`,
   default `dev-<version>`) into
-  `apps/desktop/release/`: Windows installer + portable exe, Linux AppImage.
+  `apps/desktop/release/`: Windows installer (QF.11: no portable exe), Linux AppImage.
   The `mac` section of `electron-builder.yml` stays for local `--mac` builds,
   but releases no longer build macOS (MQ.9, D97). Only `dist/main.cjs` ships in the asar; the
   web build goes to `resources/web`.

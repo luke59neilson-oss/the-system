@@ -22,19 +22,17 @@ publish: null
 # File names carry the build id (MS.7): a new download never collides with an
 # older copy that is still open. package.mjs always sets THE_SYSTEM_BUILD_ID.
 artifactName: TheSystem-${env.THE_SYSTEM_BUILD_ID}-${os}-${arch}.${ext}
+# Installer only (QF.11): electron-builder's portable template turns NSIS's
+# CRC check off, so a partial download started and hung.
 win:
   executableName: TheSystem
   target:
     - target: nsis
       arch: [x64]
-    - target: portable
-      arch: [x64]
 nsis:
   artifactName: TheSystem-${env.THE_SYSTEM_BUILD_ID}-win-${arch}-setup.${ext}
   oneClick: false
   allowToChangeInstallationDirectory: true
-portable:
-  artifactName: TheSystem-${env.THE_SYSTEM_BUILD_ID}-win-${arch}-portable.${ext}
 mac:
   target:
     - target: dmg
