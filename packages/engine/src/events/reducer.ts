@@ -472,14 +472,26 @@ function clampToEffective(
         pools ??= { ...c.pools };
         pools[p.id] = max;
       }
+      // A falling maximum that leaves a pool that was not full at its new
+      // maximum marks it too (100/120 unequips to 100/100: not full, MQ.15
+      // review).
+      if (
+        clampedPoolsNotFull &&
+        wasMax !== undefined &&
+        max < wasMax &&
+        current === max &&
+        !wasFull
+      ) {
+        notFull.add(p.id);
+      }
       // Below its maximum, a pool is plainly not full: no mark needed.
       if ((pools?.[p.id] ?? current) < max) notFull.delete(p.id);
     }
     const marks = after.rules.pools.map((p) => p.id).filter((p) => notFull.has(p));
     const marksBefore = c.clampedPools ?? [];
+    // With the rule off, marks are dropped, so turning it back on starts clean.
     const marksChanged =
-      clampedPoolsNotFull &&
-      (marks.length !== marksBefore.length || marks.some((m, i) => marksBefore[i] !== m));
+      marks.length !== marksBefore.length || marks.some((m, i) => marksBefore[i] !== m);
     if (pools === null && !marksChanged) continue;
     let next: Character = { ...c, pools: pools ?? c.pools };
     if (marksChanged) {

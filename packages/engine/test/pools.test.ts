@@ -186,6 +186,22 @@ describe('no healing by gear swap (MQ.15, L7)', () => {
     expect(pool(ok(c, equip))).toEqual({ current: 120, max: 120 });
   });
 
+  it('100/120 unequips to 100/100, which is not full: equipping again → 100/120', () => {
+    let c = ok(ok(pick(), equip), setHp(100));
+    c = ok(c, unequip);
+    expect(pool(c)).toEqual({ current: 100, max: 100 });
+    expect(marks(c)).toEqual(['hp']);
+    expect(pool(ok(c, equip))).toEqual({ current: 100, max: 120 });
+  });
+
+  it('a set of another pool keeps the mark, also through an undo', () => {
+    let c = ok(ok(ok(pick(), equip), setHp(110)), unequip);
+    c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: { mp: 50 } });
+    expect(marks(c)).toEqual(['hp']);
+    const undone = ok(c, { type: 'event.undo', eventId: c.events[c.events.length - 1]?.id ?? '' });
+    expect(marks(undone)).toEqual(['hp']);
+  });
+
   it('a clamped pool stays not full through further drops and a level-up', () => {
     let c = ok(ok(pick(), equip), setHp(110));
     c = ok(c, unequip);
@@ -231,15 +247,18 @@ describe('no healing by gear swap (MQ.15, L7)', () => {
     for (let trial = 0; trial < 40; trial += 1) {
       let c = pick();
       let worn = false;
+      let full = true;
       for (let step = 0; step < 12; step += 1) {
         const roll = random();
         if (roll < 0.25) {
           const max = pool(c).max;
-          c = ok(c, setHp(Math.floor(random() * (max + 1))));
+          const hp = Math.floor(random() * (max + 1));
+          c = ok(c, setHp(hp));
+          // Tracked outside the engine: full only when set to the maximum.
+          full = hp === max;
           continue;
         }
         const before = pool(c);
-        const full = before.current === before.max && marks(c) === undefined;
         c = ok(c, worn ? unequip : equip);
         worn = !worn;
         const after = pool(c);
