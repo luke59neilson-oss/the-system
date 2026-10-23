@@ -1,12 +1,30 @@
 import { useEffect, useState } from 'react';
-import type { CampaignState, ChangeLogRow } from '@the-system/engine';
+import {
+  CHANGE_LOG_CATEGORIES,
+  type CampaignState,
+  type ChangeLogCategory,
+  type ChangeLogRow,
+} from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 import { shortTime } from './sessionModel';
 
+const KIND_LABELS: Readonly<Record<ChangeLogCategory, string>> = {
+  campaign: 'Campaign and sessions',
+  characters: 'Characters',
+  xp: 'XP',
+  skills: 'Skills and practice',
+  items: 'Items and trades',
+  quests: 'Quests and Identify',
+  notes: 'Notes',
+  messages: 'System messages',
+  library: 'Libraries',
+};
+
 /**
- * M4.8 (in progress): the GM's change log, newest first, filterable, with
- * undo (the engine's M1.3 rules decide what can be undone).
+ * M4.8: the GM's change log, newest first, filterable by who, kind and text,
+ * with undo (the engine's M1.3 rules decide what can be undone). It refetches
+ * on every state change, so a player's action shows up live.
  */
 export function ChangeLog({
   client,
@@ -20,6 +38,7 @@ export function ChangeLog({
   const [rows, setRows] = useState<readonly ChangeLogRow[]>([]);
   const [filter, setFilter] = useState('');
   const [who, setWho] = useState<'all' | 'gm' | 'player'>('all');
+  const [kind, setKind] = useState<'all' | ChangeLogCategory>('all');
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
@@ -37,6 +56,7 @@ export function ChangeLog({
   const shown = [...rows]
     .reverse()
     .filter((r) => who === 'all' || r.actor === who || (who === 'gm' && r.actor === 'system'))
+    .filter((r) => kind === 'all' || r.category === kind)
     .filter((r) => q === '' || r.lines.join(' ').toLowerCase().includes(q) || r.type.includes(q));
   return (
     <section className="window" aria-labelledby="change-log">
@@ -50,6 +70,17 @@ export function ChangeLog({
         </select>
       </label>
       <label>
+        Kind
+        <select value={kind} onChange={(e) => setKind(e.target.value as 'all' | ChangeLogCategory)}>
+          <option value="all">Everything</option>
+          {CHANGE_LOG_CATEGORIES.map((c) => (
+            <option key={c} value={c}>
+              {KIND_LABELS[c]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
         Filter
         <input value={filter} onChange={(e) => setFilter(e.target.value)} />
       </label>
@@ -58,6 +89,7 @@ export function ChangeLog({
           {error}
         </p>
       )}
+      {shown.length === 0 && <p className="muted">Nothing matches.</p>}
       <ol className="change-log">
         {shown.map((r) => (
           <li key={r.id} className={r.undoneBy ? 'undone' : undefined}>
