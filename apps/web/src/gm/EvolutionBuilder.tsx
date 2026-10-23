@@ -178,7 +178,12 @@ function ReleaseForm({
         .map((p) => p.trim())
         .filter((p) => p !== '')
     : [];
-  const rerateList = Object.entries(rerate).map(([skill, rarity]) => ({ skill, rarity }));
+  // From the live plan, so a skill gained or lost while the GM builds is not stale.
+  const rerateList = plan.rerate.map((r) => ({
+    skill: r.skill,
+    rarity: rerate[r.skill] ?? r.byDefault,
+  }));
+  const rerateSent = Object.fromEntries(rerateList.map((r) => [r.skill, r.rarity]));
   const problem = releaseProblem(state, characterId, engineOptions, offered, rerateList);
 
   const release = async (e: FormEvent) => {
@@ -196,7 +201,7 @@ function ReleaseForm({
         ...(o.classWeights ? { classWeights: o.classWeights } : {}),
       })),
       ...(offered.length > 0 ? { professions: offered } : {}),
-      rerate,
+      rerate: rerateSent,
     });
     setBusy(false);
     setResult(
@@ -216,6 +221,11 @@ function ReleaseForm({
           again replaces it.
         </p>
       )}
+      {plan.stale.map((st) => (
+        <p key={st.className} className="err" data-testid="evolution-stale">
+          [{st.className}] can no longer be chosen: {st.problem}. Release again to fix it.
+        </p>
+      ))}
       {plan.pendingSelections.length > 0 && (
         <p className="err" data-testid="evolution-waits">
           Waits on{' '}
@@ -397,6 +407,13 @@ function TransformRows({
   const set = (i: number, patch: Partial<TransformDraft>) =>
     onChange(transforms.map((t, j) => (j === i ? { ...t, ...patch } : t)));
   const lowest = plan.rarities[0] ?? '';
+  // A transform never lowers a skill's rarity (the engine refuses it).
+  const atLeast = (skill: string) => {
+    const from = plan.rerate.find((r) => r.skill === skill)?.from;
+    const i = from === undefined ? 0 : plan.rarities.indexOf(from);
+    return plan.rarities.slice(Math.max(i, 0));
+  };
+  const merging = transforms.filter((t) => t.merge !== undefined).length;
   return (
     <div className="transforms">
       <p className="muted">
@@ -412,7 +429,16 @@ function TransformRows({
           ) : (
             <label>
               Skill{' '}
-              <select value={t.skill} onChange={(e) => set(i, { skill: e.target.value })}>
+              <select
+                value={t.skill}
+                onChange={(e) => {
+                  const ok = atLeast(e.target.value);
+                  set(i, {
+                    skill: e.target.value,
+                    rarity: ok.includes(t.rarity) ? t.rarity : (ok[0] ?? t.rarity),
+                  });
+                }}
+              >
                 {[t.skill, ...free].map((k) => (
                   <option key={k} value={k}>
                     {k}
@@ -429,16 +455,20 @@ function TransformRows({
               onChange={(e) => set(i, { name: e.target.value })}
             />
           </label>
-          <label>
-            Rarity{' '}
-            <select value={t.rarity} onChange={(e) => set(i, { rarity: e.target.value })}>
-              {plan.rarities.map((r) => (
-                <option key={r} value={r}>
-                  {rarityName(r)}
-                </option>
-              ))}
-            </select>
-          </label>
+          {t.merge ? (
+            <span data-testid="merge-rarity">({rarityName(t.rarity)}, one above the higher)</span>
+          ) : (
+            <label>
+              Rarity{' '}
+              <select value={t.rarity} onChange={(e) => set(i, { rarity: e.target.value })}>
+                {atLeast(t.skill).map((r) => (
+                  <option key={r} value={r}>
+                    {rarityName(r)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <button
             type="button"
             className="secondary"
@@ -470,7 +500,9 @@ function TransformRows({
           <button
             key={m.skills.join('+')}
             type="button"
-            disabled={full || used.has(m.skills[0]) || used.has(m.skills[1])}
+            disabled={
+              full || merging >= plan.mergesLeft || used.has(m.skills[0]) || used.has(m.skills[1])
+            }
             onClick={() =>
               onChange([
                 ...transforms,

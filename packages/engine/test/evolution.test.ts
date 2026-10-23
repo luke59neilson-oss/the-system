@@ -18,6 +18,7 @@ import {
   type Character,
   type Command,
   type CommandContext,
+  retiredSkillNames,
 } from '../src';
 import { kit, rawRules, run, testContext } from './helpers/events';
 
@@ -1741,7 +1742,12 @@ describe('merge transforms (M5.2, DESIGN §6 "offer that merge as part of the ev
   const choose: Command = { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' };
 
   it('consumes both skills on choosing; the merged skill is new, at 0 marks; the merge counts', () => {
-    let c = ok(mergeReady(), mergeRelease());
+    let c = ok(
+      mergeReady(),
+      { type: 'skill.nickname', characterId: 'jake', skill: archery, nickname: 'Old Faithful' },
+      player('jake'),
+    );
+    c = ok(c, mergeRelease());
     const me = projectForPlayer(c.state ?? (null as never), 'jake').me;
     expect(me.evolution?.options[0]?.transforms[0]).toMatchObject({ merge: stealth });
     c = ok(c, choose, player('jake'));
@@ -1756,6 +1762,19 @@ describe('merge transforms (M5.2, DESIGN §6 "offer that merge as part of the ev
       marks: 0,
     });
     expect(j.merges['G']).toBe(1);
+    // A fresh skill: no nickname, Unique tag or mark sessions from the original.
+    const merged = j.skills.find((s) => s.name === 'Ghost Shot');
+    expect(merged?.nickname ?? null).toBeNull();
+    expect(merged?.unique ?? false).toBe(false);
+    // Practice entries follow the transformed skill; the consumed name is retired.
+    const entries = c.state?.practice.filter((e) => e.characterId === 'jake') ?? [];
+    expect(entries.some((e) => e.skills.includes('Ghost Shot'))).toBe(true);
+    expect(
+      retiredSkillNames(
+        j,
+        entries.flatMap((e) => e.skills),
+      ).has(stealth.toLowerCase()),
+    ).toBe(true);
     const undone = ok(c, { type: 'event.undo', eventId: c.events.at(-1)?.id ?? '' });
     expect(char(undone).skills.map((s) => s.name)).toContain(stealth);
   });
@@ -1763,9 +1782,9 @@ describe('merge transforms (M5.2, DESIGN §6 "offer that merge as part of the ev
   it('refuses a merge the merge rules refuse', () => {
     expect(reject(mergeReady(2), mergeRelease())).toMatch(/logged together 2 times \(need 3\)/);
     expect(reject(mergeReady(), mergeRelease('Ghost Shot', 'common'))).toMatch(
-      /cannot be below the higher of the two merged skills/,
+      /must be rare \(one above the higher merged skill\)/,
     );
-    expect(reject(mergeReady(), mergeRelease('Ghost Shot', 'epic'))).toMatch(/above the F-grade/);
+    expect(reject(mergeReady(), mergeRelease('Ghost Shot', 'epic'))).toMatch(/must be rare/);
     expect(reject(mergeReady(), mergeRelease(stealth))).toMatch(/needs a new name/);
     expect(reject(mergeReady(), mergeRelease('X', 'rare', archery))).toMatch(/two different/);
     expect(reject(mergeReady(), mergeRelease('X', 'rare', 'Nope'))).toMatch(/no skill "Nope"/);

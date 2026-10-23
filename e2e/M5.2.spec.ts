@@ -140,6 +140,8 @@ test('the release waits on a selection; transforms, profession offers and withdr
     'Waits on the capstone selection at lvl 10: the player must choose first.',
   );
   await expect(form.getByRole('button', { name: 'Release evolution' })).toBeDisabled();
+  await form.getByTestId('evolution-waits').scrollIntoViewIfNeeded();
+  await gm.screenshot({ path: path.join(shots, 'gm-evolution-waits-1366x768.png') });
   await gmCommand(gm, {
     type: 'selection.offer',
     characterId: 'demo-casper',
@@ -177,6 +179,8 @@ test('the release waits on a selection; transforms, profession offers and withdr
   await expect(offers).toContainText('Casper: [Cook]');
   await offers.getByRole('button', { name: 'Withdraw Alchemist from Casper' }).click();
   await expect(offers).not.toContainText('Alchemist');
+  await form.getByRole('list', { name: 'Re-rating' }).scrollIntoViewIfNeeded();
+  await gm.screenshot({ path: path.join(shots, 'gm-evolution-rerate-offers-1366x768.png') });
 
   const player = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const playerErrors = watchErrors(player);

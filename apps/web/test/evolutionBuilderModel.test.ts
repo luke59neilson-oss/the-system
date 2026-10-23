@@ -10,7 +10,7 @@ import {
 import { evolutionPlan, releaseProblem, withdrawableOffers } from '../src/gm/evolutionBuilderModel';
 
 // M5.2: the evolution builder's model agrees with the engine.
-function campaign(classXp: number): Campaign {
+function campaign(classXp: number, extra: Command[] = [], rarity = 'inferior'): Campaign {
   let n = 0;
   const ctx: CommandContext = {
     actor: { role: 'gm' },
@@ -26,12 +26,13 @@ function campaign(classXp: number): Campaign {
       name: 'Jake',
       className: 'Archer',
       classSkills: [
-        { name: 'Basic Archery', rarity: 'inferior' },
-        { name: 'Basic Stealth', rarity: 'inferior' },
+        { name: 'Basic Archery', rarity },
+        { name: 'Basic Stealth', rarity },
         { name: 'Archer’s Eye', rarity: 'common' },
       ],
     },
     { type: 'xp.award', track: 'class', amount: classXp, participants: [{ characterId: 'jake' }] },
+    ...extra,
   ];
   let c = emptyCampaign();
   for (const command of commands) {
@@ -92,5 +93,50 @@ describe('evolution builder model (M5.2)', () => {
       transforms: [{ skill: 'Basic Archery', merge: 'Basic Stealth', name: 'X', rarity: 'rare' }],
     };
     expect(releaseProblem(state, 'jake', [merge], [], [])).toMatch(/must be at least/);
+  });
+
+  it('prompts a ready merge at the new ceiling and flags a release made unchoosable', () => {
+    const log: Command[] = [1, 2, 3].map((i) => ({
+      type: 'practice.log',
+      characterId: 'jake',
+      action: `shot ${i}`,
+      skills: ['Basic Archery', 'Basic Stealth'],
+    }));
+    const ready = campaign(400, log, 'uncommon');
+    const plan = evolutionPlan(ready.state!, 'jake')!;
+    expect(plan.mergePrompts).toEqual([
+      { skills: ['Basic Archery', 'Basic Stealth'], rarity: 'rare' },
+    ]);
+    expect(plan.mergesLeft).toBe(1);
+    expect(plan.stale).toEqual([]);
+    const released = campaign(
+      400,
+      [
+        ...log,
+        {
+          type: 'evolution.release',
+          characterId: 'jake',
+          options: [
+            {
+              className: 'Shade',
+              transforms: [
+                { skill: 'Basic Archery', merge: 'Basic Stealth', name: 'Ghost', rarity: 'rare' },
+              ],
+            },
+          ],
+        },
+        {
+          type: 'skill.merge',
+          characterId: 'jake',
+          skills: ['Basic Archery', 'Basic Stealth'],
+          name: 'Twin',
+        },
+      ],
+      'uncommon',
+    );
+    const after = evolutionPlan(released.state!, 'jake')!;
+    expect(after.stale.map((x) => x.className)).toEqual(['Shade']);
+    expect(after.mergesLeft).toBe(0);
+    expect(after.mergePrompts).toEqual([]);
   });
 });

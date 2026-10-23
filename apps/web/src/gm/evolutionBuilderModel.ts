@@ -1,5 +1,4 @@
 import {
-  characterFlags,
   defaultRerate,
   dueSelections,
   evolutionTarget,
@@ -38,6 +37,10 @@ export interface EvolutionPlan {
    * the usual merge rarity (one above the higher, capped at the new ceiling).
    */
   readonly mergePrompts: readonly MergePrompt[];
+  /** Merges one option may still carry (`merge.maxPerCharacterPerGrade` minus those done). */
+  readonly mergesLeft: number;
+  /** Released options the player can no longer choose, with the engine's reason (M5.2 review). */
+  readonly stale: readonly { className: string; problem: string }[];
   /** Rarities a transform may take: up to the new grade's ceiling. */
   readonly rarities: readonly string[];
   /** How many transforms one option may carry (`skills.evolutionTransforms`). */
@@ -66,6 +69,10 @@ export function evolutionPlan(state: CampaignState, characterId: string): Evolut
   const choices = ceiling < 0 ? ids : ids.slice(0, ceiling + 1);
   const defaults = new Map(defaultRerate(rules, c).map((r) => [r.skill, r.rarity]));
   const gi = (g: string) => rules.grades.findIndex((x) => x.id === g);
+  const { merge } = rules.skills;
+  const mergesLeft =
+    merge.maxPerCharacterPerGrade -
+    (Object.prototype.hasOwnProperty.call(c.merges, c.grade) ? (c.merges[c.grade] ?? 0) : 0);
   return {
     toGrade: target.id,
     pendingSelections: dueSelections(rules, c).map((s) => ({
@@ -78,19 +85,31 @@ export function evolutionPlan(state: CampaignState, characterId: string): Evolut
       byDefault: defaults.get(s.name) ?? s.rarity,
       choices,
     })),
-    mergePrompts: characterFlags(state, characterId).flatMap((f) => {
-      if (f.kind !== 'merge') return [];
-      const rank = (n: string) => ids.indexOf(c.skills.find((s) => s.name === n)?.rarity ?? '');
-      const top = Math.max(rank(f.skills[0]), rank(f.skills[1]));
-      const at = Math.min(top + rules.skills.merge.rarityStepsAboveHigher, choices.length - 1);
-      const rarity = choices[Math.max(at, 0)] ?? target.rarityCeiling;
-      return [{ skills: [f.skills[0], f.skills[1]] as const, rarity }];
-    }),
+    // Pairs the evolution can merge (DESIGN §6), judged at the new grade's
+    // ceiling, so a pair whose result only fits after evolving is prompted too.
+    mergePrompts:
+      mergesLeft <= 0
+        ? []
+        : skillPairCounts(state.practice, characterId).flatMap((p) => {
+            if (p.count < merge.requiredJointUses) return [];
+            const rank = (n: string) =>
+              ids.indexOf(c.skills.find((s) => s.name === n)?.rarity ?? '');
+            const [ra, rb] = [rank(p.skills[0]), rank(p.skills[1])];
+            const min = ids.indexOf(merge.minRarity);
+            if (ra < 0 || rb < 0 || ra < min || rb < min) return [];
+            const rarity = choices[Math.max(ra, rb) + merge.rarityStepsAboveHigher];
+            return rarity === undefined ? [] : [{ skills: p.skills, rarity }];
+          }),
+    mergesLeft,
     rarities: choices,
     transforms: rules.skills.evolutionTransforms,
     professionOffers:
       c.profession === null && gi(target.id) >= gi(rules.tracks.professionUnlockGrade),
     released: c.evolution ? c.evolution.options.map((o) => o.className) : null,
+    stale: (c.evolution?.options ?? []).flatMap((o) => {
+      const problem = releaseProblem(state, characterId, [o], [], []);
+      return problem === null ? [] : [{ className: o.className, problem }];
+    }),
   };
 }
 

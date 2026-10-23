@@ -504,16 +504,19 @@ function checkOption(
       }
     }
     const rank = rarityIndex(rules, t.rarity);
-    const floor = Math.max(
-      rarityIndex(rules, skill.rarity),
-      partner === null ? -1 : rarityIndex(rules, partner.rarity),
-    );
-    if (rank < floor) {
-      throw new CharacterRuleError(
-        partner === null
-          ? `[${t.skill}] cannot drop to a lower rarity`
-          : `[${name}] cannot be below the higher of the two merged skills`,
-      );
+    if (partner !== null) {
+      // DESIGN §6: the merged skill is `rarityStepsAboveHigher` above the higher.
+      const want =
+        Math.max(rarityIndex(rules, skill.rarity), rarityIndex(rules, partner.rarity)) +
+        rules.skills.merge.rarityStepsAboveHigher;
+      if (rank !== want) {
+        const at = rules.skills.rarities[want];
+        throw new CharacterRuleError(
+          `[${name}] must be ${at ? at.id : 'one rarity above the higher of the two'} (one above the higher merged skill)`,
+        );
+      }
+    } else if (rank < rarityIndex(rules, skill.rarity)) {
+      throw new CharacterRuleError(`[${t.skill}] cannot drop to a lower rarity`);
     }
     if (rank > ceiling) {
       throw new CharacterRuleError(
@@ -711,11 +714,13 @@ export function chooseEvolution(
     option.transforms.flatMap((t) => (t.merge === undefined ? [] : [t.merge])),
   );
   const transformSkill = (s: CharacterSkill, t: SkillTransform): CharacterSkill => {
+    // A merge is a new skill, as `skill.merge` makes it: no nickname, Unique
+    // tag, marks or mark sessions carry over (DESIGN §6, D168).
+    if (t.merge !== undefined) return newSkill(t.name.trim(), t.rarity, s.kind);
     // A rarity gain spends the banked marks as that many upgrades would, and
     // the rest carry on (MQ.4, D114); a transform that keeps the rarity keeps
-    // them (DESIGN §6: they bank until the evolution). A merge starts at 0.
-    const marks =
-      t.merge === undefined ? marksAfterRarityChange(marking, s.rarity, t.rarity, s.marks) : 0;
+    // them (DESIGN §6: they bank until the evolution).
+    const marks = marksAfterRarityChange(marking, s.rarity, t.rarity, s.marks);
     // A renamed skill is a new skill to the System: the old text would
     // describe the wrong thing, so it clears until the GM writes new text (M3.5).
     const name = t.name.trim();
