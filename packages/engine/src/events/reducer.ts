@@ -590,6 +590,59 @@ export function rulesEditProblem(current: RulesConfig, next: RulesConfig): strin
   return null;
 }
 
+/**
+ * What in the campaign a rules config would leave out of bounds (M4.9, D161):
+ * a class or profession level above the level cap or its grade's top level,
+ * a skill above its grade's rarity ceiling, an item in an equipment slot that
+ * no longer exists. Each line names the character or holder.
+ */
+export function rulesStateProblems(state: CampaignState, rules: RulesConfig): string[] {
+  const out: string[] = [];
+  const rank = (id: string) => rules.skills.rarities.findIndex((r) => r.id === id);
+  for (const id of state.characterOrder) {
+    const c = state.characters[id];
+    if (!c) continue;
+    const grade = rules.grades.find((g) => g.id === c.grade);
+    const top = Math.min(rules.campaign.levelCap, grade ? grade.topLevel : Infinity);
+    if (c.classLevel > top) out.push(`${c.name}'s class level ${c.classLevel} is above ${top}`);
+    if (c.profession !== null && c.professionLevel > top)
+      out.push(`${c.name}'s profession level ${c.professionLevel} is above ${top}`);
+    if (grade) {
+      const ceiling = rank(grade.rarityCeiling);
+      for (const s of c.skills) {
+        if (rank(s.rarity) > ceiling)
+          out.push(`${c.name}'s [${s.name}] is above the ${grade.id}-grade ceiling`);
+      }
+    }
+  }
+  for (const [holder, held] of Object.entries(state.holdings)) {
+    for (const key of Object.keys(held.equipped)) {
+      const cut = key.lastIndexOf(':');
+      const slot = rules.economy.equipmentSlots.find((s) => s.id === key.slice(0, cut));
+      const index = Number(key.slice(cut + 1));
+      if (!slot || index >= slot.count) {
+        const who = state.characters[holder]?.name ?? holder;
+        out.push(`${who} has an item in ${slot ? `${slot.name} slot ${index + 1}` : key}`);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Problems a rules edit would introduce into the campaign's current state.
+ * Ones the current rules already allow through (a GM sheet edit, say) are
+ * not the edit's fault, so they never block an unrelated change.
+ */
+export function rulesEditStateProblem(state: CampaignState, next: RulesConfig): string | null {
+  const before = new Set(rulesStateProblems(state, state.rules));
+  const added = rulesStateProblems(state, next).filter((p) => !before.has(p));
+  if (added.length === 0) return null;
+  const shown = added.slice(0, 3).join('; ');
+  const more = added.length > 3 ? ` (and ${added.length - 3} more)` : '';
+  return `these rules do not fit the campaign as it is: ${shown}${more}`;
+}
+
 function applyEventRaw(state: CampaignState | null, event: DomainEvent): CampaignState {
   if (event.type === 'campaign.created') {
     if (state !== null) fail(event, 'the campaign already exists');
@@ -1637,6 +1690,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       if (!parsed.ok) return fail(event, `invalid rules: ${parsed.errors.join('; ')}`);
       const problem = rulesEditProblem(state.rules, parsed.config);
       if (problem) fail(event, problem);
+      const misfit = rulesEditStateProblem(state, parsed.config);
+      if (misfit) fail(event, misfit);
       return { ...state, rules: parsed.config };
     }
     case 'rules.migrated': {

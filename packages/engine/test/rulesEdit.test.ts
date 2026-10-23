@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_RULES, defaultRules, execute, type Campaign, type Command } from '../src';
+import { rulesEditStateProblem, rulesStateProblems } from '../src/events/reducer';
 import { kit, rawRules, run, testContext } from './helpers/events';
 
 // M4.9 Rules settings: the GM edits the rules as an event; validation; reset.
@@ -107,5 +108,73 @@ describe('rules.set (M4.9)', () => {
     const r = execute(c, { type: 'rules.reset' }, ctx);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toMatch(/rules migration/);
+  });
+
+  it('refuses rules the campaign as it is does not fit, naming who', () => {
+    const { c, ctx } = setup();
+    const lv = execute(
+      c,
+      { type: 'xp.award', track: 'class', amount: 400, participants: [{ characterId: 'jake' }] },
+      ctx,
+    );
+    if (!lv.ok) throw new Error(lv.error);
+    expect(lv.campaign.state!.characters['jake']!.classLevel).toBe(4);
+    const top = execute(
+      lv.campaign,
+      { type: 'rules.set', rules: edited((x) => (x.grades[0].topLevel = 3)) },
+      ctx,
+    );
+    expect(top.ok).toBe(false);
+    if (!top.ok) expect(top.error).toMatch(/Jake's class level 4 is above 3/);
+    const ceiling = execute(
+      c,
+      { type: 'rules.set', rules: edited((x) => (x.grades[0].rarityCeiling = 'inferior')) },
+      ctx,
+    );
+    expect(ceiling.ok).toBe(false);
+    if (!ceiling.ok) expect(ceiling.error).toMatch(/\[Identify\] is above the G-grade ceiling/);
+  });
+
+  it('refuses fewer slots than are worn, and undoing the edit that added one', () => {
+    const { c, ctx } = setup();
+    const steps: Command[] = [
+      { type: 'rules.set', rules: edited((x) => (x.economy.equipmentSlots[1].count = 2)) },
+      { type: 'item.define', id: 'amulet', name: 'Amulet', rarity: 'common', slot: 'necklace' },
+      { type: 'holdings.adjust', characterId: 'jake', items: { amulet: 2 } },
+      { type: 'item.equip', characterId: 'jake', itemId: 'amulet', slot: 'necklace', index: 0 },
+      { type: 'item.equip', characterId: 'jake', itemId: 'amulet', slot: 'necklace', index: 1 },
+    ];
+    let cur = c;
+    for (const step of steps) {
+      const r = execute(cur, step, ctx);
+      if (!r.ok) throw new Error(r.error);
+      cur = r.campaign;
+    }
+    const fewer = execute(cur, { type: 'rules.reset' }, ctx);
+    expect(fewer.ok).toBe(false);
+    if (!fewer.ok) expect(fewer.error).toMatch(/Jake has an item in Necklace slot 2/);
+    const loosening = cur.events.find((e) => e.type === 'rules.edited')!;
+    const undo = execute(cur, { type: 'event.undo', eventId: loosening.id }, ctx);
+    expect(undo.ok).toBe(false);
+    if (!undo.ok) expect(undo.error).toMatch(/later event depends on it/);
+  });
+
+  it('lets an unrelated edit through when the state already breaks a rule', () => {
+    const { c } = setup();
+    // A misfit the state already has (built by hand here, as a GM sheet edit
+    // could) is not the edit's fault.
+    const state = c.state!;
+    const rules = {
+      ...state.rules,
+      grades: state.rules.grades.map((g, i) => (i === 0 ? { ...g, rarityCeiling: 'inferior' } : g)),
+    };
+    const odd = { ...state, rules };
+    expect(rulesStateProblems(odd, rules).length).toBeGreaterThan(0);
+    expect(
+      rulesEditStateProblem(odd, {
+        ...rules,
+        economy: { ...rules.economy, currencyName: 'Shards' },
+      }),
+    ).toBeNull();
   });
 });
