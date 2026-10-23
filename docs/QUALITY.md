@@ -127,6 +127,14 @@ reviewers ran 15–20 minutes each in the background.
   Not our code's time: Electron's own cold start under xvfb on a loaded
   runner. Measured from app-ready instead (D146, QF.8).
 
+- 2026-10-23 06:50 · CI `desktop-smoke` red on f4d07d9 (docs and engine
+  only; green on bc42279 just before): `apps/desktop/test/launch.spec.ts:33`
+  "page.screenshot: Target page ... has been closed" on the splash, which
+  had already handed over to the GM console. A race in the test (it
+  screenshots a window that closes by design), not in this diff. If it
+  repeats it becomes a QF item: screenshot before the hand-over can happen,
+  or assert the splash text without a screenshot.
+
 ## Backlog (Lows; M11.5 goes through these)
 
 - Tests (QF.8 review): `npm run e2e` chains `--project=e2e && --project=latency`, so locally a failing e2e spec skips the latency specs (CI runs both steps regardless).

@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3, MS and MQ done; QF.1–QF.12 done; M4.1–M4.4 done; MR (Luke's batch 2) queued after QF.8; Preview ready: Actions → Release → Run workflow (MQ)
-**Next item:** MR.1 Evolutions re-rate skills
+**Status:** in progress: M0–M3, MS and MQ done; QF.1–QF.12 done; M4.1–M4.4 done; MR.1 done, MR.2 on wip/MR.2; Preview ready: Actions → Release → Run workflow (MQ)
+**Next item:** MR.2 Every upgrade starts at 0 marks (resume wip/MR.2)
 **Blockers:** none
 
 ## Run log
@@ -683,4 +683,14 @@ next item, blockers. -->
 - Tests: 856 unit. e2e: full suite 44/44 at `--workers=2` (before the M2.A/M4.3 tags); latency project `--repeat-each=10` 30/30 (three specs), then all five `--repeat-each=2` 10/10. Engine coverage not re-measured (no engine changes).
 - Open `wip/*` branches: none.
 - Next item: MR.1, then MR.2–MR.4, MR.A.
+- Blockers: none.
+
+### Run 07ce1165 · 2026-10-23 06:09–06:53 UTC (ended at minute 44: MR.2 handed off at the 44 mark per §5.5; close-out done)
+- Preflight: `add_repo` not offered; repo already cloned (local main was stale, reset to origin/main a407401). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewers on sonnet work (blocking; no background mode). No new answers in ANSWERS.md. CI on main green at d3175c7.
+- Efficiency check (hour 06, §9): scorecard row added (end minute 42.7, items/run 2.0, round-2 5/10, Highs 4, CI red/day 10). D119 and D132 reverted (targets met, but the Highs guard rose 1/0 → 4, and CI red/day 7 → 10) (D150). Auditor (sonnet): 2 proposals, both change what §6 reviews do, so Tier 2 → Q57; Q58 asks about the Highs guard. Nothing applied (D151).
+- MR.1 Evolutions re-rate skills (D149): release carries every skill's new rarity (default one step down, GM `rerate` overrides, ceiling check); marks, text and effects kept via `textRarity`; skills gained after the release take the default; older releases replay unchanged; player evolution screen lists old → new. Demo GM keeps every rarity. Identify drops too: Q56. Sonnet 1 round: 0 H, 2 M (docs at close-out; late-gained skills, fixed), 5 L. Box checked.
+- Tests: 869 unit. e2e: full suite at `--workers=2` before the demo fix (4 failed on demo Identify/rarities, then fixed: M3.2, M3.9, MQ.8, MR.1, M3.13 green; M3.3 green alone and in a 3-spec run, known load flake). Engine coverage not re-measured.
+- CI: f4d07d9 red in `desktop-smoke` only (splash screenshot after the splash closed; logged under Flakes in QUALITY.md; this run's next push re-runs CI).
+- Open `wip/*` branches: **wip/MR.2** (base f4d07d9, head 7fd61c5). Done: `rules.skills.marksResetOnUpgrade` (new campaigns true; `marksCarryOver` now false by default; stored rules read false and replay as recorded), `MarkRules.resetOnUpgrade` (sent to players), `marksAfterRarityChange` returns 0 under it, schema v22 with goldens re-recorded (only `schemaVersion` changed), MQ.4 tests pinned to MQ.4-era rules, engine tests in `marksReset.test.ts` (all 801 engine tests green there). Next: fix `apps/web/test/skillDetailModel.test.ts` "says when an upgrade is ready" (its rules stub lacks `marks`), check the evolution warnings text under reset, e2e text on the skill detail and evolution screens (`e2e/MR.2.spec.ts` + screenshots), DESIGN-consistent D-entry, then review.
+- Next item: MR.2 (resume wip/MR.2), then MR.3, MR.4, MR.A.
 - Blockers: none.
