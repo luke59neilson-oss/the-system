@@ -76,17 +76,18 @@ export function CurrencyLedger({ client, state }: { client: LiveClient; state: C
           <fieldset className="currency-who" disabled={busy}>
             <legend>Who</legend>
             {rows.map((r) => (
-              <label key={r.id} className="check currency-balance">
-                <input
-                  type="checkbox"
-                  checked={live.includes(r.id)}
-                  onChange={() => toggle(r.id)}
-                />
+              <button
+                key={r.id}
+                type="button"
+                className="secondary currency-balance"
+                aria-pressed={live.includes(r.id)}
+                onClick={() => toggle(r.id)}
+              >
                 <span>{r.name}</span>
                 <span className="muted" data-testid="currency-balance">
                   {r.balance} {currency}
                 </span>
-              </label>
+              </button>
             ))}
             <button
               type="button"

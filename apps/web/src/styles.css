@@ -2371,7 +2371,14 @@ ol.change-log li.undone .change-text {
   margin: 0 0 10px;
 }
 .currency-balance {
-  margin: 0;
+  display: inline-flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.currency-balance[aria-pressed='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+  background: rgba(156, 194, 255, 0.14);
 }
 .currency-fields label:first-child input {
   width: 8em;

@@ -79,8 +79,8 @@ test('the GM grants and fines currency; players see their own notices; the ledge
 
   // A fine for Kim alone; Jake is not told.
   // A send that went through leaves nobody chosen, so it cannot be repeated by accident.
-  await expect(win.getByRole('checkbox', { checked: true })).toHaveCount(0);
-  await win.getByRole('checkbox', { name: /Kim/ }).check();
+  await expect(win.getByRole('button', { pressed: true })).toHaveCount(0);
+  await win.getByRole('button', { name: /^Kim/ }).click();
   await win.getByLabel('Credits each').fill('20');
   await win.getByLabel('Reason (the player sees this)').fill('Broke the canyon bridge');
   await win.getByRole('button', { name: 'Fine' }).click();
@@ -92,7 +92,7 @@ test('the GM grants and fines currency; players see their own notices; the ledge
   await kim.page.screenshot({ path: path.join(shots, 'player-fine-390x844.png') });
 
   // A fine above Kim's balance is refused before anything is sent.
-  await win.getByRole('checkbox', { name: /Kim/ }).check();
+  await win.getByRole('button', { name: /^Kim/ }).click();
   await win.getByLabel('Credits each').fill('31');
   // Enter sends nothing: a grant and a fine each need their button.
   await win.getByLabel('Credits each').press('Enter');
