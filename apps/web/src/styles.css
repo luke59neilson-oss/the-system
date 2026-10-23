@@ -2376,10 +2376,6 @@ ol.change-log li.undone .change-text {
 .currency-fields label:first-child input {
   width: 8em;
 }
-.currency-each {
-  align-self: center;
-  margin-top: 6px;
-}
 .currency-fields {
   border: 0;
   padding: 0;

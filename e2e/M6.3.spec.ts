@@ -65,7 +65,7 @@ test('the GM grants and fines currency; players see their own notices; the ledge
 
   // A grant to everyone, with a reason each player sees.
   await win.getByRole('button', { name: 'Everyone' }).click();
-  await win.getByLabel('Amount').fill('50');
+  await win.getByLabel('Credits each').fill('50');
   await win.getByLabel('Reason (the player sees this)').fill('Bounty on the pale hunter');
   await win.getByRole('button', { name: 'Grant' }).click();
   await expect(win.getByRole('status')).toHaveText('Granted 50 Credits to Jake, Kim');
@@ -81,7 +81,7 @@ test('the GM grants and fines currency; players see their own notices; the ledge
   // A send that went through leaves nobody chosen, so it cannot be repeated by accident.
   await expect(win.getByRole('checkbox', { checked: true })).toHaveCount(0);
   await win.getByRole('checkbox', { name: /Kim/ }).check();
-  await win.getByLabel('Amount').fill('20');
+  await win.getByLabel('Credits each').fill('20');
   await win.getByLabel('Reason (the player sees this)').fill('Broke the canyon bridge');
   await win.getByRole('button', { name: 'Fine' }).click();
   await expect(win.getByRole('status')).toHaveText('Fined Kim 20 Credits');
@@ -93,15 +93,15 @@ test('the GM grants and fines currency; players see their own notices; the ledge
 
   // A fine above Kim's balance is refused before anything is sent.
   await win.getByRole('checkbox', { name: /Kim/ }).check();
-  await win.getByLabel('Amount').fill('31');
+  await win.getByLabel('Credits each').fill('31');
   // Enter sends nothing: a grant and a fine each need their button.
-  await win.getByLabel('Amount').press('Enter');
+  await win.getByLabel('Credits each').press('Enter');
   await expect(win.getByRole('status')).toHaveCount(0);
   await win.getByRole('button', { name: 'Fine' }).click();
   await expect(win.getByRole('alert')).toHaveText('Not enough Credits: Kim has 30');
   await expect(win.getByTestId('currency-balance')).toHaveText(['50 Credits', '30 Credits']);
   // Editing the amount clears the stale refusal.
-  await win.getByLabel('Amount').fill('3');
+  await win.getByLabel('Credits each').fill('3');
   await expect(win.getByRole('alert')).toHaveCount(0);
 
   // The ledger shows every change, newest first, and filters by character.

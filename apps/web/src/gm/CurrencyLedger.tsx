@@ -101,7 +101,7 @@ export function CurrencyLedger({ client, state }: { client: LiveClient; state: C
           </fieldset>
           <fieldset className="currency-fields" disabled={busy}>
             <label>
-              Amount
+              {currency} each
               <input
                 inputMode="numeric"
                 value={amount}
@@ -109,12 +109,8 @@ export function CurrencyLedger({ client, state }: { client: LiveClient; state: C
                   setOutcome(null);
                   setAmount(e.target.value);
                 }}
-                aria-describedby="currency-each"
               />
             </label>
-            <span className="muted currency-each" id="currency-each">
-              {currency} each
-            </span>
             <label>
               Reason (the player sees this)
               <input value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
