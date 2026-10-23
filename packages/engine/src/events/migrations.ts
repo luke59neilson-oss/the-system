@@ -12,7 +12,7 @@ export interface BankedXp {
 /**
  * XP each character holds on a track that is at the grade's top. Under XP
  * overflow (DESIGN §2) a capped track holds nothing, so the `xpOverflow`
- * migration clears these (D153). Characters in id order, class first.
+ * migration applies these again under overflow (D153). Characters in id order, class first.
  */
 export function bankedXp(state: CampaignState): BankedXp[] {
   const out: BankedXp[] = [];

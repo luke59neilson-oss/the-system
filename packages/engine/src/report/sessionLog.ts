@@ -343,12 +343,12 @@ function describe(
     }
     case 'rules.migrated': {
       // MR.3 (L16, D153): logged like any change, with the banked XP it cleared.
-      const cleared = event.payload.cleared.map(
+      const cleared = event.payload.banked.map(
         (x) => `${who(x.characterId)} ${x.xp} ${x.track} XP`,
       );
       add(
         'rules',
-        `Rules updated: XP now overflows (DESIGN §2)${cleared.length ? `; banked XP cleared: ${cleared.join(', ')}` : ''}`,
+        `Rules updated: XP now overflows (DESIGN §2)${cleared.length ? `; banked XP re-applied under overflow: ${cleared.join(', ')}` : ''}`,
       );
       break;
     }

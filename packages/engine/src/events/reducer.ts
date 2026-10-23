@@ -1502,20 +1502,21 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
     case 'campaign.dayAdvanced':
       return { ...state, day: state.day + event.payload.days };
     case 'rules.migrated': {
-      // MR.3 (L16, D153): XP overflow on; banked XP on capped tracks cleared.
+      // MR.3 (L16, D153): XP overflow on; XP banked on a capped track is
+      // applied again under overflow: the other track takes what it can, the
+      // rest is lost, and the capped track holds 0.
       if (state.rules.xp.overflow) fail(event, 'XP overflow is already on');
-      const characters = { ...state.characters };
-      for (const { characterId, track, xp } of event.payload.cleared) {
-        const c = characterOf({ ...state, characters }, event, characterId);
+      const rules = { ...state.rules, xp: { ...state.rules.xp, overflow: true } };
+      let next: CampaignState = { ...state, rules };
+      for (const { characterId, track, xp } of event.payload.banked) {
+        const c = characterOf(next, event, characterId);
         if (c.xp[track] !== xp)
           fail(event, `${characterId} holds ${c.xp[track]} ${track} XP, not ${xp}`);
-        characters[characterId] = { ...c, xp: { ...c.xp, [track]: 0 } };
+        const emptied = { ...c, xp: { ...c.xp, [track]: 0 } };
+        const { character } = rule(event, () => awardXp(rules, emptied, track, xp));
+        next = withCharacter(next, character);
       }
-      return {
-        ...state,
-        rules: { ...state.rules, xp: { ...state.rules.xp, overflow: true } },
-        characters,
-      };
+      return next;
     }
     case 'session.started': {
       const { sessionId } = event.payload;

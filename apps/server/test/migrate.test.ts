@@ -66,7 +66,7 @@ describe('rules migrations on load (MR.3)', () => {
     expect(last?.type).toBe('rules.migrated');
     expect(last?.payload).toEqual({
       migration: 'xpOverflow',
-      cleared: [{ characterId: 'jake', track: 'class', xp: 600 }],
+      banked: [{ characterId: 'jake', track: 'class', xp: 600 }],
     });
     expect(first.state?.rules.xp.overflow).toBe(true);
     expect(first.state?.characters['jake']?.xp.class).toBe(0);

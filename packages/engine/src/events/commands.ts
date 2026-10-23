@@ -1211,7 +1211,7 @@ function toEvent(
       }
       return {
         type: 'rules.migrated',
-        payload: { migration: 'xpOverflow', cleared: bankedXp(state) },
+        payload: { migration: 'xpOverflow', banked: bankedXp(state) },
       };
     }
     case 'session.start':

@@ -516,12 +516,12 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   'campaign.dayAdvanced': z.strictObject({ days: z.number().int().min(1).max(1000) }),
   /**
    * MR.3 (L16): a rules migration applied when a stored campaign loads. The
-   * `xpOverflow` migration turns on `rules.xp.overflow` and clears the XP each
-   * capped track had banked (D153); `cleared` records what went.
+   * `xpOverflow` migration turns on `rules.xp.overflow` and applies the XP each
+   * capped track had banked again under overflow (D153); `banked` lists it.
    */
   'rules.migrated': z.strictObject({
     migration: z.literal('xpOverflow'),
-    cleared: z.array(
+    banked: z.array(
       z.strictObject({
         characterId: z.string(),
         track: z.enum(['class', 'profession']),

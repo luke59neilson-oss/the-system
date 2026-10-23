@@ -76,7 +76,7 @@ describe('XP overflow for every campaign (MR.3)', () => {
     expect(event?.type).toBe('rules.migrated');
     expect(event?.payload).toEqual({
       migration: 'xpOverflow',
-      cleared: [{ characterId: 'jake', track: 'class', xp: 600 }],
+      banked: [{ characterId: 'jake', track: 'class', xp: 600 }],
     });
     const after = result.campaign.state;
     expect(after?.rules.xp.overflow).toBe(true);
@@ -117,5 +117,37 @@ describe('XP overflow for every campaign (MR.3)', () => {
       { ...ctx, actor: { role: 'player', characterId: 'jake' } },
     );
     expect(player.ok).toBe(false);
+  });
+
+  it('cannot be undone', () => {
+    const c = ok(stored(), { type: 'rules.migrate', migration: 'xpOverflow' });
+    const eventId = c.events.at(-1)?.id ?? '';
+    const undo = execute(c, { type: 'event.undo', eventId }, ctx);
+    expect(undo).toMatchObject({ ok: false, error: expect.stringContaining('rules migration') });
+  });
+
+  it('banked class XP flows to a profession that is below the top', () => {
+    const c = stored();
+    const state = c.state;
+    const jake = state?.characters['jake'];
+    if (!state || !jake) throw new Error('no state');
+    // A profession at level 1 (constructed state: professions need E-grade play).
+    const withProfession: Campaign = {
+      ...c,
+      state: {
+        ...state,
+        characters: {
+          ...state.characters,
+          jake: { ...jake, profession: 'Cook', professionLevel: 1 },
+        },
+      },
+    };
+    const after = ok(withProfession, { type: 'rules.migrate', migration: 'xpOverflow' }).state;
+    // 600 at 100 per G level: profession 1 → 4 (300), the other 300 has nowhere to go.
+    expect(after?.characters['jake']).toMatchObject({
+      classLevel: 4,
+      professionLevel: 4,
+      xp: { class: 0, profession: 0 },
+    });
   });
 });
