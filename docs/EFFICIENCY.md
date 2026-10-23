@@ -20,8 +20,7 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
-
-None in trial (D150).
+| One push to main per item, after its review fixes (LOOP §5.4, §6.3; D162) | 2026-10-23 13:05 | Main CI runs/day and red/day down (≈ −30%) | 66 runs/day, 12 red/day | Highs (4/10), round-2 share (5/10), items/run (1.3) | 2026-10-23 ~19:00 (6 runs) |
 
 ## Kept
 
@@ -36,6 +35,10 @@ None in trial (D150).
   and D132's CI red/day guard too (7 → 10), so §9.2 reverts both.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-10-23 12:18 auditor (sonnet): no Tier 2 proposals. Its second Tier 1
+  idea, `npx playwright test --only-changed=origin/main` before each push,
+  waits for a later check (one Tier 1 change per check).
 
 - 2026-10-23 06:10 auditor (sonnet), Q57: (1) hand the reviewer the
   builder's `npm run check`/e2e output and SHA so it re-runs only what it
