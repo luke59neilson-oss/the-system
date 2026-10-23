@@ -11,6 +11,15 @@ const id = z
   .string()
   .regex(/^[a-z][a-zA-Z0-9]*$/, 'must be a camelCase identifier starting with a letter');
 const positiveInt = z.number().int().positive();
+
+/** QF.3 defaults (D136): roomy for a 40-session journal, small enough for every view. */
+export const DEFAULT_LIMITS = {
+  notesPerCharacter: 300,
+  noteCharsPerCharacter: 150_000,
+  openTradesPerCharacter: 10,
+  practiceEntriesPerCharacter: 5_000,
+  practiceEntryChars: 500,
+} as const;
 const nonNegativeInt = z.number().int().nonnegative();
 const fraction = z.number().min(0);
 
@@ -86,6 +95,18 @@ export const rulesConfigSchema = z
     character: z.strictObject({
       /** Race every new character starts as (DESIGN §2: Earth's humans). */
       defaultRace: z.string().min(1),
+      /**
+       * DESIGN §2 (MQ.2, D100): when a pool maximum rises, a full pool stays
+       * full. Rules stored before it read false (D81: a rising maximum never
+       * changes the pool), so older campaigns replay unchanged.
+       */
+      fullPoolsStayFull: z.boolean().default(false),
+      /**
+       * DESIGN §2 (MQ.15, L7): a pool clamped by a falling maximum stays full
+       * only if it was full before the drop, so swapping gear never heals.
+       * Rules stored before it read false (D111's literal reading).
+       */
+      clampedPoolsNotFull: z.boolean().default(false),
     }),
     tracks: z.strictObject({
       /** Grade at whose evolution professions are first offered. */
@@ -99,11 +120,35 @@ export const rulesConfigSchema = z
       /** Bonus per level the enemy is above the character (0.10 = +10%). */
       aboveLevelBonusPerLevel: fraction,
       aboveLevelBonusCap: fraction,
+      /**
+       * XP factor for defeating a target 1, 2, … grades below the character
+       * (MQ.10, DESIGN §5); gaps past the end use the last entry. Empty (stored
+       * campaigns from before MQ.10) means no reduction.
+       */
+      gradeBelowFactors: z.array(fraction.max(1)).max(10).default([]),
+      /**
+       * DESIGN §2 (MQ.11, L3): XP a capped track cannot use goes to the other
+       * track, and is lost when neither can use it. Rules stored before it
+       * read false (XP banks at the grade's top), so older logs replay unchanged.
+       */
+      overflow: z.boolean().default(false),
       defaultSplit: z.literal('even'),
     }),
     bonuses: z.strictObject({
-      /** Cap on the sum of percentage bonuses per stat (0.25 = +25%). */
-      percentCapPerStat: fraction,
+      /** Cap on the sum of percentage bonuses per stat (0.25 = +25%); null = no cap (L8). */
+      percentCapPerStat: fraction.nullable(),
+      /**
+       * DESIGN §4 (MQ.14, L6): the total item bonus on a stat is capped at this
+       * fraction of the stat's base (0.2 = 20%). Rules stored before it read
+       * null (no item cap), so older logs replay unchanged.
+       */
+      itemCapOfBase: fraction.nullable().default(null),
+      /**
+       * DESIGN §4 (MQ.14, L6): items carry flat stat bonuses only; item
+       * definitions with percentages are refused and stored ones count 0%.
+       * Rules stored before it read false.
+       */
+      itemsFlatOnly: z.boolean().default(false),
     }),
     skills: z.strictObject({
       rarities: z.array(raritySchema).min(2),
@@ -114,6 +159,18 @@ export const rulesConfigSchema = z
       /** Marks needed to upgrade FROM the keyed rarity to the next one. */
       markUpgrades: z.record(z.string(), positiveInt),
       maxMarksPerSkillPerSession: positiveInt,
+      /**
+       * DESIGN §6 (MQ.4, D101, D113, D114): marks beyond an upgrade's cost carry into the
+       * next rarity. Rules stored before it read false (marks reset to 0), so
+       * older campaigns replay unchanged.
+       */
+      marksCarryOver: z.boolean().default(false),
+      /**
+       * DESIGN §6 skill library (MQ.12, L4): entries keyed by name and rarity;
+       * library text follows to every copy the GM has not edited. Rules stored
+       * before it read false (name-only fill of empty text, D90).
+       */
+      libraryByRarity: z.boolean().default(false),
       merge: z.strictObject({
         requiredJointUses: positiveInt,
         minRarity: id,
@@ -126,10 +183,17 @@ export const rulesConfigSchema = z
       selectionAlertWithinLevels: positiveInt,
     }),
     resolution: z.strictObject({
-      gradeGapMode: z.enum(['none', 'multiplier', 'lowerGradeFraction']),
-      /** Stat factor for the lower-grade side in "lowerGradeFraction" mode (⅓). */
+      gradeGapMode: z.enum(['none', 'multiplier', 'lowerGradeFraction', 'gradeWalls']),
+      /** Stat (and, in "gradeWalls", damage) factor for a side one grade lower (⅓). */
       lowerGradeFraction: z.number().positive().max(1),
     }),
+    /**
+     * DESIGN §7 Identify range (MQ.8, D107): a same-grade target is
+     * identifiable only up to this many times the viewer's race level.
+     */
+    identify: z
+      .strictObject({ sameGradeLevelRatio: z.number().positive().max(100) })
+      .default({ sameGradeLevelRatio: 1.5 }),
     montage: z.strictObject({
       /** Clock fill fraction needed before a montage is offered. */
       minClockFill: z.number().min(0).max(1),
@@ -152,6 +216,27 @@ export const rulesConfigSchema = z
     logging: z.strictObject({
       autosaveMinutes: positiveInt,
     }),
+    /**
+     * Caps on what one character can create (QF.3), so one phone cannot fill
+     * every client's view. Checked on commands, never on replay, so stored
+     * logs replay unchanged; rules stored before QF.3 read the defaults.
+     */
+    limits: z
+      .strictObject({
+        /** Notes a character has written (journal and party). */
+        notesPerCharacter: positiveInt.default(DEFAULT_LIMITS.notesPerCharacter),
+        /** Characters across those notes' titles, bodies and tags. */
+        noteCharsPerCharacter: positiveInt.default(DEFAULT_LIMITS.noteCharsPerCharacter),
+        /** Trades a character has proposed that are still open. */
+        openTradesPerCharacter: positiveInt.default(DEFAULT_LIMITS.openTradesPerCharacter),
+        /** Practice entries a player may log for their character (the GM is not capped). */
+        practiceEntriesPerCharacter: positiveInt.default(
+          DEFAULT_LIMITS.practiceEntriesPerCharacter,
+        ),
+        /** Characters in one player-logged practice entry (action, skills and tags). */
+        practiceEntryChars: positiveInt.default(DEFAULT_LIMITS.practiceEntryChars),
+      })
+      .default(DEFAULT_LIMITS),
   })
   .superRefine((config, ctx) => {
     const issue = (path: (string | number)[], message: string): void => {

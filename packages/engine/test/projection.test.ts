@@ -14,7 +14,15 @@ import {
   type CampaignState,
   type Command,
 } from '../src';
-import { kit, randomCommand, rawRules, run, seededRandom, testContext } from './helpers/events';
+import {
+  kit,
+  legacyBonusRules,
+  randomCommand,
+  rawRules,
+  run,
+  seededRandom,
+  testContext,
+} from './helpers/events';
 
 const RULES = defaultRules();
 const created: Command = { type: 'campaign.create', name: 'Whale', rules: rawRules() };
@@ -84,6 +92,7 @@ describe('player projection', () => {
     expect(view.me.skills).toEqual(
       jake?.skills.map((s) => ({
         ...s,
+        effects: null,
         marksNeeded: s.rarity === 'inferior' ? 3 : 4,
         nextRarity: s.rarity === 'inferior' ? 'common' : 'uncommon',
         atCeiling: false,
@@ -92,10 +101,11 @@ describe('player projection', () => {
     expect(view.me.freePointBatches).toEqual(jake?.freePointBatches);
     expect(view.me.classLevel).toBe(3);
     expect(view.me.raceLevel).toBe(3);
+    // Full pools stay full as level-ups raise the maxima (MQ.2, D100).
     expect(view.me.pools).toEqual([
-      { id: 'hp', current: 100, max: 110 },
-      { id: 'mp', current: 100, max: 110 },
-      { id: 'stamina', current: 100, max: 120 },
+      { id: 'hp', current: 110, max: 110 },
+      { id: 'mp', current: 110, max: 110 },
+      { id: 'stamina', current: 120, max: 120 },
     ]);
   });
 
@@ -134,6 +144,7 @@ describe('player projection', () => {
     expect(Object.keys(view).sort()).toEqual([
       'campaignName',
       'day',
+      'hiddenQuests',
       'identify',
       'inventory',
       'me',
@@ -150,8 +161,10 @@ describe('player projection', () => {
 
   it('classifies every character and campaign field', () => {
     const state = party();
+    // Optional fields appear only when set (MQ.15's clamped-pool marks).
+    const optional = ['clampedPools'];
     expect(Object.keys(CHARACTER_FIELD_VISIBILITY).sort()).toEqual(
-      Object.keys(state.characters.jake ?? {}).sort(),
+      [...Object.keys(state.characters.jake ?? {}), ...optional].sort(),
     );
     expect(Object.keys(CAMPAIGN_FIELD_VISIBILITY).sort()).toEqual(Object.keys(state).sort());
     const view = projectForPlayer(state, 'jake');
@@ -164,9 +177,10 @@ describe('player projection', () => {
     const ownFields = Object.entries(CHARACTER_FIELD_VISIBILITY)
       .filter(([, v]) => v !== 'gm')
       .map(([k]) => k);
-    // Derived: race level and effective stats (base + equipped items, D81).
+    // Derived: race level, effective stats (base + equipped items, D81) and
+    // the count of earned selections still to choose (MQ.1, D103).
     expect(Object.keys(view.me).sort()).toEqual(
-      [...ownFields, 'raceLevel', 'effectiveStats'].sort(),
+      [...ownFields, 'raceLevel', 'effectiveStats', 'itemCappedStats', 'selectionsDue'].sort(),
     );
   });
 
@@ -176,10 +190,13 @@ describe('player projection', () => {
       'currencyName',
       'equipmentSlots',
       'grades',
+      'marks',
       'pools',
       'rarities',
       'stats',
     ]);
+    // Mark costs are already on each owned skill (marksNeeded); nothing else rides along.
+    expect(Object.keys(rules.marks).sort()).toEqual(['carryOver', 'order', 'upgrades']);
     const json = JSON.stringify(rules);
     for (const hidden of ['stability', 'evolutionGate', 'multiplier', 'gradeGapMultiplier'])
       expect(json).not.toContain(hidden);
@@ -410,6 +427,7 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
             description: '',
             transforms: [],
             classWeights: null,
+            statBonus: { strength: 5 },
           },
         ],
       };
@@ -480,14 +498,46 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
       }),
     );
     const first = ids[0] ?? null;
+    const second = ids[1] ?? null;
     const tradeCurrency = sentinel();
     if (first !== null) owner.get(first)?.numbers.push(tradeCurrency);
+    // QF.2: trades carry item bundles. The first character holds a swap item
+    // and offers it to the GM and to the second character; both parties see
+    // its definition (checked below), nobody else does, and the GM-only
+    // `secret` item (held by no one, in no trade) reaches no player.
+    (econ.items as Record<string, unknown>).swap = {
+      id: 'swap',
+      name: 'TRADE-swap',
+      rarity: 'rare',
+      description: 'TRADE-swapdesc',
+      slot: null,
+      bonuses: [],
+      gmNote: `${GM}-swapnote`,
+    };
+    if (first !== null) {
+      const h = (econ.holdings as Record<string, { inventory: Record<string, number> }>)[first];
+      if (h) h.inventory.swap = 1;
+    }
     econ.trades = {
+      ...(second !== null
+        ? {
+            t2: {
+              id: 't2',
+              from: first,
+              to: second,
+              give: { currency: 0, items: { swap: 1 } },
+              get: { currency: 0, items: {} },
+              status: 'open',
+              proposedAt: '2026-10-21T12:00:00.000Z',
+              closedAt: null,
+            },
+          }
+        : {}),
       t: {
         id: 't',
         from: first,
         to: null,
-        give: { currency: tradeCurrency, items: {} },
+        give: { currency: tradeCurrency, items: { swap: 1 } },
         get: { currency: 0, items: {} },
         status: 'open',
         proposedAt: '2026-10-21T12:00:00.000Z',
@@ -495,7 +545,7 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         gmNote: `${GM}-trade`,
       },
     };
-    econ.tradeOrder = ['t', `${GM}-tradeorder`];
+    econ.tradeOrder = [...(second !== null ? ['t2'] : []), 't', `${GM}-tradeorder`];
     // Practice (M3.11): own entries only, without tags or unknown keys.
     econ.practice = ids.map((id) => {
       owner.get(id)?.strings.push(`OWNER-${id}-practice`);
@@ -591,6 +641,8 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         days: gmNum(),
         startDay: 1,
         stability: { value: gmNum(), visible: true, rules: { [`${GM}-tag`]: gmNum() } },
+        // MQ.7: the notice list names who is told; players get only a count.
+        noticeTo: [...ids, `${GM}-noticeto`],
       },
       shown: {
         id: 'shown',
@@ -616,6 +668,8 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         tiers: [{ minRarity: 'inferior', text: `${GM}-entity-tier` }],
         knownBy: [],
         createdAt: '2026-10-21T12:00:00.000Z',
+        grade: null,
+        level: null,
       },
     };
     for (const id of ids) {
@@ -631,10 +685,28 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         knownBy: [id],
         createdAt: '2026-10-21T12:00:00.000Z',
         gmNote: `${GM}-entity`,
+        grade: null,
+        level: null,
+      };
+      // MQ.8: a known target of the top grade is out of range: label only.
+      owner.get(id)?.strings.push(`OWNER-${id}-far`);
+      entities[`far-${id}`] = {
+        id: `far-${id}`,
+        name: `${GM}-far-name`,
+        label: `OWNER-${id}-far`,
+        tiers: [{ minRarity: 'inferior', text: `${GM}-far-tier` }],
+        knownBy: [id],
+        createdAt: '2026-10-21T12:00:00.000Z',
+        grade: s.rules.grades.at(-1)?.id ?? 'A',
+        level: gmNum(),
       };
     }
     econ.entities = entities;
-    econ.entityOrder = ['hidden', ...ids.map((id) => `e-${id}`), `${GM}-entityorder`];
+    econ.entityOrder = [
+      'hidden',
+      ...ids.flatMap((id) => [`e-${id}`, `far-${id}`]),
+      `${GM}-entityorder`,
+    ];
     return { state: s, owner, gm };
   }
 
@@ -661,6 +733,14 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         const nums = numbersIn(json);
         projections++;
         if (json.includes(GM)) problems.push(`${viewer}: GM canary leaked`);
+        // QF.2: an item in a trade reaches exactly the trade's parties.
+        const party = viewer === state.characterOrder[0] || viewer === state.characterOrder[1];
+        for (const field of ['TRADE-swap', 'TRADE-swapdesc']) {
+          if (json.includes(field) !== party)
+            problems.push(`${viewer}: ${field} expected=${party}`);
+        }
+        // MQ.7: the hidden quest reaches each player as a bare count.
+        if (!json.includes('"hiddenQuests":1')) problems.push(`${viewer}: hidden-quest count`);
         // Non-vacuous: party notes reach every player, in full.
         for (const part of ['title', 'body', 'tag']) {
           if (!json.includes(`PARTY-note-${part}`))
@@ -694,7 +774,8 @@ describe('effective stats on the player sheet (M3.7, D81)', () => {
   it('shows effective stats and pool maxima; party bars use the same maxima', () => {
     const c = run(
       [
-        { type: 'campaign.create', name: 'Eff', rules: rawRules() },
+        // M1.6 bonus rules: +10 on base 10 would pass MQ.14's item cap.
+        { type: 'campaign.create', name: 'Eff', rules: legacyBonusRules() },
         {
           type: 'character.create',
           id: 'jake',
@@ -712,6 +793,8 @@ describe('effective stats on the player sheet (M3.7, D81)', () => {
           bonuses: [{ stat: 'vitality', flat: 10 }],
         },
         { type: 'gift.give', characterId: null, to: 'jake', items: { amulet: 1 } },
+        // Not full, so the rising maximum leaves it as it is (MQ.2, D100).
+        { type: 'character.setPools', characterId: 'jake', pools: { hp: 90 } },
         { type: 'item.equip', characterId: 'jake', itemId: 'amulet', slot: 'necklace' },
       ],
       testContext('eff'),
@@ -720,8 +803,8 @@ describe('effective stats on the player sheet (M3.7, D81)', () => {
     const me = projectForPlayer(state, 'jake').me;
     expect(me.stats['vitality']).toBe(10);
     expect(me.effectiveStats['vitality']).toBe(20);
-    expect(me.pools.find((p) => p.id === 'hp')).toEqual({ id: 'hp', current: 100, max: 200 });
+    expect(me.pools.find((p) => p.id === 'hp')).toEqual({ id: 'hp', current: 90, max: 200 });
     const bar = projectForPlayer(state, 'kim').party.find((m) => m.id === 'jake');
-    expect(bar?.pools.find((p) => p.id === 'hp')?.percent).toBe(50);
+    expect(bar?.pools.find((p) => p.id === 'hp')?.percent).toBe(45);
   });
 });

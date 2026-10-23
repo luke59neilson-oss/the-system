@@ -27,8 +27,10 @@ October 2026.
 - **Pools when maxima change:** if a maximum rises (level, item, title,
   evolution bonus), a **full pool stays full**; any other pool keeps its
   current value. Level-ups never refill pools. If a maximum falls, the
-  current value clamps to it. (Example: 85/100 HP equips +20 → 85/120;
-  100/100 HP equips +20 → 120/120.)
+  current value clamps to it, and the pool stays full only if it was full
+  before the drop (Luke, Q41: no healing by swapping gear). Examples: 85/100
+  HP equips +20 → 85/120; 100/100 → 120/120; 110/120 removes a +20 charm →
+  100/100, puts it back on → 100/120; 120/120 → 100/100 → 120/120.
 - **Tracks:** Class level, Profession level, Race level.
   - Race level = average of class and profession levels (rounded down).
   - Before a character has a profession, race level = class level.
@@ -37,19 +39,26 @@ October 2026.
     what they have done (practice log). The player picks one or chooses
     "none for now"; offered professions stay listed in a Professions tab and
     can be taken later, until one is chosen and the list locks (greyed out).
-    A profession starts at the character's class level when taken (timing
-    with banked XP: see QUESTIONS Q24).
+    While a character has none, the GM may add offers at any later evolution
+    (Q46). A profession starts at the character's class level when taken.
   - **Class levels** grant the class spread; **race levels** grant free
     points; **profession levels** grant no stats directly (they raise race
     level and add profession skill options).
   - **Grade** is the highest grade the character has evolved into. Class and
     profession levels cannot pass the top level of the current grade
-    (4, 14, 49, 99, 149, 199, 240); extra XP banks.
+    (4, 14, 49, 99, 149, 199, 240).
+  - **No banked XP; XP overflows.** XP for a track that is at the grade's top
+    goes to the other track instead (class XP levels the profession, and
+    profession XP levels the class), so whatever isn't ready yet catches up.
+    This applies to every campaign, including ones created before the rule
+    (Q49).
+    When both tracks are at the top (or the class is at the top and there is
+    no profession), the XP has nowhere to go and is lost; the GM's XP preview
+    says so before the award is confirmed.
   - **Evolution becomes available** when race level reaches the top of the
     current grade (config `evolutionGate: "race"`, Luke confirmed) **and no
     skill selection is pending**: every selection a character has earned must
-    be chosen first. The GM releases it, the player chooses, and banked XP then
-    applies at the new grade.
+    be chosen first. The GM releases it and the player chooses.
   - **Evolution refills HP, MP and Stamina** and grants a **one-time stat
     bonus** that the GM, as the System, sets for each evolution option (any
     mix of stats, or +N to all).
@@ -61,8 +70,9 @@ October 2026.
 ## 3. Grades and pacing
 
 Pacing target: ~6 race levels per session (range 4–8), 40-session campaign.
-Evolutions are **held** at each threshold until the GM releases them; XP keeps
-banking but levels don't advance past the cap until the evolution is done.
+Evolutions are **held** at each threshold until the GM releases them. Nothing
+banks while they wait: XP overflows to the track that isn't capped yet, and is
+lost once both are (§2).
 
 | Grade | Race levels | Reached by session | Selection interval | Capstone level | Rarity ceiling | Theme |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -101,9 +111,18 @@ blue-white tint and a heavier brushed texture so the change is visible.
   override.
 - Each evolution may reshape the class spread toward stats the character used
   (GM chooses, guided by the practice log).
-- Percentage bonuses are capped (default cap +25% per stat, configurable).
-  Luke wants a cap on stats gained from items too; the cap is still being
-  settled (QUESTIONS Q15).
+- **Bonuses (Luke, 2026-10-22):**
+  - **Titles** give a set percentage bonus (the GM sets it per title; a title
+    may also give flat stats). Characters can earn many.
+  - **Items** give flat stat bonuses only, never percentages. The total item
+    bonus on a stat is capped at **20% of that stat's base value**; anything
+    above the cap is ignored and shown as capped.
+  - **All percentages are additive**, never compounding: they are summed, then
+    applied once. Effective stat = (base + capped item bonus) × (1 + sum of
+    title percentages). Example: base Vitality 100, items +30 (capped to +20),
+    titles +10% and +5% → (100 + 20) × 1.15 = 138.
+  - **No cap on title percentages** (Luke, Q42): titles are rare and hard
+    to earn. The config may still set one, but the default is none.
 - Check values (all tracks leveling together, starting total 90):
   total stats = 194 at level 14, 614 at level 49, 1,514 at 99, 2,864 at 149,
   4,864 at 199, **7,324 at 240**.
@@ -117,9 +136,12 @@ blue-white tint and a heavier brushed texture so the change is visible.
   profession acts. Race level is derived.
 - Optional bonus for defeating enemies above the character's level
   (default +10% per level of difference, capped at +100%).
-- XP needed per level (default, by grade, **under review**: Luke finds it too
-  low and too flat; see QUESTIONS Q4): G 100, F 150, E 250, D 400,
-  C 650, B 1,000, A 1,500. The app shows the GM a "typical session ≈ 6 levels"
+- XP needed per level triples each grade (the books' ×3): G 100, F 300,
+  E 900, D 2,700, C 8,100, B 24,300, A 72,900. The GM ramps awards to match;
+  the "typical session ≈ 6 levels" helper shows the amount for each grade.
+- **XP across grades:** defeating something one grade below the character
+  gives ⅓ of the award; two or more grades below gives **0 XP** (no farming
+  weaker grades). The app shows the GM a "typical session ≈ 6 levels"
   helper.
 
 ## 6. Skills
@@ -140,8 +162,23 @@ blue-white tint and a heavier brushed texture so the change is visible.
   minimum 0). When two compatible skills have been used together often enough
   (the merge alert), the evolution builder prompts the GM to offer that merge
   as part of the evolution.
+- **Evolutions re-rate skills (Luke, Q43).** What was Rare at D-grade is not
+  Rare at C-grade, so at each evolution every skill drops one rarity by
+  default (never below Inferior), and the GM raises, keeps or lowers each one
+  in the evolution builder before releasing it (a raise stays within the new
+  grade's ceiling). The skill's text and effects do not change (same power,
+  lower label), and it keeps all its marks, so a well-practised skill may
+  climb straight back with its next upgrade (after which it starts at 0).
 - **Skill names:** the System gives the official name; the player may add a
   nickname ("Jake Juice"). Show both.
+- **Skill library (Luke, Q37):** one entry per skill name **and rarity**, so an
+  upgrade picks up the higher rarity's text automatically. Editing a library
+  entry updates every character's copy the GM has not personally edited. A
+  copy the GM has hand-written keeps its text through library edits and
+  upgrades until the GM presses **Use library text** (Q50, Q51). A downgrade
+  at evolution never changes a copy's text. A
+  skill's **effects** text is shown to its owner (never to other players), like
+  the books' skill descriptions.
 
 ### Mastery marks (upgrades outside selections)
 
@@ -160,8 +197,11 @@ turning point). GM confirms marks in the end-of-session review.
 
 - Max one mark per skill per session (a montage focus counts as that mark).
 - A skill at its grade's rarity ceiling banks marks until the next evolution.
-- After an upgrade, marks beyond the threshold **carry into the next
-  rarity** (they are player effort; Luke's call).
+- **Every upgrade starts at 0 marks** (Luke, 2026-10-22): an upgraded skill
+  is new to the character, so there is no familiarity to carry. That covers
+  an upgrade by marks (extra marks beyond the threshold are not kept) and
+  any evolution transform. Only a skill that drops a rarity at evolution
+  keeps its marks: it is the same skill with a lower label.
 
 ### Merges
 
@@ -172,35 +212,59 @@ turning point). GM confirms marks in the end-of-session review.
 
 ## 7. Play tools
 
-- **Resolution (proposed):** ratio odds, chance = yours ÷ (yours + theirs).
-  The app rolls and shows results. Grade-gap handling is an open decision, so
-  support three modes in config: none; grade bonus multiplier per 10 points
-  (G×1, F×3, E×5, D×10, C×20, B×40, A×80); lower-grade side × ⅓ **per
-  grade step** (one grade apart ×⅓, two apart ×1/9, and so on). Default mode:
-  none (pure ratio odds), switchable in settings.
+- **Resolution:** ratio odds, chance = yours ÷ (yours + theirs). The app
+  rolls and shows results.
+- **Grade walls (default mode, Luke 2026-10-22).** A higher grade is a
+  different order of being.
+  - **Same grade:** plain ratio odds.
+  - **One grade apart:** the lower side's stat counts ×⅓ in the roll, and its
+    hits deal ⅓ damage. Only a strong late-stage lower grade against a weak,
+    barely evolved higher grade has a real chance.
+  - **Two or more grades apart:** no roll. The higher grade succeeds, and the
+    lower grade's attacks deal no damage.
+  - **No strength in numbers across grades:** lower-grade characters cannot
+    pool their power against a higher grade; each acts alone, and anything
+    two or more grades below cannot touch it at all. A thousand G-grades are
+    nothing to an A-grade.
+  - **A fight against a higher grade is a clock, never one roll.** With ⅓,
+    a peak E against a fresh D wins about 24% of single rolls but about 10% of
+    a best-of-five fight; a mid-E against a mid-D about 2%.
+  - Other modes stay available in settings: none (pure ratio odds); grade
+    multiplier per 10 points (G×1, F×3, E×5, D×10, C×20, B×40, A×80).
 - **Progress clocks** with N segments. **Montage:** available when a clock is
   half filled with no failures; player gives a one-line focus (saved to the
   practice log); GM narrates the rest and adds one cost.
 - **Practice log:** quick-add (character, action, skill/stat), end-of-scene
   prompt, end-of-session review (repeats flagged, skill pairs counted, marks
   confirmed), selection alert (within 5 levels), merge alert.
-- **Titles:** flat and/or percentage stat bonuses, awarded by GM, shown to the
-  player with System-style text.
+- **Titles:** percentage stat bonuses (optionally flat stats too), awarded by
+  the GM, shown to the player with System-style text. Rules in §4.
 - **Identify:** entities carry descriptions per minimum Identify rarity; the
   player sees the best tier their Identify rarity unlocks. **Who can be
   identified:** anything of a lower grade always; nothing of a higher grade;
   the same grade only if its level is at most 1.5 × the viewer's level.
-  Otherwise Identify shows `[??? – lvl ???]`.
+  Otherwise Identify shows `[??? – lvl ???]`. The viewer's level is their
+  race level; targets without a grade and level (a place, an energy) are
+  always in range; a known target out of range keeps its name in the
+  Identify list with `[??? – lvl ???]` instead of its text (Q48). So a
+  level-0 character identifies nothing of its own grade above level 0 until
+  its first level-up (Q52).
 - **Quests:** text, timer/day counter, and an optional **World Stability %**
   (starts at 100) with GM-defined rules (action tags → deltas) and a
   visible/hidden toggle. **Hidden quests:** when one exists, the affected
   players get a System notice that a hidden quest exists and can be
-  triggered, with no details.
+  triggered, with no details: the whole party, unless the GM names
+  characters; the notice appears again if the quest is hidden again or
+  reopened (Q47).
 - **Hunger tracker** (tutorial): optional per campaign; fades at E-grade.
-- **Items:** rarity, description, effects; equipment slots (Zogarth's 10):
+- **Items:** rarity, description, effects (flat stat bonuses only, capped per
+  §4); equipment slots (Zogarth's 10):
   2 rings, necklace, chest, legs, boots, bracers, mask, cloak, gloves; plus
   weapon slots (main hand, off hand). Inventory, a configurable currency, and
-  giving/trading between players and the GM.
+  giving/trading between players and the GM. A player's trade with the GM
+  asks only for currency (the GM offers items from the GM side); between
+  players a proposal may ask for any item and reveals nothing about what the
+  other player holds (Q44, Q45).
 - **Notes:** player private journal, party shared notes, GM private notes;
   tags linking notes to characters, NPCs, regions, quests; search. The GM
   cannot read a private journal entry unless the player marks it shareable.
@@ -245,6 +309,28 @@ Race Skills: [Identify (Common)]
 - Supported viewports: 1366×768 and 1920×1080 laptops; 390×844 phones must
   remain usable (single column).
 - Theme check: silver and platinum accent colors differ by at least ΔE 10.
+
+## 10. Starting classes (the books' six; Luke 2026-10-22)
+
+Every class gets the same budget (§4); the books' per-level stat lines become
+the class weights. Each starts with two Inferior proficiencies and one Common
+signature skill. Archer's three are the books' own; Healer's are from the fan
+wiki; the Warriors' and Caster's are originals in the same style. Write
+original description and flavour text for every skill.
+
+| Class | Weights (from the books' per-level lines) | Starting skills |
+| --- | --- | --- |
+| Warrior (Light) | Agi 2, End 1, Str 1, Vit 1 | Basic Light Weapons (Inferior): rapiers, daggers, hatchets, thrown weapons · Basic Footwork (Inferior): dodging and evasion · Swift Strike (Common): a fast strike that is hard to read |
+| Warrior (Medium) | Agi 1, End 1, Vit 1, Str 1, Tough 1 | Basic Weapons (Inferior): most light and heavy weapons · Basic Guard (Inferior): parrying and blocking · Measured Blow (Common): a balanced strike that exploits an opening |
+| Warrior (Heavy) | Str 2, Tough 1, Vit 1, End 1 | Basic Heavy Weapons (Inferior): two-handed weapons and weapon-and-shield · Basic Shield (Inferior) · Brace (Common): plant your feet to absorb a blow or hold a line |
+| Archer | Per 2, Agi 1, End 1, Str 1 | Basic Archery (Inferior) · Basic One-Handed Weapon (Inferior) · Archer's Eye (Common) |
+| Caster | Int 2, Wis 1, Will 1, Per 1 | Basic Catalyst Proficiency (Inferior): staves, idols, relics, wands · Mana Bolt (Inferior) · Mana Sense (Common): feel mana and spellwork nearby |
+| Healer | Will 2, Wis 2, Int 1 | Basic Magic-Tool Proficiency (Inferior) · Heal (Inferior) · Regenerate (Common) |
+
+Short GM-facing descriptions, paraphrased: Light: speed, evasion, finesse.
+Medium: balanced, wide weapon range. Heavy: power and survivability, few
+ranged options. Archer: ranged, fast and flexible. Caster: non-attuned magic,
+wide but limited, fragile. Healer: mends, cleanses and supports; weak alone.
 
 ## 8. Tutorial (first content pack)
 

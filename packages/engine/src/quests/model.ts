@@ -32,6 +32,25 @@ export interface Quest {
   readonly startDay: number;
   readonly stability: Stability | null;
   readonly createdAt: string;
+  /**
+   * Who gets the hidden-quest notice while the quest is hidden and active
+   * (MQ.7, DESIGN §7): character ids, or null for every character. GM-only.
+   */
+  readonly noticeTo: readonly string[] | null;
+}
+
+/**
+ * Characters told that this quest exists (MQ.7): while it is hidden and
+ * active, its `noticeTo` (or every character); otherwise nobody.
+ */
+export function hiddenQuestNoticed(
+  quest: Quest,
+  characterOrder: readonly string[],
+): readonly string[] {
+  if (quest.visible || quest.status !== 'active') return [];
+  return quest.noticeTo === null
+    ? characterOrder
+    : characterOrder.filter((id) => quest.noticeTo?.includes(id));
 }
 
 /** Clamps a stability value to the configured range. */

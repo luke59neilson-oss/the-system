@@ -2,7 +2,7 @@ import type { PendingEvolution, SelectionRecord } from '../evolution/model';
 import type { GradeRules, RulesConfig } from '../rules';
 
 /** Bumped when the serialized character shape changes; M1.3 upcasts old states. */
-export const CHARACTER_SCHEMA_VERSION = 6;
+export const CHARACTER_SCHEMA_VERSION = 7;
 
 /** Skill as held by a character (the full skill system arrives in M1.9). */
 export interface CharacterSkill {
@@ -20,6 +20,11 @@ export interface CharacterSkill {
   readonly description: string | null;
   /** Flavour text shown under the description (M3.5); null for none. */
   readonly flavor: string | null;
+  /**
+   * The GM wrote this copy's text by hand (MQ.12): library edits no longer
+   * reach it. Absent = false, so stored states keep their shape.
+   */
+  readonly textEdited?: true;
 }
 
 /** One level-up's free points (DESIGN §4): assigned once, then locked (M1.5). */
@@ -39,6 +44,11 @@ export interface Character {
   readonly className: string;
   /** null until the profession unlock at the E-grade evolution. */
   readonly profession: string | null;
+  /**
+   * Professions the GM has offered this character (MQ.6, DESIGN §2), in offer
+   * order. They stay listed after one is taken; the list then locks.
+   */
+  readonly professionOffers: readonly string[];
   readonly classLevel: number;
   readonly professionLevel: number;
   /** Id of the highest grade evolved into (ids survive grade inserts; DESIGN §3). */
@@ -67,6 +77,12 @@ export interface Character {
    * beside the campaign, or null for the monogram (M4.4).
    */
   readonly portrait: string | null;
+  /**
+   * MQ.15 (L7): pool ids a falling maximum clamped while they were not full.
+   * Such a pool is at its maximum but does not count as full, so a rising
+   * maximum leaves it where it is. Absent when empty (older states unchanged).
+   */
+  readonly clampedPools?: readonly string[];
 }
 
 /** A stored portrait: the SHA-256 of the image bytes and its extension (M4.4). */
@@ -198,6 +214,7 @@ export function createCharacter(rules: RulesConfig, input: NewCharacter): Charac
     race: input.race === undefined ? rules.character.defaultRace : required(input.race, 'Race'),
     className,
     profession: null,
+    professionOffers: [],
     classLevel: 0,
     professionLevel: 0,
     grade: firstGrade.id,
@@ -318,4 +335,25 @@ export function grantProfession(
     professionLevel: character.classLevel,
     xp: { ...character.xp, profession: 0 },
   };
+}
+
+/**
+ * The player takes one of their offered professions later (MQ.6, DESIGN §2):
+ * only a profession the GM offered, only while the character has none. It
+ * starts at the current class level like any granted profession.
+ */
+export function takeOfferedProfession(
+  rules: RulesConfig,
+  character: Character,
+  profession: string,
+): Character {
+  if (character.profession !== null) {
+    throw new CharacterRuleError(
+      `${character.name} already has the profession [${character.profession}]`,
+    );
+  }
+  if (!character.professionOffers.includes(profession)) {
+    throw new CharacterRuleError(`"${profession}" is not one of your offered professions`);
+  }
+  return grantProfession(rules, character, profession);
 }

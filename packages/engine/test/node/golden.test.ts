@@ -2,6 +2,13 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  currentSchemaVersion,
+  readGoldens,
+  readManifest,
+  verify,
+} from '../../../../scripts/golden-manifest.mjs';
+import {
+  CAMPAIGN_STATE_SCHEMA_VERSION,
   EVENT_TYPES,
   appendEvent,
   emptyCampaign,
@@ -13,7 +20,8 @@ import {
 
 /**
  * Lives in test/node (typechecked with Node types, not the engine's pure
- * config) because it reads files. Golden event logs are committed and never regenerated: they prove that logs
+ * config) because it reads files. Golden event logs are committed, never regenerated, and pinned
+ * by `manifest.json` (QF.4, `npm run golden:record`): they prove that logs
  * written by older builds still replay to the same state. When an event
  * payload changes, bump its schemaVersion and add an upcaster; do not edit
  * these files.
@@ -27,6 +35,11 @@ const NOT_YET_REACHABLE: Partial<Record<EventType, string>> = {};
 describe('golden event logs', () => {
   it('exist', () => {
     expect(logs.length).toBeGreaterThan(0);
+  });
+
+  it('are pinned by the manifest (QF.4): logs never change, states only with a schema bump', () => {
+    expect(currentSchemaVersion()).toBe(CAMPAIGN_STATE_SCHEMA_VERSION);
+    expect(verify(readGoldens(), readManifest(), CAMPAIGN_STATE_SCHEMA_VERSION)).toEqual([]);
   });
 
   it.each(logs)('%s replays to its committed state', (file) => {

@@ -50,6 +50,20 @@ describe('notification history (M3.3)', () => {
     expect(seqs('broadcast')).toEqual(['broadcast5']);
   });
 
+  it('an acquired profession counts as a DING and under Profession (MQ.6)', () => {
+    const acquired: SeqNotification = {
+      seq: 9,
+      at,
+      day: 5,
+      notification: { kind: 'profession', characterId: 'j', name: 'Cook', level: 14 },
+    };
+    const kinds = (f: Parameters<typeof filterHistory>[1]) =>
+      filterHistory([...items, acquired], f, '').map((n) => n.notification.kind + n.seq);
+    expect(kinds('dings')[0]).toBe('profession9');
+    expect(kinds('profession')).toEqual(['profession9', 'level7']);
+    expect(kinds('class')).toEqual(['level2']);
+  });
+
   it('searches the book text and the day, ignoring case', () => {
     expect(filterHistory(items, 'all', 'ARCHER').map((n) => n.seq)).toEqual([2]);
     expect(filterHistory(items, 'all', '  dawns ').map((n) => n.seq)).toEqual([5]);

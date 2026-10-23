@@ -1,17 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_RULES,
+  ITEM_NOT_AVAILABLE,
   characterEffectiveStats,
   effectiveStats,
   execute,
   holdingsOf,
+  projectForPlayer,
   type Campaign,
   type Command,
   type CommandContext,
 } from '../src';
-import { kit, rawRules, run, testContext } from './helpers/events';
+import { kit, legacyBonusRules, rawRules, run, testContext } from './helpers/events';
 
-const created: Command = { type: 'campaign.create', name: 'Whale', rules: rawRules() };
+// These tests use the M1.6 bonus rules (item percentages, +25% cap); MQ.14's
+// flat-only, item-capped defaults are tested in 'bonus rules (MQ.14)' below.
+const created: Command = { type: 'campaign.create', name: 'Whale', rules: legacyBonusRules() };
 const make = (id: string, name: string): Command => ({
   type: 'character.create',
   id,
@@ -223,7 +227,7 @@ describe('gifts', () => {
         { type: 'gift.give', characterId: 'jake', to: 'kim', currency: 10, items: { bow: 1 } },
         player('jake'),
       ),
-    ).toContain('Not enough [Bow]');
+    ).toBe(ITEM_NOT_AVAILABLE);
     expect(held(c, 'jake').currency).toBe(100);
     expect(reject(c, { type: 'gift.give', characterId: 'jake', to: 'kim' })).toContain(
       'needs currency or items',
@@ -251,7 +255,7 @@ describe('gifts', () => {
     c = ok(c, { type: 'item.equip', characterId: 'kim', itemId: 'bow', slot: 'mainHand' });
     expect(
       reject(c, { type: 'gift.give', characterId: 'kim', to: 'jake', items: { bow: 1 } }),
-    ).toContain('Not enough [Bow]');
+    ).toBe(ITEM_NOT_AVAILABLE);
   });
 
   it('an undo that a later transfer depends on is refused', () => {
@@ -332,12 +336,32 @@ describe('equipment', () => {
     [{ itemId: 'ring', slot: 'necklace' }, 'goes in a ring slot'],
     [{ itemId: 'ring', slot: 'ring', index: 2 }, 'Ring slot 3 does not exist'],
     [{ itemId: 'ring', slot: 'tail' }, 'Unknown equipment slot'],
-    [{ itemId: 'bow', slot: 'mainHand' }, 'No [Bow] in the inventory'],
-    [{ itemId: 'ghost', slot: 'ring' }, 'unknown item'],
   ])('rejects %j', (change, reason) => {
     expect(
       reject(base(), { type: 'item.equip', characterId: 'jake', ...change } as Command),
     ).toContain(reason);
+  });
+
+  it('an unknown item and one not held read the same and name nothing (QF.2)', () => {
+    const notHeld = reject(
+      base(),
+      { type: 'item.equip', characterId: 'jake', itemId: 'bow', slot: 'mainHand' },
+      player('jake'),
+    );
+    const unknown = reject(
+      base(),
+      { type: 'item.equip', characterId: 'jake', itemId: 'ghost', slot: 'ring' },
+      player('jake'),
+    );
+    expect(notHeld).toBe(ITEM_NOT_AVAILABLE);
+    expect(unknown).toBe(ITEM_NOT_AVAILABLE);
+    expect(
+      reject(
+        base(),
+        { type: 'gift.give', characterId: 'jake', to: 'kim', items: { ghost: 1 } },
+        player('jake'),
+      ),
+    ).toBe(ITEM_NOT_AVAILABLE);
   });
 
   it('rejects equipping the same item twice in a slot and unequipping an empty slot', () => {
@@ -382,7 +406,7 @@ describe('item effects reach effective stats in the M1.6 order', () => {
     expect(characterEffectiveStats(state(), 'jake')['agility']).toBe(144);
     c = ok(c, { type: 'item.equip', characterId: 'jake', itemId: 'bow', slot: 'mainHand' });
     // Percent 0.1 + 0.1 + 0.2 = 0.4, capped at +25%: (100 + 20) × 1.25 = 150
-    expect(DEFAULT_RULES.bonuses.percentCapPerStat).toBe(0.25);
+    expect(state().rules.bonuses.percentCapPerStat).toBe(0.25);
     expect(characterEffectiveStats(state(), 'jake')['agility']).toBe(150);
     // Matches M1.6 effectiveStats with the same sources.
     const jake = state().characters['jake'];
@@ -499,16 +523,29 @@ describe('trades', () => {
   });
 
   it('each side must already hold its part; receiving it in the same trade does not count', () => {
-    const c = ok(base(), {
+    // A proposal may ask only for what the counterparty holds now (QF.2).
+    expect(
+      reject(base(), {
+        type: 'trade.propose',
+        tradeId: 'loop',
+        characterId: 'kim',
+        to: 'jake',
+        give: { items: { bow: 1 } },
+        get: { items: { bow: 1 } },
+      }),
+    ).toBe(ITEM_NOT_AVAILABLE);
+    // And at accept time, if Jake has since given his part away.
+    let c = ok(base(), {
       type: 'trade.propose',
       tradeId: 'loop',
       characterId: 'kim',
       to: 'jake',
       give: { items: { bow: 1 } },
-      get: { items: { bow: 1 } },
+      get: { items: { potion: 3 } },
     });
+    c = ok(c, { type: 'gift.give', characterId: 'jake', to: 'kim', items: { potion: 1 } });
     expect(reject(c, { type: 'trade.accept', tradeId: 'loop', characterId: 'jake' })).toContain(
-      'Not enough [Bow]',
+      'Not enough [Potion]',
     );
   });
 
@@ -517,29 +554,59 @@ describe('trades', () => {
     expect(reject(c, { ...offer, give: { currency: 101 } })).toContain('Not enough Credits');
     expect(reject(c, { ...offer, to: 'jake' })).toContain('two different parties');
     expect(reject(c, { ...offer, give: {}, get: {} })).toContain('something on it');
-    expect(reject(c, { ...offer, get: { items: { ghost: 1 } } })).toContain('unknown item');
+    // Unknown, and known but not held by the counterparty, read the same.
+    expect(reject(c, { ...offer, get: { items: { ghost: 1 } } })).toBe(ITEM_NOT_AVAILABLE);
+    expect(reject(c, { ...offer, get: { items: { ring: 1 } } })).toBe(ITEM_NOT_AVAILABLE);
+    expect(reject(c, { ...offer, give: { items: { bow: 1 } } })).toBe(ITEM_NOT_AVAILABLE);
     expect(reject(c, { ...offer, to: 'ghost' })).toContain('unknown character');
     expect(reject(ok(c, offer), offer)).toContain('already exists');
   });
 
   it('trades with the GM: the GM side comes from and goes to nowhere', () => {
+    // A player may not ask the GM for items (the GM holds the whole library,
+    // QF.2, Q44); asking for currency is fine.
+    expect(
+      reject(
+        base(),
+        {
+          type: 'trade.propose',
+          tradeId: 'shop',
+          characterId: 'jake',
+          to: null,
+          give: { currency: 40 },
+          get: { items: { bow: 1 } },
+        },
+        player('jake'),
+      ),
+    ).toContain('only for currency');
     let c = ok(
       base(),
       {
         type: 'trade.propose',
-        tradeId: 'shop',
+        tradeId: 'sell',
         characterId: 'jake',
         to: null,
-        give: { currency: 40 },
-        get: { items: { bow: 1 } },
+        give: { items: { potion: 1 } },
+        get: { currency: 15 },
       },
       player('jake'),
     );
     expect(
-      reject(c, { type: 'trade.accept', tradeId: 'shop', characterId: null }, player('jake')),
+      reject(c, { type: 'trade.accept', tradeId: 'sell', characterId: null }, player('jake')),
     ).toContain('own character');
-    c = ok(c, { type: 'trade.accept', tradeId: 'shop', characterId: null });
-    expect(held(c, 'jake')).toMatchObject({ currency: 60, inventory: { bow: 1 } });
+    c = ok(c, { type: 'trade.accept', tradeId: 'sell', characterId: null });
+    expect(held(c, 'jake')).toMatchObject({ currency: 115, inventory: { ring: 2, potion: 2 } });
+    // The GM offers items by proposing from the GM side.
+    c = ok(c, {
+      type: 'trade.propose',
+      tradeId: 'shop',
+      characterId: null,
+      to: 'jake',
+      give: { items: { bow: 1 } },
+      get: { currency: 40 },
+    });
+    c = ok(c, { type: 'trade.accept', tradeId: 'shop', characterId: 'jake' }, player('jake'));
+    expect(held(c, 'jake')).toMatchObject({ currency: 75, inventory: { bow: 1 } });
     // GM-proposed offer, answered by the player.
     c = ok(c, {
       type: 'trade.propose',
@@ -551,6 +618,84 @@ describe('trades', () => {
     });
     c = ok(c, { type: 'trade.accept', tradeId: 'quest', characterId: 'kim' }, player('kim'));
     expect(held(c, 'kim')).toMatchObject({ currency: 550, inventory: {} });
+  });
+});
+
+describe('a player cannot pull unseen item definitions (QF.2)', () => {
+  it('no command a player sends brings a GM-only item to any player view', () => {
+    const c = run(
+      [
+        {
+          type: 'item.define',
+          id: 'relic',
+          name: 'SECRET-Relic',
+          rarity: 'legendary',
+          description: 'SECRET-relic-text',
+          slot: 'ring',
+        },
+      ],
+      ctx,
+      base(),
+    );
+    const attempts: Command[] = [
+      {
+        type: 'trade.propose',
+        tradeId: 'a',
+        characterId: 'jake',
+        to: 'kim',
+        get: { items: { relic: 1 } },
+        give: { currency: 1 },
+      },
+      {
+        type: 'trade.propose',
+        tradeId: 'b',
+        characterId: 'jake',
+        to: null,
+        get: { items: { relic: 1 } },
+        give: { currency: 1 },
+      },
+      {
+        type: 'trade.propose',
+        tradeId: 'c',
+        characterId: 'jake',
+        to: 'kim',
+        give: { items: { relic: 1 } },
+        get: { currency: 1 },
+      },
+      { type: 'gift.give', characterId: 'jake', to: 'kim', items: { relic: 1 } },
+      { type: 'item.equip', characterId: 'jake', itemId: 'relic', slot: 'ring' },
+    ];
+    for (const command of attempts) {
+      const result = execute(c, command, player('jake'));
+      expect(result.ok, command.type).toBe(false);
+      if (!result.ok) expect(result.error).not.toContain('Relic');
+    }
+    // Bad counts read the same for a known id as for an unknown one (review).
+    for (const n of [0, -1, 0.5]) {
+      for (const id of ['relic', 'nope']) {
+        for (const command of [
+          {
+            type: 'trade.propose',
+            tradeId: 'p',
+            characterId: 'jake',
+            to: 'kim',
+            get: { items: { [id]: n } },
+            give: { currency: 1 },
+          },
+          { type: 'gift.give', characterId: 'jake', to: 'kim', items: { [id]: n } },
+        ] as Command[]) {
+          const result = execute(c, command, player('jake'));
+          expect(result.ok ? 'ok' : result.error, `${command.type} ${id} ${n}`).toBe(
+            ITEM_NOT_AVAILABLE,
+          );
+        }
+      }
+    }
+    for (const viewer of ['jake', 'kim']) {
+      expect(JSON.stringify(projectForPlayer(c.state ?? (null as never), viewer))).not.toContain(
+        'SECRET',
+      );
+    }
   });
 });
 
@@ -577,11 +722,18 @@ describe('pool maxima use effective stats (M3.7, D81)', () => {
     slot: 'necklace',
   };
 
-  it('equipping raises the maximum but never refills the pool', () => {
+  it('equipping raises the maximum: a full pool stays full, any other keeps its value (D100)', () => {
     let c = setup();
     expect(pools(c)['hp']).toBe(100);
     c = ok(c, equipAmulet);
+    // 100/100 → 150/150 (DESIGN §2).
+    expect(pools(c)['hp']).toBe(150);
+    c = ok(c, { type: 'item.unequip', characterId: 'jake', slot: 'necklace' });
     expect(pools(c)['hp']).toBe(100);
+    // 85/100 → 85/150 (DESIGN §2).
+    c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: { hp: 85 } });
+    c = ok(c, equipAmulet);
+    expect(pools(c)['hp']).toBe(85);
     // Vitality 10 + 5 = 15 → max 150: a pool set up to 150 is now valid.
     c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: { hp: 150 } });
     expect(pools(c)['hp']).toBe(150);
@@ -653,10 +805,93 @@ describe('pool clamp edge cases (M3.7 review)', () => {
       ctx,
       base(),
     );
-    // XP raised base stats; the gear-raised pool stays (never clamped to base).
-    expect(c.state?.characters['jake']?.pools['hp']).toBe(200);
+    // XP raised base stats; the full gear-raised pool stays full (never
+    // clamped to base; D100).
+    const hpMax = (): number | undefined =>
+      projectForPlayer(c.state ?? (null as never), 'jake').me.pools.find((p) => p.id === 'hp')?.max;
+    const full = hpMax() ?? 0;
+    expect(full).toBeGreaterThan(200);
+    expect(c.state?.characters['jake']?.pools['hp']).toBe(full);
     // A gift of another item touches holdings; the pools stay as they are.
     c = ok(c, { type: 'gift.give', characterId: 'jake', to: 'kim', items: { potion: 1 } });
-    expect(c.state?.characters['jake']?.pools['hp']).toBe(200);
+    expect(c.state?.characters['jake']?.pools['hp']).toBe(full);
+  });
+});
+
+describe('bonus rules (MQ.14, DESIGN §4, L6)', () => {
+  const fresh = (): Campaign =>
+    run(
+      [
+        { type: 'campaign.create', name: 'New', rules: rawRules() },
+        make('jake', 'Jake'),
+        make('kim', 'Kim'),
+        {
+          type: 'item.define',
+          id: 'band',
+          name: 'Iron Band',
+          rarity: 'common',
+          slot: 'ring',
+          bonuses: [{ stat: 'vitality', flat: 3 }],
+        },
+        {
+          type: 'item.define',
+          id: 'charm',
+          name: 'Charm',
+          rarity: 'common',
+          slot: 'necklace',
+          bonuses: [{ stat: 'vitality', flat: 1 }],
+        },
+        { type: 'holdings.adjust', characterId: 'jake', items: { band: 1, charm: 1 } },
+      ],
+      ctx,
+    );
+
+  it('refuses item definitions and edits that carry percentages', () => {
+    const c = fresh();
+    expect(reject(c, { ...(ring as object), id: 'ring2' } as Command)).toContain(
+      'flat stat bonuses only',
+    );
+    expect(
+      reject(c, {
+        type: 'item.edit',
+        itemId: 'band',
+        bonuses: [{ stat: 'vitality', percent: 0.1 }],
+      }),
+    ).toContain('flat stat bonuses only');
+    // Stored M1.6 rules still accept them, so their logs replay.
+    expect(base().state?.items['ring']?.bonuses[0]?.percent).toBe(0.1);
+  });
+
+  it('shows a stored item percentage only while item percentages count', () => {
+    const c = base();
+    const shown = projectForPlayer(c.state!, 'jake').inventory.itemDefs['ring']?.bonuses[0];
+    expect(shown).toMatchObject({ flat: 10, percent: 0.1 });
+    // Under flat-only items a stored percentage counts 0%, so it is not shown.
+    const state = c.state!;
+    const flatOnly = {
+      ...state,
+      rules: { ...state.rules, bonuses: { ...state.rules.bonuses, itemsFlatOnly: true } },
+    };
+    const hidden = projectForPlayer(flatOnly, 'jake').inventory.itemDefs['ring']?.bonuses[0];
+    expect(hidden).toEqual({ stat: 'agility', flat: 10 });
+  });
+
+  it('caps the total item bonus per stat at 20% of base and tells the owner', () => {
+    let c = fresh();
+    c = ok(c, { type: 'item.equip', characterId: 'jake', itemId: 'charm', slot: 'necklace' });
+    let me = projectForPlayer(c.state!, 'jake').me;
+    expect(me.effectiveStats['vitality']).toBe(11);
+    expect(me.itemCappedStats).toEqual([]);
+    // Base Vitality 10: items may add 2. Band +3 and charm +1 = +4 → +2.
+    c = ok(c, { type: 'item.equip', characterId: 'jake', itemId: 'band', slot: 'ring' });
+    me = projectForPlayer(c.state!, 'jake').me;
+    expect(me.effectiveStats['vitality']).toBe(12);
+    expect(me.itemCappedStats).toEqual(['vitality']);
+    expect(me.pools.find((p) => p.id === 'hp')?.max).toBe(120);
+    expect(characterEffectiveStats(c.state!, 'jake')['vitality']).toBe(12);
+    // Another player's view carries none of it.
+    const kim = projectForPlayer(c.state!, 'kim');
+    expect(kim.me.itemCappedStats).toEqual([]);
+    expect(JSON.stringify(kim.party)).not.toContain('itemCapped');
   });
 });

@@ -1,5 +1,9 @@
-import type { EvolutionOption, OwnSheet, PlayerRules } from '@the-system/engine';
-import { pendingSelections } from './selection';
+import {
+  marksAfterRarityChange,
+  type EvolutionOption,
+  type OwnSheet,
+  type PlayerRules,
+} from '@the-system/engine';
 import { rarityName } from './sheet';
 
 /**
@@ -32,27 +36,64 @@ export function weightsText(
 }
 
 /**
- * What the player should know before confirming an option: marks the
- * transforms reset (D64), selections still waiting, a reshaped spread, and
- * that it is final. Free points are untouched by evolving, so not listed.
+ * The option's one-time stat bonus (D98): "+2 to every stat" when it raises
+ * every stat by the same amount, else "+3 Strength · +5 Vitality" in stat
+ * order; null when there is none.
+ */
+export function bonusText(
+  rules: PlayerRules,
+  bonus: EvolutionOption['statBonus'] | undefined,
+): string | null {
+  if (!bonus) return null;
+  const values = rules.stats.list.map((s) => bonus[s.id] ?? 0);
+  const first = values[0] ?? 0;
+  if (first > 0 && values.length > 1 && values.every((v) => v === first)) {
+    return `+${first} to every stat`;
+  }
+  const parts = rules.stats.list
+    .map((s) => ({ name: s.name, v: bonus[s.id] ?? 0 }))
+    .filter((p) => p.v > 0)
+    .map((p) => `+${p.v} ${p.name}`);
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
+
+/**
+ * Why the player cannot evolve yet, or null: every earned skill selection,
+ * offered or not, must be chosen first (MQ.1, D103).
+ */
+export function evolutionBlocked(me: Pick<OwnSheet, 'selectionsDue'>): string | null {
+  const due = me.selectionsDue;
+  if (due <= 0) return null;
+  return due === 1
+    ? 'Choose your waiting skill selection first: you cannot evolve until it is picked.'
+    : `Choose your ${due} waiting skill selections first: you cannot evolve until they are picked.`;
+}
+
+/**
+ * What the player should know before confirming an option: marks a transform
+ * spends or resets (MQ.4, D114), a reshaped spread, and that it is final.
+ * Free points are untouched by evolving, so not listed. Waiting selections
+ * block the choice instead (evolutionBlocked).
  */
 export function evolutionWarnings(
-  me: Pick<OwnSheet, 'skills' | 'selections'>,
+  rules: Pick<PlayerRules, 'marks'>,
+  me: Pick<OwnSheet, 'skills'>,
   option: EvolutionOption,
 ): string[] {
   const out: string[] = [];
+  const marks = (n: number) => `${n} mastery ${n === 1 ? 'mark' : 'marks'}`;
   for (const t of option.transforms) {
     const s = me.skills.find((k) => k.name === t.skill);
-    if (s && s.marks > 0)
-      out.push(
-        `[${s.name}] becomes [${t.name}]: its ${s.marks} mastery ${s.marks === 1 ? 'mark resets' : 'marks reset'} to 0.`,
-      );
-  }
-  const waiting = pendingSelections(me.selections).length;
-  if (waiting > 0)
+    if (!s || s.marks <= 0) continue;
+    const kept = marksAfterRarityChange(rules.marks, s.rarity, t.rarity, s.marks);
+    if (kept === s.marks) continue;
+    const lead = `[${s.name}] becomes [${t.name}]: `;
     out.push(
-      `You have ${waiting} skill ${waiting === 1 ? 'selection' : 'selections'} still waiting.`,
+      kept === 0
+        ? `${lead}its ${marks(s.marks)} ${s.marks === 1 ? 'resets' : 'reset'} to 0.`
+        : `${lead}the rarity gain spends ${marks(s.marks - kept)}; ${kept} ${kept === 1 ? 'carries' : 'carry'} on.`,
     );
+  }
   if (option.classWeights !== null)
     out.push('Your class stat spread changes for every class level from now on.');
   out.push('The choice is final; the other options will be gone.');

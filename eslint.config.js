@@ -61,6 +61,25 @@ const enginePurity = [
     selector: "NewExpression[callee.name='Date'] > SpreadElement",
     message: 'Inject a clock.',
   },
+  {
+    // Date or Math as a value (a default parameter, an object property, an
+    // arrow body, an argument) smuggles ambient time or randomness (QF.5).
+    // Allowed: member access (Math.floor), `new Date(x)`, and type positions.
+    selector:
+      'Identifier[name=/^(Date|Math)$/]:not(MemberExpression > Identifier.object):not(MemberExpression[computed=false] > Identifier.property):not(NewExpression > Identifier.callee):not(CallExpression > Identifier.callee):not(Property[computed=false] > Identifier.key):not(TSTypeReference > Identifier.typeName):not(TSTypeQuery > Identifier.exprName):not(TSQualifiedName > Identifier)',
+    message: 'Inject a clock or RNG; do not pass Date or Math as a value.',
+  },
+  {
+    // Date.call(null), Date.bind(null)() and x.constructor.now() reach the
+    // clock through a member (QF.5 review).
+    selector:
+      'MemberExpression[object.name=/^(Date|Math)$/][property.name=/^(call|apply|bind|constructor)$/]',
+    message: 'Inject a clock or RNG.',
+  },
+  {
+    selector: "MemberExpression[computed=false][property.name='constructor']",
+    message: 'No constructor access in the engine (it reaches Date through any date).',
+  },
 ];
 const engineGlobals = [
   'process',

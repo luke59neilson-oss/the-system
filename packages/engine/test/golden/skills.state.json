@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 16,
+  "schemaVersion": 21,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -152,7 +152,9 @@
       }
     ],
     "character": {
-      "defaultRace": "Human"
+      "defaultRace": "Human",
+      "fullPoolsStayFull": false,
+      "clampedPoolsNotFull": false
     },
     "tracks": {
       "professionUnlockGrade": "E",
@@ -162,10 +164,14 @@
     "xp": {
       "aboveLevelBonusPerLevel": 0.1,
       "aboveLevelBonusCap": 1,
+      "gradeBelowFactors": [],
+      "overflow": false,
       "defaultSplit": "even"
     },
     "bonuses": {
-      "percentCapPerStat": 0.25
+      "percentCapPerStat": 0.25,
+      "itemCapOfBase": null,
+      "itemsFlatOnly": false
     },
     "skills": {
       "rarities": [
@@ -238,6 +244,8 @@
         "legendary": 15
       },
       "maxMarksPerSkillPerSession": 1,
+      "marksCarryOver": false,
+      "libraryByRarity": false,
       "merge": {
         "requiredJointUses": 3,
         "minRarity": "uncommon",
@@ -251,6 +259,9 @@
     "resolution": {
       "gradeGapMode": "none",
       "lowerGradeFraction": 0.3333333333333333
+    },
+    "identify": {
+      "sameGradeLevelRatio": 1.5
     },
     "montage": {
       "minClockFill": 0.5,
@@ -339,16 +350,24 @@
     },
     "logging": {
       "autosaveMinutes": 5
+    },
+    "limits": {
+      "notesPerCharacter": 300,
+      "noteCharsPerCharacter": 150000,
+      "openTradesPerCharacter": 10,
+      "practiceEntriesPerCharacter": 5000,
+      "practiceEntryChars": 500
     }
   },
   "characters": {
     "jake": {
-      "schemaVersion": 6,
+      "schemaVersion": 7,
       "id": "jake",
       "name": "Jake",
       "race": "Human",
       "className": "Archer",
       "profession": null,
+      "professionOffers": [],
       "classLevel": 0,
       "professionLevel": 0,
       "grade": "G",
@@ -443,6 +462,14 @@
   "broadcasts": [],
   "items": {},
   "itemOrder": [],
+  "skillLibrary": {},
+  "skillLibraryOrder": [],
+  "classLibrary": {},
+  "classLibraryOrder": [],
+  "raceLibrary": {},
+  "raceLibraryOrder": [],
+  "professionLibrary": {},
+  "professionLibraryOrder": [],
   "holdings": {},
   "trades": {},
   "tradeOrder": [],
@@ -492,14 +519,6 @@
   "montages": {},
   "montageOrder": [],
   "day": 1,
-  "skillLibrary": {},
-  "skillLibraryOrder": [],
-  "classLibrary": {},
-  "classLibraryOrder": [],
-  "raceLibrary": {},
-  "raceLibraryOrder": [],
-  "professionLibrary": {},
-  "professionLibraryOrder": [],
   "sessions": [],
   "currentSession": null
 }

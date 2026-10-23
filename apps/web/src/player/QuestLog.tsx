@@ -1,5 +1,5 @@
 import type { PlayerQuest, PlayerView } from '@the-system/engine';
-import { splitQuests, stabilityLabel, statusText, timeText } from './quests';
+import { hiddenQuestText, splitQuests, stabilityLabel, statusText, timeText } from './quests';
 
 /** The quest log (ROADMAP M3.8): visible quests, days left and World Stability. */
 export function QuestLog({ view }: { view: PlayerView }) {
@@ -10,10 +10,16 @@ export function QuestLog({ view }: { view: PlayerView }) {
       <p className="muted quest-day" data-testid="day">
         Day {view.day}
       </p>
-      {active.length === 0 && <p className="muted">No active quests.</p>}
+      {active.length === 0 && view.hiddenQuests === 0 && <p className="muted">No active quests.</p>}
       {active.map((q) => (
         <Quest key={q.id} quest={q} />
       ))}
+      {view.hiddenQuests > 0 && (
+        <p className="quest-hidden" data-testid="hidden-quests" role="note">
+          <span className="quest-hidden-title">[Hidden quest]</span>{' '}
+          {hiddenQuestText(view.hiddenQuests)}
+        </p>
+      )}
       {finished.length > 0 && (
         <details className="locked-points" data-testid="finished-quests">
           <summary>Finished quests ({finished.length})</summary>

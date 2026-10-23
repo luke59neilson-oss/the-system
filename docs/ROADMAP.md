@@ -137,7 +137,7 @@ the full ones.
 - [x] **MS.A Milestone acceptance and review.** Then push `main` to
   `release` so Luke gets the first build.
 
-- [ ] **MS.7 Launch polish (do next).** Luke's first try of the preview
+- [x] **MS.7 Launch polish (do next).** Luke's first try of the preview
   failed to open. Make launching foolproof on Windows: a "Starting The
   System…" window appears within 1 s of double-clicking; a second launch
   brings the running window to the front instead of erroring; if port 30333
@@ -155,43 +155,227 @@ the full ones.
 Rule changes from Luke's answers (DESIGN §2, §4, §6, §7 updated; D97–D109).
 They touch finished engine and player items, so they come before M4.4.
 
-- [ ] **MQ.1 Evolution rules.** Evolution cannot be released, and a player
+- [x] **MQ.1 Evolution rules.** Evolution cannot be released, and a player
   cannot evolve, while any skill selection is pending. Evolution refills
   all pools. Each evolution option carries a GM-set one-time stat bonus.
   Transforms are optional (config `skills.evolutionTransforms` minimum 0).
   *Accept:* engine tests for each rule (new event versions + upcasters,
   golden logs); evolution screen shows the bonus; e2e.
-- [ ] **MQ.2 Pools follow maxima.** A full pool stays full when its maximum
+- [x] **MQ.2 Pools follow maxima.** A full pool stays full when its maximum
   rises (level, item, title, evolution bonus); otherwise current is
   unchanged; never refill on level-up; clamp when a maximum falls.
   *Accept:* tests incl. DESIGN §2's 85/100 → 85/120 and 100/100 → 120/120.
-- [ ] **MQ.3 Passed-over options.** Unchosen menu options stay eligible and
+- [x] **MQ.3 Passed-over options.** Unchosen menu options stay eligible and
   appear in later menus below the new ones; one pick per selection;
   eligibility rules from DESIGN §6. Player selection screen scrolls through
   older options. *Accept:* engine tests; e2e.
-- [ ] **MQ.4 Marks carry over.** Excess marks carry into the next rarity
+- [x] **MQ.4 Marks carry over.** Excess marks carry into the next rarity
   after an upgrade (incl. banked marks applied after an evolution).
   *Accept:* tests.
-- [ ] **MQ.5 Grade gap per step.** The lower-grade mode applies ⅓ per grade
-  step. *Accept:* statistical test for 1- and 2-step gaps.
-- [ ] **MQ.6 Tailored professions.** Remove the default profession list from
+- [x] **MQ.5 Grade walls.** New default grade-gap mode per DESIGN §7: same
+  grade plain odds; one grade apart lower side ×⅓ in rolls and ⅓ damage; two
+  or more apart no roll (higher grade succeeds) and zero damage; no pooling of
+  lower-grade power against a higher grade. Encounter tools (M7.3) apply it.
+  *Accept:* statistical test for the one-grade case (24% ±2% for DESIGN's
+  peak-E vs fresh-D example); deterministic tests for two-plus grades,
+  damage scaling and the no-pooling rule.
+- [x] **MQ.10 Steep XP curve.** XP per level ×3 per grade (G 100 … A 72,900);
+  XP for defeating a target one grade below ×⅓, two or more below 0; the
+  "typical session" helper per grade. Config migration with an upcaster for
+  existing campaigns. *Accept:* engine tests; the 40-session simulation
+  still reaches the DESIGN check values with awards scaled per grade.
+- [x] **MQ.6 Tailored professions.** Remove the default profession list from
   the library seed. The GM offers each character their own professions at
   the E evolution; the player may choose "none for now"; a Professions tab
   lists the offers and lets the player take one later; once chosen the list
   locks (greyed). Race level = class level until a profession is taken.
   *Accept:* engine tests; e2e for picking at evolution, declining, and
   picking later from the tab.
-- [ ] **MQ.7 Hidden quest notice.** Creating a hidden quest sends the
+- [x] **MQ.7 Hidden quest notice.** Creating a hidden quest sends the
   affected players a System notice that a hidden quest exists, with no
   details. *Accept:* canary test still passes; notice e2e.
-- [ ] **MQ.8 Identify range.** Lower grade always; higher grade never; same
+- [x] **MQ.8 Identify range.** Lower grade always; higher grade never; same
   grade only if level ≤ 1.5 × the viewer's level; otherwise
   `[??? – lvl ???]`. *Accept:* engine and projection tests; e2e.
-- [ ] **MQ.9 Windows-first releases.** Luke uses Windows. Release builds
+- [x] **MQ.9 Windows-first releases.** Luke uses Windows. Release builds
   Windows (portable + installer) and Linux (kept for the automated smoke
   test); drop macOS (macOS Actions minutes count 10×). *Accept:* release
   dry run green with exactly 3 files.
-- [ ] **MQ.A Batch acceptance and review.**
+- [x] **MQ.11 XP overflow, no banking.** Replace banked XP: XP for a capped
+  track levels the other track; when both are capped (or the class is capped
+  with no profession) the XP is lost and the GM's award preview says so.
+  Schema bump + upcaster for logs that banked XP (replaced by the
+  `rules.xp.overflow` flag, D124: stored campaigns keep banking and replay
+  unchanged until M4.9 switches them). *Accept:* engine tests
+  (class capped → profession levels; profession capped → class levels; both
+  capped → lost and reported); 40-session simulation still passes.
+- [x] **MQ.12 Skill library rules.** Library entries keyed by name and rarity;
+  an upgrade takes the higher rarity's text; library edits update every copy
+  not individually edited by the GM; effects visible to the skill's owner
+  only. *Accept:* engine and projection tests (other players never see
+  effects); e2e for an upgrade picking up new text and an edit propagating.
+- [x] **MQ.13 The books' starting classes.** Replace the default class set
+  with DESIGN §10 (weights and starting skills, original text); update the
+  built-in Archer, the demo campaign and screenshots. *Accept:* seed tests;
+  demo e2e still green.
+- [x] **MQ.14 Bonus rules.** Items carry flat stat bonuses only (no
+  percentages); total item bonus per stat capped at 20% of base; title
+  percentages summed and applied once to (base + capped items); the existing
+  title percentages uncapped by default (config may set a cap). Status screen shows a capped item
+  bonus as capped. *Accept:* engine tests incl. DESIGN §4's 100 → 138
+  example; item definitions with percentages rejected (upcaster for old
+  logs); e2e for the capped display.
+- [x] **MQ.15 No healing by gear swap.** A pool clamped by a falling maximum
+  stays full only if it was full before the drop (DESIGN §2 examples); applies
+  to new campaigns and, via the rules setting, older ones. *Accept:* engine
+  tests for all four DESIGN §2 examples; property test that equip/unequip
+  cycles never raise a non-full pool's current value.
+- [x] **MQ.A Batch acceptance and review.**
+
+## QF — Quality fixes (from sweeps, LOOP §10)
+
+Confirmed findings from quality sweeps (`docs/QUALITY.md`). Items marked
+**(High)** are taken before any other new item, wherever they sit (LOOP §5.2);
+the rest follow in file order. Each gets its own §6 review.
+
+- [x] **QF.1 (High) Chosen options never return as passed-over options.**
+  `passedOverOptions` (`packages/engine/src/evolution/model.ts` ~276) drops a
+  menu's chosen option only while a skill of that name is owned, so after an
+  evolution transform renames it, the old name comes back on every later menu,
+  can be chosen again (the character then holds both forms), and the GM cannot
+  withdraw it. DESIGN §6: an option leaves the list when chosen. *Accept:*
+  engine test for the sweep's sequence (choose Piercing Shot at 5, transform it
+  to Storm Pierce at evolution, offer the level-15 menu): it is not passed-over,
+  `selection.choose` refuses it, and the player view does not list it; golden
+  logs still replay.
+- [x] **QF.2 (High) Item definitions reach players only for items they can
+  see.** A player's own `trade.propose` may name any library item on the `get`
+  side, and the player projection then sends its full definition (name, GM
+  description, bonuses) to both sides; equip and gift errors also name items
+  the player does not hold (`events/reducer.ts` ~800-835,
+  `projection/player.ts` ~743, `economy/model.ts` ~124, ~150). *Accept:* a
+  proposal may ask only for items the counterparty holds; "unknown item" and
+  "not held" errors are identical and name nothing; the projection canary
+  builds trades with non-empty item bundles and a GM-only item no player holds,
+  and finds none of its fields in any player frame or HTTP body.
+- [x] **QF.3 Limits on player-made data.** One phone can post 200 × 20 KB party
+  notes in about a second, after which every command pushes a 4 MB view to
+  every client (`apps/server/src/hub.ts` ~93-226). *Accept:* a per-connection
+  command rate limit in the hub, and per-character caps on note count and
+  total note size and on open trades, all from the rules or server config;
+  clients whose projected view did not change get no new snapshot; server
+  tests for each limit, with the error players see.
+- [x] **QF.4 Golden logs are pinned.** A commit can edit a `.jsonl` golden and
+  regenerate its `.state.json`, and the golden test still passes. *Accept:* a
+  manifest pins each `.jsonl` and `.state.json` by SHA-256 together with the
+  `CAMPAIGN_STATE_SCHEMA_VERSION` it was recorded at; the test fails when a
+  `.jsonl` changes, or when a `.state.json` changes without a higher schema
+  version; a script re-records the manifest and refuses to do so without a
+  version bump.
+- [ ] **QF.5 Engine purity lint has no bypasses.** `export function f(clock =
+  Date)`, `rng = Math` default parameters, `{ clock: Date }` and `() => Date`
+  pass the engine lint (`eslint.config.js` ~52-59). *Accept:* each of these is
+  rejected; `scripts/lint-rules.test.ts` asserts the rule id
+  (`no-restricted-syntax`), not just "some message".
+- [ ] **QF.6 Desktop smoke specs run in CI.** `apps/desktop/test/*.spec.ts`
+  (GM window connects with the injected key, key leaves the address bar,
+  busy-port fallback) run in no workflow. *Accept:* a CI job (public repo, so
+  free minutes) installs the Electron binary and runs `npm run desktop:smoke`
+  under xvfb on pushes to main; a test asserts the desktop app never prints
+  its GM key.
+- [ ] **QF.7 Store failure paths are tested.** The rollback after a failed
+  write and the stop-writing latch after a failed fsync
+  (`apps/server/src/store.ts` ~403-420) have no tests. *Accept:* fault-
+  injection tests: a failed write leaves the log at its last good length; a
+  failed fsync refuses every later append and the error says why.
+- [ ] **QF.8 Latency checks that don't flake.** e2e specs bound
+  click-to-render wall time (`e2e/MS.A.spec.ts` ~80-86 and ~157,
+  `e2e/MS.2.spec.ts` ~81-87, `e2e/MS.3.spec.ts` ~118-126,
+  `apps/server/test/sessionLog.test.ts` ~448) with `retries: 0` under fully
+  parallel workers; under 4 workers on 2 CPUs `e2e/MS.3.spec.ts` and
+  `e2e/M3.3.spec.ts` fail while each passes alone (QUALITY.md, Flakes). *Accept:* the "within 1 s" criteria (MS.3, M7.x) still
+  hold but are measured without depending on CI load (e.g. a serial
+  Playwright project for latency specs, or timing from the server's send to
+  the client's render); no retries added; the full suite passes 10 times in a
+  row with `--repeat-each` on the latency specs.
+
+- [ ] **QF.9 Trade proposals reveal nothing the proposer cannot see.**
+  `trade.propose` refuses a `get` bundle the counterparty does not hold
+  (`events/commands.ts` ~1250, QF.2), so a player can probe another
+  character's exact item counts (accepted for 1–3, refused at 4), and the
+  open trade then puts the asked-for item's full definition (GM description,
+  bonuses) in the proposer's `inventory.itemDefs` (`projection/player.ts`
+  ~782-800) for an item they never held (D82: players never see other
+  inventories). Sweep B, Boundaries. *Accept:* proposing never depends on the
+  counterparty's holdings (accept re-checks, with the same name-free error);
+  the proposer's view carries definitions only for items they hold or offer,
+  and the counterparty's for items they hold or are offered; engine tests for
+  the 1–3/4 probe and the definition; canary still passes.
+
+- [x] **QF.10 e2e pages close with their test.** Specs open pages with
+  `browser.newPage()` and rarely close them; once a test's server stops, each
+  leftover page keeps reconnecting, so the worker's one browser slows until a
+  late spec times out at its first click (runs 4a0765f3 and 6fcb6693: MQ.13,
+  MQ.14 and MQ.6 specs, each green alone). *Accept:* every spec imports `test`
+  from `e2e/helpers/test.ts`, whose automatic fixture closes the contexts a
+  test opened; the full suite passes on one worker; no retries added.
+- [ ] **QF.11 (High) A partial download cannot hang.** Luke's first real
+  download (2026-10-22) stopped at 52 MB of 107 MB; double-clicking the
+  portable `.exe` started it anyway and it hung, holding the file so Windows
+  would not delete it ("file is open in The System"). electron-builder's
+  portable template has `CRCCheck off` (`app-builder-lib/templates/nsis/
+  portable.nsi`); the installer checks itself and says "integrity check
+  failed". *Accept:* the portable build refuses a damaged or partial file with
+  a clear message instead of starting (integrity check on, e.g. a custom
+  portable script), or the portable build is dropped and the installer is
+  the only Windows download (D-entry either way); the release notes put the
+  installer first and list each file's exact size and SHA-256; a CI test
+  truncates the built `.exe` and checks the integrity flag or the refusal.
+
+## MR — Luke's answers, batch 2 (2026-10-22)
+
+Answers to Q43–Q52 (DESIGN §2, §6, §7 updated; L14–L18). They change finished
+engine and player items, so they come before M4.5. Defaults Luke kept need no
+work: Q44–Q48 and Q52.
+
+- [ ] **MR.1 Evolutions re-rate skills.** An evolution release carries a new
+  rarity for every skill the character keeps: by default one step down
+  (never below Inferior), set per skill by the GM (raise within the new
+  grade's ceiling, keep, or lower). The copy's text and effects stay as they
+  are (library-linked or hand-written), and every mark is kept, so the next
+  upgrade uses the lower rarity's cost. Evolution events stored before this
+  item carry no re-rating and replay unchanged. The player's evolution
+  screen shows each skill's old → new rarity before release. The GM builder
+  controls come with M5.2; until then the default applies, with the override
+  available as a command. *Accept:* engine tests: default drop, raise, keep,
+  lower, the Inferior floor, a raise refused above the ceiling, marks kept,
+  text unchanged for library-linked and hand-written copies, an upgrade
+  right after the evolution at the lower rarity's cost; golden logs still
+  replay; e2e on the evolution screen.
+- [ ] **MR.2 Every upgrade starts at 0 marks.** Replaces MQ.4's carry-over
+  (D113) and D114's spend-and-carry: an upgrade by marks leaves the skill at
+  0 (extra marks are not kept), and so does any evolution transform; only a
+  downgrade at evolution (MR.1) keeps marks. New campaigns get the new rule;
+  stored logs replay as recorded. The upgrade and evolution screens' marks
+  notes say so. *Accept:* engine tests: 10 marks on an Inferior skill
+  upgrade to a Common skill with 0; a transform (raising or same rarity)
+  leaves 0; a downgrade keeps all; tests through `evolution.choose`; e2e
+  text on both screens.
+- [ ] **MR.3 XP overflow for every campaign.** Replaces D124: campaigns
+  created before MQ.11 switch to overflow automatically when loaded (a rules
+  migration, logged). How XP already banked is handled is the run's call
+  (no real campaigns exist yet), logged as a D-entry. *Accept:* a stored
+  campaign with banked XP loads with overflow on; the GM award preview warns
+  about lost XP for it; golden logs re-recorded under a schema bump.
+- [ ] **MR.4 Hand-written skill text survives upgrades; Use library text.**
+  Replaces D133 (keeps D125): a hand-written copy keeps its text when the
+  skill upgrades, and a downgrade (MR.1) never changes text. The GM's Skill
+  text form gets **Use library text**, which reconnects the copy to the
+  library entry for its current name and rarity (disabled when there is
+  none). *Accept:* engine tests for an upgrade with and without hand-written
+  text and for reconnecting; e2e on the form.
+- [ ] **MR.A Batch acceptance and review.** The batch's e2e specs and the full
+  suite green; `fable` review; then "Preview ready" (LOOP §8.2).
 
 ## M1 (continued) — Rules engine
 
@@ -299,14 +483,18 @@ They touch finished engine and player items, so they come before M4.4.
   selection/evolution/marks/merges); full sheet edit as audited events.
 - [ ] **M4.6 XP award dialog.** Amount, class or profession, participant
   checkboxes, even integer split by default with auto-balanced last share,
-  editable shares, above-level bonus toggle, level-up preview, "typical
-  session ≈ 6 levels" helper, confirm.
+  editable shares, above-level bonus toggle, target grade (⅓ / no XP for
+  lower grades, MQ.10: `enemyGrade`), level-up preview with overflow and
+  "XP lost" warnings (`previewXpAward`, MQ.11), "typical
+  session ≈ 6 levels" helper (`typicalSessionXp`), confirm.
 - [ ] **M4.7 System broadcast.** System-style message to one or all; now or
   scheduled.
 - [ ] **M4.8 Change log and undo.** Filterable event list; undo with M1.3
   rules.
 - [ ] **M4.9 Rules settings.** Edit every config value as events, with
-  validation and reset to defaults.
+  validation and reset to defaults. Turning on `xp.overflow` (D124) for a
+  campaign that banked XP moves each capped track's bank per the overflow
+  rule, and says what was lost.
 - [ ] **M4.A Milestone acceptance and review.** GM creates 3 characters,
   awards XP with a custom split; each player screen shows the DING within
   1 s; undo reverts it everywhere.
@@ -314,12 +502,16 @@ They touch finished engine and player items, so they come before M4.4.
 ## M5 — Skills and practice tools (GM)
 
 - [ ] **M5.1 Offer builder.** Per-character menu builder beside the practice
-  log; capstone check; profession options; send. Show due selections
+  log; capstone check; profession options; send. Lists the character's
+  passed-over options with a Withdraw button (`selection.withdrawOption`,
+  MQ.3, D112). Show due selections
   (`dueSelections`) next to the M1.8 selection alert, which does not know
   whether a selection was taken.
 - [ ] **M5.2 Evolution builder.** Options, warnings, one-time stat bonus per
   option, optional transforms with merge prompts, spread reshape, tailored
-  profession offers (E evolution); release. Warn when a selection (esp. the capstone) is still
+  profession offers (E evolution, or later after "none for now"; withdrawing an
+  untaken offer, MQ.6 review); per-skill re-rating at release (default one
+  rarity down, raise/keep/lower; MR.1); release. Warn when a selection (esp. the capstone) is still
   pending (Q21).
 - [ ] **M5.3 Marks review.** End-of-session queue; upgrade prompts.
 - [ ] **M5.4 Merges.** Alert, build, send.
@@ -341,9 +533,12 @@ They touch finished engine and player items, so they come before M4.4.
 ## M7 — Quests, encounters, bestiary
 
 - [ ] **M7.1 Quest manager.** Text, timers, stability rules, nudges,
-  visibility. Offer to apply a quest's stability rule when a practice entry
+  visibility, and for hidden quests who gets the notice (`noticeTo`, D122).
+  Offer to apply a quest's stability rule when a practice entry
   carries one of its action tags (D67).
 - [ ] **M7.2 Bestiary and NPCs.** Grade, level, stats, Identify tiers, notes.
+  Sets an entity's grade and level for the Identify range (D123); warn when a
+  label names what an out-of-range target is.
 - [ ] **M7.3 Encounter panel.** Ratio-odds roller (stats + mode), pool
   damage/heal, progress clocks, montage trigger. Rolls the GM shares become
   events, and the players involved get a contest result pop-up (from M3.13,

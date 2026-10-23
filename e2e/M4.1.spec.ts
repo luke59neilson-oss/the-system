@@ -1,12 +1,13 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M4.1 Skill library: the GM creates and edits library skills (rarity, tags,
 // description, flavour, effects); a character who gains a skill by that name
 // gets its System text, including the starting race skill Identify. Effects
-// text never reaches a player (D90).
+// text reaches only the skill's owner (MQ.12; D90 kept it GM-only), and a
+// library edit reaches every copy the GM has not written by hand (MQ.12).
 
 const GM_KEY = 'e2e-gm-key-m41-0123456789abcdef';
 const SECRET = 'GM-ONLY-EFFECTS-CANARY-41';
@@ -72,7 +73,9 @@ test('the GM builds the skill library; granted skills take its text', async ({ b
   await library.getByLabel('Tags (comma-separated)').fill('Race, Utility, race');
   await library.getByLabel('Description (players see this)').fill('Learn what something is.');
   await library.getByLabel('Flavour (players see this)').fill('Knowledge is the first weapon.');
-  await library.getByLabel('Effects (GM only)').fill(`${SECRET}: reveals tier text.`);
+  await library
+    .getByLabel('Effects (only the skill’s owner sees this)')
+    .fill('Owner: reveals tier text.');
   await add.click();
   await expect(library.getByRole('status')).toHaveText('[Identify] added to the library');
   await expect(library.getByLabel('Official name')).toHaveValue('');
@@ -84,6 +87,8 @@ test('the GM builds the skill library; granted skills take its text', async ({ b
   await library.getByLabel('Official name').fill('Arcane Bolt');
   await library.getByLabel('Rarity').selectOption({ label: 'Rare' });
   await library.getByLabel('Tags (comma-separated)').fill('Ranged, Mana');
+  // Nobody owns Arcane Bolt, so its effects must reach no player.
+  await library.getByLabel('Effects (only the skill’s owner sees this)').fill(SECRET);
   await add.click();
   await expect(library.getByRole('status')).toHaveText('[Arcane Bolt] added to the library');
 
@@ -95,6 +100,7 @@ test('the GM builds the skill library; granted skills take its text', async ({ b
 
   // A clashing name is refused with a readable error.
   await library.getByLabel('Official name').fill('identify');
+  await library.getByLabel('Rarity').selectOption({ label: 'Common' });
   await add.click();
   await expect(library.getByRole('alert')).toContainText('already has [Identify]');
 
@@ -146,6 +152,9 @@ test('the GM builds the skill library; granted skills take its text', async ({ b
       'Learn what something is.',
     );
     await expect(detail.getByTestId('skill-detail-flavor')).toHaveText('Know thy prey.');
+    await expect(detail.getByTestId('skill-detail-effects')).toHaveText(
+      'Owner: reveals tier text.',
+    );
     await noSidewaysScroll(player);
     await player.screenshot({
       path: path.join(shots, `player-identify-${viewport.width}x${viewport.height}.png`),
@@ -158,7 +167,7 @@ test('the GM builds the skill library; granted skills take its text', async ({ b
     await player.close();
   }
 
-  // Later library edits leave granted skills alone.
+  // Later library edits reach the granted copy (MQ.12).
   await identifyItem.click();
   await library.getByLabel('Description (players see this)').fill('Rewritten later.');
   await library.getByRole('button', { name: 'Save changes' }).click();
@@ -167,9 +176,7 @@ test('the GM builds the skill library; granted skills take its text', async ({ b
   await check.goto(server.url);
   await check.getByRole('link', { name: /Jake/ }).click();
   await check.getByRole('button', { name: /\[Identify \(Common\)\]/ }).click();
-  await expect(check.getByTestId('skill-detail-description')).toHaveText(
-    'Learn what something is.',
-  );
+  await expect(check.getByTestId('skill-detail-description')).toHaveText('Rewritten later.');
   await check.close();
 
   // A second GM tab edits the entry: an untouched form follows it...
@@ -183,17 +190,19 @@ test('the GM builds the skill library; granted skills take its text', async ({ b
   await expect(otherLibrary.getByRole('status')).toHaveText('[Identify] saved');
   await expect(library.getByLabel('Flavour (players see this)')).toHaveValue('From the other tab.');
   // ...while a form with local edits warns, keeps them, and can reload.
-  await library.getByLabel('Effects (GM only)').fill('Local change.');
+  await library.getByLabel('Effects (only the skill’s owner sees this)').fill('Local change.');
   await otherLibrary.getByLabel('Flavour (players see this)').fill('Second outside edit.');
   await otherLibrary.getByRole('button', { name: 'Save changes' }).click();
   await expect(library.getByRole('alert')).toContainText('changed elsewhere');
-  await expect(library.getByLabel('Effects (GM only)')).toHaveValue('Local change.');
+  await expect(library.getByLabel('Effects (only the skill’s owner sees this)')).toHaveValue(
+    'Local change.',
+  );
   await library.getByRole('button', { name: 'Reload' }).click();
   await expect(library.getByLabel('Flavour (players see this)')).toHaveValue(
     'Second outside edit.',
   );
-  await expect(library.getByLabel('Effects (GM only)')).toHaveValue(
-    `${SECRET}: reveals tier text.`,
+  await expect(library.getByLabel('Effects (only the skill’s owner sees this)')).toHaveValue(
+    'Owner: reveals tier text.',
   );
   await expect(library.getByRole('alert')).toHaveCount(0);
   expect(otherErrors).toEqual([]);

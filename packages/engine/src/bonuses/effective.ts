@@ -1,19 +1,26 @@
 import type { RulesConfig } from '../rules';
 
 /**
- * Titles and bonuses (ROADMAP M1.6, DESIGN §4 and §7). A bonus source (a
- * title now; items from M1.7) carries flat and/or percentage bonuses per stat.
+ * Titles and bonuses (ROADMAP M1.6 and MQ.14, DESIGN §4 and §7). A bonus
+ * source (a title or an item) carries flat and/or percentage bonuses per stat.
  *
  * Documented order, per stat:
  *   1. base     — the character's own stat (class spread + free points)
- *   2. flat     — every flat bonus is added: base + Σ flat
- *   3. percent  — the percentages are summed: Σ percent
- *   4. cap      — that sum is capped at `bonuses.percentCapPerStat` (+25%),
- *                 then applied once: (base + Σ flat) × (1 + capped Σ percent)
+ *   2. items    — Σ item flats, capped at `bonuses.itemCapOfBase` × base
+ *                 (whole stat units, rounded down; null = no cap). Only a
+ *                 positive total is capped: penalties always apply.
+ *   3. flat     — base + capped item flats + Σ title flats
+ *   4. percent  — the percentages are summed: Σ percent. Under
+ *                 `bonuses.itemsFlatOnly` (L6) only titles' percentages count.
+ *   5. cap      — that sum is capped at `bonuses.percentCapPerStat` (null =
+ *                 no cap, L8), then applied once:
+ *                 (base + Σ flat) × (1 + capped Σ percent)
  * The result is rounded half away from zero to whole stat units (tenths on
  * screen) and never drops below 0. Percentages never compound with each other.
- * The cap applies to the net sum, so a penalty offsets over-cap stacking
- * (+40% and −20% → +20%). A source id may appear once (no double stacking).
+ * The percent cap applies to the net sum, so a penalty offsets over-cap
+ * stacking (+40% and −20% → +20%). A source id may appear once.
+ * Example (DESIGN §4): base 100, items +30 (capped to +20), titles +10% and
+ * +5% → (100 + 20) × 1.15 = 138.
  */
 
 /** One stat's bonus from one source. `flat` is in stat units (10 = 1.0 on screen). */
@@ -42,13 +49,19 @@ export interface BonusContribution {
 
 export interface StatBreakdown {
   readonly base: number;
-  /** Σ flat bonuses. */
+  /** Σ flat bonuses actually applied (item flats after their cap, plus title flats). */
   readonly flat: number;
+  /** Σ item flat bonuses before the item cap. */
+  readonly itemFlat: number;
+  /** The item flats actually applied (after the item cap). */
+  readonly itemFlatApplied: number;
+  /** True when the item cap cut the item bonus. */
+  readonly itemCapped: boolean;
   /** Σ percentage bonuses before the cap. */
   readonly percent: number;
   /** The percentage actually applied (after the cap). */
   readonly percentApplied: number;
-  /** True when the cap cut the percentage. */
+  /** True when the percent cap cut the percentage. */
   readonly capped: boolean;
   /** Effective stat in stat units. */
   readonly value: number;
@@ -94,14 +107,15 @@ export function statBreakdown(
     seen.add(source.id);
     validateBonusSource(rules, source);
   }
-  const cap = rules.bonuses.percentCapPerStat;
+  const { percentCapPerStat: cap, itemCapOfBase, itemsFlatOnly } = rules.bonuses;
   const out: Record<string, StatBreakdown> = {};
   for (const { id } of rules.stats.list) {
     const own = base[id];
     if (own === undefined || !Number.isSafeInteger(own)) {
       throw new BonusRuleError(`Stat "${id}" is missing or not a whole number`);
     }
-    let flat = 0;
+    let itemFlat = 0;
+    let otherFlat = 0;
     let percent = 0;
     const contributions: BonusContribution[] = [];
     for (const source of sources) {
@@ -115,7 +129,10 @@ export function statBreakdown(
         p += b.percent ?? 0;
       }
       if (!touched) continue;
-      flat += f;
+      // Items give flat bonuses only (L6): a stored item percentage is ignored.
+      if (itemsFlatOnly && source.kind === 'item') p = 0;
+      if (source.kind === 'item') itemFlat += f;
+      else otherFlat += f;
       percent += p;
       contributions.push({
         sourceId: source.id,
@@ -125,16 +142,23 @@ export function statBreakdown(
         percent: p,
       });
     }
+    const itemCap =
+      itemCapOfBase === null ? Infinity : Math.max(0, Math.floor(own * itemCapOfBase + 1e-9));
+    const itemFlatApplied = Math.min(itemFlat, itemCap);
+    const flat = itemFlatApplied + otherFlat;
     // Snap float noise (0.1 + 0.2 = 0.30000000000000004) to millionths.
     percent = Math.round(percent * 1e6) / 1e6;
-    const percentApplied = Math.max(-1, Math.min(cap, percent));
+    const percentApplied = Math.max(-1, cap === null ? percent : Math.min(cap, percent));
     const value = Math.max(0, roundHalfAway((own + flat) * (1 + percentApplied)));
     out[id] = {
       base: own,
       flat,
+      itemFlat,
+      itemFlatApplied,
+      itemCapped: itemFlat > itemCap,
       percent,
       percentApplied,
-      capped: percent > cap,
+      capped: cap !== null && percent > cap,
       value,
       contributions,
     };

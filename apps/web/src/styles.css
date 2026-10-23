@@ -380,6 +380,10 @@ a {
   .player-grid .status-window {
     order: 1;
   }
+  /* Professions (MQ.6): right under the status window it extends. */
+  .player-grid .professions-window {
+    order: 1;
+  }
   .player-grid .quests {
     order: 2;
   }
@@ -1006,6 +1010,10 @@ button.skill-open:hover .skill-name {
 .skill-description {
   margin: 12px 0 6px;
 }
+.skill-effects {
+  margin: 0 0 6px;
+  white-space: pre-wrap;
+}
 .skill-flavor {
   margin: 0 0 6px;
   color: var(--muted);
@@ -1077,6 +1085,37 @@ button.skill-open:hover .skill-name {
 }
 .offer button {
   align-self: flex-start;
+}
+/* MQ.3: the title and Close stay put while a long list scrolls. */
+.skill-selection .skill-detail-head {
+  position: sticky;
+  top: -16px;
+  z-index: 1;
+  margin: -16px -18px 0;
+  padding: 16px 18px 8px;
+  background: #111a2b;
+  border-bottom: 1px solid color-mix(in srgb, var(--metal, var(--border)) 35%, transparent);
+}
+/* MQ.3: passed-over options are compact rows, so a long list stays scannable. */
+.passed-over .offers {
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-top: 8px;
+}
+.passed-over .offer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 12px;
+  row-gap: 2px;
+  padding: 8px 12px;
+}
+.passed-over .offer > * {
+  grid-column: 1;
+}
+.passed-over .offer button {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
 }
 .selection-review p {
   overflow-wrap: anywhere;
@@ -1202,6 +1241,18 @@ button.skill-open:hover .skill-name {
 .quest-time.urgent {
   color: var(--err);
 }
+/* MQ.7 hidden-quest notice: no title, no text, just that one exists. */
+.quest-hidden {
+  margin: 8px 0 4px;
+  padding: 6px 8px;
+  font-family: var(--mono);
+  border: 1px dashed var(--accent);
+  border-radius: 4px;
+  color: var(--text);
+}
+.quest-hidden-title {
+  color: var(--accent);
+}
 .stability-label strong {
   color: var(--text);
 }
@@ -1246,6 +1297,11 @@ button.skill-open:hover .skill-name {
 }
 .identify-of {
   margin: 0 0 4px;
+}
+.identify-header {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  color: var(--accent);
 }
 .identify-text {
   margin: 0;
@@ -1783,4 +1839,28 @@ p.small {
 }
 .party-head .party-name {
   margin: 0;
+}
+
+/* Professions tab (MQ.6): offered professions; greyed once one is taken. */
+.profession-offers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+.profession-offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.profession-offer.greyed {
+  opacity: 0.5;
+}
+.profession-confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
 }

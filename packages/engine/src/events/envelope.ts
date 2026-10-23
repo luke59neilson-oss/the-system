@@ -69,6 +69,8 @@ const stabilityRules = z.record(
 );
 const questText = z.string().trim().max(5000);
 const questDays = z.number().int().min(1).max(10_000).nullable();
+const entityLevel = z.number().int().min(0).max(10_000);
+const questNoticeTo = z.array(recordId).max(200).nullable();
 /** Identify tiers (M3.9, DESIGN §7): one text per minimum Identify rarity. */
 const identifyTiers = z
   .array(z.strictObject({ minRarity: recordId, text: z.string().trim().min(1).max(1000) }))
@@ -115,6 +117,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     portrait: portraitRef.nullable(),
   }),
   'character.professionGranted': z.strictObject({ characterId: recordId, profession: nonBlank }),
+  /** The player takes one of their offered professions later (MQ.6; the Professions tab). */
+  'profession.chosen': z.strictObject({ characterId: recordId, profession: nonBlank }),
   /** GM awards a title by name (M1.15; the title library, bonuses and System text are M6.4). */
   'title.awarded': z.strictObject({ characterId: recordId, title: nonBlank.max(80) }),
   /** GM sets current pool values; each must be within 0..max (D31). */
@@ -136,6 +140,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
       .array(z.strictObject({ characterId: recordId, share: z.number().int().nonnegative() }))
       .min(1),
     enemyLevel: z.number().int().nonnegative().max(10_000).nullable(),
+    /** Target's grade for the grade-gap XP factor (MQ.10); absent in older events. */
+    enemyGrade: z.string().min(1).max(40).optional(),
     /** Free text for the session log ("Pale hunter pack"). */
     reason: z.string().trim().max(200),
   }),
@@ -349,6 +355,14 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     /** The offer chosen from (its event id); absent only in logs from before it existed. */
     offerId: recordId.optional(),
   }),
+  /**
+   * GM withdraws a passed-over option (MQ.3, DESIGN §6): it stops appearing in
+   * later menus. The name matches case-insensitively.
+   */
+  'selection.optionWithdrawn': z.strictObject({
+    characterId: recordId,
+    skill: nonBlank,
+  }),
   /** GM releases an available evolution with its options (DESIGN §3 "held until released"). */
   'evolution.released': z.strictObject({
     characterId: recordId,
@@ -362,11 +376,15 @@ export const EVENT_PAYLOAD_SCHEMAS = {
             .array(z.strictObject({ skill: nonBlank, name: nonBlank, rarity: recordId }))
             .max(10),
           classWeights: statValues.nullable(),
+          /** One-time stat bonus on choosing this option (MQ.1, D98; v2). */
+          statBonus: statValues,
         }),
       )
       .min(1)
       .max(10),
     professions: z.array(nonBlank).max(10),
+    /** Upcast from v1: released under the old rules (no pending-selection gate). */
+    legacy: z.literal(true).optional(),
   }),
   /** The player (or GM) chooses a released option (and an offered profession, if any). */
   'evolution.chosen': z.strictObject({
@@ -375,6 +393,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     profession: nonBlank.nullable(),
     /** The release chosen from (its event id); absent only in logs from before it existed. */
     releaseId: recordId.optional(),
+    /** Upcast from v1: chosen under the old rules (no gate, no refill, D99). */
+    legacy: z.literal(true).optional(),
   }),
   /** GM starts a progress clock with N segments (M1.11, DESIGN §7). */
   'clock.created': z.strictObject({
@@ -421,6 +441,11 @@ export const EVENT_PAYLOAD_SCHEMAS = {
         rules: stabilityRules,
       })
       .nullable(),
+    /**
+     * MQ.7: who gets the hidden-quest notice (character ids); null or absent
+     * (logs before MQ.7) = every character.
+     */
+    noticeTo: questNoticeTo.optional(),
   }),
   /** GM edits a quest; omitted fields stay. */
   'quest.edited': z.strictObject({
@@ -431,6 +456,7 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     days: questDays.optional(),
     stabilityVisible: z.boolean().optional(),
     stabilityRules: stabilityRules.optional(),
+    noticeTo: questNoticeTo.optional(),
   }),
   'quest.statusSet': z.strictObject({
     questId: recordId,
@@ -460,6 +486,9 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     label: nonBlank,
     tiers: identifyTiers,
     knownBy: z.array(recordId).max(200),
+    /** MQ.8: grade id and level for the Identify range; absent (older logs) = none. */
+    grade: recordId.nullable().optional(),
+    level: entityLevel.nullable().optional(),
   }),
   /** GM edits an entity; omitted fields stay. */
   'entity.edited': z.strictObject({
@@ -467,6 +496,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     name: nonBlank.optional(),
     label: nonBlank.optional(),
     tiers: identifyTiers.optional(),
+    grade: recordId.nullable().optional(),
+    level: entityLevel.nullable().optional(),
   }),
   /** These characters now know the entity and can Identify it. */
   'entity.revealed': z.strictObject({
@@ -495,6 +526,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'character.renamed': 1,
   'character.portraitSet': 1,
   'character.professionGranted': 1,
+  'profession.chosen': 1,
   'title.awarded': 1,
   'character.poolsSet': 1,
   'character.statsSet': 1,
@@ -533,8 +565,9 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'library.seeded': 1,
   'selection.offered': 1,
   'selection.chosen': 1,
-  'evolution.released': 1,
-  'evolution.chosen': 1,
+  'selection.optionWithdrawn': 1,
+  'evolution.released': 2,
+  'evolution.chosen': 2,
   'clock.created': 1,
   'clock.ticked': 1,
   'clock.removed': 1,
@@ -565,7 +598,25 @@ export type EventUpcaster = (payload: unknown) => unknown;
 export type EventUpcasters = Readonly<
   Partial<Record<string, Readonly<Record<number, EventUpcaster>>>>
 >;
-export const EVENT_UPCASTERS: EventUpcasters = {};
+export const EVENT_UPCASTERS: EventUpcasters = {
+  // MQ.1 (D98, D99, D103): options gain a stat bonus; events stored before it
+  // keep the old rules on replay (no pending-selection gate, no pool refill).
+  'evolution.released': {
+    1: (payload) => {
+      const p = payload as { options?: unknown };
+      return {
+        ...(payload as object),
+        options: Array.isArray(p.options)
+          ? p.options.map((o: unknown) => ({ ...(o as object), statBonus: {} }))
+          : p.options,
+        legacy: true,
+      };
+    },
+  },
+  'evolution.chosen': {
+    1: (payload) => ({ ...(payload as object), legacy: true }),
+  },
+};
 
 interface EnvelopeBase {
   readonly id: string;
@@ -624,6 +675,7 @@ export const PLAYER_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   'skill.nicknamed',
   'selection.chosen',
   'evolution.chosen',
+  'profession.chosen',
 ]);
 
 /** Throws when a player-recorded event is not one a player may cause. */

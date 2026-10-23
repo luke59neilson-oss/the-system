@@ -3,6 +3,7 @@ import {
   DEFAULT_RULES,
   STARTER_CLASSES,
   largestRemainderSplit,
+  previewXpAward,
   raceLevel,
   type CampaignState,
 } from '@the-system/engine';
@@ -204,7 +205,7 @@ function CreateCampaign({ client }: { client: LiveClient }) {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const r = await run({ type: 'campaign.create', name, rules: DEFAULT_RULES });
-    // The default class, race, profession and skill libraries (M4.2); if this
+    // The default class, race and skill libraries (M4.2; no professions, MQ.6); if this
     // fails or is left out, the library window offers it again.
     if (r.ok && defaults) await client.command({ type: 'library.seedDefaults' });
   };
@@ -217,7 +218,7 @@ function CreateCampaign({ client }: { client: LiveClient }) {
       </label>
       <label className="check">
         <input type="checkbox" checked={defaults} onChange={(e) => setDefaults(e.target.checked)} />
-        Start with the default classes, Human race, professions and their skills
+        Start with the default classes, Human race and their skills
       </label>
       <button type="submit" disabled={busy}>
         Create campaign
@@ -305,7 +306,7 @@ function CreateCharacter({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const library = entriesOf(state, 'class') as ClassChoice[];
-  // Campaigns made before M4.2 may have no classes yet; the built-in Archer keeps working.
+  // Campaigns made before M4.2 may have no classes yet; the built-in six keep working.
   const classes: readonly ClassChoice[] = library.length > 0 ? library : STARTER_CLASSES;
   const races = entriesOf(state, 'race').map((r) => r.name);
   const raceChoices = races.length > 0 ? races : [state.rules.character.defaultRace];
@@ -337,7 +338,11 @@ function CreateCharacter({
       className: chosen.name,
       race: chosenRace,
       // Built-in starters carry their own skill text; library classes take it from the skill library.
-      classSkills: chosen.skills,
+      classSkills: chosen.skills.map((s) => ({
+        name: s.name,
+        rarity: s.rarity,
+        ...('description' in s ? { description: s.description, flavor: s.flavor } : {}),
+      })),
       classWeights: chosen.weights,
       ...(portrait === undefined ? {} : { portrait }),
     });
@@ -410,6 +415,20 @@ function AwardXp({ client, state }: { client: LiveClient; state: CampaignState }
         chosen.map(() => 1),
       )
     : [];
+  // MQ.11 (DESIGN §2): say what overflows or is lost before the GM confirms.
+  const outcome = (() => {
+    if (!valid) return new Map<string, { overflowed: number; lost: number }>();
+    try {
+      const rows = previewXpAward(state.rules, state.characters, 'class', {
+        amount: value,
+        participants: chosen.map((characterId) => ({ characterId })),
+      });
+      return new Map(rows.map((r) => [r.characterId, r]));
+    } catch {
+      return new Map<string, { overflowed: number; lost: number }>();
+    }
+  })();
+  const totalLost = [...outcome.values()].reduce((a, r) => a + r.lost, 0);
   const toggle = (id: string) =>
     setExcluded((prev) => {
       const next = new Set(prev);
@@ -462,10 +481,28 @@ function AwardXp({ client, state }: { client: LiveClient; state: CampaignState }
                   · {preview[i]} XP
                 </span>
               )}
+              {i >= 0 && (outcome.get(id)?.overflowed ?? 0) > 0 && (
+                <span className="muted" data-testid={`overflow-${id}`}>
+                  {' '}
+                  · {outcome.get(id)?.overflowed} to profession
+                </span>
+              )}
+              {i >= 0 && (outcome.get(id)?.lost ?? 0) > 0 && (
+                <span className="warn" data-testid={`lost-${id}`}>
+                  {' '}
+                  · {outcome.get(id)?.lost} lost
+                </span>
+              )}
             </label>
           );
         })}
       </fieldset>
+      {totalLost > 0 && (
+        <p className="warn" data-testid="xp-lost">
+          {totalLost} XP will be lost: those tracks are at the top of their grade and nothing can
+          take the overflow.
+        </p>
+      )}
       <label>
         Reason (GM only)
         <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} />
@@ -577,6 +614,12 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
           maxLength={1000}
         />
       </label>
+      {state.rules.skills.libraryByRarity && (
+        <p className="muted hint">
+          Saving here makes this copy the character’s own: later library edits skip it until it
+          reaches a rarity the library has text for.
+        </p>
+      )}
       <button type="submit" disabled={busy || !current || unchanged}>
         Save skill text
       </button>

@@ -1,0 +1,499 @@
+{
+  "schemaVersion": 21,
+  "name": "Golden: marks carry over (MQ.4)",
+  "rules": {
+    "configVersion": 1,
+    "campaign": {
+      "levelCap": 240,
+      "typicalLevelsPerSession": 6,
+      "typicalLevelsPerSessionRange": [4, 8],
+      "plannedSessions": 40
+    },
+    "stats": {
+      "list": [
+        {
+          "id": "strength",
+          "name": "Strength"
+        },
+        {
+          "id": "agility",
+          "name": "Agility"
+        },
+        {
+          "id": "endurance",
+          "name": "Endurance"
+        },
+        {
+          "id": "vitality",
+          "name": "Vitality"
+        },
+        {
+          "id": "toughness",
+          "name": "Toughness"
+        },
+        {
+          "id": "wisdom",
+          "name": "Wisdom"
+        },
+        {
+          "id": "intelligence",
+          "name": "Intelligence"
+        },
+        {
+          "id": "perception",
+          "name": "Perception"
+        },
+        {
+          "id": "willpower",
+          "name": "Willpower"
+        }
+      ],
+      "startingValue": 10,
+      "displayDivisor": 10,
+      "displayDecimals": 1
+    },
+    "pools": [
+      {
+        "id": "hp",
+        "name": "Health Points (HP)",
+        "stat": "vitality",
+        "multiplier": 10
+      },
+      {
+        "id": "mp",
+        "name": "Mana Points (MP)",
+        "stat": "wisdom",
+        "multiplier": 10
+      },
+      {
+        "id": "stamina",
+        "name": "Stamina",
+        "stat": "endurance",
+        "multiplier": 10
+      }
+    ],
+    "grades": [
+      {
+        "id": "G",
+        "topLevel": 4,
+        "selectionInterval": null,
+        "rarityCeiling": "rare",
+        "classSpreadPerLevel": 4,
+        "freePointsPerRaceLevel": 2,
+        "xpPerLevel": 100,
+        "gradeGapMultiplier": 1,
+        "theme": "aluminum"
+      },
+      {
+        "id": "F",
+        "topLevel": 14,
+        "selectionInterval": 5,
+        "rarityCeiling": "rare",
+        "classSpreadPerLevel": 5,
+        "freePointsPerRaceLevel": 3,
+        "xpPerLevel": 150,
+        "gradeGapMultiplier": 3,
+        "theme": "bronze"
+      },
+      {
+        "id": "E",
+        "topLevel": 49,
+        "selectionInterval": 5,
+        "rarityCeiling": "epic",
+        "classSpreadPerLevel": 8,
+        "freePointsPerRaceLevel": 4,
+        "xpPerLevel": 250,
+        "gradeGapMultiplier": 5,
+        "theme": "copper"
+      },
+      {
+        "id": "D",
+        "topLevel": 99,
+        "selectionInterval": 10,
+        "rarityCeiling": "ancient",
+        "classSpreadPerLevel": 12,
+        "freePointsPerRaceLevel": 6,
+        "xpPerLevel": 400,
+        "gradeGapMultiplier": 10,
+        "theme": "silver"
+      },
+      {
+        "id": "C",
+        "topLevel": 149,
+        "selectionInterval": 10,
+        "rarityCeiling": "legendary",
+        "classSpreadPerLevel": 18,
+        "freePointsPerRaceLevel": 9,
+        "xpPerLevel": 650,
+        "gradeGapMultiplier": 20,
+        "theme": "gold"
+      },
+      {
+        "id": "B",
+        "topLevel": 199,
+        "selectionInterval": 10,
+        "rarityCeiling": "legendary",
+        "classSpreadPerLevel": 27,
+        "freePointsPerRaceLevel": 13,
+        "xpPerLevel": 1000,
+        "gradeGapMultiplier": 40,
+        "theme": "platinum"
+      },
+      {
+        "id": "A",
+        "topLevel": 240,
+        "selectionInterval": 10,
+        "rarityCeiling": "mythical",
+        "classSpreadPerLevel": 40,
+        "freePointsPerRaceLevel": 20,
+        "xpPerLevel": 1500,
+        "gradeGapMultiplier": 80,
+        "theme": "diamond"
+      }
+    ],
+    "character": {
+      "defaultRace": "Human",
+      "fullPoolsStayFull": true,
+      "clampedPoolsNotFull": false
+    },
+    "tracks": {
+      "professionUnlockGrade": "E",
+      "evolutionGate": "race",
+      "raceLevelRounding": "floor"
+    },
+    "xp": {
+      "aboveLevelBonusPerLevel": 0.1,
+      "aboveLevelBonusCap": 1,
+      "gradeBelowFactors": [],
+      "overflow": false,
+      "defaultSplit": "even"
+    },
+    "bonuses": {
+      "percentCapPerStat": 0.25,
+      "itemCapOfBase": null,
+      "itemsFlatOnly": false
+    },
+    "skills": {
+      "rarities": [
+        {
+          "id": "inferior",
+          "name": "Inferior",
+          "reserved": false
+        },
+        {
+          "id": "common",
+          "name": "Common",
+          "reserved": false
+        },
+        {
+          "id": "uncommon",
+          "name": "Uncommon",
+          "reserved": false
+        },
+        {
+          "id": "rare",
+          "name": "Rare",
+          "reserved": false
+        },
+        {
+          "id": "epic",
+          "name": "Epic",
+          "reserved": false
+        },
+        {
+          "id": "ancient",
+          "name": "Ancient",
+          "reserved": false
+        },
+        {
+          "id": "legendary",
+          "name": "Legendary",
+          "reserved": false
+        },
+        {
+          "id": "mythical",
+          "name": "Mythical",
+          "reserved": false
+        },
+        {
+          "id": "divine",
+          "name": "Divine",
+          "reserved": true
+        }
+      ],
+      "startingClassSkillCount": 3,
+      "startingRaceSkill": {
+        "name": "Identify",
+        "rarity": "common"
+      },
+      "menuSize": {
+        "min": 3,
+        "max": 4
+      },
+      "evolutionTransforms": {
+        "min": 0,
+        "max": 2
+      },
+      "markUpgrades": {
+        "inferior": 3,
+        "common": 4,
+        "uncommon": 6,
+        "rare": 8,
+        "epic": 10,
+        "ancient": 12,
+        "legendary": 15
+      },
+      "maxMarksPerSkillPerSession": 1,
+      "marksCarryOver": true,
+      "libraryByRarity": false,
+      "merge": {
+        "requiredJointUses": 3,
+        "minRarity": "uncommon",
+        "maxPerCharacterPerGrade": 1,
+        "rarityStepsAboveHigher": 1
+      }
+    },
+    "practice": {
+      "selectionAlertWithinLevels": 5
+    },
+    "resolution": {
+      "gradeGapMode": "none",
+      "lowerGradeFraction": 0.3333333333333333
+    },
+    "identify": {
+      "sameGradeLevelRatio": 1.5
+    },
+    "montage": {
+      "minClockFill": 0.5,
+      "requireNoFailures": true
+    },
+    "stability": {
+      "min": 0,
+      "max": 100,
+      "initial": 100,
+      "visibleToPlayersByDefault": false
+    },
+    "hunger": {
+      "enabledByDefault": false,
+      "fadesAtGrade": "E"
+    },
+    "economy": {
+      "currencyName": "Credits",
+      "equipmentSlots": [
+        {
+          "id": "ring",
+          "name": "Ring",
+          "count": 2,
+          "kind": "jewelry"
+        },
+        {
+          "id": "necklace",
+          "name": "Necklace",
+          "count": 1,
+          "kind": "jewelry"
+        },
+        {
+          "id": "chest",
+          "name": "Chest",
+          "count": 1,
+          "kind": "armor"
+        },
+        {
+          "id": "legs",
+          "name": "Legs",
+          "count": 1,
+          "kind": "armor"
+        },
+        {
+          "id": "boots",
+          "name": "Boots",
+          "count": 1,
+          "kind": "armor"
+        },
+        {
+          "id": "bracers",
+          "name": "Bracers",
+          "count": 1,
+          "kind": "armor"
+        },
+        {
+          "id": "mask",
+          "name": "Mask",
+          "count": 1,
+          "kind": "armor"
+        },
+        {
+          "id": "cloak",
+          "name": "Cloak",
+          "count": 1,
+          "kind": "armor"
+        },
+        {
+          "id": "gloves",
+          "name": "Gloves",
+          "count": 1,
+          "kind": "armor"
+        },
+        {
+          "id": "mainHand",
+          "name": "Main hand",
+          "count": 1,
+          "kind": "weapon"
+        },
+        {
+          "id": "offHand",
+          "name": "Off hand",
+          "count": 1,
+          "kind": "weapon"
+        }
+      ]
+    },
+    "logging": {
+      "autosaveMinutes": 5
+    },
+    "limits": {
+      "notesPerCharacter": 300,
+      "noteCharsPerCharacter": 150000,
+      "openTradesPerCharacter": 10,
+      "practiceEntriesPerCharacter": 5000,
+      "practiceEntryChars": 500
+    }
+  },
+  "characters": {
+    "jake": {
+      "schemaVersion": 7,
+      "id": "jake",
+      "name": "Jake",
+      "race": "Human",
+      "className": "Archer",
+      "profession": null,
+      "professionOffers": [],
+      "classLevel": 0,
+      "professionLevel": 0,
+      "grade": "G",
+      "xp": {
+        "class": 0,
+        "profession": 0
+      },
+      "classWeights": {
+        "strength": 1,
+        "agility": 1,
+        "endurance": 1,
+        "vitality": 1,
+        "toughness": 1,
+        "wisdom": 1,
+        "intelligence": 1,
+        "perception": 1,
+        "willpower": 1
+      },
+      "classSpreadTotals": {
+        "strength": 0,
+        "agility": 0,
+        "endurance": 0,
+        "vitality": 0,
+        "toughness": 0,
+        "wisdom": 0,
+        "intelligence": 0,
+        "perception": 0,
+        "willpower": 0
+      },
+      "stats": {
+        "strength": 10,
+        "agility": 10,
+        "endurance": 10,
+        "vitality": 10,
+        "toughness": 10,
+        "wisdom": 10,
+        "intelligence": 10,
+        "perception": 10,
+        "willpower": 10
+      },
+      "pools": {
+        "hp": 100,
+        "mp": 100,
+        "stamina": 100
+      },
+      "freePointBatches": [],
+      "titles": [],
+      "skills": [
+        {
+          "name": "Basic Archery",
+          "rarity": "common",
+          "kind": "class",
+          "nickname": null,
+          "unique": false,
+          "marks": 2,
+          "markSessions": ["a", "b", "c", "d", "e"],
+          "description": null,
+          "flavor": null
+        },
+        {
+          "name": "Basic Stealth",
+          "rarity": "inferior",
+          "kind": "class",
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": [],
+          "description": null,
+          "flavor": null
+        },
+        {
+          "name": "Archer’s Eye",
+          "rarity": "common",
+          "kind": "class",
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": [],
+          "description": null,
+          "flavor": null
+        },
+        {
+          "name": "Identify",
+          "rarity": "common",
+          "kind": "race",
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": [],
+          "description": null,
+          "flavor": null
+        }
+      ],
+      "merges": {},
+      "selections": [],
+      "evolution": null,
+      "portrait": null
+    }
+  },
+  "characterOrder": ["jake"],
+  "broadcasts": [],
+  "items": {},
+  "itemOrder": [],
+  "skillLibrary": {},
+  "skillLibraryOrder": [],
+  "classLibrary": {},
+  "classLibraryOrder": [],
+  "raceLibrary": {},
+  "raceLibraryOrder": [],
+  "professionLibrary": {},
+  "professionLibraryOrder": [],
+  "holdings": {},
+  "trades": {},
+  "tradeOrder": [],
+  "practice": [],
+  "notes": {},
+  "noteOrder": [],
+  "clocks": {},
+  "clockOrder": [],
+  "quests": {},
+  "questOrder": [],
+  "entities": {},
+  "entityOrder": [],
+  "montages": {},
+  "montageOrder": [],
+  "day": 1,
+  "sessions": [],
+  "currentSession": null
+}

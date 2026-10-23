@@ -26,15 +26,16 @@ export function matchesFilter(n: LiveNotification, filter: HistoryFilter): boole
     case 'all':
       return true;
     case 'dings':
-      return n.kind === 'level';
-    case 'class':
+      return n.kind === 'level' || n.kind === 'profession';
     case 'profession':
+      return n.kind === 'profession' || (n.kind === 'level' && n.track === filter);
+    case 'class':
     case 'race':
       return n.kind === 'level' && n.track === filter;
     case 'freePoints':
       return n.kind === 'freePoints';
     case 'broadcast':
-      return n.kind === 'broadcast';
+      return n.kind === 'broadcast' || n.kind === 'hiddenQuest';
     case 'items':
       return n.kind === 'gift' || n.kind === 'trade';
   }

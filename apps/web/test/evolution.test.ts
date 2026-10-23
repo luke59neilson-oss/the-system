@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { EvolutionOption, OwnSheet, PlayerRules } from '@the-system/engine';
-import { evolutionWarnings, transformText, weightsText } from '../src/player/evolution';
+import {
+  bonusText,
+  evolutionBlocked,
+  evolutionWarnings,
+  transformText,
+  weightsText,
+} from '../src/player/evolution';
 
 const rules = {
   stats: {
@@ -16,7 +22,9 @@ const rules = {
     { id: 'common', name: 'Common' },
     { id: 'rare', name: 'Rare' },
   ],
+  marks: { carryOver: false, upgrades: { common: 4 }, order: ['common', 'rare'] },
 } as unknown as PlayerRules;
+const carrying = { marks: { ...rules.marks, carryOver: true } };
 
 const skill = (name: string, marks: number) =>
   ({ name, rarity: 'common', marks }) as unknown as OwnSheet['skills'][number];
@@ -27,12 +35,12 @@ const option = (over: Partial<EvolutionOption> = {}): EvolutionOption => ({
   description: '',
   transforms: [{ skill: 'Basic Archery', name: 'Expert Archery', rarity: 'rare' }],
   classWeights: null,
+  statBonus: {},
   ...over,
 });
 
-const me = (over: Partial<Pick<OwnSheet, 'skills' | 'selections'>> = {}) => ({
+const me = (over: Partial<Pick<OwnSheet, 'skills'>> = {}) => ({
   skills: [skill('Basic Archery', 3)],
-  selections: [],
   ...over,
 });
 
@@ -55,30 +63,72 @@ describe('evolution screen helpers (M3.13)', () => {
     expect(weightsText(rules, { strength: 0 })).toBeNull();
   });
 
-  it('warns about lost marks, waiting choices, a reshape, and finality', () => {
-    const w = evolutionWarnings(
-      me({
-        selections: [
-          { level: 10, options: [], chosen: null, offerId: 'x' },
-          { level: 5, options: [], chosen: 'A', offerId: 'y' },
-        ],
-      }),
-      option({ classWeights: { agility: 2 } }),
-    );
+  it('warns about lost marks, a reshape, and finality', () => {
+    const w = evolutionWarnings(rules, me(), option({ classWeights: { agility: 2 } }));
     expect(w).toEqual([
       '[Basic Archery] becomes [Expert Archery]: its 3 mastery marks reset to 0.',
-      'You have 1 skill selection still waiting.',
       'Your class stat spread changes for every class level from now on.',
       'The choice is final; the other options will be gone.',
     ]);
   });
 
   it('only warns of finality when nothing is lost', () => {
-    expect(evolutionWarnings(me({ skills: [skill('Basic Archery', 0)] }), option())).toEqual([
-      'The choice is final; the other options will be gone.',
-    ]);
-    expect(evolutionWarnings(me({ skills: [skill('Basic Archery', 1)] }), option())[0]).toBe(
+    expect(evolutionWarnings(rules, me({ skills: [skill('Basic Archery', 0)] }), option())).toEqual(
+      ['The choice is final; the other options will be gone.'],
+    );
+    expect(evolutionWarnings(rules, me({ skills: [skill('Basic Archery', 1)] }), option())[0]).toBe(
       '[Basic Archery] becomes [Expert Archery]: its 1 mastery mark resets to 0.',
     );
+  });
+});
+
+describe('evolution warnings with marks carrying over (MQ.4, D114)', () => {
+  const at = (marks: number) => me({ skills: [skill('Basic Archery', marks)] });
+  it('names the marks a rarity gain spends and the ones that carry on', () => {
+    // Common → Rare costs 4 (one step).
+    expect(evolutionWarnings(carrying, at(6), option())[0]).toBe(
+      '[Basic Archery] becomes [Expert Archery]: the rarity gain spends 4 mastery marks; 2 carry on.',
+    );
+    expect(evolutionWarnings(carrying, at(5), option())[0]).toBe(
+      '[Basic Archery] becomes [Expert Archery]: the rarity gain spends 4 mastery marks; 1 carries on.',
+    );
+  });
+  it('says marks reset when the gain costs all of them', () => {
+    expect(evolutionWarnings(carrying, at(3), option())[0]).toBe(
+      '[Basic Archery] becomes [Expert Archery]: its 3 mastery marks reset to 0.',
+    );
+  });
+  it('says nothing about marks when the transform keeps the rarity', () => {
+    const keep = option({
+      transforms: [{ skill: 'Basic Archery', name: 'Expert Archery', rarity: 'common' }],
+    });
+    expect(evolutionWarnings(carrying, at(3), keep)).toEqual([
+      'The choice is final; the other options will be gone.',
+    ]);
+    expect(evolutionWarnings(rules, at(3), keep)).toEqual([
+      'The choice is final; the other options will be gone.',
+    ]);
+  });
+});
+
+describe('evolution waits for selections (MQ.1, D103)', () => {
+  it('blocks while any earned selection is unchosen, offered or not', () => {
+    expect(evolutionBlocked({ selectionsDue: 0 })).toBeNull();
+    expect(evolutionBlocked({ selectionsDue: 1 })).toBe(
+      'Choose your waiting skill selection first: you cannot evolve until it is picked.',
+    );
+    expect(evolutionBlocked({ selectionsDue: 2 })).toBe(
+      'Choose your 2 waiting skill selections first: you cannot evolve until they are picked.',
+    );
+  });
+});
+
+describe('evolution stat bonus (MQ.1)', () => {
+  it('lists a mixed bonus in stat order and folds an equal bonus to every stat', () => {
+    expect(bonusText(rules, { perception: 2, strength: 3 })).toBe('+3 Strength · +2 Perception');
+    expect(bonusText(rules, { strength: 2, agility: 2, perception: 2 })).toBe('+2 to every stat');
+    expect(bonusText(rules, { strength: 0 })).toBeNull();
+    expect(bonusText(rules, {})).toBeNull();
+    expect(bonusText(rules, undefined)).toBeNull();
   });
 });

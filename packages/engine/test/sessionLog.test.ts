@@ -65,6 +65,7 @@ function sitting(): { campaign: Campaign; fromSeq: number; earlierXp: string } {
     amount: 400,
     participants: [{ characterId: 'jake' }, { characterId: 'kim' }],
     enemyLevel: 3,
+    enemyGrade: 'G',
     reason: 'Pale hunter pack',
   });
   gm({ type: 'title.award', characterId: 'jake', title: 'Hunter of the Pale' });
@@ -159,7 +160,7 @@ describe('session log (M2.4)', () => {
     const log = buildSessionLog(campaign, fromSeq);
     const text = log.entries.map((e) => `${e.kind}|${e.text}`);
     expect(text).toContain(
-      'xp|400 class XP for Pale hunter pack, enemy level 3: Jake 200, Kim 200',
+      'xp|400 class XP for Pale hunter pack, enemy level 3, enemy grade G: Jake 200, Kim 200',
     );
     expect(text.some((t) => t.startsWith('level|Jake: class Archer 0 → '))).toBe(true);
     expect(

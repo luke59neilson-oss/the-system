@@ -1,10 +1,11 @@
 name: CI
 
-# Runs on pushes to main and wip/* (what build sessions push) and on PRs into
-# main. Not on `release`: its commit was already tested on main (D8, D15).
+# Runs on pushes to main and on PRs into main. Not on `wip/*`: unfinished work
+# is tested locally by the run that resumes it, and main CI tests it when it
+# lands (L9). Not on `release`: its commit was already tested on main (D8, D15).
 on:
   push:
-    branches: [main, 'wip/**']
+    branches: [main]
     paths-ignore: ['docs/**']
   pull_request:
     branches: [main]
@@ -24,7 +25,7 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -42,8 +43,23 @@ jobs:
         run: npm run build
       - name: Bundle the desktop main process (no Electron binary needed)
         run: npm run build -w @the-system/desktop
+      # Cache the browser download per Playwright version (L9); system
+      # libraries are still installed every time.
+      - name: Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright Chromium
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-chromium-${{ runner.os }}-${{ steps.pw.outputs.version }}
       - name: Install Playwright Chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
+      - name: Install Chromium system libraries (browser restored from cache)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - name: E2E
         run: npx playwright test
       - name: Upload Playwright report
@@ -54,5 +70,41 @@ jobs:
           path: |
             playwright-report/
             test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # Desktop smoke (QF.6): the real Electron app under xvfb. Main pushes only;
+  # the repo is public, so the minutes are free (L10).
+  desktop-smoke:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      # Electron fetches its binary lazily; fetch it now so a download
+      # failure reads as one, not as a smoke failure.
+      - name: Install the Electron binary
+        working-directory: node_modules/electron
+        run: npm_config_electron_skip_binary_download=false node install.js
+      - name: Electron binary present
+        run: node -e "require('fs').accessSync(require('electron'))"
+      - name: Install Playwright Chromium and xvfb
+        run: |
+          npx playwright install --with-deps chromium
+          sudo apt-get update && sudo apt-get install -y xvfb
+      - name: Desktop smoke
+        run: npm run desktop:smoke
+      - name: Upload smoke results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-smoke-results
+          path: apps/desktop/test-results/
           if-no-files-found: ignore
           retention-days: 7

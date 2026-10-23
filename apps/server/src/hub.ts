@@ -39,7 +39,23 @@ export interface HubOptions {
    * client, or null. Must not throw.
    */
   readonly afterAppend?: (store: CampaignStore, events: readonly DomainEvent[]) => string | null;
+  /**
+   * Per-connection message budget for every socket but the GM's (QF.3): a
+   * bucket of `burst` messages that refills at `perSecond`. Default
+   * {@link DEFAULT_RATE_LIMIT}.
+   */
+  readonly rateLimit?: RateLimit;
 }
+
+export interface RateLimit {
+  readonly burst: number;
+  readonly perSecond: number;
+}
+
+/** QF.3 (D136): far above a person tapping, far below a script flooding the hub. */
+export const DEFAULT_RATE_LIMIT: RateLimit = { burst: 30, perSecond: 5 };
+
+export const RATE_LIMITED = 'Too many actions at once; wait a moment and try again';
 
 type Role =
   { role: 'none' } | { role: 'gm' } | { role: 'player'; characterId: string; viewAs: boolean };
@@ -52,6 +68,11 @@ export interface Connection {
 interface Client {
   role: Role;
   send: (message: ServerMessage) => void;
+  /** Messages left in this connection's bucket, and when it was last refilled (ms). */
+  tokens: number;
+  refilledAt: number;
+  /** The last player view sent, serialized: unchanged views are not re-sent (QF.3). */
+  lastView: string | null;
 }
 
 export class LiveHub {
@@ -66,8 +87,35 @@ export class LiveHub {
   private readonly options: HubOptions;
 
   constructor(store: CampaignStore, options: HubOptions) {
+    const limit = options.rateLimit;
+    if (limit && !(Number.isFinite(limit.burst) && limit.burst >= 2 && limit.perSecond > 0)) {
+      // A join must always fit, or a client could never get in.
+      throw new Error('rateLimit needs burst >= 2 and perSecond > 0');
+    }
     this.store = store;
     this.options = options;
+  }
+
+  private get rateLimit(): RateLimit {
+    return this.options.rateLimit ?? DEFAULT_RATE_LIMIT;
+  }
+
+  private clock(): number {
+    const ms = Date.parse(this.options.now());
+    return Number.isFinite(ms) ? ms : 0;
+  }
+
+  /** Spends one message from a non-GM connection's bucket; false when it is empty. */
+  private allow(client: Client): boolean {
+    if (client.role.role === 'gm') return true;
+    const { burst, perSecond } = this.rateLimit;
+    const now = this.clock();
+    const elapsed = Math.max(0, now - client.refilledAt) / 1000;
+    client.tokens = Math.min(burst, client.tokens + elapsed * perSecond);
+    client.refilledAt = now;
+    if (client.tokens < 1) return false;
+    client.tokens -= 1;
+    return true;
   }
 
   private get history(): SeqNotification[] {
@@ -81,7 +129,13 @@ export class LiveHub {
 
   /** Registers a socket; returns the handlers the transport calls. */
   connect(send: (message: ServerMessage) => void): Connection {
-    const client: Client = { role: { role: 'none' }, send };
+    const client: Client = {
+      role: { role: 'none' },
+      send,
+      tokens: this.rateLimit.burst,
+      refilledAt: this.clock(),
+      lastView: null,
+    };
     this.clients.add(client);
     send(helloMessage(this.store.id));
     return {
@@ -92,8 +146,19 @@ export class LiveHub {
 
   private receive(client: Client, raw: string): void {
     const parsed = parseClientMessage(raw);
-    if (!parsed.ok) return client.send({ type: 'error', error: parsed.error });
+    if (!parsed.ok) {
+      // Garbage costs from the same budget as commands.
+      this.allow(client);
+      return client.send({ type: 'error', error: parsed.error });
+    }
     const message = parsed.message;
+    if (!this.allow(client)) {
+      return client.send(
+        message.type === 'join'
+          ? { type: 'error', error: RATE_LIMITED }
+          : { type: 'result', requestId: message.requestId, ok: false, error: RATE_LIMITED },
+      );
+    }
     if (message.type === 'join') {
       if (message.role === 'gm') {
         if (!gmKeyMatches(this.options.gmKey, message.gmKey)) {
@@ -214,11 +279,13 @@ export class LiveHub {
             items: this.filter(other.role, this.history),
             reset: true,
           });
-        } else {
-          const mine = this.filter(other.role, fresh);
-          if (mine.length) other.send({ type: 'notifications', items: mine });
         }
-        this.sendSnapshot(other);
+        const mine = undo ? [] : this.filter(other.role, fresh);
+        if (mine.length) other.send({ type: 'notifications', items: mine });
+        // A player whose view did not change and who got no notification
+        // needs no new snapshot (QF.3): one player's edits must not push
+        // every other client's whole view again.
+        this.sendSnapshot(other, { onlyIfChanged: !undo && mine.length === 0 });
       } catch {
         // One failing socket must not stop the others from updating.
       }
@@ -226,7 +293,7 @@ export class LiveHub {
   }
 
   /** The GM projection for a GM, the player projection for a player. */
-  private sendSnapshot(client: Client): void {
+  private sendSnapshot(client: Client, options: { onlyIfChanged?: boolean } = {}): void {
     const role = client.role;
     if (role.role === 'gm') {
       const state = this.store.campaign.state;
@@ -238,15 +305,16 @@ export class LiveHub {
     const state = this.store.campaign.state;
     try {
       if (!state) throw new ProjectionError('No campaign');
-      client.send({
-        type: 'view',
-        seq: this.seq,
-        view: projectForPlayer(state, role.characterId, { viewAs: role.viewAs }),
-      });
+      const view = projectForPlayer(state, role.characterId, { viewAs: role.viewAs });
+      const serialized = JSON.stringify(view);
+      if (options.onlyIfChanged && serialized === client.lastView) return;
+      client.lastView = serialized;
+      client.send({ type: 'view', seq: this.seq, view });
     } catch (error) {
       if (!(error instanceof ProjectionError)) throw error;
       // The character is gone (e.g. its creation was undone): back to the join screen.
       client.role = { role: 'none' };
+      client.lastView = null;
       client.send({ type: 'error', error: 'Your character no longer exists' });
     }
   }

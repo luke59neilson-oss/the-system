@@ -9,7 +9,7 @@ import {
 } from './envelope';
 import { CharacterRuleError } from '../character';
 import { normalizeTags } from '../skills/library';
-import { DEFAULT_LIBRARY } from '../content/defaults';
+import { missingDefaultEntries } from '../content/defaults';
 import { largestRemainderSplit } from '../progression';
 import { appendEvent, type Campaign } from './log';
 
@@ -39,6 +39,8 @@ export type Command =
   | { type: 'character.rename'; characterId: string; name: string }
   | { type: 'character.setPortrait'; characterId: string; portrait: string | null }
   | { type: 'character.grantProfession'; characterId: string; profession: string }
+  /** Player: take one of the professions the GM offered (MQ.6). */
+  | { type: 'profession.choose'; characterId: string; profession: string }
   | { type: 'title.award'; characterId: string; title: string }
   | { type: 'character.setPools'; characterId: string; pools: Readonly<Record<string, number>> }
   | { type: 'character.setStats'; characterId: string; stats: Readonly<Record<string, number>> }
@@ -57,6 +59,8 @@ export type Command =
         share?: number | undefined;
       }[];
       enemyLevel?: number | null | undefined;
+      /** Target's grade id for the grade-gap XP factor (MQ.10). */
+      enemyGrade?: string | null | undefined;
       reason?: string | undefined;
     }
   | {
@@ -204,6 +208,12 @@ export type Command =
       offerId?: string | undefined;
     }
   | {
+      /** GM only: a passed-over option leaves later menus (MQ.3). */
+      type: 'selection.withdrawOption';
+      characterId: string;
+      skill: string;
+    }
+  | {
       type: 'evolution.release';
       characterId: string;
       options: readonly {
@@ -213,6 +223,7 @@ export type Command =
         description?: string | undefined;
         transforms?: readonly { skill: string; name: string; rarity: string }[] | undefined;
         classWeights?: Readonly<Record<string, number>> | null | undefined;
+        statBonus?: Readonly<Record<string, number>> | undefined;
       }[];
       /** Offered at the profession unlock grade; default none. */
       professions?: readonly string[] | undefined;
@@ -276,6 +287,8 @@ export type Command =
           }
         | null
         | undefined;
+      /** MQ.7: who gets the hidden-quest notice; default null = every character. */
+      noticeTo?: readonly string[] | null | undefined;
     }
   | {
       type: 'quest.edit';
@@ -286,6 +299,7 @@ export type Command =
       days?: number | null | undefined;
       stabilityVisible?: boolean | undefined;
       stabilityRules?: Readonly<Record<string, number>> | undefined;
+      noticeTo?: readonly string[] | null | undefined;
     }
   | { type: 'quest.setStatus'; questId: string; status: 'active' | 'completed' | 'failed' }
   | {
@@ -374,6 +388,9 @@ export type Command =
       tiers: readonly { minRarity: string; text: string }[];
       /** Characters who know it from the start; default none. */
       knownBy?: readonly string[] | undefined;
+      /** MQ.8: grade id and level (both or neither) for the Identify range. */
+      grade?: string | null | undefined;
+      level?: number | null | undefined;
     }
   | {
       type: 'entity.edit';
@@ -381,6 +398,8 @@ export type Command =
       name?: string | undefined;
       label?: string | undefined;
       tiers?: readonly { minRarity: string; text: string }[] | undefined;
+      grade?: string | null | undefined;
+      level?: number | null | undefined;
     }
   | {
       type: 'entity.reveal';
@@ -426,6 +445,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('character.rename') }),
   z.object({ type: z.literal('character.setPortrait') }),
   z.object({ type: z.literal('character.grantProfession') }),
+  z.object({ type: z.literal('profession.choose') }),
   z.object({ type: z.literal('title.award') }),
   z.object({ type: z.literal('character.setPools'), pools: anyRecord }),
   z.object({ type: z.literal('character.setStats'), stats: anyRecord }),
@@ -463,6 +483,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('skill.merge'), skills: z.array(z.unknown()) }),
   z.object({ type: z.literal('selection.offer'), options: z.array(z.unknown()) }),
   z.object({ type: z.literal('selection.choose') }),
+  z.object({ type: z.literal('selection.withdrawOption') }),
   z.object({
     type: z.literal('evolution.release'),
     options: z.array(z.record(z.string(), z.unknown())),
@@ -532,6 +553,7 @@ export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>([
   'skill.nickname',
   'selection.choose',
   'evolution.choose',
+  'profession.choose',
 ]);
 
 /** Returns why the actor may not issue the command, or null when allowed. */
@@ -581,6 +603,9 @@ function awardPayload(command: Extract<Command, { type: 'xp.award' }>) {
     amount: command.amount,
     shares,
     enemyLevel: command.enemyLevel ?? null,
+    ...(command.enemyGrade !== null && command.enemyGrade !== undefined
+      ? { enemyGrade: command.enemyGrade }
+      : {}),
     reason: command.reason ?? '',
   };
 }
@@ -593,24 +618,18 @@ function pendingOf(campaign: Campaign, characterId: string) {
     : undefined;
 }
 
-/** The default library entries the campaign lacks (by name, ignoring case), with fresh ids. */
+/** The default library entries the campaign lacks (`missingDefaultEntries`), with fresh ids. */
 function defaultSeed(campaign: Campaign, ctx: CommandContext) {
   const state = campaign.state;
   if (!state) throw new EventRejectedError('Create a campaign first');
-  const missing = <T extends { name: string }>(
-    defaults: readonly T[],
-    library: Readonly<Record<string, { name: string }>>,
-  ) => {
-    const have = new Set(Object.values(library).map((d) => d.name.trim().toLowerCase()));
-    return defaults
-      .filter((d) => !have.has(d.name.trim().toLowerCase()))
-      .map((d) => ({ id: ctx.newId(), ...d }));
-  };
+  const lacking = missingDefaultEntries(state);
+  const withIds = <T extends object>(list: readonly T[]) =>
+    list.map((d) => ({ id: ctx.newId(), ...d }));
   const seed = {
-    skills: missing(DEFAULT_LIBRARY.skills, state.skillLibrary),
-    classes: missing(DEFAULT_LIBRARY.classes, state.classLibrary),
-    races: missing(DEFAULT_LIBRARY.races, state.raceLibrary),
-    professions: missing(DEFAULT_LIBRARY.professions, state.professionLibrary),
+    skills: withIds(lacking.skills),
+    classes: withIds(lacking.classes),
+    races: withIds(lacking.races),
+    professions: withIds(lacking.professions),
   };
   if (Object.values(seed).every((list) => list.length === 0)) {
     throw new EventRejectedError('The libraries already hold every default entry');
@@ -654,6 +673,11 @@ function toEvent(
     case 'character.grantProfession':
       return {
         type: 'character.professionGranted',
+        payload: { characterId: command.characterId, profession: command.profession },
+      };
+    case 'profession.choose':
+      return {
+        type: 'profession.chosen',
         payload: { characterId: command.characterId, profession: command.profession },
       };
     case 'title.award':
@@ -886,6 +910,11 @@ function toEvent(
             )?.offerId,
         },
       };
+    case 'selection.withdrawOption':
+      return {
+        type: 'selection.optionWithdrawn',
+        payload: { characterId: command.characterId, skill: command.skill },
+      };
     case 'evolution.release':
       return {
         type: 'evolution.released',
@@ -897,6 +926,7 @@ function toEvent(
             description: o.description ?? '',
             transforms: o.transforms ?? [],
             classWeights: o.classWeights ?? null,
+            statBonus: o.statBonus ?? {},
           })),
           professions: command.professions ?? [],
         },
@@ -972,15 +1002,32 @@ function toEvent(
                     false,
                   rules: st.rules ?? {},
                 },
+          noticeTo:
+            command.noticeTo === undefined || command.noticeTo === null
+              ? null
+              : [...command.noticeTo],
         },
       };
     }
     case 'quest.edit': {
       const { questId, title, text, visible, days, stabilityVisible, stabilityRules } = command;
+      const noticeTo =
+        command.noticeTo === undefined || command.noticeTo === null
+          ? command.noticeTo
+          : [...command.noticeTo];
       // Undefined fields vanish in the event's JSON round trip (= unchanged).
       return {
         type: 'quest.edited',
-        payload: { questId, title, text, visible, days, stabilityVisible, stabilityRules },
+        payload: {
+          questId,
+          title,
+          text,
+          visible,
+          days,
+          stabilityVisible,
+          stabilityRules,
+          noticeTo,
+        },
       };
     }
     case 'quest.setStatus':
@@ -1077,10 +1124,12 @@ function toEvent(
           label: command.label ?? command.name,
           tiers: command.tiers.map((t) => ({ minRarity: t.minRarity, text: t.text })),
           knownBy: command.knownBy ?? [],
+          grade: command.grade ?? null,
+          level: command.level ?? null,
         },
       };
     case 'entity.edit': {
-      const { entityId, name, label, tiers } = command;
+      const { entityId, name, label, tiers, grade, level } = command;
       // Undefined fields vanish in the event's JSON round trip (= unchanged).
       return {
         type: 'entity.edited',
@@ -1089,6 +1138,8 @@ function toEvent(
           name,
           label,
           tiers: tiers?.map((t) => ({ minRarity: t.minRarity, text: t.text })),
+          grade,
+          level,
         },
       };
     }
@@ -1139,6 +1190,144 @@ function toEvent(
   }
 }
 
+/** One message for an unknown item and one the character does not hold (QF.2). */
+export const ITEM_NOT_AVAILABLE = 'That item is not available';
+
+const countOf = (inventory: Readonly<Record<string, number>>, id: string): number =>
+  Object.prototype.hasOwnProperty.call(inventory, id) ? (inventory[id] ?? 0) : 0;
+
+/**
+ * Items a command may name (QF.2): each side of a trade only what that side
+ * holds now (the proposer's give, the counterparty's get); a character asking
+ * the GM for items is refused (the GM offers items); gift and equip only held
+ * items.
+ * Unknown and not held read the same and name nothing, so a player cannot
+ * probe the GM's item library. Checked on commands, not in the reducer, so
+ * stored logs replay unchanged.
+ */
+function itemOutOfReach(state: NonNullable<Campaign['state']>, command: Command): string | null {
+  const known = (id: string) => Object.prototype.hasOwnProperty.call(state.items, id);
+  const inv = (who: string) =>
+    Object.prototype.hasOwnProperty.call(state.holdings, who)
+      ? (state.holdings[who]?.inventory ?? {})
+      : {};
+  const holds = (who: string, items: Readonly<Record<string, unknown>>) =>
+    Object.entries(items).every(
+      // A bad count reads like a missing item too, or the payload schema's
+      // error would confirm that the id exists (QF.2 review).
+      ([id, n]) =>
+        typeof n === 'number' &&
+        Number.isSafeInteger(n) &&
+        n > 0 &&
+        known(id) &&
+        countOf(inv(who), id) >= n,
+    );
+  if (command.type === 'item.equip') {
+    return known(command.itemId) && countOf(inv(command.characterId), command.itemId) >= 1
+      ? null
+      : ITEM_NOT_AVAILABLE;
+  }
+  if (command.type === 'gift.give') {
+    const giver = command.characterId;
+    if (giver === null || !Object.prototype.hasOwnProperty.call(state.characters, giver)) {
+      return null;
+    }
+    return holds(giver, command.items ?? {}) ? null : ITEM_NOT_AVAILABLE;
+  }
+  if (command.type === 'trade.propose') {
+    // Malformed parties get the reducer's own message (they name no item).
+    const isCharacter = (id: string | null) =>
+      id === null || Object.prototype.hasOwnProperty.call(state.characters, id);
+    if (command.characterId === command.to) return null;
+    if (!isCharacter(command.characterId) || !isCharacter(command.to)) return null;
+    const give = command.give.items ?? {};
+    const get = command.get.items ?? {};
+    if (command.characterId !== null && !holds(command.characterId, give))
+      return ITEM_NOT_AVAILABLE;
+    if (command.to !== null && !holds(command.to, get)) return ITEM_NOT_AVAILABLE;
+    if (command.to === null && command.characterId !== null && Object.keys(get).length > 0) {
+      return 'A trade with the GM can ask only for currency; the GM offers items';
+    }
+  }
+  return null;
+}
+
+/** Characters a note counts toward its author's `noteCharsPerCharacter` (QF.3). */
+const noteChars = (note: {
+  readonly title: string;
+  readonly body: string;
+  readonly tags: readonly string[];
+}): number => note.title.length + note.body.length + note.tags.reduce((n, t) => n + t.length, 0);
+
+/**
+ * Per-character caps from `rules.limits` (QF.3): notes written, their total
+ * size, and open proposed trades. Only characters are capped (the GM is
+ * trusted). Checked on commands, not in the reducer, so stored logs replay
+ * unchanged and a GM can lower a cap without breaking a campaign.
+ */
+function overLimit(
+  state: NonNullable<Campaign['state']>,
+  command: Command,
+  actor: Actor,
+): string | null {
+  const limits = state.rules.limits;
+  if (command.type === 'practice.log' && actor.role === 'player') {
+    const size =
+      command.action.length +
+      [...(command.skills ?? []), ...(command.tags ?? [])].reduce((n, t) => n + t.length, 0);
+    if (size > limits.practiceEntryChars) {
+      return `A practice entry can be at most ${limits.practiceEntryChars} characters`;
+    }
+    const logged = state.practice.filter((p) => p.characterId === command.characterId).length;
+    if (logged >= limits.practiceEntriesPerCharacter) {
+      return `Practice log is full (${limits.practiceEntriesPerCharacter.toLocaleString('en-US')} entries); ask the GM`;
+    }
+    return null;
+  }
+  if (command.type === 'note.create' || command.type === 'note.edit') {
+    const author = command.characterId;
+    if (author === null) return null;
+    const own = Object.values(state.notes).filter((n) => n.author === author);
+    let chars = own.reduce((n, note) => n + noteChars(note), 0);
+    if (command.type === 'note.create') {
+      if (own.length >= limits.notesPerCharacter) {
+        return `Note limit reached (${limits.notesPerCharacter} notes); delete one to add another`;
+      }
+      chars += noteChars({
+        title: (command.title ?? '').trim(),
+        body: command.body ?? '',
+        tags: command.tags ?? [],
+      });
+    } else {
+      const note = own.find((n) => n.id === command.noteId);
+      // Unknown or unreadable notes get the reducer's own message.
+      if (!note) return null;
+      const next = {
+        title: command.title === undefined ? note.title : command.title.trim(),
+        body: command.body ?? note.body,
+        tags: command.tags ?? note.tags,
+      };
+      // An edit that does not grow a note is always allowed (e.g. after a GM lowers the cap).
+      if (noteChars(next) <= noteChars(note)) return null;
+      chars += noteChars(next) - noteChars(note);
+    }
+    if (chars > limits.noteCharsPerCharacter) {
+      return `Notes are full (${limits.noteCharsPerCharacter.toLocaleString('en-US')} characters in all); shorten or delete a note first`;
+    }
+    return null;
+  }
+  if (command.type === 'trade.propose' && command.characterId !== null) {
+    const from = command.characterId;
+    const open = Object.values(state.trades).filter(
+      (t) => t.status === 'open' && t.from === from,
+    ).length;
+    if (open >= limits.openTradesPerCharacter) {
+      return `Too many open trades (${limits.openTradesPerCharacter}); cancel one first`;
+    }
+  }
+  return null;
+}
+
 /**
  * Validates a command, builds its event(s) and appends them. Never throws on a
  * bad or unauthorised command; the context (actor, clock, ids) is trusted.
@@ -1151,6 +1340,10 @@ export function execute(campaign: Campaign, command: Command, ctx: CommandContex
   }
   const denied = authorize(command, ctx.actor);
   if (denied) return { ok: false, error: `Not allowed: ${denied}` };
+  const unreachable = campaign.state ? itemOutOfReach(campaign.state, command) : null;
+  if (unreachable) return { ok: false, error: unreachable };
+  const capped = campaign.state ? overLimit(campaign.state, command, ctx.actor) : null;
+  if (capped) return { ok: false, error: capped };
   try {
     const { type, payload } = toEvent(command, ctx, campaign);
     // Events carry the running session (M4.3); a session's own start and end carry its id.

@@ -3,6 +3,7 @@ import {
   clampPools,
   createCharacter,
   grantProfession,
+  takeOfferedProfession,
   poolMax,
   type Character,
 } from '../character';
@@ -25,6 +26,7 @@ import {
   awardMark,
   describeSkill,
   fillGrantedSkills,
+  syncCharacterSkills,
   mergeSkills,
   setNickname,
   setUnique,
@@ -32,10 +34,11 @@ import {
   validateSkillDef,
   type SkillDef,
 } from '../skills';
-import { gainXp, shareBonus } from '../progression';
+import { awardXp, shareXp } from '../progression';
 import {
   chooseEvolution,
   chooseSelection,
+  withdrawPassedOver,
   offerSelection,
   releaseEvolution,
   retiredSkillNames,
@@ -43,7 +46,7 @@ import {
 import { montageAvailable, newClock, tickClock, type Clock, type Montage } from '../resolution';
 import { applyAction, checkStabilityRules, nudge, type Quest } from '../quests';
 import { parseRulesConfig, type RulesConfig } from '../rules';
-import { tierProblem, type Entity } from '../entities';
+import { rankProblem, tierProblem, type Entity } from '../entities';
 import {
   validateClassDef,
   validateProfessionDef,
@@ -54,8 +57,8 @@ import {
 } from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 16;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 21;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -270,16 +273,31 @@ const partyName = (id: string | null) => (id === null ? 'the GM' : `"${id}"`);
  * Invariant (M3.7, D81): no current pool is ever above its maximum from the
  * character's effective stats (base + equipped items). After every event, a
  * character whose stats, holdings or item definitions changed has its pools
- * clamped down; a rising maximum never refills a pool.
+ * clamped down. Pools follow maxima (MQ.2, D100): when a maximum rises, a
+ * pool that was full stays full; any other pool keeps its value, so a rising
+ * maximum alone never heals.
  */
 export function applyEvent(state: CampaignState | null, event: DomainEvent): CampaignState {
   const next = applyEventRaw(state, event);
-  return state === null ? next : clampToEffective(state, fillFromLibrary(state, next), event);
+  return state === null
+    ? next
+    : clampToEffective(state, fillFromLibrary(state, next, event), event);
 }
 
-/** Granted skills take their empty text from the skill library (M4.1, D90). */
-function fillFromLibrary(before: CampaignState, after: CampaignState): CampaignState {
-  if (after.skillLibraryOrder.length === 0 || before.characters === after.characters) return after;
+/**
+ * Granted skills take their empty text from the skill library (M4.1, D90).
+ * Under `rules.skills.libraryByRarity` (MQ.12, L4) every copy the GM has not
+ * edited follows its name-and-rarity entry: on a grant, a rarity change, and
+ * whenever that entry is defined or edited.
+ */
+function fillFromLibrary(
+  before: CampaignState,
+  after: CampaignState,
+  event: DomainEvent,
+): CampaignState {
+  if (after.skillLibraryOrder.length === 0) return after;
+  if (after.rules.skills.libraryByRarity) return syncFromLibrary(before, after, event);
+  if (before.characters === after.characters) return after;
   let characters: Record<string, Character> | null = null;
   for (const id of after.characterOrder) {
     const c = hasOwn(after.characters, id) ? after.characters[id] : undefined;
@@ -287,6 +305,35 @@ function fillFromLibrary(before: CampaignState, after: CampaignState): CampaignS
     if (!c || c === old) continue;
     const filled = fillGrantedSkills(old, c, after.skillLibrary);
     if (filled !== c) (characters ??= { ...after.characters })[id] = filled;
+  }
+  return characters === null ? after : { ...after, characters };
+}
+
+function syncFromLibrary(
+  before: CampaignState,
+  after: CampaignState,
+  event: DomainEvent,
+): CampaignState {
+  // Entries this event defined or edited: their copies take the new text.
+  const touchedIds =
+    event.type === 'skillDef.defined'
+      ? [event.payload.id]
+      : event.type === 'skillDef.edited'
+        ? [event.payload.skillDefId]
+        : event.type === 'library.seeded'
+          ? event.payload.skills.map((d) => d.id)
+          : [];
+  const touched = touchedIds.flatMap((id) =>
+    hasOwn(after.skillLibrary, id) ? [after.skillLibrary[id] as SkillDef] : [],
+  );
+  if (touched.length === 0 && before.characters === after.characters) return after;
+  let characters: Record<string, Character> | null = null;
+  for (const id of after.characterOrder) {
+    const c = hasOwn(after.characters, id) ? after.characters[id] : undefined;
+    const old = hasOwn(before.characters, id) ? before.characters[id] : undefined;
+    if (!c || (c === old && touched.length === 0)) continue;
+    const synced = syncCharacterSkills(after.rules, old, c, after.skillLibrary, touched);
+    if (synced !== c) (characters ??= { ...after.characters })[id] = synced;
   }
   return characters === null ? after : { ...after, characters };
 }
@@ -382,20 +429,97 @@ function clampToEffective(
       continue;
     }
     const stats = rule(event, () => effectiveOf(after, c));
-    // Only lowers pools that exist; never fills a missing one (D81).
+    // Only changes pools that exist; never fills a missing one (D81).
     const capped = rule(event, () => clampPools(after.rules, stats, {}));
+    const old = hasOwn(before.characters, id) ? before.characters[id] : undefined;
+    const { fullPoolsStayFull, clampedPoolsNotFull } = after.rules.character;
+    const oldMax =
+      old && (fullPoolsStayFull || clampedPoolsNotFull)
+        ? rule(event, () => maximaOf(before, old))
+        : null;
+    // MQ.15 (L7): pools a falling maximum clamped while they were not full.
+    // Such a pool sits at its maximum but does not count as full, so putting
+    // the gear back on never heals it.
+    const notFull = new Set(clampedPoolsNotFull ? (c.clampedPools ?? []) : []);
     let pools: Record<string, number> | null = null;
     for (const p of after.rules.pools) {
       const current = hasOwn(c.pools, p.id) ? c.pools[p.id] : undefined;
       const max = capped[p.id] ?? 0;
-      if (current !== undefined && current > max) {
+      if (current === undefined) continue;
+      const was = old && hasOwn(old.pools, p.id) ? old.pools[p.id] : undefined;
+      const wasMax = oldMax && hasOwn(oldMax, p.id) ? oldMax[p.id] : undefined;
+      // An event that writes the pool (a GM set, the evolution refill) ends
+      // its clamped mark; a set to the same value counts too.
+      if (current !== was || writesPool(event, id, p.id)) notFull.delete(p.id);
+      const wasFull =
+        was !== undefined &&
+        wasMax !== undefined &&
+        current === was &&
+        wasMax > 0 &&
+        was >= wasMax &&
+        !notFull.has(p.id);
+      if (current > max) {
+        pools ??= { ...c.pools };
+        pools[p.id] = max;
+        // Stays full only if it was full before the drop (DESIGN §2, Q41).
+        if (clampedPoolsNotFull && !wasFull) notFull.add(p.id);
+        continue;
+      }
+      // A full pool stays full when its maximum rises (D100), unless this
+      // event set the pool itself (detected by value: no event both raises a
+      // maximum and writes a pool, except evolution, which fills it anyway).
+      if (fullPoolsStayFull && wasFull && wasMax !== undefined && max > wasMax) {
         pools ??= { ...c.pools };
         pools[p.id] = max;
       }
+      // A falling maximum that leaves a pool that was not full at its new
+      // maximum marks it too (100/120 unequips to 100/100: not full, MQ.15
+      // review).
+      if (
+        clampedPoolsNotFull &&
+        wasMax !== undefined &&
+        max < wasMax &&
+        current === max &&
+        !wasFull
+      ) {
+        notFull.add(p.id);
+      }
+      // Below its maximum, a pool is plainly not full: no mark needed.
+      if ((pools?.[p.id] ?? current) < max) notFull.delete(p.id);
     }
-    if (pools !== null) out = withCharacter(out, { ...c, pools });
+    const marks = after.rules.pools.map((p) => p.id).filter((p) => notFull.has(p));
+    const marksBefore = c.clampedPools ?? [];
+    // With the rule off, marks are dropped, so turning it back on starts clean.
+    const marksChanged =
+      marks.length !== marksBefore.length || marks.some((m, i) => marksBefore[i] !== m);
+    if (pools === null && !marksChanged) continue;
+    let next: Character = { ...c, pools: pools ?? c.pools };
+    if (marksChanged) {
+      // The key is left out when empty, so states without marks keep their shape.
+      const rest = Object.fromEntries(
+        Object.entries(next).filter(([key]) => key !== 'clampedPools'),
+      ) as unknown as Character;
+      next = marks.length > 0 ? { ...rest, clampedPools: marks } : rest;
+    }
+    out = withCharacter(out, next);
   }
   return out;
+}
+
+/** Whether this event sets the pool's current value outright (MQ.15). */
+function writesPool(event: DomainEvent, characterId: string, poolId: string): boolean {
+  if (event.type === 'character.poolsSet') {
+    return event.payload.characterId === characterId && hasOwn(event.payload.pools, poolId);
+  }
+  if (event.type === 'evolution.chosen') {
+    return event.payload.characterId === characterId && event.payload.legacy !== true;
+  }
+  return false;
+}
+
+/** Every pool maximum of a character in this state, from effective stats. */
+function maximaOf(state: CampaignState, c: Character): Readonly<Record<string, number>> {
+  return clampPools(state.rules, effectiveOf(state, c), {});
 }
 
 /** Effective stats of a character in this state (base + equipped items). */
@@ -481,6 +605,13 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         rule(event, () => grantProfession(state.rules, character, event.payload.profession)),
       );
     }
+    case 'profession.chosen': {
+      const character = characterOf(state, event, event.payload.characterId);
+      return withCharacter(
+        state,
+        rule(event, () => takeOfferedProfession(state.rules, character, event.payload.profession)),
+      );
+    }
     case 'title.awarded': {
       const character = characterOf(state, event, event.payload.characterId);
       const title = event.payload.title.trim();
@@ -523,7 +654,10 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       return withCharacter(state, { ...character, stats: merged });
     }
     case 'xp.awarded': {
-      const { track, amount, shares, enemyLevel } = event.payload;
+      const { track, amount, shares, enemyLevel, enemyGrade } = event.payload;
+      if (enemyGrade !== undefined && !state.rules.grades.some((g) => g.id === enemyGrade)) {
+        fail(event, `unknown grade "${enemyGrade}"`);
+      }
       const ids = shares.map((s) => s.characterId);
       if (new Set(ids).size !== ids.length) fail(event, 'a participant is listed twice');
       const sum = shares.reduce((a, s) => a + s.share, 0);
@@ -531,9 +665,9 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       let next = state;
       for (const { characterId, share } of shares) {
         const character = characterOf(state, event, characterId);
-        const bonus = shareBonus(state.rules, character, share, enemyLevel);
+        const gained = shareXp(state.rules, character, share, enemyLevel, enemyGrade);
         const { character: leveled } = rule(event, () =>
-          gainXp(state.rules, character, track, share + bonus),
+          awardXp(state.rules, character, track, gained),
         );
         next = withCharacter(next, leveled);
       }
@@ -1036,7 +1170,9 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const character = characterOf(state, event, characterId);
       return withCharacter(
         state,
-        rule(event, () => describeSkill(character, skill, description, flavor)),
+        rule(event, () =>
+          describeSkill(character, skill, description, flavor, state.rules.skills.libraryByRarity),
+        ),
       );
     }
     case 'skill.uniqueSet': {
@@ -1077,6 +1213,13 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         rule(event, () => mergeSkills(state.rules, character, first, second, name, joint)),
       );
     }
+    case 'selection.optionWithdrawn': {
+      const character = characterOf(state, event, event.payload.characterId);
+      return withCharacter(
+        state,
+        rule(event, () => withdrawPassedOver(character, event.payload.skill)),
+      );
+    }
     case 'selection.offered':
     case 'selection.chosen': {
       const { characterId, level } = event.payload;
@@ -1106,7 +1249,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       );
     }
     case 'evolution.released': {
-      const { characterId, options, professions } = event.payload;
+      const { characterId, options, professions, legacy } = event.payload;
       const character = characterOf(state, event, characterId);
       return withCharacter(
         state,
@@ -1118,6 +1261,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
             professions,
             retiredFor(state, character),
             event.id,
+            legacy === true,
           ),
         ),
       );
@@ -1133,6 +1277,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
           profession,
           retiredFor(state, character),
           event.payload.releaseId ?? null,
+          event.payload.legacy === true,
         ),
       );
       // Practice entries follow transformed skills, so pair counts carry over.
@@ -1145,7 +1290,18 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
                 ? { ...entry, skills: entry.skills.map((n) => renamed.get(n) ?? n) }
                 : entry,
             );
-      return { ...withCharacter(state, result.character), practice };
+      // Evolution refills every pool to its effective maximum, titles and
+      // items included (D99); old events keep the old rules (D110).
+      let evolved = result.character;
+      if (event.payload.legacy !== true) {
+        const stats = rule(event, () => effectiveOf(state, evolved));
+        const full: Record<string, number> = {};
+        for (const p of state.rules.pools) {
+          full[p.id] = rule(event, () => poolMax(state.rules, stats, p.id));
+        }
+        evolved = { ...evolved, pools: full };
+      }
+      return { ...withCharacter(state, evolved), practice };
     }
     case 'clock.created': {
       const { clockId, name, segments } = event.payload;
@@ -1175,6 +1331,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
     case 'quest.created': {
       const { questId, title, text, visible, days, stability } = event.payload;
       if (hasOwn(state.quests, questId)) fail(event, `quest "${questId}" already exists`);
+      const noticeTo = checkNoticeTo(state, event, event.payload.noticeTo ?? null);
       const range = state.rules.stability;
       if (stability) {
         rule(event, () => checkStabilityRules(state.rules, stability.rules));
@@ -1201,6 +1358,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
             }
           : null,
         createdAt: event.timestamp,
+        noticeTo,
       };
       return {
         ...state,
@@ -1222,9 +1380,10 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       });
       switch (event.type) {
         case 'quest.edited': {
-          const { title, text, visible, days, stabilityVisible, stabilityRules } = event.payload;
+          const { title, text, visible, days, stabilityVisible, stabilityRules, noticeTo } =
+            event.payload;
           if (
-            [title, text, visible, days, stabilityVisible, stabilityRules].every(
+            [title, text, visible, days, stabilityVisible, stabilityRules, noticeTo].every(
               (v) => v === undefined,
             )
           ) {
@@ -1245,6 +1404,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
             text: text ?? quest.text,
             visible: visible ?? quest.visible,
             days: days === undefined ? quest.days : days,
+            noticeTo:
+              noticeTo === undefined ? quest.noticeTo : checkNoticeTo(state, event, noticeTo),
             stability: quest.stability && {
               ...quest.stability,
               visible: stabilityVisible ?? quest.stability.visible,
@@ -1273,11 +1434,17 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const problem = tierProblem(state.rules, tiers);
       if (problem) fail(event, problem);
       checkCharacters(state, event, knownBy);
+      const grade = event.payload.grade ?? null;
+      const level = event.payload.level ?? null;
+      const rank = rankProblem(state.rules, grade, level);
+      if (rank) fail(event, rank);
       const entity: Entity = {
         id: entityId,
         name,
         label,
         tiers: tiers.map((t) => ({ minRarity: t.minRarity, text: t.text })),
+        grade,
+        level,
         knownBy: [...knownBy],
         createdAt: event.timestamp,
       };
@@ -1295,9 +1462,17 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       let next: Entity;
       if (event.type === 'entity.edited') {
         const { name, label, tiers } = event.payload;
-        if (name === undefined && label === undefined && tiers === undefined) {
+        if (
+          [name, label, tiers, event.payload.grade, event.payload.level].every(
+            (v) => v === undefined,
+          )
+        ) {
           fail(event, 'nothing to change');
         }
+        const grade = event.payload.grade === undefined ? entity.grade : event.payload.grade;
+        const level = event.payload.level === undefined ? entity.level : event.payload.level;
+        const rank = rankProblem(state.rules, grade, level);
+        if (rank) fail(event, rank);
         if (tiers !== undefined) {
           const problem = tierProblem(state.rules, tiers);
           if (problem) fail(event, problem);
@@ -1306,6 +1481,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
           ...entity,
           name: name ?? entity.name,
           label: label ?? entity.label,
+          grade,
+          level,
           tiers:
             tiers === undefined
               ? entity.tiers
@@ -1354,6 +1531,17 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');
   }
+}
+
+/** A quest's notice list (MQ.7): null (every character) or existing characters, no repeats. */
+function checkNoticeTo(
+  state: CampaignState,
+  event: DomainEvent,
+  ids: readonly string[] | null,
+): readonly string[] | null {
+  if (ids === null) return null;
+  checkCharacters(state, event, ids);
+  return [...ids];
 }
 
 /** Every id must be a character, listed once. */

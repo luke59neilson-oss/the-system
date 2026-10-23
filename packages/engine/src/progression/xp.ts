@@ -139,6 +139,48 @@ export function aboveLevelBonus(
   return Math.min(aboveLevelBonusCap, Number((aboveLevelBonusPerLevel * diff).toFixed(9)));
 }
 
+/**
+ * XP factor for a target `enemyGrade` (DESIGN §5, MQ.10): 1 at the
+ * character's grade or above; one grade below the first `gradeBelowFactors`
+ * entry (⅓ by default), further below the next ones, the last entry for any
+ * larger gap (0 by default). Unknown grades are refused.
+ */
+export function gradeGapXpFactor(
+  rules: RulesConfig,
+  characterGrade: string,
+  enemyGrade: string | null | undefined,
+): number {
+  if (enemyGrade === null || enemyGrade === undefined) return 1;
+  const enemy = rules.grades.findIndex((g) => g.id === enemyGrade);
+  if (enemy < 0) throw new CharacterRuleError(`Unknown grade "${enemyGrade}"`);
+  const gap = gradeIndexOf(rules, characterGrade) - enemy;
+  const factors = rules.xp.gradeBelowFactors;
+  if (gap <= 0 || factors.length === 0) return 1;
+  return factors[Math.min(gap, factors.length) - 1] as number;
+}
+
+/**
+ * The XP a share is worth to one character (DESIGN §5): the share scaled by
+ * the grade-gap factor (floored), plus the above-level bonus on that.
+ */
+export function shareXp(
+  rules: RulesConfig,
+  character: Character,
+  share: number,
+  enemyLevel: number | null | undefined,
+  enemyGrade?: string | null,
+): number {
+  const factor = gradeGapXpFactor(rules, character.grade, enemyGrade);
+  const scaled = factor === 1 ? share : Math.floor(Number((share * factor).toFixed(9)));
+  return scaled + shareBonus(rules, character, scaled, enemyLevel);
+}
+
+/** XP a typical session awards at a grade ("typical session ≈ 6 levels", DESIGN §5). */
+export function typicalSessionXp(rules: RulesConfig, gradeId: string): number {
+  const grade = rules.grades[gradeIndexOf(rules, gradeId)] as GradeRules;
+  return rules.campaign.typicalLevelsPerSession * grade.xpPerLevel;
+}
+
 /** Whole above-level bonus XP on top of a share (floored, float noise removed). */
 export function shareBonus(
   rules: RulesConfig,
@@ -157,6 +199,8 @@ export interface XpShare {
   readonly share: number;
   /** Above-level bonus on top of the share (whole XP, floored). */
   readonly bonus: number;
+  /** XP the character gains: the share after the grade-gap factor, plus the bonus. */
+  readonly gained: number;
 }
 
 export interface SplitInput {
@@ -165,6 +209,8 @@ export interface SplitInput {
   participants: readonly { characterId: string; weight?: number | undefined }[];
   /** Enemy level for the optional above-level bonus; omit for none. */
   enemyLevel?: number | undefined;
+  /** Enemy grade for the grade-gap factor (MQ.10); omit for none. */
+  enemyGrade?: string | undefined;
 }
 
 /**
@@ -187,11 +233,10 @@ export function splitXp(
       : undefined;
     if (!character) throw new CharacterRuleError(`Unknown character "${p.characterId}"`);
     const share = shares[i] as number;
-    return {
-      characterId: p.characterId,
-      share,
-      bonus: shareBonus(rules, character, share, input.enemyLevel),
-    };
+    const gained = shareXp(rules, character, share, input.enemyLevel, input.enemyGrade);
+    const factor = gradeGapXpFactor(rules, character.grade, input.enemyGrade);
+    const scaled = factor === 1 ? share : Math.floor(Number((share * factor).toFixed(9)));
+    return { characterId: p.characterId, share, bonus: gained - scaled, gained };
   });
 }
 
@@ -282,6 +327,81 @@ export function gainXp(
     },
     levelUps,
   };
+}
+
+export interface AwardResult extends XpResult {
+  /** XP that went to the other track because this one was at the grade's top (MQ.11). */
+  readonly overflowed: number;
+  /** XP with nowhere to go: both tracks at the top, or the class with no profession. */
+  readonly lost: number;
+}
+
+/**
+ * Applies awarded XP (MQ.11, DESIGN §2 "No banked XP; XP overflows"). With
+ * `rules.xp.overflow` on, XP a track cannot use because it is at the grade's
+ * top goes to the other track, and whatever neither can use is lost; nothing
+ * is held. With it off (rules stored before MQ.11) XP banks at the top as
+ * before, so older logs replay unchanged.
+ */
+export function awardXp(
+  rules: RulesConfig,
+  character: Character,
+  track: XpTrack,
+  amount: number,
+): AwardResult {
+  if (!rules.xp.overflow)
+    return { ...gainXp(rules, character, track, amount), overflowed: 0, lost: 0 };
+  const first = gainXp(rules, character, track, amount);
+  let next = first.character;
+  const levelUps = [...first.levelUps];
+  const trackLevel = (c: Character, t: XpTrack) =>
+    t === 'class' ? c.classLevel : c.professionLevel;
+  let left = 0;
+  if (isAtCap(rules, next.grade, trackLevel(next, track))) {
+    left = next.xp[track];
+    next = { ...next, xp: { ...next.xp, [track]: 0 } };
+  }
+  const other: XpTrack = track === 'class' ? 'profession' : 'class';
+  let overflowed = 0;
+  if (left > 0 && (other === 'class' || next.profession !== null)) {
+    if (!isAtCap(rules, next.grade, trackLevel(next, other))) {
+      overflowed = left;
+      const second = gainXp(rules, next, other, left);
+      next = second.character;
+      levelUps.push(...second.levelUps);
+      left = 0;
+      if (isAtCap(rules, next.grade, trackLevel(next, other))) {
+        left = next.xp[other];
+        overflowed -= left;
+        next = { ...next, xp: { ...next.xp, [other]: 0 } };
+      }
+    }
+  }
+  return { character: next, levelUps, overflowed, lost: left };
+}
+
+/** One participant's outcome in the GM's award preview (MQ.11). */
+export interface XpPreview extends XpShare {
+  readonly overflowed: number;
+  readonly lost: number;
+  readonly levelUps: readonly LevelUp[];
+}
+
+/**
+ * What an award would do before the GM confirms it (MQ.11): each
+ * participant's gain, what overflows to the other track and what is lost.
+ */
+export function previewXpAward(
+  rules: RulesConfig,
+  characters: Readonly<Record<string, Character>>,
+  track: XpTrack,
+  input: SplitInput,
+): XpPreview[] {
+  return splitXp(rules, characters, input).map((s) => {
+    const character = characters[s.characterId] as Character;
+    const r = awardXp(rules, character, track, s.gained);
+    return { ...s, overflowed: r.overflowed, lost: r.lost, levelUps: r.levelUps };
+  });
 }
 
 /** XP needed for `levels` more levels on a track at the current grade (the GM's pacing helper). */

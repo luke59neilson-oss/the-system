@@ -1,5 +1,6 @@
 import {
-  DEFAULT_LIBRARY,
+  missingDefaultEntries,
+  type DefaultTarget,
   type CampaignState,
   type ClassDef,
   type ProfessionDef,
@@ -193,20 +194,13 @@ export function unsavedChanges(
 }
 
 /** How many default entries (DEFAULT_LIBRARY, skills included) the campaign still lacks. */
-export function missingDefaults(state: Libraries & Pick<CampaignState, 'skillLibrary'>): number {
-  const count = (defaults: readonly { name: string }[], library: object) => {
-    const have = new Set(
-      Object.values(library as Record<string, { name: string }>).map((d) =>
-        d.name.trim().toLowerCase(),
-      ),
-    );
-    return defaults.filter((d) => !have.has(d.name.trim().toLowerCase())).length;
-  };
+export function missingDefaults(state: DefaultTarget): number {
+  const lacking = missingDefaultEntries(state);
   return (
-    count(DEFAULT_LIBRARY.classes, state.classLibrary) +
-    count(DEFAULT_LIBRARY.races, state.raceLibrary) +
-    count(DEFAULT_LIBRARY.professions, state.professionLibrary) +
-    count(DEFAULT_LIBRARY.skills, state.skillLibrary)
+    lacking.classes.length +
+    lacking.races.length +
+    lacking.professions.length +
+    lacking.skills.length
   );
 }
 

@@ -1,8 +1,8 @@
 # Progress
 
-**Status:** in progress: M0, M1, M2 and M3 done; MS done except MS.7 (added 2026-10-22); M4 under way (M4.1–M4.4 done)
-**Next item:** MS.7 Launch polish (marked "do next"), then M4.5 Party dashboard
-**Blockers:** none.
+**Status:** in progress: M0–M3, MS and MQ done; QF.1–QF.4 and QF.10 done; M4.1–M4.4 done; MR (Luke's batch 2) queued after QF; Preview ready: Actions → Release → Run workflow (MQ)
+**Next item:** QF.5 Engine purity lint has no bypasses
+**Blockers:** none
 
 ## Run log
 
@@ -465,3 +465,190 @@ next item, blockers. -->
 - Open `wip/*` branches: none unfinished.
 - Next: MS.7 Launch polish. Not started: under the new timebox it could not be finished and reviewed by minute 52.
 - Blockers: none.
+
+### Run e081d05f · 2026-10-22 14:09–14:56 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD, stale local `main`), so `main` was reset to `origin/main`.
+  - The lock was pushed to main. `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work in the background on worktrees.
+- Orient: no new answers in ANSWERS.md beyond batch 1, which Luke's commit 06151e3 (landed mid-run) had already applied (MQ milestone, D97–D109, new LOOP rule: answers in ANSWERS.md). CI on main was green (03fbbd8).
+- Finished:
+  - MS.7 Launch polish: splash within ~0.3 s of process start, a second launch focuses the running window (or the splash), a taken or reserved port falls back to the next free one with a dialog, a quit while starting closes the server and lock, release files `TheSystem-preview-<date>-<run>-…`, notes list commits since the previous preview (D96). Sonnet: round 1 3 Medium (1 fixed, 1 resolved by the dry run, 1 accepted), round 2 0 Medium.
+  - MQ.9 Windows-first releases (taken early because it shared the dry run with MS.7): Windows and Linux only, exactly 3 files. Sonnet: 0 High/Medium. Dry runs green: 39794644988 (new names, four files) and 39796128748 (three files). The `release-dry-run` branch had unrelated history, so it was joined with an `-s ours` merge (no force push).
+- Built, not checked: MQ.1 Evolution rules (fefa7d7, b3c1f84; D110). Round 1 had 3 Medium: the refill now uses effective stats (fixed); open for round 2: no GM UI for the bonus until M5.2, and the gate re-running on replay after a rules edit. Next run: run round 2 on 835717c..HEAD for MQ.1, fix, then check the box.
+- Tests: 691 unit/integration tests; full e2e suite (35) green before the default-transform change, M3.13 and MS.4 re-run after it; 6 desktop specs green. Engine coverage not re-measured.
+- Open `wip/*` branches: none (MQ.1 code is on main; only its review round 2 remains).
+- Blockers: none.
+
+### Run 451e9851 · 2026-10-22 15:09–15:50 UTC
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned (detached HEAD), so `main` was reset to `origin/main`.
+  - The lock was pushed to main. `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work in the background on worktrees.
+- Orient: no new answers in ANSWERS.md. CI on main was green (b3c1f84).
+- Finished:
+  - MQ.1 Evolution rules, review round 2 (sonnet): 0 High, 1 Medium, 3 Low. The Medium is fixed in 66033ea: the player view carries `selectionsDue`, and the evolution screen blocks Evolve while earned selections wait. The round-1 replay concern was confirmed not to be a defect (note for M4.9 in REVIEW-LOG).
+  - MQ.2 Pools follow maxima (D111, Q41). A full pool stays full when its maximum rises, behind `rules.character.fullPoolsStayFull`: on for new campaigns, off for stored rules, so old logs replay unchanged. Golden states were bumped additively, and there is a new `pools` golden log. Sonnet: 0 High, 0 Medium, 4 Low (2 fixed, 2 accepted).
+- Tests: 702 unit/integration tests (65 files). The full e2e suite (35) was run after the MQ.2 engine change: 3 expected failures, fixed by updating the M3.2 and M3.7 expectations to D100. M3.2, M3.7, M3.6 and M3.13 were re-run green. Engine coverage was not re-measured.
+- Open `wip/*` branches: `wip/MQ.3`, base 6c241ad, head e99c52c. Done there:
+  - `passedOverOptions` (newest menu first; drops owned, retired, above-ceiling and no-profession options).
+  - `selection.chosen` accepts a passed-over name.
+  - The owner projection gives each pending menu `passedOver`.
+  - The selection screen has a "Passed over earlier (N)" list, and the review text now says passed-over skills stay on offer.
+  - The M3.6 e2e covers picking a passed-over option at level 60. `npm run check` (704) and M3.6 are green there.
+- Next step on `wip/MQ.3`:
+  - The GM "withdraw" of an option (DESIGN §6). Plan: a new GM-only event `selection.optionWithdrawn {characterId, name}` stored as an optional per-character list, so goldens stay unchanged. It needs a golden log and a session-log line.
+  - Consider a compact layout for long passed-over lists (the demo shows 20 cards).
+  - Then the sonnet review, merge to main, and check the box.
+- Blockers: none.
+
+### Run cff91d0a · 2026-10-22 16:07–16:53 UTC (ended at minute 46: §5.5 hand-off and close-out)
+- Preflight:
+  - `add_repo` was not offered in this session. The repo was already cloned with a stale local `main` and a detached HEAD, so `main` was reset to `origin/main`.
+  - The lock was pushed to main. `npm view vitest version` → 5.0.5.
+  - Reviewer subagents on `sonnet` work in the background on worktrees.
+- Orient: no new answers in ANSWERS.md. CI on main was green (6c241ad). Luke pushed during the run: L-numbered chat decisions (L1–L10), the new LOOP timebox and orient rules, and the public-repo rule. All of it was merged with no force push.
+- Finished: MQ.3 Passed-over options (D112).
+  - The GM withdraws an option with the GM-only event `selection.optionWithdrawn`. It can be undone, writes a session-log line, and has a new `passed-over` golden log. The GM button comes with M5.1.
+  - Passed-over options show as compact rows. The dialog header stays in place while the list scrolls. The count includes older options, e.g. "choose one of 22 skills (3 new)". A notice appears when the option under review is withdrawn.
+  - Review round 1 (sonnet): 0 High, 4 Medium, all fixed. Round 2: 0 High, 0 Medium, 3 Low, accepted.
+  - A D-number collision with Luke's chat decisions was renumbered, then reverted once Luke moved his to L-numbers.
+- Built, not checked: MQ.4 Marks carry over, on `wip/MQ.4` (base 835e3f5, head 1bc57bf; D113).
+  - `skill.upgrade` keeps `marks - needed` behind `rules.skills.marksCarryOver`: on for new campaigns, off for stored rules. Golden states were bumped additively, and there is a new `marks` golden log. 715 tests green.
+  - Review round 1 (sonnet): 1 High, 2 Medium. Details are in REVIEW-LOG.
+  - Next step:
+    1. In `packages/engine/src/evolution/model.ts` (~546), when an evolution transform raises a skill's rarity, keep the marks minus the summed step costs (clamped at 0) under the flag.
+    2. Replace the direct `upgradeSkill` test with one that goes through `evolution.choose`.
+    3. Fix the evolution screen's "marks reset to 0" warning (`apps/web/src/player/evolution.ts:77`; may need `marksCarryOver` in the player rules).
+    4. Run review round 2, merge, and check the box.
+- Tests: 711 on main (64 files). The full e2e suite (35) was green after the MQ.3 merge. M3.6, M3.13 and M3.A were re-run, and only the M3.6 and M3.13 screenshots were kept. Engine coverage was not re-measured.
+- Open `wip/*` branches: `wip/MQ.4` (unfinished). `wip/MQ.3` is merged.
+- Blockers: none.
+
+
+### Run f4eb87e7 · 2026-10-22 17:07–17:48 UTC (ended at minute 41: QF.2 cannot reach a reviewed state before the 44 hand-off; handed off to `wip/QF.2`, close-out done)
+- Preflight:
+  - `add_repo` was not offered; the repo was already cloned with a stale local `main` (diverged, old history) and a detached HEAD, so `main` was reset to `origin/main`.
+  - Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work in the background on worktrees.
+- Orient: no new answers in ANSWERS.md. Luke pushed LOOP §10 (quality sweeps) and the QF queue during the run; merged by rebase, no force push. Not an efficiency or sweep hour (17).
+- Finished:
+  - MQ.4 Marks carry over (D113, D114). Evolution transforms that raise a rarity spend the skipped steps' mark costs and carry the rest; the evolution screen says what marks spend, carry or reset (`rules.marks` sent to players: carry flag, step costs, rarity order). Review round 2 (sonnet): 0 High, 0 Medium, 3 Low accepted. Asked as Q43.
+  - MQ.5 Grade walls (D115). New default mode `gradeWalls`: one grade apart ×⅓ odds and `damageFactor` ⅓; two or more apart no roll (`roll: null`, `walled: true`, no RNG draw) and 0 damage; `planGroup`/`pooledSide` for no pooling across grades. Stored campaigns keep their saved mode. Round 1: 3 Medium, fixed; round 2: 0 High/Medium.
+  - QF.1 (High) Chosen options never return as passed-over (D116). Round 1: 0 High/Medium, 2 Low (one to the QUALITY backlog).
+- Built, not checked: QF.2 on `wip/QF.2` (base 6ca3e7e, head efb4549). A command-level check (`itemOutOfReach` in `events/commands.ts`, so golden logs replay) refuses trade items a side does not hold, a player asking the GM for items, and equipping an unheld item, with one message `That item is not available`. Next steps:
+  1. Update the 6 failing engine tests (economy equip/trade message expectations; the `shop` test now needs the GM to propose item trades, Q44 default; the `events.test.ts` property test seed 20261021 now accepts no `montage.offer`: find out why the random command mix changed, do not loosen the check).
+  2. Gift errors (`economy/model.ts` ~124 `Not enough [Name]`) for unheld items should use the same message.
+  3. Projection canary per QF.2's Accept (trades with item bundles, a GM-only item no player holds).
+  4. Review, then merge.
+- Tests: 739 on main (65 files). Full e2e (35) green locally after MQ.4's player-projection change. Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/QF.2` (unfinished). `wip/MQ.4` is merged.
+- Blockers: none.
+
+### Run 74982dab · 2026-10-22 18:06–18:52 UTC (ended at minute 46: MQ.10 finished and reviewed at minute 43; MQ.6 (engine, UI and e2e) cannot start meaningfully in the 1 minute left before the 44 hand-off)
+- Preflight:
+  - `add_repo` was not offered; the repo was already cloned with a stale, diverged local `main` (detached HEAD), reset to `origin/main`.
+  - Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work on worktrees (they block this session until they report, so reviews ran between items).
+- Orient: no new answers in ANSWERS.md. Latest main CI (6ca3e7e) red in E2E: `e2e/M3.7.spec.ts:202` timed out; the same commit passed it 3× locally, logged as a flake in QUALITY.md (a repeat makes it a QF item). Hour 18: efficiency check (§9).
+- Efficiency check: scorecard row added (end minute 41.3, items/run 1.7, round-2 7/10, Highs 1, CI 95 runs / 8 red per day, 4.6 min). L9 trials too young to judge. Auditor (sonnet) made 2 Tier 1 proposals; applied one in trial (D119: pre-review sibling self-check, LOOP §6.2); the other (fix the M3.7 flake now) waits for a repeat.
+- Finished:
+  - QF.2 (High) Item definitions reach players only for items they can see (D117, D118). Command-level `itemOutOfReach`: trade sides, gifts and equips name only held items; one message for unknown, not held and bad counts; a player's trade with the GM asks only for currency (Q44 default). Canary trades carry item bundles. The replay property test walks two seeds (QF.2 had reshuffled the single walk). Review round 1: 0 High, 1 Medium (zero-count id probe) fixed and confirmed failing without the fix. New Q45 (asking another player for items).
+  - MQ.10 Steep XP curve (D120): ×3 per grade for new campaigns, `xp.gradeBelowFactors` [⅓, 0], optional `enemyGrade` on `xp.awarded`, `typicalSessionXp`; campaign state v17 (golden states bumped additively). Rounds 1–2 (sonnet): round 2 clean.
+- Tests: 743 unit (65 files). Full e2e 35/35 green on QF.2 and on MQ.10 after the M3.6 fix (M3.6 re-run alone). Engine coverage not re-measured.
+- Open `wip/*` branches: none unfinished (`wip/QF.2`, `wip/MQ.10` merged).
+- Blockers: none.
+
+### Run 181c9c28 · 2026-10-22 19:06–19:51 UTC (ended at minute 45: MQ.6 merged and reviewed at minute 43; MQ.7 needs a design choice on "affected players" and an e2e, too large to start usefully in the minute before the 44 hand-off)
+- Preflight:
+  - `add_repo` was not offered; the repo was already cloned (detached HEAD), reset to `origin/main`.
+  - Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work on worktrees (they block this session until they report).
+- Orient: no new answers in ANSWERS.md. Latest main CI (f68620a) green. Hour 19: no efficiency check or sweep.
+- Finished:
+  - MQ.6 Tailored professions (D121): no default professions; "none for now" at the evolution keeps the offers (character v7 `professionOffers`, owner-only; campaign state v18; golden states bumped additively; new `professions` golden log); player `profession.choose` takes one later at class level; Professions window under Status, greyed once locked; "Profession acquired" DING and session-log line instead of a 0 → N level-up. New Q46 (more offers at later evolutions; default allowed). Review: round 1 (sonnet) 0 High, 2 Medium (one fixed: a profession taken while a later release waits; one deferred to M5.2: no GM release UI yet), round 2 clean (2 Low, one fixed).
+- Tests: 754+ unit (65 files). Full e2e 37/37 green on the round-1 fix. Engine coverage not re-measured.
+- Open `wip/*` branches: none unfinished (`wip/MQ.6` merged).
+- Next item: MQ.7 Hidden quest notice (quests have no participant list yet: "affected players" needs a design choice).
+- Blockers: none.
+
+### Run 7df0b6d4 · 2026-10-22 20:07–20:50 UTC (ended at minute 42: MQ.11 merged and main re-checked at minute 41; MQ.12 (library keys, propagation, owner-only effects, e2e) cannot start usefully before the 44 hand-off)
+- Preflight:
+  - `add_repo` was not offered; the repo was already cloned (detached HEAD, stale diverged local `main`), reset to `origin/main`.
+  - Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work in the background on worktrees.
+- Orient: no new answers in ANSWERS.md. Latest main CI (ed93de6) green. Hour 20: no efficiency check or sweep.
+- Finished:
+  - MQ.7 Hidden quest notice (D122): per-quest GM-only `noticeTo` (null = everyone; campaign state v19); players get a bare `hiddenQuests` count, a "[Hidden quest]" line in the quest log and a "Hidden quest detected" notice when newly included (also a character created later). New `hidden-quests` golden log; canary extended. Q47. Review round 1 (sonnet): 0 High, 1 Medium fixed, 4 Low.
+  - MQ.8 Identify range (D123): entities get an optional grade and level; `rules.identify.sameGradeLevelRatio` (1.5) × race level for the same grade; out of range shows `[??? – lvl ???]` with no text, grade or level (campaign state v20, new `identify-range` golden, canary extended). Q48. Review round 1: clean (4 Low).
+  - MQ.11 XP overflow, no banking (D124): `awardXp` behind `rules.xp.overflow` (on for new campaigns; stored campaigns keep banking and replay unchanged); `previewXpAward` reports overflow and loss; the simulation checks held XP is lost. New `overflow` golden. Q49. Review round 1: 0 High, 1 Medium (docs) fixed.
+- Tests: 777 unit (65 files). e2e run: MQ.7, MQ.8, M3.3, M3.8, M3.9 green locally (full suite not run; CI runs it on 6ca27d0). Engine coverage not re-measured.
+- Open `wip/*` branches: none unfinished (`wip/MQ.7`, `wip/MQ.8`, `wip/MQ.11` merged).
+- Next item: MQ.12 Skill library rules.
+- Blockers: none.
+
+### Run 1a32d25e · 2026-10-22 21:06–21:50 UTC (ended at minute 43, hand-off at 44; quality sweep run)
+- Preflight:
+  - `add_repo` was not offered; the repo was already cloned (detached HEAD, stale diverged local `main`), reset to `origin/main`.
+  - Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `haiku`, `fable` and `sonnet` work on worktrees, but this session's Agent tool had no background option: the three sweep reviewers ran in parallel and blocked the run until minute 23 (fable took 23 min).
+- Orient: no new answers in ANSWERS.md. Latest main CI (6ca27d0) green. Hour 21: quality sweep B.
+- Sweep B (5e72abe..520f6ce; Boundaries · haiku, Tests · fable, UX · sonnet): 0 High, 1 confirmed Medium → QF.9 (trade proposals probe the counterparty's item counts and reveal item definitions; confirmed by tracing `itemOutOfReach` and `inventoryView`); 1 Medium not a defect (`previewXpAward` UI belongs to unchecked M4.6); 11 Lows (2 already accepted, the rest to the QUALITY Backlog). Fable's 18 engine mutations: 17 caught.
+- Started MQ.12 Skill library rules (D125, Q50) on `wip/MQ.12` (base 91dd606, head 71cfedc): engine done behind `rules.skills.libraryByRarity` (name+rarity entries, propagation to copies not hand-edited, upgrade takes the higher rarity's text, owner-only `effects` in the projection and skill dialog; stored rules keep D90; goldens gain the flag additively); 7 new engine tests; GM form label and hint; M4.1 e2e updated (effects reach the owner; edits reach granted copies). `npm run check` green (784 unit); full e2e 39/39 green locally on the branch.
+  - Where I stopped / next step: write `e2e/MQ.12.spec.ts` (an upgrade picking up the next rarity's text; a library edit propagating; another player never sees the effects; screenshots in `docs/screens/MQ.12/` at 1366×768 and 390×844), then the sonnet review, merge to main, check the box.
+- Tests: 784 unit (66 files) on `wip/MQ.12`; main unchanged at 777. Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/MQ.12` (unfinished).
+- Next item: MQ.12 (resume `wip/MQ.12`).
+- Blockers: none.
+
+### Run dc36334a · 2026-10-22 22:06–22:52 UTC (hand-off at minute 44, close-out to 46)
+- Preflight:
+  - `add_repo` was not offered; the repo was already cloned (shallow; stale diverged local `main`), reset to `origin/main`.
+  - Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` work on worktrees; the Agent tool has no background option here, so each review blocked the run for about 4–5 minutes.
+- Orient: no new answers in ANSWERS.md. Latest main CI (6ca27d0) green. Hour 22: no efficiency check or sweep.
+- MQ.12 Skill library rules: finished `wip/MQ.12` (e2e `e2e/MQ.12.spec.ts`: upgrade takes the Uncommon entry's text and effects live; a library edit reaches the owner's open dialog; another player's frames and page never carry the effects; screenshots in `docs/screens/MQ.12/`). Review round 1 (sonnet): 0 High, 2 Medium, 6 Low; both Mediums fixed (seeding defaults now syncs existing copies; default seed matches skills by name and rarity, D126) with tests seen failing first; round 2 clean. Merged to main (eb8d7f6), box checked. Sibling found afterwards: the GM's "missing defaults" count still matched by name only; now shares `missingDefaultEntries` with the seed command (2676e61, web test added).
+- Full e2e on main: 40/40 green locally.
+- Started MQ.13 The books' starting classes on `wip/MQ.13` (base 2676e61, head 440b61e): `STARTER_CLASSES` is DESIGN §10's six with original text (Archer first), default library derived from them (D127), demo and GM form pass skills without tags; new `starters.test.ts` checks the table; `npm run check`-level unit tests green (789).
+  - Where I stopped / next step: full e2e on the branch has 3 failures from the old class names: `M4.2.spec.ts` (both tests) and `M4.4.spec.ts` (portraits test). Update those specs to the six classes, add `e2e/MQ.13.spec.ts` (GM picks each class; the demo still loads) with screenshots, refresh demo/class screenshots, then the sonnet review and merge.
+- Tests: 787 unit on main; 789 on `wip/MQ.13`. Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/MQ.13` (unfinished).
+- Next item: MQ.13 (resume `wip/MQ.13`).
+- Blockers: none.
+
+### Run 4a0765f3 · 2026-10-22 23:06–23:57 UTC (hand-off at minute 49, close-out to 51)
+- Preflight: `add_repo` not offered; repo already cloned and current. Lock pushed to main. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` with worktrees work (the Agent tool blocks; no background option). Latest main CI (2676e61) green. Hour 23: no efficiency check or sweep. No new answers.
+- MQ.13 The books' starting classes: finished `wip/MQ.13`: M4.2/M4.4 e2e updated to the six classes; new `e2e/MQ.13.spec.ts` (a character from each class with its three skills and text; demo loads with the new Archer kit, own server) and screenshots; seed test through `execute` (each seeded class levels only its named stats). Review (sonnet): 0 H, 0 M, 5 L (Mana Bolt text no longer names a stat; two Lows to Backlog). Merged to main (83ef5b8), box checked.
+- MQ.14 Bonus rules on `wip/MQ.14` (base 83ef5b8, head 956e26a): rules flags `itemCapOfBase` 0.2 / `itemsFlatOnly` / nullable `percentCapPerStat` (stored rules keep M1.6, D128); golden states gain two fields additively; percentage items refused; owner projection `itemCappedStats`; status screen "(+0.2, capped)"; `e2e/MQ.14.spec.ts` and screenshots. `npm run check` green (799 unit). Review (sonnet): 0 H, 0 M, 5 L (one to Backlog). Not merged: the full local e2e had 42/43 green; `MQ.14.spec.ts` timed out waiting for the GM setup form, while it passes alone. The same happened to the new MQ.13 spec earlier this run (also the newest spec, also at the first step, passing alone and with `--workers=2`).
+  - Next step: run the full e2e on `wip/MQ.14`; if the MQ.14 spec fails again only in the full run, find why a late spec's fresh server never shows "Campaign name" (server start, leftover state, load), then merge and check the box.
+- Tests: 790 unit on main; 799 on `wip/MQ.14`. Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/MQ.14` (reviewed, unmerged).
+- Next item: MQ.14 (resume `wip/MQ.14`), then MQ.15.
+- Blockers: none.
+
+### Run 6fcb6693 · 2026-10-23 00:07–00:49 UTC (ended at minute 42)
+- Preflight: `add_repo` not offered; repo already cloned, fast-forwarded. Lock pushed. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` with worktrees work (they block the caller). Latest main CI (83ef5b8) green. No new answers. Hour 00: efficiency check (below).
+- Efficiency check: scorecard row 00:08 (end minute 45.8, 1.3 items/run, round-2 4/10, 0 Highs). L9's three trials kept (D131); D119 judged next check. Auditor (sonnet): 2 Tier 1 proposals; applied one, no full-e2e re-run on main for an identical tree (D132, LOOP §5.6); the other noted in EFFICIENCY.md.
+- QF.10 (new, found this run): late specs timing out in full local runs (MQ.13, MQ.14, MQ.6) came from pages never closed, reconnecting to stopped servers. Fixture in `e2e/helpers/test.ts` closes each test's contexts; full suite green on one worker, 5.4 → 3.8–4.1 min. Review (sonnet): 0 H, 0 M, 4 L. Box checked.
+- MQ.14 Bonus rules: resumed `wip/MQ.14`; full e2e 43/43 after QF.10; merged (3e9412d), box checked.
+- MQ.15 No healing by gear swap: `rules.character.clampedPoolsNotFull`, GM-only `clampedPools` marks (D129); tests for the four DESIGN §2 examples, the exactly-reached drop, a seeded property test (seed 15015). Review round 1 (sonnet): 1 H, 1 M, 2 L, fixed; round 2: 0 H, 0 M, 2 L. Merged (f3b02c0), box checked. Full e2e on main (f3b02c0): 43/43, 4.2 min.
+- Tests: 809 unit on main. Engine coverage not re-measured.
+- Open `wip/*` branches: none new (`wip/MQ.14`, `wip/MQ.15` merged).
+- Next item: MQ.A (fable review), then QF.3.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Blockers: none.
+
+### Run 26b985de · 2026-10-23 01:06–01:49 UTC (ended at minute 42: MQ.A merged at minute 41; QF.3 not started, see Next item)
+- Preflight: `add_repo` not offered; repo already cloned (shallow; unshallowed), fast-forwarded. Lock pushed. `npm view vitest version` → 5.0.5. Reviewer subagents on `fable` with worktrees work (they block the caller). Latest main CI (0f9ff81) green. No new answers. Hour 01: no efficiency check or sweep.
+- MQ.A Batch acceptance and review: `npm run check` and full e2e on main (567d841) green (43/43, 7.5 min). Fable round 1 over the whole batch (06151e3..567d841): 0 H, 2 M, 6 L. Fixed both Mediums (D133 upgrade takes the new rarity's library text over a hand edit; D134 GM XP form shows overflow and loss before confirming, new `e2e/MQ.A.spec.ts` + screenshot) and two Lows (D135); others to Q52 and the QUALITY backlog. Round 2 (fable): 0 H, 0 M, 4 L; fixed the blank-entry case and D133 wording. Full e2e 44/44 on c3a35be; the later commits change only a hint string and the blank-entry gate (unit-tested), so not re-run. Merged (d7b9283), box checked. MQ milestone done.
+- Not done: preview release (`git push origin main:release` refused by the permission classifier; logged as a Blocker for Luke, not retried).
+- Docs: removed a run-end line that run 6fcb6693 duplicated into every PROGRESS entry. New questions Q51 (hand-written text on upgrade, follows Q50), Q52 (Identify at level 0).
+- Tests: 811 unit on main. Engine coverage not re-measured.
+- Open `wip/*` branches: none new (`wip/MQ.A` merged).
+- Next item: QF.3 Limits on player-made data (not started: MQ.A's two blocking fable rounds ran to minute 41, and a hub rate limit plus note caps cannot be begun usefully in the 3 minutes before the 44 hand-off).
+- Blockers: MQ.A preview release not published (above).
+
+### Run ed52836b · 2026-10-23 02:06–02:53 UTC (ended at minute 46: both items reviewed and closed out; nothing was in progress at the 44 hand-off, so QF.5 was not started. Not one of LOOP §5.5's reasons; next run should start the next item at once instead of stopping early)
+- Preflight: `add_repo` not offered; repo already cloned, fast-forwarded. Lock pushed. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` with worktrees work (background). Latest main CI (d7b9283) green. No new answers in ANSWERS.md; Luke's batch 2 (Q43–Q52) arrived mid-run as DESIGN/ROADMAP edits (milestone MR, L14–L18) and LOOP §8.2 (preview = Luke's Run-workflow click). Hour 02: no efficiency check or sweep.
+- QF.3 Limits on player-made data: `rules.limits` (notes 300 / 150,000 characters, open trades 10, player practice 5,000 entries / 500 characters), checked on commands only; hub rate limit 30 burst + 5/s per non-GM socket; unchanged player views are not re-sent; state schema v21 so pre-limits snapshots are replayed (D136, Q53). Sonnet 2 rounds (round 1: 0 H 2 M; round 2: 0 H, 1 M not reproduced). Full e2e 44/44 twice (490c4c3, 4d993b7). Box checked.
+- QF.4 Golden logs are pinned: `manifest.json` + `npm run golden:record` (D137). Sonnet 2 rounds (round 1: 0 H 2 M, fixed; round 2: 0 H 0 M 3 L). Box checked. Not e2e-relevant (test tooling only).
+- Tests: 836 unit. Engine coverage not re-measured.
+- Open `wip/*` branches: none.
+- Next item: QF.5 Engine purity lint has no bypasses (then QF.6–QF.9, then MR.1).
+- Review Lows from QF.3 and QF.4 added to the QUALITY backlog.
+- Blockers: none new (the MQ.A preview is Luke's Run-workflow click per LOOP §8.2).
+

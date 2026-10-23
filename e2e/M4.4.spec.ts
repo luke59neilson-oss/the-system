@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { deflateSync } from 'node:zlib';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M4.4 Character creation: the GM creates characters with a name, a starting
@@ -101,7 +101,7 @@ test('the GM creates characters with portraits; players see them live', async ({
   // Name, starting class from the default library, portrait with a preview.
   const create = gm.locator('form[aria-labelledby="new-character"]');
   await create.getByLabel('Name', { exact: true }).fill('Jake Thayne');
-  await create.getByLabel('Starting class').selectOption({ label: 'Warrior' });
+  await create.getByLabel('Starting class').selectOption({ label: 'Warrior (Heavy)' });
   await expect(create).toContainText('[Identify (Common)] (race skill, added automatically)');
   await create.getByTestId('portrait-file').setInputFiles({
     name: 'jake.png',
@@ -120,7 +120,7 @@ test('the GM creates characters with portraits; players see them live', async ({
 
   // A second character without a portrait keeps the monogram.
   await create.getByLabel('Name', { exact: true }).fill('Kim');
-  await create.getByLabel('Starting class').selectOption({ label: 'Mage' });
+  await create.getByLabel('Starting class').selectOption({ label: 'Caster' });
   await create.getByRole('button', { name: 'Create character' }).click();
   const party = gm.locator('section[aria-labelledby="party"]');
   const jakeRow = party.locator('tr', { hasText: 'Jake Thayne' });

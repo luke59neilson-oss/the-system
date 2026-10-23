@@ -1,5 +1,5 @@
 // Runs electron-builder with the build id that names the release files (MS.7):
-// `TheSystem-<id>-win-x64-portable.exe` and so on. The release workflow sets
+// `TheSystem-<id>-win-x64-setup.exe` and so on. The release workflow sets
 // THE_SYSTEM_BUILD_ID to `preview-<date>-<run>`; local builds use `dev-<version>`.
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';

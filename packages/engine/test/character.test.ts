@@ -47,7 +47,8 @@ describe('createCharacter', () => {
       [],
       [],
     ]);
-    expect(c.schemaVersion).toBe(6);
+    expect(c.schemaVersion).toBe(7);
+    expect(c.professionOffers).toEqual([]);
     expect(c.portrait).toBeNull();
     expect(Object.values(c.classWeights)).toEqual(Array(9).fill(1));
     expect(Object.values(c.classSpreadTotals)).toEqual(Array(9).fill(0));

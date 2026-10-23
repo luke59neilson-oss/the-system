@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M3.6 Skill selection: a pending badge on the sheet, the offered skills side
@@ -85,8 +85,12 @@ test('a player chooses a skill from the offered menu', async ({ browser }) => {
   const dialog = laptop.getByRole('dialog', { name: 'Skill selection' });
   await expect(dialog).toBeVisible();
   await expect.poll(() => focusedText(laptop)).toBe('Skill selection');
+  // The demo Jake passed options over at earlier selections (MQ.3); the
+  // count covers them too.
+  const olderAt50 = await dialog.getByTestId('passed-over-offer').count();
+  expect(olderAt50).toBeGreaterThan(0);
   await expect(dialog.getByTestId('selection-level')).toHaveText(
-    'Class level 50: choose one of 3 skills',
+    `Class level 50: choose one of ${3 + olderAt50} skills (3 new)`,
   );
   const offers = dialog.getByTestId('offer');
   await expect(offers).toHaveCount(3);
@@ -114,7 +118,7 @@ test('a player chooses a skill from the offered menu', async ({ browser }) => {
   // Pick the second, go Back (focus returns to it), then take the first.
   await dialog.getByRole('button', { name: `Choose ${names[1]}` }).click();
   await expect(dialog.getByTestId('selection-review')).toContainText(
-    `Take [${names[1]} (Epic)]? The choice is final; the other options will be gone.`,
+    `Take [${names[1]} (Epic)]? The choice is final; the skills you pass over stay on offer for later selections.`,
   );
   await expect.poll(() => focusedText(laptop)).toBe('Confirm');
   await dialog.getByRole('button', { name: 'Back' }).click();
@@ -139,6 +143,67 @@ test('a player chooses a skill from the offered menu', async ({ browser }) => {
   await expect(laptop.getByTestId('skills-class')).toContainText(`[${names[0]} (Epic)]`);
   await expect(laptop.getByTestId('selection-badge')).toHaveCount(0);
 
+  // MQ.3: at his next selection the options he passed over are listed below
+  // the new menu, and one of them can fill it.
+  await gmCommand(gm, {
+    type: 'xp.award',
+    track: 'class',
+    amount: 8 * 2700, // eight D levels (DESIGN §5: 2,700 per D level, MQ.10)
+    participants: [{ characterId: 'demo-jake' }],
+  });
+  await gmCommand(gm, {
+    type: 'selection.offer',
+    characterId: 'demo-jake',
+    level: 60,
+    options: [
+      { name: 'Squall Lance', rarity: 'epic' },
+      { name: 'Cloud Read', rarity: 'rare' },
+      { name: 'Drizzle Veil', rarity: 'uncommon' },
+    ],
+  });
+  await laptop.getByRole('button', { name: '[Choose]' }).click();
+  await expect(dialog.getByTestId('offer')).toHaveCount(3);
+  const older = dialog.getByTestId('passed-over').getByTestId('passed-over-offer');
+  await expect(older.filter({ hasText: `[${names[1]} (Epic)]` })).toHaveCount(1);
+  await expect(older.filter({ hasText: `[${names[0]} (Epic)]` })).toHaveCount(0);
+  const total = await older.count();
+  await expect(dialog.getByTestId('selection-level')).toHaveText(
+    `Class level 60: choose one of ${3 + total} skills (3 new)`,
+  );
+  // Older options sit below the new menu, and the long list scrolls with the
+  // title and Close kept in view.
+  const order = await dialog.evaluate((el) => {
+    const fresh = el.querySelector('[data-testid="offers"]');
+    const old = el.querySelector('[data-testid="passed-over"]');
+    return fresh && old ? fresh.compareDocumentPosition(old) : 0;
+  });
+  expect(order & 4).toBe(4); // DOCUMENT_POSITION_FOLLOWING
+  expect(await dialog.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+  await older.last().scrollIntoViewIfNeeded();
+  await expect(older.last()).toBeInViewport();
+  await expect(dialog.getByRole('button', { name: 'Close' })).toBeInViewport();
+  await dialog.evaluate((el) => el.scrollTo(0, 0));
+  // The GM withdraws the option the player is reviewing: the review closes
+  // with a notice, and the option leaves the open list live.
+  await dialog.getByRole('button', { name: `Choose ${names[2]}` }).click();
+  await expect(dialog.getByRole('button', { name: 'Confirm' })).toBeVisible();
+  await gmCommand(gm, {
+    type: 'selection.withdrawOption',
+    characterId: 'demo-jake',
+    skill: names[2],
+  });
+  await expect(dialog.getByTestId('selection-gone')).toContainText(
+    `[${names[2]}] is no longer on offer`,
+  );
+  await expect(older.filter({ hasText: `[${names[2]} ` })).toHaveCount(0);
+  await expect(older).toHaveCount(total - 1);
+  await laptop.screenshot({ path: path.join(shots, 'player-passed-over-1366x768.png') });
+  await dialog.getByRole('button', { name: `Choose ${names[1]}` }).click();
+  await dialog.getByRole('button', { name: 'Confirm' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(laptop.getByTestId('skills-class')).toContainText(`[${names[1]} (Epic)]`);
+  await expect(laptop.getByTestId('selection-badge')).toHaveCount(0);
+
   // Miranda (E, level 22) on a phone. The GM's View-as pane shows the badge
   // but never offers [Choose].
   const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -154,8 +219,10 @@ test('a player chooses a skill from the offered menu', async ({ browser }) => {
 
   await phone.getByRole('button', { name: '[Choose]' }).click();
   const phoneDialog = phone.getByRole('dialog', { name: 'Skill selection' });
+  const olderAt20 = await phoneDialog.getByTestId('passed-over-offer').count();
+  expect(olderAt20).toBeGreaterThan(0);
   await expect(phoneDialog.getByTestId('selection-level')).toHaveText(
-    'Class level 20: choose one of 3 skills',
+    `Class level 20: choose one of ${3 + olderAt20} skills (3 new)`,
   );
   // Escape leaves the choice for later.
   await phone.keyboard.press('Escape');

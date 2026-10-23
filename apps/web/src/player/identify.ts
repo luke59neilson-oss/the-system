@@ -25,3 +25,16 @@ export function identifyResult(
 
 /** The text when the viewer's Identify rarity unlocks no tier. */
 export const NOTHING_REVEALED = 'Your Identify reveals nothing about it. Train it to see more.';
+
+/** What Identify shows for a target out of range (MQ.8, DESIGN §7). */
+export const OUT_OF_RANGE = '[??? – lvl ???]';
+
+/**
+ * The status line above the text: `[??? – lvl ???]` out of range,
+ * `[Pale hunter (F) – lvl 7]` when the GM gave a grade and level, else null.
+ */
+export function identifyHeader(e: PlayerIdentify): string | null {
+  if (!e.inRange) return OUT_OF_RANGE;
+  if (e.grade === null || e.level === null) return null;
+  return `[${e.label} (${e.grade}) – lvl ${e.level}]`;
+}

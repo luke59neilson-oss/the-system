@@ -3,7 +3,11 @@ import {
   adjustedValues,
   clockComplete,
   contestChance,
+  damageFactor,
   defaultRules,
+  planGroup,
+  pooledSide,
+  walled,
   execute,
   montageAvailable,
   newClock,
@@ -18,6 +22,8 @@ import { kit, rawRules, run, seededRandom, testContext } from './helpers/events'
 
 const rules = defaultRules();
 const MODES: readonly GradeGapMode[] = ['none', 'multiplier', 'lowerGradeFraction'];
+const ALL_MODES: readonly GradeGapMode[] = [...MODES, 'gradeWalls'];
+const none = { ...rules, resolution: { ...rules.resolution, gradeGapMode: 'none' as const } };
 
 describe('contest odds (DESIGN §7)', () => {
   it('ratio odds: yours ÷ (yours + theirs)', () => {
@@ -46,11 +52,17 @@ describe('contest odds (DESIGN §7)', () => {
       resolution: { ...rules.resolution, gradeGapMode: 'multiplier' as const },
     };
     expect(contestChance(multi, f, d)).toBeCloseTo(30 / 130, 12);
-    expect(contestChance(rules, f, d)).toBe(0.5);
+    expect(contestChance(none, f, d)).toBe(0.5);
   });
 
   it('rejects bad inputs', () => {
     const g = (value: number) => ({ value, grade: 'G' });
+    for (const mode of ALL_MODES) {
+      expect(() => contestChance(rules, g(-1), { value: 1, grade: 'A' }, mode)).toThrow(/≥ 0/);
+      expect(() => rollContest(rules, g(1), { value: -1, grade: 'A' }, () => 0, mode)).toThrow(
+        /≥ 0/,
+      );
+    }
     expect(() => contestChance(rules, g(-1), g(1))).toThrow(/≥ 0/);
     expect(() => contestChance(rules, g(Number.NaN), g(1))).toThrow(/≥ 0/);
     expect(() => contestChance(rules, { value: 1, grade: 'Z' }, g(1))).toThrow(/Unknown grade/);
@@ -229,5 +241,124 @@ describe('progress clocks and montage (DESIGN §7)', () => {
     expect(c.state?.clocks).toEqual({});
     expect(c.state?.clockOrder).toEqual([]);
     expect(reject(c, { type: 'clock.remove', clockId: 'spout' })).toMatch(/unknown clock/);
+  });
+});
+
+describe('grade walls (MQ.5, DESIGN §7, D115)', () => {
+  const side = (value: number, grade: string) => ({ value, grade });
+
+  it('is the default mode for new campaigns', () => {
+    expect(rules.resolution.gradeGapMode).toBe('gradeWalls');
+  });
+
+  it('same grade: plain ratio odds', () => {
+    expect(contestChance(rules, side(30, 'E'), side(10, 'E'))).toBe(0.75);
+    expect(adjustedValues(rules, side(30, 'E'), side(10, 'E'))).toEqual([30, 10]);
+  });
+
+  it('one grade apart: the lower side counts ×⅓, either way round', () => {
+    expect(adjustedValues(rules, side(30, 'E'), side(10, 'D'))).toEqual([10, 10]);
+    expect(adjustedValues(rules, side(10, 'D'), side(30, 'E'))).toEqual([10, 10]);
+    expect(contestChance(rules, side(30, 'E'), side(10, 'D'))).toBeCloseTo(0.5, 12);
+    expect(contestChance(rules, side(60, 'F'), side(10, 'E'))).toBeCloseTo(2 / 3, 12);
+    expect(walled(rules, side(1, 'E'), side(1, 'D'))).toBe(false);
+  });
+
+  it('peak E against a fresh D wins about 24% of single rolls (20,000 rolls, seed 20261022)', () => {
+    // DESIGN §4 check values: 614 total stats at level 49 (peak E); a fresh D
+    // at level 50 has one more D level, +18 (§4), averaged over nine stats.
+    const SEED = 20261022;
+    const peakE = side(614 / 9, 'E');
+    const freshD = side((614 + 18) / 9, 'D');
+    const expected = 614 / 3 / (614 / 3 + 632);
+    expect(contestChance(rules, peakE, freshD)).toBeCloseTo(expected, 12);
+    const rng = seededRandom(SEED);
+    let wins = 0;
+    const n = 20_000;
+    for (let i = 0; i < n; i++) if (rollContest(rules, peakE, freshD, rng).success) wins++;
+    expect(Math.abs(wins / n - 0.24), `seed ${SEED}: ${wins}/${n}`).toBeLessThan(0.02);
+  });
+
+  it('two or more grades apart: no roll, the higher grade succeeds, the RNG is untouched', () => {
+    let draws = 0;
+    const rng = () => {
+      draws++;
+      return 0;
+    };
+    for (const [low, high] of [
+      ['G', 'E'],
+      ['F', 'D'],
+      ['E', 'A'],
+    ] as const) {
+      // Even a huge lower-grade value cannot win.
+      const up = rollContest(rules, side(10_000, low), side(1, high), rng);
+      expect(up).toEqual({
+        yours: 0,
+        theirs: 1,
+        chance: 0,
+        roll: null,
+        walled: true,
+        success: false,
+      });
+      const down = rollContest(rules, side(1, high), side(10_000, low), rng);
+      expect(down).toMatchObject({ chance: 1, roll: null, success: true });
+      expect(contestChance(rules, side(10_000, low), side(1, high))).toBe(0);
+      expect(walled(rules, side(1, low), side(1, high))).toBe(true);
+    }
+    // A higher grade with 0 in the stat still succeeds.
+    expect(rollContest(rules, side(0, 'C'), side(50, 'E'), rng).success).toBe(true);
+    expect(draws).toBe(0);
+    // Other modes still roll across the same gap.
+    expect(walled(rules, side(1, 'G'), side(1, 'E'), 'lowerGradeFraction')).toBe(false);
+    expect(rollContest(rules, side(1, 'G'), side(1, 'E'), rng, 'none')).toMatchObject({
+      roll: 0,
+      walled: false,
+    });
+    expect(rollContest(rules, side(3, 'F'), side(1, 'E'), rng).walled).toBe(false);
+    expect(draws).toBe(2);
+  });
+
+  it('damage: ⅓ from one grade below, none from two or more below, full otherwise', () => {
+    expect(damageFactor(rules, 'E', 'E')).toBe(1);
+    expect(damageFactor(rules, 'D', 'E')).toBe(1);
+    expect(damageFactor(rules, 'A', 'G')).toBe(1);
+    expect(damageFactor(rules, 'E', 'D')).toBeCloseTo(1 / 3, 12);
+    expect(damageFactor(rules, 'G', 'F')).toBeCloseTo(1 / 3, 12);
+    expect(damageFactor(rules, 'F', 'D')).toBe(0);
+    expect(damageFactor(rules, 'G', 'A')).toBe(0);
+    // Other modes never scale damage.
+    for (const mode of MODES) expect(damageFactor(rules, 'G', 'A', mode)).toBe(1);
+  });
+
+  it('no strength in numbers across grades: only same-or-higher grades pool', () => {
+    const opp = side(50, 'D');
+    const party = [
+      { ...side(40, 'D'), id: 'd' },
+      { ...side(40, 'C'), id: 'c' },
+      { ...side(60, 'E'), id: 'e1' },
+      { ...side(60, 'E'), id: 'e2' },
+      { ...side(900, 'F'), id: 'f' },
+      { ...side(900, 'G'), id: 'g' },
+    ];
+    const plan = planGroup(rules, party, opp);
+    expect(plan.pooled.map((m) => m.id)).toEqual(['d', 'c']);
+    expect(plan.alone.map((m) => m.id)).toEqual(['e1', 'e2']);
+    expect(plan.powerless.map((m) => m.id)).toEqual(['f', 'g']);
+    // A thousand G-grades are nothing to an A-grade.
+    const horde = Array.from({ length: 1000 }, () => side(100, 'G'));
+    const vsA = planGroup(rules, horde, side(1, 'A'));
+    expect(vsA.pooled).toHaveLength(0);
+    expect(vsA.alone).toHaveLength(0);
+    expect(vsA.powerless).toHaveLength(1000);
+    // Other modes pool everyone.
+    for (const mode of MODES) expect(planGroup(rules, party, opp, mode).pooled).toHaveLength(6);
+    expect(() => planGroup(rules, [side(-1, 'D')], opp)).toThrow(/≥ 0/);
+    // The pool is one side at its lowest member's grade, values summed.
+    expect(pooledSide(rules, plan.pooled)).toEqual({ value: 80, grade: 'D' });
+    expect(pooledSide(rules, [])).toBeNull();
+    expect(contestChance(rules, pooledSide(rules, plan.pooled) ?? opp, opp)).toBeCloseTo(
+      80 / 130,
+      12,
+    );
   });
 });

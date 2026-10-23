@@ -11,10 +11,10 @@ DESIGN/ROADMAP; do not re-apply them.
    Answer (Luke, 2026-10-22): Credits. (default kept)
 3. **Grade gap on rolls** (open decision in DESIGN §7)? Default: pure ratio
    odds, switchable in settings.
-   Answer (Luke, 2026-10-22): Default for now, switchable later. (default kept)
+   Answer (Luke, 2026-10-22): Default for now, switchable later. Superseded the same day in chat: grade walls are the default. (applied, L1)
 4. **XP per level by grade** (G 100, F 150, E 250, D 400, C 650, B 1,000,
    A 1,500) OK? Default: yes.
-   Answer (Luke, 2026-10-22): Too low and too flat: XP should scale with power like stats do. Numbers being settled in chat; keep the current curve until then. (open)
+   Answer (Luke, 2026-10-22): Too low and too flat; ramp it like the power gap. ×3 per grade (G 100 … A 72,900); no XP from targets two or more grades below. (applied, L2)
 5. **One-time stat bonus at each evolution?** Default: none.
    Answer (Luke, 2026-10-22): Yes, set by the System (GM) at each evolution. (applied, D98)
 6. **What opens an evolution?** Default: race level at the top of the grade,
@@ -51,7 +51,7 @@ DESIGN/ROADMAP; do not re-apply them.
     (Basic Archery, Basic Stealth, Archer’s Eye; Agility and Perception
     weighted 3, Strength 2, others 1). Default: keep it until the class
     library (M4.2) lets you define your own. Want different starter classes?
-    Answer (Luke, 2026-10-22): A pool of starter classes from the class library; see Q38. (open)
+    Answer (Luke, 2026-10-22): A pool of starter classes from the class library: the books' six (Q38). (applied, L5)
 14. **Refill pools on level-up?** When a level raises max HP/MP/Stamina
     (e.g. Endurance up → Stamina 100/110), current values stay where they
     were. Default: no refill (the GM heals or rests the party). Alternative:
@@ -60,7 +60,7 @@ DESIGN/ROADMAP; do not re-apply them.
 15. **Do item and title bonuses raise max HP/MP/Stamina?** E.g. a ring with
     +1.0 Vitality. Default: yes, pool maxima use effective stats from M3.7 on
     (D60); until then only base stats count.
-    Answer (Luke, 2026-10-22): Yes. A full pool stays full when its max rises; otherwise current is unchanged (85/100 +20 → 85/120; 100/100 +20 → 120/120). Wants a cap on item stats like the books; cap being settled in chat. (partly applied, D100)
+    Answer (Luke, 2026-10-22): Yes. A full pool stays full when its max rises; otherwise current is unchanged (85/100 +20 → 85/120; 100/100 +20 → 120/120). Item bonuses are flat only, capped at 20% of base; title percentages are additive. (applied, D100, L6)
 16. **Does the GM keep a stock?** The GM side of gifts and trades is
     unlimited (a shop or quest reward conjures the goods; what players hand
     to the GM leaves play). Default: unlimited. Alternative: a GM stash
@@ -100,7 +100,7 @@ DESIGN/ROADMAP; do not re-apply them.
     ×⅓ as F against E. Default: flat ⅓ whenever the grades differ (DESIGN
     §7 wording). Alternative: ⅓ per grade step. (The "multiplier" mode
     multiplies the whole stat value by the grade's factor.)
-    Answer (Luke, 2026-10-22): Per grade step, compounding. (applied, D104)
+    Answer (Luke, 2026-10-22): Per grade step, compounding. Refined the same day: ⅓ at one grade apart, automatic at two or more. (applied, L1)
 23. **Can party members see each other's titles?** DESIGN §9 lists Titles
     on the player's own status screen; it doesn't say whether the party sees
     them. Default: owner only (titles may carry stat bonuses in M6.4).
@@ -111,7 +111,7 @@ DESIGN/ROADMAP; do not re-apply them.
     applies (Cook 14 while class jumps to 24, race 19). Default: before
     (D64 order). Alternative: after, so the profession starts at the new
     class level.
-    Answer (Luke, 2026-10-22): Asked for examples; discussing in chat. (open)
+    Answer (Luke, 2026-10-22): Moot: there is no banked XP. XP for a capped track levels the other track. (applied, L3)
 25. **Declining an offered profession.** When an evolution offers
     professions, the player must pick one. Default: must pick (the GM can
     re-release with none). Alternative: allow "none for now".
@@ -192,7 +192,7 @@ DESIGN/ROADMAP; do not re-apply them.
     Alternatives: one entry per name and rarity; library edits update every
     character's copy that has not been individually edited; show effects to
     the skill's owner.
-    Answer (Luke, 2026-10-22): Asked for examples; discussing in chat. (open)
+    Answer (Luke, 2026-10-22): All three alternatives: entries per name and rarity; edits update unedited copies; effects shown to the owner. (applied, L4)
 
 38. **Default classes, races and professions.** New campaigns start with six
     starting classes (Archer, Warrior, Mage, Healer, Rogue, Brawler), the
@@ -203,7 +203,7 @@ DESIGN/ROADMAP; do not re-apply them.
     described (D91). Alternatives: a different starting set; races with
     their own stat weights or skills; show the descriptions to players on
     the status screen or the evolution profession picker.
-    Answer (Luke, 2026-10-22): Match the book's starting classes (discussing in chat, open). No default professions: tailored per player once unlocked. (professions applied, D105)
+    Answer (Luke, 2026-10-22): Replace the six with the books' six (Warrior Light/Medium/Heavy, Archer, Caster, Healer). No default professions: tailored per player once unlocked. (applied, D105, L5)
 
 39. **Session log between sessions.** The running log now covers only a
     started session; changes made between sessions (prep, XP awarded after
@@ -221,4 +221,130 @@ DESIGN/ROADMAP; do not re-apply them.
     can still load it).
     Default: as described (D95). Alternatives: a portrait at the top of the
     status window; bundle the portraits folder into backups and exports.
+    Answer:
+
+41. **Pools after a maximum falls and rises again.** DESIGN §2 read
+    literally: a falling maximum clamps the pool, and a pool at its maximum
+    is full, so it rises with the maximum next time. Example: 110/120 HP with
+    a +20 charm; take the charm off → 100/100; put it back on → 120/120. A
+    player could heal a little by swapping gear. Older campaigns (created
+    before this build) keep the old rule (a rising maximum never changes the
+    pool) until the GM turns the rule on in the rules settings (M4.9).
+    Default: as described (D111). Alternatives: remember that a pool was
+    clamped and do not treat it as full; apply the new rule to old campaigns
+    too.
+    Answer (Luke, 2026-10-22): Agreed: close the loophole; a clamped pool stays full only if it was full before the drop. (applied, L7)
+
+42. **Cap on title percentages?** Titles give percentage bonuses and stack
+    additively (D115). The engine also caps the total percentage per stat
+    (default +25%). Default: keep the +25% cap. Alternative: no cap on title
+    percentages, or a different cap.
+    Answer (Luke, 2026-10-22): No cap; titles will be few, far between and hard to earn. (applied, L8)
+
+43. **Marks when an evolution transform raises a skill's rarity.** A
+    transform is the System's gift at an evolution, not an upgrade the player
+    paid for. Built default: the gain spends the marks each skipped step
+    would cost, and the rest carry on (10 marks on an Inferior skill that
+    becomes Uncommon keep 3; 5 marks keep 0). Same-rarity transforms keep
+    every mark. Default: as described (D114). Alternatives: a transform
+    keeps every mark (the gain is free); or it resets them to 0 (the old
+    rule).
+    Answer (Luke, 2026-10-22, in chat): evolutions downgrade many skills,
+    since what is Rare at D-grade is not Rare at C-grade. Each skill drops one
+    rarity by default and the GM adjusts each; same text, lower label; marks
+    all kept. Every upgrade (by marks or by a transform) is a new skill to
+    learn and starts at 0 marks. (applied, L14, L15; MR.1, MR.2)
+
+44. **Asking the GM for items in a trade.** A player can propose a trade with
+    the GM side ("40 Credits for the Bow"). Because the GM holds the whole
+    item library, a player who guesses an item id could name an item they
+    have never seen and get its definition sent to their screen (QF.2). Draft
+    default on `wip/QF.2`: a player's trade with the GM may ask only for
+    currency; the GM offers items by proposing the trade from the GM side.
+    Alternative: a player may ask the GM only for items they have already
+    seen (held, equipped, or in an earlier trade).
+    Answer (Luke, 2026-10-22, in chat): currency only (default kept).
+    (applied, L18)
+
+45. **Asking another player for items.** A trade proposal may ask only for
+    items the other player holds now (QF.2). So a player who guesses an item
+    id can learn whether another player carries it, and the proposal then
+    shows them its name and description. Built default: allowed (trading is
+    open between players, and the ids are not shown anywhere). Alternative:
+    a player may ask another player only for currency, or only for items the
+    asker has already seen.
+    Answer (Luke, 2026-10-22, in chat): yes, any item (default kept; QF.9
+    hides holdings). (applied, L18)
+
+46. **More profession offers after "none for now".** A character who declined
+    every offered profession at the E-grade evolution keeps those offers in
+    the Professions tab. Built default (MQ.6, D121): the GM may also offer new
+    professions with any later evolution (D, C, ...) while the character still
+    has none; they join the same list. The GM can also grant any profession
+    directly. Alternative: offers happen only at the E-grade evolution.
+    Answer (Luke, 2026-10-22, in chat): yes, at any later evolution (default
+    kept). (applied, L18)
+
+47. **Who gets a hidden quest's notice.** DESIGN §7 says the "affected
+    players" get a detail-free notice that a hidden quest exists. Quests have
+    no participant list, so each quest now has a GM-chosen notice list.
+    Default (used now): everyone in the party, unless the GM names
+    characters; the notice appears again if the quest is hidden again or
+    reopened. Alternative: notify only characters the GM names (default
+    nobody), or tie it to who is in the scene. (D122)
+    Answer (Luke, 2026-10-22, in chat): the whole party unless the GM names
+    characters (default kept). (applied, L18)
+
+48. **Identify range details.** DESIGN §7: same grade only if the target's
+    level is at most 1.5 × the viewer's level. Defaults used (MQ.8, D123):
+    "the viewer's level" is their race level; targets without a grade and
+    level (a place, an energy) are always in range; a known target out of
+    range still shows its name in the Identify list, with `[??? – lvl ???]`
+    instead of its text. Alternatives: class level; hide out-of-range
+    targets from the list entirely.
+    Answer (Luke, 2026-10-22, in chat): race level; name with [??? – lvl ???]
+    (default kept). (applied, L18)
+
+49. **Existing campaigns and the no-banking rule.** XP overflow (MQ.11)
+    is on for new campaigns. Campaigns created before it keep banking XP at
+    the grade top, so their logs replay exactly as played. Default (D124):
+    they keep banking until the GM switches the rule in Rules settings
+    (M4.9). Alternative: switch every campaign over automatically.
+    Answer (Luke, 2026-10-22, in chat): switch every campaign automatically.
+    (applied, L16; MR.3)
+
+50. **Hand-written skill text and the library.** Once you write a
+    character's skill text by hand (Skill text form), library edits no
+    longer change that copy, even after it upgrades. Default (D125): it
+    stays hand-written for good (until an evolution renames the skill).
+    Alternative: a "Use library text" button that hands it back to the
+    library.
+    Answer (Luke, 2026-10-22, in chat): add the Use library text button.
+    (applied, L17; MR.4)
+
+51. **Hand-written skill text when a skill upgrades (follows Q50).** The
+    MQ.A review pointed at DESIGN §6: "an upgrade picks up the higher
+    rarity's text automatically". Default now (D133): when a skill changes
+    rarity and the library has text for the new rarity, the copy takes it,
+    replacing your hand-written text for the old rarity; library edits at the
+    same rarity still leave hand-written copies alone. Alternative: keep your
+    hand-written text through upgrades too (Q50's earlier default).
+    Answer (Luke, 2026-10-22, in chat): keep the hand-written text through
+    upgrades. (applied, L17; MR.4)
+
+52. **Identify at level 0.** A brand-new character (race level 0) can
+    identify nothing of its own grade above level 0, since 1.5 × 0 = 0: a
+    level-1 G-grade rat shows `[??? – lvl ???]` until their first level-up.
+    Default: the rule as written (DESIGN §7); leave grade and level blank on
+    tutorial-start creatures if you want them readable. Alternative: treat a
+    level-0 viewer as level 1 for this rule.
+    Answer (Luke, 2026-10-22, in chat): keep the rule as written (default
+    kept). (applied, L18)
+
+53. **Note and trade limits.** To stop one phone flooding everyone's
+    screen (QF.3), each character may keep up to 300 notes with 150,000
+    characters in all (about 25,000 words), and have 10 trades they proposed
+    open at once; a player-logged practice entry is at most 500 characters
+    and 5,000 per character. The GM has no limits. Default: these numbers (they live in
+    the rules config). Alternative: tell me other numbers.
     Answer:

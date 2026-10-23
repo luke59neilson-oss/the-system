@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import type { PendingEvolution, PlayerView } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
-import { evolutionWarnings, transformText, weightsText } from './evolution';
+import {
+  bonusText,
+  evolutionBlocked,
+  evolutionWarnings,
+  transformText,
+  weightsText,
+} from './evolution';
 import { isConnectionError } from './selection';
 
 /**
@@ -31,6 +37,9 @@ export function EvolutionChoice({
   const dialog = useRef<HTMLDialogElement | null>(null);
   const heading = useRef<HTMLHeadingElement | null>(null);
   const confirmButton = useRef<HTMLButtonElement | null>(null);
+  const backButton = useRef<HTMLButtonElement | null>(null);
+  // Waiting selections block the choice (MQ.1, D103); the player can still look.
+  const blocked = evolutionBlocked(me);
   const [picked, setPicked] = useState<string | null>(null);
   const [profession, setProfession] = useState<string>('');
   const [busy, setBusy] = useState(false);
@@ -42,8 +51,8 @@ export function EvolutionChoice({
   }, []);
   const option = picked === null ? null : evolution.options.find((o) => o.id === picked);
   useEffect(() => {
-    if (option) confirmButton.current?.focus();
-  }, [option]);
+    if (option) (blocked === null ? confirmButton : backButton).current?.focus();
+  }, [option, blocked]);
   // Back returns keyboard focus to the path that was picked.
   const [backTo, setBackTo] = useState<string | null>(null);
   useEffect(() => {
@@ -60,7 +69,8 @@ export function EvolutionChoice({
       type: 'evolution.choose',
       characterId: me.id,
       optionId,
-      profession: profession === '' ? null : profession,
+      // A profession that arrived while the dialog was open hides the picker (MQ.6).
+      profession: profession === '' || me.profession !== null ? null : profession,
       releaseId: evolution.releaseId,
     });
     setBusy(false);
@@ -97,19 +107,25 @@ export function EvolutionChoice({
       </div>
       <p className="muted" data-testid="evolution-grade">
         Evolve into {evolution.toGrade}-grade: choose one of {evolution.options.length}{' '}
-        {evolution.options.length === 1 ? 'path' : 'paths'}
+        {evolution.options.length === 1 ? 'path' : 'paths'}. Evolving refills{' '}
+        {poolList(rules.pools)}.
       </p>
+      {blocked && (
+        <p className="err" role="status" data-testid="evolution-blocked">
+          {blocked}
+        </p>
+      )}
       {option ? (
         <div className="selection-review">
           <p id="evolution-review" data-testid="evolution-review">
             Become <span className="skill-name">[{option.className}]</span>?
           </p>
           <ul className="evolution-warnings" data-testid="evolution-warnings">
-            {evolutionWarnings(me, option).map((w) => (
+            {evolutionWarnings(rules, me, option).map((w) => (
               <li key={w}>{w}</li>
             ))}
           </ul>
-          {evolution.professions.length > 0 && (
+          {evolution.professions.length > 0 && me.profession === null && (
             <label className="evolution-profession">
               Profession
               <select
@@ -124,13 +140,16 @@ export function EvolutionChoice({
                   </option>
                 ))}
               </select>
+              <span className="muted">
+                &ldquo;None for now&rdquo; keeps the offers: take one later from Professions.
+              </span>
             </label>
           )}
           <div className="assign-actions">
             <button
               type="button"
               ref={confirmButton}
-              disabled={busy}
+              disabled={busy || blocked !== null}
               aria-describedby="evolution-review"
               onClick={() => void confirm(option.id)}
             >
@@ -139,6 +158,7 @@ export function EvolutionChoice({
             <button
               type="button"
               className="secondary"
+              ref={backButton}
               disabled={busy}
               onClick={() => {
                 setBackTo(option.id);
@@ -154,6 +174,7 @@ export function EvolutionChoice({
           {evolution.options.map((o, i) => {
             const id = `evolution-option-${i}`;
             const weights = weightsText(rules, o.classWeights);
+            const bonus = bonusText(rules, o.statBonus);
             return (
               <li key={o.id} className="offer" data-testid="evolution-option" aria-labelledby={id}>
                 <h4 id={id}>
@@ -170,6 +191,11 @@ export function EvolutionChoice({
                       <li key={t.skill}>{transformText(rules, me, t)}</li>
                     ))}
                   </ul>
+                )}
+                {bonus && (
+                  <p className="evolution-bonus" data-testid="evolution-bonus">
+                    One-time bonus: {bonus}
+                  </p>
                 )}
                 {weights && <p className="muted">Class stats per level: {weights}</p>}
                 <button
@@ -195,4 +221,11 @@ export function EvolutionChoice({
       )}
     </dialog>
   );
+}
+
+/** "HP, MP and Stamina" from the rules' pool names (a name's "(abbreviation)" if it has one). */
+export function poolList(pools: readonly { readonly name: string }[]): string {
+  const names = pools.map((p) => /\(([^)]+)\)\s*$/.exec(p.name)?.[1] ?? p.name);
+  if (names.length <= 1) return names.join('');
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }

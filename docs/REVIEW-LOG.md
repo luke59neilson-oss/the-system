@@ -422,3 +422,169 @@
   - L fixed: portrait changes appear in the session log (unit test); only the latest pick counts in the new-character picker, which is disabled while reading; the picker's Remove has an aria-label.
   - L accepted: a well-formed but missing file name is accepted (the badge falls back to the monogram); orphan files after a failed create (files are never deleted); `readFileSync` per request with an immutable cache; server 400/413 paths covered by unit tests only; portraits not on the own status window (Q40).
 - Round 2 (e5d4e74..18cefa8, required by two Mediums): 0 High, 0 Medium, 2 Low. Accepted: a decode that never settles leaves the picker on "Reading…". Fixed: the reviewer worktree pointer committed by mistake in 18cefa8 was removed and `.claude/worktrees/` ignored (03fbbd8).
+
+## 2026-10-22 · MS.7 Launch polish · sonnet
+- Round 1 (935d7e8..b868d1e): 0 High, 3 Medium, 6 Low. Check and all 4 desktop specs pass; splash screenshot clear.
+  - M fixed: a quit or splash close while starting exited without closing the server and campaign lock (before-quit now holds the exit and start() closes what it opened; test proves the LOCK file is gone). Tests now check focus, a second launch during start (splash comes forward) and closing the splash while starting.
+  - M resolved: the workflow was unverified; both release-dry-run runs were green (39794644988 with the four new names, 39796128748 after MQ.9 with three).
+  - M accepted: the "within 1 s" figure is measured from process start (325 ms locally); the portable exe's own unpack time is outside Electron's control (D96).
+  - L accepted: a re-run picks the previous attempt as the "previous preview"; a program bound only to 127.0.0.1:30333 on Windows does not trigger the fallback; `did-fail-load` can reveal early; the port+1 assertion can race; desktop specs re-render screenshots; packaged smoke shares the real profile.
+- Round 2 (c841cba, required by three Mediums): 0 High, 0 Medium, 3 Low, accepted for now: a second quit while the server is closing can exit before the lock is released; no exit timeout while a start hangs; the test hold sets `running` only after the delay.
+
+## 2026-10-22 · MQ.9 Windows-first releases · sonnet
+- Round 1 (835717c): 0 High, 0 Medium, 3 Low (D55 and older ROADMAP lines still mention macOS as history; header wrap; mac section kept for local builds). Accepted. Dry run 39796128748 green: meta, build (linux), build (win), collect with exactly three files.
+
+## 2026-10-22 · MQ.1 Evolution rules · sonnet
+- Round 1 (835717c..fefa7d7): 0 High, 3 Medium, 4 Low.
+  - M fixed (b3c1f84): the refill used base stats; it now fills to the effective maximum (items and titles count; unit test).
+  - M open for round 2: no GM UI sets the stat bonus (there is no GM evolution builder until M5.2; D110 says so); the pending-selection gate re-runs on replay, so a later rules edit that adds a selection slot could make a stored v2 release fail to replay.
+  - L open: `statValues` accepts unknown stat ids at the schema (the reducer rejects them); `legacy: true` is accepted on hand-written v2 events; the refill sentence hard-codes pool names; `bonusText` edge cases fine.
+- Round 2 required (3 Mediums); not run this run (timebox). The box stays unchecked.
+- Round 2 (2026-10-22, run 451e9851, 835717c..e5ba69f), sonnet: 0 High, 1 Medium, 3 Low. `npm run check` green (691); M3.13 e2e green; evolution screenshots judged fine against DESIGN §9.
+  - Round-1 replay Medium confirmed as no defect: replay folds in log order and an undo that breaks a later release is refused. Caveat for M4.9: test that undoing a rules edit cannot re-gate a stored release.
+  - Round-1 "no GM UI for the bonus" stays accepted by design (M5.2 evolution builder; D110).
+  - M fixed (66033ea): the evolution screen called waiting selections a warning, though choosing is refused. The player view now carries `selectionsDue` (earned and unchosen, offered or not), and the screen shows "Choose your waiting skill selection first…" and disables Evolve. There are engine projection and web unit tests.
+  - L accepted: `chooseEvolution` refills from base stats when called directly (the reducer refills from effective stats; only unit tests call it directly); `bonusText` edge cases are fine; `legacy: true` on a hand-written v2 event also skips the bonus (commands never set it).
+
+## 2026-10-22 · MQ.2 Pools follow maxima · sonnet
+- Round 1 (5619f9b..717e33c): 0 High, 0 Medium, 4 Low. `npm run check` green (701); M3.2 and M3.7 e2e green. Full e2e suite (35) run by the builder before the e2e updates: 3 failures, all expected under D100 (M3.2 stamina, M3.7 amulet, and a cascade from it), fixed in 717e33c.
+  - L accepted (Q41): the literal reading lets a clamped pool count as full, so swapping gear can top up a pool. It is documented and pinned by a test.
+  - L fixed: the comment now explains why "the event did not set the pool" is detected by value.
+  - L accepted: two effective-stat computations per changed character (bounded, LAN scale).
+  - L fixed: a test for item edits that raise an equipped bonus (full stays full; 90 stays 90). Evolution's interplay is covered by the MQ.1 refill tests.
+- No round 2 (no High, fewer than two Mediums).
+
+## 2026-10-22 · MQ.3 Passed-over options · sonnet
+- Round 1 (origin/main...64a5968): 0 High, 4 Medium, 5 Low. `npm run check` green (708); M3.6 e2e green. No GM-only data reaches players (`withdrawn` is not projected).
+  - M fixed (22a9d0c): the eligibility rules (ceiling at the selection's grade, profession options, retired names, unknown rarity, case-insensitive dedupe) had no tests; a new describe covers each.
+  - M fixed: choosing matched names case-sensitively while withdraw did not; both are case-insensitive now.
+  - M fixed: loosened e2e text checks are exact again (3 + passed-over count), and the spec now asserts the new menu precedes the passed-over list, the dialog scrolls with Close in view, and a GM withdraw mid-review.
+  - M fixed: long lists: sticky dialog header (title and Close), compact rows.
+  - L fixed: withdrawing a skill the character already owns is refused; a notice says when the option under review was withdrawn.
+  - L accepted: a pending lower menu does not feed a later pending menu ("passed over" means a chosen menu's leftovers); the GM button waits for M5.1 (D112); the D-number churn was undone after Luke's L-numbering (D110/D111 keep their numbers; MQ.3 is D112).
+- Round 2 (64a5968..22a9d0c), sonnet: 0 High, 0 Medium, 3 Low, all accepted: the sticky header hard-codes the dialog background and padding; withdrawing a retired name succeeds with no visible effect; the withdrawn notice stays until the player picks again or closes.
+- Builder ran the full e2e suite (35) green after merging into main.
+
+## 2026-10-22 · MQ.4 Marks carry over · sonnet
+- Round 1 (835e3f5..1bc57bf): 1 High, 2 Medium, 3 Low. `npm run check` green (715); no banned patterns; golden logs untouched; state changes additive.
+  - H open: an evolution transform that raises a skill's rarity still zeroes its marks (`evolution/model.ts` ~546), so banked marks are not carried after an evolution.
+  - M open: the "banked marks apply after an evolution" test calls `upgradeSkill` on a hand-made E-grade character instead of running an evolution.
+  - M open: the evolution screen warns "N mastery marks reset to 0" for every transformed skill (`apps/web/src/player/evolution.ts:77`), which is wrong when the rarity is kept and after the fix.
+  - L: "5 / 4 marks" can show after a carry (the bar clamps); a double carry through two upgrades is not tested; the schema comment cites D101 rather than D113. The flag has no settings UI (as with `fullPoolsStayFull`, D111), so stored campaigns keep the reset rule until M4.9.
+- Round 2 required (a High). Not run this run (timebox); the box stays unchecked.
+
+- Round 2 (c81a313, fixes on top of 1bc57bf + merge of origin/main): 0 High, 0 Medium, 3 Low. `npm run check` green (731); M3.13 e2e green; full e2e (35) green locally.
+  - Round-1 H and both M verified fixed: transforms now go through `marksAfterRarityChange` (D114), tests run `evolution.choose` including banked marks applied after G→F→E, and the evolution screen says what marks spend, carry or reset.
+  - L accepted: "reset to 0" wording when a rarity gain spends every mark (it reads the same to a player); `marksAfterRarityChange` ignores the reserved flag (transforms cannot target reserved rarities in practice); D114 is an interpretation, asked as Q43.
+
+## 2026-10-22 · MQ.5 Grade walls · sonnet
+- Round 1 (d244b21..bc3fb97): 0 High, 3 Medium, 5 Low. `npm run check` green (738).
+  - M fixed: `planGroup` left pooled mixed grades and several opponents unspecified → `pooledSide` (values summed at the lowest pooled grade), "one plan per opponent" in the docstring and D115.
+  - M fixed: `roll: null` on walled contests undocumented for M7.3 → D115 says the roll log must allow a null roll.
+  - M fixed: no explicit flag for a walled result → `ContestResult.walled`.
+  - L fixed: the bad-input test now runs every mode. L accepted: the 24% test's constants come from DESIGN §4 check values typed in; one sign convention repeated across helpers; D66/Q3 still mention the old default (history).
+- Round 2 (fc84bf9): 0 High, 0 Medium, 5 Low, accepted (opponent value unchecked in `planGroup`, `walled` name used for a function and a field, adjusted 0 for the walled side, no replay test of a stored pre-MQ.5 mode, box unchecked at the reviewed commit).
+
+## 2026-10-22 · QF.1 Chosen options never return as passed-over · sonnet
+- Round 1 (fc84bf9..6ca3e7e): 0 High, 0 Medium, 2 Low. `npm run check` green (739); the reviewer confirmed the new test fails without the fix.
+  - L accepted for now: the GM can still offer a chosen-then-renamed name fresh on a later menu (`offerSelection`/`checkFreeName` ~214); a GM action, not a leak; noted for the QUALITY backlog.
+  - L accepted: no test pins `withdrawPassedOver` on the old name or a case variant.
+
+## 2026-10-22 · QF.2 Item definitions reach players only for items they can see · sonnet
+- Round 1 (6ca3e7e..bc6ff15): 0 High, 1 Medium, 3 Low. `npm run check` green (739); `e2e/M3.7` green. The reviewer judged the two-seed property test (D118) robust, not weaker.
+  - M fixed (97d0ff2): a zero, negative or fractional count on a known id reached the payload schema, whose error named the id, so a player could scan for ids that exist. Every bad count now reads `That item is not available`; test over 0, -1, 0.5 × known/unknown ids for trades and gifts, confirmed failing without the fix. No round 2 (one Medium).
+  - L to Q45: asking another player for an item they hold shows its definition (a guessed id probes their inventory); by Accept's design.
+  - L accepted: a stale trade's accept error names an item both parties already saw. L fixed: canary failure text read inverted.
+
+## 2026-10-22 · MQ.10 Steep XP curve · sonnet
+- Round 1 (5d2a6e0..2e433ea): 0 High, 4 Medium, 5 Low. `npm run check` green (743).
+  - M deferred to M4.6 (ROADMAP note, D120): the GM award form cannot send a target grade yet; every award is full XP until the dialog item.
+  - M resolved: an unknown `enemyGrade` is refused in the reducer and surfaces as a normal command error (tested).
+  - M resolved by D120: no upcaster; stored rules get `gradeBelowFactors: []` by default and keep their saved curve (D113 pattern).
+  - M fixed (5dbaacf): docs (D120, ROADMAP M4.6). Also fixed from my own full e2e run: `e2e/M3.6.spec.ts` awarded eight D levels at the old 400.
+  - L accepted: factor before bonus (D120 says why); unconstrained factor lists; the 0→240 test now chooses due selections before its exit check (the level-240 menu was skipped once awards grew); a bare `award(400)` at G in evolution.test.ts.
+- Round 2 (5dbaacf): 0 High, 0 Medium, 1 Low (MS.A's 400 XP → level 4 looked old-curve; it is G at 100, unchanged). `npm run check` and e2e M3.6, MS.4, MS.A, M3.5 green.
+
+## 2026-10-22 · MQ.6 Tailored professions · sonnet
+- Round 1 (40c20b1..083d0a4): 0 High, 2 Medium, 5 Low. `npm run check` green (754); e2e MQ.6, M3.13, M4.2 green; screenshots judged fine against §9.
+  - M fixed: a profession taken from the tab while a later release waited left the evolution dialog's profession picker stale (any pick failed with a generic error) and merged that release's names into the locked list. `chooseEvolution` now refuses a pick with a clear "already has the profession [X]; evolve with none" and leaves the locked offers alone; the dialog hides the picker once a profession exists. Engine test added.
+  - M deferred to M5.2 (ROADMAP note): no GM console UI releases evolutions or offers professions yet (raw commands and the demo only); M5.2 now also lists withdrawing an untaken offer.
+  - L accepted: exact-match take vs case-insensitive merge (D121; the UI sends stored names); no "Chosen" badge after a GM grant of an unoffered name (the locked line names it); ~22 px phone tap targets (same as other [Take]/[Choose] buttons; M8.3 accessibility); window vs "tab" naming (D121).
+- Round 2: see below (two Mediums in round 1).
+- Round 2 (083d0a4..b94eb65): 0 High, 0 Medium, 2 Low. Vitest (engine evolution + web) and typecheck green.
+  - L fixed: a picker value chosen before a profession arrived live was still sent after the picker hid; the dialog now sends none once a profession exists.
+  - L accepted: states saved on the unreleased branch before the fix keep merged names (nothing shipped).
+
+## 2026-10-22 · MQ.7 Hidden quest notice · reviewer: sonnet (round 1)
+- Findings: 0 High, 1 Medium, 4 Low.
+- Medium: a character created after a hidden quest meant for everyone got the count but no notice. Fixed: `character.created` now notifies the newcomer once per such quest (test in `quests.test.ts`; D122 updated).
+- Low fixed: the "Every id must be a character" comment sat above the new `checkNoticeTo`; moved back.
+- Low accepted: no character removal exists, so no other event changes who is told; DESIGN §7 left as Luke's text (model in D122/Q47); toast overlap is existing behaviour; GM control for `noticeTo` comes with M7.1.
+- One Medium only, so no round 2 (LOOP §6.4); fix verified by the new test, `npm run check` and the MQ.7 e2e.
+
+## 2026-10-22 · MQ.8 Identify range · reviewer: sonnet (round 1)
+- Findings: 0 High, 0 Medium, 4 Low.
+- Low accepted: an out-of-range target keeps its player-facing label (D123; the label is separate from the GM name, and M7.2 now notes a warning when a label gives too much away); "Identify: <label>" repeats the label above the rank line (cosmetic); no GM UI for grade/level until M7.2 (roadmap note added); no per-grade level range check (the GM may set it freely).
+- Clean round 1, so no round 2.
+
+## 2026-10-22 · MQ.11 XP overflow, no banking · reviewer: sonnet (round 1)
+- Findings: 0 High, 1 Medium, 4 Low.
+- Medium: the rules flag replaces the roadmap's "schema bump + upcaster" without saying so, and switching an old campaign later leaves its banks unhandled. Fixed in docs: the MQ.11 accept line records the replacement (D124); M4.9 now owns moving banked XP when the flag is turned on; Q49 asks Luke whether old campaigns should switch automatically.
+- Low fixed: a comment at the post-evolution `gainXp(…, 0)` calls says they are no-ops under overflow.
+- Low accepted: `previewXpAward` throws for a profession award to a character without a profession, like the award itself (M4.6 filters participants); the extra edge cases the reviewer traced (lagging profession batches, partial XP, bonuses) were found correct; the `overflow` golden covers the lost path, the overflow path is in progression tests; older banking comments describe `gainXp`, still the banking primitive.
+- One Medium only, so no round 2.
+
+## 2026-10-22 · MQ.12 Skill library rules · reviewer: sonnet (rounds 1 and 2)
+- Round 1: 0 High, 2 Medium, 6 Low.
+- Medium fixed: "Add the default set" (`library.seeded`) did not sync copies that already existed; it now counts every seeded skill entry as just defined (D126). Medium fixed: the default seed matched skills by name only, so an existing other-rarity entry blocked a default one; under `libraryByRarity` it matches name and rarity, stored rules keep name-only. Two engine tests, both seen failing before the fix.
+- Low fixed: the GM "Skill text" form says a hand edit stops later library edits reaching that copy.
+- Low to the QUALITY backlog: hand-edited copies keep their text through upgrades and the mark cannot be cleared; renaming an entry or changing its rarity orphans copies silently; switching the flag on for a stored campaign (M4.9) would overwrite earlier hand edits. Low accepted: a copy upgraded to a rarity with no entry keeps its old text (D125 says so); grant-with-explicit-text overwrite is moot (no grant path carries text).
+- Round 2 (6bf36a5): 0 High, 0 Medium, 0 Low.
+
+## 2026-10-22 · MQ.13 The books' starting classes · sonnet (round 1)
+
+- Range 2676e61..7e00755 (`wip/MQ.13`). Reviewer ran `npm run check` (790 unit) and MQ.13, M4.2, M4.4, MS.4 e2e: green.
+- Findings: 0 High, 0 Medium, 5 Low.
+  - L fixed: Mana Bolt's text named a stat ("damage grows with Intelligence"), a rules claim in content text; now "hits harder as your magic grows".
+  - L to Backlog: campaigns seeded before MQ.13 keep the old classes and "Add the default set" cannot replace a same-named stale entry (old Healer, old Common Mana Bolt under name-only rules); Identify has no default library text.
+  - L no change: Basic Heavy Weapons mentions weapon-and-shield (DESIGN §10 says exactly that); an empty class library shows the six only in the character form (D91 fallback, by design).
+- Also: the full local e2e run hit the 30 s timeout on the MQ.13 spec while the reviewer loaded the 2 CPUs; it passed alone and with `--workers=2`. Split the demo check into its own test with its own server so each test is well inside the budget.
+
+## 2026-10-22 · MQ.14 Bonus rules · sonnet (round 1)
+
+- Range 83ef5b8..86e29a8 (`wip/MQ.14`). Reviewer ran the engine tests (544) and engine/web typechecks: green.
+- Findings: 0 High, 0 Medium, 5 Low.
+  - L to Backlog: a base under 5 stat units gives an item cap of 0, so the screen reads "(+0.0, capped)" (consistent with D128's round-down).
+  - L no change: the `1e-9` guard in the cap; M3.7 now exercises the exact cap (MQ.14 covers over-cap); `LEGACY_BONUSES` repeated in bonuses.test.ts; "upcaster" read as stored rules keeping the legacy bonus defaults (D128).
+
+## 2026-10-23 · QF.10 e2e pages close with their test · sonnet
+- Commit 732c85d. Reviewer ran `npm run check` (790) and MQ.6, M3.1, M3.7 on one worker (6/6).
+- Findings: 0 High, 0 Medium, 4 Low (a throwing `close()` adds a teardown error beside the real one; afterEach stops servers before the fixture closes pages, a one-test window; traces unaffected; per-worker browsers). No change.
+
+## 2026-10-23 · MQ.15 No healing by gear swap · sonnet (2 rounds)
+- Round 1, 00a1de4..4f39f22: 1 High, 1 Medium, 2 Low.
+  - H fixed (df508ab): 100/120 unequipped to exactly 100/100 was not clamped, so not marked, and re-equipping healed to 120/120. A drop that leaves a not-full pool at its new maximum now marks it; new test.
+  - M fixed: the property test judged fullness from the post-drop state; it now tracks fullness outside the engine (fails on the old code).
+  - L fixed: marks drop while the rule is off. L partly: added tests for a set of another pool and undo; rest to no change.
+- Round 2, df508ab: 0 High, 0 Medium, 2 Low (property test covers only equip/unequip/set; `writesPool` is an allowlist a new pool-writing event must join). No change.
+
+## 2026-10-23 · MQ.A Batch acceptance and review · fable (fresh context, 2 rounds)
+- Acceptance: `npm run check` (809 → 811 unit) and the full e2e suite (43/43 on main 567d841; 44/44 with the new `e2e/MQ.A.spec.ts`), both exit 0.
+- Round 1 (06151e3..567d841, whole MQ batch plus QF.1/QF.2/QF.10): 0 High, 2 Medium, 6 Low. Reviewer re-ran check and the MQ e2e specs, viewed every MQ screenshot, probed through `execute` (evolution chain, overflow, marks banking, professions, canary).
+  - M fixed (c3a35be, D133): a hand-edited skill copy kept its old-rarity text through a mark upgrade; it now takes the new rarity's library text.
+  - M fixed (c3a35be, D134): the GM's XP form now shows overflow and loss per character, and a total warning, before the award (enemy grade/level inputs stay with M4.6).
+  - L fixed (D135): stored item percentages hidden under flat-only items; evolution dialog lists the rules' pool names.
+  - L to question: Identify at race level 0 sees nothing of its grade above level 0 (Q52).
+  - L to QUALITY backlog: titles engine-only until M6.4; GM same-value pool set ends the no-heal mark (D129); MQ GM commands without UI yet.
+- Round 2 (567d841..3baa565): 0 High, 0 Medium, 4 Low. Fixed: a blank library entry no longer strips the hand-edit mark (test added); D133 wording on replay. Accepted: silent catch around the preview (no throw path); `poolList` covered by e2e only.
+
+## 2026-10-23 · QF.3 Limits on player-made data · sonnet (2 rounds)
+
+- Round 1 (02e4cc5..490c4c3): 0 H, 2 M, 4 L. M1 player `practice.log` uncapped: partly not reproduced (every `nonBlank` field is already ≤ 200 characters in the event schema), but the entry count was unbounded; fixed with `practiceEntriesPerCharacter` 5,000 and `practiceEntryChars` 500 (players only). M2 log growth through create/delete churn and a fresh bucket per socket: default refill lowered 10/s → 5/s, residual documented in D136. Lows fixed: `rateLimit` validated (burst ≥ 2, rate > 0), unparseable frames charged, hub-level tests for note-edit growth and practice caps. Left: no usage readout in NotesPanel (error text only).
+- Round 2 (490c4c3..4d993b7): 0 H, 1 M, 4 L. M `montage.focus` size uncapped: not reproduced (action ≤ 200 by the event schema, skills must be owned, one focus per montage). Lows left as is (client-side 200-char practice hint ignores skill names; GM entries count toward the 5,000; "1 entries" wording only at cap 1; garbage frames past the budget get a parse error, still charged).
+- Own find while starting QF.4: a snapshot saved before QF.3 has no `rules.limits` yet would be trusted, so every note command would throw. Fixed by bumping the state schema to v21 (snapshot mismatch → replay), with a regression test (6a72739).
+
+## 2026-10-23 · QF.4 Golden logs are pinned · sonnet (2 rounds)
+
+- Round 1 (4aa5864): 0 H, 2 M, 5 L. M1 `golden:record` silently dropped pins of deleted or renamed goldens: fixed (structured problem codes; a missing pin is refused). M2 a bump with no state change left pins stale, licensing later unbumped edits: fixed (states pinned at an older version must be re-recorded; record re-pins every state at the current version). Lows fixed: hash raw bytes, version regex anchored to a real declaration. Left: CLI main block untested (manually checked), case-sensitive non-recursive file scan, manifest hand edits are only visible in review.
+- Round 2 (d775162): 0 H, 0 M, 3 L. Left for the QUALITY backlog: a schema downgrade (revert) re-pins states at the lower version; a new unpinned state needs no bump (by design); the "without a bump" message also covers a downgrade.

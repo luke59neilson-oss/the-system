@@ -8,18 +8,27 @@ import {
 import type { CampaignState } from '../events';
 import {
   EMPTY_HOLDINGS,
+  itemCappedStats,
   itemEffectiveStats,
   type Bundle,
   type Holdings,
   type ItemDef,
   type TradeStatus,
 } from '../economy';
-import type { PendingEvolution, SelectionRecord, SkillOption } from '../evolution';
+import {
+  dueSelections,
+  passedOverOptions,
+  retiredSkillNames,
+  type PendingEvolution,
+  type SelectionRecord,
+  type SkillOption,
+} from '../evolution';
 import { canReadNote } from '../practice';
-import { daysLeft, type QuestStatus } from '../quests';
+import { identifyInRange } from '../entities';
+import { daysLeft, hiddenQuestNoticed, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
 import { identifyRarity, resolveIdentify } from './identify';
-import { atCeiling, marksToUpgrade } from '../skills';
+import { atCeiling, entryForSkill, markRules, marksToUpgrade, type MarkRules } from '../skills';
 
 /**
  * Player projection (ROADMAP M1.13): what one player's browser may receive.
@@ -45,6 +54,8 @@ export const CHARACTER_FIELD_VISIBILITY: Readonly<Record<keyof Character, Visibi
   race: 'party',
   className: 'party',
   profession: 'party',
+  // MQ.6: the professions offered to this character are theirs alone.
+  professionOffers: 'owner',
   classLevel: 'party',
   professionLevel: 'party',
   grade: 'party',
@@ -64,6 +75,8 @@ export const CHARACTER_FIELD_VISIBILITY: Readonly<Record<keyof Character, Visibi
   evolution: 'owner',
   // M4.4: the portrait file name; the join list already shows it to anyone.
   portrait: 'party',
+  // MQ.15: rules bookkeeping; the sheet shows the pool values themselves.
+  clampedPools: 'gm',
 };
 
 /** Every campaign field, classified (`owner` is not used at this level). */
@@ -141,6 +154,8 @@ export interface PlayerRules {
     readonly theme: string;
   }[];
   readonly rarities: readonly { readonly id: string; readonly name: string }[];
+  /** Mark costs and carry-over, so the evolution screen can say what marks keep (MQ.4). */
+  readonly marks: MarkRules;
   readonly currencyName: string;
   readonly equipmentSlots: readonly {
     readonly id: string;
@@ -171,6 +186,8 @@ export interface OwnSheet {
   readonly race: string;
   readonly className: string;
   readonly profession: string | null;
+  /** Professions the GM offered (MQ.6); locked once `profession` is set. */
+  readonly professionOffers: readonly string[];
   readonly classLevel: number;
   readonly professionLevel: number;
   readonly raceLevel: number;
@@ -182,6 +199,8 @@ export interface OwnSheet {
   readonly stats: Readonly<Record<string, number>>;
   /** Stats after equipped item bonuses (M3.7, D60/D81): the Stats block and pool maxima. */
   readonly effectiveStats: Readonly<Record<string, number>>;
+  /** Stats whose item bonus hit the item cap (MQ.14, DESIGN §4), shown as capped. */
+  readonly itemCappedStats: readonly string[];
   readonly pools: readonly OwnPool[];
   readonly freePointBatches: readonly FreePointBatch[];
   readonly titles: readonly string[];
@@ -197,6 +216,11 @@ export interface OwnSheet {
     /** System description and flavour (M3.5), or null for none yet. */
     readonly description: string | null;
     readonly flavor: string | null;
+    /**
+     * The library entry's effects text, shown to the skill's owner only
+     * (MQ.12, L4; never on party views); null for none or on older rules.
+     */
+    readonly effects: string | null;
     /** Marks the next upgrade needs, or null when the ladder has no next step. */
     readonly marksNeeded: number | null;
     /** The rarity id a mark upgrade leads to, or null. */
@@ -206,8 +230,20 @@ export interface OwnSheet {
   }[];
   /** Merges done per grade id. */
   readonly merges: Readonly<Record<string, number>>;
-  /** Selection menus offered to this character, with the pick once chosen (M1.10). */
-  readonly selections: readonly SelectionRecord[];
+  /**
+   * Selection menus offered to this character, with the pick once chosen
+   * (M1.10). An unchosen menu also lists the passed-over options of earlier
+   * menus that are still eligible, newest first (MQ.3, DESIGN §6); empty once
+   * chosen.
+   */
+  readonly selections: readonly (SelectionRecord & {
+    readonly passedOver: readonly SkillOption[];
+  })[];
+  /**
+   * Earned selections not chosen yet, offered or not (MQ.1, D103): while any
+   * wait, the evolution cannot be chosen.
+   */
+  readonly selectionsDue: number;
   /** A released evolution waiting for this character's choice (M1.10). */
   readonly evolution: PendingEvolution | null;
   /** Portrait URL path (`/portraits/<file>`), or null for the monogram (M4.4). */
@@ -244,6 +280,11 @@ export interface PlayerView {
   readonly day: number;
   /** Visible quests in creation order. */
   readonly quests: readonly PlayerQuest[];
+  /**
+   * Active hidden quests whose notice reaches the viewer (MQ.7, DESIGN §7):
+   * only how many exist, never which quest, its text or who else knows.
+   */
+  readonly hiddenQuests: number;
   /** The viewer's own currency, items, equipment and trades (M3.7). */
   readonly inventory: PlayerInventory;
   /** Entities the viewer knows, in definition order (M3.9). */
@@ -303,7 +344,16 @@ export interface PlayerProjectionOptions {
 export interface PlayerIdentify {
   readonly id: string;
   readonly label: string;
-  /** The best tier the viewer's Identify rarity unlocks, or null for none. */
+  /**
+   * False when the target is out of the viewer's Identify range (MQ.8,
+   * DESIGN §7): a higher grade, or the same grade above 1.5 × their level.
+   * The player then sees `[??? – lvl ???]` and gets no text, grade or level.
+   */
+  readonly inRange: boolean;
+  /** Grade and level shown when in range and the GM gave them, else null. */
+  readonly grade: string | null;
+  readonly level: number | null;
+  /** The best tier the viewer's Identify rarity unlocks, or null for none (or out of range). */
   readonly text: string | null;
 }
 
@@ -385,6 +435,7 @@ export function projectRules(rules: RulesConfig): PlayerRules {
       theme: g.theme,
     })),
     rarities: rules.skills.rarities.map((r) => ({ id: r.id, name: r.name })),
+    marks: markRules(rules),
     currencyName: rules.economy.currencyName,
     equipmentSlots: rules.economy.equipmentSlots.map((s) => ({
       id: s.id,
@@ -430,6 +481,9 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
   const rules = state.rules;
   const statIds = rules.stats.list.map((s) => s.id);
   const effective = effectiveFor(state, c);
+  const h = hasOwnKey(state.holdings, c.id)
+    ? (state.holdings[c.id] ?? EMPTY_HOLDINGS)
+    : EMPTY_HOLDINGS;
   return {
     schemaVersion: c.schemaVersion,
     id: c.id,
@@ -437,6 +491,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
     race: c.race,
     className: c.className,
     profession: c.profession,
+    professionOffers: [...c.professionOffers],
     classLevel: c.classLevel,
     professionLevel: c.professionLevel,
     raceLevel: raceLevel(rules, c),
@@ -446,6 +501,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
     classSpreadTotals: copyRecord(c.classSpreadTotals, statIds),
     stats: copyRecord(c.stats, statIds),
     effectiveStats: copyRecord(effective, statIds),
+    itemCappedStats: itemCappedStats(rules, c.stats, h, state.items),
     pools: rules.pools.map((p) => ({
       id: p.id,
       current: own(c.pools, p.id) ?? 0,
@@ -468,6 +524,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
       markSessions: [...s.markSessions],
       description: s.description,
       flavor: s.flavor,
+      effects: ownEffects(state, s),
       ...markProgress(rules, c, s),
     })),
     merges: copyRecord(
@@ -479,7 +536,14 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
       options: r.options.map(copyOption),
       chosen: r.chosen,
       offerId: r.offerId,
+      passedOver:
+        r.chosen === null
+          ? passedOverOptions(rules, c, r.level, retiredSkillNames(c, practiced(state, c))).map(
+              copyOption,
+            )
+          : [],
     })),
+    selectionsDue: dueSelections(rules, c).length,
     evolution:
       c.evolution === null
         ? null
@@ -496,6 +560,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
                 rarity: t.rarity,
               })),
               classWeights: o.classWeights === null ? null : copyRecord(o.classWeights, statIds),
+              statBonus: copyRecord(o.statBonus, statIds),
             })),
             professions: [...c.evolution.professions],
           },
@@ -503,9 +568,21 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
   };
 }
 
+/** Skill names the character practised (retired names count, D64). */
+function practiced(state: CampaignState, c: Character): string[] {
+  return state.practice.filter((e) => e.characterId === c.id).flatMap((e) => e.skills);
+}
+
 /** Where browsers fetch a stored portrait (M4.4); the server serves `/portraits/<file>`. */
 export function portraitUrl(portrait: string | null): string | null {
   return portrait === null ? null : `/portraits/${portrait}`;
+}
+
+/** MQ.12: the owner sees their skill's library effects (new rules only). */
+function ownEffects(state: CampaignState, s: CharacterSkill): string | null {
+  if (!state.rules.skills.libraryByRarity) return null;
+  const text = entryForSkill(state.rules, state.skillLibrary, s)?.effects.trim() ?? '';
+  return text === '' ? null : text;
 }
 
 /** Where a skill stands on the mark ladder (DESIGN §6), from the rules config. */
@@ -596,6 +673,10 @@ export function projectForPlayer(
         entryId === undefined ? undefined : state.practice.find((p) => p.id === entryId);
       return [{ id: m.id, label: m.label, focus: entry?.action ?? null }];
     }),
+    hiddenQuests: state.questOrder.filter((id) => {
+      const q = hasOwnKey(state.quests, id) ? state.quests[id] : undefined;
+      return q !== undefined && hiddenQuestNoticed(q, state.characterOrder).includes(viewer.id);
+    }).length,
     quests: state.questOrder.flatMap((id) => {
       const q = Object.prototype.hasOwnProperty.call(state.quests, id)
         ? state.quests[id]
@@ -647,10 +728,22 @@ function playerNotes(state: CampaignState, viewerId: string, viewAs: boolean): P
 /** Known entities with the viewer's tier text only (D40: resolved here, never the tier list). */
 function playerIdentify(state: CampaignState, viewer: Character): PlayerIdentify[] {
   const rarity = identifyRarity(state.rules, viewer);
-  return state.entityOrder.flatMap((id) => {
+  return state.entityOrder.flatMap((id): PlayerIdentify[] => {
     const e = hasOwnKey(state.entities, id) ? state.entities[id] : undefined;
     if (!e || !e.knownBy.includes(viewer.id)) return [];
-    return [{ id: e.id, label: e.label, text: resolveIdentify(state.rules, e.tiers, rarity) }];
+    if (!identifyInRange(state.rules, viewer, e)) {
+      return [{ id: e.id, label: e.label, inRange: false, grade: null, level: null, text: null }];
+    }
+    return [
+      {
+        id: e.id,
+        label: e.label,
+        inRange: true,
+        grade: e.grade,
+        level: e.level,
+        text: resolveIdentify(state.rules, e.tiers, rarity),
+      },
+    ];
   });
 }
 
@@ -669,7 +762,11 @@ function copyBundle(b: Bundle): Bundle {
   return { currency: b.currency, items };
 }
 
-function copyItem(def: ItemDef): PlayerItem {
+/**
+ * Under flat-only items (L6, D128) a stored percentage counts for nothing, so
+ * the player is not shown it (MQ.A review).
+ */
+function copyItem(def: ItemDef, flatOnly: boolean): PlayerItem {
   return {
     id: def.id,
     name: def.name,
@@ -679,7 +776,7 @@ function copyItem(def: ItemDef): PlayerItem {
     bonuses: def.bonuses.map((b) => ({
       stat: b.stat,
       ...(b.flat === undefined ? {} : { flat: b.flat }),
-      ...(b.percent === undefined ? {} : { percent: b.percent }),
+      ...(b.percent === undefined || flatOnly ? {} : { percent: b.percent }),
     })),
   };
 }
@@ -725,7 +822,7 @@ function playerInventory(state: CampaignState, viewerId: string): PlayerInventor
   const itemDefs: Record<string, PlayerItem> = {};
   for (const id of wanted) {
     const def = hasOwnKey(state.items, id) ? state.items[id] : undefined;
-    if (def) itemDefs[id] = copyItem(def);
+    if (def) itemDefs[id] = copyItem(def, state.rules.bonuses.itemsFlatOnly);
   }
   return { currency: h.currency, items, equipped, trades, itemDefs };
 }

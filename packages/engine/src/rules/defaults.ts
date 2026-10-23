@@ -1,4 +1,4 @@
-import { RULES_CONFIG_VERSION, type RulesConfigInput } from './schema';
+import { DEFAULT_LIMITS, RULES_CONFIG_VERSION, type RulesConfigInput } from './schema';
 
 /** DESIGN.md defaults. Section numbers refer to DESIGN.md. */
 export const DEFAULT_RULES: RulesConfigInput = {
@@ -52,7 +52,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
       rarityCeiling: 'rare',
       classSpreadPerLevel: 5,
       freePointsPerRaceLevel: 3,
-      xpPerLevel: 150,
+      xpPerLevel: 300,
       gradeGapMultiplier: 3,
       theme: 'bronze',
     },
@@ -63,7 +63,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
       rarityCeiling: 'epic',
       classSpreadPerLevel: 8,
       freePointsPerRaceLevel: 4,
-      xpPerLevel: 250,
+      xpPerLevel: 900,
       gradeGapMultiplier: 5,
       theme: 'copper',
     },
@@ -74,7 +74,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
       rarityCeiling: 'ancient',
       classSpreadPerLevel: 12,
       freePointsPerRaceLevel: 6,
-      xpPerLevel: 400,
+      xpPerLevel: 2700,
       gradeGapMultiplier: 10,
       theme: 'silver',
     },
@@ -85,7 +85,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
       rarityCeiling: 'legendary',
       classSpreadPerLevel: 18,
       freePointsPerRaceLevel: 9,
-      xpPerLevel: 650,
+      xpPerLevel: 8100,
       gradeGapMultiplier: 20,
       theme: 'gold',
     },
@@ -96,7 +96,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
       rarityCeiling: 'legendary',
       classSpreadPerLevel: 27,
       freePointsPerRaceLevel: 13,
-      xpPerLevel: 1000,
+      xpPerLevel: 24300,
       gradeGapMultiplier: 40,
       theme: 'platinum',
     },
@@ -107,12 +107,14 @@ export const DEFAULT_RULES: RulesConfigInput = {
       rarityCeiling: 'mythical',
       classSpreadPerLevel: 40,
       freePointsPerRaceLevel: 20,
-      xpPerLevel: 1500,
+      xpPerLevel: 72900,
       gradeGapMultiplier: 80,
       theme: 'diamond',
     },
   ],
-  character: { defaultRace: 'Human' },
+  // §2 pools follow maxima: a full pool stays full when its maximum rises
+  // (D100); a pool clamped while not full does not count as full (L7).
+  character: { defaultRace: 'Human', fullPoolsStayFull: true, clampedPoolsNotFull: true },
   tracks: {
     professionUnlockGrade: 'E', // §2
     evolutionGate: 'race', // §2, QUESTIONS 6
@@ -121,9 +123,12 @@ export const DEFAULT_RULES: RulesConfigInput = {
   xp: {
     aboveLevelBonusPerLevel: 0.1, // §5
     aboveLevelBonusCap: 1,
+    // §5 XP across grades: one grade below ⅓, two or more below 0 (MQ.10, L2).
+    gradeBelowFactors: [1 / 3, 0],
+    overflow: true, // §2 no banked XP, MQ.11
     defaultSplit: 'even',
   },
-  bonuses: { percentCapPerStat: 0.25 }, // §4
+  bonuses: { percentCapPerStat: null, itemCapOfBase: 0.2, itemsFlatOnly: true }, // §4, MQ.14
   skills: {
     // §6 rarity ladder; Divine reserved. Unique is a tag, not a rarity.
     rarities: [
@@ -140,7 +145,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
     startingClassSkillCount: 3, // §2
     startingRaceSkill: { name: 'Identify', rarity: 'common' },
     menuSize: { min: 3, max: 4 }, // §6
-    evolutionTransforms: { min: 1, max: 2 },
+    evolutionTransforms: { min: 0, max: 2 },
     // §6 mastery marks.
     markUpgrades: {
       inferior: 3,
@@ -152,6 +157,8 @@ export const DEFAULT_RULES: RulesConfigInput = {
       legendary: 15,
     },
     maxMarksPerSkillPerSession: 1,
+    marksCarryOver: true, // §6, MQ.4
+    libraryByRarity: true, // §6 skill library, MQ.12
     merge: {
       requiredJointUses: 3,
       minRarity: 'uncommon',
@@ -161,9 +168,10 @@ export const DEFAULT_RULES: RulesConfigInput = {
   },
   practice: { selectionAlertWithinLevels: 5 }, // §7
   resolution: {
-    gradeGapMode: 'none', // §7 open decision, QUESTIONS 3
+    gradeGapMode: 'gradeWalls', // §7 grade walls (Luke), MQ.5
     lowerGradeFraction: 1 / 3,
   },
+  identify: { sameGradeLevelRatio: 1.5 }, // §7 Identify range, MQ.8
   montage: { minClockFill: 0.5, requireNoFailures: true }, // §7
   stability: { min: 0, max: 100, initial: 100, visibleToPlayersByDefault: false },
   hunger: { enabledByDefault: false, fadesAtGrade: 'E' }, // §7
@@ -185,4 +193,5 @@ export const DEFAULT_RULES: RulesConfigInput = {
     ],
   },
   logging: { autosaveMinutes: 5 }, // ROADMAP M2.4
+  limits: { ...DEFAULT_LIMITS }, // QF.3, D136
 };

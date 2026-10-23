@@ -3,6 +3,7 @@ import {
   gradeIndexOf,
   grantProfession,
   newSkill,
+  poolMax,
   raceLevel,
   trackCap,
   type Character,
@@ -10,6 +11,7 @@ import {
 } from '../character';
 import { gainXp, reshapeClassWeights, type LevelUp } from '../progression';
 import type { GradeRules, RulesConfig } from '../rules';
+import { markRules, marksAfterRarityChange } from '../skills/model';
 
 /**
  * Skill selections and evolutions (ROADMAP M1.10, DESIGN §2, §3, §6). Pure;
@@ -46,6 +48,12 @@ export interface SelectionRecord {
   readonly chosen: string | null;
   /** Id of the offer event; a choice names it, so undoing a re-offer cannot re-aim a pick. */
   readonly offerId: string;
+  /**
+   * Unchosen options of this menu the GM withdrew afterwards (MQ.3, DESIGN §6):
+   * they no longer appear as passed-over options. Absent when none, so states
+   * from before MQ.3 are unchanged.
+   */
+  readonly withdrawn?: readonly string[];
 }
 
 /** One skill an evolution option rewrites (DESIGN §6 "Evolutions transform 1–2 skills"). */
@@ -66,6 +74,8 @@ export interface EvolutionOption {
   readonly transforms: readonly SkillTransform[];
   /** Reshaped class stat weights (DESIGN §4), or null to keep the current ones. */
   readonly classWeights: Readonly<Record<string, number>> | null;
+  /** One-time stat bonus the GM sets as the System, added to base stats on choosing (D98). */
+  readonly statBonus: Readonly<Record<string, number>>;
 }
 
 /** An evolution the GM has released and the player has not chosen yet. */
@@ -242,6 +252,77 @@ export function offerSelection(
   return { ...character, selections };
 }
 
+/**
+ * Passed-over options (DESIGN §6, D103, MQ.3): options of earlier, chosen
+ * selections that were not picked stay eligible for later selections, newest
+ * menu first. An option drops out when the character already has (or had)
+ * the skill or chose it on any menu, it is above the rarity ceiling of the selection being chosen,
+ * it is on that selection's own menu, or it is a profession option and the
+ * character has no profession. Pure; derived from the selection records, so
+ * logs from before MQ.3 replay unchanged.
+ */
+export function passedOverOptions(
+  rules: RulesConfig,
+  character: Character,
+  level: number,
+  retired: ReadonlySet<string> = new Set(),
+): SkillOption[] {
+  const slot = selectionAt(rules, level);
+  if (!slot) return [];
+  const ceiling = rarityIndex(rules, gradeRules(rules, slot.grade).rarityCeiling);
+  const record = character.selections.find((s) => s.level === level);
+  const seen = new Set((record?.options ?? []).map((o) => lower(o.name)));
+  const owned = new Set(character.skills.map((s) => lower(s.name)));
+  // A chosen option leaves the list for good (DESIGN §6), even after an
+  // evolution transform renames the skill it became (QF.1).
+  for (const s of character.selections) if (s.chosen !== null) owned.add(lower(s.chosen));
+  const out: SkillOption[] = [];
+  const earlier = character.selections
+    .filter((s) => s.level < level && s.chosen !== null)
+    .sort((a, b) => b.level - a.level);
+  for (const r of earlier) {
+    const gone = new Set((r.withdrawn ?? []).map(lower));
+    for (const o of r.options) {
+      const key = lower(o.name);
+      if (gone.has(key) || seen.has(key) || owned.has(key) || retired.has(key)) continue;
+      if (o.kind === 'profession' && character.profession === null) continue;
+      const rank = rules.skills.rarities.findIndex((x) => x.id === o.rarity);
+      if (rank === -1 || rank > ceiling) continue;
+      seen.add(key);
+      out.push(o);
+    }
+  }
+  return out;
+}
+
+/**
+ * The GM withdraws a passed-over option (DESIGN §6 "withdrawn by the GM",
+ * MQ.3): every chosen menu that left it unpicked records the withdrawal, so it
+ * no longer appears in later menus. Refused when no chosen menu still holds it
+ * unpicked, or when the character already has the skill. A pending menu's own
+ * options are changed by offering it again.
+ */
+export function withdrawPassedOver(character: Character, name: string): Character {
+  const key = lower(name);
+  if (character.skills.some((s) => lower(s.name) === key)) {
+    throw new CharacterRuleError(`${character.name} already has [${name.trim()}]`);
+  }
+  let hit = false;
+  const selections = character.selections.map((r) => {
+    if (r.chosen === null || lower(r.chosen) === key) return r;
+    const option = r.options.find((o) => lower(o.name) === key);
+    if (!option || (r.withdrawn ?? []).some((w) => lower(w) === key)) return r;
+    hit = true;
+    return { ...r, withdrawn: [...(r.withdrawn ?? []), option.name] };
+  });
+  if (!hit) {
+    throw new CharacterRuleError(
+      `[${name.trim()}] is not a passed-over option of ${character.name}`,
+    );
+  }
+  return { ...character, selections };
+}
+
 /** The player (or GM) picks one option of an offered selection; the skill is granted. */
 export function chooseSelection(
   rules: RulesConfig,
@@ -262,7 +343,10 @@ export function chooseSelection(
   if (record.chosen !== null) {
     throw new CharacterRuleError(`The level ${level} selection was already chosen`);
   }
-  const option = record.options.find((o) => o.name === name);
+  // A passed-over option from an earlier menu is a valid pick too (MQ.3).
+  const option =
+    record.options.find((o) => lower(o.name) === lower(name)) ??
+    passedOverOptions(rules, character, level, retired).find((o) => lower(o.name) === lower(name));
   if (!option) throw new CharacterRuleError(`"${name}" is not on the level ${level} menu`);
   // The character may have gained the name since the offer (a transform, a merge).
   checkFreeName(character, option.name, retired);
@@ -365,7 +449,9 @@ export function releaseEvolution(
   professions: readonly string[],
   retired: ReadonlySet<string> = new Set(),
   releaseId = 'release',
+  legacy = false,
 ): Character {
+  if (!legacy) checkNoPendingSelection(rules, character, 'released');
   const target = evolutionTarget(rules, character);
   if (!target) {
     const top = trackCap(rules, character.grade);
@@ -379,11 +465,18 @@ export function releaseEvolution(
   }
   const ids = new Set(options.map((o) => o.id));
   if (ids.size !== options.length) throw new CharacterRuleError('Two options share an id');
-  for (const option of options) checkOption(rules, character, target, option, retired);
-  const unlock = target.id === rules.tracks.professionUnlockGrade && character.profession === null;
+  for (const option of options) {
+    checkOption(rules, character, target, option, retired);
+    checkStatBonus(rules, option);
+  }
+  // From the unlock grade on, a character without a profession can be offered
+  // some (MQ.6): at the unlock evolution, or at a later one after "none for now".
+  const unlock =
+    character.profession === null &&
+    gradeIndexOf(rules, target.id) >= gradeIndexOf(rules, rules.tracks.professionUnlockGrade);
   if (!unlock && professions.length > 0) {
     throw new CharacterRuleError(
-      `Professions are offered at the ${rules.tracks.professionUnlockGrade}-grade evolution of a character without one`,
+      `Professions are offered from the ${rules.tracks.professionUnlockGrade}-grade evolution on, to a character without one`,
     );
   }
   const trimmed = professions.map((p) => p.trim());
@@ -396,7 +489,11 @@ export function releaseEvolution(
     evolution: {
       toGrade: target.id,
       releaseId,
-      options: options.map((o) => ({ ...o, className: o.className.trim() })),
+      options: options.map((o) => ({
+        ...o,
+        className: o.className.trim(),
+        statBonus: o.statBonus ?? {},
+      })),
       professions: trimmed,
     },
   };
@@ -422,9 +519,11 @@ export function chooseEvolution(
   profession: string | null,
   retired: ReadonlySet<string> = new Set(),
   releaseId: string | null = null,
+  legacy = false,
 ): EvolutionResult {
   const pending = character.evolution;
   if (!pending) throw new CharacterRuleError(`No evolution is released for ${character.name}`);
+  if (!legacy) checkNoPendingSelection(rules, character, 'chosen');
   if (releaseId !== null && releaseId !== pending.releaseId) {
     throw new CharacterRuleError('The evolution was released again; choose from the new options');
   }
@@ -437,27 +536,42 @@ export function chooseEvolution(
     );
   }
   checkOption(rules, character, target, option, retired);
+  // "None for now" (null) is always allowed; the offers stay on the character
+  // and can be taken later from the Professions tab (MQ.6, DESIGN §2).
   if (pending.professions.length > 0) {
-    if (profession === null) throw new CharacterRuleError('Choose one of the offered professions');
-    if (!pending.professions.includes(profession)) {
+    if (profession !== null && !pending.professions.includes(profession)) {
       throw new CharacterRuleError(`"${profession}" is not an offered profession`);
     }
   } else if (profession !== null) {
     throw new CharacterRuleError('No profession is offered with this evolution');
   }
+  // Taken from the Professions tab while this release waited: the list is
+  // locked, so the release's offers no longer apply (MQ.6 review).
+  const hasProfession = character.profession !== null;
+  if (hasProfession && profession !== null) {
+    throw new CharacterRuleError(
+      `${character.name} already has the profession [${character.profession}]; evolve with none`,
+    );
+  }
 
   const byName = new Map(option.transforms.map((t) => [t.skill, t]));
+  const marking = markRules(rules);
   const skills: CharacterSkill[] = character.skills.map((s) => {
     const t = byName.get(s.name);
     if (!t) return s;
-    // A rarity gain spends the banked marks (as an upgrade would); a transform
-    // that keeps the rarity keeps them (DESIGN §6: they bank until the evolution).
-    const marks = t.rarity === s.rarity ? s.marks : 0;
+    // A rarity gain spends the banked marks as that many upgrades would, and
+    // the rest carry on (MQ.4, D114); a transform that keeps the rarity keeps
+    // them (DESIGN §6: they bank until the evolution).
+    const marks = marksAfterRarityChange(marking, s.rarity, t.rarity, s.marks);
     // A renamed skill is a new skill to the System: the old text would
     // describe the wrong thing, so it clears until the GM writes new text (M3.5).
     const name = t.name.trim();
-    const text = name === s.name ? {} : { description: null, flavor: null };
-    return { ...s, name, rarity: t.rarity, marks, ...text };
+    // Its hand-written mark goes too, so library text can reach it (MQ.12).
+    const kept: CharacterSkill = { ...s, name, rarity: t.rarity, marks };
+    if (name === s.name) return kept;
+    const { textEdited, ...fresh } = kept;
+    void textEdited;
+    return { ...fresh, description: null, flavor: null };
   });
   let next: Character = {
     ...character,
@@ -465,10 +579,16 @@ export function chooseEvolution(
     className: option.className,
     skills,
     evolution: null,
+    professionOffers: hasProfession
+      ? character.professionOffers
+      : mergeOffers(character.professionOffers, pending.professions),
   };
   if (option.classWeights !== null) next = reshapeClassWeights(rules, next, option.classWeights);
+  if (!legacy) next = applyStatBonus(next, option.statBonus ?? {});
   if (profession !== null) next = grantProfession(rules, next, profession);
   const levelUps: LevelUp[] = [];
+  // Spends XP banked at the old top (banking rules only); with `xp.overflow`
+  // on, capped tracks hold 0 XP, so these are no-ops (MQ.11).
   const cls = gainXp(rules, next, 'class', 0);
   next = cls.character;
   levelUps.push(...cls.levelUps);
@@ -477,8 +597,59 @@ export function chooseEvolution(
     next = prof.character;
     levelUps.push(...prof.levelUps);
   }
+  // Evolution refills every pool (D99); level-ups alone never do.
+  if (!legacy) next = { ...next, pools: fullPools(rules, next.stats) };
   const renames = option.transforms
     .filter((t) => t.name.trim() !== t.skill)
     .map((t) => [t.skill, t.name.trim()] as const);
   return { character: next, renames, levelUps };
+}
+
+/** Earlier offers first, then new names not already offered (ignoring case). */
+function mergeOffers(was: readonly string[], offered: readonly string[]): readonly string[] {
+  const seen = new Set(was.map(lower));
+  const added = offered.filter((p) => !seen.has(lower(p)));
+  return added.length === 0 ? was : [...was, ...added];
+}
+
+/** An evolution waits for every earned selection to be chosen (DESIGN §2, D103). */
+function checkNoPendingSelection(
+  rules: RulesConfig,
+  character: Character,
+  verb: 'released' | 'chosen',
+): void {
+  const due = dueSelections(rules, character);
+  if (due.length === 0) return;
+  const levels = due.map((s) => s.level).join(', ');
+  throw new CharacterRuleError(
+    `${character.name} has a skill selection to choose first (class level ${levels}); an evolution cannot be ${verb} until then`,
+  );
+}
+
+/** Bonus stats must be real stats with whole, non-negative values (D98). */
+function checkStatBonus(rules: RulesConfig, option: EvolutionOption): void {
+  const ids = new Set(rules.stats.list.map((s) => s.id));
+  for (const [stat, value] of Object.entries(option.statBonus ?? {})) {
+    if (!ids.has(stat)) throw new CharacterRuleError(`Unknown stat "${stat}" in the stat bonus`);
+    if (!Number.isInteger(value) || value < 0) {
+      throw new CharacterRuleError(`The ${stat} bonus must be a whole number of 0 or more`);
+    }
+  }
+}
+
+function applyStatBonus(character: Character, bonus: Readonly<Record<string, number>>): Character {
+  const entries = Object.entries(bonus).filter(([, v]) => v > 0);
+  if (entries.length === 0) return character;
+  const stats = { ...character.stats };
+  for (const [stat, value] of entries) stats[stat] = (stats[stat] ?? 0) + value;
+  return { ...character, stats };
+}
+
+function fullPools(
+  rules: RulesConfig,
+  stats: Readonly<Record<string, number>>,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const pool of rules.pools) out[pool.id] = poolMax(rules, stats, pool.id);
+  return out;
 }
