@@ -45,7 +45,7 @@ test('the GM creates, edits, gives and takes an item; the player sees it live', 
   const library = gm.locator('section[aria-labelledby="item-library"]');
   await expect(library).toContainText('No items yet.');
   const form = library.locator('form[aria-labelledby="item-library-form"]');
-  await form.getByLabel('Name').fill('Bone Charm');
+  await form.getByLabel('Item name').fill('Bone Charm');
   await form.getByLabel('Slot').selectOption({ label: 'Necklace' });
   await form.getByLabel('Description (players see this)').fill('A knuckle on a cord.');
   await form.getByLabel('Vitality').fill('1.5');
@@ -92,7 +92,7 @@ test('the GM creates, edits, gives and takes an item; the player sees it live', 
 
   // A GM-only library item the player does not hold never reaches them.
   await library.getByRole('button', { name: 'New item' }).click();
-  await form.getByLabel('Name').fill('Secret Blade');
+  await form.getByLabel('Item name').fill('Secret Blade');
   await form.getByRole('button', { name: 'Add to library' }).click();
   await expect(library.getByRole('status')).toHaveText('[Secret Blade] added to the library');
 

@@ -137,7 +137,7 @@ export function ItemLibrary({ client, state }: { client: LiveClient; state: Camp
       <form onSubmit={(e) => void save(e)} aria-labelledby="item-library-form">
         <h3 id="item-library-form">{base ? `Edit [${base.name}]` : 'New item'}</h3>
         <label>
-          Name
+          Item name
           <input
             value={draft.name}
             onChange={(e) => setDraft({ ...draft, name: e.target.value })}
