@@ -124,6 +124,8 @@ export default tseslint.config(
       'coverage/**',
       'test-results/**',
       'playwright-report/**',
+      'test-results-latency/**',
+      'playwright-report-latency/**',
       'apps/desktop/release/**',
     ],
   },

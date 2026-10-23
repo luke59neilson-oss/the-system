@@ -80,9 +80,7 @@ them whole costs about 30k tokens per run for history you do not need):
   then `.../check-runs/<job id>/annotations`. Reproduce it the way CI runs:
   CI has 4 CPUs and 2 Playwright workers, this workspace 2 CPUs and 1, so a
   test that needs another test's state passes here and fails there. Run the
-  failing test alone (`npx playwright test -g "<title>"`; add `--no-deps`
-  for a `@latency` test, whose project otherwise runs every other spec first)
-  and its file with
+  failing test alone (`npx playwright test -g "<title>"`) and its file with
   `--workers=2`. Failing alone = a real bug in the test: fix it now. Passing
   both ways = a flake: add it to "Flakes" in `docs/QUALITY.md` and carry on
   (your next push re-runs CI). Never add retries or loosen a check to hide a

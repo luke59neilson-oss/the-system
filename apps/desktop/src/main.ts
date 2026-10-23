@@ -64,8 +64,9 @@ function showSplash(): void {
     }
   });
   void win.loadURL(splashUrl());
-  // For the desktop test: how long after app-ready (our code's part, QF.8) and
-  // after the process started (includes Electron's own start-up) it came up.
+  // For the desktop test: how long after app-ready (our start-up code, QF.8)
+  // and after the process started (includes Electron's own start-up) the
+  // splash window was created and its page requested (not when it painted).
   const g = globalThis as {
     theSystemSplashShownAfterMs?: number;
     theSystemSplashShownAfterReadyMs?: number;

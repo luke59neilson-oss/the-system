@@ -4,7 +4,9 @@ build/
 out/
 coverage/
 test-results/
+test-results-latency/
 playwright-report/
+playwright-report-latency/
 .vite/
 *.log
 data/

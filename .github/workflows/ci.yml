@@ -61,7 +61,14 @@ jobs:
         if: steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - name: E2E
-        run: npx playwright test
+        run: npx playwright test --project=e2e
+      # QF.8: the specs that bound wall time run alone, after the rest, and
+      # also when the step above failed.
+      - name: E2E latency (serial)
+        if: success() || failure()
+        run: npx playwright test --project=latency --output=test-results-latency
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report-latency
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
@@ -70,6 +77,8 @@ jobs:
           path: |
             playwright-report/
             test-results/
+            playwright-report-latency/
+            test-results-latency/
           if-no-files-found: ignore
           retention-days: 7
 
