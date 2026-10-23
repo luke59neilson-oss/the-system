@@ -31,7 +31,7 @@ describe('markProgress (M3.5)', () => {
 
   it('says when an upgrade is ready', () => {
     expect(markProgress(rules, 'G', skill({ marks: 3 })).text).toBe(
-      '3 / 3 marks toward Common. Ready: the GM can upgrade it.',
+      '3 / 3 marks toward Common. Ready: the GM can upgrade it. The upgraded skill starts at 0 marks.',
     );
   });
 
