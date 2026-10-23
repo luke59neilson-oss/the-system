@@ -218,7 +218,7 @@ They touch finished engine and player items, so they come before M4.4.
   with DESIGN §10 (weights and starting skills, original text); update the
   built-in Archer, the demo campaign and screenshots. *Accept:* seed tests;
   demo e2e still green.
-- [ ] **MQ.14 Bonus rules.** Items carry flat stat bonuses only (no
+- [x] **MQ.14 Bonus rules.** Items carry flat stat bonuses only (no
   percentages); total item bonus per stat capped at 20% of base; title
   percentages summed and applied once to (base + capped items); the existing
   title percentages uncapped by default (config may set a cap). Status screen shows a capped item
