@@ -32,7 +32,7 @@ env:
 jobs:
   # One build id for every job, so files made either side of midnight match (MS.7).
   meta:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       id: ${{ steps.id.outputs.id }}
@@ -48,7 +48,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             target: linux
             files: apps/desktop/release/*.AppImage
           - os: windows-latest
@@ -109,7 +109,7 @@ jobs:
 
   collect:
     needs: [meta, build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: write
