@@ -100,7 +100,8 @@ jobs:
           $stream.Close()
           $p = Start-Process $partial -ArgumentList '/S' -PassThru
           if (-not $p.WaitForExit(60000)) { $p.Kill(); throw 'the partial installer hung' }
-          if ($p.ExitCode -eq 0) { throw 'the partial installer exited 0 instead of refusing' }
+          $p.WaitForExit()
+          if ($null -eq $p.ExitCode -or $p.ExitCode -eq 0) { throw 'the partial installer did not refuse (exit code 0 or none)' }
           Write-Output "partial installer refused with exit code $($p.ExitCode)"
       - name: Smoke-test the AppImage itself
         if: matrix.target == 'linux'
