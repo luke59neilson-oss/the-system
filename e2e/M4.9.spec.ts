@@ -65,6 +65,20 @@ test('the GM edits, validates and resets the rules; players see the change live'
   await expect(panel.getByLabel('Above level bonus per level')).toHaveValue('0.1');
   await expect(panel.getByRole('alert')).toHaveCount(0);
 
+  // A number the rules allow to be "none": a value, then blank saves none.
+  await panel.locator('summary', { hasText: 'Bonuses' }).click();
+  const titleCap = panel.getByLabel('Percent cap per stat');
+  await expect(titleCap).toHaveValue('');
+  await expect(titleCap).toHaveAttribute('placeholder', 'none');
+  await titleCap.fill('0.5');
+  await save.click();
+  await expect(panel.getByRole('status')).toHaveText('Rules saved.');
+  await titleCap.fill('');
+  await save.click();
+  await expect(panel.getByRole('status')).toHaveText('Rules saved.');
+  await expect(save).toBeDisabled();
+  await expect(titleCap).toHaveValue('');
+
   // Reset asks first, then brings the defaults back everywhere.
   await panel.getByRole('button', { name: 'Reset to defaults' }).click();
   await panel.getByRole('button', { name: 'Keep my rules' }).click();
@@ -77,7 +91,7 @@ test('the GM edits, validates and resets the rules; players see the change live'
 
   const log = gm.locator('section[aria-labelledby="change-log"]');
   await expect(log.getByRole('listitem').filter({ hasText: 'Rules settings changed' })).toHaveCount(
-    2,
+    4,
   );
   await player.screenshot({ path: path.join(shots, 'player-390x844.png') });
   await gm.screenshot({ path: path.join(shots, 'gm-1366x768.png') });

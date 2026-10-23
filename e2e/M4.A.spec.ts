@@ -117,6 +117,8 @@ test(
     for (const p of players) {
       await expect(p.getByTestId('class')).toHaveText(/lvl 0\]/, { timeout: 1000 });
       await expect(p.getByTestId('free-points')).toHaveText('0');
+      // The undone award's DINGs leave the notification history too.
+      await expect(p.getByTestId('history')).not.toContainText("'DING!' Class: [");
     }
     await gm.screenshot({ path: path.join(shots, 'gm-1366x768.png'), fullPage: true });
     await players[1]!.screenshot({ path: path.join(shots, 'player-undone-1366x768.png') });
