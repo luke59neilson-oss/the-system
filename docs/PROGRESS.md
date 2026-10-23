@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3, MS and MQ done; QF.1–QF.5 and QF.10 done; M4.1–M4.4 done; MR (Luke's batch 2) queued after QF; Preview ready: Actions → Release → Run workflow (MQ)
-**Next item:** QF.11 (High) A partial download cannot hang — resume `wip/QF.11`; check the `release-dry-run` run (7446f46) first
+**Status:** in progress: M0–M3, MS and MQ done; QF.1–QF.7 and QF.9–QF.12 done; M4.1–M4.4 done; MR (Luke's batch 2) queued after QF.8; Preview ready: Actions → Release → Run workflow (MQ)
+**Next item:** QF.8 Latency checks that don't flake, then MR.1
 **Blockers:** none
 
 ## Run log
@@ -663,3 +663,15 @@ next item, blockers. -->
 - QF.6 next step: read the annotations of the newest CI run's `desktop-smoke` job (5bca523 or later), fix, and once green remove `continue-on-error`.
 - Next item: QF.11 (resume), then QF.6, QF.7–QF.9, QF.12, then MR.1.
 - Blockers: none. Main CI: 31cf4ec and a021c50 red only from the new desktop-smoke job; 5bca523 makes it non-gating.
+
+### Run 5a8ed3d5 · 2026-10-23 04:06–04:47 UTC (ended at minute 41, not one of LOOP §5.5's reasons: Agent reviews block the session (no background mode here), and round 2 for QF.9 and QF.12 came back at minute 39 with too little time to start QF.8 before the 44 hand-off)
+- Preflight: `add_repo` not offered; repo already cloned, fast-forwarded. Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewers on sonnet work. Latest main CI (5bca523) green, including the `desktop-smoke` job (6 passed). `release-dry-run` (7446f46) green. No new answers in ANSWERS.md.
+- QF.11 (High): dry run green, including the truncated-installer step; `wip/QF.11` merged into main. Box checked.
+- QF.6: the smoke job passed in CI; `continue-on-error` removed (D141). Box checked.
+- QF.7: `StoreOptions.logIo` seam and three fault-injection tests (half-written append cut back and the store keeps writing; failed undo latches; failed fsync latches with the reason) (D142). Sonnet 1 round, 0 H/0 M. Box checked.
+- QF.9: a character may ask in a trade only for items it has seen, never checked against the counterparty; player views define only seen items (D143, Q55). Round 1 High (accept showed the proposer's balance) fixed with `TRADE_NOT_POSSIBLE` (D145); round 2 clean. Box checked.
+- QF.12: golden `defaults.jsonl` under `DEFAULT_RULES` (D144). Round 1 found two rules pinned only nominally; re-recorded the same run (manifest pins dropped by hand before any build used them); round 2 confirmed each rule flip changes the state. Box checked.
+- Tests: 856 unit (849 + 3 store + 3 trade + 1 golden). Engine coverage not re-measured. e2e: M3.7 2/2 (trades); full suite not run (no shared UI or server changes; the store change is test-only seam).
+- Open `wip/*` branches: none new (`wip/QF.11` merged).
+- Next item: QF.8, then MR.1–MR.4, MR.A.
+- Blockers: none.

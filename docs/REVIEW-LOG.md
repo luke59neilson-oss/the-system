@@ -599,3 +599,20 @@
 ## 2026-10-23 · QF.11 (High) A partial download cannot hang · sonnet (on wip/QF.11)
 - Round 1: 0 High. Mediums: a stale "installer + portable" header comment (already replaced on the branch; M10.2 text fixed on main); the truncated-installer step's behaviour is unverified (NSIS may show a modal box in `/S` mode); a missing `ExitCode` would pass silently, fixed (54544b3..). Lows: half-length truncation tests the early-fail path, not a mid-file CRC flip; message not asserted.
 - Verification needs a release build: the branch's tree is pushed to `release-dry-run` (7446f46). Box stays open until that run is green.
+
+## 2026-10-23 · QF.6 Desktop smoke specs run in CI (close)
+- The job passed on 5bca523 (6 passed); `continue-on-error` removed (D141). Gate-only change, verified by `npm run check`; no new review. Box checked.
+
+## 2026-10-23 · QF.11 (High) A partial download cannot hang (close)
+- `release-dry-run` run 7446f46 green, including "A partial installer refuses to start". `wip/QF.11` merged into main. Box checked.
+
+## 2026-10-23 · QF.7 Store failure paths are tested · sonnet
+- Round 1 (8d7fe97): 0 High, 0 Medium, 6 Low (weaker fsync-test assertions, undo-fsync path untested, Windows partial-write semantics not modelled by a fake; seam unreachable in production confirmed). Lows to the QUALITY backlog. Box checked.
+
+## 2026-10-23 · QF.9 Trade proposals reveal nothing · sonnet (2 rounds)
+- Round 1 (017fbb7): 1 High, 0 Medium, 2 Low. H fixed (90d9971, D145): accepting a trade whose proposer had spent their currency returned the reducer's "Not enough Credits (has 45)", showing the proposer's balance; accept now checks items and currency for both sides at command level with `TRADE_NOT_POSSIBLE`. Lows (non-party message, accept tells the counterparty the offer is gone) to backlog.
+- Round 2 (90d9971): 0 High, 0 Medium, 2 Low (bare `get` ids reach the counterparty; declined offers stay seen), to backlog. Box checked.
+
+## 2026-10-23 · QF.12 A golden log under today's default rules · sonnet (2 rounds)
+- Round 1 (0b417f0): 2 High, 1 Medium, 3 Low. The item cap and the library edit were only nominally pinned (replays with the cap or flat-only off matched; no unedited copy existed at the edit), and the clamp mark had cleared by the end. Fixed (90d9971, D144) by re-recording `defaults.jsonl` with Lee (unedited copy, capped charm at full HP → 120) and ending with Kim clamped and marked.
+- Round 2 (90d9971): 0 High, 0 Medium, 2 Low; reviewer confirmed each rule flip changes the replayed state. Box checked.

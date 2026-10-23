@@ -185,3 +185,6 @@ reviewers ran 15–20 minutes each in the background.
 - UX (sweep C): `.skill-effects` lacks `overflow-wrap: anywhere` (`styles.css` ~1010); stat bonus annotation is 12 px muted (`styles.css` ~1171).
 - Rules (QF.5 review): the engine lint flags declarations of one's own names `Date`/`Math` (enum members, class members, type parameters); none exist.
 - Tests (QF.6 review): desktop.spec attaches stdout/stderr listeners after launch; output before then is not checked.
+- Tests (QF.7 review): the failed-fsync test does not pin the log's bytes after the refusals; the undo path where ftruncate succeeds and its fsync fails is untested; a short write that does not throw is untested.
+- Boundaries (QF.9 review): a non-party player with a trade id gets the reducer's `only "kim" can answer`; an accept failure tells the counterparty the proposer no longer has their offer; a proposal's `get` ids reach the counterparty as bare ids (the proposer's choice, not a probe); items from declined trades stay "seen" for good.
+- Tests (QF.12 review): the `libraryByRarity` pin in `defaults.jsonl` shows as a replay rejection, not a state diff.

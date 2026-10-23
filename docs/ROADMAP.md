@@ -283,7 +283,7 @@ the rest follow in file order. Each gets its own §6 review.
   free minutes) installs the Electron binary and runs `npm run desktop:smoke`
   under xvfb on pushes to main; a test asserts the desktop app never prints
   its GM key.
-- [ ] **QF.7 Store failure paths are tested.** The rollback after a failed
+- [x] **QF.7 Store failure paths are tested.** The rollback after a failed
   write and the stop-writing latch after a failed fsync
   (`apps/server/src/store.ts` ~403-420) have no tests. *Accept:* fault-
   injection tests: a failed write leaves the log at its last good length; a
@@ -299,7 +299,7 @@ the rest follow in file order. Each gets its own §6 review.
   the client's render); no retries added; the full suite passes 10 times in a
   row with `--repeat-each` on the latency specs.
 
-- [ ] **QF.9 Trade proposals reveal nothing the proposer cannot see.**
+- [x] **QF.9 Trade proposals reveal nothing the proposer cannot see.**
   `trade.propose` refuses a `get` bundle the counterparty does not hold
   (`events/commands.ts` ~1250, QF.2), so a player can probe another
   character's exact item counts (accepted for 1–3, refused at 4), and the
@@ -332,7 +332,7 @@ the rest follow in file order. Each gets its own §6 review.
   installer first and list each file's exact size and SHA-256; a CI test
   truncates the built `.exe` and checks the integrity flag or the refusal.
 
-- [ ] **QF.12 A golden log runs under today's default rules.** All golden
+- [x] **QF.12 A golden log runs under today's default rules.** All golden
   logs were recorded with stored-style rules (`libraryByRarity`,
   `clampedPoolsNotFull`, `itemsFlatOnly` all off), so library text sync, the
   no-heal pool mark and flat-only items have no replay pin for new campaigns,
