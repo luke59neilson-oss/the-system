@@ -340,11 +340,15 @@ work: Q44–Q48 and Q52.
   text unchanged for library-linked and hand-written copies, an upgrade
   right after the evolution at the lower rarity's cost; golden logs still
   replay; e2e on the evolution screen.
-- [ ] **MR.2 A transform that raises rarity resets marks.** Replaces D114's
-  spend-and-carry: when an evolution transform raises a skill's rarity, its
-  marks go to 0; a same-rarity transform keeps them. The evolution screen's
-  marks note says so. *Accept:* engine tests through `evolution.choose`;
-  e2e text on the evolution screen.
+- [ ] **MR.2 Every upgrade starts at 0 marks.** Replaces MQ.4's carry-over
+  (D113) and D114's spend-and-carry: an upgrade by marks leaves the skill at
+  0 (extra marks are not kept), and so does any evolution transform; only a
+  downgrade at evolution (MR.1) keeps marks. New campaigns get the new rule;
+  stored logs replay as recorded. The upgrade and evolution screens' marks
+  notes say so. *Accept:* engine tests: 10 marks on an Inferior skill
+  upgrade to a Common skill with 0; a transform (raising or same rarity)
+  leaves 0; a downgrade keeps all; tests through `evolution.choose`; e2e
+  text on both screens.
 - [ ] **MR.3 XP overflow for every campaign.** Replaces D124: campaigns
   created before MQ.11 switch to overflow automatically when loaded (a rules
   migration, logged). How XP already banked is handled is the run's call

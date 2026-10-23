@@ -168,7 +168,7 @@ blue-white tint and a heavier brushed texture so the change is visible.
   in the evolution builder before releasing it (a raise stays within the new
   grade's ceiling). The skill's text and effects do not change (same power,
   lower label), and it keeps all its marks, so a well-practised skill may
-  climb straight back with its next upgrade.
+  climb straight back with its next upgrade (after which it starts at 0).
 - **Skill names:** the System gives the official name; the player may add a
   nickname ("Jake Juice"). Show both.
 - **Skill library (Luke, Q37):** one entry per skill name **and rarity**, so an
@@ -197,11 +197,11 @@ turning point). GM confirms marks in the end-of-session review.
 
 - Max one mark per skill per session (a montage focus counts as that mark).
 - A skill at its grade's rarity ceiling banks marks until the next evolution.
-- After an upgrade, marks beyond the threshold **carry into the next
-  rarity** (they are player effort; Luke's call).
-- An evolution transform that raises a skill's rarity **resets its marks to
-  0** (Q43); a same-rarity transform keeps them. A skill that drops a rarity
-  at evolution keeps all its marks.
+- **Every upgrade starts at 0 marks** (Luke, 2026-10-22): an upgraded skill
+  is new to the character, so there is no familiarity to carry. That covers
+  an upgrade by marks (extra marks beyond the threshold are not kept) and
+  any evolution transform. Only a skill that drops a rarity at evolution
+  keeps its marks: it is the same skill with a lower label.
 
 ### Merges
 
