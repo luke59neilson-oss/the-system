@@ -77,7 +77,11 @@ test('the GM builds and releases an evolution with re-rating', async ({ browser 
   await option.getByLabel('Class name').fill('Storm Hunter');
   await option.getByLabel('Bonus to all stats').fill('2');
   await option.getByText('Bonus per stat').click();
-  await option.getByLabel('Strength').fill('3');
+  await option.getByLabel('Strength', { exact: true }).fill('3');
+  await option.getByText('Reshape the class spread').click();
+  await option.getByLabel('Perception weight').fill('3');
+  await expect(option.getByText('Reshape the class spread (changed)')).toBeVisible();
+  await expect(form.getByTestId('release-problem')).toHaveCount(0);
   await expect(
     form.getByRole('list', { name: 'Re-rating' }).getByRole('listitem').first(),
   ).toBeVisible();

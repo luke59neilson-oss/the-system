@@ -11,6 +11,8 @@ interface OptionDraft {
   allBonus: number;
   /** Extra one-time bonus per stat id. */
   bonus: Record<string, number>;
+  /** Reshaped class weights (DESIGN §4), or null to keep the current ones. */
+  weights: Record<string, number> | null;
 }
 
 const blankOption = (className = ''): OptionDraft => ({
@@ -18,6 +20,7 @@ const blankOption = (className = ''): OptionDraft => ({
   description: '',
   allBonus: 0,
   bonus: {},
+  weights: null,
 });
 
 const wholeNumber = (v: string) => Math.max(0, Math.floor(Number(v) || 0));
@@ -94,7 +97,7 @@ function ReleaseForm({
     className: o.className.trim(),
     description: o.description.trim(),
     transforms: [],
-    classWeights: null,
+    classWeights: o.weights,
     statBonus: Object.fromEntries(
       rules.stats.list
         .map((s) => [s.id, o.allBonus + (o.bonus[s.id] ?? 0)] as const)
@@ -121,6 +124,7 @@ function ReleaseForm({
         className: o.className,
         ...(o.description ? { description: o.description } : {}),
         ...(Object.keys(o.statBonus).length > 0 ? { statBonus: o.statBonus } : {}),
+        ...(o.classWeights ? { classWeights: o.classWeights } : {}),
       })),
       ...(offered.length > 0 ? { professions: offered } : {}),
       rerate,
@@ -189,6 +193,33 @@ function ReleaseForm({
                 />
               </label>
             ))}
+          </details>
+          <details className="stat-bonus">
+            <summary>Reshape the class spread{o.weights ? ' (changed)' : ''}</summary>
+            {rules.stats.list.map((st) => (
+              <label key={st.id}>
+                {st.name} weight{' '}
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={(o.weights ?? character?.classWeights ?? {})[st.id] ?? 0}
+                  onChange={(e) =>
+                    setOption(i, {
+                      weights: {
+                        ...(o.weights ?? character?.classWeights ?? {}),
+                        [st.id]: wholeNumber(e.target.value),
+                      },
+                    })
+                  }
+                />
+              </label>
+            ))}
+            {o.weights && (
+              <button type="button" onClick={() => setOption(i, { weights: null })}>
+                Keep the current spread
+              </button>
+            )}
           </details>
           <label>
             Description{' '}
