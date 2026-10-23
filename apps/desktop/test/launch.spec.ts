@@ -74,13 +74,15 @@ test('a splash says "Starting The System…" at once, then hands over to the GM 
     // Release the hand-over once the server holds it; before that the hook
     // does not exist yet.
     await expect
-      .poll(() =>
-        app.evaluate(() => {
-          const g = globalThis as { theSystemReleaseStart?: () => void };
-          if (!g.theSystemReleaseStart) return false;
-          g.theSystemReleaseStart();
-          return true;
-        }),
+      .poll(
+        () =>
+          app.evaluate(() => {
+            const g = globalThis as { theSystemReleaseStart?: () => void };
+            if (!g.theSystemReleaseStart) return false;
+            g.theSystemReleaseStart();
+            return true;
+          }),
+        { timeout: 30_000 },
       )
       .toBe(true);
 

@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** 34f6f14 (2026-10-23, D) · **Next rotation:** A
+**Last sweep:** 41be1ee (2026-10-23, A) · **Next rotation:** B
 
 ## Lenses and rotation
 
@@ -99,6 +99,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-23 09:16 | D, 4cf9f1b..34f6f14 | Rules · sonnet | 0 | 2 | 1 | 2 M, both also found by the MR.A review and fixed there (stale re-rating D155; `rerate` golden); L to Backlog | 0 | 99k |
 | 2026-10-23 09:16 | D, 4cf9f1b..34f6f14 | Boundaries · fable | 0 | 0 | 1 | L to Backlog (off-lens) | 0 | 166k |
 | 2026-10-23 09:16 | D, 4cf9f1b..34f6f14 | UX · haiku | 0 | 0 | 3 | 3 L to Backlog | 0 | 126k |
+| 2026-10-23 15:10 | A, 34f6f14..41be1ee | Rules · fable | 0 | 0 | 3 | 3 L to Backlog | 0 | ~115k |
+| 2026-10-23 15:10 | A, 34f6f14..41be1ee | Boundaries · sonnet | 0 | 0 | 2 | 2 L to Backlog | 0 | ~90k |
+| 2026-10-23 15:10 | A, 34f6f14..41be1ee | Tests · haiku | 0 | 2 | 4 | 2 M confirmed and fixed this run (QF.15); 4 L to Backlog | 0 | 186k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -210,3 +213,12 @@ reviewers ran 15–20 minutes each in the background.
 - Boundaries (sweep D, off-lens): `migrateOnLoad` (`apps/server/src/migrate.ts` ~14-24) does not close the store when the migration throws, so a failed demo switch keeps the lock and every later switch gets 409 until restart; wrap in try/catch and `store.close()`.
 - UX (sweep D): the GM Skill text form keeps "Library text in use"/"Skill text saved" after the GM switches character or skill (`GmScreen.tsx` SkillText); a disabled Use library text explains itself only by `title=`; `AwardXp` swallows a `previewXpAward` throw and hides the lost-XP warning.
 - UX (MR.A round 2): for a re-rated copy whose old-rarity entry is missing, the Skill text form says "No library entry for this rarity." while Use library text is enabled.
+- Rules (sweep A): `rules.edited` lowering a grade's `xpPerLevel` leaves a character over the new threshold unlevelled until the next award (then several DINGs at once); re-run the level loop or flag it in `rulesStateProblems` (`reducer.ts` ~1689).
+- Rules (sweep A): the `rules-settings` golden ends on default rules (re4 reset, re6 undo), so a no-op `rules.edited` would still replay to it; end on a non-default edit and re-pin.
+- Rules (sweep A): `typicalSessionAward` multiplies by every participant, including those with no XP room, so its own suggestion loses their share (documented choice; the preview shows the loss).
+- Boundaries (sweep A): `GET /api/gm/export` with no open campaign returns 200 `{error}` instead of 404 (`server.ts` ~323).
+- Boundaries (sweep A): no cap on concurrent pre-join WebSocket connections or connection rate (LAN DoS only).
+- Tests (sweep A): `changeLogPage` counts `undone` after filters despite the QF.13 doc; untested under a filter that excludes the undone row, so the console's restart guard can miss it (`history/changeLog.ts` ~292).
+- Tests (sweep A): `e2e/M4.7.spec.ts` ~107 fixed 300 ms sleep before a negative leak check; await a later visible broadcast instead.
+- Tests (sweep A): `RulesSettings.tsx`, `XpAward.tsx`, `ChangeLog.tsx` have no unit tests (e2e only).
+- Tests (sweep A): `CAMPAIGN_FIELD_VISIBILITY` is not read by `projectForPlayer`, so it documents rather than enforces (`projection/player.ts` ~95).

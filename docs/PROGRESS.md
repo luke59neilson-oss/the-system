@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M4, MS, MQ and MR done; QF.1–QF.13 done; M5.1 started on `wip/M5.1`; Preview ready: Actions → Release → Run workflow (M4)
-**Next item:** QF.14 (desktop splash test race), then resume `wip/M5.1` (offer builder UI)
+**Status:** in progress: M0–M4, MS, MQ and MR done; QF.1–QF.15 done; M5.1 built on `wip/M5.1`, round-1 review Mediums to fix; Preview ready: Actions → Release → Run workflow (M4)
+**Next item:** finish `wip/M5.1` (fix the 4 round-1 Mediums in REVIEW-LOG, then round-2 review), then M5.2
 **Blockers:** none
 
 ## Run log
@@ -773,3 +773,15 @@ next item, blockers. -->
 - Open `wip/*` branches: `wip/M5.1`.
 - Next item: QF.14, then resume `wip/M5.1`.
 - Blockers: none.
+
+### Run 9ff7dfc2 · 2026-10-23 15:09–15:55 UTC (end minute ~46)
+- Preflight: `add_repo` not offered; repo already cloned (detached HEAD, reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewers on fable, sonnet and haiku work (worktree). No new answers. CI on main: latest completed 7d27d83 green. Sweep hour (15): sweep A run.
+- Quality sweep A (34f6f14..41be1ee): Rules·fable 0H/0M/3L; Boundaries·sonnet 0H/0M/2L; Tests·haiku 0H/2M/4L. Both Mediums confirmed by mutation and fixed as QF.15; 9 Lows to the QUALITY Backlog.
+- QF.14 splash test holds the hand-over in a test-only way (`THE_SYSTEM_TEST_HOLD_START=1`, unpackaged only; D165); splash spec 20/20 under xvfb. Lint/format skip reviewer worktrees under `.claude/worktrees/` (D166). Sonnet: 0H/0M/5L, two Lows fixed. **Checked.**
+- QF.15 grade-gap floor pinned at all three sites; leak property seeds scheduled broadcasts. Sonnet: clean. **Checked.**
+- M5.1 offer builder built on `wip/M5.1` (base 105b8fa, head 402f59b, merged main at 356da2f): `OfferBuilder.tsx` panel (due selections, engine-checked menu sized from rules, send, withdraw passed-over, recent practice), e2e `M5.1.spec.ts` 2/2, screenshots. Full e2e there 54/54 + latency 6/6. Sonnet round 1: 0H/4M/6L (REVIEW-LOG). Next step: reset/key the draft per character and slot (M1), add a capstone e2e case (M2), put the practice log beside the menu with counts (M3), link the dashboard selection chip to the builder (M4); then round 2. Consider not re-committing unrelated screenshots (L9).
+- Tests: 960 unit (`npm run check` green). Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/M5.1`.
+- Next item: finish M5.1.
+- Blockers: none.
+
