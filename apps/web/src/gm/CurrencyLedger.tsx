@@ -73,7 +73,7 @@ export function CurrencyLedger({ client, state }: { client: LiveClient; state: C
         <p className="muted">No characters yet.</p>
       ) : (
         <form onSubmit={submit}>
-          <fieldset className="currency-who">
+          <fieldset className="currency-who" disabled={busy}>
             <legend>Who</legend>
             {rows.map((r) => (
               <label key={r.id} className="check currency-balance">
@@ -99,7 +99,7 @@ export function CurrencyLedger({ client, state }: { client: LiveClient; state: C
               {live.length === rows.length ? 'Clear' : 'Everyone'}
             </button>
           </fieldset>
-          <div className="currency-fields">
+          <fieldset className="currency-fields" disabled={busy}>
             <label>
               Amount
               <input
@@ -119,7 +119,7 @@ export function CurrencyLedger({ client, state }: { client: LiveClient; state: C
               Reason (the player sees this)
               <input value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
             </label>
-          </div>
+          </fieldset>
           <div className="currency-actions">
             <button type="button" disabled={busy} onClick={() => void send(1)}>
               Grant

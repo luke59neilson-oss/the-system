@@ -2381,6 +2381,9 @@ ol.change-log li.undone .change-text {
   margin-top: 6px;
 }
 .currency-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 10px 16px;
