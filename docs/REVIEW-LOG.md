@@ -691,3 +691,10 @@
 - Round 1 (cfa0258): 0 H / 3 M / 7 L. M1 skill pairs not counted in the review → `marksReview` returns session and whole-log pair counts vs the merge joint-use rule. M2 montage focus not treated as that mark → per-candidate `montage` flag with a hint; D169 says the review is where it is confirmed. M3 screenshot did not show the review → scrolled into view. L4 merged-away skills silent → `lost` list shown. Other Lows (stale success text after undo, `busy` on a thrown command, long window with many characters, screenshot churn) → QUALITY Backlog.
 - Round 2 (ad0d288): 0 H / 0 M / 3 L. L1 "merge alert" ignored the merge rarity → `rarityOk` on each pair, wording changed (fixed). L2 dead `?? p.count` fallback, L3 no UI assertion for the lost/montage lines → Backlog.
 - Full e2e: MQ.12 and MR.4 hit a strict-mode clash with the new skill-upgrade DING toast; their Identify locators are now scoped to the race skills.
+
+## 2026-10-23 · M5.4 Merges · reviewer: sonnet (2 rounds)
+
+- Round 1 (ed2d957): 0 H / 2 M / 5 L. M1 tests missed the ceiling and one-per-grade refusals, the name-clash refusal and a consumed skill dropping its other alerts → engine test for all three refusals and the dropped alert; e2e for the clash warning. M2 evolution merges (D168) send no merge DING → documented in D171 (the player picks that option themselves). Lows fixed: per-grade text reads `merge.maxPerCharacterPerGrade`; pair keys use a NUL separator; Send held while the name clashes; GM 390×844 overflow check and screenshot. Left: two-command send has no retry for a failed text save (reported in the banner).
+- Round 2 (5d96bce): 0 H / 0 M / 4 L. Fixed: the 390×844 check and screenshot now show the filled form before sending; name/text fields reset on a character switch. Left to Backlog: no engine-level clash test inside the builder (covered by `mergeSkills` and the e2e); screenshot churn.
+- CI fix this run (fdedc32): M4.3 latency red on main from the M5.3 "Mark another skill" select widening the 390px console; select and label capped at 100%.
+

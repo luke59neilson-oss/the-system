@@ -549,7 +549,7 @@ work: Q44–Q48 and Q52.
   rarity down, raise/keep/lower; MR.1); release. Warn when a selection (esp. the capstone) is still
   pending (Q21).
 - [x] **M5.3 Marks review.** End-of-session queue; upgrade prompts.
-- [ ] **M5.4 Merges.** Alert, build, send.
+- [x] **M5.4 Merges.** Alert, build, send.
 - [ ] **M5.5 Practice capture.** Quick-add with shortcut; end-of-scene
   prompt; review of player submissions. Needs new events to edit/remove an
   entry and to mark entries reviewed (M1.8 review, Lows 5).

@@ -101,6 +101,22 @@ test('the GM builds and sends a merge; the player gets the DING and the new skil
   await builder.evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-merge-builder-1366x768.png') });
 
+  // The GM form stays usable at phone width, before it is sent.
+  await gm.setViewportSize({ width: 390, height: 844 });
+  await builder.scrollIntoViewIfNeeded();
+  const overflow = await gm.evaluate(() => {
+    const d = (
+      globalThis as unknown as {
+        document: { documentElement: { scrollWidth: number; clientWidth: number } };
+      }
+    ).document.documentElement;
+    return d.scrollWidth - d.clientWidth;
+  });
+  expect(overflow).toBeLessThanOrEqual(0);
+  await builder.screenshot({ path: path.join(shots, 'gm-merge-builder-390x844.png') });
+
+  await gm.setViewportSize({ width: 1366, height: 768 });
+
   const player = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const playerErrors = watchErrors(player);
   await player.goto(server.url);
@@ -123,20 +139,6 @@ test('the GM builds and sends a merge; the player gets the DING and the new skil
   await expect(player.getByTestId('skill-detail-description')).toHaveText(
     'Strike and slip away in one motion.',
   );
-
-  // The GM window stays usable at phone width.
-  await gm.setViewportSize({ width: 390, height: 844 });
-  await builder.scrollIntoViewIfNeeded();
-  const overflow = await gm.evaluate(() => {
-    const d = (
-      globalThis as unknown as {
-        document: { documentElement: { scrollWidth: number; clientWidth: number } };
-      }
-    ).document.documentElement;
-    return d.scrollWidth - d.clientWidth;
-  });
-  expect(overflow).toBeLessThanOrEqual(0);
-  await builder.screenshot({ path: path.join(shots, 'gm-merge-builder-390x844.png') });
 
   expect(errors).toEqual([]);
   expect(playerErrors).toEqual([]);

@@ -109,6 +109,7 @@ reviewers ran 15–20 minutes each in the background.
 
 ## Flakes
 
+- 2026-10-23 19:25 · local full e2e (run 698982a6): `e2e/M2.A.spec.ts` (latency project, restart test) failed once with a GM console error "Failed to load resource: net::ERR_CONNECTION_RESET" while a 2,000-step vitest property run loaded the 2-CPU workspace; passed alone right after. Flake under load; watch for a repeat.
 - 2026-10-22 16:55–17:38 · CI on main red four times (5e72abe, d244b21,
   176523f, 6ca3e7e). Not a flake: `e2e/M3.7.spec.ts` "View-as panes" relied
   on the previous test having loaded the demo. It passed locally (1 worker)
@@ -144,6 +145,7 @@ reviewers ran 15–20 minutes each in the background.
 
 ## Backlog (Lows; M11.5 goes through these)
 
+- UX (M5.4 review): Send merge is two commands; a failed `skill.describe` leaves the merge with no text and no retry (the banner says so); no engine-level name-clash test through the builder (the e2e and `mergeSkills` cover it).
 - UX (M5.3 review): the marks review's success text stays after an undo; `busy` is never reset if `client.command` throws; the window grows long with many characters; no UI assertion for the lost-skills and montage lines; `?? p.count` fallback in `marksReview` pairs is dead code; e2e reruns rewrite committed screenshots (repo-wide).
 - UX (M5.1 review): the offer builder's result banner stays after live updates; a draft is dropped without notice when the player chooses the selection being edited; practice dates show the UTC day; Withdraw uses a native confirm; no e2e for a repeat chip click or a declined confirm.
 - Tests (QF.8 review): `npm run e2e` chains `--project=e2e && --project=latency`, so locally a failing e2e spec skips the latency specs (CI runs both steps regardless).

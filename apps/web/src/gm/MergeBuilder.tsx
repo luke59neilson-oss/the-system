@@ -82,6 +82,10 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
                 setPicked(e.target.value);
                 setPairKey('');
                 setOutcome(null);
+                // A name typed for one character must not carry over to another.
+                setName('');
+                setDescription('');
+                setFlavor('');
               }}
             >
               {ids.map((id) => (
