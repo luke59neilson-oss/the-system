@@ -103,6 +103,22 @@ describe('characterFlags (M4.5)', () => {
     const capped = run([award(9 * 300)], testContext('t'), offered);
     const evo = flags(capped).filter((x) => x.kind === 'evolution');
     expect(evo).toEqual([{ kind: 'evolution', toGrade: 'E', status: 'blocked' }]);
+    // A released evolution with a selection due (a release stored before the
+    // gate, or a selection reached later) is blocked too: choose is refused.
+    const jake = capped.state!.characters[ID]!;
+    const releasedState = {
+      ...capped.state!,
+      characters: {
+        ...capped.state!.characters,
+        [ID]: {
+          ...jake,
+          evolution: { toGrade: 'E', releaseId: 'r', options: [], professions: [] },
+        },
+      },
+    };
+    expect(characterFlags(releasedState, ID).filter((x) => x.kind === 'evolution')).toEqual([
+      { kind: 'evolution', toGrade: 'E', status: 'blocked' },
+    ]);
     expect(flags(capped).filter((x) => x.kind === 'selection')).toEqual([
       { kind: 'selection', level: 5, capstone: false, offered: true },
       { kind: 'selection', level: 10, capstone: true, offered: false },

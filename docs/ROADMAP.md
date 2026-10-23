@@ -488,7 +488,7 @@ work: Q44–Q48 and Q52.
   the server opened the campaign".
 - [x] **M4.4 Character creation.** Name, starting class, portrait; Identify
   added automatically.
-- [ ] **M4.5 Party dashboard.** Card per character with flags (pending
+- [x] **M4.5 Party dashboard.** Card per character with flags (pending
   selection/evolution/marks/merges); full sheet edit as audited events.
 - [ ] **M4.6 XP award dialog.** Amount, class or profession, participant
   checkboxes, even integer split by default with auto-balanced last share,
