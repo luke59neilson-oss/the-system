@@ -88,7 +88,15 @@ test('the GM builds and sends a merge; the player gets the DING and the new skil
   await expect(alerts).toHaveText('[Quick Cut] + [Side Step] · together 3× → Rare');
   const send = builder.getByRole('button', { name: 'Send merge' });
   await expect(send).toBeDisabled();
+  // A name the character already uses is refused before Send.
+  await builder.getByLabel('Merged skill name').fill('side step');
+  await expect(builder.getByRole('alert')).toHaveText(
+    'Jake already has a skill named [side step]; pick another name.',
+  );
+  await expect(send).toBeDisabled();
+  await expect(builder).toContainText('At most 1 merge per character per grade.');
   await builder.getByLabel('Merged skill name').fill('Dancing Blade');
+  await expect(builder.getByRole('alert')).toHaveCount(0);
   await builder.getByLabel('Description (optional)').fill('Strike and slip away in one motion.');
   await builder.evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-merge-builder-1366x768.png') });
@@ -115,6 +123,20 @@ test('the GM builds and sends a merge; the player gets the DING and the new skil
   await expect(player.getByTestId('skill-detail-description')).toHaveText(
     'Strike and slip away in one motion.',
   );
+
+  // The GM window stays usable at phone width.
+  await gm.setViewportSize({ width: 390, height: 844 });
+  await builder.scrollIntoViewIfNeeded();
+  const overflow = await gm.evaluate(() => {
+    const d = (
+      globalThis as unknown as {
+        document: { documentElement: { scrollWidth: number; clientWidth: number } };
+      }
+    ).document.documentElement;
+    return d.scrollWidth - d.clientWidth;
+  });
+  expect(overflow).toBeLessThanOrEqual(0);
+  await builder.screenshot({ path: path.join(shots, 'gm-merge-builder-390x844.png') });
 
   expect(errors).toEqual([]);
   expect(playerErrors).toEqual([]);

@@ -19,19 +19,25 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
   const character = state.characters[characterId];
   const candidates = character ? mergeCandidates(state, characterId) : [];
   const [pairKey, setPairKey] = useState('');
-  const chosen = candidates.find((c) => c.skills.join('+') === pairKey) ?? candidates[0];
+  const chosen = candidates.find((c) => c.skills.join('\u0000') === pairKey) ?? candidates[0];
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [flavor, setFlavor] = useState('');
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Outcome>(null);
+  const merged = name.trim();
+  // The engine refuses a name the character already uses; say so before Send.
+  const clash =
+    merged !== '' &&
+    (character?.skills.some((s) => s.name.toLowerCase() === merged.toLowerCase()) ?? false);
+  const pairId = (skills: readonly [string, string]) => skills.join('\u0000');
+  const perGrade = rules.skills.merge.maxPerCharacterPerGrade;
   const rarityName = (id: string) => rules.skills.rarities.find((r) => r.id === id)?.name ?? id;
 
   const send = async (e: FormEvent) => {
     e.preventDefault();
-    if (!character || !chosen || chosen.problem !== null) return;
+    if (!character || !chosen || chosen.problem !== null || clash) return;
     setBusy(true);
-    const merged = name.trim();
     const r = await client.command({
       type: 'skill.merge',
       characterId,
@@ -99,7 +105,7 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
             <form onSubmit={(e) => void send(e)} aria-label="Build a merge">
               <ul className="merge-candidates" aria-label="Merge alerts">
                 {candidates.map((c) => {
-                  const key = c.skills.join('+');
+                  const key = pairId(c.skills);
                   return (
                     <li key={key}>
                       <label className="check">
@@ -121,6 +127,11 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
                 Merged skill name
                 <input value={name} onChange={(e) => setName(e.target.value)} />
               </label>
+              {clash && (
+                <p className="warn" role="alert">
+                  {character?.name} already has a skill named [{merged}]; pick another name.
+                </p>
+              )}
               <label>
                 Description (optional)
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
@@ -130,12 +141,12 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
                 <textarea value={flavor} onChange={(e) => setFlavor(e.target.value)} />
               </label>
               <p className="muted">
-                Both skills are consumed; the merged skill starts at 0 marks. One merge per
-                character per grade.
+                Both skills are consumed; the merged skill starts at 0 marks. At most {perGrade}{' '}
+                {perGrade === 1 ? 'merge' : 'merges'} per character per grade.
               </p>
               <button
                 type="submit"
-                disabled={busy || !chosen || chosen.problem !== null || name.trim() === ''}
+                disabled={busy || !chosen || chosen.problem !== null || merged === '' || clash}
               >
                 Send merge
               </button>
