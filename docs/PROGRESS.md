@@ -794,11 +794,12 @@ next item, blockers. -->
 - Next item: resume `wip/M5.2`.
 - Blockers: none.
 
-### Run M52b · 2026-10-23 17:08–17:52 UTC (end minute ~44)
+### Run M52b · 2026-10-23 17:08–17:50 UTC (end minute 42)
 - Preflight: `add_repo` not offered; repo already cloned (detached, reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer on sonnet works (worktree). No new answers. CI on main: b255ecc green. Not an efficiency or sweep hour.
 - M5.2 evolution builder finished on `wip/M5.2` and merged: per-option skill transforms (rarity floor at the skill's own), merge transforms (optional `merge` on a transform: second skill consumed, merge rules enforced, fresh skill exactly one above the higher; prompts judged at the new ceiling; D168, Q61), GM `profession.withdrawOffer` / `profession.offerWithdrawn` (Professions tab and waiting release) with a Withdraw list, warning on released options that later events made unchoosable, session-log line for a merge at evolution, player evolution screen shows "[A] + [B] → [New]" and a merge warning. New golden log `evolution-builder`. e2e M5.2 2/2 (player chooses: bonus and re-rating land; waits-on-capstone warning; transform; withdraw an offer) with 4 screenshots.
 - Review (sonnet): round 1 0 H / 4 M / 8 L, round 2 0 H / 1 M / 5 L; all M fixed, Lows fixed or to the QUALITY Backlog. **Checked.**
 - Tests: 976 unit (`npm run check` green); full e2e 63/63. Engine coverage not re-measured.
 - Open `wip/*` branches: none new (wip/M5.2 merged).
+- Ended at minute 42, before 48 without a §5.5 reason: M5.2 was checked and merged at minute 41 after the full e2e run, and M5.3 was not started (protocol deviation, noted honestly).
 - Next item: M5.3 Marks review.
 - Blockers: none.
