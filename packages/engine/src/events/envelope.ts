@@ -540,6 +540,11 @@ export const EVENT_PAYLOAD_SCHEMAS = {
    * `xpOverflow` migration turns on `rules.xp.overflow` and applies the XP each
    * capped track had banked again under overflow (D153); `banked` lists it.
    */
+  /**
+   * M4.9: the GM's edited rules, whole (D161): replaces the campaign's rules
+   * after validation. Stat, pool, grade, rarity and slot ids may not change.
+   */
+  'rules.edited': z.strictObject({ rules: z.unknown() }),
   'rules.migrated': z.strictObject({
     migration: z.literal('xpOverflow'),
     banked: z.array(
@@ -631,6 +636,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'entity.revealed': 1,
   'campaign.dayAdvanced': 1,
   'rules.migrated': 1,
+  'rules.edited': 1,
   'session.started': 1,
   'session.ended': 1,
   'event.undone': 1,

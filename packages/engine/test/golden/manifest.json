@@ -192,6 +192,14 @@
       "sha256": "06a72f124ed43617e282835ac40caa0bb599aad2d659602cca5f113b6e013637",
       "schemaVersion": 25
     },
+    "rules-settings.jsonl": {
+      "sha256": "2c066ccc8df31ac885c86dc1bc25af9e3e67f75503e492d1add4de84a8eee3a2",
+      "schemaVersion": 25
+    },
+    "rules-settings.state.json": {
+      "sha256": "52e473b899211cb0ea40f449d7af653b6a1fc43f0513206c6ab3e60506ec42e3",
+      "schemaVersion": 25
+    },
     "scheduled-broadcasts.jsonl": {
       "sha256": "6844590ff36351db6ddaa7e8e888f0c37db47231ccc9c6ebc58c142de73f1580",
       "schemaVersion": 25

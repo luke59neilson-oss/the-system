@@ -103,6 +103,7 @@ export const CHANGE_LOG_PHRASES: Readonly<Record<string, string>> = {
   'professionDef.defined': 'profession added to the library',
   'professionDef.edited': 'library profession edited',
   'library.seeded': 'Default libraries added',
+  'rules.edited': 'Rules settings changed',
   'clock.created': 'progress clock created',
   'clock.ticked': 'progress clock ticked',
   'clock.removed': 'progress clock removed',

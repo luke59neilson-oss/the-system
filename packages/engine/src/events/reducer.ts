@@ -563,6 +563,28 @@ function effectiveOf(state: CampaignState, c: Character): Readonly<Record<string
   return itemEffectiveStats(state.rules, c.stats, held, state.items);
 }
 
+/**
+ * Why an edited rules config may not replace the current one (M4.9, D161):
+ * ids that characters, skills and items point at stay fixed, and XP overflow
+ * stays on (L16). Null when the edit is fine.
+ */
+export function rulesEditProblem(current: RulesConfig, next: RulesConfig): string | null {
+  const ids = (list: readonly { id: string }[]) => list.map((x) => x.id).join(',');
+  const lists: [string, readonly { id: string }[], readonly { id: string }[]][] = [
+    ['stats', current.stats.list, next.stats.list],
+    ['pools', current.pools, next.pools],
+    ['grades', current.grades, next.grades],
+    ['skill rarities', current.skills.rarities, next.skills.rarities],
+    ['equipment slots', current.economy.equipmentSlots, next.economy.equipmentSlots],
+  ];
+  for (const [name, a, b] of lists) {
+    if (ids(a) !== ids(b))
+      return `the ${name} list (ids and order) cannot change in a running campaign`;
+  }
+  if (current.xp.overflow && !next.xp.overflow) return 'XP overflow stays on (Luke, L16)';
+  return null;
+}
+
 function applyEventRaw(state: CampaignState | null, event: DomainEvent): CampaignState {
   if (event.type === 'campaign.created') {
     if (state !== null) fail(event, 'the campaign already exists');
@@ -1603,6 +1625,14 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
           })),
         ],
       };
+    }
+    case 'rules.edited': {
+      // M4.9 (D161): the whole rules config, validated like a new campaign's.
+      const parsed = parseRulesConfig(event.payload.rules);
+      if (!parsed.ok) return fail(event, `invalid rules: ${parsed.errors.join('; ')}`);
+      const problem = rulesEditProblem(state.rules, parsed.config);
+      if (problem) fail(event, problem);
+      return { ...state, rules: parsed.config };
     }
     case 'rules.migrated': {
       // MR.3 (L16, D153): XP overflow on; XP banked on a capped track is

@@ -937,6 +937,9 @@ describe('property: replay equals incremental state', () => {
       // MR.3: random play starts on overflow rules, which have nothing to
       // migrate; rulesMigration.test.ts and its golden log cover it.
       'rules.migrated',
+      // M4.9: rules edits have their own tests (rulesEdit.test.ts) and golden
+      // log; editing rules here would change what every later command means.
+      'rules.edited',
     ]);
     expect(
       EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),

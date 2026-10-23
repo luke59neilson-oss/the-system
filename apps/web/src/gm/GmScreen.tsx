@@ -22,6 +22,7 @@ import { PortraitPicker } from './PortraitControls';
 import { PartyDashboard } from './PartyDashboard';
 import { XpAward } from './XpAward';
 import { ChangeLog } from './ChangeLog';
+import { RulesSettings } from './RulesSettings';
 import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
 
@@ -141,6 +142,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <SkillText client={client} state={state} />
               <SkillLibrary client={client} state={state} />
               <OriginLibrary client={client} state={state} />
+              <RulesSettings client={client} state={state} />
               <Feed live={live} state={state} />
             </div>
           </div>

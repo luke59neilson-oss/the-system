@@ -13,6 +13,7 @@ import { normalizeTags } from '../skills/library';
 import { missingDefaultEntries } from '../content/defaults';
 import { largestRemainderSplit } from '../progression';
 import { bankedXp } from './migrations';
+import { defaultRules } from '../rules';
 import { EMPTY_HOLDINGS, itemsSeenBy } from '../economy';
 import { appendEvent, type Campaign } from './log';
 
@@ -430,6 +431,10 @@ export type Command =
     }
   | { type: 'campaign.advanceDay'; days?: number | undefined }
   | { type: 'rules.migrate'; migration: 'xpOverflow' }
+  /** M4.9: replaces the campaign's rules with an edited copy (validated). */
+  | { type: 'rules.set'; rules: unknown }
+  /** M4.9: puts the rules back to the DESIGN defaults. */
+  | { type: 'rules.reset' }
   /** Starts a play session (M4.3); the id is generated when omitted. */
   | { type: 'session.start'; sessionId?: string | undefined }
   /** Ends the running play session. */
@@ -556,6 +561,8 @@ const commandSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('campaign.advanceDay') }),
   z.object({ type: z.literal('rules.migrate'), migration: z.literal('xpOverflow') }),
+  z.object({ type: z.literal('rules.set'), rules: z.unknown() }),
+  z.object({ type: z.literal('rules.reset') }),
   z.object({ type: z.literal('session.start'), sessionId: z.string().optional() }),
   z.object({ type: z.literal('session.end') }),
   z.object({ type: z.literal('event.undo') }),
@@ -1252,6 +1259,10 @@ function toEvent(
         payload: { migration: 'xpOverflow', banked: bankedXp(state) },
       };
     }
+    case 'rules.set':
+      return { type: 'rules.edited', payload: { rules: command.rules } };
+    case 'rules.reset':
+      return { type: 'rules.edited', payload: { rules: defaultRules() } };
     case 'session.start':
       if ((campaign.state?.currentSession ?? null) !== null) {
         throw new EventRejectedError('A session is already running; end it first');

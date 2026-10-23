@@ -2056,3 +2056,60 @@ ol.change-log li.undone {
 ol.change-log li.undone .change-text {
   text-decoration: line-through;
 }
+
+/* M4.9 Rules settings: every config value, grouped by section. */
+.rules-settings {
+  grid-column: 1 / -1;
+}
+.rules-settings .rules-section {
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  padding: 0.35rem 0;
+}
+.rules-settings .rules-section > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.rules-settings .rules-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.5rem 1rem;
+  align-items: start;
+  padding: 0.5rem 0;
+}
+.rules-settings .rules-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.35rem 0.75rem;
+  min-width: 0;
+  align-items: start;
+}
+/* A list of entries (slots, grades, stats) spans the row. */
+.rules-settings .rules-body > .rules-group:has(> .rules-group) {
+  grid-column: 1 / -1;
+}
+.rules-settings .rules-field {
+  display: grid;
+  gap: 0.15rem;
+}
+.rules-settings .rules-field.check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.rules-settings .rules-field input[readonly] {
+  opacity: 0.6;
+}
+.rules-settings .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.rules-settings .rules-group .rules-group {
+  grid-template-columns: 1fr;
+}
+.rules-settings .rules-field input:not([type='checkbox']) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
