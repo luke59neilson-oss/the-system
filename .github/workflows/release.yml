@@ -85,6 +85,23 @@ jobs:
         run: |
           THE_SYSTEM_PACKAGED_EXE="$PWD/apps/desktop/release/win-unpacked/TheSystem.exe" \
             npx playwright test -c apps/desktop/playwright.packaged.config.ts
+      # QF.11: a download that stopped halfway must refuse to start, never hang.
+      # NSIS checks its own CRC; run a half-length copy silently and expect a
+      # non-zero exit within a minute.
+      - name: A partial installer refuses to start
+        if: matrix.target == 'win'
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem apps/desktop/release/*-setup.exe | Select-Object -First 1
+          $partial = Join-Path $env:RUNNER_TEMP 'partial-setup.exe'
+          Copy-Item $setup.FullName $partial
+          $stream = [System.IO.File]::Open($partial, 'Open')
+          $stream.SetLength([long]($setup.Length / 2))
+          $stream.Close()
+          $p = Start-Process $partial -ArgumentList '/S' -PassThru
+          if (-not $p.WaitForExit(60000)) { $p.Kill(); throw 'the partial installer hung' }
+          if ($p.ExitCode -eq 0) { throw 'the partial installer exited 0 instead of refusing' }
+          Write-Output "partial installer refused with exit code $($p.ExitCode)"
       - name: Smoke-test the AppImage itself
         if: matrix.target == 'linux'
         run: |
