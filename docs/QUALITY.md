@@ -136,7 +136,8 @@ reviewers ran 15–20 minutes each in the background.
   had already handed over to the GM console. A race in the test (it
   screenshots a window that closes by design), not in this diff. If it
   repeats it becomes a QF item: screenshot before the hand-over can happen,
-  or assert the splash text without a screenshot.
+  or assert the splash text without a screenshot. It repeated on ab3f114
+  (10:31 UTC): now QF.14.
 
 ## Backlog (Lows; M11.5 goes through these)
 
