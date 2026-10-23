@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { changeLog, changeLogCategory, execute, type Campaign, type Command } from '../src';
+import {
+  changeLog,
+  changeLogCategory,
+  execute,
+  humanize,
+  type Campaign,
+  type Command,
+} from '../src';
 import { kit, rawRules, run, testContext } from './helpers/events';
 
 // M4.8: the GM's change log rows.
@@ -94,5 +101,12 @@ describe('changeLog (M4.8)', () => {
   });
   it('files unknown event areas under campaign', () => {
     expect(changeLogCategory('mystery.thing')).toBe('campaign');
+  });
+});
+
+describe('humanize (M4.8)', () => {
+  it('turns an event type into words', () => {
+    expect(humanize('quest.statusSet')).toBe('quest status set');
+    expect(humanize('session.started')).toBe('session started');
   });
 });

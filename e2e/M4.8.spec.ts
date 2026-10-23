@@ -45,7 +45,9 @@ test('the GM undoes a broadcast from the change log', async ({ page }) => {
   await expect(log.getByRole('listitem').filter({ hasText: 'Only Jake.' })).toHaveCount(1);
   const created = log.getByRole('listitem').filter({ hasText: 'Jake' }).last();
   await created.getByRole('button', { name: 'Undo' }).click();
-  await expect(log.getByRole('alert')).toBeVisible();
+  await expect(log.getByRole('alert')).toHaveText(
+    "Can't undo this: a later change depends on it. Undo the later changes first.",
+  );
   await log.getByLabel('Filter').fill('only jake');
   await expect(log.getByRole('listitem')).toHaveCount(1);
   await log.getByLabel('Who').selectOption('player');
