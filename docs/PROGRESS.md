@@ -45,7 +45,7 @@ next item, blockers. -->
 - Open `wip/*` branches: none.
 - New question: Q9 starting World Stability (default 100).
 - Next: M1.3 Event-sourced core.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 3b746078 · 2026-10-21 15:07–15:47 UTC
@@ -66,7 +66,7 @@ next item, blockers. -->
 - New decisions D27–D38; new question Q10 (class spread rounding).
 - Open `wip/*` branches: none.
 - Next: M1.13 Player projection (then M2.1–M2.3, MS).
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 647c5fd1 · 2026-10-21 16:06–16:53 UTC
@@ -79,7 +79,7 @@ next item, blockers. -->
 - New decisions D39–D46; new questions Q11 (party pool bars), Q12 (GM from another device).
 - Open `wip/*` branches: none unfinished (`wip/M2.2` is merged).
 - Next: M2.3 Join helper, then MS.1–MS.6, MS.A.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run (lock id blank) · 2026-10-21 17:06–17:44 UTC
@@ -93,7 +93,7 @@ next item, blockers. -->
 - How to try it: `npm run build && node apps/server/dist/main.js`, open the printed `http://localhost:30333/gm#key=…` link as GM and the join URL (`/`) as a player.
 - Open `wip/*` branches: none.
 - Next: MS.3 Perspective switcher, then MS.4–MS.6, MS.A.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 5f86c6b8 · 2026-10-21 18:06–18:51 UTC
@@ -107,7 +107,7 @@ next item, blockers. -->
 - How to try it: `npm run build && node apps/server/dist/main.js`, open the printed GM link; "View as" bar for player perspectives and Table view; "Load demo campaign" in the GM header. Desktop: `npm run desktop:smoke` or `npm run build -w @the-system/desktop && npx electron apps/desktop` after fetching the Electron binary (see apps/desktop/README.md).
 - Open `wip/*` branches: none unfinished (`wip/MS.5` is merged).
 - Next: MS.6 Preview release (electron-builder; release workflow on push to `release`), then MS.A.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 01ce3e89 · 2026-10-21 19:06–19:47 UTC
@@ -121,7 +121,7 @@ next item, blockers. -->
 - Environment notes: macOS arm64 runners did not pick up jobs (capacity; jobs cancelled after ~15 min) → Intel runner. The release-dry-run branch now exists on the remote and is meant to be reused. Each mac run costs ~2–3 min of 10× macOS minutes.
 - Open `wip/*` branches: none unfinished (`wip/MS.6` is merged).
 - Next: MS.A Milestone acceptance and review (reviewer `fable`), then `git push origin main:release`.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 9fed26a9 · 2026-10-21 20:06–20:36 UTC
@@ -195,7 +195,7 @@ next item, blockers. -->
 - New decisions D72–D73; new questions Q26 (GM notes in logs: `export` tag) and Q27 (hidden quests in the GM-only log). Roadmap note on M4.3: point the session log at the started session.
 - Open `wip/*` branches: none unfinished.
 - Next: M3.1 Join screen. Stopped at 43 min, past the 35-minute start limit.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 5a4cdc41 · 2026-10-22 01:06–01:33 UTC
@@ -216,7 +216,7 @@ next item, blockers. -->
 - New decisions D74–D75; new question Q28 (rejoin automatically?).
 - Open `wip/*` branches: none unfinished.
 - Next: M3.3 Notifications and history. Not started: at 27 min it needs engine/server history (DINGs back to day 1, with undo), which would not fit with review before the 60-minute stop.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run b1b95d91 · 2026-10-22 02:06–02:55 UTC
@@ -242,7 +242,7 @@ next item, blockers. -->
 - New decisions D76–D77; new question Q29 (what pops up as a DING; sound default).
 - Open `wip/*` branches: none.
 - Next: M3.5 Skill detail. Not started: at 47 min this run was past the 35-minute start limit.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run cfeff3e8 · 2026-10-22 03:06–03:41 UTC
@@ -267,7 +267,7 @@ next item, blockers. -->
 - New decisions D78–D79; new question Q30 (who writes skill text). Roadmap note on M4.1: fill skill text on grant, including Identify.
 - Open `wip/*` branches: none.
 - Next: M3.6 Skill selection. Not started: at 34 min, an item plus two review rounds would not fit before the 60-minute stop.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 832a5b4e · 2026-10-22 04:06–04:36 UTC
@@ -294,7 +294,7 @@ next item, blockers. -->
 - New decision D80. New question Q31 (should a skill selection DING?).
 - Open `wip/*` branches: `wip/M3.7` (unfinished, see above).
 - Next: M3.7, resuming `wip/M3.7`. Not finished: the pool-clamp semantics touch the undo rules (D31) and could not be built and reviewed before the 60-minute stop.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 
@@ -320,7 +320,7 @@ next item, blockers. -->
 - New decisions D81–D83. New question Q32 (gear and pools; gift/trade pop-ups).
 - Open `wip/*` branches: none unfinished (`wip/M3.7` is merged).
 - Next: M3.9 Identify. Not started: at 49 min this run was past the 35-minute start limit.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 5faa0b38 · 2026-10-22 06:08–06:44 UTC
@@ -341,7 +341,7 @@ next item, blockers. -->
 - New decision D84. New question Q33 (Identify level gap; per-character knowledge).
 - Open `wip/*` branches: none unfinished.
 - Next: M3.10 Notes. Not started: at 34 min, an item plus two review rounds would not fit before the 60-minute stop.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run b7215e54 · 2026-10-22 07:07–07:58 UTC
@@ -366,7 +366,7 @@ next item, blockers. -->
 - New decisions D85, D86. New questions Q34 (who edits party notes), Q35 (montage focus and marks).
 - Open `wip/*` branches: none unfinished (`wip/M3.11` is merged).
 - Next: M3.12 Party view.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run a379851e · 2026-10-22 08:07–08:53 UTC
@@ -390,7 +390,7 @@ next item, blockers. -->
 - New decisions D87, D88. New question Q36 (warnings before an evolution; warn-only default).
 - Open `wip/*` branches: none unfinished (`wip/M3.13` is merged).
 - Next: M3.A Milestone acceptance and review (fable reviewer; ends by pushing `main` to `release`). Not started: the run was past the 35-minute mark.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run b4b5e178 · 2026-10-22 09:06–09:42 UTC
@@ -409,7 +409,7 @@ next item, blockers. -->
 - New decision D89. No new questions.
 - Open `wip/*` branches: none unfinished.
 - Next: M4.1 Skill library. Not started: the run was at the 35-minute mark.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 5d1c0a4e · 2026-10-22 10:06–10:47 UTC
@@ -444,7 +444,7 @@ next item, blockers. -->
 - New decision D91. New question Q38 (default classes, races, professions; race as name only; descriptions GM-only).
 - Open `wip/*` branches: none unfinished.
 - Next: M4.3 Campaign and sessions. Not started: too little of the timebox left to finish and review it.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 1506f1ae · 2026-10-22 12:12–12:47 UTC
@@ -463,7 +463,7 @@ next item, blockers. -->
 - New decision D92. New question Q39 (nothing is logged between sessions).
 - Open `wip/*` branches: none unfinished.
 - Next: M4.4 Character creation. Not started: the run was past the 35-minute mark.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 54be8ae4 · 2026-10-22 13:09–13:47 UTC
@@ -482,7 +482,7 @@ next item, blockers. -->
 - New decision D95. New question Q40 (where portraits show; exports and backups do not carry them; removal does not unpublish).
 - Open `wip/*` branches: none unfinished.
 - Next: MS.7 Launch polish. Not started: under the new timebox it could not be finished and reviewed by minute 52.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run e081d05f · 2026-10-22 14:09–14:56 UTC
@@ -497,7 +497,7 @@ next item, blockers. -->
 - Built, not checked: MQ.1 Evolution rules (fefa7d7, b3c1f84; D110). Round 1 had 3 Medium: the refill now uses effective stats (fixed); open for round 2: no GM UI for the bonus until M5.2, and the gate re-running on replay after a rules edit. Next run: run round 2 on 835717c..HEAD for MQ.1, fix, then check the box.
 - Tests: 691 unit/integration tests; full e2e suite (35) green before the default-transform change, M3.13 and MS.4 re-run after it; 6 desktop specs green. Engine coverage not re-measured.
 - Open `wip/*` branches: none (MQ.1 code is on main; only its review round 2 remains).
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 451e9851 · 2026-10-22 15:09–15:50 UTC
@@ -520,7 +520,7 @@ next item, blockers. -->
   - The GM "withdraw" of an option (DESIGN §6). Plan: a new GM-only event `selection.optionWithdrawn {characterId, name}` stored as an optional per-character list, so goldens stay unchanged. It needs a golden log and a session-log line.
   - Consider a compact layout for long passed-over lists (the demo shows 20 cards).
   - Then the sonnet review, merge to main, and check the box.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run cff91d0a · 2026-10-22 16:07–16:53 UTC (ended at minute 46: §5.5 hand-off and close-out)
@@ -544,7 +544,7 @@ next item, blockers. -->
     4. Run review round 2, merge, and check the box.
 - Tests: 711 on main (64 files). The full e2e suite (35) was green after the MQ.3 merge. M3.6, M3.13 and M3.A were re-run, and only the M3.6 and M3.13 screenshots were kept. Engine coverage was not re-measured.
 - Open `wip/*` branches: `wip/MQ.4` (unfinished). `wip/MQ.3` is merged.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 
@@ -564,7 +564,7 @@ next item, blockers. -->
   4. Review, then merge.
 - Tests: 739 on main (65 files). Full e2e (35) green locally after MQ.4's player-projection change. Engine coverage not re-measured.
 - Open `wip/*` branches: `wip/QF.2` (unfinished). `wip/MQ.4` is merged.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 74982dab · 2026-10-22 18:06–18:52 UTC (ended at minute 46: MQ.10 finished and reviewed at minute 43; MQ.6 (engine, UI and e2e) cannot start meaningfully in the 1 minute left before the 44 hand-off)
@@ -578,7 +578,7 @@ next item, blockers. -->
   - MQ.10 Steep XP curve (D120): ×3 per grade for new campaigns, `xp.gradeBelowFactors` [⅓, 0], optional `enemyGrade` on `xp.awarded`, `typicalSessionXp`; campaign state v17 (golden states bumped additively). Rounds 1–2 (sonnet): round 2 clean.
 - Tests: 743 unit (65 files). Full e2e 35/35 green on QF.2 and on MQ.10 after the M3.6 fix (M3.6 re-run alone). Engine coverage not re-measured.
 - Open `wip/*` branches: none unfinished (`wip/QF.2`, `wip/MQ.10` merged).
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 181c9c28 · 2026-10-22 19:06–19:51 UTC (ended at minute 45: MQ.6 merged and reviewed at minute 43; MQ.7 needs a design choice on "affected players" and an e2e, too large to start usefully in the minute before the 44 hand-off)
@@ -591,7 +591,7 @@ next item, blockers. -->
 - Tests: 754+ unit (65 files). Full e2e 37/37 green on the round-1 fix. Engine coverage not re-measured.
 - Open `wip/*` branches: none unfinished (`wip/MQ.6` merged).
 - Next item: MQ.7 Hidden quest notice (quests have no participant list yet: "affected players" needs a design choice).
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 7df0b6d4 · 2026-10-22 20:07–20:50 UTC (ended at minute 42: MQ.11 merged and main re-checked at minute 41; MQ.12 (library keys, propagation, owner-only effects, e2e) cannot start usefully before the 44 hand-off)
@@ -606,7 +606,7 @@ next item, blockers. -->
 - Tests: 777 unit (65 files). e2e run: MQ.7, MQ.8, M3.3, M3.8, M3.9 green locally (full suite not run; CI runs it on 6ca27d0). Engine coverage not re-measured.
 - Open `wip/*` branches: none unfinished (`wip/MQ.7`, `wip/MQ.8`, `wip/MQ.11` merged).
 - Next item: MQ.12 Skill library rules.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 1a32d25e · 2026-10-22 21:06–21:50 UTC (ended at minute 43, hand-off at 44; quality sweep run)
@@ -620,7 +620,7 @@ next item, blockers. -->
 - Tests: 784 unit (66 files) on `wip/MQ.12`; main unchanged at 777. Engine coverage not re-measured.
 - Open `wip/*` branches: `wip/MQ.12` (unfinished).
 - Next item: MQ.12 (resume `wip/MQ.12`).
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run dc36334a · 2026-10-22 22:06–22:52 UTC (hand-off at minute 44, close-out to 46)
@@ -635,7 +635,7 @@ next item, blockers. -->
 - Tests: 787 unit on main; 789 on `wip/MQ.13`. Engine coverage not re-measured.
 - Open `wip/*` branches: `wip/MQ.13` (unfinished).
 - Next item: MQ.13 (resume `wip/MQ.13`).
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
 ### Run 4a0765f3 · 2026-10-22 23:06–23:57 UTC (hand-off at minute 49, close-out to 51)
@@ -646,10 +646,10 @@ next item, blockers. -->
 - Tests: 790 unit on main; 799 on `wip/MQ.14`. Engine coverage not re-measured.
 - Open `wip/*` branches: `wip/MQ.14` (reviewed, unmerged).
 - Next item: MQ.14 (resume `wip/MQ.14`), then MQ.15.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
 
-### Run 6fcb6693 · 2026-10-23 00:07–00:54 UTC (ended at minute 47)
+### Run 6fcb6693 · 2026-10-23 00:07–00:49 UTC (ended at minute 42)
 - Preflight: `add_repo` not offered; repo already cloned, fast-forwarded. Lock pushed. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` with worktrees work (they block the caller). Latest main CI (83ef5b8) green. No new answers. Hour 00: efficiency check (below).
 - Efficiency check: scorecard row 00:08 (end minute 45.8, 1.3 items/run, round-2 4/10, 0 Highs). L9's three trials kept (D131); D119 judged next check. Auditor (sonnet): 2 Tier 1 proposals; applied one, no full-e2e re-run on main for an identical tree (D132, LOOP §5.6); the other noted in EFFICIENCY.md.
 - QF.10 (new, found this run): late specs timing out in full local runs (MQ.13, MQ.14, MQ.6) came from pages never closed, reconnecting to stopped servers. Fixture in `e2e/helpers/test.ts` closes each test's contexts; full suite green on one worker, 5.4 → 3.8–4.1 min. Review (sonnet): 0 H, 0 M, 4 L. Box checked.
@@ -658,5 +658,5 @@ next item, blockers. -->
 - Tests: 809 unit on main. Engine coverage not re-measured.
 - Open `wip/*` branches: none new (`wip/MQ.14`, `wip/MQ.15` merged).
 - Next item: MQ.A (fable review), then QF.3.
-- Ended at minute 47: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
+- Ended at minute 42: the next item, MQ.A, is a fable review; reviewer subagents block the caller here, so it could not report before the 52-minute stop. The next run starts with it.
 - Blockers: none.
