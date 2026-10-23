@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { CampaignState, ChangeLogRow } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
+import { shortTime } from './sessionModel';
 
 /**
  * M4.8 (in progress): the GM's change log, newest first, filterable, with
@@ -60,6 +61,10 @@ export function ChangeLog({
       <ol className="change-log">
         {shown.map((r) => (
           <li key={r.id} className={r.undoneBy ? 'undone' : undefined}>
+            <span className="muted small">
+              {shortTime(r.at)}
+              {r.actor === 'player' ? ' · player' : ''}{' '}
+            </span>
             {r.lines.join(' · ')}
             {r.type === 'campaign.created' ? null : r.undoneBy ? (
               <span className="muted"> (undone)</span>
