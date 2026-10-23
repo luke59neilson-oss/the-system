@@ -109,7 +109,11 @@ test('the GM reviews a session, confirms marks and upgrades; the player gets the
     '[Basic One-Handed Weapon (Inferior)]',
   );
   await expect(jake.getByTestId('upgrade-prompt')).toHaveCount(0);
-  await gm.screenshot({ path: path.join(shots, 'gm-marks-review-1366x768.png'), fullPage: false });
+  await expect(review.getByRole('list', { name: 'Jake: skills used together' })).toHaveText(
+    'Used together: [Archer’s Eye] + [Basic Archery] ×1 this session · 1/3 for a merge',
+  );
+  await review.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await gm.screenshot({ path: path.join(shots, 'gm-marks-review-1366x768.png') });
 
   // The player is watching their sheet when the upgrade lands.
   const player = await browser.newPage({ viewport: { width: 390, height: 844 } });

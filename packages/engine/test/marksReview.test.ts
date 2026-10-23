@@ -149,4 +149,61 @@ describe('marksReview (M5.3)', () => {
   it('no session played means no session to review', () => {
     expect(reviewSessionId(run(start).state!)).toBeNull();
   });
+  it('counts skill pairs this session and in the whole log, and flags a montage focus', () => {
+    const c = run([
+      ...start,
+      { type: 'session.start', sessionId: 'p0' },
+      log('Aimed and shot', ['Archer’s Eye', 'Basic Archery']),
+      { type: 'session.end' },
+      { type: 'session.start', sessionId: 'p1' },
+      log('Aimed and shot again', ['Basic Archery', 'Archer’s Eye']),
+      { type: 'clock.create', clockId: 'k', name: 'Climb', segments: 2 },
+      { type: 'clock.tick', clockId: 'k', result: 'success' },
+      { type: 'montage.offer', montageId: 'm', clockId: 'k', characterIds: [ID] },
+      {
+        type: 'montage.focus',
+        montageId: 'm',
+        characterId: ID,
+        action: 'Hid',
+        skills: ['Basic Stealth'],
+      },
+    ]);
+    const jake = jakeOf(c, 'p1');
+    expect(jake.pairs).toEqual([
+      { skills: ['Archer’s Eye', 'Basic Archery'], session: 1, total: 2, needed: 3 },
+    ]);
+    expect(jake.used.find((u) => u.skill === 'Basic Stealth')).toMatchObject({
+      montage: true,
+      status: 'eligible',
+    });
+    expect(jake.used.find((u) => u.skill === 'Basic Archery')!.montage).toBe(false);
+    expect(jake.lost).toEqual([]);
+  });
+
+  it('lists logged skills merged away this session as lost', () => {
+    const pair = ['Cut', 'Step'];
+    const c = run([
+      { type: 'campaign.create', name: 'Whale', rules: rawRules() },
+      {
+        type: 'character.create',
+        id: ID,
+        name: 'Jake',
+        className: 'Archer',
+        classSkills: [
+          { name: 'Cut', rarity: 'uncommon' },
+          { name: 'Step', rarity: 'uncommon' },
+          { name: 'Look', rarity: 'common' },
+        ],
+      },
+      { type: 'session.start', sessionId: 'p1' },
+      log('One', pair),
+      log('Two', pair),
+      log('Three', pair),
+      { type: 'skill.merge', characterId: ID, skills: ['Cut', 'Step'], name: 'Cutstep' },
+    ]);
+    const jake = jakeOf(c, 'p1');
+    expect(jake.lost).toEqual(['Cut', 'Step']);
+    expect(jake.used).toEqual([]);
+    expect(jake.pairs).toEqual([]);
+  });
 });

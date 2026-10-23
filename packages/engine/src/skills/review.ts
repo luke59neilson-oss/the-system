@@ -1,5 +1,5 @@
 import type { CampaignState } from '../events/reducer';
-import { repeatedEntryIds, type PracticeSource } from '../practice/model';
+import { repeatedEntryIds, skillPairCounts, type PracticeSource } from '../practice/model';
 import { atCeiling, canUpgrade, marksToUpgrade } from './model';
 
 /**
@@ -38,6 +38,19 @@ export interface MarkCandidate {
   readonly status: MarkStatus;
   /** At the grade's rarity ceiling: a mark banks until the next evolution. */
   readonly banks: boolean;
+  /** A montage focus used it this session: the focus counts as its mark (DESIGN §6). */
+  readonly montage: boolean;
+}
+
+/** Two skills logged working together this session (DESIGN §7 "skill pairs counted"). */
+export interface ReviewPair {
+  readonly skills: readonly [string, string];
+  /** Joint uses this session (repeats not counted). */
+  readonly session: number;
+  /** Joint uses in the whole log, which the merge alert counts. */
+  readonly total: number;
+  /** Joint uses a merge needs (rules). */
+  readonly needed: number;
 }
 
 /** A skill with the marks for its next rarity that the grade allows now. */
@@ -60,6 +73,9 @@ export interface CharacterMarksReview {
   readonly upgrades: readonly UpgradePrompt[];
   /** Skills holding enough marks but at the grade ceiling (they bank). */
   readonly banked: readonly MarkCandidate[];
+  readonly pairs: readonly ReviewPair[];
+  /** Skill names logged this session that the character no longer has (merged, transformed). */
+  readonly lost: readonly string[];
 }
 
 /**
@@ -98,6 +114,7 @@ export function marksReview(state: CampaignState, sessionId: string): CharacterM
         needed,
         status,
         banks: needed !== null && atCeiling(rules, character, skill),
+        montage: entries.some((e) => e.source === 'montage'),
       };
       return { candidate, order };
     });
@@ -119,7 +136,20 @@ export function marksReview(state: CampaignState, sessionId: string): CharacterM
     const banked = candidates
       .map((c) => c.candidate)
       .filter((c) => c.banks && c.needed !== null && c.marks >= c.needed);
-    return [{ characterId: id, name: character.name, used, unused, upgrades, banked }];
+    const owned = new Set(character.skills.map((k) => k.name));
+    const lost = [...new Set(mine.flatMap((e) => e.skills))].filter((n) => !owned.has(n));
+    const totals = skillPairCounts(state.practice, id);
+    const pairs = skillPairCounts(session, id)
+      .filter((p) => owned.has(p.skills[0]) && owned.has(p.skills[1]))
+      .map((p) => ({
+        skills: p.skills,
+        session: p.count,
+        total:
+          totals.find((t) => t.skills[0] === p.skills[0] && t.skills[1] === p.skills[1])?.count ??
+          p.count,
+        needed: rules.skills.merge.requiredJointUses,
+      }));
+    return [{ characterId: id, name: character.name, used, unused, upgrades, banked, pairs, lost }];
   });
 }
 

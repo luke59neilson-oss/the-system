@@ -2215,6 +2215,7 @@ ol.change-log li.undone .change-text {
   padding-top: 0.5rem;
 }
 .marks-list,
+.marks-pairs,
 .marks-entries {
   list-style: none;
   margin: 0;
@@ -2248,4 +2249,8 @@ ol.change-log li.undone .change-text {
 }
 .upgrade-prompt {
   margin: 0.4rem 0;
+}
+.marks-montage {
+  margin: 0.2rem 0 0;
+  font-size: 0.9em;
 }

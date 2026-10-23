@@ -129,6 +129,11 @@ export function MarksReview({ client, state }: { client: LiveClient; state: Camp
                           </span>
                           {markButton(r.characterId, r.name, c)}
                         </div>
+                        {c.montage && c.status === 'eligible' && (
+                          <p className="muted marks-montage">
+                            A montage focus used it: the focus counts as this session&apos;s mark.
+                          </p>
+                        )}
                         <ul className="marks-entries">
                           {c.entries.map((e) => (
                             <li key={e.id}>
@@ -138,6 +143,23 @@ export function MarksReview({ client, state }: { client: LiveClient; state: Camp
                             </li>
                           ))}
                         </ul>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {r.lost.length > 0 && (
+                  <p className="muted" data-testid="marks-lost">
+                    Logged this session but no longer held (merged or transformed):{' '}
+                    {r.lost.map((n) => `[${n}]`).join(', ')}
+                  </p>
+                )}
+                {r.pairs.length > 0 && (
+                  <ul className="marks-pairs" aria-label={`${r.name}: skills used together`}>
+                    {r.pairs.map((p) => (
+                      <li key={p.skills.join('+')}>
+                        Used together: [{p.skills[0]}] + [{p.skills[1]}] ×{p.session} this session ·{' '}
+                        {Math.min(p.total, p.needed)}/{p.needed} for a merge
+                        {p.total >= p.needed ? ' (merge alert)' : ''}
                       </li>
                     ))}
                   </ul>
