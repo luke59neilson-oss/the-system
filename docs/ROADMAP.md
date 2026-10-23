@@ -500,7 +500,7 @@ work: Q44–Q48 and Q52.
   scheduled.
 - [x] **M4.8 Change log and undo.** Filterable event list; undo with M1.3
   rules.
-- [ ] **M4.9 Rules settings.** Edit every config value as events, with
+- [x] **M4.9 Rules settings.** Edit every config value as events, with
   validation and reset to defaults. Turning on `xp.overflow` (D124) for a
   campaign that banked XP moves each capped track's bank per the overflow
   rule, and says what was lost.
