@@ -272,7 +272,7 @@ the rest follow in file order. Each gets its own §6 review.
   `.jsonl` changes, or when a `.state.json` changes without a higher schema
   version; a script re-records the manifest and refuses to do so without a
   version bump.
-- [ ] **QF.5 Engine purity lint has no bypasses.** `export function f(clock =
+- [x] **QF.5 Engine purity lint has no bypasses.** `export function f(clock =
   Date)`, `rng = Math` default parameters, `{ clock: Date }` and `() => Date`
   pass the engine lint (`eslint.config.js` ~52-59). *Accept:* each of these is
   rejected; `scripts/lint-rules.test.ts` asserts the rule id
@@ -331,6 +331,15 @@ the rest follow in file order. Each gets its own §6 review.
   the only Windows download (D-entry either way); the release notes put the
   installer first and list each file's exact size and SHA-256; a CI test
   truncates the built `.exe` and checks the integrity flag or the refusal.
+
+- [ ] **QF.12 A golden log runs under today's default rules.** All golden
+  logs were recorded with stored-style rules (`libraryByRarity`,
+  `clampedPoolsNotFull`, `itemsFlatOnly` all off), so library text sync, the
+  no-heal pool mark and flat-only items have no replay pin for new campaigns,
+  and MR.1/MR.4 will change that code. Sweep C, Rules. *Accept:* a new golden
+  recorded with `DEFAULT_RULES` covering a hand-edited skill copy, a library
+  edit, an upgrade, a clamped pool and a capped item, pinned through
+  `npm run golden:record`.
 
 ## MR — Luke's answers, batch 2 (2026-10-22)
 

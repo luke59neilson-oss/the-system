@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** 520f6ce (2026-10-22, B) · **Next rotation:** C
+**Last sweep:** 4cf9f1b (2026-10-23, C) · **Next rotation:** D
 
 ## Lenses and rotation
 
@@ -93,6 +93,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-22 21:10 | B, 5e72abe..520f6ce | Boundaries · haiku | 0 | 2 | 0 | 1 M (QF.9: trade probe and item definitions); 1 M is a known gap (`previewXpAward` UI belongs to unchecked M4.6) | 0 | 187k |
 | 2026-10-22 21:10 | B, 5e72abe..520f6ce | Tests · fable | 0 | 0 | 5 | 5 L to Backlog (18 engine mutations, 17 caught) | 0 | 233k |
 | 2026-10-22 21:10 | B, 5e72abe..520f6ce | UX · sonnet | 0 | 0 | 4 | 2 L to Backlog; 2 already accepted in REVIEW-LOG | 0 | 74k |
+| 2026-10-23 03:10 | C, 520f6ce..4cf9f1b | Rules · haiku | 0 | 1 | 2 | 1 M (QF.12: no golden uses the new rules flags) | 0 | 154k |
+| 2026-10-23 03:25 | C, 520f6ce..4cf9f1b | Tests · sonnet | 0 | 1 | 6 | 6 L to Backlog; the M (M4.1/M4.2/MQ.13 time out at 4 workers on 2 CPUs) is load, as QF.8 (Flakes) | 1 M | 102k |
+| 2026-10-23 03:25 | C, 520f6ce..4cf9f1b | UX · fable | 0 | 0 | 5 | 5 L to Backlog | 0 | 152k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -115,6 +118,9 @@ reviewers ran 15–20 minutes each in the background.
   green alone. Not a flake: pages from earlier tests were never closed and
   kept reconnecting to stopped servers. Fixed by QF.10 (full suite 5.4 → 4.1
   min, green).
+- 2026-10-23 · Sweep C (Tests): under 4 workers on 2 CPUs `e2e/M4.1.spec.ts`
+  ~56, `e2e/M4.2.spec.ts` ~54 and `e2e/MQ.13.spec.ts` ~90 hit the 30 s test
+  timeout; each passes alone in about 10 s. Load sensitivity, see QF.8.
 
 ## Backlog (Lows; M11.5 goes through these)
 
@@ -168,3 +174,14 @@ reviewers ran 15–20 minutes each in the background.
 - Boundaries (QF.3 review): the rate limit is per socket, so a script that reconnects gets a fresh 30-message burst each time (no per-address limit); create/delete churn still grows the event log (D136 residual). NotesPanel shows no usage readout, only the limit error.
 - UX (QF.3 review): the player practice form's 200-character hint ignores selected skill names, which count toward the 500-character entry cap; "Practice log is full (1 entries)" wording at a cap of 1.
 - Tests (QF.4 review): a schema version downgrade (a revert) lets `golden:record` re-pin states at the lower version; the CLI main block and `readManifest`'s missing-file path are untested; the golden scan is case-sensitive and non-recursive.
+- Rules (sweep C): `overLimit` practice count includes GM-logged entries, so GM entries use up a player's 5,000 allowance (`events/commands.ts` ~1280).
+- Rules (sweep C): `reducer.ts` ~1293 comment says evolution refills include titles; titles are not wired until M6.4.
+- Tests (sweep C): hub undo path (`hub.ts` ~282, ~288: `undo ? [] : …`, `onlyIfChanged: !undo && …`) and the rate-limit bucket cap (`Math.min(burst, …)` ~109) survive mutation.
+- Tests (sweep C): `overLimit` note.edit title growth and practice `skills` in the entry size are unpinned (`commands.ts` ~1275, ~1306); the item-cap `+ 1e-9` guard and `Math.max(0, …)` in `bonuses/effective.ts` ~147 survive mutation.
+- Tests (sweep C): one commit can edit a golden log, its manifest hash and the schema version together; a CI comparison against `origin/main` would catch it.
+- UX (sweep C): XP-loss preview wording ("450 XP · 50 lost", "tracks are at the top") misleads for a level-0 character the award itself caps (`GmScreen.tsx` ~484-500).
+- UX (sweep C): "capped" is explained only by a `title=` tooltip, invisible on phones (`PlayerScreen.tsx` ~366-372).
+- UX (sweep C): Notifications default filter "Level-ups" hides a gift-only history ("No notifications match.").
+- UX (sweep C): `.skill-effects` lacks `overflow-wrap: anywhere` (`styles.css` ~1010); stat bonus annotation is 12 px muted (`styles.css` ~1171).
+- Rules (QF.5 review): the engine lint flags declarations of one's own names `Date`/`Math` (enum members, class members, type parameters); none exist.
+- Tests (QF.6 review): desktop.spec attaches stdout/stderr listeners after launch; output before then is not checked.

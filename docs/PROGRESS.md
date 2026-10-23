@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3, MS and MQ done; QF.1–QF.4 and QF.10 done; M4.1–M4.4 done; MR (Luke's batch 2) queued after QF; Preview ready: Actions → Release → Run workflow (MQ)
-**Next item:** QF.5 Engine purity lint has no bypasses
+**Status:** in progress: M0–M3, MS and MQ done; QF.1–QF.5 and QF.10 done; M4.1–M4.4 done; MR (Luke's batch 2) queued after QF; Preview ready: Actions → Release → Run workflow (MQ)
+**Next item:** QF.11 (High) A partial download cannot hang — resume `wip/QF.11`; check the `release-dry-run` run (7446f46) first
 **Blockers:** none
 
 ## Run log
@@ -652,3 +652,14 @@ next item, blockers. -->
 - Review Lows from QF.3 and QF.4 added to the QUALITY backlog.
 - Blockers: none new (the MQ.A preview is Luke's Run-workflow click per LOOP §8.2).
 
+### Run df7dd1be · 2026-10-23 03:06–03:52 UTC (ended at minute 46: close-out after the 44 hand-off; QF.11 handed to `wip/QF.11` awaiting its release dry run)
+- Preflight: `add_repo` not offered; repo already cloned, fast-forwarded. Lock pushed (first push raced Luke's docs commit 7e97cb2; rebased, not a lock race). `npm view vitest version` → 5.0.5. Reviewers on haiku, sonnet and fable work (Agent calls block until they report). Latest main CI (d775162) green. No new answers in ANSWERS.md (batch 2 already applied, L14–L18). QF.11 (High) arrived mid-run (b5a436e).
+- Hour 03: quality sweep C (Rules · haiku, Tests · sonnet, UX · fable) on 520f6ce..4cf9f1b: 0 High, 2 Medium (1 confirmed → QF.12; 1 is load, logged under Flakes with QF.8), 13 Low to Backlog.
+- QF.5 Engine purity lint has no bypasses: one selector bans `Date`/`Math` as values; review round 1 added call/apply/bind/constructor bans (D138). Sonnet 1 round (0 H, 1 M fixed). Box checked.
+- QF.6 Desktop smoke in CI: job added and the GM-key no-print assertion (D139); local smoke 6/6; review 0 H, 1 M fixed. First CI run of the job failed with no readable log; it now runs with `continue-on-error` and a `github` reporter so the next run can read the failure from annotations. Box open.
+- QF.11 (High): portable Windows build dropped, release notes list size and SHA-256 installer first, release job checks a half-length installer refuses (D140, Q54). Review round 1: 0 H; fixes applied on the branch. Pushed the branch tree to `release-dry-run` (7446f46) to verify; box open.
+- Tests: 849 unit (845 + 4 lint). Engine coverage not re-measured. e2e not run (no UI or server changes).
+- Open `wip/*` branches: `wip/QF.11` (base a021c50, head 54544b3 + review fix). Next step: read the `release-dry-run` run (`GH_TOKEN= gh api "repos/luke59neilson-oss/the-system/actions/runs?branch=release-dry-run&per_page=1"`, then its jobs/annotations); if green, merge `wip/QF.11` into main and check the box; if the partial-installer step hangs or exits 0, adjust it.
+- QF.6 next step: read the annotations of the newest CI run's `desktop-smoke` job (5bca523 or later), fix, and once green remove `continue-on-error`.
+- Next item: QF.11 (resume), then QF.6, QF.7–QF.9, QF.12, then MR.1.
+- Blockers: none. Main CI: 31cf4ec and a021c50 red only from the new desktop-smoke job; 5bca523 makes it non-gating.

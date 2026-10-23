@@ -588,3 +588,14 @@
 
 - Round 1 (4aa5864): 0 H, 2 M, 5 L. M1 `golden:record` silently dropped pins of deleted or renamed goldens: fixed (structured problem codes; a missing pin is refused). M2 a bump with no state change left pins stale, licensing later unbumped edits: fixed (states pinned at an older version must be re-recorded; record re-pins every state at the current version). Lows fixed: hash raw bytes, version regex anchored to a real declaration. Left: CLI main block untested (manually checked), case-sensitive non-recursive file scan, manifest hand edits are only visible in review.
 - Round 2 (d775162): 0 H, 0 M, 3 L. Left for the QUALITY backlog: a schema downgrade (revert) re-pins states at the lower version; a new unpinned state needs no bump (by design); the "without a bump" message also covers a downgrade.
+
+## 2026-10-23 · QF.5 Engine purity lint has no bypasses · sonnet
+- Round 1: 0 High. 1 Medium (pre-existing, outside the item's list): `Date.call(null)`, `Date.bind(null)()` and `new Date(0).constructor.now()` reach the clock through a member. Fixed in 31cf4ec (ban `Date`/`Math` `.call/.apply/.bind/.constructor` and any non-computed `.constructor`; four lint tests). Lows (own `Date`/`Math` declarations flagged; `toContain` slightly loose) accepted, to Backlog. Verified myself: lint test 42/42, engine lint clean. No round 2 (one Medium). Box checked.
+
+## 2026-10-23 · QF.6 Desktop smoke specs run in CI · sonnet
+- Round 1: 0 High, 1 Medium (no `apt-get update` before installing xvfb), fixed in a021c50. Lows: listeners attach after launch (Backlog); key check covers the happy path only (accepted, matches the acceptance). Local `npm run desktop:smoke` 6/6.
+- The job's first CI run (31cf4ec) failed at "Desktop smoke" with no readable log (artifact downloads are refused from here). 5bca523 makes it report failures as annotations with `continue-on-error` so main stays green. Box stays open until the job passes once and the gate is restored.
+
+## 2026-10-23 · QF.11 (High) A partial download cannot hang · sonnet (on wip/QF.11)
+- Round 1: 0 High. Mediums: a stale "installer + portable" header comment (already replaced on the branch; M10.2 text fixed on main); the truncated-installer step's behaviour is unverified (NSIS may show a modal box in `/S` mode); a missing `ExitCode` would pass silently, fixed (54544b3..). Lows: half-length truncation tests the early-fail path, not a mid-file CRC flip; message not asserted.
+- Verification needs a release build: the branch's tree is pushed to `release-dry-run` (7446f46). Box stays open until that run is green.
