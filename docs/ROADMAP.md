@@ -340,7 +340,7 @@ the rest follow in file order. Each gets its own §6 review.
   recorded with `DEFAULT_RULES` covering a hand-edited skill copy, a library
   edit, an upgrade, a clamped pool and a capped item, pinned through
   `npm run golden:record`.
-- [ ] **QF.13 The change log stays cheap in a long campaign.** M4.A review
+- [x] **QF.13 The change log stays cheap in a long campaign.** M4.A review
   (fable), Medium 3: `GET /api/gm/changelog` replays every event on the
   server's event loop and the GM console refetches and renders every row after
   each state change (188 ms and 538 KB at 3,196 events; a 40-session campaign
@@ -512,7 +512,7 @@ work: Q44–Q48 and Q52.
   validation and reset to defaults. Turning on `xp.overflow` (D124) for a
   campaign that banked XP moves each capped track's bank per the overflow
   rule, and says what was lost.
-- [ ] **M4.A Milestone acceptance and review.** GM creates 3 characters,
+- [x] **M4.A Milestone acceptance and review.** GM creates 3 characters,
   awards XP with a custom split; each player screen shows the DING within
   1 s; undo reverts it everywhere.
 
