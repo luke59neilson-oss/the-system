@@ -424,3 +424,9 @@ DESIGN/ROADMAP; do not re-apply them.
     both originals), like a selection menu? Default: the GM's send applies
     it; the GM asks at the table first (D171).
     Answer:
+
+63. **End-of-scene prompt for players?** M5.5's "End scene" walks the GM's
+    console through the party one character at a time. Should it also ask
+    each player, on their own screen, to log what they practised? Default:
+    no; players keep their own practice panel (D172).
+    Answer:
