@@ -616,7 +616,8 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
       </label>
       {state.rules.skills.libraryByRarity && (
         <p className="muted hint">
-          Saving here makes this copy the character’s own: later library edits skip it.
+          Saving here makes this copy the character’s own: later library edits skip it until it
+          reaches a rarity the library has text for.
         </p>
       )}
       <button type="submit" disabled={busy || !current || unchanged}>
