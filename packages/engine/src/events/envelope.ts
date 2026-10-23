@@ -514,6 +514,21 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   }),
   /** The in-game day counter moves forward (quest timers count down). */
   'campaign.dayAdvanced': z.strictObject({ days: z.number().int().min(1).max(1000) }),
+  /**
+   * MR.3 (L16): a rules migration applied when a stored campaign loads. The
+   * `xpOverflow` migration turns on `rules.xp.overflow` and applies the XP each
+   * capped track had banked again under overflow (D153); `banked` lists it.
+   */
+  'rules.migrated': z.strictObject({
+    migration: z.literal('xpOverflow'),
+    banked: z.array(
+      z.strictObject({
+        characterId: z.string(),
+        track: z.enum(['class', 'profession']),
+        xp: z.number().int().min(1),
+      }),
+    ),
+  }),
   /** GM starts a play session (M4.3); events until its end carry its id. */
   'session.started': z.strictObject({ sessionId: recordId }),
   /** GM ends the running play session (the server backs up and writes the report). */
@@ -591,6 +606,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'entity.edited': 1,
   'entity.revealed': 1,
   'campaign.dayAdvanced': 1,
+  'rules.migrated': 1,
   'session.started': 1,
   'session.ended': 1,
   'event.undone': 1,
