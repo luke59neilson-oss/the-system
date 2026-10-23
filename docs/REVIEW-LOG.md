@@ -577,3 +577,9 @@
   - L to question: Identify at race level 0 sees nothing of its grade above level 0 (Q52).
   - L to QUALITY backlog: titles engine-only until M6.4; GM same-value pool set ends the no-heal mark (D129); MQ GM commands without UI yet.
 - Round 2 (567d841..3baa565): 0 High, 0 Medium, 4 Low. Fixed: a blank library entry no longer strips the hand-edit mark (test added); D133 wording on replay. Accepted: silent catch around the preview (no throw path); `poolList` covered by e2e only.
+
+## 2026-10-23 · QF.3 Limits on player-made data · sonnet (2 rounds)
+
+- Round 1 (02e4cc5..490c4c3): 0 H, 2 M, 4 L. M1 player `practice.log` uncapped: partly not reproduced (every `nonBlank` field is already ≤ 200 characters in the event schema), but the entry count was unbounded; fixed with `practiceEntriesPerCharacter` 5,000 and `practiceEntryChars` 500 (players only). M2 log growth through create/delete churn and a fresh bucket per socket: default refill lowered 10/s → 5/s, residual documented in D136. Lows fixed: `rateLimit` validated (burst ≥ 2, rate > 0), unparseable frames charged, hub-level tests for note-edit growth and practice caps. Left: no usage readout in NotesPanel (error text only).
+- Round 2 (490c4c3..4d993b7): 0 H, 1 M, 4 L. M `montage.focus` size uncapped: not reproduced (action ≤ 200 by the event schema, skills must be owned, one focus per montage). Lows left as is (client-side 200-char practice hint ignores skill names; GM entries count toward the 5,000; "1 entries" wording only at cap 1; garbage frames past the budget get a parse error, still charged).
+- Own find while starting QF.4: a snapshot saved before QF.3 has no `rules.limits` yet would be trusted, so every note command would throw. Fixed by bumping the state schema to v21 (snapshot mismatch → replay), with a regression test (6a72739).

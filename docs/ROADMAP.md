@@ -258,7 +258,7 @@ the rest follow in file order. Each gets its own §6 review.
   "not held" errors are identical and name nothing; the projection canary
   builds trades with non-empty item bundles and a GM-only item no player holds,
   and finds none of its fields in any player frame or HTTP body.
-- [ ] **QF.3 Limits on player-made data.** One phone can post 200 × 20 KB party
+- [x] **QF.3 Limits on player-made data.** One phone can post 200 × 20 KB party
   notes in about a second, after which every command pushes a 4 MB view to
   every client (`apps/server/src/hub.ts` ~93-226). *Accept:* a per-connection
   command rate limit in the hub, and per-character caps on note count and
