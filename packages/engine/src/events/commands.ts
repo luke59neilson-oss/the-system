@@ -12,6 +12,7 @@ import { defaultRerate } from '../evolution';
 import { normalizeTags } from '../skills/library';
 import { missingDefaultEntries } from '../content/defaults';
 import { largestRemainderSplit } from '../progression';
+import { bankedXp } from './migrations';
 import { EMPTY_HOLDINGS, itemsSeenBy } from '../economy';
 import { appendEvent, type Campaign } from './log';
 
@@ -415,6 +416,7 @@ export type Command =
       characterIds?: readonly string[] | null | undefined;
     }
   | { type: 'campaign.advanceDay'; days?: number | undefined }
+  | { type: 'rules.migrate'; migration: 'xpOverflow' }
   /** Starts a play session (M4.3); the id is generated when omitted. */
   | { type: 'session.start'; sessionId?: string | undefined }
   /** Ends the running play session. */
@@ -532,6 +534,7 @@ const commandSchema = z.discriminatedUnion('type', [
     characterIds: z.array(z.string()).nullable().optional(),
   }),
   z.object({ type: z.literal('campaign.advanceDay') }),
+  z.object({ type: z.literal('rules.migrate'), migration: z.literal('xpOverflow') }),
   z.object({ type: z.literal('session.start'), sessionId: z.string().optional() }),
   z.object({ type: z.literal('session.end') }),
   z.object({ type: z.literal('event.undo') }),
@@ -1201,6 +1204,16 @@ function toEvent(
       };
     case 'campaign.advanceDay':
       return { type: 'campaign.dayAdvanced', payload: { days: command.days ?? 1 } };
+    case 'rules.migrate': {
+      const state = campaign.state;
+      if (!state || state.rules.xp.overflow) {
+        throw new EventRejectedError('XP overflow is already on');
+      }
+      return {
+        type: 'rules.migrated',
+        payload: { migration: 'xpOverflow', cleared: bankedXp(state) },
+      };
+    }
     case 'session.start':
       if ((campaign.state?.currentSession ?? null) !== null) {
         throw new EventRejectedError('A session is already running; end it first');

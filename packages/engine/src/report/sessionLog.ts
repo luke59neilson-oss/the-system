@@ -29,6 +29,7 @@ export type SessionLogKind =
   | 'quest'
   | 'stability'
   | 'day'
+  | 'rules'
   | 'session'
   | 'undo';
 
@@ -338,6 +339,17 @@ function describe(
           : 'GM nudge';
       const reason = event.payload.reason ? `; ${line(event.payload.reason)}` : '';
       add('stability', `World Stability (${line(q.title)}): ${from} → ${to} (${how}${reason})`);
+      break;
+    }
+    case 'rules.migrated': {
+      // MR.3 (L16, D153): logged like any change, with the banked XP it cleared.
+      const cleared = event.payload.cleared.map(
+        (x) => `${who(x.characterId)} ${x.xp} ${x.track} XP`,
+      );
+      add(
+        'rules',
+        `Rules updated: XP now overflows (DESIGN §2)${cleared.length ? `; banked XP cleared: ${cleared.join(', ')}` : ''}`,
+      );
       break;
     }
     case 'campaign.dayAdvanced':

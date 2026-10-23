@@ -57,8 +57,8 @@ import {
 } from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 22;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 23;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -1501,6 +1501,22 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
     }
     case 'campaign.dayAdvanced':
       return { ...state, day: state.day + event.payload.days };
+    case 'rules.migrated': {
+      // MR.3 (L16, D153): XP overflow on; banked XP on capped tracks cleared.
+      if (state.rules.xp.overflow) fail(event, 'XP overflow is already on');
+      const characters = { ...state.characters };
+      for (const { characterId, track, xp } of event.payload.cleared) {
+        const c = characterOf({ ...state, characters }, event, characterId);
+        if (c.xp[track] !== xp)
+          fail(event, `${characterId} holds ${c.xp[track]} ${track} XP, not ${xp}`);
+        characters[characterId] = { ...c, xp: { ...c.xp, [track]: 0 } };
+      }
+      return {
+        ...state,
+        rules: { ...state.rules, xp: { ...state.rules.xp, overflow: true } },
+        characters,
+      };
+    }
     case 'session.started': {
       const { sessionId } = event.payload;
       if (state.currentSession !== null) fail(event, 'a session is already running');

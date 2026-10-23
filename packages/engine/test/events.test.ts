@@ -924,6 +924,9 @@ describe('property: replay equals incremental state', () => {
       'session.ended',
       // M4.4 portraits have their own tests (portraits.test.ts) and golden log.
       'character.portraitSet',
+      // MR.3: random play starts on overflow rules, which have nothing to
+      // migrate; rulesMigration.test.ts and its golden log cover it.
+      'rules.migrated',
     ]);
     expect(
       EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),

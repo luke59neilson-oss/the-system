@@ -6,6 +6,7 @@ import { newGmKey } from './security';
 import { createServer } from './server';
 import { exportsDirFor } from './sessionLog';
 import { CampaignStore } from './store';
+import { migrateOnLoad } from './migrate';
 
 /**
  * Starts the whole server: opens the real campaign, builds the app and
@@ -44,7 +45,10 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
     now: () => new Date().toISOString(),
     ...(options.machineId === undefined ? {} : { machineId: options.machineId }),
   };
-  const store = CampaignStore.open('main', storeOptions);
+  // Stored campaigns pick up rules migrations as they load (MR.3).
+  const open = (id: string) =>
+    migrateOnLoad(CampaignStore.open(id, storeOptions), storeOptions.now, () => randomUUID());
+  const store = open('main');
   const exportsDir = exportsDirFor(storeOptions.dataDir);
   const gmKey = options.gmKey ?? newGmKey();
   let boundPort: number | null = null;
@@ -55,7 +59,7 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
         boundPort === null ? null : joinInfo(options.host, boundPort, networkInterfaces()),
       webRoot: options.webRoot,
       // The demo campaign lives in its own directory (MS.4, D53).
-      openCampaign: (id) => CampaignStore.open(id, storeOptions),
+      openCampaign: open,
       sessionLog: {
         exportsDir,
         now: storeOptions.now,
