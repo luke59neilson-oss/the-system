@@ -319,6 +319,18 @@ the rest follow in file order. Each gets its own §6 review.
   MQ.14 and MQ.6 specs, each green alone). *Accept:* every spec imports `test`
   from `e2e/helpers/test.ts`, whose automatic fixture closes the contexts a
   test opened; the full suite passes on one worker; no retries added.
+- [ ] **QF.11 (High) A partial download cannot hang.** Luke's first real
+  download (2026-10-22) stopped at 52 MB of 107 MB; double-clicking the
+  portable `.exe` started it anyway and it hung, holding the file so Windows
+  would not delete it ("file is open in The System"). electron-builder's
+  portable template has `CRCCheck off` (`app-builder-lib/templates/nsis/
+  portable.nsi`); the installer checks itself and says "integrity check
+  failed". *Accept:* the portable build refuses a damaged or partial file with
+  a clear message instead of starting (integrity check on, e.g. a custom
+  portable script), or the portable build is dropped and the installer is
+  the only Windows download (D-entry either way); the release notes put the
+  installer first and list each file's exact size and SHA-256; a CI test
+  truncates the built `.exe` and checks the integrity flag or the refusal.
 
 ## MR — Luke's answers, batch 2 (2026-10-22)
 
