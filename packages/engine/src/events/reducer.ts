@@ -432,41 +432,89 @@ function clampToEffective(
     // Only changes pools that exist; never fills a missing one (D81).
     const capped = rule(event, () => clampPools(after.rules, stats, {}));
     const old = hasOwn(before.characters, id) ? before.characters[id] : undefined;
+    const { fullPoolsStayFull, clampedPoolsNotFull } = after.rules.character;
     const oldMax =
-      old && after.rules.character.fullPoolsStayFull
+      old && (fullPoolsStayFull || clampedPoolsNotFull)
         ? rule(event, () => maximaOf(before, old))
         : null;
+    // MQ.15 (L7): pools a falling maximum clamped while they were not full.
+    // Such a pool sits at its maximum but does not count as full, so putting
+    // the gear back on never heals it.
+    const notFull = new Set(clampedPoolsNotFull ? (c.clampedPools ?? []) : []);
     let pools: Record<string, number> | null = null;
     for (const p of after.rules.pools) {
       const current = hasOwn(c.pools, p.id) ? c.pools[p.id] : undefined;
       const max = capped[p.id] ?? 0;
       if (current === undefined) continue;
-      if (current > max) {
-        pools ??= { ...c.pools };
-        pools[p.id] = max;
-        continue;
-      }
-      // A full pool stays full when its maximum rises (D100), unless this
-      // event set the pool itself (detected by value: no event both raises a
-      // maximum and writes a pool, except evolution, which fills it anyway).
       const was = old && hasOwn(old.pools, p.id) ? old.pools[p.id] : undefined;
       const wasMax = oldMax && hasOwn(oldMax, p.id) ? oldMax[p.id] : undefined;
-      if (
-        after.rules.character.fullPoolsStayFull &&
+      // An event that writes the pool (a GM set, the evolution refill) ends
+      // its clamped mark; a set to the same value counts too.
+      if (current !== was || writesPool(event, id, p.id)) notFull.delete(p.id);
+      const wasFull =
         was !== undefined &&
         wasMax !== undefined &&
         current === was &&
         wasMax > 0 &&
         was >= wasMax &&
-        max > wasMax
-      ) {
+        !notFull.has(p.id);
+      if (current > max) {
+        pools ??= { ...c.pools };
+        pools[p.id] = max;
+        // Stays full only if it was full before the drop (DESIGN §2, Q41).
+        if (clampedPoolsNotFull && !wasFull) notFull.add(p.id);
+        continue;
+      }
+      // A full pool stays full when its maximum rises (D100), unless this
+      // event set the pool itself (detected by value: no event both raises a
+      // maximum and writes a pool, except evolution, which fills it anyway).
+      if (fullPoolsStayFull && wasFull && wasMax !== undefined && max > wasMax) {
         pools ??= { ...c.pools };
         pools[p.id] = max;
       }
+      // A falling maximum that leaves a pool that was not full at its new
+      // maximum marks it too (100/120 unequips to 100/100: not full, MQ.15
+      // review).
+      if (
+        clampedPoolsNotFull &&
+        wasMax !== undefined &&
+        max < wasMax &&
+        current === max &&
+        !wasFull
+      ) {
+        notFull.add(p.id);
+      }
+      // Below its maximum, a pool is plainly not full: no mark needed.
+      if ((pools?.[p.id] ?? current) < max) notFull.delete(p.id);
     }
-    if (pools !== null) out = withCharacter(out, { ...c, pools });
+    const marks = after.rules.pools.map((p) => p.id).filter((p) => notFull.has(p));
+    const marksBefore = c.clampedPools ?? [];
+    // With the rule off, marks are dropped, so turning it back on starts clean.
+    const marksChanged =
+      marks.length !== marksBefore.length || marks.some((m, i) => marksBefore[i] !== m);
+    if (pools === null && !marksChanged) continue;
+    let next: Character = { ...c, pools: pools ?? c.pools };
+    if (marksChanged) {
+      // The key is left out when empty, so states without marks keep their shape.
+      const rest = Object.fromEntries(
+        Object.entries(next).filter(([key]) => key !== 'clampedPools'),
+      ) as unknown as Character;
+      next = marks.length > 0 ? { ...rest, clampedPools: marks } : rest;
+    }
+    out = withCharacter(out, next);
   }
   return out;
+}
+
+/** Whether this event sets the pool's current value outright (MQ.15). */
+function writesPool(event: DomainEvent, characterId: string, poolId: string): boolean {
+  if (event.type === 'character.poolsSet') {
+    return event.payload.characterId === characterId && hasOwn(event.payload.pools, poolId);
+  }
+  if (event.type === 'evolution.chosen') {
+    return event.payload.characterId === characterId && event.payload.legacy !== true;
+  }
+  return false;
 }
 
 /** Every pool maximum of a character in this state, from effective stats. */

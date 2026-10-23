@@ -7,7 +7,7 @@ import {
   type Command,
   type CommandContext,
 } from '../src';
-import { kit, legacyBonusRules, rawRules, run, testContext } from './helpers/events';
+import { kit, legacyBonusRules, rawRules, run, seededRandom, testContext } from './helpers/events';
 
 /**
  * MQ.2 Pools follow maxima (DESIGN §2, D100): a full pool stays full when its
@@ -95,12 +95,13 @@ describe('pools follow maxima (MQ.2, D100)', () => {
     expect(pool(full, 'hp', 'kim')).toEqual({ current: 100, max: 100 });
   });
 
-  it('a falling maximum clamps; a pool at the lower maximum is then full again', () => {
-    let c = ok(ok(start(), equip), setHp(110));
+  it('without MQ.15 a clamped pool counts as full and rises with the maximum (D111)', () => {
+    const r = rawRules() as { character: Record<string, unknown> };
+    r.character['clampedPoolsNotFull'] = false;
+    let c = ok(ok(start(r), equip), setHp(110));
     c = ok(c, unequip);
     expect(pool(c)).toEqual({ current: 100, max: 100 });
-    // DESIGN §2 read literally: the clamped pool is full, so it rises with the
-    // maximum (QUESTIONS Q41).
+    // DESIGN §2 read literally (D111, before Q41's answer).
     c = ok(c, equip);
     expect(pool(c)).toEqual({ current: 120, max: 120 });
   });
@@ -150,5 +151,127 @@ describe('pools follow maxima (MQ.2, D100)', () => {
     expect(replay(c.events.map((e) => JSON.parse(JSON.stringify(e)) as unknown)).state).toEqual(
       c.state,
     );
+  });
+});
+
+const pick = (rules: unknown = rawRules()): Campaign => start(rules);
+const marks = (c: Campaign, who = 'jake') => c.state?.characters[who]?.clampedPools;
+
+describe('no healing by gear swap (MQ.15, L7)', () => {
+  it('DESIGN §2: 110/120 removes the +20 charm → 100/100, puts it back on → 100/120', () => {
+    let c = ok(ok(pick(), equip), setHp(110));
+    c = ok(c, unequip);
+    expect(pool(c)).toEqual({ current: 100, max: 100 });
+    expect(marks(c)).toEqual(['hp']);
+    c = ok(c, equip);
+    expect(pool(c)).toEqual({ current: 100, max: 120 });
+    // Below its maximum the pool needs no mark.
+    expect(marks(c)).toBeUndefined();
+  });
+
+  it('DESIGN §2: 120/120 → 100/100 → 120/120 (a full pool stays full)', () => {
+    let c = ok(pick(), equip);
+    expect(pool(c)).toEqual({ current: 120, max: 120 });
+    c = ok(c, unequip);
+    expect(pool(c)).toEqual({ current: 100, max: 100 });
+    expect(marks(c)).toBeUndefined();
+    c = ok(c, equip);
+    expect(pool(c)).toEqual({ current: 120, max: 120 });
+  });
+
+  it('DESIGN §2: 85/100 equips +20 → 85/120; 100/100 → 120/120', () => {
+    let c = ok(ok(pick(), setHp(85)), equip);
+    expect(pool(c)).toEqual({ current: 85, max: 120 });
+    c = ok(ok(c, unequip), setHp(100));
+    expect(pool(ok(c, equip))).toEqual({ current: 120, max: 120 });
+  });
+
+  it('100/120 unequips to 100/100, which is not full: equipping again → 100/120', () => {
+    let c = ok(ok(pick(), equip), setHp(100));
+    c = ok(c, unequip);
+    expect(pool(c)).toEqual({ current: 100, max: 100 });
+    expect(marks(c)).toEqual(['hp']);
+    expect(pool(ok(c, equip))).toEqual({ current: 100, max: 120 });
+  });
+
+  it('a set of another pool keeps the mark, also through an undo', () => {
+    let c = ok(ok(ok(pick(), equip), setHp(110)), unequip);
+    c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: { mp: 50 } });
+    expect(marks(c)).toEqual(['hp']);
+    const undone = ok(c, { type: 'event.undo', eventId: c.events[c.events.length - 1]?.id ?? '' });
+    expect(marks(undone)).toEqual(['hp']);
+  });
+
+  it('a clamped pool stays not full through further drops and a level-up', () => {
+    let c = ok(ok(pick(), equip), setHp(110));
+    c = ok(c, unequip);
+    c = ok(c, { type: 'character.setStats', characterId: 'jake', stats: { vitality: 9 } });
+    expect(pool(c)).toEqual({ current: 90, max: 90 });
+    expect(marks(c)).toEqual(['hp']);
+    c = ok(c, levelUp());
+    expect(pool(c).current).toBe(90);
+    expect(pool(c).max).toBeGreaterThan(90);
+    expect(marks(c)).toBeUndefined();
+  });
+
+  it('a GM set ends the mark, even to the same value, so the pool is full again', () => {
+    let c = ok(ok(ok(pick(), equip), setHp(110)), unequip);
+    expect(marks(c)).toEqual(['hp']);
+    c = ok(c, setHp(100));
+    expect(marks(c)).toBeUndefined();
+    expect(pool(ok(c, equip))).toEqual({ current: 120, max: 120 });
+  });
+
+  it('players never receive the marks', () => {
+    const c = ok(ok(ok(pick(), equip), setHp(110)), unequip);
+    expect(marks(c)).toEqual(['hp']);
+    const view = projectForPlayer(c.state ?? (null as never), 'jake');
+    expect(JSON.stringify(view)).not.toContain('clampedPools');
+  });
+
+  it('rules stored without the flag read false; new campaigns get true', () => {
+    const r = rawRules() as { character: Record<string, unknown> };
+    delete r.character['clampedPoolsNotFull'];
+    const old = pick(r);
+    expect(old.state?.rules.character.clampedPoolsNotFull).toBe(false);
+    let c = ok(ok(ok(old, equip), setHp(110)), unequip);
+    expect(marks(c)).toBeUndefined();
+    c = ok(c, equip);
+    expect(pool(c)).toEqual({ current: 120, max: 120 });
+    expect(pick().state?.rules.character.clampedPoolsNotFull).toBe(true);
+  });
+
+  it('property: equip/unequip cycles never raise a pool that is not full', () => {
+    const seed = 15_015;
+    const random = seededRandom(seed);
+    for (let trial = 0; trial < 40; trial += 1) {
+      let c = pick();
+      let worn = false;
+      let full = true;
+      for (let step = 0; step < 12; step += 1) {
+        const roll = random();
+        if (roll < 0.25) {
+          const max = pool(c).max;
+          const hp = Math.floor(random() * (max + 1));
+          c = ok(c, setHp(hp));
+          // Tracked outside the engine: full only when set to the maximum.
+          full = hp === max;
+          continue;
+        }
+        const before = pool(c);
+        c = ok(c, worn ? unequip : equip);
+        worn = !worn;
+        const after = pool(c);
+        if (!full && after.current > before.current) {
+          throw new Error(
+            `seed ${seed}, trial ${trial}, step ${step}: ${JSON.stringify(before)} → ${JSON.stringify(after)}`,
+          );
+        }
+        expect(after.current).toBeLessThanOrEqual(after.max);
+      }
+      expect(replay(c.events.map((e) => JSON.parse(JSON.stringify(e)) as unknown)).state).toEqual(
+        c.state,
+      );
+    }
   });
 });

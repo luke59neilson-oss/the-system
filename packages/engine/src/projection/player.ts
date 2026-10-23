@@ -75,6 +75,8 @@ export const CHARACTER_FIELD_VISIBILITY: Readonly<Record<keyof Character, Visibi
   evolution: 'owner',
   // M4.4: the portrait file name; the join list already shows it to anyone.
   portrait: 'party',
+  // MQ.15: rules bookkeeping; the sheet shows the pool values themselves.
+  clampedPools: 'gm',
 };
 
 /** Every campaign field, classified (`owner` is not used at this level). */

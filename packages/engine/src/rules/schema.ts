@@ -92,6 +92,12 @@ export const rulesConfigSchema = z
        * changes the pool), so older campaigns replay unchanged.
        */
       fullPoolsStayFull: z.boolean().default(false),
+      /**
+       * DESIGN §2 (MQ.15, L7): a pool clamped by a falling maximum stays full
+       * only if it was full before the drop, so swapping gear never heals.
+       * Rules stored before it read false (D111's literal reading).
+       */
+      clampedPoolsNotFull: z.boolean().default(false),
     }),
     tracks: z.strictObject({
       /** Grade at whose evolution professions are first offered. */
