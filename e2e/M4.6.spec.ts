@@ -81,7 +81,7 @@ test('the GM previews and awards XP with a custom split', async ({ browser }) =>
   await expect(award.getByRole('button', { name: 'Award XP' })).toBeDisabled();
   await award.getByLabel('Kim’s share').fill('100');
 
-  // A target one grade below would give a third; set and then clear it.
+  // A G-grade target is the party's own grade: full XP (the ⅓ and 0 factors are unit-tested).
   await award.getByLabel('Target’s grade').selectOption({ label: 'G-grade' });
   await expect(award.getByTestId(`gained-${jake}`)).toHaveCount(0);
   await award.getByLabel('Target’s grade').selectOption({ label: 'Not set (full XP)' });
@@ -117,9 +117,13 @@ test('the GM previews and awards XP with a custom split', async ({ browser }) =>
     reason: 'The Rake Canyons ambush',
   });
 
-  // The profession track: no profession yet, so a capped class takes nothing and it is lost.
+  // The profession track: nobody has a profession yet, so the award is refused before sending.
   await award.getByLabel('Track').selectOption('profession');
-  await expect(gm.getByRole('form', { name: 'Award profession XP' })).toBeVisible();
+  const prof = gm.getByRole('form', { name: 'Award profession XP' });
+  await expect(prof.getByRole('status')).toHaveCount(0);
+  await prof.getByLabel('Amount').fill('50');
+  await expect(prof.getByRole('alert')).toContainText('has no profession');
+  await expect(prof.getByRole('button', { name: 'Award XP' })).toBeDisabled();
   await gm.screenshot({ path: path.join(shots, 'gm-1366x768.png'), fullPage: true });
   await gm.setViewportSize({ width: 390, height: 844 });
   await gm

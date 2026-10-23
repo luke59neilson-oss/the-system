@@ -97,4 +97,32 @@ describe('previewXpShares (M4.6)', () => {
     ).toThrow('whole number');
     expect(p([{ characterId: 'ghost', share: 100 }])).toThrow('Unknown character');
   });
+  it('applies the grade-gap factor: one grade below gives a third, two or more none', () => {
+    const f: Character = { ...make('f'), grade: 'F' };
+    const e: Character = { ...make('e'), grade: 'E' };
+    const rows = previewXpShares(rules, { f, e }, 'class', {
+      amount: 600,
+      shares: [
+        { characterId: 'f', share: 300 },
+        { characterId: 'e', share: 300 },
+      ],
+      enemyGrade: 'G',
+    });
+    expect(rows.map((r) => r.gained)).toEqual([100, 0]);
+  });
+  it('profession XP is refused without a profession, as the reducer refuses it; with one it levels', () => {
+    expect(() =>
+      previewXpShares(rules, { p: make('p') }, 'profession', {
+        amount: 100,
+        shares: [{ characterId: 'p', share: 100 }],
+      }),
+    ).toThrow('p has no profession');
+    const crafter: Character = { ...make('q'), profession: 'Alchemist', professionLevel: 0 };
+    const [up] = previewXpShares(rules, { q: crafter }, 'profession', {
+      amount: 100,
+      shares: [{ characterId: 'q', share: 100 }],
+    });
+    expect(up!.lost).toBe(0);
+    expect(up!.levelUps.some((l) => l.track === 'profession' && l.level === 1)).toBe(true);
+  });
 });

@@ -652,3 +652,9 @@
 - Full e2e suite green locally at d32bd05 (46 e2e; the party table became cards, so 20 specs now find members by heading).
 - Round 1 (229219a..d32bd05): 0 H, 3 M, 6 L. Fixed in ab3f114: M1 a released evolution showed "player choosing" with a selection due → blocked; M2 typing a pool back to its opening value after a live change sent nothing → touched fields are sent when they differ from live; M3 a retry after a partial save resent landed stats → only fields differing from live are sent. Lows kept: pool "max" hint uses saved stats, not the draft; whole-number regex duplicated in the view; narrow cards at 1366 (cards now min 360 px); Return to player acts at once without confirm (it is an undoable event); player screenshot cropped.
 - Round 2 (ab3f114): 0 H, 0 M. Fixed: L1 regression test for a released evolution blocked by a due selection. Lows kept: name/nickname/Unique still compare with the opening value (only a second GM tab can move them), touched bookkeeping tested only through `sheetPlan`.
+
+## 2026-10-23 · M4.6 XP award dialog · reviewer: sonnet (round 1 of 2)
+
+- Full e2e suite green locally at 21f6506 (47 e2e).
+- Round 1 (9e0e5d2..21f6506): 0 H, 3 M, 6 L. Preview matches the reducer (same `shareXp`/`awardXp`). Fixed in the next commit: M1 grade-gap ⅓/0 untested → unit test in xpShares.test.ts (e2e comment corrected: G target = own grade); M2 profession track untested → unit test (refused without a profession, levels with one) and e2e checks the refusal; M3 typical-session helper silent about loss past the grade top → helper says XP past the top overflows or is lost. Lows fixed: messages for a bad amount or target level; "XP awarded" clears on edit. Lows kept: `bonus` math duplicated from `shareXp`; form-only screenshot named 1366x768 (a full-page one exists); typed shares and by-hand mode persist after an award.
+- Round 2 required (3 Mediums), not run: no time before the hard stop. Next run launches it first.

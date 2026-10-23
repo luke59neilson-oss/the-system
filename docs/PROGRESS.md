@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3, MS, MQ and MR done; QF.1–QF.12 done; M4.1–M4.4 done; Preview ready: Actions → Release → Run workflow (MR)
-**Next item:** M4.5 Party dashboard
+**Status:** in progress: M0–M3, MS, MQ and MR done; QF.1–QF.12 done; M4.1–M4.5 done; M4.6 built, review round 2 pending; Preview ready: Actions → Release → Run workflow (MR)
+**Next item:** M4.6 review round 2 (sonnet, 21f6506..HEAD), then M4.7 System broadcast
 **Blockers:** none
 
 ## Run log
@@ -722,5 +722,14 @@ next item, blockers. -->
 - Tests: 900 unit (`npm run check` green); e2e MR.1, MR.4, M3.5, M3.13 green after the fixes. Engine coverage not re-measured.
 - Open `wip/*` branches: none new (wip/MR.4 merged).
 - Next item: M4.5 Party dashboard.
+- Blockers: none.
+
+### Run 83cd75b7 · 2026-10-23 10:07–10:55 UTC (ended at minute 48)
+- Preflight: `add_repo` not offered; repo already cloned (local main unrelated to origin/main, reset to origin/main dfaa504). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer on sonnet works (background, worktree). No new answers. CI on main: latest completed e453b15 green. Hour 10: no efficiency check or sweep.
+- M4.5 Party dashboard: cards with flags from engine `characterFlags` (selections, evolution ready/blocked/released, mark upgrades, merges, free points; who each waits on) and a sheet editor (name, base stats, pools, nicknames, Unique, return a free-point batch) sending audited GM events (D157, Q59). Party table → cards; 20 specs now find members by heading. Sonnet round 1: 0 H, 3 M fixed; round 2: 0 H, 0 M. **Checked.**
+- M4.6 XP award dialog: track, shares by hand with balancing last share (`balancedShares`), `previewXpShares`, target grade, above-level bonus, level-up/overflow/lost preview, typical-session helper (D158). Sonnet round 1: 0 H, 3 M, fixed (tests, helper wording); round 2 required and not run before the stop. **Not checked.**
+- Tests: 922 unit (`npm run check` green); full e2e suite green twice locally (46 at d32bd05, 47 at 21f6506); M4.6, MS.1, MR.3 green after the last fixes. Engine coverage not re-measured.
+- Open `wip/*` branches: none new (M4.6 is on main, box open).
+- Next item: re-launch the M4.6 round-2 review, then M4.7 System broadcast.
 - Blockers: none.
 

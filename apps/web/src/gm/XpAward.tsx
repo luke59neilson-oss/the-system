@@ -54,6 +54,8 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
     amountOk && chosen.length > 0 && shareError === null
       ? balancedShares(value, chosen.length, fixed)
       : null;
+  if (amount.trim() !== '' && !amountOk) shareError = 'The amount must be a whole number above 0';
+  else if (!levelOk) shareError = 'The target’s level must be a whole number of 0 or more';
   if (amountOk && shares === null && shareError === null && chosen.length > 0) {
     shareError = `The shares add up to more than ${value} XP`;
   }
@@ -137,13 +139,22 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
             step={1}
             inputMode="numeric"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => {
+              setAmount(e.target.value);
+              setResult(null);
+            }}
             required
           />
         </label>
         <label>
           Track
-          <select value={track} onChange={(e) => setTrack(e.target.value as XpTrack)}>
+          <select
+            value={track}
+            onChange={(e) => {
+              setTrack(e.target.value as XpTrack);
+              setResult(null);
+            }}
+          >
             <option value="class">Class</option>
             <option value="profession">Profession</option>
           </select>
@@ -168,6 +179,7 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
               </button>
             </span>
           ))}
+          . XP past a grade’s top level overflows or is lost; the preview below shows it.
         </p>
       )}
       <fieldset>
