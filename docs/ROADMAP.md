@@ -542,7 +542,7 @@ work: Q44–Q48 and Q52.
   MQ.3, D112). Show due selections
   (`dueSelections`) next to the M1.8 selection alert, which does not know
   whether a selection was taken.
-- [ ] **M5.2 Evolution builder.** Options, warnings, one-time stat bonus per
+- [x] **M5.2 Evolution builder.** Options, warnings, one-time stat bonus per
   option, optional transforms with merge prompts, spread reshape, tailored
   profession offers (E evolution, or later after "none for now"; withdrawing an
   untaken offer, MQ.6 review); per-skill re-rating at release (default one

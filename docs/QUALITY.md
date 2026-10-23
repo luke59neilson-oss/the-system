@@ -223,3 +223,5 @@ reviewers ran 15–20 minutes each in the background.
 - Tests (sweep A): `e2e/M4.7.spec.ts` ~107 fixed 300 ms sleep before a negative leak check; await a later visible broadcast instead.
 - Tests (sweep A): `RulesSettings.tsx`, `XpAward.tsx`, `ChangeLog.tsx` have no unit tests (e2e only).
 - Tests (sweep A): `CAMPAIGN_FIELD_VISIBILITY` is not read by `projectForPlayer`, so it documents rather than enforces (`projection/player.ts` ~95).
+- M5.2 review: no e2e exercises the evolution builder's "Offer merge" button or the merge-row rarity label (engine and model unit tests cover the rules).
+- M5.2 review: the builder's stale-option check does not re-check a release's stored professions or re-rating against the current character (choose re-defaults them).
