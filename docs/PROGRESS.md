@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M4, MS, MQ and MR done; QF.1–QF.15 done; M5.1–M5.3 done; Preview ready: Actions → Release → Run workflow (M4)
-**Next item:** M5.4 Merges (resume `wip/M5.4`)
+**Status:** in progress: M0–M4, MS, MQ and MR done; QF.1–QF.15 done; M5.1–M5.5 done; Preview ready: Actions → Release → Run workflow (M4)
+**Next item:** M5.A Milestone acceptance and review (fable review)
 **Blockers:** none
 
 ## Run log
@@ -815,3 +815,14 @@ next item, blockers. -->
 - Next item: M5.4 Merges (resume wip/M5.4).
 - Ended at minute 45: hand-off at 44 per §5.5; M5.4's review could not report and be fixed before 50, so it was not launched (next run launches it first).
 - Blockers: none.
+
+### Run 698982a6 · 2026-10-23 19:07–19:56 UTC (end minute 48)
+- Preflight: `add_repo` not offered; repo already cloned (local main fast-forwarded to origin/main after unshallowing). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer on sonnet works (worktree). No new answers. Not an efficiency or sweep hour.
+- CI on main was red (098ed9f): M4.3 latency spec, 42px sideways scroll at 390px from the M5.3 "Mark another skill" select. Reproduced, fixed (select and label capped at 100%), pushed fdedc32 first.
+- M5.4 Merges **checked** (resumed wip/M5.4): sonnet round 1 0 H / 2 M / 5 L, round 2 0 H / 0 M / 4 L; refusal-path tests, name clash held before Send, per-grade text from config, GM 390×844 check. D171 finalised.
+- M5.5 Practice capture **checked**: `practice.edited` / `practice.removed` / `practice.reviewed` (GM only), entries carry `reviewed` (state v26, goldens re-recorded, new golden `practice-review.jsonl`), GM "Practice" window (quick-add with Alt+P, end-of-scene prompt, To review list with OK/Edit/Remove/Mark all). D172, Q63. Property-test second seed moved 20261022 → 20261023 (the new commands shift the stream; reason in the test). Sonnet round 1 0 H / 3 M / 5 L (all M fixed), round 2 0 H / 0 M / 4 L.
+- Tests: 991 unit (`npm run check` green); engine coverage 98.9% lines; full e2e 60/60 + latency 6/6 on the final M5.5 code. An earlier full run had one latency flake (M2.A connection reset under CPU load; passed alone; noted in QUALITY Flakes).
+- Open `wip/*` branches: none new (wip/M5.4 and wip/M5.5 merged).
+- Next item: M5.A (fable review). Not started: the gate reached minute 44 while the final full e2e was running, and M5.A's acceptance run needs that suite.
+- Blockers: none.
+

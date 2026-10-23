@@ -145,6 +145,7 @@ reviewers ran 15–20 minutes each in the background.
 
 ## Backlog (Lows; M11.5 goes through these)
 
+- UX (M5.5 review): practice edits of a deleted character's entries are refused; the To review list is unbounded and not per session (Mark all reviewed caps at 500); the end-of-scene order desyncs if the GM switches character mid-scene and has no cancel; a stale stat shows as "None" in the edit select but is kept; the edit form always sends skills and stat; the e2e does not assert the edited fields or Mark all reviewed.
 - UX (M5.4 review): Send merge is two commands; a failed `skill.describe` leaves the merge with no text and no retry (the banner says so); no engine-level name-clash test through the builder (the e2e and `mergeSkills` cover it).
 - UX (M5.3 review): the marks review's success text stays after an undo; `busy` is never reset if `client.command` throws; the window grows long with many characters; no UI assertion for the lost-skills and montage lines; `?? p.count` fallback in `marksReview` pairs is dead code; e2e reruns rewrite committed screenshots (repo-wide).
 - UX (M5.1 review): the offer builder's result banner stays after live updates; a draft is dropped without notice when the player chooses the selection being edited; practice dates show the UTC day; Withdraw uses a native confirm; no e2e for a repeat chip click or a declined confirm.

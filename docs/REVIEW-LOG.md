@@ -698,3 +698,8 @@
 - Round 2 (5d96bce): 0 H / 0 M / 4 L. Fixed: the 390×844 check and screenshot now show the filled form before sending; name/text fields reset on a character switch. Left to Backlog: no engine-level clash test inside the builder (covered by `mergeSkills` and the e2e); screenshot churn.
 - CI fix this run (fdedc32): M4.3 latency red on main from the M5.3 "Mark another skill" select widening the 390px console; select and label capped at 100%.
 
+## 2026-10-23 · M5.5 Practice capture · reviewer: sonnet (2 rounds)
+
+- Round 1 (086a56d): 0 H / 3 M / 5 L. M1 Edit could only change the action → the edit form now corrects skills (the character's skills plus any the entry already names) and the stat. M2 Alt+P matched `e.key`, so Option+P on macOS never fired → matches `e.code === 'KeyP'`. M3 an action-only edit failed when the entry's stat had left the rules → an unchanged stat is exempt from the stat check. Lows to Backlog: edits of a deleted character's entries refused; review list unbounded and not per session (Mark all caps at 500); end-of-scene order desyncs if the GM changes the character mid-scene, no cancel; e2e mostly happy path; seed moved in the property test (explained in its comment).
+- Round 2 (9006f69): 0 H / 0 M / 4 L (stale stat shows as "None" in the edit select; the form always sends skills and stat; e2e does not assert the edited fields; Alt+P by key position on non-QWERTY). All to Backlog.
+
