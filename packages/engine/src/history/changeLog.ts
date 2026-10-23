@@ -1,5 +1,6 @@
 import type { Campaign } from '../events/log';
-import { buildSessionLog } from '../report/sessionLog';
+import { applyEvent, type CampaignState } from '../events/reducer';
+import { describeEvent } from '../report/sessionLog';
 
 /** One row of the GM's change log (M4.8): an event and what it did, in words. */
 export interface ChangeLogRow {
@@ -16,30 +17,35 @@ export interface ChangeLogRow {
   readonly undoneBy: string | null;
 }
 
+const has = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
+
 /**
- * Every event but undo markers, oldest first, with session-log wording (M4.8).
- * GM-only: it includes GM notes on awards and scheduled broadcasts.
+ * Every event but undo markers, oldest first, in the session log's words
+ * (M4.8). An undone event is described against the state it was applied to
+ * then, without counting it. GM-only: rows carry GM notes and schedules.
  */
 export function changeLog(campaign: Campaign): ChangeLogRow[] {
-  const bySeq = new Map<number, string[]>();
-  for (const e of buildSessionLog(campaign, 0).entries) {
-    const list = bySeq.get(e.seq) ?? [];
-    list.push(e.text);
-    bySeq.set(e.seq, list);
-  }
   const rows: ChangeLogRow[] = [];
+  let state: CampaignState | null = null;
   campaign.events.forEach((event, seq) => {
     if (event.type === 'event.undone') return;
+    const undone = has(campaign.undone, event.id);
+    let lines: string[] = [];
+    try {
+      const after = applyEvent(state, event);
+      lines = describeEvent(state, after, event).map((e) => e.text);
+      if (!undone) state = after;
+    } catch {
+      // An undone event may no longer apply where it stood; its type still names it.
+    }
     rows.push({
       seq,
       id: event.id,
       type: event.type,
       at: event.timestamp,
       actor: event.actor.role,
-      lines: bySeq.get(seq) ?? [event.type],
-      undoneBy: Object.prototype.hasOwnProperty.call(campaign.undone, event.id)
-        ? (campaign.undone[event.id] as string)
-        : null,
+      lines: lines.length ? lines : [event.type],
+      undoneBy: undone ? (campaign.undone[event.id] as string) : null,
     });
   });
   return rows;

@@ -159,7 +159,7 @@ function levelLines(before: CampaignState | null, after: CampaignState): string[
 }
 
 /** Log lines for one counted event, given the state before and after it. */
-function describe(
+export function describeEvent(
   before: CampaignState | null,
   after: CampaignState,
   event: DomainEvent,
@@ -486,7 +486,7 @@ export function buildSessionLog(
     if (has(campaign.undone, event.id)) continue;
     const after = applyEvent(state, event);
     if (seq >= start) {
-      for (const e of describe(state, after, event)) {
+      for (const e of describeEvent(state, after, event)) {
         entries.push({ seq, at: event.timestamp, ...e });
       }
       if (event.type === 'practice.logged') practiceIds.add(event.id);
