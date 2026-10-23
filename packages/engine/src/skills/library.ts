@@ -128,11 +128,28 @@ export function syncCharacterSkills(
     const fresh = had.get(skill.name) !== skill.rarity;
     const hit = touched.some((t) => t.rarity === skill.rarity && sameName(t.name, skill.name));
     if (!fresh && !hit) return skill;
-    const synced = syncSkillText(skill, entryForSkill(rules, library, skill));
+    const def = entryForSkill(rules, library, skill);
+    // A rarity change on a skill the character already had (mark upgrade,
+    // transform) takes the new rarity's entry text even over a hand edit: the
+    // GM's edit described the old rarity (DESIGN §6, MQ.A review).
+    const regraded =
+      fresh &&
+      had.has(skill.name) &&
+      rules.skills.libraryByRarity &&
+      def &&
+      (def.description.trim() !== '' || def.flavor.trim() !== '');
+    const base = regraded && skill.textEdited ? withoutEditMark(skill) : skill;
+    const synced = syncSkillText(base, def);
     if (synced !== skill) changed = true;
     return synced;
   });
   return changed ? { ...after, skills } : after;
+}
+
+function withoutEditMark(skill: CharacterSkill): CharacterSkill {
+  const { textEdited, ...rest } = skill;
+  void textEdited;
+  return rest;
 }
 
 /** Fills a granted skill's empty description and flavour from its library entry. */

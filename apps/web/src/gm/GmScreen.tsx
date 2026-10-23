@@ -3,6 +3,7 @@ import {
   DEFAULT_RULES,
   STARTER_CLASSES,
   largestRemainderSplit,
+  previewXpAward,
   raceLevel,
   type CampaignState,
 } from '@the-system/engine';
@@ -414,6 +415,20 @@ function AwardXp({ client, state }: { client: LiveClient; state: CampaignState }
         chosen.map(() => 1),
       )
     : [];
+  // MQ.11 (DESIGN §2): say what overflows or is lost before the GM confirms.
+  const outcome = (() => {
+    if (!valid) return new Map<string, { overflowed: number; lost: number }>();
+    try {
+      const rows = previewXpAward(state.rules, state.characters, 'class', {
+        amount: value,
+        participants: chosen.map((characterId) => ({ characterId })),
+      });
+      return new Map(rows.map((r) => [r.characterId, r]));
+    } catch {
+      return new Map<string, { overflowed: number; lost: number }>();
+    }
+  })();
+  const totalLost = [...outcome.values()].reduce((a, r) => a + r.lost, 0);
   const toggle = (id: string) =>
     setExcluded((prev) => {
       const next = new Set(prev);
@@ -466,10 +481,28 @@ function AwardXp({ client, state }: { client: LiveClient; state: CampaignState }
                   · {preview[i]} XP
                 </span>
               )}
+              {i >= 0 && (outcome.get(id)?.overflowed ?? 0) > 0 && (
+                <span className="muted" data-testid={`overflow-${id}`}>
+                  {' '}
+                  · {outcome.get(id)?.overflowed} to profession
+                </span>
+              )}
+              {i >= 0 && (outcome.get(id)?.lost ?? 0) > 0 && (
+                <span className="warn" data-testid={`lost-${id}`}>
+                  {' '}
+                  · {outcome.get(id)?.lost} lost
+                </span>
+              )}
             </label>
           );
         })}
       </fieldset>
+      {totalLost > 0 && (
+        <p className="warn" data-testid="xp-lost">
+          {totalLost} XP will be lost: those tracks are at the top of their grade and nothing can
+          take the overflow.
+        </p>
+      )}
       <label>
         Reason (GM only)
         <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} />
@@ -583,7 +616,8 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
       </label>
       {state.rules.skills.libraryByRarity && (
         <p className="muted hint">
-          Saving here makes this copy the character’s own: later library edits skip it.
+          Saving here makes this copy the character’s own: later library edits skip it until it
+          reaches a rarity the library has text for.
         </p>
       )}
       <button type="submit" disabled={busy || !current || unchanged}>

@@ -162,3 +162,6 @@ reviewers ran 15–20 minutes each in the background.
 - UX (sweep B): MQ.8 demo tier text reads "TIER A storm-bred…" (fixture
   wording); out-of-range Identify could say why ("too powerful to read").
 - UX (sweep B): MQ.6 [Take] buttons misalign between offer rows on a phone.
+- Rules (MQ.A review): titles are plain strings, so MQ.14's title percentages and the pools' "maximum rises from a title" path are engine-only until M6.4; add an end-to-end pools test there.
+- Rules (MQ.A review): a GM pool set to the same value ends the no-heal mark (D129, deliberate), so re-equipping then refills; the GM form could say "healed to full".
+- Process (MQ.A review): MQ rules that need GM commands without UI yet (withdraw option M5.1, evolution stat bonus and profession offers M5.2, quest `noticeTo` M7.1, entity grade/level M7.2, rules switches M4.9) are reachable only through the WebSocket API until those items land.
