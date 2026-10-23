@@ -2027,3 +2027,21 @@ ul.scheduled li {
 .scheduled-text {
   font-style: italic;
 }
+
+/* M4.8 change log. */
+ol.change-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 420px;
+  overflow-y: auto;
+  display: grid;
+  gap: 4px;
+}
+ol.change-log li {
+  overflow-wrap: anywhere;
+}
+ol.change-log li.undone {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
