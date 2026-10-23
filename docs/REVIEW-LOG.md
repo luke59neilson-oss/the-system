@@ -630,3 +630,8 @@
 - High: none. Medium: none.
 - Low (fixed): no test pinned reset winning over carry-over (added in `marksReset.test.ts`, incl. a lower-rarity transform); the re-rate note did not say the next upgrade starts at 0 (wording added, e2e updated); D152 understated the golden changes (corrected).
 - Low (kept): a transform to a lower rarity resets marks (a transform is a new skill; D152 says a GM wanting a lower label re-rates instead); the skill detail names the rule only when an upgrade is ready; no e2e for banked-at-ceiling notes (not in acceptance).
+
+## 2026-10-23 · MR.3 XP overflow for every campaign · reviewer: sonnet (2 rounds)
+
+- Round 1 (738d8be..f20c43d): 0 H, 3 M. Fixed: banked XP on capped tracks is re-applied under overflow (other track takes what it can, rest lost) instead of cleared; `rules.migrated` cannot be undone (it would re-run on load). Kept: the GM sees the migration in the session log only until M4.8's change log (no GM UI for it yet). Lows kept: `importCampaign` has no route yet; demo-switch path untested (same `open` wrapper as main); no HTTP-path test.
+- Round 2 (f20c43d..ea946ad): 0 H, 0 M; both fixes confirmed. Lows: a stale variable name (kept), payload renamed without an event version bump (never on main, so harmless), a comment on per-track independence (kept).

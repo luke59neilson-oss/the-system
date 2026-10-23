@@ -370,7 +370,7 @@ work: Q44–Q48 and Q52.
   upgrade to a Common skill with 0; a transform (raising or same rarity)
   leaves 0; a downgrade keeps all; tests through `evolution.choose`; e2e
   text on both screens.
-- [ ] **MR.3 XP overflow for every campaign.** Replaces D124: campaigns
+- [x] **MR.3 XP overflow for every campaign.** Replaces D124: campaigns
   created before MQ.11 switch to overflow automatically when loaded (a rules
   migration, logged). How XP already banked is handled is the run's call
   (no real campaigns exist yet), logged as a D-entry. *Accept:* a stored
