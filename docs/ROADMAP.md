@@ -265,7 +265,7 @@ the rest follow in file order. Each gets its own §6 review.
   total note size and on open trades, all from the rules or server config;
   clients whose projected view did not change get no new snapshot; server
   tests for each limit, with the error players see.
-- [ ] **QF.4 Golden logs are pinned.** A commit can edit a `.jsonl` golden and
+- [x] **QF.4 Golden logs are pinned.** A commit can edit a `.jsonl` golden and
   regenerate its `.state.json`, and the golden test still passes. *Accept:* a
   manifest pins each `.jsonl` and `.state.json` by SHA-256 together with the
   `CAMPAIGN_STATE_SCHEMA_VERSION` it was recorded at; the test fails when a
