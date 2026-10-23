@@ -249,7 +249,11 @@ DESIGN/ROADMAP; do not re-apply them.
     every mark. Default: as described (D114). Alternatives: a transform
     keeps every mark (the gain is free); or it resets them to 0 (the old
     rule).
-    Answer:
+    Answer (Luke, 2026-10-22, in chat): evolutions downgrade many skills,
+    since what is Rare at D-grade is not Rare at C-grade. Each skill drops one
+    rarity by default and the GM adjusts each; same text, lower label; marks
+    all kept. Every upgrade (by marks or by a transform) is a new skill to
+    learn and starts at 0 marks. (applied, L14, L15; MR.1, MR.2)
 
 44. **Asking the GM for items in a trade.** A player can propose a trade with
     the GM side ("40 Credits for the Bow"). Because the GM holds the whole
@@ -259,7 +263,8 @@ DESIGN/ROADMAP; do not re-apply them.
     currency; the GM offers items by proposing the trade from the GM side.
     Alternative: a player may ask the GM only for items they have already
     seen (held, equipped, or in an earlier trade).
-    Answer:
+    Answer (Luke, 2026-10-22, in chat): currency only (default kept).
+    (applied, L18)
 
 45. **Asking another player for items.** A trade proposal may ask only for
     items the other player holds now (QF.2). So a player who guesses an item
@@ -268,7 +273,8 @@ DESIGN/ROADMAP; do not re-apply them.
     open between players, and the ids are not shown anywhere). Alternative:
     a player may ask another player only for currency, or only for items the
     asker has already seen.
-    Answer:
+    Answer (Luke, 2026-10-22, in chat): yes, any item (default kept; QF.9
+    hides holdings). (applied, L18)
 
 46. **More profession offers after "none for now".** A character who declined
     every offered profession at the E-grade evolution keeps those offers in
@@ -276,7 +282,8 @@ DESIGN/ROADMAP; do not re-apply them.
     professions with any later evolution (D, C, ...) while the character still
     has none; they join the same list. The GM can also grant any profession
     directly. Alternative: offers happen only at the E-grade evolution.
-    Answer:
+    Answer (Luke, 2026-10-22, in chat): yes, at any later evolution (default
+    kept). (applied, L18)
 
 47. **Who gets a hidden quest's notice.** DESIGN §7 says the "affected
     players" get a detail-free notice that a hidden quest exists. Quests have
@@ -285,7 +292,8 @@ DESIGN/ROADMAP; do not re-apply them.
     characters; the notice appears again if the quest is hidden again or
     reopened. Alternative: notify only characters the GM names (default
     nobody), or tie it to who is in the scene. (D122)
-    Answer:
+    Answer (Luke, 2026-10-22, in chat): the whole party unless the GM names
+    characters (default kept). (applied, L18)
 
 48. **Identify range details.** DESIGN §7: same grade only if the target's
     level is at most 1.5 × the viewer's level. Defaults used (MQ.8, D123):
@@ -294,14 +302,16 @@ DESIGN/ROADMAP; do not re-apply them.
     range still shows its name in the Identify list, with `[??? – lvl ???]`
     instead of its text. Alternatives: class level; hide out-of-range
     targets from the list entirely.
-    Answer:
+    Answer (Luke, 2026-10-22, in chat): race level; name with [??? – lvl ???]
+    (default kept). (applied, L18)
 
 49. **Existing campaigns and the no-banking rule.** XP overflow (MQ.11)
     is on for new campaigns. Campaigns created before it keep banking XP at
     the grade top, so their logs replay exactly as played. Default (D124):
     they keep banking until the GM switches the rule in Rules settings
     (M4.9). Alternative: switch every campaign over automatically.
-    Answer:
+    Answer (Luke, 2026-10-22, in chat): switch every campaign automatically.
+    (applied, L16; MR.3)
 
 50. **Hand-written skill text and the library.** Once you write a
     character's skill text by hand (Skill text form), library edits no
@@ -309,7 +319,8 @@ DESIGN/ROADMAP; do not re-apply them.
     stays hand-written for good (until an evolution renames the skill).
     Alternative: a "Use library text" button that hands it back to the
     library.
-    Answer:
+    Answer (Luke, 2026-10-22, in chat): add the Use library text button.
+    (applied, L17; MR.4)
 
 51. **Hand-written skill text when a skill upgrades (follows Q50).** The
     MQ.A review pointed at DESIGN §6: "an upgrade picks up the higher
@@ -318,7 +329,8 @@ DESIGN/ROADMAP; do not re-apply them.
     replacing your hand-written text for the old rarity; library edits at the
     same rarity still leave hand-written copies alone. Alternative: keep your
     hand-written text through upgrades too (Q50's earlier default).
-    Answer:
+    Answer (Luke, 2026-10-22, in chat): keep the hand-written text through
+    upgrades. (applied, L17; MR.4)
 
 52. **Identify at level 0.** A brand-new character (race level 0) can
     identify nothing of its own grade above level 0, since 1.5 × 0 = 0: a
@@ -326,7 +338,8 @@ DESIGN/ROADMAP; do not re-apply them.
     Default: the rule as written (DESIGN §7); leave grade and level blank on
     tutorial-start creatures if you want them readable. Alternative: treat a
     level-0 viewer as level 1 for this rule.
-    Answer:
+    Answer (Luke, 2026-10-22, in chat): keep the rule as written (default
+    kept). (applied, L18)
 
 53. **Note and trade limits.** To stop one phone flooding everyone's
     screen (QF.3), each character may keep up to 300 notes with 150,000
