@@ -8,6 +8,7 @@ import {
   type EventType,
 } from './envelope';
 import { CharacterRuleError } from '../character';
+import { defaultRerate } from '../evolution';
 import { normalizeTags } from '../skills/library';
 import { missingDefaultEntries } from '../content/defaults';
 import { largestRemainderSplit } from '../progression';
@@ -228,6 +229,11 @@ export type Command =
       }[];
       /** Offered at the profession unlock grade; default none. */
       professions?: readonly string[] | undefined;
+      /**
+       * GM override of the re-rating (MR.1): skill name → rarity after the
+       * evolution. Skills not named drop one rarity (never below the lowest).
+       */
+      rerate?: Readonly<Record<string, string>> | undefined;
     }
   | {
       type: 'evolution.choose';
@@ -488,6 +494,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('evolution.release'),
     options: z.array(z.record(z.string(), z.unknown())),
+    rerate: z.record(z.string(), z.string()).optional(),
   }),
   z.object({ type: z.literal('evolution.choose') }),
   z.object({ type: z.literal('clock.create') }),
@@ -612,6 +619,23 @@ function awardPayload(command: Extract<Command, { type: 'xp.award' }>) {
 }
 
 /** The character a choice is made for, if it exists (choices default to what is pending). */
+/** The release's full re-rating: the default drop plus the GM's overrides (MR.1). */
+function rerateFor(
+  campaign: Campaign,
+  characterId: string,
+  overrides: Readonly<Record<string, string>>,
+): { skill: string; rarity: string }[] {
+  const character = pendingOf(campaign, characterId);
+  const rules = campaign.state?.rules;
+  if (!character || !rules) return [];
+  const known = new Set(character.skills.map((s) => s.name));
+  // A name the character lacks stays in the list, so the release is refused.
+  const extra = Object.entries(overrides)
+    .filter(([name]) => !known.has(name))
+    .map(([skill, rarity]) => ({ skill, rarity }));
+  return [...defaultRerate(rules, character, overrides), ...extra];
+}
+
 function pendingOf(campaign: Campaign, characterId: string) {
   const characters = campaign.state?.characters;
   return characters && Object.prototype.hasOwnProperty.call(characters, characterId)
@@ -930,6 +954,7 @@ function toEvent(
             statBonus: o.statBonus ?? {},
           })),
           professions: command.professions ?? [],
+          rerate: rerateFor(campaign, command.characterId, command.rerate ?? {}),
         },
       };
     case 'evolution.choose':

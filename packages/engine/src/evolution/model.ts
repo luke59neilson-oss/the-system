@@ -78,6 +78,15 @@ export interface EvolutionOption {
   readonly statBonus: Readonly<Record<string, number>>;
 }
 
+/**
+ * A kept skill's rarity after the evolution (MR.1, DESIGN §6 "Evolutions
+ * re-rate skills"): one step down by default, set per skill by the GM.
+ */
+export interface SkillRerate {
+  readonly skill: string;
+  readonly rarity: string;
+}
+
 /** An evolution the GM has released and the player has not chosen yet. */
 export interface PendingEvolution {
   /** Grade the character evolves into. */
@@ -87,6 +96,11 @@ export interface PendingEvolution {
   readonly options: readonly EvolutionOption[];
   /** Professions offered at the unlock grade (empty otherwise, or when none is offered). */
   readonly professions: readonly string[];
+  /**
+   * New rarity of each skill the chosen option does not transform (MR.1).
+   * Absent on releases stored before MR.1, which re-rate nothing.
+   */
+  readonly rerate?: readonly SkillRerate[];
 }
 
 /** A class level that grants a selection (DESIGN §3). */
@@ -386,6 +400,53 @@ export function evolutionTarget(rules: RulesConfig, character: Character): Grade
   return gateLevel(rules, character) >= trackCap(rules, grade.id) ? next : null;
 }
 
+/**
+ * The default re-rating (MR.1, DESIGN §6): every skill drops one rarity, never
+ * below the lowest; `overrides` (skill name → rarity) replaces the default for
+ * the skills it names. Validation happens on release.
+ */
+export function defaultRerate(
+  rules: RulesConfig,
+  character: Character,
+  overrides: Readonly<Record<string, string>> = {},
+): SkillRerate[] {
+  const ids = rules.skills.rarities.map((r) => r.id);
+  return character.skills.map((s) => {
+    const own = Object.prototype.hasOwnProperty.call(overrides, s.name)
+      ? overrides[s.name]
+      : undefined;
+    if (own !== undefined) return { skill: s.name, rarity: own };
+    const index = ids.indexOf(s.rarity);
+    return { skill: s.name, rarity: index <= 0 ? s.rarity : (ids[index - 1] as string) };
+  });
+}
+
+/**
+ * Throws unless every re-rating names a current skill once, at a known rarity
+ * no higher than the new grade's ceiling (a skill may keep a rarity above it).
+ */
+function checkRerate(
+  rules: RulesConfig,
+  character: Character,
+  toGrade: GradeRules,
+  rerate: readonly SkillRerate[],
+): void {
+  const ceiling = rarityIndex(rules, toGrade.rarityCeiling);
+  const seen = new Set<string>();
+  for (const r of rerate) {
+    const skill = character.skills.find((s) => s.name === r.skill);
+    if (!skill) throw new CharacterRuleError(`${character.name} has no skill "${r.skill}"`);
+    if (seen.has(r.skill)) throw new CharacterRuleError(`[${r.skill}] is re-rated twice`);
+    seen.add(r.skill);
+    const rank = rarityIndex(rules, r.rarity);
+    if (rank > ceiling && rank > rarityIndex(rules, skill.rarity)) {
+      throw new CharacterRuleError(
+        `[${r.skill}] cannot be raised above the ${toGrade.id}-grade ceiling (${toGrade.rarityCeiling})`,
+      );
+    }
+  }
+}
+
 /** Throws unless the option can apply to the character evolving into `toGrade`. */
 function checkOption(
   rules: RulesConfig,
@@ -450,6 +511,8 @@ export function releaseEvolution(
   retired: ReadonlySet<string> = new Set(),
   releaseId = 'release',
   legacy = false,
+  /** Per-skill rarities after the evolution (MR.1); null on older releases. */
+  rerate: readonly SkillRerate[] | null = null,
 ): Character {
   if (!legacy) checkNoPendingSelection(rules, character, 'released');
   const target = evolutionTarget(rules, character);
@@ -469,6 +532,7 @@ export function releaseEvolution(
     checkOption(rules, character, target, option, retired);
     checkStatBonus(rules, option);
   }
+  if (rerate !== null) checkRerate(rules, character, target, rerate);
   // From the unlock grade on, a character without a profession can be offered
   // some (MQ.6): at the unlock evolution, or at a later one after "none for now".
   const unlock =
@@ -495,6 +559,7 @@ export function releaseEvolution(
         statBonus: o.statBonus ?? {},
       })),
       professions: trimmed,
+      ...(rerate === null ? {} : { rerate: rerate.map((r) => ({ ...r })) }),
     },
   };
 }
@@ -555,10 +620,11 @@ export function chooseEvolution(
   }
 
   const byName = new Map(option.transforms.map((t) => [t.skill, t]));
+  const rerated = new Map((pending.rerate ?? []).map((r) => [r.skill, r.rarity]));
   const marking = markRules(rules);
   const skills: CharacterSkill[] = character.skills.map((s) => {
     const t = byName.get(s.name);
-    if (!t) return s;
+    if (!t) return rerateSkill(s, rerated.get(s.name));
     // A rarity gain spends the banked marks as that many upgrades would, and
     // the rest carry on (MQ.4, D114); a transform that keeps the rarity keeps
     // them (DESIGN §6: they bank until the evolution).
@@ -567,7 +633,10 @@ export function chooseEvolution(
     // describe the wrong thing, so it clears until the GM writes new text (M3.5).
     const name = t.name.trim();
     // Its hand-written mark goes too, so library text can reach it (MQ.12).
-    const kept: CharacterSkill = { ...s, name, rarity: t.rarity, marks };
+    // A transform takes its new rarity's library text (MQ.A), not a re-rated one.
+    const { textRarity, ...plain } = s;
+    void textRarity;
+    const kept: CharacterSkill = { ...plain, name, rarity: t.rarity, marks };
     if (name === s.name) return kept;
     const { textEdited, ...fresh } = kept;
     void textEdited;
@@ -603,6 +672,18 @@ export function chooseEvolution(
     .filter((t) => t.name.trim() !== t.skill)
     .map((t) => [t.skill, t.name.trim()] as const);
   return { character: next, renames, levelUps };
+}
+
+/**
+ * A kept skill takes its re-rated label (MR.1): marks, text and effects stay,
+ * so its text keeps following the entry of the rarity it had (`textRarity`).
+ */
+function rerateSkill(skill: CharacterSkill, rarity: string | undefined): CharacterSkill {
+  if (rarity === undefined || rarity === skill.rarity) return skill;
+  const textRarity = skill.textRarity ?? skill.rarity;
+  const { textRarity: _old, ...rest } = skill;
+  void _old;
+  return rarity === textRarity ? { ...rest, rarity } : { ...rest, rarity, textRarity };
 }
 
 /** Earlier offers first, then new names not already offered (ignoring case). */

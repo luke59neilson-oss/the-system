@@ -565,6 +565,9 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
               statBonus: copyRecord(o.statBonus, statIds),
             })),
             professions: [...c.evolution.professions],
+            ...(c.evolution.rerate === undefined
+              ? {}
+              : { rerate: c.evolution.rerate.map((r) => ({ skill: r.skill, rarity: r.rarity })) }),
           },
     portrait: portraitUrl(c.portrait),
   };

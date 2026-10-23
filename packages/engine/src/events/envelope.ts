@@ -383,6 +383,14 @@ export const EVENT_PAYLOAD_SCHEMAS = {
       .min(1)
       .max(10),
     professions: z.array(nonBlank).max(10),
+    /**
+     * Each kept skill's rarity after the evolution (MR.1, DESIGN §6); absent in
+     * releases stored before MR.1, which re-rate nothing.
+     */
+    rerate: z
+      .array(z.strictObject({ skill: nonBlank, rarity: recordId }))
+      .max(200)
+      .optional(),
     /** Upcast from v1: released under the old rules (no pending-selection gate). */
     legacy: z.literal(true).optional(),
   }),

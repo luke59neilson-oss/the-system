@@ -25,6 +25,12 @@ export interface CharacterSkill {
    * reach it. Absent = false, so stored states keep their shape.
    */
   readonly textEdited?: true;
+  /**
+   * The rarity whose library entry this copy's text and effects follow, when
+   * an evolution re-rated the skill (MR.1, DESIGN §6: same power, new label).
+   * Absent = its own rarity; an upgrade or transform clears it.
+   */
+  readonly textRarity?: string;
 }
 
 /** One level-up's free points (DESIGN §4): assigned once, then locked (M1.5). */

@@ -91,9 +91,18 @@ export function librarySkill(
 export function entryForSkill(
   rules: RulesConfig,
   library: Readonly<Record<string, SkillDef>>,
-  skill: Pick<CharacterSkill, 'name' | 'rarity'>,
+  skill: Pick<CharacterSkill, 'name' | 'rarity' | 'textRarity'>,
 ): SkillDef | undefined {
-  return librarySkill(library, skill.name, rules.skills.libraryByRarity ? skill.rarity : undefined);
+  return librarySkill(
+    library,
+    skill.name,
+    rules.skills.libraryByRarity ? textRarityOf(skill) : undefined,
+  );
+}
+
+/** The rarity whose entry a copy's text follows: its own, unless re-rated (MR.1). */
+export function textRarityOf(skill: Pick<CharacterSkill, 'rarity' | 'textRarity'>): string {
+  return skill.textRarity ?? skill.rarity;
 }
 
 /**
@@ -122,11 +131,15 @@ export function syncCharacterSkills(
   library: Readonly<Record<string, SkillDef>>,
   touched: readonly SkillDef[],
 ): Character {
-  const had = new Map(before?.skills.map((s) => [s.name, s.rarity]) ?? []);
+  // Keyed by the rarity each copy's text follows, so a re-rating at evolution
+  // (label only, MR.1) is not a rarity change here and keeps the copy's text.
+  const had = new Map(before?.skills.map((s) => [s.name, textRarityOf(s)]) ?? []);
   let changed = false;
   const skills = after.skills.map((skill) => {
-    const fresh = had.get(skill.name) !== skill.rarity;
-    const hit = touched.some((t) => t.rarity === skill.rarity && sameName(t.name, skill.name));
+    const fresh = had.get(skill.name) !== textRarityOf(skill);
+    const hit = touched.some(
+      (t) => t.rarity === textRarityOf(skill) && sameName(t.name, skill.name),
+    );
     if (!fresh && !hit) return skill;
     const def = entryForSkill(rules, library, skill);
     // A rarity change on a skill the character already had (mark upgrade,

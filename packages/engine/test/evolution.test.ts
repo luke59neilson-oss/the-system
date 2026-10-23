@@ -480,8 +480,9 @@ describe('evolution', () => {
     expect(j.skills.map((s) => [s.name, s.rarity])).toEqual([
       ['Twin Shot', 'rare'],
       [stealth, 'common'],
-      ['Archer’s Eye', 'common'],
-      ['Identify', 'common'],
+      // Kept skills drop one rarity by default (MR.1).
+      ['Archer’s Eye', 'inferior'],
+      ['Identify', 'inferior'],
     ]);
     // Spread reshaped: new weights govern, totals restart from the evolution.
     expect(j.classWeights).toMatchObject({ agility: 2, perception: 1, strength: 0 });
@@ -1452,7 +1453,8 @@ describe('marks carry over through evolutions (MQ.4, D113, D114)', () => {
     expect(reject(c, { type: 'skill.upgrade', characterId: 'jake', skill: archery })).toMatch(
       /ceiling/,
     );
-    // Evolve G → F (still Rare) → E (Epic), with no transforms.
+    // Evolve G → F (still Rare) → E (Epic), with no transforms; the GM keeps
+    // its rarity at each re-rating (MR.1).
     for (let step = 0; step < 200 && char(c).grade !== 'E'; step++) {
       c = pickAll(c);
       const target = evolutionTarget(rules, char(c));
@@ -1461,6 +1463,7 @@ describe('marks carry over through evolutions (MQ.4, D113, D114)', () => {
           type: 'evolution.release',
           characterId: 'jake',
           options: [{ className: 'Hunter', transforms: [] }],
+          rerate: { [archery]: 'rare' },
         });
         c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
       } else {

@@ -217,7 +217,10 @@ export function upgradeSkill(rules: RulesConfig, character: Character, name: str
   }
   const next = rules.skills.rarities[rarityIndex(rules, skill.rarity) + 1];
   const marks = rules.skills.marksCarryOver ? skill.marks - needed : 0;
-  return withSkill(character, index, { ...skill, rarity: next?.id ?? skill.rarity, marks });
+  // The upgraded copy follows its new rarity's entry, not a re-rated one (MR.1).
+  const { textRarity, ...rest } = skill;
+  void textRarity;
+  return withSkill(character, index, { ...rest, rarity: next?.id ?? skill.rarity, marks });
 }
 
 /**

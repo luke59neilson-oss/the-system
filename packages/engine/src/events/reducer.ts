@@ -1249,7 +1249,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       );
     }
     case 'evolution.released': {
-      const { characterId, options, professions, legacy } = event.payload;
+      const { characterId, options, professions, legacy, rerate } = event.payload;
       const character = characterOf(state, event, characterId);
       return withCharacter(
         state,
@@ -1262,6 +1262,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
             retiredFor(state, character),
             event.id,
             legacy === true,
+            rerate ?? null,
           ),
         ),
       );

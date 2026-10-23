@@ -2,6 +2,7 @@ import {
   marksAfterRarityChange,
   type EvolutionOption,
   type OwnSheet,
+  type PendingEvolution,
   type PlayerRules,
 } from '@the-system/engine';
 import { rarityName } from './sheet';
@@ -98,4 +99,27 @@ export function evolutionWarnings(
     out.push('Your class stat spread changes for every class level from now on.');
   out.push('The choice is final; the other options will be gone.');
   return out;
+}
+
+/**
+ * The release's re-rating (MR.1, DESIGN §6), one line per skill in sheet
+ * order: "[Archer's Eye] Common → Inferior", or "[Identify] stays Common".
+ * Empty for releases stored before MR.1 (they re-rate nothing).
+ */
+export function rerateLines(
+  rules: PlayerRules,
+  me: Pick<OwnSheet, 'skills'>,
+  evolution: Pick<PendingEvolution, 'rerate'>,
+): string[] {
+  const rerate = evolution.rerate;
+  if (!rerate || rerate.length === 0) return [];
+  const to = new Map(rerate.map((r) => [r.skill, r.rarity]));
+  return me.skills.flatMap((s) => {
+    const rarity = to.get(s.name);
+    if (rarity === undefined) return [];
+    const from = rarityName(rules, s.rarity);
+    return rarity === s.rarity
+      ? [`[${s.name}] stays ${from}`]
+      : [`[${s.name}] ${from} → ${rarityName(rules, rarity)}`];
+  });
 }

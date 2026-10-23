@@ -6,6 +6,7 @@ import {
   bonusText,
   evolutionBlocked,
   evolutionWarnings,
+  rerateLines,
   transformText,
   weightsText,
 } from './evolution';
@@ -40,6 +41,7 @@ export function EvolutionChoice({
   const backButton = useRef<HTMLButtonElement | null>(null);
   // Waiting selections block the choice (MQ.1, D103); the player can still look.
   const blocked = evolutionBlocked(me);
+  const rerate = rerateLines(rules, me, evolution);
   const [picked, setPicked] = useState<string | null>(null);
   const [profession, setProfession] = useState<string>('');
   const [busy, setBusy] = useState(false);
@@ -110,6 +112,20 @@ export function EvolutionChoice({
         {evolution.options.length === 1 ? 'path' : 'paths'}. Evolving refills{' '}
         {poolList(rules.pools)}.
       </p>
+      {rerate.length > 0 && (
+        <section className="evolution-rerate" data-testid="evolution-rerate">
+          <p className="muted">
+            Your skills are re-rated for {evolution.toGrade}-grade: same power, new label. Text and
+            mastery marks stay; the next upgrade costs the new rarity&rsquo;s marks. A skill a path
+            transforms follows that path instead.
+          </p>
+          <ul aria-label="Skill re-rating">
+            {rerate.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </section>
+      )}
       {blocked && (
         <p className="err" role="status" data-testid="evolution-blocked">
           {blocked}

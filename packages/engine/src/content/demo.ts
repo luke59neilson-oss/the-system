@@ -343,6 +343,9 @@ export function buildDemoEvents(ctx: DemoContext): DomainEvent[] {
             },
           ],
           ...(unlock && demo.profession ? { professions: [demo.profession.name, 'Smith'] } : {}),
+          // The demo's GM keeps every rarity at the re-rating (MR.1), so the
+          // sheets show the whole ladder and Identify keeps its reach.
+          rerate: Object.fromEntries(char(id).skills.map((s) => [s.name, s.rarity])),
         });
         run({
           type: 'evolution.choose',

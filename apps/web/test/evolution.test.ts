@@ -4,6 +4,7 @@ import {
   bonusText,
   evolutionBlocked,
   evolutionWarnings,
+  rerateLines,
   transformText,
   weightsText,
 } from '../src/player/evolution';
@@ -130,5 +131,23 @@ describe('evolution stat bonus (MQ.1)', () => {
     expect(bonusText(rules, { strength: 0 })).toBeNull();
     expect(bonusText(rules, {})).toBeNull();
     expect(bonusText(rules, undefined)).toBeNull();
+  });
+});
+
+describe('rerateLines (MR.1)', () => {
+  const me = { skills: [skill('Basic Archery', 0), skill('Identify', 2)] };
+  it('lists each re-rated skill in sheet order, old → new or "stays"', () => {
+    expect(
+      rerateLines(rules, me, {
+        rerate: [
+          { skill: 'Identify', rarity: 'common' },
+          { skill: 'Basic Archery', rarity: 'rare' },
+        ],
+      }),
+    ).toEqual(['[Basic Archery] Common → Rare', '[Identify] stays Common']);
+  });
+  it('is empty for a release stored before MR.1', () => {
+    expect(rerateLines(rules, me, {})).toEqual([]);
+    expect(rerateLines(rules, me, { rerate: [] })).toEqual([]);
   });
 });
