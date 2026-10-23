@@ -356,3 +356,13 @@ DESIGN/ROADMAP; do not re-apply them.
     SHA-256 so a short download is easy to spot. Alternative: bring back a
     portable build with its own integrity check (more to build and test).
     Answer:
+
+55. **What a player can ask for in a trade.** So that a proposal never reveals
+    what another player holds (QF.9), a player may ask only for items they have
+    seen: ones they hold or wear, or ones offered to them or by them in a
+    trade. Asking for 4 of something the other player holds 1 of is now
+    accepted and only fails when they accept. The trade screen already asks
+    only for currency ("ask in person and let them offer"). Default (D143):
+    this rule. Alternative: let players ask for any item in the library by
+    name, which would tell them which items exist.
+    Answer:

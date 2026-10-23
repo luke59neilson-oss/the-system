@@ -10,9 +10,11 @@ import {
   EMPTY_HOLDINGS,
   itemCappedStats,
   itemEffectiveStats,
+  itemsSeenBy,
   type Bundle,
   type Holdings,
   type ItemDef,
+  type Trade,
   type TradeStatus,
 } from '../economy';
 import {
@@ -391,7 +393,7 @@ export interface PlayerInventory {
   readonly equipped: Readonly<Record<string, string>>;
   /** Own trades, oldest first. */
   readonly trades: readonly PlayerTrade[];
-  /** Definitions of every item above (held, equipped or in an own trade). */
+  /** Definitions of the items the viewer has seen: held, equipped, offered by or to them (QF.9). */
   readonly itemDefs: Readonly<Record<string, PlayerItem>>;
 }
 
@@ -802,12 +804,11 @@ function playerInventory(state: CampaignState, viewerId: string): PlayerInventor
     wanted.add(id);
   }
   const trades: PlayerTrade[] = [];
+  const own: Trade[] = [];
   for (const id of state.tradeOrder) {
     const t = hasOwnKey(state.trades, id) ? state.trades[id] : undefined;
     if (!t || (t.from !== viewerId && t.to !== viewerId)) continue;
-    for (const itemId of [...Object.keys(t.give.items), ...Object.keys(t.get.items)]) {
-      wanted.add(itemId);
-    }
+    own.push(t);
     trades.push({
       id: t.id,
       from: t.from,
@@ -819,6 +820,9 @@ function playerInventory(state: CampaignState, viewerId: string): PlayerInventor
       closedAt: t.closedAt,
     });
   }
+  // Definitions only for items the viewer has seen (QF.9): an item a trade
+  // asks for, but the viewer neither holds nor was offered, stays an id.
+  for (const id of itemsSeenBy(h, own, viewerId)) wanted.add(id);
   const itemDefs: Record<string, PlayerItem> = {};
   for (const id of wanted) {
     const def = hasOwnKey(state.items, id) ? state.items[id] : undefined;

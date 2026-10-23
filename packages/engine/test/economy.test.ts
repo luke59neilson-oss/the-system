@@ -7,8 +7,10 @@ import {
   execute,
   holdingsOf,
   projectForPlayer,
+  appendEvent,
   type Campaign,
   type Command,
+  type DomainEvent,
   type CommandContext,
 } from '../src';
 import { kit, legacyBonusRules, rawRules, run, testContext } from './helpers/events';
@@ -446,9 +448,25 @@ describe('trades', () => {
     give: { currency: 20, items: { potion: 1 } },
     get: { items: { bow: 1 } },
   };
+  /**
+   * A player may ask only for items they have seen (QF.9): Kim once offered
+   * Jake her bow, and he declined.
+   */
+  const seen = () =>
+    ok(
+      ok(base(), {
+        type: 'trade.propose',
+        tradeId: 'look',
+        characterId: 'kim',
+        to: 'jake',
+        give: { items: { bow: 1 } },
+        get: {},
+      }),
+      { type: 'trade.decline', tradeId: 'look', characterId: 'jake' },
+    );
 
   it('accept moves both sides at once', () => {
-    let c = ok(base(), offer, player('jake'));
+    let c = ok(seen(), offer, player('jake'));
     expect(c.state?.trades['tr1']).toMatchObject({ status: 'open', from: 'jake', to: 'kim' });
     // Nothing moves on proposal.
     expect(held(c, 'jake').currency).toBe(100);
@@ -463,7 +481,7 @@ describe('trades', () => {
   });
 
   it('decline and cancel close the trade without moving anything', () => {
-    const c = ok(base(), offer);
+    const c = ok(seen(), offer);
     const declined = ok(
       c,
       { type: 'trade.decline', tradeId: 'tr1', characterId: 'kim' },
@@ -485,7 +503,7 @@ describe('trades', () => {
   });
 
   it('only the counterparty answers and only the proposer cancels', () => {
-    const c = ok(base(), offer);
+    const c = ok(seen(), offer);
     expect(reject(c, { type: 'trade.accept', tradeId: 'tr1', characterId: 'jake' })).toContain(
       'only "kim" can answer',
     );
@@ -505,16 +523,16 @@ describe('trades', () => {
   });
 
   it('accept is atomic: if either side no longer has its part, nothing moves', () => {
-    let c = ok(base(), offer);
+    let c = ok(seen(), offer);
     // Kim gives the bow away before answering.
     c = ok(c, { type: 'gift.give', characterId: 'kim', to: null, items: { bow: 1 } });
-    expect(reject(c, { type: 'trade.accept', tradeId: 'tr1', characterId: 'kim' })).toContain(
-      'Not enough [Bow]',
+    expect(reject(c, { type: 'trade.accept', tradeId: 'tr1', characterId: 'kim' })).toBe(
+      ITEM_NOT_AVAILABLE,
     );
     expect(held(c, 'jake')).toMatchObject({ currency: 100, inventory: { ring: 2, potion: 3 } });
     expect(c.state?.trades['tr1']?.status).toBe('open');
     // And the proposer's side is re-checked too.
-    let d = ok(base(), offer);
+    let d = ok(seen(), offer);
     d = ok(d, { type: 'holdings.adjust', characterId: 'jake', currency: -95 });
     expect(reject(d, { type: 'trade.accept', tradeId: 'tr1', characterId: 'kim' })).toContain(
       'Not enough Credits',
@@ -523,19 +541,34 @@ describe('trades', () => {
   });
 
   it('each side must already hold its part; receiving it in the same trade does not count', () => {
-    // A proposal may ask only for what the counterparty holds now (QF.2).
+    // Kim's bow cannot pay for itself: refused at accept (QF.9), not at proposal.
+    const loop = ok(seen(), {
+      type: 'trade.propose',
+      tradeId: 'loop',
+      characterId: 'kim',
+      to: 'jake',
+      give: { items: { bow: 1 } },
+      get: { items: { bow: 1 } },
+    });
+    expect(reject(loop, { type: 'trade.accept', tradeId: 'loop', characterId: 'jake' })).toBe(
+      ITEM_NOT_AVAILABLE,
+    );
+    expect(loop.state?.trades['loop']?.status).toBe('open');
+    // An item the proposer has never seen cannot be asked for at all.
     expect(
       reject(base(), {
         type: 'trade.propose',
-        tradeId: 'loop',
-        characterId: 'kim',
-        to: 'jake',
-        give: { items: { bow: 1 } },
+        tradeId: 'loop2',
+        characterId: 'jake',
+        to: 'kim',
+        give: { items: { potion: 1 } },
         get: { items: { bow: 1 } },
       }),
     ).toBe(ITEM_NOT_AVAILABLE);
-    // And at accept time, if Jake has since given his part away.
-    let c = ok(base(), {
+    // Jake gives Kim a potion (now she has seen them), then she asks for more
+    // than he holds: the proposal stands (it reveals nothing), the accept fails.
+    let c = ok(base(), { type: 'gift.give', characterId: 'jake', to: 'kim', items: { potion: 1 } });
+    c = ok(c, {
       type: 'trade.propose',
       tradeId: 'loop',
       characterId: 'kim',
@@ -543,20 +576,19 @@ describe('trades', () => {
       give: { items: { bow: 1 } },
       get: { items: { potion: 3 } },
     });
-    c = ok(c, { type: 'gift.give', characterId: 'jake', to: 'kim', items: { potion: 1 } });
-    expect(reject(c, { type: 'trade.accept', tradeId: 'loop', characterId: 'jake' })).toContain(
-      'Not enough [Potion]',
+    expect(reject(c, { type: 'trade.accept', tradeId: 'loop', characterId: 'jake' })).toBe(
+      ITEM_NOT_AVAILABLE,
     );
   });
 
   it('the proposer must hold the offer; trades need two parties and something on them', () => {
-    const c = base();
+    const c = seen();
     expect(reject(c, { ...offer, give: { currency: 101 } })).toContain('Not enough Credits');
     expect(reject(c, { ...offer, to: 'jake' })).toContain('two different parties');
     expect(reject(c, { ...offer, give: {}, get: {} })).toContain('something on it');
-    // Unknown, and known but not held by the counterparty, read the same.
+    // Unknown, and known but never seen by the proposer, read the same.
     expect(reject(c, { ...offer, get: { items: { ghost: 1 } } })).toBe(ITEM_NOT_AVAILABLE);
-    expect(reject(c, { ...offer, get: { items: { ring: 1 } } })).toBe(ITEM_NOT_AVAILABLE);
+    expect(reject(c, { ...offer, get: { items: { ring: 0 } } })).toBe(ITEM_NOT_AVAILABLE);
     expect(reject(c, { ...offer, give: { items: { bow: 1 } } })).toBe(ITEM_NOT_AVAILABLE);
     expect(reject(c, { ...offer, to: 'ghost' })).toContain('unknown character');
     expect(reject(ok(c, offer), offer)).toContain('already exists');
@@ -893,5 +925,97 @@ describe('bonus rules (MQ.14, DESIGN §4, L6)', () => {
     const kim = projectForPlayer(c.state!, 'kim');
     expect(kim.me.itemCappedStats).toEqual([]);
     expect(JSON.stringify(kim.party)).not.toContain('itemCapped');
+  });
+});
+
+describe('trade proposals reveal nothing (QF.9)', () => {
+  /** Jake has seen Kim's bow: she once offered it and he declined. */
+  const seen = () =>
+    ok(
+      ok(base(), {
+        type: 'trade.propose',
+        tradeId: 'look',
+        characterId: 'kim',
+        to: 'jake',
+        give: { items: { bow: 1 } },
+        get: {},
+      }),
+      { type: 'trade.decline', tradeId: 'look', characterId: 'jake' },
+    );
+  const ask = (n: number): Extract<Command, { type: 'trade.propose' }> => ({
+    type: 'trade.propose',
+    characterId: 'jake',
+    to: 'kim',
+    give: { currency: 1 },
+    get: { items: { bow: n } },
+  });
+
+  it("a proposal never depends on the counterparty's holdings: asking 1-4 of Kim's 1 bow all stand", () => {
+    for (const n of [1, 2, 3, 4]) {
+      const c = ok(seen(), ask(n), player('jake'));
+      expect(Object.values(c.state?.trades ?? {}).filter((t) => t.status === 'open')).toHaveLength(
+        1,
+      );
+    }
+    // And Kim holding none reads the same as Kim holding one.
+    const empty = ok(seen(), {
+      type: 'gift.give',
+      characterId: 'kim',
+      to: null,
+      items: { bow: 1 },
+    });
+    for (const n of [1, 4]) expect(execute(empty, ask(n), player('jake')).ok).toBe(true);
+    // The accept re-checks with the one name-free message.
+    const c = ok(seen(), { ...ask(4), tradeId: 'many' }, player('jake'));
+    expect(
+      reject(c, { type: 'trade.accept', tradeId: 'many', characterId: 'kim' }, player('kim')),
+    ).toBe(ITEM_NOT_AVAILABLE);
+  });
+
+  it('an item the proposer has never seen is refused alike, held or not, known or not', () => {
+    const c = base();
+    const kimHas = reject(c, ask(1), player('jake'));
+    const ghost = reject(c, { ...ask(1), get: { items: { ghost: 1 } } }, player('jake'));
+    const nobodyHas = reject(
+      ok(c, { type: 'gift.give', characterId: 'kim', to: null, items: { bow: 1 } }),
+      ask(1),
+      player('jake'),
+    );
+    expect([kimHas, ghost, nobodyHas]).toEqual([
+      ITEM_NOT_AVAILABLE,
+      ITEM_NOT_AVAILABLE,
+      ITEM_NOT_AVAILABLE,
+    ]);
+  });
+
+  it('views carry definitions only for items held, offered by or offered to the viewer', () => {
+    // A trade stored before QF.9 in which Jake asked for a bow he never saw.
+    const c0 = base();
+    const last = c0.events[c0.events.length - 1] as DomainEvent;
+    const old = {
+      ...last,
+      id: 'old-ask',
+      type: 'trade.proposed',
+      actor: { role: 'player', characterId: 'jake' },
+      payload: {
+        tradeId: 'old',
+        characterId: 'jake',
+        to: 'kim',
+        give: { currency: 5, items: { potion: 1 } },
+        get: { currency: 0, items: { bow: 1 } },
+      },
+    } as unknown as DomainEvent;
+    const c = appendEvent(c0, old);
+    const state = c.state ?? (null as never);
+    const jake = projectForPlayer(state, 'jake').inventory;
+    expect(jake.trades.map((t) => t.id)).toEqual(['old']);
+    expect(jake.trades[0]?.get.items).toEqual({ bow: 1 });
+    expect(Object.keys(jake.itemDefs).sort()).toEqual(['potion', 'ring']);
+    expect(JSON.stringify(projectForPlayer(state, 'jake'))).not.toContain('Bow');
+    // Kim holds the bow and is offered the potion: she sees both.
+    const kim = projectForPlayer(state, 'kim').inventory;
+    expect(Object.keys(kim.itemDefs).sort()).toEqual(['bow', 'potion']);
+    // Jake's ring is not offered to Kim, so she never sees it.
+    expect(JSON.stringify(projectForPlayer(state, 'kim'))).not.toContain('Ring of Haste');
   });
 });

@@ -11,6 +11,7 @@ import { CharacterRuleError } from '../character';
 import { normalizeTags } from '../skills/library';
 import { missingDefaultEntries } from '../content/defaults';
 import { largestRemainderSplit } from '../progression';
+import { EMPTY_HOLDINGS, itemsSeenBy } from '../economy';
 import { appendEvent, type Campaign } from './log';
 
 /**
@@ -1222,6 +1223,16 @@ function itemOutOfReach(state: NonNullable<Campaign['state']>, command: Command)
         known(id) &&
         countOf(inv(who), id) >= n,
     );
+  const asksOnlySeen = (who: string, items: Readonly<Record<string, unknown>>) => {
+    const holdings = Object.prototype.hasOwnProperty.call(state.holdings, who)
+      ? (state.holdings[who] ?? EMPTY_HOLDINGS)
+      : EMPTY_HOLDINGS;
+    const seen = itemsSeenBy(holdings, Object.values(state.trades), who);
+    return Object.entries(items).every(
+      ([id, n]) =>
+        typeof n === 'number' && Number.isSafeInteger(n) && n > 0 && known(id) && seen.has(id),
+    );
+  };
   if (command.type === 'item.equip') {
     return known(command.itemId) && countOf(inv(command.characterId), command.itemId) >= 1
       ? null
@@ -1244,10 +1255,26 @@ function itemOutOfReach(state: NonNullable<Campaign['state']>, command: Command)
     const get = command.get.items ?? {};
     if (command.characterId !== null && !holds(command.characterId, give))
       return ITEM_NOT_AVAILABLE;
-    if (command.to !== null && !holds(command.to, get)) return ITEM_NOT_AVAILABLE;
     if (command.to === null && command.characterId !== null && Object.keys(get).length > 0) {
       return 'A trade with the GM can ask only for currency; the GM offers items';
     }
+    if (command.characterId === null) {
+      // The GM sees every inventory, so it may ask only for what is there.
+      if (command.to !== null && !holds(command.to, get)) return ITEM_NOT_AVAILABLE;
+    } else if (!asksOnlySeen(command.characterId, get)) {
+      // A character's ask never depends on the counterparty's holdings (QF.9):
+      // only items the proposer has seen, checked again on accept.
+      return ITEM_NOT_AVAILABLE;
+    }
+  }
+  if (command.type === 'trade.accept') {
+    // Both sides must still hold their part; one name-free message (QF.9).
+    const trade = Object.prototype.hasOwnProperty.call(state.trades, command.tradeId)
+      ? state.trades[command.tradeId]
+      : undefined;
+    if (!trade || trade.status !== 'open' || command.characterId !== trade.to) return null;
+    if (trade.from !== null && !holds(trade.from, trade.give.items)) return ITEM_NOT_AVAILABLE;
+    if (trade.to !== null && !holds(trade.to, trade.get.items)) return ITEM_NOT_AVAILABLE;
   }
   return null;
 }

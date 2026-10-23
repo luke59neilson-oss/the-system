@@ -63,6 +63,27 @@ export interface Trade {
 
 export const EMPTY_HOLDINGS: Holdings = { currency: 0, inventory: {}, equipped: {} };
 
+/**
+ * Item ids a character has seen (QF.9): what they hold or wear, what they
+ * offered in a trade, and what was offered to them. Never what someone else
+ * holds or what a trade asked them for, so neither a proposal nor its view
+ * reveals another character's inventory (D82). Players get definitions for
+ * these items only, and may ask in a trade only for these.
+ */
+export function itemsSeenBy(
+  holdings: Holdings,
+  trades: Iterable<Trade>,
+  characterId: string,
+): Set<string> {
+  const seen = new Set<string>(Object.keys(holdings.inventory));
+  for (const id of Object.values(holdings.equipped)) seen.add(id);
+  for (const t of trades) {
+    if (t.from !== characterId && t.to !== characterId) continue;
+    for (const id of Object.keys(t.give.items)) seen.add(id);
+  }
+  return seen;
+}
+
 const own = <T>(record: Readonly<Record<string, T>>, key: string): T | undefined =>
   Object.prototype.hasOwnProperty.call(record, key) ? record[key] : undefined;
 
