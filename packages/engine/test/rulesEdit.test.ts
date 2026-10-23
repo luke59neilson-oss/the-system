@@ -99,4 +99,13 @@ describe('rules.set (M4.9)', () => {
     );
     expect(r.ok).toBe(false);
   });
+
+  it('never turns XP overflow on by an edit: banked XP needs the migration', () => {
+    const ctx = testContext('o');
+    const legacy = edited((x) => (x.xp.overflow = false));
+    const c = run([{ type: 'campaign.create', name: 'Old', rules: legacy }] as Command[], ctx);
+    const r = execute(c, { type: 'rules.reset' }, ctx);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/rules migration/);
+  });
 });

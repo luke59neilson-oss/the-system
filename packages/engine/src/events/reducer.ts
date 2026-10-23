@@ -581,7 +581,12 @@ export function rulesEditProblem(current: RulesConfig, next: RulesConfig): strin
     if (ids(a) !== ids(b))
       return `the ${name} list (ids and order) cannot change in a running campaign`;
   }
-  if (current.xp.overflow && !next.xp.overflow) return 'XP overflow stays on (Luke, L16)';
+  // Off → on must go through rules.migrate, which moves banked XP and says what was lost.
+  if (current.xp.overflow !== next.xp.overflow) {
+    return current.xp.overflow
+      ? 'XP overflow stays on (Luke, L16)'
+      : 'turn XP overflow on with the rules migration, which moves banked XP first';
+  }
   return null;
 }
 

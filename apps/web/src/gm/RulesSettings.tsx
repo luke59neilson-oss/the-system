@@ -24,6 +24,15 @@ function setAt(root: Json, path: Path, value: Json): Json {
   return { ...obj, [head as string]: setAt(obj[head as string] ?? null, rest, value) };
 }
 
+/** True when a number field is empty or not a finite number. */
+function hasBadNumber(value: Json): boolean {
+  if (typeof value === 'number') return !Number.isFinite(value);
+  if (value !== null && typeof value === 'object') {
+    return Object.values(value).some((v) => hasBadNumber(v));
+  }
+  return false;
+}
+
 /** Keys that other data points at, or that only the app may change (D161). */
 const LOCKED_KEYS = new Set(['id', 'configVersion']);
 
@@ -151,7 +160,8 @@ export function RulesSettings({ client, state }: { client: LiveClient; state: Ca
       return next;
     });
   const draft: Json = edits ?? (JSON.parse(current) as Json);
-  const dirty = JSON.stringify(draft) !== current;
+  const badNumber = hasBadNumber(draft);
+  const dirty = edits !== null && JSON.stringify(draft) !== current;
   const onChange = (path: Path, value: Json) => {
     setEdits(setAt(draft, path, value));
     setStatus(null);
@@ -190,6 +200,7 @@ export function RulesSettings({ client, state }: { client: LiveClient; state: Ca
           />
         ),
       )}
+      {badNumber && <p className="err">Every number field needs a number before saving.</p>}
       {error && (
         <p className="err" role="alert">
           {error}
@@ -203,7 +214,7 @@ export function RulesSettings({ client, state }: { client: LiveClient; state: Ca
       <div className="row">
         <button
           type="button"
-          disabled={!dirty}
+          disabled={!dirty || badNumber}
           onClick={() => send({ type: 'rules.set', rules: draft }, 'Rules saved.')}
         >
           Save rules
