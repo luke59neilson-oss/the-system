@@ -161,8 +161,10 @@ describe('player projection', () => {
 
   it('classifies every character and campaign field', () => {
     const state = party();
+    // Optional fields appear only when set (MQ.15's clamped-pool marks).
+    const optional = ['clampedPools'];
     expect(Object.keys(CHARACTER_FIELD_VISIBILITY).sort()).toEqual(
-      Object.keys(state.characters.jake ?? {}).sort(),
+      [...Object.keys(state.characters.jake ?? {}), ...optional].sort(),
     );
     expect(Object.keys(CAMPAIGN_FIELD_VISIBILITY).sort()).toEqual(Object.keys(state).sort());
     const view = projectForPlayer(state, 'jake');

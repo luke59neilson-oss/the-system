@@ -77,6 +77,12 @@ export interface Character {
    * beside the campaign, or null for the monogram (M4.4).
    */
   readonly portrait: string | null;
+  /**
+   * MQ.15 (L7): pool ids a falling maximum clamped while they were not full.
+   * Such a pool is at its maximum but does not count as full, so a rising
+   * maximum leaves it where it is. Absent when empty (older states unchanged).
+   */
+  readonly clampedPools?: readonly string[];
 }
 
 /** A stored portrait: the SHA-256 of the image bytes and its extension (M4.4). */

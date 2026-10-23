@@ -17,6 +17,7 @@ exports[`default rules > match the snapshot 1`] = `
     ],
   },
   "character": {
+    "clampedPoolsNotFull": true,
     "defaultRace": "Human",
     "fullPoolsStayFull": true,
   },
