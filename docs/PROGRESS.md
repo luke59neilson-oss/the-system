@@ -743,7 +743,7 @@ next item, blockers. -->
 - Next item: resume `wip/M4.8`.
 - Blockers: none.
 
-### Run eed2b7e8 · 2026-10-23 12:18–13:07 UTC (end minute 49)
+### Run eed2b7e8 · 2026-10-23 12:18–13:05 UTC (end minute 47: close-out finished early with M4.9 on wip; none of the §5.5 reasons applies, so this is an early stop to note)
 - Preflight: `add_repo` not offered; repo already cloned (local main unrelated to origin/main, reset to origin/main eac4c8b). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer on sonnet works (worktree; the Agent call returns when done). No new answers. CI on main: latest completed 7c7523e green.
 - Efficiency check (hour 12): scorecard row appended; nothing in trial to judge; auditor (sonnet) gave 2 Tier 1 proposals; applied one as a trial (push main once per item after review fixes, LOOP §5.4/§6.3, D162); the other (`--only-changed` e2e) noted for a later check.
 - M4.8 Change log and undo: every event type has words (session-log wording or a summary phrase; test enforces it), Kind filter, notes never show title or text, live player rows, undo reaches the player. Sonnet round 1: 0 H, 3 M fixed; round 2: 0 H, 0 M, 3 L fixed. D160. **Checked.**
