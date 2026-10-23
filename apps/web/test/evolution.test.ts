@@ -112,6 +112,32 @@ describe('evolution warnings with marks carrying over (MQ.4, D114)', () => {
   });
 });
 
+describe('evolution warnings when every upgrade starts at 0 marks (MR.2, L15)', () => {
+  const resetting = { marks: { ...rules.marks, carryOver: false, resetOnUpgrade: true } };
+  const at = (marks: number) => me({ skills: [skill('Basic Archery', marks)] });
+  it('says a transform that raises the rarity resets every mark', () => {
+    expect(evolutionWarnings(resetting, at(6), option())[0]).toBe(
+      '[Basic Archery] becomes [Expert Archery]: a transformed skill starts at 0 marks, so its 6 mastery marks reset.',
+    );
+    expect(evolutionWarnings(resetting, at(1), option())[0]).toBe(
+      '[Basic Archery] becomes [Expert Archery]: a transformed skill starts at 0 marks, so its 1 mastery mark resets.',
+    );
+  });
+  it('says a transform at the same rarity resets them too', () => {
+    const keep = option({
+      transforms: [{ skill: 'Basic Archery', name: 'Expert Archery', rarity: 'common' }],
+    });
+    expect(evolutionWarnings(resetting, at(3), keep)[0]).toBe(
+      '[Basic Archery] becomes [Expert Archery]: a transformed skill starts at 0 marks, so its 3 mastery marks reset.',
+    );
+  });
+  it('says nothing about a skill with no marks', () => {
+    expect(evolutionWarnings(resetting, at(0), option())).toEqual([
+      'The choice is final; the other options will be gone.',
+    ]);
+  });
+});
+
 describe('evolution waits for selections (MQ.1, D103)', () => {
   it('blocks while any earned selection is unchosen, offered or not', () => {
     expect(evolutionBlocked({ selectionsDue: 0 })).toBeNull();

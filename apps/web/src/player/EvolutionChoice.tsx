@@ -117,7 +117,8 @@ export function EvolutionChoice({
           <p className="muted">
             Your skills are re-rated for {evolution.toGrade}-grade: same power, new label. Text and
             mastery marks stay; the next upgrade costs the new rarity&rsquo;s marks. A skill a path
-            transforms follows that path instead.
+            transforms follows that path instead
+            {rules.marks.resetOnUpgrade ? ' and starts at 0 marks' : ''}.
           </p>
           <ul aria-label="Skill re-rating">
             {rerate.map((line) => (
