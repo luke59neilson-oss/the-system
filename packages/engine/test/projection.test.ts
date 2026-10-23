@@ -455,6 +455,25 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
       ...s.broadcasts.map((b) => ({ ...b, gmNote: `${GM}-broadcast` })),
       ...whispers,
     ];
+    // Scheduled broadcasts (M4.7) stay GM-only until their day is reached,
+    // even those addressed to everyone or to the viewer (QF.15).
+    (s as Record<string, unknown>).scheduledBroadcasts = [
+      ...s.scheduledBroadcasts.map((b) => ({ ...b, text: `${GM}-scheduled-${b.id}` })),
+      {
+        id: 'sched-all',
+        text: `${GM}-scheduled-all`,
+        characterIds: null,
+        day: s.day + 1,
+        scheduledAt: '2026-10-21T12:00:00.000Z',
+      },
+      ...ids.map((id) => ({
+        id: `sched-${id}`,
+        text: `${GM}-scheduled-${id}`,
+        characterIds: [id],
+        day: s.day + 1,
+        scheduledAt: '2026-10-21T12:00:00.000Z',
+      })),
+    ];
     // Economy (M3.7): each player gets only their own holdings, their own
     // trades and the definitions of the items those mention. The rest of the
     // library, other players' holdings and trades, and unknown keys stay hidden.

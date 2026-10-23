@@ -128,7 +128,7 @@ export default tseslint.config(
       'playwright-report-latency/**',
       'apps/desktop/release/**',
       // Reviewer worktrees (gitignored) hold whole repo copies.
-      '.claude/**',
+      '.claude/worktrees/**',
     ],
   },
   {

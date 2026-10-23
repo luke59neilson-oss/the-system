@@ -9,4 +9,4 @@ package-lock.json
 docs
 *.md
 apps/desktop/release/
-.claude/
+.claude/worktrees/
