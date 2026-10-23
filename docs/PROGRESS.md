@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M4, MS, MQ and MR done; QF.1–QF.15 done; M5.1 built on `wip/M5.1`, round-1 review Mediums to fix; Preview ready: Actions → Release → Run workflow (M4)
-**Next item:** finish `wip/M5.1` (fix the 4 round-1 Mediums in REVIEW-LOG, then round-2 review), then M5.2
+**Status:** in progress: M0–M4, MS, MQ and MR done; QF.1–QF.15 done; M5.1 done; M5.2 started on `wip/M5.2`; Preview ready: Actions → Release → Run workflow (M4)
+**Next item:** resume `wip/M5.2` (evolution builder), then M5.3
 **Blockers:** none
 
 ## Run log
@@ -785,3 +785,11 @@ next item, blockers. -->
 - Next item: finish M5.1.
 - Blockers: none.
 
+### Run 15df85c9 · 2026-10-23 16:10–16:54 UTC (end minute ~44)
+- Preflight: `add_repo` not offered; repo already cloned (detached HEAD, local main stale, reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer on sonnet works (worktree). No new answers. CI on main: latest completed 77ee21a green. Not an efficiency or sweep hour.
+- M5.1 offer builder: fixed the four round-1 Mediums on `wip/M5.1` (be2d267): one draft per character and selection (keyed form; Kind forced to class without a profession), capstone e2e reached through the dashboard chip, practice log as a column beside the menu with whole-log skill/stat counts and dates, dashboard selection chips open the builder at that character and level; Withdraw confirms (D167). Sonnet round 2: 0 H, 0 M, 7 L (one fixed, rest to the QUALITY Backlog). Full e2e 55/55. **Checked**, merged to main (b255ecc).
+- M5.2 evolution builder started on `wip/M5.2` (base b255ecc, head 2d14e01): `evolutionBuilderModel.ts` (plan: target grade, pending selections, default re-rating rows capped at the new ceiling, merge prompts, profession offers allowed, pending release; `releaseProblem` = the engine's own refusal) with unit tests; `EvolutionBuilder.tsx` panel (options with class name, +N to all and per-stat one-time bonus, spread reshape, professions to offer, per-skill re-rating, merge prompts, release); e2e `M5.2.spec.ts` 1/1 and a screenshot. `npm run check` green there (968). Where I stopped / next steps: (1) transforms: let the GM add skill transforms per option, and turn a merge prompt into a transform; (2) withdrawing an untaken profession offer needs a new engine command/event (none exists; MQ.6 review) — add it with a golden-log update; (3) e2e for the "waits on a selection" warning and a player choosing the released option (bonus and re-rating land); (4) then the §6 review.
+- Tests: 965 unit on main (`npm run check` green); e2e 55 incl. M5.1. Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/M5.2`.
+- Next item: resume `wip/M5.2`.
+- Blockers: none.
