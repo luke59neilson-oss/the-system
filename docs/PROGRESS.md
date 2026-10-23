@@ -816,7 +816,7 @@ next item, blockers. -->
 - Ended at minute 45: hand-off at 44 per §5.5; M5.4's review could not report and be fixed before 50, so it was not launched (next run launches it first).
 - Blockers: none.
 
-### Run 698982a6 · 2026-10-23 19:07–19:56 UTC (end minute 48)
+### Run 698982a6 · 2026-10-23 19:07–19:55 UTC (end minute 47: M5.4 and M5.5 checked and merged; at minute 44 the final full e2e was still running, and M5.A needs it, so no new item was started)
 - Preflight: `add_repo` not offered; repo already cloned (local main fast-forwarded to origin/main after unshallowing). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer on sonnet works (worktree). No new answers. Not an efficiency or sweep hour.
 - CI on main was red (098ed9f): M4.3 latency spec, 42px sideways scroll at 390px from the M5.3 "Mark another skill" select. Reproduced, fixed (select and label capped at 100%), pushed fdedc32 first.
 - M5.4 Merges **checked** (resumed wip/M5.4): sonnet round 1 0 H / 2 M / 5 L, round 2 0 H / 0 M / 4 L; refusal-path tests, name clash held before Send, per-grade text from config, GM 390×844 check. D171 finalised.
