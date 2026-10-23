@@ -635,3 +635,7 @@
 
 - Round 1 (738d8be..f20c43d): 0 H, 3 M. Fixed: banked XP on capped tracks is re-applied under overflow (other track takes what it can, rest lost) instead of cleared; `rules.migrated` cannot be undone (it would re-run on load). Kept: the GM sees the migration in the session log only until M4.8's change log (no GM UI for it yet). Lows kept: `importCampaign` has no route yet; demo-switch path untested (same `open` wrapper as main); no HTTP-path test.
 - Round 2 (f20c43d..ea946ad): 0 H, 0 M; both fixes confirmed. Lows: a stale variable name (kept), payload renamed without an event version bump (never on main, so harmless), a comment on per-track independence (kept).
+
+## 2026-10-23 · MR.4 · sonnet (round 1, 54f0dd0..9bf8bd2)
+- 0 High, 1 Medium, 4 Low. M fixed (15bf8ae, wip): the Skill text form's "Follows the library entry" line now uses `entryForSkill` (a re-rated copy follows its old text rarity); the button keeps the current-rarity lookup. L fixed: an all-blank entry is refused (engine and button); tests for undo of `skill.libraryTextUsed` and a same-name transform keeping hand text; 8px gap between the buttons. L kept: no confirm on Use library text (undo exists); legacy (`libraryByRarity` false) campaigns get no button, consistent since hand text only exists under it. Box not checked yet (property test unfinished, see PROGRESS).
+

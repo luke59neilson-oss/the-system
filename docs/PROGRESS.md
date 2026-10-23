@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress: M0–M3, MS and MQ done; QF.1–QF.12 done; M4.1–M4.4 done; MR.1–MR.3 done; Preview ready: Actions → Release → Run workflow (MQ)
-**Next item:** MR.4 Hand-written skill text survives upgrades; Use library text
+**Next item:** MR.4 (resume wip/MR.4), then MR.A
 **Blockers:** none
 
 ## Run log
@@ -704,3 +704,13 @@ next item, blockers. -->
 - Open `wip/*` branches: none new (wip/MR.2 and wip/MR.3 merged).
 - Next item: MR.4, then MR.A (fable review, then Preview ready).
 - Blockers: none.
+
+### Run 9ff08458 · 2026-10-23 08:08–08:55 UTC (ended at minute 45+; MR.4 handed off at the 44 mark)
+- Preflight: `add_repo` not offered; repo already cloned but shallow (unshallowed, then fast-forwarded to origin/main d92476f). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer on sonnet works (blocking, ~12 min). No new answers. CI on main: latest completed 75e26f3 green.
+- MR.4 Hand-written skill text survives upgrades; Use library text (D154): rule `skills.handTextSurvivesUpgrade` (stored rules false, D133 kept for them), command `skill.useLibraryText` → `skill.libraryTextUsed`, GM Skill text form button + source line, schema v24, goldens re-recorded + new `library-text` golden, `handText.test.ts` (10 tests), e2e `MR.4.spec.ts` + screenshots. Sonnet round 1: 0 H, 1 M (form status line used the current rarity instead of the copy's text rarity: fixed), 4 L (all-blank entry now refused; undo and same-name transform tests added; button spacing; legacy-campaign UI noted). **Not checked.**
+- **Where I stopped:** branch `wip/MR.4` at 15bf8ae (base 54f0dd0). `npm run check` fails one test only: the random property test (`events.test.ts` "holds over 2000 random commands") never gets an accepted `skill.useLibraryText` (random library entries rarely match a hand-written copy's name+rarity with text). Next step: make the generator reach it (e.g. have `randomLibraryCommand` define with text for the rarity of a hand-written copy, or emit a `skill.describe` then reconnect on Identify/Common), re-run check + e2e MR.4/MQ.12/M3.5, verify round-1 fixes yourself (round 2 not required: 0 H, 1 M), log REVIEW-LOG, merge wip/MR.4 into main, check the box.
+- Tests: 895/896 unit on wip/MR.4 (the generator one above). e2e MR.4, MQ.12, M3.5, MR.1 green. Engine coverage not re-measured.
+- Open `wip/*` branches: wip/MR.4 (unfinished).
+- Next item: finish MR.4, then MR.A (fable review, then Preview ready).
+- Blockers: none.
+
