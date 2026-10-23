@@ -448,14 +448,17 @@ describe('session log during a scripted session (M2.4 acceptance)', () => {
     const started = Date.now();
     try {
       await app.close();
-      expect(Date.now() - started).toBeLessThan(2000);
+      // What this guards is ws's 30 s close-handshake wait (QF.8): without the
+      // terminate in preClose, close takes 30 s. 10 s leaves room for a loaded
+      // machine and still tells the two apart.
+      expect(Date.now() - started).toBeLessThan(10_000);
       const dir = path.join(app.exportsDir, 'main');
       expect(readdirSync(dir).filter((f) => f.endsWith('.md'))).toHaveLength(1);
       expect(existsSync(path.join(dataDir, 'campaigns', 'main', 'LOCK'))).toBe(false);
     } finally {
       zombie.destroy();
     }
-  });
+  }, 20_000);
 
   it('keeps a log per hub-driven campaign without touching the event log', () => {
     // The writer reads the store; the hub writes it. Both share one store.

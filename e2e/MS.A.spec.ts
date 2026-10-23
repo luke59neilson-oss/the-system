@@ -42,7 +42,7 @@ function watch(page: Page) {
   return { errors, frames };
 }
 
-test('a first session on the walking skeleton, through a laptop restart', async ({ browser }) => {
+test('a first session on the walking skeleton, through a laptop restart', { tag: '@latency' }, async ({ browser }) => {
   server = await startBuiltServer({ GM_KEY }, { dataDir });
   const port = Number(new URL(server.url).port);
 

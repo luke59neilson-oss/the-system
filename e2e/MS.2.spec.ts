@@ -39,7 +39,7 @@ async function broadcast(gm: Page, text: string, to: string) {
   await expect(gm.getByRole('listitem').filter({ hasText: text })).toBeVisible();
 }
 
-test('a player picks a character and watches the GM’s changes land live', async ({ browser }) => {
+test('a player picks a character and watches the GM’s changes land live', { tag: '@latency' }, async ({ browser }) => {
   const gm = await browser.newPage();
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Tutorial: The Whale');

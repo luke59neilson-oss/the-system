@@ -56,7 +56,7 @@ function watch(page: Page) {
 const pane = (gm: Page, name: string) =>
   gm.frameLocator(`iframe[title="${name} (player view)"]:visible`);
 
-test('the GM views the table as each player, live, with player-only data', async ({ browser }) => {
+test('the GM views the table as each player, live, with player-only data', { tag: '@latency' }, async ({ browser }) => {
   const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const { errors, sockets, paneBodies } = watch(gm);
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
