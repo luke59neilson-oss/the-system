@@ -2188,3 +2188,22 @@ ol.change-log li.undone .change-text {
 .offer-builder > label select {
   max-width: 360px;
 }
+
+/* M5.2 evolution builder */
+.evolution-builder .stat-bonus {
+  grid-column: 1 / -1;
+  margin-bottom: 6px;
+}
+.evolution-builder .stat-bonus[open] {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 8px;
+}
+.evolution-builder .stat-bonus summary {
+  grid-column: 1 / -1;
+  cursor: pointer;
+}
+.evolution-builder .rerate {
+  list-style: none;
+  padding: 0;
+}

@@ -76,6 +76,8 @@ test('the GM builds and releases an evolution with re-rating', async ({ browser 
   const option = form.getByRole('group', { name: 'Option 1' });
   await option.getByLabel('Class name').fill('Storm Hunter');
   await option.getByLabel('Bonus to all stats').fill('2');
+  await option.getByText('Bonus per stat').click();
+  await option.getByLabel('Strength').fill('3');
   await expect(
     form.getByRole('list', { name: 'Re-rating' }).getByRole('listitem').first(),
   ).toBeVisible();

@@ -7,9 +7,20 @@ import { evolutionPlan, releaseProblem, type EvolutionPlan } from './evolutionBu
 interface OptionDraft {
   className: string;
   description: string;
-  /** "+N to all" one-time bonus (DESIGN §2); per-stat bonuses come later. */
+  /** "+N to all" one-time bonus (DESIGN §2), added to each per-stat bonus. */
   allBonus: number;
+  /** Extra one-time bonus per stat id. */
+  bonus: Record<string, number>;
 }
+
+const blankOption = (className = ''): OptionDraft => ({
+  className,
+  description: '',
+  allBonus: 0,
+  bonus: {},
+});
+
+const wholeNumber = (v: string) => Math.max(0, Math.floor(Number(v) || 0));
 
 /**
  * GM evolution builder (ROADMAP M5.2, DESIGN §2/§6; work in progress): for a
@@ -70,9 +81,7 @@ function ReleaseForm({
   const { rules } = state;
   const character = state.characters[characterId];
   const rarityName = (id: string) => rules.skills.rarities.find((r) => r.id === id)?.name ?? id;
-  const [options, setOptions] = useState<OptionDraft[]>([
-    { className: character?.className ?? '', description: '', allBonus: 0 },
-  ]);
+  const [options, setOptions] = useState<OptionDraft[]>([blankOption(character?.className ?? '')]);
   const [professions, setProfessions] = useState('');
   const [rerate, setRerate] = useState<Record<string, string>>(() =>
     Object.fromEntries(plan.rerate.map((r) => [r.skill, r.byDefault])),
@@ -86,8 +95,11 @@ function ReleaseForm({
     description: o.description.trim(),
     transforms: [],
     classWeights: null,
-    statBonus:
-      o.allBonus > 0 ? Object.fromEntries(rules.stats.list.map((s) => [s.id, o.allBonus])) : {},
+    statBonus: Object.fromEntries(
+      rules.stats.list
+        .map((s) => [s.id, o.allBonus + (o.bonus[s.id] ?? 0)] as const)
+        .filter(([, n]) => n > 0),
+    ),
   }));
   const offered = plan.professionOffers
     ? professions
@@ -158,11 +170,26 @@ function ReleaseForm({
               min={0}
               step={1}
               value={o.allBonus}
-              onChange={(e) =>
-                setOption(i, { allBonus: Math.max(0, Math.floor(Number(e.target.value) || 0)) })
-              }
+              onChange={(e) => setOption(i, { allBonus: wholeNumber(e.target.value) })}
             />
           </label>
+          <details className="stat-bonus">
+            <summary>Bonus per stat</summary>
+            {rules.stats.list.map((st) => (
+              <label key={st.id}>
+                {st.name}{' '}
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={o.bonus[st.id] ?? 0}
+                  onChange={(e) =>
+                    setOption(i, { bonus: { ...o.bonus, [st.id]: wholeNumber(e.target.value) } })
+                  }
+                />
+              </label>
+            ))}
+          </details>
           <label>
             Description{' '}
             <input
@@ -177,7 +204,7 @@ function ReleaseForm({
         <button
           type="button"
           disabled={options.length >= rules.skills.menuSize.max}
-          onClick={() => setOptions([...options, { className: '', description: '', allBonus: 0 }])}
+          onClick={() => setOptions([...options, blankOption()])}
         >
           Add option
         </button>
