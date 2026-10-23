@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3, MS, MQ and MR done; QF.1–QF.12 done; M4.1–M4.5 done; M4.6 built, review round 2 pending; Preview ready: Actions → Release → Run workflow (MR)
-**Next item:** M4.6 review round 2 (sonnet, 21f6506..HEAD), then M4.7 System broadcast
+**Status:** in progress: M0–M3, MS, MQ and MR done; QF.1–QF.12 done; M4.1–M4.7 done; M4.8 on `wip/M4.8`; Preview ready: Actions → Release → Run workflow (MR)
+**Next item:** resume `wip/M4.8` Change log and undo (see the last run entry), then M4.9 Rules settings
 **Blockers:** none
 
 ## Run log
@@ -733,3 +733,12 @@ next item, blockers. -->
 - Next item: re-launch the M4.6 round-2 review, then M4.7 System broadcast.
 - Blockers: none.
 
+### Run ff3fd214 · 2026-10-23 11:14–11:59 UTC (ended at minute 45; close-out after the 44 hand-off)
+- Preflight: `add_repo` not offered; repo already cloned (local main unrelated to origin/main, reset to origin/main f5cfa3a, unshallowed). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer on sonnet works (worktree; the Agent call returns when the review is done). No new answers. CI on main: latest completed f5cfa3a green. Hour 11: no efficiency check or sweep.
+- M4.6 XP award dialog: sonnet round 2: 0 H, 2 M, fixed (typical-session suggestion capped by the room left: engine `xpRoom`, `typicalSessionAward`; button disabled with nobody to suggest for) plus 2 Lows. **Checked.**
+- M4.7 System broadcast: to everyone, one character or several; now or scheduled for a later in-game day (`broadcast.scheduled`/`unscheduled`, GM-only `scheduledBroadcasts`, campaign state v25, new golden log; `campaign.dayAdvanced` sends due ones). D159, Q60. Sonnet round 1: 0 H, 2 M fixed (day form warns and reports sends; hub test); round 2: 0 H, 0 M. **Checked.**
+- M4.8 Change log and undo, started on `wip/M4.8` (base e20e3f4, head 07295b3): engine `changeLog` (rows in session-log words via exported `describeEvent`; undone events described against the state they were applied to), `GET /api/gm/changelog`, `ChangeLog` GM panel (Who filter, text filter, Undo with friendly refusal, no Undo on the campaign's creation, time and player marker), `e2e/M4.8.spec.ts` green, first screenshot. Next: rows for events with no session-log line read as raw types (`library.seeded`, `campaign.created`) → give them words; type/category filter; live refresh is by state change (check a player's own action refreshes it); screenshot at 1366 full page; D-entry; review.
+- Tests: 934 unit on main (`npm run check` green; 935 on wip); full e2e suite green locally at b3b663e (53 incl. latency); M4.6, M4.7, M4.3, MS.1, M2.A green after the last fixes. Engine coverage not re-measured.
+- Open `wip/*` branches: `wip/M4.8`.
+- Next item: resume `wip/M4.8`.
+- Blockers: none.
