@@ -24,9 +24,15 @@ test('double-click start: server up, GM window connected with the key', async ()
       THE_SYSTEM_USER_DATA_DIR: userData,
     },
   });
+  // Everything the app prints, to prove the GM key never appears in it (QF.6).
+  let printed = '';
+  app.process().stdout?.on('data', (chunk: Buffer) => (printed += chunk.toString()));
+  app.process().stderr?.on('data', (chunk: Buffer) => (printed += chunk.toString()));
   try {
     const gm = await gmWindow(app);
     await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    const gmKey = await gm.evaluate(() => sessionStorage.getItem('the-system.gmKey'));
+    expect(gmKey).toMatch(/^.{16,}$/);
     // The key was moved out of the address bar.
     expect(gm.url()).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/gm$/);
     const port = Number(new URL(gm.url()).port);
@@ -58,6 +64,11 @@ test('double-click start: server up, GM window connected with the key', async ()
     } finally {
       await browser.close();
     }
+
+    // The app printed its ready line, and never the key.
+    await expect.poll(() => printed).toContain('desktop ready on port');
+    expect(printed).not.toContain(gmKey ?? '');
+    expect(printed).not.toContain(encodeURIComponent(gmKey ?? ''));
   } finally {
     await app.close();
     rmSync(dataDir, { recursive: true, force: true });
