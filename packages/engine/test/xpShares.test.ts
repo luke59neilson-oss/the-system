@@ -5,6 +5,8 @@ import {
   defaultRules,
   previewXpAward,
   previewXpShares,
+  typicalSessionAward,
+  xpRoom,
   type Character,
 } from '../src';
 import { kit } from './helpers/events';
@@ -124,5 +126,44 @@ describe('previewXpShares (M4.6)', () => {
     });
     expect(up!.lost).toBe(0);
     expect(up!.levelUps.some((l) => l.track === 'profession' && l.level === 1)).toBe(true);
+  });
+});
+
+describe('typical-session suggestion (M4.6)', () => {
+  it('xpRoom is the XP left to the grade top on class plus profession', () => {
+    // G top is level 4 at 100 XP per level.
+    expect(xpRoom(rules, make('a'))).toBe(400);
+    expect(xpRoom(rules, { ...make('a'), classLevel: 3, xp: { class: 40, profession: 0 } })).toBe(
+      60,
+    );
+    expect(xpRoom(rules, { ...make('a'), classLevel: 4 })).toBe(0);
+    const e: Character = {
+      ...make('e'),
+      grade: 'E',
+      classLevel: 49,
+      professionLevel: 47,
+      profession: 'Alchemist',
+    };
+    expect(xpRoom(rules, e)).toBe(2 * 900);
+    expect(xpRoom({ ...rules, xp: { ...rules.xp, overflow: false } }, make('a'))).toBe(Infinity);
+  });
+  it('suggests the typical session per head, capped by the least room, and loses nothing', () => {
+    const fresh = [make('a'), make('b'), make('c')];
+    // G typical is 6 × 100 = 600 each, but a fresh G character has 400 of room.
+    const amount = typicalSessionAward(rules, 'G', fresh);
+    expect(amount).toBe(1200);
+    const rows = previewXpAward(rules, { a: fresh[0]!, b: fresh[1]!, c: fresh[2]! }, 'class', {
+      amount,
+      participants: fresh.map((c) => ({ characterId: c.id })),
+    });
+    expect(rows.every((r) => r.lost === 0)).toBe(true);
+    const f: Character = { ...make('f'), grade: 'F', classLevel: 5 };
+    expect(typicalSessionAward(rules, 'F', [f])).toBe(6 * 300);
+  });
+  it('ignores capped characters for the cap and is 0 when nobody has room', () => {
+    const capped: Character = { ...make('x'), classLevel: 4 };
+    expect(typicalSessionAward(rules, 'G', [capped, make('a')])).toBe(800);
+    expect(typicalSessionAward(rules, 'G', [capped])).toBe(0);
+    expect(typicalSessionAward(rules, 'G', [])).toBe(0);
   });
 });

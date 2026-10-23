@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import {
   balancedShares,
   previewXpShares,
+  typicalSessionAward,
   typicalSessionXp,
   type CampaignState,
   type XpPreview,
@@ -55,7 +56,8 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
       ? balancedShares(value, chosen.length, fixed)
       : null;
   if (amount.trim() !== '' && !amountOk) shareError = 'The amount must be a whole number above 0';
-  else if (!levelOk) shareError = 'The target’s level must be a whole number of 0 or more';
+  else if (!levelOk && enemyLevel.trim() !== '')
+    shareError = 'The target’s level must be a whole number of 0 or more';
   if (amountOk && shares === null && shareError === null && chosen.length > 0) {
     shareError = `The shares add up to more than ${value} XP`;
   }
@@ -167,24 +169,41 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
             <span key={g}>
               {i > 0 && ' · '}
               {g}-grade {typicalSessionXp(rules, g).toLocaleString('en-US')} XP each{' '}
-              <button
-                type="button"
-                className="secondary small"
-                onClick={() => {
-                  const n = chosen.filter((id) => state.characters[id]?.grade === g).length;
-                  setAmount(String(typicalSessionXp(rules, g) * n));
-                }}
-              >
-                Use for {chosen.filter((id) => state.characters[id]?.grade === g).length}
-              </button>
+              {(() => {
+                const group = chosen
+                  .map((id) => state.characters[id])
+                  .filter((c): c is NonNullable<typeof c> => c?.grade === g);
+                const suggested = typicalSessionAward(rules, g, group);
+                return (
+                  <button
+                    type="button"
+                    className="secondary small"
+                    disabled={suggested === 0}
+                    title={
+                      group.length === 0
+                        ? `No chosen ${g}-grade participants`
+                        : suggested === 0
+                          ? `Every chosen ${g}-grade participant is at the grade’s top`
+                          : `${suggested.toLocaleString('en-US')} XP, split evenly`
+                    }
+                    onClick={() => {
+                      setAmount(String(suggested));
+                      setResult(null);
+                    }}
+                  >
+                    Use for {group.length}
+                  </button>
+                );
+              })()}
             </span>
           ))}
-          . XP past a grade’s top level overflows or is lost; the preview below shows it.
+          . The button suggests no more than the room left before the grade’s top, so it loses no XP
+          for anyone who can still level; the preview below shows overflow and loss.
         </p>
       )}
       <fieldset>
         <legend>Participants ({byHand ? 'shares by hand' : 'even split'})</legend>
-        {chosen.length > 1 && (
+        {(chosen.length > 1 || byHand) && (
           <label className="check">
             <input
               type="checkbox"

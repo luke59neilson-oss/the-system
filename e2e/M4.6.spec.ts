@@ -53,10 +53,14 @@ test('the GM previews and awards XP with a custom split', async ({ browser }) =>
   const [jake, kim, ada] = ids as [string, string, string];
 
   const award = gm.getByRole('form', { name: 'Award class XP' });
-  // The typical-session helper fills the amount for the three G-grade characters.
+  // The typical-session helper fills the amount for the three G-grade characters:
+  // 600 each is typical, but a fresh G character has only 400 XP of room, so it
+  // suggests 3 × 400 and nothing is lost.
   await expect(award.getByTestId('typical-session')).toContainText('G-grade 600 XP each');
   await award.getByRole('button', { name: 'Use for 3' }).click();
-  await expect(award.getByLabel('Amount')).toHaveValue('1800');
+  await expect(award.getByLabel('Amount')).toHaveValue('1200');
+  await expect(award.getByTestId(`levels-${jake}`)).toHaveText(' · class lvl 0 → 4');
+  await expect(award.getByTestId('xp-lost')).toHaveCount(0);
 
   // Even split of 1,000: 334 / 333 / 333, each to class level 3 or 4 with XP lost past the top.
   await award.getByLabel('Amount').fill('1000');
@@ -87,6 +91,8 @@ test('the GM previews and awards XP with a custom split', async ({ browser }) =>
   await award.getByLabel('Target’s grade').selectOption({ label: 'Not set (full XP)' });
   // The above-level bonus: a level 3 target gives +30% to level-0 characters.
   await award.getByRole('checkbox', { name: 'Above-level bonus' }).check();
+  // No error before the GM has typed a level.
+  await expect(award.getByRole('alert')).toHaveCount(0);
   await award.getByLabel('Target’s level').fill('3');
   await expect(award.getByTestId(`gained-${kim}`)).toHaveText(' · gains 130');
   await award.getByLabel('Reason (GM only)').fill('The Rake Canyons ambush');

@@ -3,6 +3,7 @@ import {
   gradeIndexOf,
   isAtCap,
   raceLevel,
+  trackCap,
   type Character,
   type FreePointBatch,
 } from '../character';
@@ -179,6 +180,41 @@ export function shareXp(
 export function typicalSessionXp(rules: RulesConfig, gradeId: string): number {
   const grade = rules.grades[gradeIndexOf(rules, gradeId)] as GradeRules;
   return rules.campaign.typicalLevelsPerSession * grade.xpPerLevel;
+}
+
+/**
+ * XP a character can still use at its current grade before any is lost
+ * (M4.6): the XP left to the top level on the class track plus, with a
+ * profession, on the profession track. Infinity when `xp.overflow` is off
+ * (older campaigns bank XP at the top).
+ */
+export function xpRoom(rules: RulesConfig, character: Character): number {
+  if (!rules.xp.overflow) return Number.POSITIVE_INFINITY;
+  const top = trackCap(rules, character.grade);
+  const per = xpPerLevel(rules, character);
+  const room = (level: number, xp: number) => Math.max(0, (top - level) * per - xp);
+  const cls = room(character.classLevel, character.xp.class);
+  if (character.profession === null) return cls;
+  return cls + room(character.professionLevel, character.xp.profession);
+}
+
+/**
+ * The "typical session" amount for an even split between these characters of
+ * one grade (M4.6): each gets the typical session's XP, or less when someone
+ * has less room left at the grade (so the helper's own suggestion loses
+ * nothing for anyone who can still level). Characters with no room left still
+ * count as participants but do not lower the amount; 0 when none has room.
+ */
+export function typicalSessionAward(
+  rules: RulesConfig,
+  gradeId: string,
+  characters: readonly Character[],
+): number {
+  const typical = typicalSessionXp(rules, gradeId);
+  const rooms = characters.map((c) => xpRoom(rules, c)).filter((r) => r > 0);
+  if (rooms.length === 0) return 0;
+  const each = Math.min(typical, ...rooms);
+  return each * characters.length;
 }
 
 /** Whole above-level bonus XP on top of a share (floored, float noise removed). */

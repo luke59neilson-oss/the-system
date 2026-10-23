@@ -490,7 +490,7 @@ work: Q44–Q48 and Q52.
   added automatically.
 - [x] **M4.5 Party dashboard.** Card per character with flags (pending
   selection/evolution/marks/merges); full sheet edit as audited events.
-- [ ] **M4.6 XP award dialog.** Amount, class or profession, participant
+- [x] **M4.6 XP award dialog.** Amount, class or profession, participant
   checkboxes, even integer split by default with auto-balanced last share,
   editable shares, above-level bonus toggle, target grade (⅓ / no XP for
   lower grades, MQ.10: `enemyGrade`), level-up preview with overflow and
