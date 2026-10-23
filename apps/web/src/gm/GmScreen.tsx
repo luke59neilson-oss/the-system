@@ -23,6 +23,7 @@ import { PartyDashboard } from './PartyDashboard';
 import { XpAward } from './XpAward';
 import { OfferBuilder, type OfferTarget } from './OfferBuilder';
 import { ChangeLog } from './ChangeLog';
+import { EvolutionBuilder } from './EvolutionBuilder';
 import { RulesSettings } from './RulesSettings';
 import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
@@ -148,6 +149,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <CreateCharacter client={client} gmKey={gmKey} state={state} />
               <XpAward client={client} state={state} />
               <OfferBuilder client={client} state={state} target={offerTarget} />
+              <EvolutionBuilder client={client} state={state} />
               <Broadcast client={client} state={state} />
               <ChangeLog client={client} gmKey={gmKey} state={state} />
               <SkillText client={client} state={state} />
