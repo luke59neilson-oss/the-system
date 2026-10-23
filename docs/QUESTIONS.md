@@ -348,3 +348,11 @@ DESIGN/ROADMAP; do not re-apply them.
     and 5,000 per character. The GM has no limits. Default: these numbers (they live in
     the rules config). Alternative: tell me other numbers.
     Answer:
+
+54. **No portable Windows build.** Your first download stopped halfway and the
+    portable `.exe` started anyway and hung (QF.11). The installer checks
+    itself and says "integrity check failed" instead. Default (D140): Windows
+    gets only the installer; the release notes list each file's size and
+    SHA-256 so a short download is easy to spot. Alternative: bring back a
+    portable build with its own integrity check (more to build and test).
+    Answer:

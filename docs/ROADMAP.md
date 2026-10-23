@@ -589,7 +589,7 @@ work: Q44–Q48 and Q52.
   OS app-data folder; single instance; backup on quit; Windows firewall help.
   *Accept:* launches under `xvfb-run` in the workspace; `/health` responds;
   GM window connects with the key; a plain browser client cannot act as GM.
-- [ ] **M10.2 Packaging and releases (final).** Builds on MS.6. electron-builder: Windows NSIS + portable,
+- [ ] **M10.2 Packaging and releases (final).** Builds on MS.6. electron-builder: Windows NSIS installer (no portable build, D140),
   macOS dmg (unsigned), Linux AppImage. A release workflow runs on push to
   the `release` branch (tags cannot be pushed from build sessions) and
   creates the GitHub Release itself. *Accept:* AppImage builds and launches
