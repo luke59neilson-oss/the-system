@@ -85,7 +85,7 @@ export function ChangeLog({
     .reverse()
     .filter((r) => who === 'all' || r.actor === who || (who === 'gm' && r.actor === 'system'))
     .filter((r) => kind === 'all' || r.category === kind)
-    .filter((r) => q === '' || r.lines.join(' ').toLowerCase().includes(q) || r.type.includes(q));
+    .filter((r) => q === '' || r.lines.join(' ').toLowerCase().includes(q));
   return (
     <section className="window" aria-labelledby="change-log">
       <h2 id="change-log">Change log</h2>
@@ -132,7 +132,7 @@ export function ChangeLog({
       </label>
       {loadError && (
         <p className="err" role="alert">
-          Couldn't load the change log. It retries on the next change.
+          Couldn't load the change log. It reloads after the next change in the game.
         </p>
       )}
       {error && (
@@ -160,6 +160,12 @@ export function ChangeLog({
                 onClick={() =>
                   void client.command({ type: 'event.undo', eventId: r.id }).then((res) => {
                     setError(res.ok ? null : undoError(res.error));
+                    // Show it undone at once; the refetch brings the real marker.
+                    if (res.ok) {
+                      setRows((all) =>
+                        all.map((x) => (x.id === r.id ? { ...x, undoneBy: 'pending' } : x)),
+                      );
+                    }
                   })
                 }
               >
