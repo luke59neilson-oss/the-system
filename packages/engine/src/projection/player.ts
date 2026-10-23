@@ -8,6 +8,7 @@ import {
 import type { CampaignState } from '../events';
 import {
   EMPTY_HOLDINGS,
+  itemCappedStats,
   itemEffectiveStats,
   type Bundle,
   type Holdings,
@@ -196,6 +197,8 @@ export interface OwnSheet {
   readonly stats: Readonly<Record<string, number>>;
   /** Stats after equipped item bonuses (M3.7, D60/D81): the Stats block and pool maxima. */
   readonly effectiveStats: Readonly<Record<string, number>>;
+  /** Stats whose item bonus hit the item cap (MQ.14, DESIGN §4), shown as capped. */
+  readonly itemCappedStats: readonly string[];
   readonly pools: readonly OwnPool[];
   readonly freePointBatches: readonly FreePointBatch[];
   readonly titles: readonly string[];
@@ -476,6 +479,9 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
   const rules = state.rules;
   const statIds = rules.stats.list.map((s) => s.id);
   const effective = effectiveFor(state, c);
+  const h = hasOwnKey(state.holdings, c.id)
+    ? (state.holdings[c.id] ?? EMPTY_HOLDINGS)
+    : EMPTY_HOLDINGS;
   return {
     schemaVersion: c.schemaVersion,
     id: c.id,
@@ -493,6 +499,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
     classSpreadTotals: copyRecord(c.classSpreadTotals, statIds),
     stats: copyRecord(c.stats, statIds),
     effectiveStats: copyRecord(effective, statIds),
+    itemCappedStats: itemCappedStats(rules, c.stats, h, state.items),
     pools: rules.pools.map((p) => ({
       id: p.id,
       current: own(c.pools, p.id) ?? 0,

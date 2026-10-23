@@ -7,7 +7,7 @@ import {
   type Command,
   type CommandContext,
 } from '../src';
-import { kit, rawRules, run, testContext } from './helpers/events';
+import { kit, legacyBonusRules, rawRules, run, testContext } from './helpers/events';
 
 /**
  * MQ.2 Pools follow maxima (DESIGN §2, D100): a full pool stays full when its
@@ -106,7 +106,8 @@ describe('pools follow maxima (MQ.2, D100)', () => {
   });
 
   it('an item edit that raises an equipped bonus keeps a full pool full (MQ.2 review)', () => {
-    let c = ok(start(), equip);
+    // M1.6 bonus rules: +4 Vitality would pass MQ.14's item cap (20% of 10).
+    let c = ok(start(legacyBonusRules()), equip);
     c = ok(c, { type: 'item.edit', itemId: 'charm', bonuses: [{ stat: 'vitality', flat: 4 }] });
     expect(pool(c)).toEqual({ current: 140, max: 140 });
     c = ok(ok(c, setHp(90)), {

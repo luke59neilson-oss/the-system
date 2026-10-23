@@ -127,7 +127,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
     overflow: true, // §2 no banked XP, MQ.11
     defaultSplit: 'even',
   },
-  bonuses: { percentCapPerStat: 0.25 }, // §4
+  bonuses: { percentCapPerStat: null, itemCapOfBase: 0.2, itemsFlatOnly: true }, // §4, MQ.14
   skills: {
     // §6 rarity ladder; Divine reserved. Unique is a tag, not a rarity.
     rarities: [

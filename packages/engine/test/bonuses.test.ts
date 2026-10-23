@@ -8,9 +8,15 @@ import {
   type RulesConfig,
 } from '../src';
 
-// M1.6 Titles and bonuses: base → flat → percent → cap (DESIGN §4: +25% per stat).
+// M1.6 Titles and bonuses: base → flat → percent → cap. These cases run on the
+// M1.6 bonus rules (+25% percent cap, no item cap), as stored campaigns read
+// them; MQ.14's defaults are tested below.
 
-const rules = defaultRules();
+const current = defaultRules();
+const rules: RulesConfig = {
+  ...current,
+  bonuses: { percentCapPerStat: 0.25, itemCapOfBase: null, itemsFlatOnly: false },
+};
 const base = (overrides: Record<string, number> = {}): Record<string, number> => {
   const out: Record<string, number> = {};
   for (const s of rules.stats.list) out[s.id] = 10;
@@ -52,6 +58,9 @@ describe('effective stats', () => {
     expect(b).toEqual({
       base: 100,
       flat: 20,
+      itemFlat: 0,
+      itemFlatApplied: 0,
+      itemCapped: false,
       percent: 0.2,
       percentApplied: 0.2,
       capped: false,
@@ -82,7 +91,7 @@ describe('effective stats', () => {
   });
 
   it('the cap is read from the rules config', () => {
-    const loose: RulesConfig = { ...rules, bonuses: { percentCapPerStat: 0.5 } };
+    const loose: RulesConfig = { ...rules, bonuses: { ...rules.bonuses, percentCapPerStat: 0.5 } };
     const sources = [title('A', [{ stat: 'strength', percent: 0.4 }])];
     expect(effectiveStats(rules, base({ strength: 100 }), sources)['strength']).toBe(125);
     expect(effectiveStats(loose, base({ strength: 100 }), sources)['strength']).toBe(140);
@@ -210,5 +219,97 @@ describe('bonus validation', () => {
     delete stats['wisdom'];
     expect(() => effectiveStats(rules, stats, [])).toThrow(/Stat "wisdom" is missing/);
     expect(() => effectiveStats(rules, base({ wisdom: Number.NaN }), [])).toThrow(BonusRuleError);
+  });
+});
+
+const item = (name: string, bonuses: BonusSource['bonuses']): BonusSource => ({
+  id: `item-${name}`,
+  kind: 'item',
+  name,
+  bonuses,
+});
+
+describe('bonus rules (MQ.14, DESIGN §4, L6, L8)', () => {
+  it('default: items capped at 20% of base, titles summed once, uncapped', () => {
+    expect(current.bonuses).toEqual({
+      percentCapPerStat: null,
+      itemCapOfBase: 0.2,
+      itemsFlatOnly: true,
+    });
+  });
+
+  it('DESIGN §4 example: base 100, items +30 capped to +20, titles +10% and +5% → 138', () => {
+    const b = statBreakdown(current, base({ vitality: 100 }), [
+      item('Belt', [{ stat: 'vitality', flat: 18 }]),
+      item('Charm', [{ stat: 'vitality', flat: 12 }]),
+      title('A', [{ stat: 'vitality', percent: 0.1 }]),
+      title('B', [{ stat: 'vitality', percent: 0.05 }]),
+    ])['vitality'];
+    expect(b).toMatchObject({
+      base: 100,
+      itemFlat: 30,
+      itemFlatApplied: 20,
+      itemCapped: true,
+      flat: 20,
+      percent: 0.15,
+      percentApplied: 0.15,
+      capped: false,
+      value: 138,
+    });
+  });
+
+  it('an item total exactly at 20% is not capped; the cap rounds down to whole units', () => {
+    const at = statBreakdown(current, base({ strength: 100 }), [
+      item('Ring', [{ stat: 'strength', flat: 20 }]),
+    ])['strength'];
+    expect(at).toMatchObject({ itemCapped: false, value: 120 });
+    // 20% of 23 is 4.6: the cap is 4 whole stat units.
+    const odd = statBreakdown(current, base({ strength: 23 }), [
+      item('Ring', [{ stat: 'strength', flat: 5 }]),
+    ])['strength'];
+    expect(odd).toMatchObject({ itemFlatApplied: 4, itemCapped: true, value: 27 });
+  });
+
+  it('item penalties are never capped; title flats are not items', () => {
+    const b = statBreakdown(current, base({ agility: 50 }), [
+      item('Cursed', [{ stat: 'agility', flat: -30 }]),
+      title('Fleet', [{ stat: 'agility', flat: 15 }]),
+    ])['agility'];
+    expect(b).toMatchObject({ itemFlatApplied: -30, itemCapped: false, flat: -15, value: 35 });
+  });
+
+  it('title percentages have no cap by default; a configured cap still applies', () => {
+    const many = [1, 2, 3, 4].map((n) => title(`T${n}`, [{ stat: 'wisdom', percent: 0.25 }]));
+    expect(effectiveStats(current, base({ wisdom: 100 }), many)['wisdom']).toBe(200);
+    const capped: RulesConfig = {
+      ...current,
+      bonuses: { ...current.bonuses, percentCapPerStat: 0.5 },
+    };
+    expect(effectiveStats(capped, base({ wisdom: 100 }), many)['wisdom']).toBe(150);
+  });
+
+  it('under flat-only rules a stored item percentage counts for nothing', () => {
+    const b = statBreakdown(current, base({ agility: 100 }), [
+      item('Old ring', [{ stat: 'agility', flat: 5, percent: 0.5 }]),
+    ])['agility'];
+    expect(b).toMatchObject({ percent: 0, value: 105 });
+    expect(b?.contributions[0]?.percent).toBe(0);
+  });
+
+  it('property: item bonuses never add more than 20% of base (seed 1414)', () => {
+    let seed = 1414;
+    const rnd = () => {
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      return seed / 2147483648;
+    };
+    for (let i = 0; i < 500; i++) {
+      const own = Math.floor(rnd() * 2000);
+      const items = [0, 1, 2].map((k) =>
+        item(`i${k}`, [{ stat: 'endurance', flat: Math.floor(rnd() * 400) - 50 }]),
+      );
+      const b = statBreakdown(current, base({ endurance: own }), items)['endurance']!;
+      expect(b.itemFlatApplied, `seed 1414 case ${i}`).toBeLessThanOrEqual(own * 0.2);
+      expect(b.itemFlatApplied, `seed 1414 case ${i}`).toBeLessThanOrEqual(b.itemFlat);
+    }
   });
 });

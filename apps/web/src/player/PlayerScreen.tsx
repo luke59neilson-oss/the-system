@@ -359,14 +359,25 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
           const base = me.stats[s.id] ?? 0;
           const value = me.effectiveStats[s.id] ?? base;
           const delta = value - base;
+          // MQ.14 (DESIGN §4): gear adds at most a share of the base; say so when it hits it.
+          const capped = me.itemCappedStats.includes(s.id);
           return (
             <li key={s.id} data-testid={`stat-${s.id}`}>
               <span>{s.name}</span> <LiveStrong value={formatStatValue(rules, value)} />
-              {delta !== 0 && (
-                <span className="muted stat-bonus" data-testid={`bonus-${s.id}`}>
+              {(delta !== 0 || capped) && (
+                <span
+                  className="muted stat-bonus"
+                  data-testid={`bonus-${s.id}`}
+                  title={
+                    capped
+                      ? 'Item bonus capped: gear can add only a set share of this stat’s base'
+                      : undefined
+                  }
+                >
                   {' '}
-                  ({delta > 0 ? '+' : '−'}
-                  {formatStatValue(rules, Math.abs(delta))})
+                  ({delta > 0 ? '+' : delta < 0 ? '−' : '+'}
+                  {formatStatValue(rules, Math.abs(delta))}
+                  {capped && <span data-testid={`capped-${s.id}`}>, capped</span>})
                 </span>
               )}
             </li>

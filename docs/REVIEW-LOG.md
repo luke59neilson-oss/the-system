@@ -549,3 +549,10 @@
   - L to Backlog: campaigns seeded before MQ.13 keep the old classes and "Add the default set" cannot replace a same-named stale entry (old Healer, old Common Mana Bolt under name-only rules); Identify has no default library text.
   - L no change: Basic Heavy Weapons mentions weapon-and-shield (DESIGN §10 says exactly that); an empty class library shows the six only in the character form (D91 fallback, by design).
 - Also: the full local e2e run hit the 30 s timeout on the MQ.13 spec while the reviewer loaded the 2 CPUs; it passed alone and with `--workers=2`. Split the demo check into its own test with its own server so each test is well inside the budget.
+
+## 2026-10-22 · MQ.14 Bonus rules · sonnet (round 1)
+
+- Range 83ef5b8..86e29a8 (`wip/MQ.14`). Reviewer ran the engine tests (544) and engine/web typechecks: green.
+- Findings: 0 High, 0 Medium, 5 Low.
+  - L to Backlog: a base under 5 stat units gives an item cap of 0, so the screen reads "(+0.0, capped)" (consistent with D128's round-down).
+  - L no change: the `1e-9` guard in the cap; M3.7 now exercises the exact cap (MQ.14 covers over-cap); `LEGACY_BONUSES` repeated in bonuses.test.ts; "upcaster" read as stored rules keeping the legacy bonus defaults (D128).

@@ -14,7 +14,15 @@ import {
   type CampaignState,
   type Command,
 } from '../src';
-import { kit, randomCommand, rawRules, run, seededRandom, testContext } from './helpers/events';
+import {
+  kit,
+  legacyBonusRules,
+  randomCommand,
+  rawRules,
+  run,
+  seededRandom,
+  testContext,
+} from './helpers/events';
 
 const RULES = defaultRules();
 const created: Command = { type: 'campaign.create', name: 'Whale', rules: rawRules() };
@@ -170,7 +178,7 @@ describe('player projection', () => {
     // Derived: race level, effective stats (base + equipped items, D81) and
     // the count of earned selections still to choose (MQ.1, D103).
     expect(Object.keys(view.me).sort()).toEqual(
-      [...ownFields, 'raceLevel', 'effectiveStats', 'selectionsDue'].sort(),
+      [...ownFields, 'raceLevel', 'effectiveStats', 'itemCappedStats', 'selectionsDue'].sort(),
     );
   });
 
@@ -764,7 +772,8 @@ describe('effective stats on the player sheet (M3.7, D81)', () => {
   it('shows effective stats and pool maxima; party bars use the same maxima', () => {
     const c = run(
       [
-        { type: 'campaign.create', name: 'Eff', rules: rawRules() },
+        // M1.6 bonus rules: +10 on base 10 would pass MQ.14's item cap.
+        { type: 'campaign.create', name: 'Eff', rules: legacyBonusRules() },
         {
           type: 'character.create',
           id: 'jake',

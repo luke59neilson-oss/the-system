@@ -168,7 +168,9 @@
       "defaultSplit": "even"
     },
     "bonuses": {
-      "percentCapPerStat": 0.25
+      "percentCapPerStat": 0.25,
+      "itemCapOfBase": null,
+      "itemsFlatOnly": false
     },
     "skills": {
       "rarities": [

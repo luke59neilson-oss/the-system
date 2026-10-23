@@ -1166,7 +1166,8 @@ describe('evolution refill counts items and titles (MQ.1 review)', () => {
       name: 'Amulet of Life',
       rarity: 'common',
       slot: 'necklace',
-      bonuses: [{ stat: 'vitality', flat: 10 }],
+      // Within MQ.14's item cap (20% of base Vitality, at least 2 here).
+      bonuses: [{ stat: 'vitality', flat: 2 }],
     });
     c = ok(c, { type: 'holdings.adjust', characterId: 'jake', items: { amulet: 1 } });
     c = ok(c, { type: 'item.equip', characterId: 'jake', itemId: 'amulet', slot: 'necklace' });
@@ -1175,7 +1176,7 @@ describe('evolution refill counts items and titles (MQ.1 review)', () => {
     c = ok(c, release(archery, 'Volley', 'common'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
     const base = char(c).stats['vitality'] ?? 0;
-    expect(char(c).pools['hp']).toBe(10 * (base + 10));
+    expect(char(c).pools['hp']).toBe(10 * (base + 2));
   });
 });
 

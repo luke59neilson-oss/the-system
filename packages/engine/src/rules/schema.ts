@@ -120,8 +120,20 @@ export const rulesConfigSchema = z
       defaultSplit: z.literal('even'),
     }),
     bonuses: z.strictObject({
-      /** Cap on the sum of percentage bonuses per stat (0.25 = +25%). */
-      percentCapPerStat: fraction,
+      /** Cap on the sum of percentage bonuses per stat (0.25 = +25%); null = no cap (L8). */
+      percentCapPerStat: fraction.nullable(),
+      /**
+       * DESIGN §4 (MQ.14, L6): the total item bonus on a stat is capped at this
+       * fraction of the stat's base (0.2 = 20%). Rules stored before it read
+       * null (no item cap), so older logs replay unchanged.
+       */
+      itemCapOfBase: fraction.nullable().default(null),
+      /**
+       * DESIGN §4 (MQ.14, L6): items carry flat stat bonuses only; item
+       * definitions with percentages are refused and stored ones count 0%.
+       * Rules stored before it read false.
+       */
+      itemsFlatOnly: z.boolean().default(false),
     }),
     skills: z.strictObject({
       rarities: z.array(raritySchema).min(2),
