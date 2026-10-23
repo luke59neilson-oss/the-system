@@ -74,6 +74,15 @@ export type SystemNotification =
       /** Rarity display names before and after. */
       readonly from: string;
       readonly to: string;
+    }
+  | {
+      /** Two skills merged into one (M5.4); only their owner is told. */
+      readonly kind: 'skillMerge';
+      readonly characterId: string;
+      readonly skills: readonly [string, string];
+      readonly name: string;
+      /** Rarity display name of the merged skill. */
+      readonly rarity: string;
     };
 
 /** A notification with where it sits in the campaign. */
@@ -193,6 +202,17 @@ export function notificationsBetween(
     if (from && to && from !== to) {
       const name = (id: string) => after.rules.skills.rarities.find((r) => r.id === id)?.name ?? id;
       out.push({ kind: 'skillUpgrade', characterId, skill, from: name(from), to: name(to) });
+    }
+  }
+  if (event?.type === 'skill.merged') {
+    const { characterId, skills, name } = event.payload;
+    const merged = (
+      has(after.characters, characterId) ? after.characters[characterId] : undefined
+    )?.skills.find((s) => s.name === name);
+    if (merged) {
+      const rarity =
+        after.rules.skills.rarities.find((r) => r.id === merged.rarity)?.name ?? merged.rarity;
+      out.push({ kind: 'skillMerge', characterId, skills: [skills[0], skills[1]], name, rarity });
     }
   }
   for (const id of after.characterOrder) {

@@ -2254,3 +2254,9 @@ ol.change-log li.undone .change-text {
   margin: 0.2rem 0 0;
   font-size: 0.9em;
 }
+/* Merge builder (M5.4). */
+.merge-candidates {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+}

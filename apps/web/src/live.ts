@@ -22,6 +22,13 @@ export type LiveNotification =
   | { kind: 'hiddenQuest'; characterId: string }
   | { kind: 'skillUpgrade'; characterId: string; skill: string; from: string; to: string }
   | {
+      kind: 'skillMerge';
+      characterId: string;
+      skills: readonly [string, string];
+      name: string;
+      rarity: string;
+    }
+  | {
       kind: 'gift';
       characterId: string;
       from: string | null;

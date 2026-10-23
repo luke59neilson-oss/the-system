@@ -29,6 +29,8 @@ export function notificationText(n: LiveNotification): string {
         : 'All free points assigned';
     case 'skillUpgrade':
       return `*'DING!' Skill upgraded: [${n.skill} (${n.from})] → [${n.skill} (${n.to})]*`;
+    case 'skillMerge':
+      return `*'DING!' Skills merged: [${n.skills[0]}] + [${n.skills[1]}] → [${n.name} (${n.rarity})]*`;
     case 'broadcast':
       return n.text;
     case 'hiddenQuest':

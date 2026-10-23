@@ -26,7 +26,12 @@ export function matchesFilter(n: LiveNotification, filter: HistoryFilter): boole
     case 'all':
       return true;
     case 'dings':
-      return n.kind === 'level' || n.kind === 'profession' || n.kind === 'skillUpgrade';
+      return (
+        n.kind === 'level' ||
+        n.kind === 'profession' ||
+        n.kind === 'skillUpgrade' ||
+        n.kind === 'skillMerge'
+      );
     case 'profession':
       return n.kind === 'profession' || (n.kind === 'level' && n.track === filter);
     case 'class':

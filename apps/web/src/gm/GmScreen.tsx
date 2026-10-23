@@ -25,6 +25,7 @@ import { OfferBuilder, type OfferTarget } from './OfferBuilder';
 import { ChangeLog } from './ChangeLog';
 import { EvolutionBuilder } from './EvolutionBuilder';
 import { MarksReview } from './MarksReview';
+import { MergeBuilder } from './MergeBuilder';
 import { RulesSettings } from './RulesSettings';
 import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
@@ -152,6 +153,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <OfferBuilder client={client} state={state} target={offerTarget} />
               <EvolutionBuilder client={client} state={state} />
               <MarksReview client={client} state={state} />
+              <MergeBuilder client={client} state={state} />
               <Broadcast client={client} state={state} />
               <ChangeLog client={client} gmKey={gmKey} state={state} />
               <SkillText client={client} state={state} />

@@ -416,3 +416,11 @@ DESIGN/ROADMAP; do not re-apply them.
     evolution merge count against the new grade instead? Default: the grade
     being left (D168).
     Answer:
+
+62. **Who accepts a merge?** M5.4 lets the GM build a merge from a merge
+    alert (two skills logged together 3 times, both at least Uncommon) and
+    send it: it applies at once and the player gets the System's merge DING.
+    Should the player be able to accept or decline a merge first (keeping
+    both originals), like a selection menu? Default: the GM's send applies
+    it; the GM asks at the table first (D171).
+    Answer:
