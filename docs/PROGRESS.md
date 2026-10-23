@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M4, MS, MQ and MR done; QF.1–QF.15 done; M5.1–M5.5 done; Preview ready: Actions → Release → Run workflow (M4)
-**Next item:** M5.A Milestone acceptance and review (fable review)
+**Status:** in progress: M0–M5, MS, MQ and MR done; QF.1–QF.15 done; M6.1 in progress on wip/M6.1; Preview ready: Actions → Release → Run workflow (M5)
+**Next item:** M6.1 Item library (resume wip/M6.1)
 **Blockers:** none
 
 ## Run log
@@ -826,3 +826,13 @@ next item, blockers. -->
 - Next item: M5.A (fable review). Not started: the gate reached minute 44 while the final full e2e was running, and M5.A's acceptance run needs that suite.
 - Blockers: none.
 
+
+### Run f55e54f2 · 2026-10-23 20:07–20:53 UTC (end minute 45: M5.A checked; M6.1 handed to wip/M6.1 at minute 44)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` had an unrelated history, reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Fable reviewer works (worktree; the Agent call blocked until it reported, ~11 min round 1). CI on main green (6cb9ed1). No new answers. Not an efficiency or sweep hour.
+- M5.A **checked**: `e2e/M5.A.spec.ts` runs one Archer through evolution (with a kept re-rating), the level 5 selection, player-logged practice reviewed by the GM, a mark upgrade, and a merge, UI on both sides, plus reload, phone and GM-only canary. D173. Fable round 1 0 H / 2 M / 6 L (toast-queue flake → history asserts; merge alerts now count unreviewed uses; evolution builder pins the shown character), round 2 0 H / 0 M / 1 L. Lows to Backlog; Q64 (Identify re-rated at evolution).
+- M6.1 Item library **started** on `wip/M6.1` (0e9d4b5, base 89e660b + docs): `ItemLibrary.tsx` (create/edit with flat bonuses per stat, rarity change, give/take via `holdings.adjust`), `itemLibraryModel.ts` with 5 unit tests, `e2e/M6.1.spec.ts` drafted but **not run yet** (the full e2e held the build). Next step: merge main into wip/M6.1, `npm run build`, run the M6.1 spec, fix it, screenshots, then review (sonnet).
+- Tests: 992 unit (`npm run check` green); engine coverage 98.95% lines; full e2e 61/61 + latency 6/6 on the final M5.A code.
+- Preview ready: Actions → Release → Run workflow (M5) — Luke's one click (D93), not a Blocker.
+- Open `wip/*` branches: wip/M6.1.
+- Next item: M6.1 (resume wip/M6.1).
+- Blockers: none.
