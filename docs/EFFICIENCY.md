@@ -20,14 +20,13 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
-| L9 fixed-clock timebox (§5.5) | 2026-10-22 16:37 | End minute ≥ 48; items/run up | 39.0; 1.3 (last 6 runs) | Highs, round-2 share, CI red | first check after 6 runs |
-| L9 targeted orient reads (§4) | 2026-10-22 16:37 | Orient words down | ~30,800 (whole files) → 7,841 | Review findings that cite a missed decision | first check after 6 runs |
-| L9 CI: no `wip/*`, Chromium cache | 2026-10-22 16:37 | Main CI minutes down | 4.3 | CI red | first check after 6 runs |
-| D119 pre-review sibling self-check (§6.2) | 2026-10-22 18:35 | Round-2 share down (to ~4/10) | 7/10 | Highs, items/run | first check after 6 runs |
+| D119 pre-review sibling self-check (§6.2) | 2026-10-22 18:35 | Round-2 share down (to ~4/10) | 7/10 | Highs, items/run | next check (5 runs old at 00:08) |
+| D132 no main e2e re-run on an identical tree (§5.6) | 2026-10-23 00:45 | End minute / items per run up | 45.8; 1.3 | Main CI red/day, Highs | first check after 6 runs |
 
 ## Kept
 
-(none yet)
+- L9 fixed-clock timebox, L9 targeted orient reads, L9 CI wip-skip and
+  Chromium cache (2026-10-23 00:08, D131).
 
 ## Reverted
 
@@ -35,7 +34,9 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 ## Proposals for Luke (Tier 2)
 
-None open. Declined 2026-10-22 (chat): a narrower "Medium" review severity,
+None open. Not applied (2026-10-23 auditor, Tier 1, may come later): run
+the full e2e in the background while a blocking reviewer works (risk: load
+flakes on 2 CPUs, QF.8). Declined 2026-10-22 (chat): a narrower "Medium" review severity,
 screenshot changes, in-run builder subagents. Second lane: not yet (L11);
 §9 proposes it when the queue splits cleanly.
 
@@ -48,3 +49,4 @@ table last in the file.
 |---|---|---|---|---|---|---|---|---|---|
 | 2026-10-22 16:53 | 6 | 39.8 | 1.3 | 7/10 | 1 | 97 | 5 | 4.3 | 8110 |
 | 2026-10-22 18:07 | 6 | 41.3 | 1.7 | 7/10 | 1 | 95 | 8 | 4.6 | 9665 |
+| 2026-10-23 00:08 | 6 | 45.8 | 1.3 | 4/10 | 0 | 75 | 7 | 6.0 | 9919 |

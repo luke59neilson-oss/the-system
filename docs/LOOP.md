@@ -129,7 +129,10 @@ them whole costs about 30k tokens per run for history you do not need):
 6. **Test scope.** Before each push to main: `npm run check` plus the e2e
    specs for the items you touched. Run the full e2e suite before every
    `Mx.A` and whenever you change shared server or UI code. CI runs the full
-   suite on every push; a red main is the next run's first task.
+   suite on every push; a red main is the next run's first task. A full run
+   on a branch head counts for main when, after the merge,
+   `git diff --quiet <branch-head> main` shows the same tree (D132); note it
+   in PROGRESS instead of running it again.
 7. Banned in committed code: `.skip`, `.only`, `@ts-ignore`,
    `@ts-expect-error` without a reason, `eslint-disable`, lowering the
    coverage threshold. Property and simulation tests use fixed seeds and

@@ -556,3 +556,14 @@
 - Findings: 0 High, 0 Medium, 5 Low.
   - L to Backlog: a base under 5 stat units gives an item cap of 0, so the screen reads "(+0.0, capped)" (consistent with D128's round-down).
   - L no change: the `1e-9` guard in the cap; M3.7 now exercises the exact cap (MQ.14 covers over-cap); `LEGACY_BONUSES` repeated in bonuses.test.ts; "upcaster" read as stored rules keeping the legacy bonus defaults (D128).
+
+## 2026-10-23 · QF.10 e2e pages close with their test · sonnet
+- Commit 732c85d. Reviewer ran `npm run check` (790) and MQ.6, M3.1, M3.7 on one worker (6/6).
+- Findings: 0 High, 0 Medium, 4 Low (a throwing `close()` adds a teardown error beside the real one; afterEach stops servers before the fixture closes pages, a one-test window; traces unaffected; per-worker browsers). No change.
+
+## 2026-10-23 · MQ.15 No healing by gear swap · sonnet (2 rounds)
+- Round 1, 00a1de4..4f39f22: 1 High, 1 Medium, 2 Low.
+  - H fixed (df508ab): 100/120 unequipped to exactly 100/100 was not clamped, so not marked, and re-equipping healed to 120/120. A drop that leaves a not-full pool at its new maximum now marks it; new test.
+  - M fixed: the property test judged fullness from the post-drop state; it now tracks fullness outside the engine (fails on the old code).
+  - L fixed: marks drop while the rule is off. L partly: added tests for a set of another pool and undo; rest to no change.
+- Round 2, df508ab: 0 High, 0 Medium, 2 Low (property test covers only equip/unequip/set; `writesPool` is an allowlist a new pool-writing event must join). No change.

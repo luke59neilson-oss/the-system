@@ -225,7 +225,7 @@ They touch finished engine and player items, so they come before M4.4.
   bonus as capped. *Accept:* engine tests incl. DESIGN §4's 100 → 138
   example; item definitions with percentages rejected (upcaster for old
   logs); e2e for the capped display.
-- [ ] **MQ.15 No healing by gear swap.** A pool clamped by a falling maximum
+- [x] **MQ.15 No healing by gear swap.** A pool clamped by a falling maximum
   stays full only if it was full before the drop (DESIGN §2 examples); applies
   to new campaigns and, via the rules setting, older ones. *Accept:* engine
   tests for all four DESIGN §2 examples; property test that equip/unequip
@@ -312,7 +312,7 @@ the rest follow in file order. Each gets its own §6 review.
   and the counterparty's for items they hold or are offered; engine tests for
   the 1–3/4 probe and the definition; canary still passes.
 
-- [ ] **QF.10 e2e pages close with their test.** Specs open pages with
+- [x] **QF.10 e2e pages close with their test.** Specs open pages with
   `browser.newPage()` and rarely close them; once a test's server stops, each
   leftover page keeps reconnecting, so the worker's one browser slows until a
   late spec times out at its first click (runs 4a0765f3 and 6fcb6693: MQ.13,
