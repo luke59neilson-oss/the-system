@@ -14,9 +14,9 @@ describe('golden manifest', () => {
   it('fails when a log changes, even at a higher schema version, and refuses to re-record it', () => {
     const edited = { ...files, 'a.jsonl': '{"x":2}\n' };
     for (const version of [5, 6]) {
-      expect(verify(edited, pinned, version)).toEqual([
+      expect(verify(edited, pinned, version)).toContain(
         'a.jsonl changed: golden logs are never edited (add an upcaster instead)',
-      ]);
+      );
       expect(() => record(edited, pinned, version)).toThrow(/Refusing to re-record/);
     }
   });
@@ -40,6 +40,28 @@ describe('golden manifest', () => {
     expect(verify(regenerated, next, 6)).toEqual([]);
   });
 
+  it('a bump re-pins unchanged states too, so one bump never licenses a later edit', () => {
+    expect(verify(files, pinned, 6)).toEqual([
+      'a.state.json is pinned at v5, now v6: run `npm run golden:record`',
+    ]);
+    const bumped = record(files, pinned, 6);
+    expect(bumped.files['a.state.json']?.schemaVersion).toBe(6);
+    expect(() => record({ ...files, 'a.state.json': '{"s":3}\n' }, bumped, 6)).toThrow(
+      /without a state schema bump/,
+    );
+  });
+
+  it('refuses to re-record when a pinned golden is gone (deleted or renamed)', () => {
+    expect(() => record({ 'a.jsonl': files['a.jsonl'] }, pinned, 5)).toThrow(/pinned but missing/);
+    expect(() =>
+      record({ 'b.jsonl': files['a.jsonl'], 'a.state.json': files['a.state.json'] }, pinned, 6),
+    ).toThrow(/a.jsonl is pinned but missing/);
+  });
+
+  it('hashes bytes: text and its bytes pin the same', () => {
+    expect(sha256(Buffer.from('é\n'))).toBe(sha256('é\n'));
+  });
+
   it('new files must be pinned and pinned files must exist', () => {
     expect(verify({ ...files, 'b.jsonl': 'x' }, pinned, 5)).toEqual([
       'b.jsonl is not pinned: run `npm run golden:record`',
@@ -52,6 +74,11 @@ describe('golden manifest', () => {
 
   it('reads the schema version from the engine source', () => {
     expect(currentSchemaVersion('export const CAMPAIGN_STATE_SCHEMA_VERSION = 42;')).toBe(42);
+    expect(
+      currentSchemaVersion(
+        '// export const CAMPAIGN_STATE_SCHEMA_VERSION = 5;\nexport const CAMPAIGN_STATE_SCHEMA_VERSION = 7;',
+      ),
+    ).toBe(7);
     expect(() => currentSchemaVersion('nothing')).toThrow(/not found/);
   });
 });

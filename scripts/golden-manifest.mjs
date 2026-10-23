@@ -17,71 +17,93 @@ const REDUCER = join(root, 'packages', 'engine', 'src', 'events', 'reducer.ts');
 
 export const sha256 = (text) => createHash('sha256').update(text).digest('hex');
 
-/** CAMPAIGN_STATE_SCHEMA_VERSION, read from the engine source. */
+/** CAMPAIGN_STATE_SCHEMA_VERSION, read from the engine source (a real declaration, not a comment). */
 export function currentSchemaVersion(source = readFileSync(REDUCER, 'utf8')) {
-  const match = /export const CAMPAIGN_STATE_SCHEMA_VERSION = (\d+);/.exec(source);
+  const match = /^export const CAMPAIGN_STATE_SCHEMA_VERSION = (\d+);/m.exec(source);
   if (!match) throw new Error('CAMPAIGN_STATE_SCHEMA_VERSION not found');
   return Number(match[1]);
 }
 
-/** `{ file: contents }` for every golden log and state. */
+/** `{ file: bytes }` for every golden log and state (hashed as raw bytes). */
 export function readGoldens(dir = GOLDEN_DIR) {
   const files = {};
   for (const name of readdirSync(dir).sort()) {
     if (name.endsWith('.jsonl') || name.endsWith('.state.json')) {
-      files[name] = readFileSync(join(dir, name), 'utf8');
+      files[name] = readFileSync(join(dir, name));
     }
   }
   return files;
 }
 
-/**
- * Problems with the goldens against a manifest, as sentences; empty = pinned.
- * A log may never change; a state may change only at a higher schema version
- * (then the manifest must be re-recorded); every file must be pinned.
- */
-export function verify(files, manifest, schemaVersion) {
+/** Problems that `golden:record` may not clear: they need a reviewed manifest edit or a bump. */
+const REFUSED = new Set(['log-edited', 'state-unbumped', 'missing']);
+
+function problemsOf(files, manifest, schemaVersion) {
   const problems = [];
+  const add = (code, message) => problems.push({ code, message });
   for (const [name, text] of Object.entries(files)) {
     const pin = manifest.files?.[name];
     if (!pin) {
-      problems.push(`${name} is not pinned: run \`npm run golden:record\``);
+      add('unpinned', `${name} is not pinned: run \`npm run golden:record\``);
       continue;
     }
-    if (pin.sha256 === sha256(text)) continue;
-    if (name.endsWith('.jsonl')) {
-      problems.push(`${name} changed: golden logs are never edited (add an upcaster instead)`);
-    } else if (schemaVersion <= pin.schemaVersion) {
-      problems.push(
-        `${name} changed without a state schema bump (pinned at v${pin.schemaVersion}, now v${schemaVersion})`,
+    const isLog = name.endsWith('.jsonl');
+    if (pin.sha256 !== sha256(text)) {
+      if (isLog) {
+        add(
+          'log-edited',
+          `${name} changed: golden logs are never edited (add an upcaster instead)`,
+        );
+      } else if (schemaVersion <= pin.schemaVersion) {
+        add(
+          'state-unbumped',
+          `${name} changed without a state schema bump (pinned at v${pin.schemaVersion}, now v${schemaVersion})`,
+        );
+      } else {
+        add('stale', `${name} changed at v${schemaVersion}: run \`npm run golden:record\``);
+      }
+    } else if (!isLog && pin.schemaVersion !== schemaVersion) {
+      // After a bump every state is re-pinned at it, so a later edit needs another bump.
+      add(
+        'stale',
+        `${name} is pinned at v${pin.schemaVersion}, now v${schemaVersion}: run \`npm run golden:record\``,
       );
-    } else {
-      problems.push(`${name} changed at v${schemaVersion}: run \`npm run golden:record\``);
     }
   }
   for (const name of Object.keys(manifest.files ?? {})) {
-    if (!(name in files)) problems.push(`${name} is pinned but missing`);
+    if (!(name in files)) add('missing', `${name} is pinned but missing`);
   }
   return problems;
 }
 
 /**
+ * Problems with the goldens against a manifest, as sentences; empty = pinned.
+ * A log may never change or vanish; a state may change only at a higher
+ * schema version; after a bump every state must be re-recorded at it; every
+ * file must be pinned.
+ */
+export function verify(files, manifest, schemaVersion) {
+  return problemsOf(files, manifest, schemaVersion).map((p) => p.message);
+}
+
+/**
  * The manifest to write, or throws when recording would launder a change:
- * an edited log, or a changed state without a schema bump.
+ * an edited log, a changed state without a schema bump, or a pinned file
+ * that is gone (removing a golden is a hand edit of the manifest, in review).
  */
 export function record(files, manifest, schemaVersion) {
-  const refused = verify(files, manifest, schemaVersion).filter((p) =>
-    / are never edited| without a state schema bump/.test(p),
-  );
-  if (refused.length) throw new Error(`Refusing to re-record:\n- ${refused.join('\n- ')}`);
+  const refused = problemsOf(files, manifest, schemaVersion).filter((p) => REFUSED.has(p.code));
+  if (refused.length) {
+    throw new Error(`Refusing to re-record:\n- ${refused.map((p) => p.message).join('\n- ')}`);
+  }
   const next = { files: {} };
   for (const [name, text] of Object.entries(files)) {
     const hash = sha256(text);
     const pin = manifest.files?.[name];
     next.files[name] = {
       sha256: hash,
-      // Unchanged files keep the version they were recorded at.
-      schemaVersion: pin && pin.sha256 === hash ? pin.schemaVersion : schemaVersion,
+      // Logs keep the version they were recorded at; states are pinned at the current one.
+      schemaVersion: name.endsWith('.jsonl') && pin ? pin.schemaVersion : schemaVersion,
     };
   }
   return next;
