@@ -86,6 +86,17 @@ export type Command =
       characterIds?: readonly string[] | null | undefined;
     }
   | {
+      /** M4.7: send on a later in-game day instead of now. */
+      type: 'broadcast.schedule';
+      /** Optional; a fresh id is generated when omitted. */
+      id?: string | undefined;
+      text: string;
+      /** Recipients; omitted or null = every character (when it is sent). */
+      characterIds?: readonly string[] | null | undefined;
+      day: number;
+    }
+  | { type: 'broadcast.unschedule'; id: string }
+  | {
       type: 'item.define';
       /** Optional; a fresh id is generated when omitted. */
       id?: string | undefined;
@@ -472,6 +483,13 @@ const commandSchema = z.discriminatedUnion('type', [
     text: z.string(),
     characterIds: z.array(z.string()).nullable().optional(),
   }),
+  z.object({
+    type: z.literal('broadcast.schedule'),
+    text: z.string(),
+    characterIds: z.array(z.string()).nullable().optional(),
+    day: z.number(),
+  }),
+  z.object({ type: z.literal('broadcast.unschedule'), id: z.string() }),
   z.object({ type: z.literal('item.define') }),
   z.object({ type: z.literal('item.edit') }),
   z.object({ type: z.literal('holdings.adjust') }),
@@ -752,6 +770,18 @@ function toEvent(
         type: 'system.broadcast',
         payload: { text: command.text, characterIds: command.characterIds ?? null },
       };
+    case 'broadcast.schedule':
+      return {
+        type: 'broadcast.scheduled',
+        payload: {
+          id: command.id ?? ctx.newId(),
+          text: command.text,
+          characterIds: command.characterIds ?? null,
+          day: command.day,
+        },
+      };
+    case 'broadcast.unschedule':
+      return { type: 'broadcast.unscheduled', payload: { id: command.id } };
     case 'item.define':
       return {
         type: 'item.defined',

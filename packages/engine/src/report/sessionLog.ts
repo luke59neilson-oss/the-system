@@ -306,6 +306,20 @@ function describe(
       add('broadcast', `System message to ${audience}: ${line(event.payload.text)}`);
       break;
     }
+    case 'broadcast.scheduled': {
+      const to = event.payload.characterIds;
+      const audience = to === null ? 'everyone' : to.map((id) => who(id)).join(', ');
+      add(
+        'broadcast',
+        `System message scheduled for day ${event.payload.day} to ${audience}: ${line(event.payload.text)}`,
+      );
+      break;
+    }
+    case 'broadcast.unscheduled': {
+      const b = before?.scheduledBroadcasts.find((x) => x.id === event.payload.id);
+      add('broadcast', `Scheduled System message cancelled${b ? `: ${line(b.text)}` : ''}`);
+      break;
+    }
     case 'quest.created': {
       const q = after.quests[event.payload.questId];
       if (q) {
@@ -352,9 +366,17 @@ function describe(
       );
       break;
     }
-    case 'campaign.dayAdvanced':
+    case 'campaign.dayAdvanced': {
       add('day', `Day ${before?.day ?? after.day - event.payload.days} → ${after.day}`);
+      for (const b of after.broadcasts.slice(
+        before?.broadcasts.length ?? after.broadcasts.length,
+      )) {
+        const to = b.characterIds;
+        const audience = to === null ? 'everyone' : to.map((id) => who(id)).join(', ');
+        add('broadcast', `Scheduled System message to ${audience}: ${line(b.text)}`);
+      }
       break;
+    }
     case 'session.started':
     case 'session.ended': {
       const s = after.sessions.find((x) => x.id === event.payload.sessionId);

@@ -525,16 +525,35 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
 function Broadcast({ client, state }: { client: LiveClient; state: CampaignState }) {
   const [text, setText] = useState('');
   const [to, setTo] = useState('all');
+  const [several, setSeveral] = useState<ReadonlySet<string>>(new Set());
+  const [when, setWhen] = useState<'now' | 'day'>('now');
+  const [day, setDay] = useState('');
   const { busy, result, run } = useCommand(client);
+  const cancel = useCommand(client);
+  const [okText, setOkText] = useState('Broadcast sent');
+  const name = (id: string) => state.characters[id]?.name ?? id;
+  const recipients: string[] | null =
+    to === 'all'
+      ? null
+      : to === 'several'
+        ? state.characterOrder.filter((id) => several.has(id))
+        : [to];
+  const dayValue = /^\d+$/.test(day.trim()) ? Number(day.trim()) : NaN;
+  const dayOk = when === 'now' || (Number.isSafeInteger(dayValue) && dayValue > state.day);
+  const noOne = recipients !== null && recipients.length === 0;
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const r = await run({
-      type: 'system.broadcast',
-      text,
-      characterIds: to === 'all' ? null : [to],
-    });
-    if (r.ok) setText('');
+    const r = await run(
+      when === 'now'
+        ? { type: 'system.broadcast', text, characterIds: recipients }
+        : { type: 'broadcast.schedule', text, characterIds: recipients, day: dayValue },
+    );
+    if (r.ok) {
+      setOkText(when === 'now' ? 'Broadcast sent' : `Scheduled for day ${dayValue}`);
+      setText('');
+    }
   };
+  const pending = state.scheduledBroadcasts;
   return (
     <form className="window" onSubmit={(e) => void submit(e)} aria-labelledby="broadcast">
       <h2 id="broadcast">System broadcast</h2>
@@ -548,21 +567,109 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
           rows={3}
         />
       </label>
-      <label>
-        To
-        <select aria-label="Recipients" value={to} onChange={(e) => setTo(e.target.value)}>
-          <option value="all">Everyone</option>
+      <div className="broadcast-row">
+        <label>
+          To
+          <select aria-label="Recipients" value={to} onChange={(e) => setTo(e.target.value)}>
+            <option value="all">Everyone</option>
+            {state.characterOrder.map((id) => (
+              <option key={id} value={id}>
+                {name(id)}
+              </option>
+            ))}
+            {state.characterOrder.length > 1 && <option value="several">Several…</option>}
+          </select>
+        </label>
+        <label>
+          When
+          <select
+            aria-label="When"
+            value={when}
+            onChange={(e) => setWhen(e.target.value as 'now' | 'day')}
+          >
+            <option value="now">Now</option>
+            <option value="day">On a later in-game day</option>
+          </select>
+        </label>
+        {when === 'day' && (
+          <label>
+            Send on day
+            <input
+              type="number"
+              inputMode="numeric"
+              min={state.day + 1}
+              step={1}
+              value={day}
+              placeholder={String(state.day + 1)}
+              onChange={(e) => setDay(e.target.value)}
+            />
+          </label>
+        )}
+      </div>
+      {to === 'several' && (
+        <fieldset>
+          <legend>Recipients</legend>
           {state.characterOrder.map((id) => (
-            <option key={id} value={id}>
-              {state.characters[id]?.name}
-            </option>
+            <label key={id} className="check">
+              <input
+                type="checkbox"
+                checked={several.has(id)}
+                onChange={(e) => {
+                  const next = new Set(several);
+                  if (e.target.checked) next.add(id);
+                  else next.delete(id);
+                  setSeveral(next);
+                }}
+              />
+              {name(id)}
+            </label>
           ))}
-        </select>
-      </label>
-      <button type="submit" disabled={busy}>
-        Send broadcast
+        </fieldset>
+      )}
+      {when === 'day' && (
+        <p className="muted small">
+          Today is day {state.day}. It is sent when the in-game day reaches the day you pick
+          (Session panel: advance the day).
+          {day.trim() !== '' && !dayOk && (
+            <span className="err" role="alert">
+              {' '}
+              Pick a whole day after day {state.day}.
+            </span>
+          )}
+        </p>
+      )}
+      <button type="submit" disabled={busy || !dayOk || noOne}>
+        {when === 'now' ? 'Send broadcast' : 'Schedule broadcast'}
       </button>
-      <Outcome result={result} okText="Broadcast sent" />
+      {noOne && <p className="muted small">Tick at least one recipient.</p>}
+      <Outcome result={result} okText={okText} />
+      {pending.length > 0 && (
+        <section aria-labelledby="scheduled-broadcasts">
+          <h3 id="scheduled-broadcasts">Scheduled (GM only until sent)</h3>
+          <ul className="scheduled">
+            {[...pending]
+              .map((b, i) => ({ b, i }))
+              .sort((x, y) => x.b.day - y.b.day || x.i - y.i)
+              .map(({ b }) => (
+                <li key={b.id} data-testid={`scheduled-${b.id}`}>
+                  <strong>Day {b.day}</strong> · to{' '}
+                  {b.characterIds === null ? 'everyone' : b.characterIds.map(name).join(', ')}:{' '}
+                  <span className="scheduled-text">{b.text}</span>{' '}
+                  <button
+                    type="button"
+                    className="secondary small"
+                    disabled={cancel.busy}
+                    aria-label={`Cancel the day ${b.day} broadcast to ${b.characterIds === null ? 'everyone' : b.characterIds.map(name).join(', ')}`}
+                    onClick={() => void cancel.run({ type: 'broadcast.unschedule', id: b.id })}
+                  >
+                    Cancel
+                  </button>
+                </li>
+              ))}
+          </ul>
+          <Outcome result={cancel.result} okText="Scheduled message cancelled" />
+        </section>
+      )}
     </form>
   );
 }

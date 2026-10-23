@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 24,
+  "schemaVersion": 25,
   "name": "Golden: clocks",
   "rules": {
     "configVersion": 1,
@@ -471,6 +471,7 @@
   },
   "characterOrder": ["jake"],
   "broadcasts": [],
+  "scheduledBroadcasts": [],
   "items": {},
   "itemOrder": [],
   "skillLibrary": {},

@@ -91,6 +91,8 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   characterOrder: 'party',
   // Each player gets only the broadcasts addressed to them, without the recipient list.
   broadcasts: 'owner',
+  // M4.7: a scheduled broadcast is the GM's until its day comes (then it is in `broadcasts`).
+  scheduledBroadcasts: 'gm',
   // M1.7 economy, projected as `inventory` (M3.7): the library may hold items
   // the GM has not handed out, so players get only the definitions of items
   // they hold, wear or see in an own trade; holdings and trades only their own.

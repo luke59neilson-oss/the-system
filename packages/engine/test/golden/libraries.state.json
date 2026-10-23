@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 24,
+  "schemaVersion": 25,
   "name": "Libraries",
   "rules": {
     "configVersion": 1,
@@ -471,6 +471,7 @@
   },
   "characterOrder": ["c1"],
   "broadcasts": [],
+  "scheduledBroadcasts": [],
   "items": {},
   "itemOrder": [],
   "skillLibrary": {

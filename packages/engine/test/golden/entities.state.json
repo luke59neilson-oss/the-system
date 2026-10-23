@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 24,
+  "schemaVersion": 25,
   "name": "Golden: entities",
   "rules": {
     "configVersion": 1,
@@ -577,6 +577,7 @@
   },
   "characterOrder": ["jake", "kim"],
   "broadcasts": [],
+  "scheduledBroadcasts": [],
   "items": {},
   "itemOrder": [],
   "skillLibrary": {},

@@ -171,6 +171,22 @@ export const EVENT_PAYLOAD_SCHEMAS = {
       .refine((t) => t.length <= 2000, 'must be at most 2000 characters'),
     characterIds: z.array(recordId).min(1).nullable(),
   }),
+  /**
+   * GM schedules a System broadcast for a later in-game day (M4.7, D159): it
+   * is sent when the day counter reaches `day`. GM-only until then.
+   */
+  'broadcast.scheduled': z.strictObject({
+    id: recordId,
+    text: z
+      .string()
+      .trim()
+      .min(1, 'must not be blank')
+      .refine((t) => t.length <= 2000, 'must be at most 2000 characters'),
+    characterIds: z.array(recordId).min(1).nullable(),
+    day: z.number().int().min(2).max(100000),
+  }),
+  /** GM cancels a scheduled broadcast before it is sent (M4.7). */
+  'broadcast.unscheduled': z.strictObject({ id: recordId }),
   /** GM adds an item definition to the campaign library (M1.7). */
   'item.defined': z.strictObject({ id: recordId, ...itemFields }),
   /** GM edits a definition (rarity edits etc.); every copy changes. Omitted fields stay. */
@@ -562,6 +578,8 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'freePoints.assigned': 1,
   'freePoints.overridden': 1,
   'system.broadcast': 1,
+  'broadcast.scheduled': 1,
+  'broadcast.unscheduled': 1,
   'item.defined': 1,
   'item.edited': 1,
   'holdings.adjusted': 1,

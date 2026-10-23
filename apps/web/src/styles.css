@@ -2001,3 +2001,29 @@ p.small {
 .xp-share input {
   width: 7em;
 }
+
+/* M4.7 System broadcast: recipients, when, and the GM's scheduled list. */
+.broadcast-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: flex-end;
+}
+.broadcast-row label {
+  flex: 1 1 140px;
+}
+ul.scheduled {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+ul.scheduled li {
+  border-left: 2px solid var(--accent, currentColor);
+  padding: 4px 8px;
+  overflow-wrap: anywhere;
+}
+.scheduled-text {
+  font-style: italic;
+}

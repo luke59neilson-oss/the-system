@@ -23,6 +23,7 @@ import {
   kit,
   randomCommand,
   randomLibraryCommand,
+  randomBroadcastCommand,
   rawRules,
   run,
   seededRandom,
@@ -792,9 +793,15 @@ describe('property: replay equals incremental state', () => {
       const ctx = testContext('p');
       let c = run([created]);
       const libraryRand = seededRandom(seed + 1);
+      // M4.7: scheduled broadcasts on their own stream, so the main walk keeps its draws.
+      const broadcastRand = seededRandom(seed + 2);
       for (let step = 0; step < STEPS; step++) {
         const command =
-          step % 20 === 7 ? randomLibraryCommand(libraryRand, c) : randomCommand(rand, c);
+          step % 20 === 7
+            ? randomLibraryCommand(libraryRand, c)
+            : step % 40 === 13
+              ? randomBroadcastCommand(broadcastRand, c)
+              : randomCommand(rand, c);
         const asPlayer =
           (command.type === 'event.undo' ||
             (PLAYER_COMMANDS.has(command.type) &&
@@ -892,6 +899,8 @@ describe('property: replay equals incremental state', () => {
       'montage.close',
       'skillDef.define',
       'skillDef.edit',
+      'broadcast.schedule',
+      'broadcast.unschedule',
     ]) {
       expect(acceptedByType[type] ?? 0, `seed ${SEED}: accepted ${type}`).toBeGreaterThan(0);
     }

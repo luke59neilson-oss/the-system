@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 24,
+  "schemaVersion": 25,
   "name": "Golden: default rules (QF.12)",
   "rules": {
     "configVersion": 1,
@@ -685,6 +685,7 @@
   },
   "characterOrder": ["jake", "kim", "lee"],
   "broadcasts": [],
+  "scheduledBroadcasts": [],
   "items": {
     "charm": {
       "id": "charm",

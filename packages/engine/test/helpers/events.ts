@@ -698,3 +698,28 @@ function randomQuestCommand(
     return { type: 'stability.nudge', questId: someQuest(), delta: pick([-10, 5, 0]) };
   return { type: 'campaign.advanceDay', days: pick([1, 3, 0]) };
 }
+
+/** M4.7: broadcasts scheduled for a later in-game day, cancelled, and sent as days pass. */
+export function randomBroadcastCommand(rand: () => number, c: Campaign): Command {
+  const pick = <T>(items: readonly T[]): T => items[Math.floor(rand() * items.length)] as T;
+  const day = c.state?.day ?? 1;
+  const roll = rand();
+  if (roll < 0.55) {
+    const chars = c.state?.characterOrder ?? [];
+    return {
+      type: 'broadcast.schedule',
+      id: `sb${Math.floor(rand() * 4)}`,
+      text: pick(['Day breaks.', ' ', 'The Host stirs.']),
+      characterIds: rand() < 0.5 || chars.length === 0 ? null : [pick(chars)],
+      day: day + pick([1, 2, 0]),
+    };
+  }
+  if (roll < 0.75) {
+    const pending = c.state?.scheduledBroadcasts ?? [];
+    return {
+      type: 'broadcast.unschedule',
+      id: pending.length && rand() < 0.8 ? pick(pending).id : 'sb-none',
+    };
+  }
+  return { type: 'campaign.advanceDay', days: pick([1, 2]) };
+}

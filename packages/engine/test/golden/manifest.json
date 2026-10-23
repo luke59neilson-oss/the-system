@@ -5,240 +5,248 @@
       "schemaVersion": 21
     },
     "basic.state.json": {
-      "sha256": "96a2afee6def2cf55486601bdc2718e720cfdd04cb8a079c9cacb3b77684d9bc",
-      "schemaVersion": 24
+      "sha256": "0705775e13c8fada29cbf48aa0ef69a8a061a4d6fd696780943843a350afd7b5",
+      "schemaVersion": 25
     },
     "broadcast.jsonl": {
       "sha256": "c835a801fa04add391930a22558f082d8f635ea33a5ad27bb973a65d7faa5986",
       "schemaVersion": 21
     },
     "broadcast.state.json": {
-      "sha256": "6b60ce63acf4d8bb9bc39ce867de9f5c043437db2a5572726c9116d44c5c9ec5",
-      "schemaVersion": 24
+      "sha256": "744c2a8d6ec7de85bbf37b2637f963f3beb537708a0accca5ae025e126825d87",
+      "schemaVersion": 25
     },
     "clocks.jsonl": {
       "sha256": "5b173c30ed21431bcd6b7a656b5d9a2f25ff489d8b3522e042c788d7ccf89489",
       "schemaVersion": 21
     },
     "clocks.state.json": {
-      "sha256": "886679de85da4bf68eb76842542f4497f322dcbb5d8c9a2c2e5d1a12b1017e4c",
-      "schemaVersion": 24
+      "sha256": "a70b5e7a27514856aef5dcd462a034e3354efc7abc4cbbc05699358774fe1af9",
+      "schemaVersion": 25
     },
     "defaults.jsonl": {
       "sha256": "40cdb92ff2d06edb5c44a9c33d05c6302a7f28cd0b37a0721333944fa4d8a011",
       "schemaVersion": 21
     },
     "defaults.state.json": {
-      "sha256": "cd1c466a0729334ee77ea83dc8a3638bf55e7b65302ca5e16845c3a83c4b7612",
-      "schemaVersion": 24
+      "sha256": "8cdd285a5bc6f1b585b7c86df1e422705e926a6626dbf2781a49ce47bdc8d58f",
+      "schemaVersion": 25
     },
     "economy.jsonl": {
       "sha256": "3e1ca6c2d9b56970bddb350b3db208a6756e9338496bbd74a00393095c4f5a24",
       "schemaVersion": 21
     },
     "economy.state.json": {
-      "sha256": "e8600ddb038277adcbf25430f8a615521bd9214a2cbfd5a85c2f387e80dd717c",
-      "schemaVersion": 24
+      "sha256": "655ece18984f6211ffeb47211fdc1dee7b96e64844936b87b9c9e9569b792b3b",
+      "schemaVersion": 25
     },
     "entities.jsonl": {
       "sha256": "ec21d4d8ba52048c3219a4a3d10a9c7ccd38ffff83d83a6eb3340d1a4434ed90",
       "schemaVersion": 21
     },
     "entities.state.json": {
-      "sha256": "4bbf9e80597de3a56c93cfb61e765da7700de84f461ca43a6b7251c56efcac0b",
-      "schemaVersion": 24
+      "sha256": "8d9c3a6ccf96484f4bd8ac9aa57bd06b4a882534fe4017572d13da2ba2b658ed",
+      "schemaVersion": 25
     },
     "evolution-rules.jsonl": {
       "sha256": "22156912bbed8870163a5db1db90e41cff3d5af56a1911a17413eaa92d83eb8e",
       "schemaVersion": 21
     },
     "evolution-rules.state.json": {
-      "sha256": "b53f8244376e776fea600636d69c3a459082211836177b99c5e4eb7d608ba74f",
-      "schemaVersion": 24
+      "sha256": "e1ce28cc087299c417b34f53577760301ab14fa06c862da1fb5eae75512ebe9a",
+      "schemaVersion": 25
     },
     "evolution.jsonl": {
       "sha256": "9945cd2b70f9584f01e7394ca5835ed1883049d181cee7df62e546cd7b71f79f",
       "schemaVersion": 21
     },
     "evolution.state.json": {
-      "sha256": "4c925caaa8794929b61836d0db841af49f17d66f72e02468e0443a20df1bc03e",
-      "schemaVersion": 24
+      "sha256": "ed4f75909a5f794aea49ac246f276e478815ec87951c362647b407edc56dcb96",
+      "schemaVersion": 25
     },
     "freepoints.jsonl": {
       "sha256": "e18d62e4312817aabcb70424b9521015f8cec50bdf385fe596c6a5fbfc012f10",
       "schemaVersion": 21
     },
     "freepoints.state.json": {
-      "sha256": "778bdc00cc9173756c3dfce1b7d66a6476231b0c6e9a609dea438418c338b9bc",
-      "schemaVersion": 24
+      "sha256": "ddc277041ecef218bad45e77cebb636a1a6997bc0ef59a8b1daf7d3011f396db",
+      "schemaVersion": 25
     },
     "hidden-quests.jsonl": {
       "sha256": "5f42398dc190cfe40d61e99f512fd1eea7a529f6bd4ae04ad7a8db5c30f89cef",
       "schemaVersion": 21
     },
     "hidden-quests.state.json": {
-      "sha256": "4483b1d0d6874d87e2da4777ad3b6ae491bd0345ac4fbe4be696321b79e71cb4",
-      "schemaVersion": 24
+      "sha256": "b0da03f2508565ab803761cf953e969426d0d5a7da068e0b68397f39f212ccf8",
+      "schemaVersion": 25
     },
     "identify-range.jsonl": {
       "sha256": "fc6368db952f89cbbe8bdccfd7d477a54a3caa2c463fdd9cf3abeb43cd29747f",
       "schemaVersion": 21
     },
     "identify-range.state.json": {
-      "sha256": "a271656f70a8c8251e777c2da35baef45f2369bf273309defb4d4d0c62754ca9",
-      "schemaVersion": 24
+      "sha256": "6e4c71bda14ea61534472dc8b4ff1ef237b7de7c4e3f345647ff3fd5f55f0e2d",
+      "schemaVersion": 25
     },
     "libraries.jsonl": {
       "sha256": "5b487482a7fdf58fff0a2c0e40dcfd2be1c81d2467553decf08a964927da22bf",
       "schemaVersion": 21
     },
     "libraries.state.json": {
-      "sha256": "ba26967de26dd3bca1aca2a1574ec5a561c1f36b476e420edd1073e340850940",
-      "schemaVersion": 24
+      "sha256": "ca86c74d3b8e741004a648c30f5aa955d96f04554966282ff83c172e7664209c",
+      "schemaVersion": 25
     },
     "library-text.jsonl": {
       "sha256": "6c8a6f5cfa4f9230a1b79a26e2b4d572f1a3c6f9133f4a2a8b0114a52e45a390",
       "schemaVersion": 24
     },
     "library-text.state.json": {
-      "sha256": "91e82323a60b48a6f7373c6120706b2aa8526d6d8c8e2c1bebc3180839750107",
-      "schemaVersion": 24
+      "sha256": "a2d90dc837ef941ded897545a3bdb237a6247896092b281366a084aa6bd3a659",
+      "schemaVersion": 25
     },
     "marks.jsonl": {
       "sha256": "fd917252b011a0a9fc515ef82ee350178ce08644f79ecc0fd2be5ef4dc7ceffe",
       "schemaVersion": 21
     },
     "marks.state.json": {
-      "sha256": "386f62d4e9609dd052fe478a3e48a5afaaed0eec5741595bebf4737f3c4fd223",
-      "schemaVersion": 24
+      "sha256": "7ee6dae579da4ee3f3256a757dfc78840406e5c9a182758748143455895a67fb",
+      "schemaVersion": 25
     },
     "montage.jsonl": {
       "sha256": "337a1399a34d9801f95dd75879f59ffcab8a3adcf4359fba1d098976b51c5462",
       "schemaVersion": 21
     },
     "montage.state.json": {
-      "sha256": "6dee71a3a510724aaed4af6da1edfe3cbf0a5f955f571f5c507cb7dfe7341eba",
-      "schemaVersion": 24
+      "sha256": "ace658cb119c496027f7433f4940c60fa1a78cd78cc4838e12c4de72c0d28441",
+      "schemaVersion": 25
     },
     "overflow.jsonl": {
       "sha256": "9ec32474dd61e85c3d2da63865839dc2cbe96ef0f42401cbb0645536bed9a63d",
       "schemaVersion": 21
     },
     "overflow.state.json": {
-      "sha256": "2861692fd85b399c04165d4d2efc30799964380fd8fabe1db0485955671248f0",
-      "schemaVersion": 24
+      "sha256": "fdd4ccce7632cc9bc7a50f60930ab220ae49215a2c1c5eed66901a85bfd5393a",
+      "schemaVersion": 25
     },
     "passed-over.jsonl": {
       "sha256": "6f0e4e012cde19200dcf55f26eb81a48349c09ac7564ae689a43876a3824fe1f",
       "schemaVersion": 21
     },
     "passed-over.state.json": {
-      "sha256": "f66ec215ffb99c8f653ab91944c513e14916018429e1e8b0d7f369f4fe08fb71",
-      "schemaVersion": 24
+      "sha256": "bffdb70a8906c3010daeac17f752ecb28cfe9fda879136f999fc9393e09a9524",
+      "schemaVersion": 25
     },
     "pools.jsonl": {
       "sha256": "67cec1dd0b4445eada8c28aa5b889aa6ebd8098fcf65bcf2bf4dbe5e57262206",
       "schemaVersion": 21
     },
     "pools.state.json": {
-      "sha256": "61059aee9ec61a56c4885f0df34046642a785dfc8c617310d14ae01d549e173e",
-      "schemaVersion": 24
+      "sha256": "9a96c784e472dcfec46125961f41c8da5fed0f678bee724f92cfb668721ff904",
+      "schemaVersion": 25
     },
     "portraits.jsonl": {
       "sha256": "ece08fbeebae7f701eff834a1fcd33a2ce4ab8b64e2ded375029c38e1b9f515c",
       "schemaVersion": 21
     },
     "portraits.state.json": {
-      "sha256": "d870ed35d57120fa39de3dc01cd437d3394ee9ee2233dbf2c17492fb5a652cd8",
-      "schemaVersion": 24
+      "sha256": "b15322a181d974f3edbbe7db86f395a951ff44ec6a5a5a6f2f4ef9f39a832e44",
+      "schemaVersion": 25
     },
     "practice.jsonl": {
       "sha256": "71d8749d44c34d5ae4334b64fda6006df32859b703f7eb6cf38f7f7ef915e104",
       "schemaVersion": 21
     },
     "practice.state.json": {
-      "sha256": "6d9b4d0ac0459ad439f6a0f592a061df281ad1eae1d1e9a106c6d31a07a8bc40",
-      "schemaVersion": 24
+      "sha256": "c24501ae9e76869b1009c645d6e6b14e909690dc16b8525fa8761d7f0bef3e27",
+      "schemaVersion": 25
     },
     "professions.jsonl": {
       "sha256": "9c3af60db50101b8906fb7aa4d0a9228a0a07e26998e497e91fa93149eda099a",
       "schemaVersion": 21
     },
     "professions.state.json": {
-      "sha256": "9f202045515c62396541750edb0f36048452b810cd30ecbfdb5c26ebaecebf4d",
-      "schemaVersion": 24
+      "sha256": "2802d50afe17c3d06a27726f7f6a341b271eb796ba9b1edf9a1d45380db0e29d",
+      "schemaVersion": 25
     },
     "quests.jsonl": {
       "sha256": "24bb9e35fe3c3779a2bfb186cc5a6381e97028c739e46d081ce8f296f2c97180",
       "schemaVersion": 21
     },
     "quests.state.json": {
-      "sha256": "553c996e2d5277950fb407e40ead6c3fe7231b3959e12164bf21a5bf299db1cc",
-      "schemaVersion": 24
+      "sha256": "115fce1f594933703bdc35222bd2b1bdeba8cecb73ba1e802914fc17ece21e7e",
+      "schemaVersion": 25
     },
     "rerate.jsonl": {
       "sha256": "396d52eebadb7a37cf0bc77964f350b31a6cbc8df608fd53519267df463e5992",
       "schemaVersion": 24
     },
     "rerate.state.json": {
-      "sha256": "0b06e19afd4d900c9f8e0cdb6aa7ab9b3c0441b8771bff5f37842a33e13396f0",
-      "schemaVersion": 24
+      "sha256": "f52e028b908bc1d00e99a514770631b70208e19f9bbf2362a9b8a3e71e8801ca",
+      "schemaVersion": 25
     },
     "rules-migration.jsonl": {
       "sha256": "c90a36eb444ff5138d3be80c8303787d8d374ca7d991edd97e1c7481be0f3d12",
       "schemaVersion": 23
     },
     "rules-migration.state.json": {
-      "sha256": "9e29dba93e805ca0508aecbf8661e4ba25e96e3c3796601018d7440e5929cf1c",
-      "schemaVersion": 24
+      "sha256": "06a72f124ed43617e282835ac40caa0bb599aad2d659602cca5f113b6e013637",
+      "schemaVersion": 25
+    },
+    "scheduled-broadcasts.jsonl": {
+      "sha256": "6844590ff36351db6ddaa7e8e888f0c37db47231ccc9c6ebc58c142de73f1580",
+      "schemaVersion": 25
+    },
+    "scheduled-broadcasts.state.json": {
+      "sha256": "be32a1cde8fc193c89cd669d1146bbe5b96cfc0af282d35d7a54545ca5687f07",
+      "schemaVersion": 25
     },
     "sessions.jsonl": {
       "sha256": "2f043faa32742333274444b7afe4ba2b27b089128ee9f8a0294128abd922ec1b",
       "schemaVersion": 21
     },
     "sessions.state.json": {
-      "sha256": "7d17b3a17c07596171468a6c9683beaf354d080ee261994701a62acea286e1b4",
-      "schemaVersion": 24
+      "sha256": "75f25360abfdd70743e5d51bbcf987a8760735ee775e7de06b30903be7d27fc0",
+      "schemaVersion": 25
     },
     "skilllibrary.jsonl": {
       "sha256": "ffcacef30fa6373d00d463910f09b4f33cdcb2ea951f25d5275c1f670abda5a8",
       "schemaVersion": 21
     },
     "skilllibrary.state.json": {
-      "sha256": "0126643b1e9b825ba230cab23ff82311dcbdc4ad856ee2a7f003234b481bf951",
-      "schemaVersion": 24
+      "sha256": "8daaa5c6dbde0c19d375d87afa834fd0573dcb59c4e463429dff906f6a4a2701",
+      "schemaVersion": 25
     },
     "skills.jsonl": {
       "sha256": "380f59562cc91547fba38243e3919ef1de78733fc33bc228b42978ca449ba77c",
       "schemaVersion": 21
     },
     "skills.state.json": {
-      "sha256": "54d475052207829543766525b139dcd3eaec8c8c29fcf4ee699f26b240c3b243",
-      "schemaVersion": 24
+      "sha256": "f6309923c3831f4c9afacaa098e9bc5ec953634accd1201019b2c226935cea00",
+      "schemaVersion": 25
     },
     "skilltext.jsonl": {
       "sha256": "2bb403b2b78152209b7a8c00866da6f3e53668a60c265bc043889cf2a167f2c6",
       "schemaVersion": 21
     },
     "skilltext.state.json": {
-      "sha256": "ce24da34e7cbbfdeba3235be392bbd3171604699eb36d8438a0d3d1a677dba30",
-      "schemaVersion": 24
+      "sha256": "532b39b925ac35de165ad60d9fdc35b8fbaeeba15b4fbaa38274b0094c841338",
+      "schemaVersion": 25
     },
     "titles.jsonl": {
       "sha256": "0db31fe34df8a20d8ea9737d74d7cc569f3ec233cb874834d53af0501a9bf24a",
       "schemaVersion": 21
     },
     "titles.state.json": {
-      "sha256": "1c8e6237f7c23b82c4775281e65d4f7b3f906ee398b2945fcb6a1ea5489dd628",
-      "schemaVersion": 24
+      "sha256": "41c6bb15135253e946b4a18129cfbb8d825eaa19e00b13205133fc9ce472a986",
+      "schemaVersion": 25
     },
     "xp.jsonl": {
       "sha256": "97f7836434530d61610b9c4abbeb6c19dcc0b26b386a7dced96d7a422ed84ed3",
       "schemaVersion": 21
     },
     "xp.state.json": {
-      "sha256": "db00a3989b62878250d23da1939e686e7efae7511f56d9d203ef5a78db458984",
-      "schemaVersion": 24
+      "sha256": "840af503cf7fed8b855d3ee4738d65d30fa16c653c1ed87f88c9090d55a71dff",
+      "schemaVersion": 25
     }
   }
 }

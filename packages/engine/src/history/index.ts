@@ -104,6 +104,14 @@ export function notificationsBetween(
       out.push({ kind: 'broadcast', characterId, text: event.payload.text });
     }
   }
+  if (event?.type === 'campaign.dayAdvanced' && before) {
+    // M4.7: scheduled broadcasts sent as the day counter reached their day.
+    for (const b of after.broadcasts.slice(before.broadcasts.length)) {
+      for (const characterId of b.characterIds ?? after.characterOrder) {
+        out.push({ kind: 'broadcast', characterId, text: b.text });
+      }
+    }
+  }
   if (
     event?.type === 'quest.created' ||
     event?.type === 'quest.edited' ||

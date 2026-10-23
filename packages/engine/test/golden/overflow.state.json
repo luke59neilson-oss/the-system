@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 24,
+  "schemaVersion": 25,
   "name": "Golden: XP overflow",
   "rules": {
     "configVersion": 1,
@@ -496,6 +496,7 @@
   },
   "characterOrder": ["jake"],
   "broadcasts": [],
+  "scheduledBroadcasts": [],
   "items": {},
   "itemOrder": [],
   "skillLibrary": {},

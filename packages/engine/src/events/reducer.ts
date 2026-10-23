@@ -59,18 +59,30 @@ import {
 } from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 24;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 25;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
-  /** Id of the `system.broadcast` event. */
+  /** Id of the `system.broadcast` event, or of the schedule that sent it (M4.7). */
   readonly id: string;
   /** Event timestamp (ISO-8601 UTC). */
   readonly at: string;
   readonly text: string;
   /** Recipients; null = every character. */
   readonly characterIds: readonly string[] | null;
+}
+
+/** A broadcast the GM scheduled for a later in-game day (M4.7); GM-only until sent. */
+export interface ScheduledBroadcast {
+  readonly id: string;
+  readonly text: string;
+  /** Recipients; null = every character when it is sent. */
+  readonly characterIds: readonly string[] | null;
+  /** In-game day it is sent on (when the day counter reaches it). */
+  readonly day: number;
+  /** When the GM scheduled it (ISO-8601 UTC). */
+  readonly scheduledAt: string;
 }
 
 /** Plain, serializable campaign state: a pure fold over the effective events. */
@@ -83,6 +95,8 @@ export interface CampaignState {
   readonly characterOrder: readonly string[];
   /** GM broadcasts in order (DESIGN §7); players see only those addressed to them. */
   readonly broadcasts: readonly BroadcastRecord[];
+  /** Broadcasts waiting for an in-game day, in the order scheduled (M4.7). GM-only. */
+  readonly scheduledBroadcasts: readonly ScheduledBroadcast[];
   /** Item library by id (M1.7). */
   readonly items: Readonly<Record<string, ItemDef>>;
   /** Item ids in definition order. */
@@ -561,6 +575,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       characters: {},
       characterOrder: [],
       broadcasts: [],
+      scheduledBroadcasts: [],
       items: {},
       itemOrder: [],
       skillLibrary: {},
@@ -754,6 +769,44 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
             characterIds: ids === null ? null : [...ids],
           },
         ],
+      };
+    }
+    case 'broadcast.scheduled': {
+      const { id, text, characterIds, day } = event.payload;
+      if (day <= state.day) fail(event, `day ${day} has already begun; send it now instead`);
+      if (
+        state.scheduledBroadcasts.some((b) => b.id === id) ||
+        state.broadcasts.some((b) => b.id === id)
+      )
+        fail(event, `broadcast ${id} already exists`);
+      if (characterIds !== null) {
+        if (new Set(characterIds).size !== characterIds.length)
+          fail(event, 'a recipient is listed twice');
+        for (const cid of characterIds) characterOf(state, event, cid);
+      } else if (state.characterOrder.length === 0) {
+        fail(event, 'there is no one to broadcast to yet');
+      }
+      return {
+        ...state,
+        scheduledBroadcasts: [
+          ...state.scheduledBroadcasts,
+          {
+            id,
+            text,
+            characterIds: characterIds === null ? null : [...characterIds],
+            day,
+            scheduledAt: event.timestamp,
+          },
+        ],
+      };
+    }
+    case 'broadcast.unscheduled': {
+      const { id } = event.payload;
+      if (!state.scheduledBroadcasts.some((b) => b.id === id))
+        fail(event, `no scheduled broadcast ${id}`);
+      return {
+        ...state,
+        scheduledBroadcasts: state.scheduledBroadcasts.filter((b) => b.id !== id),
       };
     }
     case 'item.defined': {
@@ -1526,8 +1579,31 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       }
       return { ...state, entities: { ...state.entities, [entityId]: next } };
     }
-    case 'campaign.dayAdvanced':
-      return { ...state, day: state.day + event.payload.days };
+    case 'campaign.dayAdvanced': {
+      const day = state.day + event.payload.days;
+      // M4.7: scheduled broadcasts whose day has come are sent, earliest day
+      // first, then in the order scheduled.
+      const due = state.scheduledBroadcasts
+        .map((b, i) => ({ b, i }))
+        .filter(({ b }) => b.day <= day)
+        .sort((x, y) => x.b.day - y.b.day || x.i - y.i)
+        .map(({ b }) => b);
+      if (due.length === 0) return { ...state, day };
+      return {
+        ...state,
+        day,
+        scheduledBroadcasts: state.scheduledBroadcasts.filter((b) => b.day > day),
+        broadcasts: [
+          ...state.broadcasts,
+          ...due.map((b) => ({
+            id: b.id,
+            at: event.timestamp,
+            text: b.text,
+            characterIds: b.characterIds === null ? null : [...b.characterIds],
+          })),
+        ],
+      };
+    }
     case 'rules.migrated': {
       // MR.3 (L16, D153): XP overflow on; XP banked on a capped track is
       // applied again under overflow: the other track takes what it can, the

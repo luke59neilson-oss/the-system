@@ -398,3 +398,11 @@ DESIGN/ROADMAP; do not re-apply them.
     through XP awards and evolutions (and undo). Should the GM have a raw
     "set level" override anyway? Default: no (D157).
     Answer:
+
+60. **When a scheduled System broadcast goes out.** M4.7 schedules a
+    broadcast for a later **in-game day**: it is sent the moment the GM
+    advances the day counter to that day (or past it), so it survives app
+    restarts and undo, and needs no clock. It does not schedule by real
+    time ("in 20 minutes") or for "the start of the next session". Want
+    either of those too? Default: in-game day only (D159).
+    Answer:

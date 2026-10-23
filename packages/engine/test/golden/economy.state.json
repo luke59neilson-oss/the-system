@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 24,
+  "schemaVersion": 25,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -577,6 +577,7 @@
   },
   "characterOrder": ["jake", "casper"],
   "broadcasts": [],
+  "scheduledBroadcasts": [],
   "items": {
     "hasteRing": {
       "id": "hasteRing",

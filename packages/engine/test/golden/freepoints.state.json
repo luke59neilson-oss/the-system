@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 24,
+  "schemaVersion": 25,
   "name": "Free points golden",
   "rules": {
     "configVersion": 1,
@@ -497,6 +497,7 @@
   },
   "characterOrder": ["jake"],
   "broadcasts": [],
+  "scheduledBroadcasts": [],
   "items": {},
   "itemOrder": [],
   "skillLibrary": {},
