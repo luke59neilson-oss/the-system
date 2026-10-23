@@ -642,12 +642,13 @@ next item, blockers. -->
 - Next item: QF.3 Limits on player-made data (not started: MQ.A's two blocking fable rounds ran to minute 41, and a hub rate limit plus note caps cannot be begun usefully in the 3 minutes before the 44 hand-off).
 - Blockers: MQ.A preview release not published (above).
 
-### Run ed52836b · 2026-10-23 02:06–02:55 UTC (ended at minute 49)
+### Run ed52836b · 2026-10-23 02:06–02:55 UTC (ended at minute 48: close-out done, QF.5 not started after the 44 hand-off)
 - Preflight: `add_repo` not offered; repo already cloned, fast-forwarded. Lock pushed. `npm view vitest version` → 5.0.5. Reviewer subagents on `sonnet` with worktrees work (background). Latest main CI (d7b9283) green. No new answers in ANSWERS.md; Luke's batch 2 (Q43–Q52) arrived mid-run as DESIGN/ROADMAP edits (milestone MR, L14–L18) and LOOP §8.2 (preview = Luke's Run-workflow click). Hour 02: no efficiency check or sweep.
 - QF.3 Limits on player-made data: `rules.limits` (notes 300 / 150,000 characters, open trades 10, player practice 5,000 entries / 500 characters), checked on commands only; hub rate limit 30 burst + 5/s per non-GM socket; unchanged player views are not re-sent; state schema v21 so pre-limits snapshots are replayed (D136, Q53). Sonnet 2 rounds (round 1: 0 H 2 M; round 2: 0 H, 1 M not reproduced). Full e2e 44/44 twice (490c4c3, 4d993b7). Box checked.
 - QF.4 Golden logs are pinned: `manifest.json` + `npm run golden:record` (D137). Sonnet 2 rounds (round 1: 0 H 2 M, fixed; round 2: 0 H 0 M 3 L). Box checked. Not e2e-relevant (test tooling only).
 - Tests: 836 unit. Engine coverage not re-measured.
 - Open `wip/*` branches: none.
 - Next item: QF.5 Engine purity lint has no bypasses (then QF.6–QF.9, then MR.1).
+- Review Lows from QF.3 and QF.4 added to the QUALITY backlog.
 - Blockers: none new (the MQ.A preview is Luke's Run-workflow click per LOOP §8.2).
 
