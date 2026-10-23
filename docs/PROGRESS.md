@@ -804,13 +804,14 @@ next item, blockers. -->
 - Next item: M5.3 Marks review.
 - Blockers: none.
 
-### Run 2922f876 · 2026-10-23 18:07–18:5x UTC
+### Run 2922f876 · 2026-10-23 18:07–18:52 UTC (end minute 45)
 - Preflight: `add_repo` not offered; repo already cloned (local main reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer on sonnet works (worktree). No new answers. CI on main: 350d5f0 green.
 - Efficiency check (hour 18): scorecard row appended. D162 (one push per item) kept: main CI 66 → 48 runs/day, 12 → 8 red/day, guards flat. Auditor (sonnet) gave 2 Tier 1 ideas; applied the close-out gate (LOOP §5.5 gate, §8 step 0; trial, D170). Not a sweep hour.
 - M5.3 marks review **checked**: engine `marksReview`/`reviewSessionId` (skills used per play session, repeats flagged, pairs counted vs the merge rule, montage focus flagged, lost skills named, upgrade prompts and banked skills from the engine's own rules), GM "Marks review" window (any session; Confirm mark, Mark another skill, Upgrade), player skill-upgrade DING (`skillUpgrade`, owner only; in the "Level-ups and upgrades" filter). D169. e2e M5.3 1/1 with 3 screenshots.
 - Review (sonnet): round 1 0 H / 3 M / 7 L, round 2 0 H / 0 M / 3 L; all M and one round-2 L fixed, rest to the QUALITY Backlog.
 - Tests: 988 unit (`npm run check` green); full e2e: all passed except MQ.12 and MR.4 (strict-mode clash with the new DING toast), fixed and re-run with M5.3 and M3.3: 4/4.
-- Started M5.4 per the new gate: `wip/M5.4` (base 1ee9b9e on wip/M5.3, now on main). Done: engine `mergeCandidates` + tests, `skillMerge` DING, GM `MergeBuilder` window, draft e2e `e2e/M5.4.spec.ts` (not yet run), D171, Q62. Next step: merge origin/main, build, run `e2e/M5.4.spec.ts` and fix, `npm run check`, then review.
+- Started M5.4 per the new gate: `wip/M5.4` at f5ce2fb (main 098ed9f merged in). Done: engine `mergeCandidates` + tests, `skillMerge` DING (owner only), GM "Merges" window (alert list with merged rarity or refusal reason, name/description/flavour, Send merge = `skill.merge` then `skill.describe`), e2e `e2e/M5.4.spec.ts` 1/1 with 2 screenshots, `npm run check` green (988), D171, Q62. Next step: sibling self-check, launch the sonnet review (base 098ed9f), full e2e (shared GmScreen/format code), then merge to main.
 - Open `wip/*` branches: wip/M5.4 (new).
 - Next item: M5.4 Merges (resume wip/M5.4).
+- Ended at minute 45: hand-off at 44 per §5.5; M5.4's review could not report and be fixed before 50, so it was not launched (next run launches it first).
 - Blockers: none.
