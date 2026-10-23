@@ -509,8 +509,14 @@ function checkOption(
       const want =
         Math.max(rarityIndex(rules, skill.rarity), rarityIndex(rules, partner.rarity)) +
         rules.skills.merge.rarityStepsAboveHigher;
+      if (rank === want && rules.skills.rarities[want]?.reserved) {
+        throw new CharacterRuleError(`[${name}] would be a reserved rarity (${t.rarity})`);
+      }
       if (rank !== want) {
         const at = rules.skills.rarities[want];
+        if (at?.reserved) {
+          throw new CharacterRuleError(`[${name}] would be a reserved rarity (${at.id})`);
+        }
         throw new CharacterRuleError(
           `[${name}] must be ${at ? at.id : 'one rarity above the higher of the two'} (one above the higher merged skill)`,
         );

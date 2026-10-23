@@ -183,6 +183,9 @@ function ReleaseForm({
     skill: r.skill,
     rarity: rerate[r.skill] ?? r.byDefault,
   }));
+  const merged = new Set(
+    options.flatMap((o) => o.transforms.flatMap((t) => (t.merge ? [t.skill, t.merge] : []))),
+  );
   const rerateSent = Object.fromEntries(rerateList.map((r) => [r.skill, r.rarity]));
   const problem = releaseProblem(state, characterId, engineOptions, offered, rerateList);
 
@@ -343,6 +346,11 @@ function ReleaseForm({
       <ul className="rerate" aria-label="Re-rating">
         {plan.rerate.map((r) => (
           <li key={r.skill}>
+            {merged.has(r.skill) && (
+              <span className="muted">
+                (merged by an option: ignored if that option is chosen){' '}
+              </span>
+            )}
             <label>
               [{r.skill}] {rarityName(r.from)} →{' '}
               <select

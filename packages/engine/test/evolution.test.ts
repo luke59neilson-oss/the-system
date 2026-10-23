@@ -1747,6 +1747,7 @@ describe('merge transforms (M5.2, DESIGN §6 "offer that merge as part of the ev
       { type: 'skill.nickname', characterId: 'jake', skill: archery, nickname: 'Old Faithful' },
       player('jake'),
     );
+    c = ok(c, { type: 'skill.setUnique', characterId: 'jake', skill: archery, unique: true });
     c = ok(c, mergeRelease());
     const me = projectForPlayer(c.state ?? (null as never), 'jake').me;
     expect(me.evolution?.options[0]?.transforms[0]).toMatchObject({ merge: stealth });
@@ -1766,6 +1767,7 @@ describe('merge transforms (M5.2, DESIGN §6 "offer that merge as part of the ev
     const merged = j.skills.find((s) => s.name === 'Ghost Shot');
     expect(merged?.nickname ?? null).toBeNull();
     expect(merged?.unique ?? false).toBe(false);
+    expect(merged?.markSessions ?? []).toEqual([]);
     // Practice entries follow the transformed skill; the consumed name is retired.
     const entries = c.state?.practice.filter((e) => e.characterId === 'jake') ?? [];
     expect(entries.some((e) => e.skills.includes('Ghost Shot'))).toBe(true);

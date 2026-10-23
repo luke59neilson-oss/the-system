@@ -107,7 +107,9 @@ export function evolutionPlan(state: CampaignState, characterId: string): Evolut
       c.profession === null && gi(target.id) >= gi(rules.tracks.professionUnlockGrade),
     released: c.evolution ? c.evolution.options.map((o) => o.className) : null,
     stale: (c.evolution?.options ?? []).flatMap((o) => {
-      const problem = releaseProblem(state, characterId, [o], [], []);
+      // A waiting selection already shows as "Waits on…" and blocks a re-release
+      // too, so it is not this option's problem (round-2 review).
+      const problem = releaseProblem(state, characterId, [o], [], [], true);
       return problem === null ? [] : [{ className: o.className, problem }];
     }),
   };
@@ -120,6 +122,8 @@ export function releaseProblem(
   options: readonly EvolutionOption[],
   professions: readonly string[],
   rerate: readonly SkillRerate[],
+  /** Skip the pending-selection check (stale-option checks only). */
+  ignoreSelections = false,
 ): string | null {
   const c = state.characters[characterId];
   if (!c) return 'No such character.';
@@ -131,7 +135,7 @@ export function releaseProblem(
       professions,
       retiredOf(state, characterId),
       'draft',
-      false,
+      ignoreSelections,
       rerate,
       jointUses(state, characterId),
     );
