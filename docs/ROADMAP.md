@@ -576,7 +576,7 @@ work: Q44–Q48 and Q52.
 
 - [x] **M6.1 Item library.** Create/edit, rarity change, give/take.
 - [x] **M6.2 Loot tables.** Define and roll.
-- [ ] **M6.3 Currency.** Grants, fines, ledger.
+- [x] **M6.3 Currency.** Grants, fines, ledger.
 - [ ] **M6.4 Titles.** Library; award with System text.
 - [ ] **M6.A Milestone acceptance and review.** Give, trade, loot roll, title
   award end to end.
