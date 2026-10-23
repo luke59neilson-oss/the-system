@@ -37,19 +37,26 @@ export function LootTables({ client, state }: { client: LiveClient; state: Campa
     baseId !== null && Object.prototype.hasOwnProperty.call(state.lootTables, baseId)
       ? (state.lootTables[baseId] ?? null)
       : null;
+  // The table as the form opened it (or last saved it): a save sends only the
+  // fields changed since then, so another GM's edits to other fields stay.
+  const [loaded, setLoaded] = useState<LootTable | null>(null);
   const [draft, setDraft] = useState<TableDraft>(() => emptyTableDraft(firstItem));
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Outcome>(null);
   const ids = state.characterOrder.filter((id) => state.characters[id]);
   const [who, setWho] = useState('');
   const recipient = who === '' || ids.includes(who) ? who : '';
-  const command = tableSaveCommand(draft, base);
+  const command = tableSaveCommand(draft, base ? (loaded ?? base) : null);
+  const stale = base !== null && loaded !== null && JSON.stringify(loaded) !== JSON.stringify(base);
+  // Rolling uses the saved table, so it waits until the form has nothing unsaved.
   const problem = draftProblem(draft);
+  const unsaved = base !== null && (command !== null || problem !== null);
   const chances = entryChances(draft);
   const rolls = recentRolls(state);
 
   const open = (table: LootTable | null) => {
     setBaseId(table?.id ?? null);
+    setLoaded(table);
     setDraft(table ? tableDraftOf(table) : emptyTableDraft(firstItem));
     setOutcome(null);
   };
@@ -67,6 +74,15 @@ export function LootTables({ client, state }: { client: LiveClient; state: Campa
     const name = draft.name.trim();
     if (!r.ok) return setOutcome({ ok: false, text: friendlyError(r.error) });
     setOutcome({ ok: true, text: base ? `[${name}] saved` : `[${name}] added` });
+    if (base && command.type === 'lootTable.edit') {
+      const was = loaded ?? base;
+      setLoaded({
+        ...was,
+        name: command.name ?? was.name,
+        rolls: command.rolls ?? was.rolls,
+        entries: command.entries ?? was.entries,
+      });
+    }
     if (!base) setDraft(emptyTableDraft(firstItem));
   };
   const roll = async () => {
@@ -236,6 +252,14 @@ export function LootTables({ client, state }: { client: LiveClient; state: Campa
             {problem}
           </p>
         )}
+        {stale && (
+          <p className="muted" role="note">
+            Changed elsewhere since you opened it. Saving changes only the fields you edited.{' '}
+            <button type="button" className="secondary" onClick={() => base && open(base)}>
+              Reload
+            </button>
+          </p>
+        )}
         <button type="submit" disabled={busy || command === null}>
           {base ? 'Save changes' : 'Add table'}
         </button>
@@ -253,9 +277,14 @@ export function LootTables({ client, state }: { client: LiveClient; state: Campa
               ))}
             </select>
           </label>
-          <button type="button" disabled={busy} onClick={() => void roll()}>
+          <button type="button" disabled={busy || unsaved} onClick={() => void roll()}>
             Roll
           </button>
+          {unsaved && (
+            <p className="muted" role="note">
+              Save or reload the table first: a roll uses the saved table.
+            </p>
+          )}
         </div>
       )}
       {outcome && (

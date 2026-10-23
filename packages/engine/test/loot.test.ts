@@ -207,6 +207,37 @@ describe('loot tables (M6.2)', () => {
     ]);
   });
 
+  it('undoing a table edit cannot rewrite a later roll (D175)', () => {
+    // Entry 1 was a pelt; the edit makes it a fang; Jake rolls a fang.
+    let c = ok(base(), {
+      type: 'lootTable.edit',
+      tableId: 'hunter',
+      entries: [{ kind: 'item', itemId: 'fang', weight: 1, min: 1, max: 1 }],
+    });
+    const edit = c.events.at(-1)?.id ?? '';
+    c = ok(
+      c,
+      { type: 'loot.roll', tableId: 'hunter', characterId: 'jake' },
+      ctx(() => 0),
+    );
+    expect(c.state ? holdingsOf(c.state, 'jake').inventory : null).toEqual({ fang: 2 });
+    // Undoing the edit would turn the fangs into pelts (same picks): refused.
+    expect(reject(c, { type: 'event.undo', eventId: edit })).toContain('changed since this roll');
+    // A forged roll whose bundle does not match its picks is refused too.
+    const roll = c.events.at(-1);
+    if (roll?.type !== 'loot.rolled') throw new Error('no roll');
+    expect(() =>
+      replay([
+        ...c.events,
+        {
+          ...roll,
+          id: 'forged',
+          payload: { ...roll.payload, bundle: { currency: 0, items: { fang: 9 } } },
+        },
+      ]),
+    ).toThrow('picks no longer match');
+  });
+
   it('a roll for the GM only changes no holdings and tells no one', () => {
     const c0 = base();
     const c = ok(c0, { type: 'loot.roll', tableId: 'hunter' });

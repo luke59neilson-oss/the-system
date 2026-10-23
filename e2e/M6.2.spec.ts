@@ -107,6 +107,8 @@ test('the GM defines and rolls a loot table; the player receives the roll live',
   await entry(1).getByLabel('Kind').selectOption({ label: 'Credits' });
   await entry(1).getByLabel('Min').fill('10');
   await entry(1).getByLabel('Max').fill('10');
+  // A roll uses the saved table, so it waits for the save.
+  await expect(roll.getByRole('button', { name: 'Roll' })).toBeDisabled();
   await form.getByRole('button', { name: 'Save changes' }).click();
   await expect(loot.getByRole('status')).toHaveText('[Pale hunter drop] saved');
   await expect(form.getByRole('button', { name: 'Save changes' })).toBeDisabled();

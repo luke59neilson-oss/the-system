@@ -255,6 +255,11 @@ function transfer(
   return next;
 }
 
+const sameBundle = (a: Bundle, b: Bundle) =>
+  a.currency === b.currency &&
+  Object.keys(a.items).length === Object.keys(b.items).length &&
+  Object.entries(a.items).every(([id, n]) => hasOwn(b.items, id) && b.items[id] === n);
+
 function lootTableOf(state: CampaignState, event: DomainEvent, id: string): LootTable {
   const found = hasOwn(state.lootTables, id) ? state.lootTables[id] : undefined;
   return found ?? fail(event, `unknown loot table "${id}"`);
@@ -1058,9 +1063,15 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       return { ...state, lootTables: { ...state.lootTables, [tableId]: table } };
     }
     case 'loot.rolled': {
-      const { tableId, characterId, picks } = event.payload;
+      const { tableId, characterId, picks, bundle } = event.payload;
       const table = lootTableOf(state, event, tableId);
-      const bundle = rule(event, () => lootBundle(table, picks));
+      const gives = rule(event, () => lootBundle(table, picks));
+      if (!sameBundle(gives, bundle)) {
+        fail(
+          event,
+          `loot table "${table.name}" changed since this roll; its picks no longer match`,
+        );
+      }
       const record: LootRecord = {
         id: event.id,
         at: event.timestamp,

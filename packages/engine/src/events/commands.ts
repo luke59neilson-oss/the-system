@@ -18,6 +18,7 @@ import {
   EMPTY_HOLDINGS,
   EconomyRuleError,
   itemsSeenBy,
+  lootBundle,
   rollLoot,
   type LootEntry,
   type LootTable,
@@ -890,15 +891,17 @@ function toEvent(
       const table = lootTableOf(campaign, command.tableId);
       if (!ctx.random) throw new EventRejectedError('No random source to roll with');
       let picks;
+      let bundle;
       try {
         picks = rollLoot(table, ctx.random);
+        bundle = lootBundle(table, picks);
       } catch (error) {
         if (error instanceof EconomyRuleError) throw new EventRejectedError(error.message);
         throw error;
       }
       return {
         type: 'loot.rolled',
-        payload: { tableId: table.id, characterId: command.characterId ?? null, picks },
+        payload: { tableId: table.id, characterId: command.characterId ?? null, bundle, picks },
       };
     }
     case 'holdings.adjust':

@@ -233,12 +233,15 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     entries: lootTableFields.entries.optional(),
   }),
   /**
-   * GM rolls a loot table (M6.2): the picks the random source made, so replay
-   * never rolls again. With a character, what it gives goes to them as a GM gift.
+   * GM rolls a loot table (M6.2): the picks the random source made and what
+   * they give, so replay never rolls again. The reducer refuses a roll whose
+   * picks no longer give `bundle` (an undone table edit cannot rewrite a past
+   * roll). With a character, `bundle` goes to them as a GM gift.
    */
   'loot.rolled': z.strictObject({
     tableId: recordId,
     characterId: party,
+    bundle,
     picks: z
       .array(
         z.strictObject({

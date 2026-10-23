@@ -106,7 +106,8 @@ export function lootBundle(table: LootTable, picks: readonly LootPick[]): Bundle
     throw new EconomyRuleError(`The table rolls ${table.rolls} times, not ${picks.length}`);
   }
   let currency = 0;
-  const items: Record<string, number> = {};
+  // A Map, so no item id (not even "__proto__") can clash with an object key.
+  const items = new Map<string, number>();
   for (const pick of picks) {
     const e = table.entries[pick.entry];
     if (!e) throw new EconomyRuleError(`No entry ${pick.entry + 1} on the table`);
@@ -121,7 +122,7 @@ export function lootBundle(table: LootTable, picks: readonly LootPick[]): Bundle
     }
     if (pick.count === 0) continue;
     if (e.kind === 'currency') currency += pick.count;
-    else items[e.itemId] = (own(items, e.itemId) ? (items[e.itemId] as number) : 0) + pick.count;
+    else items.set(e.itemId, (items.get(e.itemId) ?? 0) + pick.count);
   }
-  return { currency, items };
+  return { currency, items: Object.fromEntries(items) };
 }
