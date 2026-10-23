@@ -2240,6 +2240,12 @@ ol.change-log li.undone .change-text {
 }
 .marks-row > label {
   margin-bottom: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+/* A long skill list must not widen a phone-width console (M4.3 at 390px). */
+.marks-row > label select {
+  max-width: 100%;
 }
 .marks-session {
   max-width: 16rem;
