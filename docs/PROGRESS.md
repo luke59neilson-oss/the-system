@@ -652,7 +652,7 @@ next item, blockers. -->
 - Review Lows from QF.3 and QF.4 added to the QUALITY backlog.
 - Blockers: none new (the MQ.A preview is Luke's Run-workflow click per LOOP §8.2).
 
-### Run df7dd1be · 2026-10-23 03:06–03:52 UTC (ended at minute 46: close-out after the 44 hand-off; QF.11 handed to `wip/QF.11` awaiting its release dry run)
+### Run df7dd1be · 2026-10-23 03:06–03:50 UTC (ended at minute 43, not one of LOOP §5.5's reasons: QF.11 waits on its release dry run and QF.6 on a CI run, and the lock was released with the close-out commit; next run should start QF.7 at once if both are still pending)
 - Preflight: `add_repo` not offered; repo already cloned, fast-forwarded. Lock pushed (first push raced Luke's docs commit 7e97cb2; rebased, not a lock race). `npm view vitest version` → 5.0.5. Reviewers on haiku, sonnet and fable work (Agent calls block until they report). Latest main CI (d775162) green. No new answers in ANSWERS.md (batch 2 already applied, L14–L18). QF.11 (High) arrived mid-run (b5a436e).
 - Hour 03: quality sweep C (Rules · haiku, Tests · sonnet, UX · fable) on 520f6ce..4cf9f1b: 0 High, 2 Medium (1 confirmed → QF.12; 1 is load, logged under Flakes with QF.8), 13 Low to Backlog.
 - QF.5 Engine purity lint has no bypasses: one selector bans `Date`/`Math` as values; review round 1 added call/apply/bind/constructor bans (D138). Sonnet 1 round (0 H, 1 M fixed). Box checked.
