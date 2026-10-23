@@ -122,6 +122,11 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
                         [{c.skills[0]}] + [{c.skills[1]}] · together {c.count}×
                         {c.rarity !== null ? ` → ${rarityName(c.rarity)}` : ''}
                       </label>
+                      {c.unreviewed > 0 && (
+                        <p className="warn" data-testid="merge-unreviewed">
+                          {c.unreviewed} of these {c.count} uses not reviewed yet (Practice window).
+                        </p>
+                      )}
                       {c.problem !== null && <p className="warn">{c.problem}</p>}
                     </li>
                   );

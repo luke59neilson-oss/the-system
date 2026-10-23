@@ -1,6 +1,6 @@
 import { CharacterRuleError } from '../character';
 import type { CampaignState } from '../events/reducer';
-import { practiceAlerts } from '../practice/model';
+import { practiceAlerts, repeatedEntryIds } from '../practice/model';
 import { mergeSkills } from './model';
 
 /**
@@ -17,6 +17,11 @@ export interface MergeCandidate {
   readonly rarity: string | null;
   /** Why the engine would refuse it now (rarity, ceiling, one per grade), else null. */
   readonly problem: string | null;
+  /**
+   * Of the joint uses counted, how many are player or montage entries the GM
+   * has not reviewed yet (M5.5), so the alert can say so (M5.A review).
+   */
+  readonly unreviewed: number;
 }
 
 /** A name no character skill can have, to test a merge without a real name. */
@@ -28,16 +33,22 @@ export function mergeCandidates(state: CampaignState, characterId: string): Merg
     : undefined;
   if (!character) return [];
   const entries = state.practice.filter((e) => e.characterId === characterId);
+  const repeats = repeatedEntryIds(entries);
   return practiceAlerts(state.rules, character, entries).flatMap((alert): MergeCandidate[] => {
     if (alert.kind !== 'merge') return [];
     const [a, b] = alert.skills;
+    // Same counting as the alert (repeats excluded), restricted to unreviewed entries.
+    const unreviewed = entries.filter(
+      (e) => !e.reviewed && !repeats.has(e.id) && e.skills.includes(a) && e.skills.includes(b),
+    ).length;
+    const base = { skills: alert.skills, count: alert.count, unreviewed };
     try {
       const after = mergeSkills(state.rules, character, a, b, PROBE, alert.count);
       const rarity = after.skills.find((s) => s.name === PROBE)?.rarity ?? null;
-      return [{ skills: alert.skills, count: alert.count, rarity, problem: null }];
+      return [{ ...base, rarity, problem: null }];
     } catch (err) {
       if (!(err instanceof CharacterRuleError)) throw err;
-      return [{ skills: alert.skills, count: alert.count, rarity: null, problem: err.message }];
+      return [{ ...base, rarity: null, problem: err.message }];
     }
   });
 }

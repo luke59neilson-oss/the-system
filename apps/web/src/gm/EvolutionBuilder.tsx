@@ -54,6 +54,10 @@ export function EvolutionBuilder({ client, state }: { client: LiveClient; state:
   });
   const [picked, setPicked] = useState('');
   const current = ready.find((r) => r.id === picked) ?? ready[0];
+  // Pin the shown character, so another character becoming ready earlier in
+  // the party order does not swap the form and lose the GM's draft (M5.A review).
+  // (Adjusting state while rendering, React's pattern for derived state.)
+  if (current !== undefined && current.id !== picked) setPicked(current.id);
   return (
     <section className="window evolution-builder" aria-labelledby="evolution-builder">
       <h2 id="evolution-builder">Evolutions</h2>

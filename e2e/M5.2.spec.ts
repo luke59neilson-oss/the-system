@@ -82,6 +82,16 @@ test('the GM builds and releases an evolution with re-rating', async ({ browser 
   await option.getByText('Reshape the class spread').click();
   await option.getByLabel('Perception weight').fill('3');
   await expect(option.getByText('Reshape the class spread (changed)')).toBeVisible();
+  // Casper, earlier in the party order, becomes ready mid-build: Sultan's draft stays.
+  await gmCommand(gm, {
+    type: 'xp.award',
+    track: 'class',
+    amount: 5000,
+    participants: [{ characterId: 'demo-casper' }],
+  });
+  await expect(builder.getByLabel('Character').locator('option')).toHaveCount(2);
+  await expect(builder.getByLabel('Character')).toHaveValue('demo-sultan');
+  await expect(option.getByLabel('Class name')).toHaveValue('Storm Hunter');
   await expect(form.getByTestId('release-problem')).toHaveCount(0);
   await expect(
     form.getByRole('list', { name: 'Re-rating' }).getByRole('listitem').first(),
@@ -109,7 +119,9 @@ test('the GM builds and releases an evolution with re-rating', async ({ browser 
   await dialog.getByRole('button', { name: 'Evolve' }).click();
   await expect(player.getByTestId('class')).toHaveText(/^\[Storm Hunter – lvl \d+\]$/);
   await expect(player.getByTestId('skills-class')).toContainText(/Archer.s Eye \(Inferior\)/);
-  await expect(builder.getByTestId('no-evolution')).toBeVisible();
+  // Sultan is done; the builder moves on to Casper, still waiting.
+  await expect(builder.getByLabel('Character')).toHaveValue('demo-casper');
+  await expect(builder.getByLabel('Character').locator('option')).toHaveCount(1);
   expect(errors).toEqual([]);
   expect(playerErrors).toEqual([]);
 });

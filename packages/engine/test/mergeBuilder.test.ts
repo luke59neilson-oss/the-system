@@ -32,7 +32,7 @@ describe('mergeCandidates (M5.4)', () => {
   it('a ready pair shows the merged rarity; merging tells only the owner', () => {
     const c = run(start('uncommon'));
     expect(mergeCandidates(c.state!, ID)).toEqual([
-      { skills: ['Cut', 'Step'], count: 3, rarity: 'rare', problem: null },
+      { skills: ['Cut', 'Step'], count: 3, rarity: 'rare', problem: null, unreviewed: 0 },
     ]);
     const merged = run(
       [{ type: 'skill.merge', characterId: ID, skills: ['Cut', 'Step'], name: 'Cutstep' }],
@@ -49,6 +49,24 @@ describe('mergeCandidates (M5.4)', () => {
       },
     ]);
     expect(mergeCandidates(merged.state!, ID)).toEqual([]);
+  });
+
+  it('counts the joint uses the GM has not reviewed yet (M5.A review)', () => {
+    const c = run([
+      ...start('uncommon'),
+      ...['Four', 'Four', 'Five'].map((action): Command => ({
+        type: 'practice.log',
+        characterId: ID,
+        action,
+        skills: pair,
+        source: 'montage',
+      })),
+    ]);
+    // The repeated "Four" counts neither as a use nor as unreviewed.
+    expect(mergeCandidates(c.state!, ID)).toMatchObject([{ count: 5, unreviewed: 2 }]);
+    const ids = c.state!.practice.filter((e) => !e.reviewed).map((e) => e.id);
+    const reviewed = run([{ type: 'practice.review', entryIds: ids }], testContext('r'), c);
+    expect(mergeCandidates(reviewed.state!, ID)).toMatchObject([{ count: 5, unreviewed: 0 }]);
   });
 
   it('a pair below the merge rarity says why; unknown characters have none', () => {

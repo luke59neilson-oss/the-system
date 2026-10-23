@@ -229,3 +229,8 @@ reviewers ran 15–20 minutes each in the background.
 - Tests (sweep A): `CAMPAIGN_FIELD_VISIBILITY` is not read by `projectForPlayer`, so it documents rather than enforces (`projection/player.ts` ~95).
 - M5.2 review: no e2e exercises the evolution builder's "Offer merge" button or the merge-row rarity label (engine and model unit tests cover the rules).
 - M5.2 review: the builder's stale-option check does not re-check a release's stored professions or re-rating against the current character (choose re-defaults them).
+- (M5.A review, 2026-10-23) Merge transform at evolution renames practice entries for the transformed skill but not its consumed partner (`evolution/model.ts` ~786), so the merged skill inherits one side's joint-use history; `skill.merge` renames nothing. Pick one rule (DESIGN §6: merged skill starts fresh).
+- (M5.A review) Merged skill's `kind` comes from the alphabetically first skill (`skills/model.ts` mergeSkills uses `a.kind`); class + profession merges always become class skills. Take the higher-rarity skill's kind or let the GM choose.
+- (M5.A review) "Send merge" sends `skill.merge` then `skill.describe`; undoing the merge from the Change Log is refused until the describe is undone. Carry description/flavour in `skill.merge`.
+- (M5.A review) The default re-rating at evolution also drops Identify (race skill), lowering the Identify tier; the builder gives no hint. Per DESIGN §6, but worth a note in the re-rating row. (Q64)
+- (M5.A review) Practice "Remove" has no confirmation (`PracticeCapture.tsx` ~293) while Withdraw does; "Mark all reviewed" repeats the 500 batch limit from `envelope.ts`.

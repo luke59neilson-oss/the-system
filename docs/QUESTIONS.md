@@ -430,3 +430,12 @@ DESIGN/ROADMAP; do not re-apply them.
     each player, on their own screen, to log what they practised? Default:
     no; players keep their own practice panel (D172).
     Answer:
+
+64. **Should evolutions re-rate race skills like Identify?** DESIGN §6 drops
+    every kept skill one rarity at evolution by default, so Identify (Common)
+    becomes Inferior at the F evolution unless the GM keeps it, and the
+    Identify tier the player sees drops with it. Should race skills (or just
+    Identify) keep their rarity by default? Default: the rule as written; the
+    GM can keep Identify in the evolution builder's re-rating list (M5.A
+    review).
+    Answer:

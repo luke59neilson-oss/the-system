@@ -104,7 +104,8 @@ test('selection, evolution, mark upgrade and merge between the GM and the player
   await expect(player.getByTestId('connection')).toHaveText('Connected');
   await expect(player.getByTestId('race')).toHaveText(/\(G\) – lvl 0\]/);
   const skills = player.getByTestId('skills-class');
-  const toast = player.getByTestId('ding-toast');
+  // DINGs queue as toasts one at a time, so assert on the notification history.
+  const dings = player.getByTestId('dings');
 
   // 1. Evolution: four G levels reach the top of G; the GM releases the F
   // evolution, keeping Archer's Eye at Common; the player evolves.
@@ -196,8 +197,15 @@ test('selection, evolution, mark upgrade and merge between the GM and the player
   }
   const capture = gm.locator('section[aria-labelledby="practice-capture-heading"]');
   await expect(capture).toContainText('To review (3)');
+  // The merge alert says its uses are not reviewed yet (and Archer's Eye is
+  // still Common, so the engine refuses it for now).
+  const merge = gm.locator('section[aria-labelledby="merge-builder-heading"]');
+  await expect(merge.getByTestId('merge-unreviewed')).toHaveText(
+    '3 of these 3 uses not reviewed yet (Practice window).',
+  );
   await capture.getByRole('button', { name: 'Mark all reviewed' }).click();
   await expect(capture).toContainText('To review (0)');
+  await expect(merge.getByTestId('merge-unreviewed')).toHaveCount(0);
 
   // 4. Mark upgrade: the GM confirms the session's mark on Archer's Eye
   // (4/4) and upgrades it; the player gets the DING.
@@ -213,14 +221,13 @@ test('selection, evolution, mark upgrade and merge between the GM and the player
   await gm.screenshot({ path: path.join(shots, 'gm-marks-1366x768.png') });
   await upgrade.getByRole('button', { name: 'Upgrade Jake Archer’s Eye' }).click();
   await expect(marks.getByRole('status')).toHaveText('Jake: [Archer’s Eye] is now Uncommon');
-  await expect(toast).toContainText(
+  await expect(dings).toContainText(
     "*'DING!' Skill upgraded: [Archer’s Eye (Common)] → [Archer’s Eye (Uncommon)]*",
   );
   await expect(skills).toContainText('[Archer’s Eye (Uncommon)]');
 
   // 5. Merge: both skills are Uncommon and were used together 3 times; the
   // GM builds the merge and sends it; the player gets the merged skill.
-  const merge = gm.locator('section[aria-labelledby="merge-builder-heading"]');
   await expect(merge.getByRole('list', { name: 'Merge alerts' })).toHaveText(
     '[Archer’s Eye] + [Gale Step] · together 3× → Rare',
   );
@@ -232,7 +239,7 @@ test('selection, evolution, mark upgrade and merge between the GM and the player
   await expect(merge.getByRole('status')).toHaveText(
     'Jake: [Archer’s Eye] + [Gale Step] → [Windreader’s Step] sent',
   );
-  await expect(toast).toContainText(
+  await expect(dings).toContainText(
     "*'DING!' Skills merged: [Archer’s Eye] + [Gale Step] → [Windreader’s Step (Rare)]*",
   );
   await expect(skills).toContainText('[Windreader’s Step (Rare)]');
