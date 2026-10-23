@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { CampaignState, ChangeLogRow } from '@the-system/engine';
+import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 
 /**
@@ -60,7 +61,7 @@ export function ChangeLog({
         {shown.map((r) => (
           <li key={r.id} className={r.undoneBy ? 'undone' : undefined}>
             {r.lines.join(' · ')}
-            {r.undoneBy ? (
+            {r.type === 'campaign.created' ? null : r.undoneBy ? (
               <span className="muted"> (undone)</span>
             ) : (
               <button
@@ -68,7 +69,7 @@ export function ChangeLog({
                 className="secondary small"
                 onClick={() =>
                   void client.command({ type: 'event.undo', eventId: r.id }).then((res) => {
-                    setError(res.ok ? null : res.error);
+                    setError(res.ok ? null : friendlyError(res.error));
                   })
                 }
               >
