@@ -616,3 +616,7 @@
 ## 2026-10-23 · QF.12 A golden log under today's default rules · sonnet (2 rounds)
 - Round 1 (0b417f0): 2 High, 1 Medium, 3 Low. The item cap and the library edit were only nominally pinned (replays with the cap or flat-only off matched; no unedited copy existed at the edit), and the clamp mark had cleared by the end. Fixed (90d9971, D144) by re-recording `defaults.jsonl` with Lee (unedited copy, capped charm at full HP → 120) and ending with Kim clamped and marked.
 - Round 2 (90d9971): 0 High, 0 Medium, 2 Low; reviewer confirmed each rule flip changes the replayed state. Box checked.
+
+## 2026-10-23 · QF.8 Latency checks that don't flake (and the red desktop-smoke CI) · sonnet (2 rounds)
+- Round 1 (9ad606e..d2badbf): 0 High, 3 Medium, 3 Low. M: `dependencies: ['e2e']` skipped the latency specs whenever any other spec failed; CLI file filters pulled in the whole e2e project; M2.A and M4.3 2 s delivery bounds left in the parallel project. Fixed in d3175c7 (D148): no dependency, CI runs the latency project as its own step (also after a failed e2e step, own report dirs); M2.A and M4.3 tagged. Lows: desktop app-ready bound measures window creation not paint (comment reworded); zombie-close bound now guards only the 30 s handshake (noted in D148); long scenarios hold the bound mid-test (accepted).
+- Round 2 (d3175c7): 0 High, 0 Medium, 2 Low: `npm run e2e` still skips latency locally when e2e fails (`&&`; CI unaffected; Backlog); stale `--no-deps` note (already removed). Box checked.

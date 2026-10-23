@@ -288,7 +288,7 @@ the rest follow in file order. Each gets its own §6 review.
   (`apps/server/src/store.ts` ~403-420) have no tests. *Accept:* fault-
   injection tests: a failed write leaves the log at its last good length; a
   failed fsync refuses every later append and the error says why.
-- [ ] **QF.8 Latency checks that don't flake.** e2e specs bound
+- [x] **QF.8 Latency checks that don't flake.** e2e specs bound
   click-to-render wall time (`e2e/MS.A.spec.ts` ~80-86 and ~157,
   `e2e/MS.2.spec.ts` ~81-87, `e2e/MS.3.spec.ts` ~118-126,
   `apps/server/test/sessionLog.test.ts` ~448) with `retries: 0` under fully

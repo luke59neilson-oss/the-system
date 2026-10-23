@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3, MS and MQ done; QF.1–QF.7 and QF.9–QF.12 done; M4.1–M4.4 done; MR (Luke's batch 2) queued after QF.8; Preview ready: Actions → Release → Run workflow (MQ)
-**Next item:** QF.8 Latency checks that don't flake, then MR.1
+**Status:** in progress: M0–M3, MS and MQ done; QF.1–QF.12 done; M4.1–M4.4 done; MR (Luke's batch 2) queued after QF.8; Preview ready: Actions → Release → Run workflow (MQ)
+**Next item:** MR.1 Evolutions re-rate skills
 **Blockers:** none
 
 ## Run log
@@ -674,4 +674,13 @@ next item, blockers. -->
 - Tests: 856 unit (849 + 3 store + 3 trade + 1 golden). Engine coverage not re-measured. e2e: M3.7 2/2 (trades); full suite not run (no shared UI or server changes; the store change is test-only seam).
 - Open `wip/*` branches: none new (`wip/QF.11` merged).
 - Next item: QF.8, then MR.1–MR.4, MR.A.
+- Blockers: none.
+
+### Run 9621cf76 · 2026-10-23 05:07–05:46 UTC (ended at minute 39, not one of LOOP §5.5's reasons: the §6 reviews block the session here (no background mode), round 2 for QF.8 came back at minute 37, and MR.1 (engine + golden + e2e) had no useful first step that fits before the 44 hand-off; next run starts it fresh)
+- Preflight: `add_repo` not offered; repo already cloned, fast-forwarded. Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewers on sonnet work. No new answers in ANSWERS.md. Not an efficiency (§9) or sweep (§10) hour.
+- CI on main was red (0b417f0, 90d9971): `desktop-smoke` splash bound 1085/1020 ms vs < 1000 from process start (Electron cold start under xvfb). Fixed in 76eaf9c by measuring from app-ready (D146); desktop smoke 6/6 locally (64 ms after ready).
+- QF.8: latency specs (MS.2, MS.3, MS.A, M2.A, M4.3) tagged `@latency` and run in a one-worker `latency` project; `npm run e2e` and CI run it as its own step after `e2e` (CI step runs even if `e2e` failed) (D147, D148). Zombie-close bound 10 s, still catches the 30 s handshake (checked by removing the terminate). Bounds unchanged, no retries. Sonnet 2 rounds: round 1 3 M fixed; round 2 clean. Box checked.
+- Tests: 856 unit. e2e: full suite 44/44 at `--workers=2` (before the M2.A/M4.3 tags); latency project `--repeat-each=10` 30/30 (three specs), then all five `--repeat-each=2` 10/10. Engine coverage not re-measured (no engine changes).
+- Open `wip/*` branches: none.
+- Next item: MR.1, then MR.2–MR.4, MR.A.
 - Blockers: none.
