@@ -376,7 +376,7 @@ work: Q44–Q48 and Q52.
   (no real campaigns exist yet), logged as a D-entry. *Accept:* a stored
   campaign with banked XP loads with overflow on; the GM award preview warns
   about lost XP for it; golden logs re-recorded under a schema bump.
-- [ ] **MR.4 Hand-written skill text survives upgrades; Use library text.**
+- [x] **MR.4 Hand-written skill text survives upgrades; Use library text.**
   Replaces D133 (keeps D125): a hand-written copy keeps its text when the
   skill upgrades, and a downgrade (MR.1) never changes text. The GM's Skill
   text form gets **Use library text**, which reconnects the copy to the
