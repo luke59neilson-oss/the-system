@@ -2117,3 +2117,31 @@ ol.change-log li.undone .change-text {
   min-width: 0;
   box-sizing: border-box;
 }
+
+/* M5.1 offer builder */
+.offer-builder .due-selections {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+}
+.offer-builder .due-selections label {
+  margin-bottom: 4px;
+}
+.offer-builder .offer-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  column-gap: 8px;
+}
+.offer-builder .offer-row label:last-child {
+  grid-column: 1 / -1;
+}
+.offer-builder .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.offer-builder .offer-practice {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+}

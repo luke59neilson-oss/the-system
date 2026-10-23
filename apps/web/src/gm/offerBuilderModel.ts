@@ -7,7 +7,7 @@ import {
   type SkillOption,
 } from '@the-system/engine';
 
-// M5.1 offer builder (work in progress): what the GM needs per character to
+// M5.1 offer builder: what the GM needs per character to
 // build a selection menu, derived only from the engine's own rules so the
 // builder and the engine never disagree.
 
@@ -68,4 +68,12 @@ export function offerProblem(
   } catch (error) {
     return error instanceof Error ? error.message : String(error);
   }
+}
+
+/** The character's newest practice entries first (what the menu is built from). */
+export function recentPractice(state: CampaignState, characterId: string, limit = 12) {
+  return state.practice
+    .filter((e) => e.characterId === characterId)
+    .slice(-limit)
+    .reverse();
 }
