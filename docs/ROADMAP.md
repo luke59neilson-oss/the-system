@@ -247,6 +247,22 @@ the rest follow in file order. Each gets its own §6 review.
   holds the hand-over in a test-only way); `--repeat-each=20` on that test
   green under xvfb; no retries added. (Numbered 14 because `wip/M4.A` holds
   QF.13.)
+- [x] **QF.16 Pin the merge rarity and a partial practice review.** Sweep B
+  (Tests, 2026-10-23): every evolution-merge test merges two skills of the
+  same rarity, so `Math.max`→`Math.min` in `checkOption`
+  (`evolution/model.ts` ~507) and in the builder's `mergePrompts`
+  (`evolutionBuilderModel.ts` ~88) survives (DESIGN §6: one rarity above the
+  *higher*); and no test reviews a subset of pending entries, so dropping
+  `ids.has(e.id)` in `practice.reviewed` (`reducer.ts` ~1220) marks every
+  entry reviewed unnoticed. *Accept:* an Uncommon + Rare merge at evolution
+  is refused below Epic and accepted at Epic, through `execute`; the builder
+  model prompts Epic for that pair; `practice.review` of one of two entries
+  leaves the other unreviewed; each named mutation fails a test.
+- [ ] **QF.17 Table-view panes show every DING.** Sweep B (UX, 2026-10-23):
+  `PaneLatest` (`PlayerScreen.tsx` ~966) pins only `kind === 'level'`, so a
+  skill upgrade, merge or profession DING never shows in the GM's Table-view
+  pane. *Accept:* the pane uses the same set as the history's DING filter; an
+  e2e upgrades a skill in Table view and sees `latest-ding` change.
 - [x] **QF.15 Pin the grade-gap floor and scheduled broadcasts in the leak
   property.** Sweep A (Tests, 2026-10-23): `Math.floor`→`Math.round` on the
   grade-gap scaled share (`progression/xp.ts` ~175, ~274, ~496) left every
@@ -558,7 +574,7 @@ work: Q44–Q48 and Q52.
 
 ## M6 — Items, titles, economy (GM)
 
-- [ ] **M6.1 Item library.** Create/edit, rarity change, give/take.
+- [x] **M6.1 Item library.** Create/edit, rarity change, give/take.
 - [ ] **M6.2 Loot tables.** Define and roll.
 - [ ] **M6.3 Currency.** Grants, fines, ledger.
 - [ ] **M6.4 Titles.** Library; award with System text.

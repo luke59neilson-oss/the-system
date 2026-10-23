@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** 41be1ee (2026-10-23, A) · **Next rotation:** B
+**Last sweep:** d6fedf8 (2026-10-23, B) · **Next rotation:** C
 
 ## Lenses and rotation
 
@@ -102,6 +102,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-23 15:10 | A, 34f6f14..41be1ee | Rules · fable | 0 | 0 | 3 | 3 L to Backlog | 0 | ~115k |
 | 2026-10-23 15:10 | A, 34f6f14..41be1ee | Boundaries · sonnet | 0 | 0 | 2 | 2 L to Backlog | 0 | ~90k |
 | 2026-10-23 15:10 | A, 34f6f14..41be1ee | Tests · haiku | 0 | 2 | 4 | 2 M confirmed and fixed this run (QF.15); 4 L to Backlog | 0 | 186k |
+| 2026-10-23 21:15 | B, 41be1ee..d6fedf8 | Boundaries · haiku | 0 | 0 | 1 | L to Backlog | 0 | ~133k |
+| 2026-10-23 21:15 | B, 41be1ee..d6fedf8 | Tests · fable | 0 | 2 | 8 | 2 M confirmed by reading the tests (QF.16); 8 L to Backlog (16 mutations, 3 caught) | 0 | ~189k |
+| 2026-10-23 21:15 | B, 41be1ee..d6fedf8 | UX · sonnet | 0 | 1 | 5 | 1 M confirmed in code (QF.17); 5 L to Backlog | 0 | ~121k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -144,6 +147,12 @@ reviewers ran 15–20 minutes each in the background.
   (10:31 UTC): now QF.14.
 
 ## Backlog (Lows; M11.5 goes through these)
+
+- Sweep B Tests (fable): `practice.edited` keeping a merged-away skill the entry already names is untested; no rejected-input case for an unknown stat in `practice.edit`; `practice.reviewed` `.min(1)` untested; `marksReview` banked filter, `noUpgrade` status and `used` tie-break unpinned; `jointUsesOf` name sort untested (API-only path); session-log merge phrase and `skillMerge` DING text/filter have no unit test; unreachable reserved-rarity merge branches (`evolution/model.ts` ~511); merged-name clash check case-insensitivity untested.
+- Sweep B UX (sonnet): practice review list has no CSS (bullets, text touching OK/Edit); marks review's Confirm buttons sit apart from their skill and evidence; Log practice/Save disabled with no "pick a skill or a stat" hint; GM windows each keep their own character picker; Evolutions bonus grid has no phone breakpoint and no 390px screenshot.
+- Sweep B Boundaries (haiku): `THE_SYSTEM_TEST_HOLD_START` hook in `apps/desktop/src/main.ts` ~205 (unpackaged only).
+- QF.16 review: no builder test of a mixed-rarity pair that does get a prompt (needs a rule where the result fits the ceiling).
+- M6.1 review: Reload discards unsaved edits without asking, and after a save while stale the other GM's value shows only on Reload; the bonus preview ignores the item cap (legend says so); `changedSince` compares JSON (key order); bad Give counts are disabled but unexplained; a new item is not selected after Add; negative bonuses accepted without a hint.
 
 - UX (M5.5 review): practice edits of a deleted character's entries are refused; the To review list is unbounded and not per session (Mark all reviewed caps at 500); the end-of-scene order desyncs if the GM switches character mid-scene and has no cancel; a stale stat shows as "None" in the edit select but is kept; the edit form always sends skills and stat; the e2e does not assert the edited fields or Mark all reviewed.
 - UX (M5.4 review): Send merge is two commands; a failed `skill.describe` leaves the merge with no text and no retry (the banner says so); no engine-level name-clash test through the builder (the e2e and `mergeSkills` cover it).

@@ -708,3 +708,16 @@
 
 - Round 1 (d3781e1, milestone range e77690d^..d3781e1): 0 H / 2 M / 6 L. M1 the acceptance spec asserted upgrade/merge DINGs on the queued toast (2.6 s each), flaky on a fast machine → asserts on the notification history. M2 unreviewed player/montage entries drove merge alerts with no flag → `mergeCandidates` returns `unreviewed` (same counting as the alert, repeats excluded) and the Merges window says "N of these M uses not reviewed yet"; unit test and e2e. L3 the evolution builder lost a draft when another character became ready earlier in the party order → the shown character is pinned (M5.2 e2e covers it; failed before the fix). Other Lows (merge transform half-renames the practice log, merged skill kind by name order, two-command Send merge vs undo, Identify dropped by the default re-rating (Q64), Remove without confirm) → QUALITY Backlog.
 - Round 2 (89e660b): 0 H / 0 M / 1 L (Merges window default character unpinned, like the evolution builder was) → Backlog. Fixes verified; M5.A + M5.2 + M5.4 passed twice each.
+
+## 2026-10-23 · M6.1 Item library · reviewer: sonnet (2 rounds)
+
+- Round 1 (5c93e4a): 0 H / 5 M / 4 L. M1 a stale form overwrote another GM's edit → saves diff against the copy the form opened (`loaded`, `savedDef`) with a "Changed elsewhere" note and Reload. M2 a slot change on a worn item hit a raw engine error naming a character id → "Worn by <name>: unequip it before changing its slot." and Save disabled. M3 equipped copies were invisible → "holds N (+M equipped; unequip to take)". M4 bonus units unclear → per-stat live sheet-value preview from `rules.stats`. M5 test gaps → e2e asserts the preview, the player's "Vitality +0.5", the worn-slot block, count validation and a canary (an unheld library item never reaches the player's frames or page); unit tests for the new helpers and the stale diff. L: Give/Take disabled for a bad count; rest to Backlog.
+- Round 2 (62a2f74): 0 H / 1 M / 3 L. M the slot block compared with the live slot, falsely blocking a worn item whose slot changed elsewhere → blocks only when the save would send a slot (5e4a34e). Legend now says "before the item cap". Lows to Backlog.
+
+## 2026-10-23 · QF.16 Pin the merge rarity and a partial practice review · reviewer: sonnet (1 round)
+
+- Round 1 (20bfadb): 0 H / 0 M / 2 L. Re-ran all four mutations (Math.min in `checkOption` and `mergePrompts`, dropping `ids.has` in `practice.reviewed`, dropping `|| rb < min`); each fails a QF.16 test. L1 pin that Epic is refused by the F ceiling for the same pair → added. L2 no mixed-rarity pair that does get a builder prompt under default rules → Backlog.
+
+## 2026-10-23 · Quality sweep B (41be1ee..d6fedf8) · haiku / fable / sonnet
+
+- No fixes made in code from the sweep beyond QF.16 (above); QF.17 queued. Rows in QUALITY.md.

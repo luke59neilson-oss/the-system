@@ -1795,6 +1795,7 @@ describe('merge transforms (M5.2, DESIGN §6 "offer that merge as part of the ev
     c = ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: archery });
     expect(char(c).skills.find((s) => s.name === archery)?.rarity).toBe('rare');
     expect(reject(c, mergeRelease('Ghost Shot', 'rare'))).toMatch(/must be epic/);
+    expect(reject(c, mergeRelease('Ghost Shot', 'epic'))).toMatch(/ceiling/);
   });
 
   it('refuses a merge the merge rules refuse', () => {

@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M5, MS, MQ and MR done; QF.1–QF.15 done; M6.1 in progress on wip/M6.1; Preview ready: Actions → Release → Run workflow (M5)
-**Next item:** M6.1 Item library (resume wip/M6.1)
+**Status:** in progress: M0–M5, MS, MQ and MR done; QF.1–QF.16 done; M6.1 done; Preview ready: Actions → Release → Run workflow (M5)
+**Next item:** QF.17 Table-view panes show every DING, then M6.2 Loot tables
 **Blockers:** none
 
 ## Run log
@@ -835,4 +835,14 @@ next item, blockers. -->
 - Preview ready: Actions → Release → Run workflow (M5) — Luke's one click (D93), not a Blocker.
 - Open `wip/*` branches: wip/M6.1.
 - Next item: M6.1 (resume wip/M6.1).
+- Blockers: none.
+
+### Run 4d0e187e · 2026-10-23 21:08–21:56 UTC (end minute 48: sweep B, M6.1 and QF.16 checked)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Sonnet, haiku and fable reviewers all work (worktree; each Agent call blocks until it reports, 2–15 min). CI on main green (57813aa). No new answers. Sweep hour (21 UTC), rotation B.
+- Quality sweep B (41be1ee..d6fedf8): Boundaries · haiku 0/0/1; Tests · fable 0/2/8 (16 mutations, 3 caught); UX · sonnet 0/1/5. Mediums confirmed by reading the tests and code → QF.16 (done this run), QF.17 (queued). Lows to Backlog. Last sweep → d6fedf8, next rotation C.
+- M6.1 Item library **checked**: bonus grid, give/take row, D174. Sonnet round 1 0 H / 5 M / 4 L (stale-form overwrite, worn-item slot change, equipped copies hidden, units, test gaps incl. a player canary), round 2 0 H / 1 M / 3 L (false slot block) — all Mediums fixed. The full e2e then caught the library's "Name" label clashing with 18 specs' `getByLabel('Name')` → renamed "Item name".
+- QF.16 **checked**: tests pin the merge rarity from the higher skill (engine and builder) and a partial practice review; each named mutation fails a test. Sonnet 0 H / 0 M / 2 L.
+- Tests: 1,001+ unit (`npm run check` green); full e2e 68/68 green after the label fix (7.2 min).
+- Open `wip/*` branches: none new (wip/M6.1 merged).
+- Next item: QF.17, then M6.2.
 - Blockers: none.
