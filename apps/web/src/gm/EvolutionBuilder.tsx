@@ -125,6 +125,12 @@ function ReleaseForm({
 
   return (
     <form onSubmit={release} aria-label="Evolution release">
+      {plan.released && (
+        <p className="muted" data-testid="evolution-released">
+          Released, player choosing: {plan.released.map((n) => `[${n}]`).join(', ')}. Releasing
+          again replaces it.
+        </p>
+      )}
       {plan.pendingSelections.length > 0 && (
         <p className="err" data-testid="evolution-waits">
           Waits on{' '}

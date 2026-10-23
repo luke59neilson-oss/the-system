@@ -31,6 +31,8 @@ export interface EvolutionPlan {
   readonly mergePrompts: readonly (readonly [string, string])[];
   /** Tailored profession offers allowed (no profession, unlock grade reached). */
   readonly professionOffers: boolean;
+  /** Class names of a release the player has not chosen from yet; re-releasing replaces it. */
+  readonly released: readonly string[] | null;
 }
 
 const retiredOf = (state: CampaignState, characterId: string) =>
@@ -68,6 +70,7 @@ export function evolutionPlan(state: CampaignState, characterId: string): Evolut
     ),
     professionOffers:
       c.profession === null && gi(target.id) >= gi(rules.tracks.professionUnlockGrade),
+    released: c.evolution ? c.evolution.options.map((o) => o.className) : null,
   };
 }
 

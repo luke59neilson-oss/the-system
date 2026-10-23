@@ -83,5 +83,6 @@ test('the GM builds and releases an evolution with re-rating', async ({ browser 
   await gm.screenshot({ path: path.join(shots, 'gm-evolution-1366x768.png') });
   await form.getByRole('button', { name: 'Release evolution' }).click();
   await expect(builder.getByRole('status')).toHaveText('Evolution released to Sultan');
+  await expect(builder.getByTestId('evolution-released')).toContainText('[Storm Hunter]');
   expect(errors).toEqual([]);
 });

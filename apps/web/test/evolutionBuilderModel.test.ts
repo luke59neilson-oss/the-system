@@ -62,6 +62,7 @@ describe('evolution builder model (M5.2)', () => {
     expect(plan.toGrade).toBe('F');
     expect(plan.pendingSelections).toEqual([]);
     expect(plan.professionOffers).toBe(false);
+    expect(plan.released).toBeNull();
     const archery = plan.rerate.find((r) => r.skill === 'Basic Archery')!;
     expect([archery.from, archery.byDefault]).toEqual(['inferior', 'inferior']);
     const eye = plan.rerate.find((r) => r.skill === 'Archer’s Eye')!;
