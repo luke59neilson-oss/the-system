@@ -1972,3 +1972,32 @@ p.small {
   display: grid;
   gap: 4px;
 }
+
+/* XP award dialog (M4.6). */
+.xp-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0 10px;
+}
+.xp-participant {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(90, 127, 184, 0.2);
+}
+.xp-participant label.check {
+  margin-bottom: 2px;
+}
+.xp-outcome {
+  font-size: 0.85rem;
+  padding-left: 26px;
+  overflow-wrap: anywhere;
+}
+.xp-share {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding-left: 26px;
+  margin: 4px 0 0;
+}
+.xp-share input {
+  width: 7em;
+}

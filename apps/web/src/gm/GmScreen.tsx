@@ -3,9 +3,7 @@ import {
   DEFAULT_RULES,
   STARTER_CLASSES,
   entryForSkill,
-  largestRemainderSplit,
   librarySkill,
-  previewXpAward,
   type CampaignState,
 } from '@the-system/engine';
 import { friendlyError } from '../format';
@@ -22,6 +20,7 @@ import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
 import { SessionPanel } from './SessionPanel';
 import { PortraitPicker } from './PortraitControls';
 import { PartyDashboard } from './PartyDashboard';
+import { XpAward } from './XpAward';
 import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
 
@@ -135,7 +134,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <SessionPanel client={client} state={state} />
               <JoinPanel gmKey={gmKey} />
               <CreateCharacter client={client} gmKey={gmKey} state={state} />
-              <AwardXp client={client} state={state} />
+              <XpAward client={client} state={state} />
               <Broadcast client={client} state={state} />
               <SkillText client={client} state={state} />
               <SkillLibrary client={client} state={state} />
@@ -343,121 +342,6 @@ function CreateCharacter({
       ) : (
         <Outcome result={result} okText="Character created" />
       )}
-    </form>
-  );
-}
-
-function AwardXp({ client, state }: { client: LiveClient; state: CampaignState }) {
-  const [amount, setAmount] = useState('');
-  const [excluded, setExcluded] = useState<ReadonlySet<string>>(new Set());
-  const [reason, setReason] = useState('');
-  const { busy, result, run } = useCommand(client);
-  const ids = state.characterOrder.filter((id) => state.characters[id]);
-  const chosen = ids.filter((id) => !excluded.has(id));
-  const value = Number(amount);
-  const valid = amount !== '' && Number.isInteger(value) && value > 0 && chosen.length > 0;
-  const preview = valid
-    ? largestRemainderSplit(
-        value,
-        chosen.map(() => 1),
-      )
-    : [];
-  // MQ.11 (DESIGN §2): say what overflows or is lost before the GM confirms.
-  const outcome = (() => {
-    if (!valid) return new Map<string, { overflowed: number; lost: number }>();
-    try {
-      const rows = previewXpAward(state.rules, state.characters, 'class', {
-        amount: value,
-        participants: chosen.map((characterId) => ({ characterId })),
-      });
-      return new Map(rows.map((r) => [r.characterId, r]));
-    } catch {
-      return new Map<string, { overflowed: number; lost: number }>();
-    }
-  })();
-  const totalLost = [...outcome.values()].reduce((a, r) => a + r.lost, 0);
-  const toggle = (id: string) =>
-    setExcluded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!valid) return;
-    const r = await run({
-      type: 'xp.award',
-      track: 'class',
-      amount: value,
-      participants: chosen.map((characterId) => ({ characterId })),
-      reason,
-    });
-    if (r.ok) {
-      setAmount('');
-      setReason('');
-    }
-  };
-  return (
-    <form className="window" onSubmit={(e) => void submit(e)} aria-labelledby="award-xp">
-      <h2 id="award-xp">Award class XP</h2>
-      <label>
-        Amount
-        <input
-          type="number"
-          min={1}
-          step={1}
-          inputMode="numeric"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          required
-        />
-      </label>
-      <fieldset>
-        <legend>Participants (even split)</legend>
-        {ids.length === 0 && <p className="muted">Create a character first.</p>}
-        {ids.map((id) => {
-          const i = chosen.indexOf(id);
-          return (
-            <label key={id} className="check">
-              <input type="checkbox" checked={!excluded.has(id)} onChange={() => toggle(id)} />
-              {state.characters[id]?.name}
-              {i >= 0 && preview[i] !== undefined && (
-                <span className="muted" data-testid={`share-${id}`}>
-                  {' '}
-                  · {preview[i]} XP
-                </span>
-              )}
-              {i >= 0 && (outcome.get(id)?.overflowed ?? 0) > 0 && (
-                <span className="muted" data-testid={`overflow-${id}`}>
-                  {' '}
-                  · {outcome.get(id)?.overflowed} to profession
-                </span>
-              )}
-              {i >= 0 && (outcome.get(id)?.lost ?? 0) > 0 && (
-                <span className="warn" data-testid={`lost-${id}`}>
-                  {' '}
-                  · {outcome.get(id)?.lost} lost
-                </span>
-              )}
-            </label>
-          );
-        })}
-      </fieldset>
-      {totalLost > 0 && (
-        <p className="warn" data-testid="xp-lost">
-          {totalLost} XP will be lost: those tracks are at the top of their grade and nothing can
-          take the overflow.
-        </p>
-      )}
-      <label>
-        Reason (GM only)
-        <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} />
-      </label>
-      <button type="submit" disabled={busy || !valid}>
-        Award XP
-      </button>
-      <Outcome result={result} okText="XP awarded" />
     </form>
   );
 }

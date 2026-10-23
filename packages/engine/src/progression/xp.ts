@@ -423,3 +423,78 @@ export function statBudgetTotal(character: Character): number {
     .reduce((a, b) => a + b.points, 0);
   return stats + unassigned;
 }
+
+/** An award's input with every share set by hand (shares must sum to the amount). */
+export interface ManualSplitInput {
+  amount: number;
+  shares: readonly { characterId: string; share: number }[];
+  enemyLevel?: number | undefined;
+  enemyGrade?: string | undefined;
+}
+
+/**
+ * The GM's award preview for shares set by hand (M4.6): the same outcome the
+ * reducer applies to an `xp.award` whose participants all carry a `share`.
+ */
+export function previewXpShares(
+  rules: RulesConfig,
+  characters: Readonly<Record<string, Character>>,
+  track: XpTrack,
+  input: ManualSplitInput,
+): XpPreview[] {
+  const ids = input.shares.map((s) => s.characterId);
+  if (new Set(ids).size !== ids.length)
+    throw new CharacterRuleError('A participant is listed twice');
+  const sum = input.shares.reduce((a, s) => a + s.share, 0);
+  if (sum !== input.amount) {
+    throw new CharacterRuleError(`Shares sum to ${sum}, not the award of ${input.amount}`);
+  }
+  return input.shares.map(({ characterId, share }) => {
+    if (!isWhole(share)) throw new CharacterRuleError('A share must be a whole number ≥ 0');
+    const character = Object.prototype.hasOwnProperty.call(characters, characterId)
+      ? characters[characterId]
+      : undefined;
+    if (!character) throw new CharacterRuleError(`Unknown character "${characterId}"`);
+    const gained = shareXp(rules, character, share, input.enemyLevel, input.enemyGrade);
+    const factor = gradeGapXpFactor(rules, character.grade, input.enemyGrade);
+    const scaled = factor === 1 ? share : Math.floor(Number((share * factor).toFixed(9)));
+    const r = awardXp(rules, character, track, gained);
+    return {
+      characterId,
+      share,
+      bonus: gained - scaled,
+      gained,
+      overflowed: r.overflowed,
+      lost: r.lost,
+      levelUps: r.levelUps,
+    };
+  });
+}
+
+/**
+ * Shares with the GM's edits kept and the last share balancing the rest
+ * (M4.6): `fixed` holds the shares typed by hand (by index, never the last);
+ * the others split what remains evenly (largest remainder). null when the
+ * typed shares already exceed the amount.
+ */
+export function balancedShares(
+  amount: number,
+  count: number,
+  fixed: ReadonlyMap<number, number>,
+): number[] | null {
+  if (count <= 0) return [];
+  const typed = [...fixed.entries()].filter(([i]) => i >= 0 && i < count - 1);
+  const used = typed.reduce((a, [, v]) => a + v, 0);
+  if (used > amount) return null;
+  const free = Array.from({ length: count }, (_, i) => i).filter(
+    (i) => !typed.some(([j]) => j === i),
+  );
+  const parts = largestRemainderSplit(
+    amount - used,
+    free.map(() => 1),
+  );
+  const out = new Array<number>(count).fill(0);
+  for (const [i, v] of typed) out[i] = v;
+  free.forEach((i, k) => (out[i] = parts[k] as number));
+  return out;
+}

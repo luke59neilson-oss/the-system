@@ -1,0 +1,319 @@
+import { useState, type FormEvent } from 'react';
+import {
+  balancedShares,
+  previewXpShares,
+  typicalSessionXp,
+  type CampaignState,
+  type XpPreview,
+  type XpTrack,
+} from '@the-system/engine';
+import { friendlyError } from '../format';
+import type { CommandResult, LiveClient } from '../live';
+
+const WHOLE = /^\d+$/;
+
+/**
+ * The XP award dialog (M4.6, DESIGN §5): amount, class or profession,
+ * participants, an even split with editable shares (the last share balances),
+ * the above-level bonus, the target's grade, and a preview of level-ups,
+ * overflow and lost XP before the GM confirms.
+ */
+export function XpAward({ client, state }: { client: LiveClient; state: CampaignState }) {
+  const { rules } = state;
+  const [track, setTrack] = useState<XpTrack>('class');
+  const [amount, setAmount] = useState('');
+  const [excluded, setExcluded] = useState<ReadonlySet<string>>(new Set());
+  const [byHand, setByHand] = useState(false);
+  // Shares typed by hand, by character id (the last participant's always balances).
+  const [typed, setTyped] = useState<Readonly<Record<string, string>>>({});
+  const [bonusOn, setBonusOn] = useState(false);
+  const [enemyLevel, setEnemyLevel] = useState('');
+  const [enemyGrade, setEnemyGrade] = useState('');
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<CommandResult | null>(null);
+
+  const ids = state.characterOrder.filter((id) => state.characters[id]);
+  const chosen = ids.filter((id) => !excluded.has(id));
+  const value = WHOLE.test(amount.trim()) ? Number(amount.trim()) : NaN;
+  const amountOk = Number.isSafeInteger(value) && value > 0;
+  const levelOk = !bonusOn || WHOLE.test(enemyLevel.trim());
+
+  // Typed shares must be whole numbers; the last chosen participant balances.
+  let shareError: string | null = null;
+  const fixed = new Map<number, number>();
+  if (byHand) {
+    chosen.slice(0, -1).forEach((id, i) => {
+      const raw = (typed[id] ?? '').trim();
+      if (raw === '') return;
+      if (!WHOLE.test(raw)) shareError = 'Shares must be whole numbers of 0 or more';
+      else fixed.set(i, Number(raw));
+    });
+  }
+  const shares =
+    amountOk && chosen.length > 0 && shareError === null
+      ? balancedShares(value, chosen.length, fixed)
+      : null;
+  if (amountOk && shares === null && shareError === null && chosen.length > 0) {
+    shareError = `The shares add up to more than ${value} XP`;
+  }
+
+  let preview: XpPreview[] = [];
+  let previewError: string | null = null;
+  if (shares && levelOk) {
+    try {
+      preview = previewXpShares(rules, state.characters, track, {
+        amount: value,
+        shares: chosen.map((characterId, i) => ({ characterId, share: shares[i] as number })),
+        ...(bonusOn ? { enemyLevel: Number(enemyLevel) } : {}),
+        ...(enemyGrade ? { enemyGrade } : {}),
+      });
+    } catch (e) {
+      previewError = e instanceof Error ? e.message : String(e);
+    }
+  }
+  const outcome = new Map(preview.map((r) => [r.characterId, r]));
+  const totalLost = preview.reduce((a, r) => a + r.lost, 0);
+  const valid = preview.length > 0 && preview.length === chosen.length;
+  const other = track === 'class' ? 'profession' : 'class';
+  const grades = [...new Set(chosen.map((id) => state.characters[id]?.grade ?? ''))].filter(
+    (g) => g !== '',
+  );
+
+  const toggle = (id: string) =>
+    setExcluded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!valid || !shares) return;
+    setBusy(true);
+    const r = await client.command({
+      type: 'xp.award',
+      track,
+      amount: value,
+      participants: byHand
+        ? chosen.map((characterId, i) => ({ characterId, share: shares[i] as number }))
+        : chosen.map((characterId) => ({ characterId })),
+      ...(bonusOn ? { enemyLevel: Number(enemyLevel) } : {}),
+      ...(enemyGrade ? { enemyGrade } : {}),
+      reason,
+    });
+    setResult(r.ok ? r : { ok: false, error: friendlyError(r.error) });
+    setBusy(false);
+    if (r.ok) {
+      setAmount('');
+      setReason('');
+      setTyped({});
+    }
+  };
+
+  const levelText = (r: XpPreview) => {
+    const c = state.characters[r.characterId];
+    if (!c) return '';
+    const ups = r.levelUps.filter((l) => l.track !== 'race');
+    if (ups.length === 0) return '';
+    const parts: string[] = [];
+    for (const t of ['class', 'profession'] as const) {
+      const top = ups.filter((l) => l.track === t).at(-1);
+      if (top)
+        parts.push(`${t} lvl ${t === 'class' ? c.classLevel : c.professionLevel} → ${top.level}`);
+    }
+    return parts.join(', ');
+  };
+
+  return (
+    <form className="window xp-award" onSubmit={(e) => void submit(e)} aria-labelledby="award-xp">
+      <h2 id="award-xp">Award {track} XP</h2>
+      <div className="xp-row">
+        <label>
+          Amount
+          <input
+            type="number"
+            min={1}
+            step={1}
+            inputMode="numeric"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            required
+          />
+        </label>
+        <label>
+          Track
+          <select value={track} onChange={(e) => setTrack(e.target.value as XpTrack)}>
+            <option value="class">Class</option>
+            <option value="profession">Profession</option>
+          </select>
+        </label>
+      </div>
+      {grades.length > 0 && (
+        <p className="muted small" data-testid="typical-session">
+          Typical session (≈ {rules.campaign.typicalLevelsPerSession} levels):{' '}
+          {grades.map((g, i) => (
+            <span key={g}>
+              {i > 0 && ' · '}
+              {g}-grade {typicalSessionXp(rules, g).toLocaleString('en-US')} XP each{' '}
+              <button
+                type="button"
+                className="secondary small"
+                onClick={() => {
+                  const n = chosen.filter((id) => state.characters[id]?.grade === g).length;
+                  setAmount(String(typicalSessionXp(rules, g) * n));
+                }}
+              >
+                Use for {chosen.filter((id) => state.characters[id]?.grade === g).length}
+              </button>
+            </span>
+          ))}
+        </p>
+      )}
+      <fieldset>
+        <legend>Participants ({byHand ? 'shares by hand' : 'even split'})</legend>
+        {chosen.length > 1 && (
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={byHand}
+              onChange={(e) => {
+                setByHand(e.target.checked);
+                setTyped({});
+              }}
+            />
+            Set shares by hand
+          </label>
+        )}
+        {ids.length === 0 && <p className="muted">Create a character first.</p>}
+        {ids.map((id) => {
+          const i = chosen.indexOf(id);
+          const r = outcome.get(id);
+          const last = i === chosen.length - 1;
+          const name = state.characters[id]?.name ?? id;
+          return (
+            <div key={id} className="xp-participant">
+              <label className="check">
+                <input type="checkbox" checked={!excluded.has(id)} onChange={() => toggle(id)} />
+                {name}
+              </label>
+              <div className="xp-outcome">
+                {i >= 0 && shares && shares[i] !== undefined && (
+                  <span className="muted" data-testid={`share-${id}`}>
+                    {' '}
+                    · {shares[i]} XP
+                  </span>
+                )}
+                {r && r.gained !== r.share && (
+                  <span className="muted" data-testid={`gained-${id}`}>
+                    {' '}
+                    · gains {r.gained}
+                  </span>
+                )}
+                {r && r.overflowed > 0 && (
+                  <span className="muted" data-testid={`overflow-${id}`}>
+                    {' '}
+                    · {r.overflowed} to {other}
+                  </span>
+                )}
+                {r && r.lost > 0 && (
+                  <span className="warn" data-testid={`lost-${id}`}>
+                    {' '}
+                    · {r.lost} lost
+                  </span>
+                )}
+                {r && levelText(r) !== '' && (
+                  <span className="ok" data-testid={`levels-${id}`}>
+                    {' '}
+                    · {levelText(r)}
+                  </span>
+                )}
+              </div>
+              {byHand && i >= 0 && (
+                <label className="xp-share">
+                  {last ? `${name}’s share (balances)` : `${name}’s share`}
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    inputMode="numeric"
+                    readOnly={last}
+                    value={last ? (shares?.[i] ?? '') : (typed[id] ?? '')}
+                    placeholder={shares?.[i] !== undefined ? String(shares[i]) : ''}
+                    onChange={(e) => setTyped((t) => ({ ...t, [id]: e.target.value }))}
+                  />
+                </label>
+              )}
+            </div>
+          );
+        })}
+      </fieldset>
+      <fieldset>
+        <legend>Target</legend>
+        <label>
+          Target’s grade
+          <select value={enemyGrade} onChange={(e) => setEnemyGrade(e.target.value)}>
+            <option value="">Not set (full XP)</option>
+            {rules.grades.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.id}-grade
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="muted small">
+          A target one grade below a character gives{' '}
+          {Math.round((rules.xp.gradeBelowFactors[0] ?? 1) * 100)}% XP
+          {rules.xp.gradeBelowFactors.length > 1 &&
+            `; ${rules.xp.gradeBelowFactors.length} or more below gives ${Math.round((rules.xp.gradeBelowFactors.at(-1) ?? 1) * 100)}%`}
+          .
+        </p>
+        <label className="check">
+          <input type="checkbox" checked={bonusOn} onChange={(e) => setBonusOn(e.target.checked)} />
+          Above-level bonus
+        </label>
+        {bonusOn && (
+          <label>
+            Target’s level
+            <input
+              type="number"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              value={enemyLevel}
+              onChange={(e) => setEnemyLevel(e.target.value)}
+            />
+          </label>
+        )}
+      </fieldset>
+      {totalLost > 0 && (
+        <p className="warn" data-testid="xp-lost">
+          {totalLost} XP will be lost: those tracks are at the top of their grade and nothing can
+          take the overflow.
+        </p>
+      )}
+      {(shareError ?? previewError) && (
+        <p className="err" role="alert">
+          {shareError ?? previewError}
+        </p>
+      )}
+      <label>
+        Reason (GM only)
+        <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} />
+      </label>
+      <button type="submit" disabled={busy || !valid}>
+        Award XP
+      </button>
+      {result &&
+        (result.ok ? (
+          <p className="ok" role="status">
+            XP awarded
+          </p>
+        ) : (
+          <p className="err" role="alert">
+            {result.error}
+          </p>
+        ))}
+    </form>
+  );
+}
