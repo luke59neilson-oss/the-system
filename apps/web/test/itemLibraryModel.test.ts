@@ -7,6 +7,10 @@ import {
   itemSaveCommand,
   libraryItems,
   parseBonuses,
+  bonusPreview,
+  changedSince,
+  savedDef,
+  wearersOf,
 } from '../src/gm/itemLibraryModel';
 
 // M6.1 item library form helpers (DESIGN §4, §7: items give flat bonuses only).
@@ -99,5 +103,53 @@ describe('item library model (M6.1)', () => {
     expect(adjustCommand('jake', 'charm', ' 1 ', -1)).toMatchObject({ items: { charm: -1 } });
     expect(adjustCommand('jake', 'charm', '0', 1)).toBeNull();
     expect(adjustCommand('jake', 'charm', '-3', 1)).toBeNull();
+  });
+});
+
+describe('editing against the copy the form was opened from', () => {
+  it('keeps another GM edit to a field this form did not touch', () => {
+    const live: ItemDef = { ...charm, name: 'Knuckle Charm' };
+    const draft = { ...itemDraftOf(charm), description: 'Older than it looks.' };
+    expect(changedSince(charm, live)).toBe(true);
+    expect(itemSaveCommand(draft, charm, stats)).toEqual({
+      type: 'item.edit',
+      itemId: 'charm',
+      description: 'Older than it looks.',
+    });
+  });
+
+  it('savedDef applies the sent fields, so the same draft then sends nothing', () => {
+    const draft = { ...itemDraftOf(charm), rarity: 'rare', bonuses: { vitality: '7' } };
+    const command = itemSaveCommand(draft, charm, stats);
+    expect(command).not.toBeNull();
+    const after = savedDef(charm, command!);
+    expect(after).toEqual({ ...charm, rarity: 'rare', bonuses: [{ stat: 'vitality', flat: 7 }] });
+    expect(itemSaveCommand(draft, after, stats)).toBeNull();
+    expect(changedSince(after, after)).toBe(false);
+  });
+});
+
+describe('wearersOf and bonusPreview', () => {
+  it('names the characters wearing an item, in character order', () => {
+    const state = {
+      characterOrder: ['b', 'a', 'c'],
+      characters: { a: { name: 'Jake' }, b: { name: 'Casper' }, c: { name: 'Kim' } },
+      holdings: {
+        a: { currency: 0, inventory: {}, equipped: { 'necklace:0': 'charm' } },
+        b: { currency: 0, inventory: { charm: 1 }, equipped: { 'ring:0': 'charm' } },
+        c: { currency: 0, inventory: { charm: 2 }, equipped: {} },
+      },
+    } as unknown as Parameters<typeof wearersOf>[0];
+    expect(wearersOf(state, 'charm')).toEqual(['Casper', 'Jake']);
+    expect(wearersOf(state, 'other')).toEqual([]);
+  });
+
+  it('shows a typed bonus as the sheet shows it', () => {
+    const display = { displayDivisor: 10, displayDecimals: 1 };
+    expect(bonusPreview('5', display)).toBe('+0.5');
+    expect(bonusPreview('-12', display)).toBe('-1.2');
+    expect(bonusPreview('0', display)).toBe('');
+    expect(bonusPreview('1.5', display)).toBe('');
+    expect(bonusPreview(undefined, display)).toBe('');
   });
 });

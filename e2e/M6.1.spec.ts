@@ -51,6 +51,7 @@ test('the GM creates, edits, gives and takes an item; the player sees it live', 
   await form.getByLabel('Vitality').fill('1.5');
   await expect(form.getByRole('button', { name: 'Add to library' })).toBeDisabled();
   await form.getByLabel('Vitality').fill('5');
+  await expect(form.getByTestId('bonus-preview-vitality')).toHaveText('+0.5');
   await form.getByRole('button', { name: 'Add to library' }).click();
   await expect(library.getByRole('status')).toHaveText('[Bone Charm] added to the library');
   const list = library.getByRole('list', { name: 'Library items' });
@@ -58,6 +59,10 @@ test('the GM creates, edits, gives and takes an item; the player sees it live', 
 
   const player = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const playerErrors = watchErrors(player);
+  const playerFrames: string[] = [];
+  player.on('websocket', (ws) =>
+    ws.on('framereceived', (f) => playerFrames.push(String(f.payload))),
+  );
   await player.goto(server.url);
   await player.getByRole('link', { name: /Jake/ }).click();
   await expect(player.getByTestId('connection')).toHaveText('Connected');
@@ -83,11 +88,37 @@ test('the GM creates, edits, gives and takes an item; the player sees it live', 
   await expect(form.getByRole('button', { name: 'Save changes' })).toBeDisabled();
   await expect(list).toHaveText('[Bone Charm] (Rare)');
   await expect(player.getByTestId('inventory')).toContainText('Rare');
+  await expect(player.getByTestId('inventory')).toContainText('Vitality +0.5');
+
+  // A GM-only library item the player does not hold never reaches them.
+  await library.getByRole('button', { name: 'New item' }).click();
+  await form.getByLabel('Name').fill('Secret Blade');
+  await form.getByRole('button', { name: 'Add to library' }).click();
+  await expect(library.getByRole('status')).toHaveText('[Secret Blade] added to the library');
+
+  // Once worn, the slot cannot change from the library, and Take explains why.
+  await list.getByRole('button', { name: /Bone Charm/ }).click();
+  await player.getByTestId('inventory').getByRole('button', { name: 'Equip Bone Charm' }).click();
+  await expect(give.getByTestId('item-held')).toHaveText(
+    'Jake holds 0 (+1 equipped; unequip to take)',
+  );
+  await form.getByLabel('Slot').selectOption({ label: 'Not equippable' });
+  await expect(form.getByRole('note')).toHaveText(
+    'Worn by Jake: unequip it before changing its slot.',
+  );
+  await expect(form.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+  await form.getByLabel('Slot').selectOption({ label: 'Necklace' });
+  await give.getByLabel('Count').fill('0');
+  await expect(give.getByRole('button', { name: 'Give' })).toBeDisabled();
+  await give.getByLabel('Count').fill('1');
   await library.evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-item-library-1366x768.png') });
   await player.getByTestId('inventory').scrollIntoViewIfNeeded();
   await player.screenshot({ path: path.join(shots, 'player-inventory-390x844.png') });
 
+  expect(playerFrames.length).toBeGreaterThan(0);
+  expect(playerFrames.some((f) => f.includes('Secret Blade') || f.includes(GM_KEY))).toBe(false);
+  await expect(player.locator('body')).not.toContainText('Secret Blade');
   expect(errors).toEqual([]);
   expect(playerErrors).toEqual([]);
 });

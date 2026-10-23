@@ -5,10 +5,14 @@ import type { LiveClient } from '../live';
 import { cssToken } from '../player/sheet';
 import {
   adjustCommand,
+  bonusPreview,
+  changedSince,
   emptyItemDraft,
   itemDraftOf,
   itemSaveCommand,
   libraryItems,
+  savedDef,
+  wearersOf,
   type ItemDraft,
 } from './itemLibraryModel';
 
@@ -33,6 +37,9 @@ export function ItemLibrary({ client, state }: { client: LiveClient; state: Camp
     baseId !== null && Object.prototype.hasOwnProperty.call(state.items, baseId)
       ? (state.items[baseId] ?? null)
       : null;
+  // The copy the form was opened from (or last saved): a save sends only the
+  // fields changed since then, so another GM's edits to other fields stay.
+  const [loaded, setLoaded] = useState<ItemDef | null>(null);
   const [draft, setDraft] = useState<ItemDraft>(() => emptyItemDraft(rarities));
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Outcome>(null);
@@ -41,22 +48,27 @@ export function ItemLibrary({ client, state }: { client: LiveClient; state: Camp
   const characterId = ids.includes(who) ? who : (ids[0] ?? '');
   const [count, setCount] = useState('1');
   const shown = libraryItems(state, query);
-  const command = itemSaveCommand(draft, base, stats);
+  const command = itemSaveCommand(draft, base ? (loaded ?? base) : null, stats);
+  const wearers = base ? wearersOf(state, base.id) : [];
+  const slotBlocked = base !== null && wearers.length > 0 && (draft.slot || null) !== base.slot;
+  const stale = base !== null && loaded !== null && changedSince(loaded, base);
 
   const open = (def: ItemDef | null) => {
     setBaseId(def?.id ?? null);
+    setLoaded(def);
     setDraft(def ? itemDraftOf(def) : emptyItemDraft(rarities));
     setOutcome(null);
   };
   const save = async (e: FormEvent) => {
     e.preventDefault();
-    if (!command) return;
+    if (!command || slotBlocked) return;
     setBusy(true);
     const r = await client.command(command);
     setBusy(false);
     const name = draft.name.trim();
     if (!r.ok) return setOutcome({ ok: false, text: friendlyError(r.error) });
     setOutcome({ ok: true, text: base ? `[${name}] saved` : `[${name}] added to the library` });
+    if (base) setLoaded(savedDef(loaded ?? base, command));
     if (!base) setDraft(emptyItemDraft(rarities));
   };
   const adjust = async (sign: 1 | -1) => {
@@ -76,7 +88,12 @@ export function ItemLibrary({ client, state }: { client: LiveClient; state: Camp
           : `Took ${count.trim()} × [${base.name}] from ${name}`,
     });
   };
-  const held = base && characterId ? (holdingsOf(state, characterId).inventory[base.id] ?? 0) : 0;
+  const holdings = characterId ? holdingsOf(state, characterId) : null;
+  const held = base && holdings ? (holdings.inventory[base.id] ?? 0) : 0;
+  const worn =
+    base && holdings ? Object.values(holdings.equipped).filter((i) => i === base.id).length : 0;
+  const adjustable = base ? adjustCommand(characterId, base.id, count, 1) !== null : false;
+  const display = rules.stats;
 
   return (
     <section className="window item-library" aria-labelledby="item-library">
@@ -161,7 +178,7 @@ export function ItemLibrary({ client, state }: { client: LiveClient; state: Camp
           />
         </label>
         <fieldset className="item-bonuses">
-          <legend>Flat stat bonuses while equipped (stat points; sheets show tenths)</legend>
+          <legend>Flat stat bonuses while equipped, in stat points (sheet value shown)</legend>
           {stats.map((s) => (
             <label key={s.id}>
               {s.name}
@@ -172,10 +189,26 @@ export function ItemLibrary({ client, state }: { client: LiveClient; state: Camp
                   setDraft({ ...draft, bonuses: { ...draft.bonuses, [s.id]: e.target.value } })
                 }
               />
+              <span className="muted bonus-preview" data-testid={`bonus-preview-${s.id}`}>
+                {bonusPreview(draft.bonuses[s.id], display)}
+              </span>
             </label>
           ))}
         </fieldset>
-        <button type="submit" disabled={busy || command === null}>
+        {stale && (
+          <p className="muted" role="note">
+            Changed elsewhere since you opened it. Saving changes only the fields you edited.{' '}
+            <button type="button" className="secondary" onClick={() => base && open(base)}>
+              Reload
+            </button>
+          </p>
+        )}
+        {slotBlocked && (
+          <p className="err" role="note">
+            Worn by {wearers.join(', ')}: unequip it before changing its slot.
+          </p>
+        )}
+        <button type="submit" disabled={busy || command === null || slotBlocked}>
           {base ? 'Save changes' : 'Add to library'}
         </button>
       </form>
@@ -197,14 +230,15 @@ export function ItemLibrary({ client, state }: { client: LiveClient; state: Camp
           </label>
           <p className="muted" data-testid="item-held">
             {state.characters[characterId]?.name} holds {held}
+            {worn > 0 && ` (+${worn} equipped; unequip to take)`}
           </p>
-          <button type="button" disabled={busy} onClick={() => void adjust(1)}>
+          <button type="button" disabled={busy || !adjustable} onClick={() => void adjust(1)}>
             Give
           </button>
           <button
             type="button"
             className="secondary"
-            disabled={busy || held === 0}
+            disabled={busy || held === 0 || !adjustable}
             onClick={() => void adjust(-1)}
           >
             Take

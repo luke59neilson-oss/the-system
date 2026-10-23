@@ -109,3 +109,59 @@ export function adjustCommand(
   if (n < 1) return null;
   return { type: 'holdings.adjust', characterId, items: { [itemId]: sign * n } };
 }
+
+/**
+ * The item as it will read once `command` (from `itemSaveCommand`, diffed
+ * against `loaded`) is applied: the form's new baseline after a save, so a
+ * second save sends nothing and later edits elsewhere are not overwritten.
+ */
+export function savedDef(loaded: ItemDef, command: Command): ItemDef {
+  if (command.type !== 'item.edit') return loaded;
+  const { name, rarity, description, slot, bonuses } = command;
+  return {
+    ...loaded,
+    ...(name !== undefined && { name }),
+    ...(rarity !== undefined && { rarity }),
+    ...(description !== undefined && { description }),
+    ...(slot !== undefined && { slot }),
+    ...(bonuses !== undefined && {
+      bonuses: bonuses.map((b) => ({
+        stat: b.stat,
+        ...(b.flat !== undefined && { flat: b.flat }),
+      })),
+    }),
+  };
+}
+
+/** True when the live item differs from the copy the form was opened from (another GM edit). */
+export function changedSince(loaded: ItemDef, live: ItemDef): boolean {
+  return JSON.stringify(loaded) !== JSON.stringify(live);
+}
+
+/** Names of the characters wearing `itemId`, in character order. */
+export function wearersOf(
+  state: Pick<CampaignState, 'characterOrder' | 'characters' | 'holdings'>,
+  itemId: string,
+): string[] {
+  return state.characterOrder.flatMap((id) => {
+    const c = Object.prototype.hasOwnProperty.call(state.characters, id)
+      ? state.characters[id]
+      : undefined;
+    const h = Object.prototype.hasOwnProperty.call(state.holdings, id)
+      ? state.holdings[id]
+      : undefined;
+    if (!c || !h) return [];
+    return Object.values(h.equipped).includes(itemId) ? [c.name] : [];
+  });
+}
+
+/** How one typed bonus reads on a sheet ("+0.5"), or '' when blank or not a whole number. */
+export function bonusPreview(
+  raw: string | undefined,
+  display: { displayDivisor: number; displayDecimals: number },
+): string {
+  const t = (raw ?? '').trim();
+  if (!/^[+-]?\d+$/u.test(t) || Number(t) === 0) return '';
+  const v = Number(t) / display.displayDivisor;
+  return `${v > 0 ? '+' : ''}${v.toFixed(display.displayDecimals)}`;
+}

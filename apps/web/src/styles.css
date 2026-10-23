@@ -2304,3 +2304,9 @@ ol.change-log li.undone .change-text {
 .item-give button {
   margin-bottom: 10px;
 }
+.bonus-preview {
+  display: block;
+  min-height: 1.2em;
+  font-size: 0.8rem;
+  font-family: var(--mono);
+}
