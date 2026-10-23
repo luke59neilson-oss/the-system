@@ -3,7 +3,16 @@ import path from 'node:path';
 import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { buildDemoEvents, changeLog, portraitUrl, type DomainEvent } from '@the-system/engine';
+import {
+  CHANGE_LOG_CATEGORIES,
+  buildDemoEvents,
+  changeLogPage,
+  portraitUrl,
+  updateChangeLog,
+  type ChangeLogCache,
+  type ChangeLogQuery,
+  type DomainEvent,
+} from '@the-system/engine';
 import { LiveHub, type HubOptions } from './hub';
 import type { JoinInfo } from './join';
 import {
@@ -322,9 +331,15 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   });
 
   // M4.8: the GM's change log (GM-only: every event, in words, with undo state).
-  app.get('/api/gm/changelog', (_request, reply) => {
+  // QF.13: rows are kept per campaign and extended as events arrive, so a
+  // request costs a filter over cached rows and returns one bounded page.
+  const changeLogs = new WeakMap<CampaignStore, ChangeLogCache>();
+  app.get('/api/gm/changelog', (request, reply) => {
     if (!active) return reply.code(404).send({ error: 'No campaign open' });
-    return { rows: changeLog(active.store.campaign) };
+    const store = active.store;
+    const cache = updateChangeLog(changeLogs.get(store) ?? null, store.campaign);
+    changeLogs.set(store, cache);
+    return changeLogPage(cache.rows, parseChangeLogQuery(request.query));
   });
 
   app.get('/api/gm/export', () => {
@@ -356,4 +371,20 @@ export function isReservedPath(pathname: string): boolean {
   return RESERVED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
+}
+
+/** Query string → change-log page query; anything malformed falls back to the default. */
+export function parseChangeLogQuery(query: unknown): ChangeLogQuery {
+  const q = (query && typeof query === 'object' ? query : {}) as Record<string, unknown>;
+  const int = (v: unknown) =>
+    typeof v === 'string' && /^\d{1,9}$/.test(v) ? Number.parseInt(v, 10) : null;
+  const who = q.who === 'gm' || q.who === 'player' ? q.who : 'all';
+  const kind = CHANGE_LOG_CATEGORIES.find((c) => c === q.kind) ?? 'all';
+  return {
+    before: int(q.before),
+    limit: int(q.limit),
+    who,
+    kind,
+    text: typeof q.text === 'string' ? q.text.slice(0, 200) : '',
+  };
 }

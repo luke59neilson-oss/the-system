@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   CHANGE_LOG_CATEGORIES,
+  CHANGE_LOG_DEFAULT_PAGE,
   type CampaignState,
   type ChangeLogCategory,
+  type ChangeLogPage,
   type ChangeLogRow,
 } from '@the-system/engine';
 import { friendlyError } from '../format';
@@ -38,9 +40,54 @@ const NO_UNDO = new Set(['campaign.created', 'rules.migrated']);
 const REFETCH_MS = 250;
 
 /**
+ * The newest page merged over what is shown (QF.13). Until the GM loads older
+ * pages the newest page simply replaces the list, so it stays one page long.
+ * After that, rows only ever arrive at the top, so the new head plus the shown
+ * rows below it is contiguous and the older cursor (the bottom row) still
+ * holds (`keptOlder`). If the head filled up without reaching the old top,
+ * the gap is unknown and the list starts over from the head.
+ */
+export function mergeHead(
+  shown: readonly ChangeLogRow[],
+  head: ChangeLogPage,
+): { rows: readonly ChangeLogRow[]; keptOlder: boolean } {
+  const restart = { rows: head.rows, keptOlder: false };
+  const oldest = head.rows.at(-1)?.seq;
+  const top = shown[0]?.seq;
+  if (oldest === undefined || top === undefined) return restart;
+  if (shown.length <= CHANGE_LOG_DEFAULT_PAGE) return restart;
+  if (head.older !== null && oldest > top) return restart;
+  return { rows: [...head.rows, ...shown.filter((r) => r.seq < oldest)], keptOlder: true };
+}
+
+interface Filters {
+  readonly who: 'all' | 'gm' | 'player';
+  readonly kind: 'all' | ChangeLogCategory;
+  readonly text: string;
+}
+
+/** One page of the GM change log from the server, filtered there. */
+async function fetchPage(gmKey: string, filters: Filters, before: number | null) {
+  const params = new URLSearchParams({
+    who: filters.who,
+    kind: filters.kind,
+    text: filters.text,
+    limit: String(CHANGE_LOG_DEFAULT_PAGE),
+  });
+  if (before !== null) params.set('before', String(before));
+  const r = await fetch(`/api/gm/changelog?${params.toString()}`, {
+    headers: { 'x-gm-key': gmKey },
+  });
+  if (!r.ok) throw new Error(String(r.status));
+  return (await r.json()) as ChangeLogPage;
+}
+
+/**
  * M4.8: the GM's change log, newest first, filterable by who, kind and text,
- * with undo (the engine's M1.3 rules decide what can be undone). It refetches
- * on every state change, so a player's action shows up live.
+ * with undo (the engine's M1.3 rules decide what can be undone). The server
+ * filters and pages it (QF.13): the console shows the newest page and loads
+ * older ones on request; it refetches the newest page on every state change,
+ * so a player's action shows up live.
  */
 export function ChangeLog({
   client,
@@ -52,24 +99,41 @@ export function ChangeLog({
   state: CampaignState;
 }) {
   const [rows, setRows] = useState<readonly ChangeLogRow[]>([]);
+  const [older, setOlder] = useState<number | null>(null);
+  const [matching, setMatching] = useState(0);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [filter, setFilter] = useState('');
   const [who, setWho] = useState<'all' | 'gm' | 'player'>('all');
   const [kind, setKind] = useState<'all' | ChangeLogCategory>('all');
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const text = filter.trim();
+  const filterKey = `${who}|${kind}|${text}`;
+  // What is on screen and for which filters; read by the refetch, which only
+  // a state or filter change triggers.
+  const shownRef = useRef<{ key: string; rows: readonly ChangeLogRow[] }>({ key: '', rows: [] });
+  const [shownKey, setShownKey] = useState<string | null>(null);
+  const show = (key: string, next: readonly ChangeLogRow[]) => {
+    shownRef.current = { key, rows: next };
+    setRows(next);
+    setShownKey(key);
+  };
   useEffect(() => {
     let live = true;
-    // Debounced: a burst of player actions refetches once.
+    // Debounced: a burst of player actions (or typing) refetches once.
     const timer = setTimeout(() => {
-      fetch('/api/gm/changelog', { headers: { 'x-gm-key': gmKey } })
-        .then((r) => {
-          if (!r.ok) throw new Error(String(r.status));
-          return r.json() as Promise<{ rows: ChangeLogRow[] }>;
-        })
-        .then((body) => {
+      fetchPage(gmKey, { who, kind, text }, null)
+        .then((head) => {
           if (!live) return;
-          setRows(body.rows);
+          const before = shownRef.current;
+          const merged =
+            before.key === filterKey
+              ? mergeHead(before.rows, head)
+              : { rows: head.rows, keptOlder: false };
+          show(filterKey, merged.rows);
+          if (!merged.keptOlder) setOlder(head.older);
+          setMatching(head.matching);
           setLoadError(false);
         })
         .catch(() => {
@@ -80,13 +144,24 @@ export function ChangeLog({
       live = false;
       clearTimeout(timer);
     };
-  }, [gmKey, state]);
-  const q = filter.trim().toLowerCase();
-  const shown = [...rows]
-    .reverse()
-    .filter((r) => who === 'all' || r.actor === who || (who === 'gm' && r.actor === 'system'))
-    .filter((r) => kind === 'all' || r.category === kind)
-    .filter((r) => q === '' || r.lines.join(' ').toLowerCase().includes(q));
+  }, [gmKey, state, who, kind, text, filterKey]);
+  const loadOlder = () => {
+    if (older === null) return;
+    const key = filterKey;
+    setLoadingOlder(true);
+    fetchPage(gmKey, { who, kind, text }, older)
+      .then((page) => {
+        const current = shownRef.current;
+        if (current.key !== key) return;
+        const bottom = current.rows.at(-1)?.seq ?? Number.POSITIVE_INFINITY;
+        show(key, [...current.rows, ...page.rows.filter((r) => r.seq < bottom)]);
+        setOlder(page.older);
+        setLoadError(false);
+      })
+      .catch(() => setLoadError(true))
+      .finally(() => setLoadingOlder(false));
+  };
+  const shown = shownKey === filterKey ? rows : [];
   return (
     <section className="window" aria-labelledby="change-log">
       <h2 id="change-log">Change log</h2>
@@ -138,7 +213,9 @@ export function ChangeLog({
           {error}
         </p>
       )}
-      {!loadError && shown.length === 0 && <p className="muted">Nothing matches.</p>}
+      {!loadError && shownKey === filterKey && shown.length === 0 && (
+        <p className="muted">Nothing matches.</p>
+      )}
       <ol className="change-log">
         {shown.map((r) => (
           <li key={r.id} className={r.undoneBy ? 'undone' : undefined}>
@@ -189,6 +266,23 @@ export function ChangeLog({
           </li>
         ))}
       </ol>
+      {shown.length > 0 && (
+        <p className="row muted small">
+          <span>
+            Showing {shown.length} of {matching} {matching === 1 ? 'change' : 'changes'}.
+          </span>
+          {older !== null && (
+            <button
+              type="button"
+              className="secondary small"
+              disabled={loadingOlder}
+              onClick={loadOlder}
+            >
+              Load older
+            </button>
+          )}
+        </p>
+      )}
     </section>
   );
 }

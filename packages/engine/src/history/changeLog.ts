@@ -157,10 +157,65 @@ function fallbackLine(state: CampaignState | null, event: DomainEvent): string {
  * then, without counting it. GM-only: rows carry GM notes and schedules.
  */
 export function changeLog(campaign: Campaign): ChangeLogRow[] {
-  const rows: ChangeLogRow[] = [];
-  let state: CampaignState | null = null;
-  campaign.events.forEach((event, seq) => {
-    if (event.type === 'event.undone') return;
+  return [...describeFrom(campaign, [], null, 0).rows];
+}
+
+/**
+ * QF.13: the change log kept up to date one event at a time, so a long
+ * campaign never replays its whole log per request. Holds the rows so far,
+ * the state after them, and the last event seen, to tell an append (extend)
+ * from anything else (rebuild).
+ */
+export interface ChangeLogCache {
+  readonly rows: readonly ChangeLogRow[];
+  /** State after every counted event so far (undone ones skipped). */
+  readonly state: CampaignState | null;
+  /** Events consumed (undo markers included). */
+  readonly count: number;
+  readonly firstId: string | null;
+  readonly lastId: string | null;
+}
+
+const cacheOf = (campaign: Campaign, rows: ChangeLogRow[], state: CampaignState | null) => ({
+  rows,
+  state,
+  count: campaign.events.length,
+  firstId: campaign.events[0]?.id ?? null,
+  lastId: campaign.events.at(-1)?.id ?? null,
+});
+
+/**
+ * The change log for `campaign`, reusing `prev` when the log only grew by
+ * events that are not undos: the new rows are described exactly as
+ * `changeLog` would. An undo (which changes the state later rows were
+ * described against) or a different log rebuilds from scratch. Rows already
+ * built are shared, never mutated.
+ */
+export function updateChangeLog(prev: ChangeLogCache | null, campaign: Campaign): ChangeLogCache {
+  const events = campaign.events;
+  const extends_ =
+    prev !== null &&
+    prev.count <= events.length &&
+    (events[0]?.id ?? null) === prev.firstId &&
+    (prev.count === 0 ? null : events[prev.count - 1]?.id) === prev.lastId &&
+    !events.slice(prev.count).some((e) => e.type === 'event.undone');
+  if (!extends_) {
+    return describeFrom(campaign, [], null, 0);
+  }
+  if (prev.count === events.length) return prev;
+  return describeFrom(campaign, [...prev.rows], prev.state, prev.count);
+}
+
+function describeFrom(
+  campaign: Campaign,
+  rows: ChangeLogRow[],
+  start: CampaignState | null,
+  from: number,
+): ChangeLogCache {
+  let state = start;
+  for (let seq = from; seq < campaign.events.length; seq++) {
+    const event = campaign.events[seq]!;
+    if (event.type === 'event.undone') continue;
     const undone = has(campaign.undone, event.id);
     let lines: string[] = [];
     try {
@@ -180,6 +235,60 @@ export function changeLog(campaign: Campaign): ChangeLogRow[] {
       lines: lines.length ? lines : [fallbackLine(state, event)],
       undoneBy: undone ? (campaign.undone[event.id] as string) : null,
     });
-  });
-  return rows;
+  }
+  return cacheOf(campaign, rows, state);
+}
+
+/** Most rows one change-log page may hold (QF.13). */
+export const CHANGE_LOG_MAX_PAGE = 500;
+export const CHANGE_LOG_DEFAULT_PAGE = 100;
+
+export interface ChangeLogQuery {
+  /** Only rows with `seq` below this (the previous page's `older`). */
+  readonly before?: number | null;
+  readonly limit?: number | null;
+  readonly who?: 'all' | 'gm' | 'player';
+  readonly kind?: 'all' | ChangeLogCategory;
+  /** Case-insensitive text the row's words must contain. */
+  readonly text?: string;
+}
+
+export interface ChangeLogPage {
+  /** Newest first. */
+  readonly rows: readonly ChangeLogRow[];
+  /** Pass as `before` for the next older page; null when there is none. */
+  readonly older: number | null;
+  /** Rows matching the filters across the whole log. */
+  readonly matching: number;
+}
+
+/**
+ * One bounded page of the change log, newest first, filtered across the
+ * whole log (so a search still finds old changes). `limit` is clamped to
+ * 1…CHANGE_LOG_MAX_PAGE.
+ */
+export function changeLogPage(rows: readonly ChangeLogRow[], query: ChangeLogQuery = {}) {
+  const raw = query.limit ?? CHANGE_LOG_DEFAULT_PAGE;
+  const limit = Math.min(
+    CHANGE_LOG_MAX_PAGE,
+    Math.max(1, Number.isFinite(raw) ? Math.floor(raw) : CHANGE_LOG_DEFAULT_PAGE),
+  );
+  const who = query.who ?? 'all';
+  const kind = query.kind ?? 'all';
+  const text = (query.text ?? '').trim().toLowerCase();
+  const before = query.before ?? Number.POSITIVE_INFINITY;
+  const page: ChangeLogRow[] = [];
+  let matching = 0;
+  let older: number | null = null;
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const r = rows[i]!;
+    if (who !== 'all' && r.actor !== who && !(who === 'gm' && r.actor === 'system')) continue;
+    if (kind !== 'all' && r.category !== kind) continue;
+    if (text !== '' && !r.lines.join(' ').toLowerCase().includes(text)) continue;
+    matching++;
+    if (r.seq >= before) continue;
+    if (page.length < limit) page.push(r);
+    else if (older === null) older = page.at(-1)!.seq;
+  }
+  return { rows: page, older, matching } satisfies ChangeLogPage;
 }
