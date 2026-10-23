@@ -1598,7 +1598,7 @@ button.danger {
   color: var(--err);
 }
 .evolution-rerate p {
-  margin: 4px 0 0;
+  margin: 4px 0 6px;
 }
 .evolution-profession {
   display: grid;

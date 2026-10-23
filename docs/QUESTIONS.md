@@ -366,3 +366,26 @@ DESIGN/ROADMAP; do not re-apply them.
     this rule. Alternative: let players ask for any item in the library by
     name, which would tell them which items exist.
     Answer:
+
+56. **Does Identify drop at evolution too?** MR.1 re-rates every skill one
+    rarity down by default, and that includes the race skill Identify, so a
+    Common Identify becomes Inferior at the G → F evolution and shows less
+    about the same targets until it climbs back (it keeps its marks). The GM
+    can keep it in the release. Default (D149): Identify drops like any other
+    skill. Alternative: race skills (or Identify alone) keep their rarity by
+    default.
+    Answer:
+
+57. **Faster reviews (efficiency check, Tier 2).** (a) The builder pastes its
+    own `npm run check` and e2e results with the commit SHA into the review
+    prompt, and the reviewer re-runs only what it doubts; (b) two small,
+    independent items (no engine, save format or golden changes, no `Mx.A`)
+    share one reviewer. Each saves a few minutes of a blocking review per run.
+    Default: no change (reviewers re-run everything, one item each).
+    Answer:
+
+58. **Efficiency guard on Highs.** Trials are reverted when the number of
+    High review findings rises, but recent Highs all came from sweep-found
+    QF items, so two harmless changes (D119, D132) were reverted on noise
+    (D150). Count only non-QF items for that guard? Default: no change.
+    Answer:

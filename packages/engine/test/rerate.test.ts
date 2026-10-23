@@ -214,6 +214,39 @@ describe('evolutions re-rate skills (MR.1)', () => {
     expect(skillOf(c, archery)?.rarity).toBe('inferior');
   });
 
+  it('a skill gained after the release (a merge) takes the default drop', () => {
+    let c = atGTop();
+    for (const name of [archery, 'Basic Stealth']) {
+      c = mark(c, name, 3);
+      c = ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: name });
+      c = mark(c, name, 4);
+      c = ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: name });
+    }
+    for (let i = 0; i < 3; i++) {
+      c = ok(
+        c,
+        {
+          type: 'practice.log',
+          characterId: 'jake',
+          action: `Shot ${i}`,
+          skills: [archery, 'Basic Stealth'],
+        },
+        { ...ctx, sessionId: `p${i}` },
+      );
+    }
+    c = ok(c, release({ [eye]: 'common' }));
+    c = ok(c, {
+      type: 'skill.merge',
+      characterId: 'jake',
+      skills: [archery, 'Basic Stealth'],
+      name: 'Shadow Shot',
+    });
+    expect(skillOf(c, 'Shadow Shot')?.rarity).toBe('rare');
+    c = ok(c, choose, player('jake'));
+    expect(skillOf(c, 'Shadow Shot')?.rarity).toBe('uncommon');
+    expect(skillOf(c, eye)?.rarity).toBe('common');
+  });
+
   it('the owner sees the re-rating; another player does not', () => {
     const c = ok(atGTop(), release());
     const own = projectForPlayer(c.state!, 'jake');

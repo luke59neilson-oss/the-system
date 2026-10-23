@@ -347,7 +347,7 @@ Answers to Q43–Q52 (DESIGN §2, §6, §7 updated; L14–L18). They change fini
 engine and player items, so they come before M4.5. Defaults Luke kept need no
 work: Q44–Q48 and Q52.
 
-- [ ] **MR.1 Evolutions re-rate skills.** An evolution release carries a new
+- [x] **MR.1 Evolutions re-rate skills.** An evolution release carries a new
   rarity for every skill the character keeps: by default one step down
   (never below Inferior), set per skill by the GM (raise within the new
   grade's ceiling, keep, or lower). The copy's text and effects stay as they

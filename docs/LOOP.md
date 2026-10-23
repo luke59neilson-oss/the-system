@@ -129,10 +129,7 @@ them whole costs about 30k tokens per run for history you do not need):
 6. **Test scope.** Before each push to main: `npm run check` plus the e2e
    specs for the items you touched. Run the full e2e suite before every
    `Mx.A` and whenever you change shared server or UI code. CI runs the full
-   suite on every push; a red main is the next run's first task. A full run
-   on a branch head counts for main when, after the merge,
-   `git diff --quiet <branch-head> main` shows the same tree (D132); note it
-   in PROGRESS instead of running it again.
+   suite on every push; a red main is the next run's first task.
 7. Banned in committed code: `.skip`, `.only`, `@ts-ignore`,
    `@ts-expect-error` without a reason, `eslint-disable`, lowering the
    coverage threshold. Property and simulation tests use fixed seeds and
@@ -155,11 +152,6 @@ them whole costs about 30k tokens per run for history you do not need):
    tests (banned patterns in §5.7), GM-only data reaching players, and UX
    problems; report High / Medium / Low with file:line and a concrete failure
    scenario; do not edit files.
-   **Before launching it, self-check siblings (about 2 minutes)** and paste
-   the results into the prompt: (a) `grep` every other caller of each rule or
-   command you changed; (b) `grep` UI and help text that describes the changed
-   behaviour; (c) confirm each new test goes through the public command path
-   (`execute`), not a helper. Fix what this finds first.
 3. **Review in parallel.** Launch the reviewer with `run_in_background: true`
    and `isolation: "worktree"` (so it tests the item's commit, not your
    working tree), then start the next item while it works. When it reports,

@@ -620,7 +620,18 @@ export function chooseEvolution(
   }
 
   const byName = new Map(option.transforms.map((t) => [t.skill, t]));
-  const rerated = new Map((pending.rerate ?? []).map((r) => [r.skill, r.rarity]));
+  // A skill gained after the release (a grant, a merge) takes the default
+  // drop; releases stored before MR.1 re-rate nothing (MR.1 review).
+  const rerated =
+    pending.rerate === undefined
+      ? new Map<string, string>()
+      : new Map(
+          defaultRerate(
+            rules,
+            character,
+            Object.fromEntries(pending.rerate.map((r) => [r.skill, r.rarity])),
+          ).map((r) => [r.skill, r.rarity]),
+        );
   const marking = markRules(rules);
   const skills: CharacterSkill[] = character.skills.map((s) => {
     const t = byName.get(s.name);
