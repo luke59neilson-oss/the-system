@@ -1185,7 +1185,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       for (const name of nextSkills) {
         if (!known.has(name)) fail(event, `${character.name} has no skill "${name}"`);
       }
-      if (nextStat !== null)
+      // An unchanged stat may stay even if the rules' stat list changed since.
+      if (nextStat !== null && nextStat !== entry.stat)
         checkKeys(
           event,
           [nextStat],

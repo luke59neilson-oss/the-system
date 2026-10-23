@@ -5,8 +5,8 @@ import type { LiveClient } from '../live';
 
 type Outcome = { ok: boolean; text: string } | null;
 
-/** Keyboard shortcut that jumps to the quick-add action field (Alt+P). */
-export const QUICK_ADD_KEY = 'p';
+/** Keyboard shortcut that jumps to the quick-add action field (Alt+P; by key position, so Option+P works on macOS). */
+export const QUICK_ADD_CODE = 'KeyP';
 
 /**
  * GM practice capture (ROADMAP M5.5, DESIGN §7): quick-add with a shortcut,
@@ -27,11 +27,13 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
   const [outcome, setOutcome] = useState<Outcome>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [editAction, setEditAction] = useState('');
+  const [editSkills, setEditSkills] = useState<string[]>([]);
+  const [editStat, setEditStat] = useState('');
   const actionRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === QUICK_ADD_KEY) {
+      if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === QUICK_ADD_CODE) {
         e.preventDefault();
         actionRef.current?.focus();
       }
@@ -188,7 +190,13 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
                         onSubmit={(ev) => {
                           ev.preventDefault();
                           void run(
-                            { type: 'practice.edit', entryId: e.id, action: editAction.trim() },
+                            {
+                              type: 'practice.edit',
+                              entryId: e.id,
+                              action: editAction.trim(),
+                              skills: editSkills,
+                              stat: editStat === '' ? null : editStat,
+                            },
                             `Corrected: ${editAction.trim()}`,
                           ).then((ok) => ok && setEditing(null));
                         }}
@@ -200,7 +208,50 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
                             onChange={(ev) => setEditAction(ev.target.value)}
                           />
                         </label>
-                        <button type="submit" disabled={busy || editAction.trim() === ''}>
+                        <fieldset>
+                          <legend>Skills used</legend>
+                          {[
+                            ...new Set([
+                              ...(state.characters[e.characterId]?.skills.map((sk) => sk.name) ??
+                                []),
+                              ...e.skills,
+                            ]),
+                          ].map((n) => (
+                            <label key={n} className="check">
+                              <input
+                                type="checkbox"
+                                checked={editSkills.includes(n)}
+                                onChange={(ev) =>
+                                  setEditSkills(
+                                    ev.target.checked
+                                      ? [...editSkills, n]
+                                      : editSkills.filter((x) => x !== n),
+                                  )
+                                }
+                              />
+                              [{n}]
+                            </label>
+                          ))}
+                        </fieldset>
+                        <label>
+                          Stat
+                          <select value={editStat} onChange={(ev) => setEditStat(ev.target.value)}>
+                            <option value="">None</option>
+                            {state.rules.stats.list.map((st) => (
+                              <option key={st.id} value={st.id}>
+                                {st.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <button
+                          type="submit"
+                          disabled={
+                            busy ||
+                            editAction.trim() === '' ||
+                            (editSkills.length === 0 && editStat === '')
+                          }
+                        >
                           Save
                         </button>
                         <button type="button" onClick={() => setEditing(null)}>
@@ -232,6 +283,8 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
                             onClick={() => {
                               setEditing(e.id);
                               setEditAction(e.action);
+                              setEditSkills([...e.skills]);
+                              setEditStat(e.stat ?? '');
                             }}
                           >
                             Edit

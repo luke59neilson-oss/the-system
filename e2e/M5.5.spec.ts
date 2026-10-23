@@ -121,6 +121,8 @@ test('the GM quick-adds practice, walks the end-of-scene prompt and reviews play
 
   await review.getByRole('listitem').nth(0).getByRole('button', { name: 'Edit' }).click();
   await review.getByLabel('Action').fill('Shot the eel');
+  await review.getByRole('checkbox', { name: '[Basic One-Handed Weapon]' }).check();
+  await review.getByRole('checkbox', { name: '[Basic Archery]' }).uncheck();
   await review.getByRole('button', { name: 'Save' }).click();
   await expect(win.getByRole('status')).toHaveText('Corrected: Shot the eel');
   await review.getByRole('listitem').nth(0).getByRole('button', { name: 'Remove' }).click();
