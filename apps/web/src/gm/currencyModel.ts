@@ -125,3 +125,35 @@ export function ledgerRows(
     detail: detailOf(state, e),
   }));
 }
+
+/** One command's result in a grant or fine sent to several characters. */
+export interface SendResult {
+  readonly name: string;
+  readonly error: string | null;
+}
+
+/**
+ * What the window says after a grant or fine (M6.3 review): who it went
+ * through for, and each refusal by name. A partial failure names both, so the
+ * GM never re-sends to someone already granted or fined.
+ */
+export function sendOutcome(
+  results: readonly SendResult[],
+  amount: number,
+  sign: 1 | -1,
+  currency: string,
+): { ok: boolean; text: string } {
+  const done = results.filter((r) => r.error === null).map((r) => r.name);
+  const failed = results.filter((r) => r.error !== null);
+  const parts: string[] = [];
+  if (done.length > 0) {
+    const names = done.join(', ');
+    parts.push(
+      sign > 0
+        ? `Granted ${amount} ${currency} to ${names}`
+        : `Fined ${names} ${amount} ${currency}`,
+    );
+  }
+  for (const r of failed) parts.push(`Not sent to ${r.name}: ${r.error ?? ''}`);
+  return { ok: failed.length === 0, text: parts.join('. ') };
+}

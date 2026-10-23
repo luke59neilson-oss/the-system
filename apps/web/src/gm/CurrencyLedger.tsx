@@ -2,7 +2,14 @@ import { useState, type FormEvent } from 'react';
 import type { CampaignState } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
-import { balances, currencyCommands, ledgerRows } from './currencyModel';
+import {
+  balances,
+  currencyCommands,
+  ledgerRows,
+  parseAmount,
+  sendOutcome,
+  type SendResult,
+} from './currencyModel';
 import { shortTime } from './sessionModel';
 
 type Outcome = { ok: boolean; text: string } | null;
@@ -30,39 +37,34 @@ export function CurrencyLedger({ client, state }: { client: LiveClient; state: C
   const ledger = ledgerRows(state, shownFilter === '' ? null : shownFilter);
   const shown = all ? ledger : ledger.slice(0, LEDGER_PAGE);
 
-  const toggle = (id: string) =>
+  const toggle = (id: string) => {
+    setOutcome(null);
     setChosen(live.includes(id) ? live.filter((x) => x !== id) : [...live, id]);
+  };
   const send = async (sign: 1 | -1) => {
     const plan = currencyCommands(state, live, amount, sign, reason);
     if ('problem' in plan) return setOutcome({ ok: false, text: plan.problem });
     setBusy(true);
-    const failed: string[] = [];
+    const results: SendResult[] = [];
+    const failedIds: string[] = [];
     for (const command of plan.commands) {
+      const id = command.type === 'holdings.adjust' ? command.characterId : '';
+      const name = rows.find((row) => row.id === id)?.name ?? '';
       const r = await client.command(command);
-      if (!r.ok) {
-        const id = command.type === 'holdings.adjust' ? command.characterId : '';
-        const name = rows.find((row) => row.id === id)?.name ?? '';
-        failed.push(`${name}: ${friendlyError(r.error)}`);
-      }
+      results.push({ name, error: r.ok ? null : friendlyError(r.error) });
+      if (!r.ok) failedIds.push(id);
     }
     setBusy(false);
-    if (failed.length > 0) return setOutcome({ ok: false, text: failed.join('; ') });
-    const names = rows
-      .filter((r) => live.includes(r.id))
-      .map((r) => r.name)
-      .join(', ');
-    const n = amount.trim();
-    setOutcome({
-      ok: true,
-      text: sign > 0 ? `Granted ${n} ${currency} to ${names}` : `Fined ${names} ${n} ${currency}`,
-    });
-    setAmount('');
-    setReason('');
+    setOutcome(sendOutcome(results, parseAmount(amount) ?? 0, sign, currency));
+    // Only the refused stay chosen, so pressing again never repeats a success.
+    setChosen(failedIds);
+    if (failedIds.length === 0) {
+      setAmount('');
+      setReason('');
+    }
   };
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    void send(1);
-  };
+  // Enter never sends: a grant and a fine each need their own button.
+  const submit = (e: FormEvent) => e.preventDefault();
 
   return (
     <section className="window currency-ledger" aria-labelledby="currency-ledger">
@@ -89,7 +91,10 @@ export function CurrencyLedger({ client, state }: { client: LiveClient; state: C
             <button
               type="button"
               className="secondary"
-              onClick={() => setChosen(live.length === rows.length ? [] : rows.map((r) => r.id))}
+              onClick={() => {
+                setOutcome(null);
+                setChosen(live.length === rows.length ? [] : rows.map((r) => r.id));
+              }}
             >
               {live.length === rows.length ? 'Clear' : 'Everyone'}
             </button>
@@ -100,7 +105,10 @@ export function CurrencyLedger({ client, state }: { client: LiveClient; state: C
               <input
                 inputMode="numeric"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => {
+                  setOutcome(null);
+                  setAmount(e.target.value);
+                }}
                 aria-describedby="currency-each"
               />
             </label>
@@ -113,7 +121,7 @@ export function CurrencyLedger({ client, state }: { client: LiveClient; state: C
             </label>
           </div>
           <div className="currency-actions">
-            <button type="submit" disabled={busy}>
+            <button type="button" disabled={busy} onClick={() => void send(1)}>
               Grant
             </button>
             <button

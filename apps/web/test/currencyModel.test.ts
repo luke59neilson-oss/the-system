@@ -7,6 +7,7 @@ import {
   currencyCommands,
   ledgerRows,
   parseAmount,
+  sendOutcome,
   signed,
 } from '../src/gm/currencyModel';
 
@@ -104,5 +105,26 @@ describe('currency model (M6.3)', () => {
       'Fined 20 Credits by the GM',
     );
     expect(matchesFilter({ ...base, amount: 1, reason: '' }, 'items')).toBe(true);
+  });
+
+  it('names who a send went through for and each refusal (partial failure)', () => {
+    expect(
+      sendOutcome(
+        [
+          { name: 'Jake', error: null },
+          { name: 'Kim', error: 'Not enough Credits (has 4)' },
+        ],
+        30,
+        -1,
+        'Credits',
+      ),
+    ).toEqual({
+      ok: false,
+      text: 'Fined Jake 30 Credits. Not sent to Kim: Not enough Credits (has 4)',
+    });
+    expect(sendOutcome([{ name: 'Jake', error: null }], 7, 1, 'Credits')).toEqual({
+      ok: true,
+      text: 'Granted 7 Credits to Jake',
+    });
   });
 });
