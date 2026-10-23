@@ -348,3 +348,282 @@ the rest follow in file order. Each gets its own §6 review.
   plus a "load older" cursor) without a full replay per request, the console
   renders that page, and a unit or e2e test pins the bound on a 10k-event log.
   Needed before M4.A is checked.
+
+## MR — Luke's answers, batch 2 (2026-10-22)
+
+Answers to Q43–Q52 (DESIGN §2, §6, §7 updated; L14–L18). They change finished
+engine and player items, so they come before M4.5. Defaults Luke kept need no
+work: Q44–Q48 and Q52.
+
+- [x] **MR.1 Evolutions re-rate skills.** An evolution release carries a new
+  rarity for every skill the character keeps: by default one step down
+  (never below Inferior), set per skill by the GM (raise within the new
+  grade's ceiling, keep, or lower). The copy's text and effects stay as they
+  are (library-linked or hand-written), and every mark is kept, so the next
+  upgrade uses the lower rarity's cost. Evolution events stored before this
+  item carry no re-rating and replay unchanged. The player's evolution
+  screen shows each skill's old → new rarity before release. The GM builder
+  controls come with M5.2; until then the default applies, with the override
+  available as a command. *Accept:* engine tests: default drop, raise, keep,
+  lower, the Inferior floor, a raise refused above the ceiling, marks kept,
+  text unchanged for library-linked and hand-written copies, an upgrade
+  right after the evolution at the lower rarity's cost; golden logs still
+  replay; e2e on the evolution screen.
+- [x] **MR.2 Every upgrade starts at 0 marks.** Replaces MQ.4's carry-over
+  (D113) and D114's spend-and-carry: an upgrade by marks leaves the skill at
+  0 (extra marks are not kept), and so does any evolution transform; only a
+  downgrade at evolution (MR.1) keeps marks. New campaigns get the new rule;
+  stored logs replay as recorded. The upgrade and evolution screens' marks
+  notes say so. *Accept:* engine tests: 10 marks on an Inferior skill
+  upgrade to a Common skill with 0; a transform (raising or same rarity)
+  leaves 0; a downgrade keeps all; tests through `evolution.choose`; e2e
+  text on both screens.
+- [x] **MR.3 XP overflow for every campaign.** Replaces D124: campaigns
+  created before MQ.11 switch to overflow automatically when loaded (a rules
+  migration, logged). How XP already banked is handled is the run's call
+  (no real campaigns exist yet), logged as a D-entry. *Accept:* a stored
+  campaign with banked XP loads with overflow on; the GM award preview warns
+  about lost XP for it; golden logs re-recorded under a schema bump.
+- [x] **MR.4 Hand-written skill text survives upgrades; Use library text.**
+  Replaces D133 (keeps D125): a hand-written copy keeps its text when the
+  skill upgrades, and a downgrade (MR.1) never changes text. The GM's Skill
+  text form gets **Use library text**, which reconnects the copy to the
+  library entry for its current name and rarity (disabled when there is
+  none). *Accept:* engine tests for an upgrade with and without hand-written
+  text and for reconnecting; e2e on the form.
+- [x] **MR.A Batch acceptance and review.** The batch's e2e specs and the full
+  suite green; `fable` review; then "Preview ready" (LOOP §8.2).
+
+## M1 (continued) — Rules engine
+
+- [x] **M1.6 Titles and bonuses.** Flat and percentage bonuses, percentage
+  cap, documented order (base → flat → percent → cap). *Accept:* stacking and
+  cap tests.
+- [x] **M1.7 Items and economy.** Item definitions (rarity, effects), rarity
+  edits, inventories, 12 equipment slots (2 rings, necklace, chest, legs,
+  boots, bracers, mask, cloak, gloves, main hand, off hand), currency, gifts
+  and two-sided trades between characters and the GM. *Accept:* atomic
+  transfers; no negative balances or stacks; equip rules; item effects reach
+  effective stats via M1.6 order; trade accept/decline/cancel.
+- [x] **M1.8 Practice log and notes.** Practice entries (character, action,
+  skill/stat, tags, source GM/player/montage), repeat detection, skill-pair
+  counts, alerts (selection within 5 levels, merge at 3 joint uses). Notes:
+  private journal, party notes, GM notes, tags, shareable flag, search.
+  *Accept:* alert and pair-count tests; GM cannot read unshared private notes.
+- [x] **M1.9 Skills.** Rarity ladder, Unique tag, nicknames, mastery marks
+  (one per skill per session; end-of-session review), thresholds, grade
+  ceilings with banking, upgrades, merges (uses M1.8 counts; both ≥ Uncommon;
+  one per grade; +1 rarity; originals consumed; marks reset). *Accept:* one
+  test per rule incl. every rejection path.
+- [x] **M1.10 Selections and evolutions.** Selections from class level at
+  DESIGN intervals with capstone flags; capstone menus must contain an option
+  at the grade ceiling; profession options inside class menus. Evolution:
+  available at grade top (`evolutionGate` config) → GM release → options →
+  choice → new grade, banked XP applied, optional spread reshape, skill
+  transforms (rewrite or alias practice-log skill names, M1.9 review);
+  profession unlock at E starting at class level. *Accept:* 0→240
+  simulation yields exactly 29 selections, capstones at 10/45/90/140/190/240;
+  levels freeze at caps and banked XP applies after evolution; evolution
+  impossible without GM release; both gate modes tested.
+- [x] **M1.11 Resolution and clocks.** Ratio odds with injectable RNG; three
+  grade-gap modes (none; per-grade multiplier on the stat value; lower-grade
+  side ÷3); progress clocks; montage eligibility. *Accept:* 10,000-roll test
+  within ±2% for 1:1, 2:1, 3:1, 10:1 in each mode; clock/montage tests.
+- [x] **M1.12 Quests and World Stability.** Quest text, timers, day counter,
+  stability rules (action tag → delta), clamp 0–100, manual nudge, visibility
+  flag. *Accept:* rule, clamp and visibility tests.
+- [x] **M1.14 Campaign simulation.** 40 sessions, 4 characters, ~6 levels per
+  session, random valid play (fixed seed). *Accept:* DESIGN check values; 29
+  selections each; evolutions at thresholds; invariants hold; coverage ≥ 90%.
+- [x] **M1.15 Demo campaign content.** (from MS.4, D53) Extend the demo:
+  characters at grades G, F, E and D (via evolutions), titles, items and a
+  quest with World Stability. *Accept:* demo tests check each grade, a title,
+  an item and a visible stability quest; the real campaign is untouched.
+- [x] **M1.A Milestone acceptance and review.**
+
+## M2 (continued) — Server and sync
+
+- [x] **M2.4 Session log autosave.** Running log (DESIGN §7 "Logging for
+  Claude") written to the exports folder every 5 minutes and on shutdown.
+  *Accept:* file appears and grows during a scripted session; contains no
+  GM-private notes unless GM-flagged for export.
+- [x] **M2.A Milestone acceptance and review.**
+
+## M3 — Player app (browser)
+
+- [x] **M3.1 Join screen.** Character list (portrait, name, grade); pick one;
+  remembered in localStorage (try/catch).
+- [x] **M3.2 Status screen.** DESIGN §9 layout, live updates.
+- [x] **M3.3 Notifications and history.** Book-style DING feed, queued
+  animation, optional sound; full history back to day 1, searchable and
+  filterable.
+- [x] **M3.4 Free points.** Allocate a batch, confirm, locked.
+- [x] **M3.5 Skill detail.** Rarity color, description, flavor, marks
+  progress, nickname edit (official name always shown).
+- [x] **M3.6 Skill selection.** Pending badge, offers side by side, choose.
+  The e2e uses the demo's open menu (Jake, level 50; D70).
+- [x] **M3.7 Inventory, gifts, trades.** Equip; give items/currency to a
+  character or the GM; propose/accept/decline trades; incoming notices.
+  Project holdings, own trades and the definitions of held/offered items;
+  switch pool maxima and the stats block to effective stats (D60). The e2e
+  checks the demo's equipped ring and bow on Jake's screen (D70).
+- [x] **M3.8 Quest log.** Text, days left, stability gauge when visible.
+  The e2e checks the demo quest's visible gauge (89) on a player screen (D70).
+- [x] **M3.9 Identify.** Choose a known entity; show tier text.
+- [x] **M3.10 Notes.** Private journal (markdown, shareable toggle), live
+  party notes, tags, search. Project notes with `canReadNote` (own journal +
+  party; never GM notes) with a canary; server-generated note ids.
+- [x] **M3.11 Practice and montage.** Submit practice entries; enter montage
+  focus when offered.
+- [x] **M3.12 Party view.** Names, race/class/level, pool bars.
+- [x] **M3.13 Table extras.** Evolution screen (options, warnings, choose).
+  The contest result pop-up moved to M7.3 and the hunger tracker to M7.4,
+  where the engine first records rolls and hunger (D88).
+- [x] **M3.A Milestone acceptance and review.** All M3 specs pass at both
+  viewports with zero console errors.
+
+## M4 — GM console
+
+- [x] **M4.1 Skill library.** Create/edit skills: rarity, tags, description,
+  flavor, effects text. Character skills already carry `description` and
+  `flavor` (M3.5, D78; `skill.described`); the library should fill them when
+  a skill is granted, including the starting race skill (Identify).
+- [x] **M4.2 Class, race and profession libraries.** Starting classes (stat
+  weights + 3 starting skills), Human race, professions; seed a default set.
+- [x] **M4.3 Campaign and sessions.** Create campaign; start/end session (end
+  = backup + full session report); in-game day counter. Point the running
+  session log (M2.4, D72) at the started session's events instead of "since
+  the server opened the campaign".
+- [x] **M4.4 Character creation.** Name, starting class, portrait; Identify
+  added automatically.
+- [x] **M4.5 Party dashboard.** Card per character with flags (pending
+  selection/evolution/marks/merges); full sheet edit as audited events.
+- [x] **M4.6 XP award dialog.** Amount, class or profession, participant
+  checkboxes, even integer split by default with auto-balanced last share,
+  editable shares, above-level bonus toggle, target grade (⅓ / no XP for
+  lower grades, MQ.10: `enemyGrade`), level-up preview with overflow and
+  "XP lost" warnings (`previewXpAward`, MQ.11), "typical
+  session ≈ 6 levels" helper (`typicalSessionXp`), confirm.
+- [x] **M4.7 System broadcast.** System-style message to one or all; now or
+  scheduled.
+- [x] **M4.8 Change log and undo.** Filterable event list; undo with M1.3
+  rules.
+- [x] **M4.9 Rules settings.** Edit every config value as events, with
+  validation and reset to defaults. Turning on `xp.overflow` (D124) for a
+  campaign that banked XP moves each capped track's bank per the overflow
+  rule, and says what was lost.
+- [ ] **M4.A Milestone acceptance and review.** GM creates 3 characters,
+  awards XP with a custom split; each player screen shows the DING within
+  1 s; undo reverts it everywhere.
+
+## M5 — Skills and practice tools (GM)
+
+- [ ] **M5.1 Offer builder.** Per-character menu builder beside the practice
+  log; capstone check; profession options; send. Lists the character's
+  passed-over options with a Withdraw button (`selection.withdrawOption`,
+  MQ.3, D112). Show due selections
+  (`dueSelections`) next to the M1.8 selection alert, which does not know
+  whether a selection was taken.
+- [ ] **M5.2 Evolution builder.** Options, warnings, one-time stat bonus per
+  option, optional transforms with merge prompts, spread reshape, tailored
+  profession offers (E evolution, or later after "none for now"; withdrawing an
+  untaken offer, MQ.6 review); per-skill re-rating at release (default one
+  rarity down, raise/keep/lower; MR.1); release. Warn when a selection (esp. the capstone) is still
+  pending (Q21).
+- [ ] **M5.3 Marks review.** End-of-session queue; upgrade prompts.
+- [ ] **M5.4 Merges.** Alert, build, send.
+- [ ] **M5.5 Practice capture.** Quick-add with shortcut; end-of-scene
+  prompt; review of player submissions. Needs new events to edit/remove an
+  entry and to mark entries reviewed (M1.8 review, Lows 5).
+- [ ] **M5.A Milestone acceptance and review.** Full selection, evolution,
+  mark-upgrade and merge loops between GM and player.
+
+## M6 — Items, titles, economy (GM)
+
+- [ ] **M6.1 Item library.** Create/edit, rarity change, give/take.
+- [ ] **M6.2 Loot tables.** Define and roll.
+- [ ] **M6.3 Currency.** Grants, fines, ledger.
+- [ ] **M6.4 Titles.** Library; award with System text.
+- [ ] **M6.A Milestone acceptance and review.** Give, trade, loot roll, title
+  award end to end.
+
+## M7 — Quests, encounters, bestiary
+
+- [ ] **M7.1 Quest manager.** Text, timers, stability rules, nudges,
+  visibility, and for hidden quests who gets the notice (`noticeTo`, D122).
+  Offer to apply a quest's stability rule when a practice entry
+  carries one of its action tags (D67).
+- [ ] **M7.2 Bestiary and NPCs.** Grade, level, stats, Identify tiers, notes.
+  Sets an entity's grade and level for the Identify range (D123); warn when a
+  label names what an out-of-range target is.
+- [ ] **M7.3 Encounter panel.** Ratio-odds roller (stats + mode), pool
+  damage/heal, progress clocks, montage trigger. Rolls the GM shares become
+  events, and the players involved get a contest result pop-up (from M3.13,
+  D88).
+  Store the race level used for the above-level XP bonus in `xp.awarded`
+  so a non-latest undo cannot re-price a later award (D71).
+- [ ] **M7.4 Trackers.** Hunger (fades at E-grade by default), regions,
+  survivor factions. Players see their hunger tracker when the campaign
+  enables it (from M3.13, D88).
+- [ ] **M7.A Milestone acceptance and review.** Sample encounter end to end;
+  stability visible to players only when toggled on.
+
+## M8 — Look and feel
+
+- [ ] **M8.1 Metallic grade themes.** Tokens for aluminum (dull), bronze
+  (dull), copper, silver, gold, platinum (cool blue-white, heavier brushed
+  texture), prismatic diamond (animated; respects reduced motion).
+  System-window styling per DESIGN §9.
+- [ ] **M8.2 Evolution transition.** Animated re-theme on evolution.
+- [ ] **M8.3 Accessibility.** Text contrast ≥ 4.5:1 in all 7 themes
+  (automated); silver vs platinum ΔE ≥ 10 (automated); keyboard navigation;
+  reduced motion.
+- [ ] **M8.4 Sound.** Original sounds generated in code (DING, selection,
+  evolution); volume and mute.
+- [ ] **M8.A Milestone acceptance and review.** Screenshots of every theme in
+  `docs/screens/themes/`, viewed by the reviewer.
+
+## M9 — Claude bridge and content packs
+
+- [ ] **M9.1 Session report.** Full markdown + JSON report at session end
+  (builds on M2.4); "Copy for Claude" button.
+- [ ] **M9.2 Content format.** JSON schemas for skill offers, skills, items,
+  titles, evolution options, bestiary entries; `docs/CONTENT-FORMAT.md` with
+  examples.
+- [ ] **M9.3 Import with approval.** Invalid files show errors and change
+  nothing; GM approves what applies.
+- [ ] **M9.4 Optional GitHub sync (deferred: Luke chose folder export for now; skip and leave unchecked until he asks).** Token stored in OS app data only, never
+  exported. Session end pushes the report to `campaign/sessions/`; pulls
+  `campaign/inbox/*.json` into the import queue. Off by default. Tested
+  against a mocked API.
+- [ ] **M9.5 Tutorial content pack.** DESIGN §8 as an importable pack.
+- [ ] **M9.A Milestone acceptance and review.**
+
+## M10 — Desktop app (double-click)
+
+- [ ] **M10.1 Electron wrapper (final).** Builds on MS.5. Double-click starts the server and opens
+  the GM console with the GM key injected; shows join URL + QR; data in the
+  OS app-data folder; single instance; backup on quit; Windows firewall help.
+  *Accept:* launches under `xvfb-run` in the workspace; `/health` responds;
+  GM window connects with the key; a plain browser client cannot act as GM.
+- [ ] **M10.2 Packaging and releases (final).** Builds on MS.6. electron-builder: Windows NSIS installer (no portable build, D140),
+  macOS dmg (unsigned), Linux AppImage. A release workflow runs on push to
+  the `release` branch (tags cannot be pushed from build sessions) and
+  creates the GitHub Release itself. *Accept:* AppImage builds and launches
+  under `xvfb-run` locally; the release workflow's latest run is green with
+  all three artifacts (check via the repo-scoped Actions read API).
+- [ ] **M10.A Milestone acceptance and review.**
+
+## M11 — Hardening and docs
+
+- [ ] **M11.1 Soak test.** 1 GM + 4 player clients, 2,000 random valid
+  commands (fixed seed): no desync, no crash, heap growth < 20% after warm-up.
+- [ ] **M11.2 Recovery.** Server restart mid-session; client reconnect;
+  simulated power loss on the event log.
+- [ ] **M11.3 Performance.** Player sheet interactive < 2 s on localhost
+  (Playwright timing); 50,000-event log loads < 3 s.
+- [ ] **M11.4 Guides.** `docs/GM-GUIDE.md`, `docs/PLAYER-QUICKSTART.md` (one
+  page), `docs/TROUBLESHOOTING.md` (firewall, IP, ports, unsigned-app
+  warnings on Windows and macOS).
+- [ ] **M11.5 Final review.** Whole-repo review by a different model; every
+  High/Medium fixed; no `[~]` boxes remain; `docs/DONE.md` written.
