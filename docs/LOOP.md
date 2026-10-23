@@ -127,6 +127,11 @@ them whole costs about 30k tokens per run for history you do not need):
    - Ending before minute 48 needs one of these reasons, written in the
      PROGRESS entry: `docs/DONE.md` written, a Blocker, or every remaining
      item is blocked or deferred.
+   - **Gate (D170):** finishing an item, its review or the full e2e run is
+     never the end of the build phase. If the clock is under 44 and an
+     unblocked item remains, start it now (its first commit goes to
+     `wip/<item-id>` at 44). Run the full e2e while the last review works,
+     not after it, so it does not read as the run's last step.
    - Remote branches cannot be deleted from here; leave finished `wip/*`
      branches alone.
 6. **Test scope.** Before each push to main: `npm run check` plus the e2e
@@ -177,6 +182,8 @@ should weigh in on also go in `docs/QUESTIONS.md` with the default you used.
 
 ## 8. Finish the run
 
+0. Before writing close-out notes, check the clock: under 44 with an
+   unblocked item and no §5.5 reason means go back to §5 and start it.
 1. Append a run entry to `docs/PROGRESS.md`: start/end UTC (and the end
    minute; if before 48, the reason from §5.5), preflight results,
    items finished, test counts, engine coverage, review summary, open `wip/*`

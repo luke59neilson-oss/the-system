@@ -20,10 +20,13 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
-| One push to main per item, after its review fixes (LOOP §5.4, §6.3; D162) | 2026-10-23 13:05 | Main CI runs/day and red/day down (≈ −30%) | 66 runs/day, 12 red/day | Highs (4/10), round-2 share (5/10), items/run (1.3) | 2026-10-23 ~19:00 (6 runs) |
+| Close-out gate: under minute 44 with an unblocked item, start it (LOOP §5.5, §8.0; D170) | 2026-10-23 18:40 | End minute (mean) up to ≈ 49; items/run ≈ 1.5 | 43.7 end minute, 1.3 items/run | Highs (4/10), round-2 share (5/10), main CI red/day (8) | 2026-10-24 ~00:00 (6 runs) |
 
 ## Kept
 
+- D162 one push to main per item (2026-10-23 18:08, D170): main CI runs/day
+  66 → 48 and red/day 12 → 8 (both ≈ −30%), guards flat (Highs 4/10,
+  round-2 share 5/10, items/run 1.3).
 - L9 fixed-clock timebox, L9 targeted orient reads, L9 CI wip-skip and
   Chromium cache (2026-10-23 00:08, D131).
 
@@ -35,6 +38,11 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   and D132's CI red/day guard too (7 → 10), so §9.2 reverts both.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-10-23 18:08 auditor (sonnet): no Tier 2 proposals. Applied its Tier 1
+  close-out gate (D170). Its `--only-changed` re-evaluation: not worth it
+  yet (risk of skipping a coupled spec). Note: `desktop-smoke` re-installs
+  Playwright deps uncached; small wall-time gain, not taken.
 
 - 2026-10-23 12:18 auditor (sonnet): no Tier 2 proposals. Its second Tier 1
   idea, `npx playwright test --only-changed=origin/main` before each push,
