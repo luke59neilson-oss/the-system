@@ -27,8 +27,11 @@ import { kit, rawRules, run, testContext } from './helpers/events';
  * that behaviour). Overflow has its own tests in progression.test.ts.
  */
 const bankingRules = () => {
-  const raw = rawRules() as { xp: Record<string, unknown> };
+  const raw = rawRules() as { xp: Record<string, unknown>; skills: Record<string, unknown> };
   raw.xp.overflow = false;
+  // Same era for marks: MQ.4's carry-over, before MR.2 reset them on upgrade.
+  raw.skills.marksCarryOver = true;
+  raw.skills.marksResetOnUpgrade = false;
   return raw;
 };
 const rules = defaultRules();

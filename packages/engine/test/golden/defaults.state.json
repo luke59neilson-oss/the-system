@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 21,
+  "schemaVersion": 22,
   "name": "Golden: default rules (QF.12)",
   "rules": {
     "configVersion": 1,
@@ -245,6 +245,7 @@
       },
       "maxMarksPerSkillPerSession": 1,
       "marksCarryOver": true,
+      "marksResetOnUpgrade": false,
       "libraryByRarity": true,
       "merge": {
         "requiredJointUses": 3,

@@ -235,7 +235,8 @@ exports[`default rules > match the snapshot 1`] = `
       "rare": 8,
       "uncommon": 6,
     },
-    "marksCarryOver": true,
+    "marksCarryOver": false,
+    "marksResetOnUpgrade": true,
     "maxMarksPerSkillPerSession": 1,
     "menuSize": {
       "max": 4,

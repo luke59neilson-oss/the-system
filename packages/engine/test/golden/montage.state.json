@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 21,
+  "schemaVersion": 22,
   "name": "Golden: montage",
   "rules": {
     "configVersion": 1,
@@ -245,6 +245,7 @@
       },
       "maxMarksPerSkillPerSession": 1,
       "marksCarryOver": false,
+      "marksResetOnUpgrade": false,
       "libraryByRarity": false,
       "merge": {
         "requiredJointUses": 3,
@@ -439,7 +440,7 @@
           "flavor": null
         },
         {
-          "name": "Archer\u2019s Eye",
+          "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -545,7 +546,7 @@
           "flavor": null
         },
         {
-          "name": "Archer\u2019s Eye",
+          "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
