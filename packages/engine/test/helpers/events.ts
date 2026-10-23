@@ -441,6 +441,18 @@ function randomSkillCommand(
     return { type: 'skill.setUnique', characterId, skill: someSkill(), unique: rand() < 0.5 };
   }
   if (roll < 0.25) {
+    // MR.4: hand a copy back to the library; mostly a hand-written one, so
+    // accepted reconnects do not hinge on luck (refused without an entry).
+    const edited = Object.values(c.state?.characters ?? {}).flatMap((ch) =>
+      ch.skills.filter((s) => s.textEdited).map((s) => [ch.id, s.name] as const),
+    );
+    if (rand() < (edited.length ? 0.6 : 0.05)) {
+      const [id, skill] =
+        edited.length && rand() < 0.9 ? pick(edited) : ([characterId, someSkill()] as const);
+      return { type: 'skill.useLibraryText', characterId: id, skill };
+    }
+  }
+  if (roll < 0.25) {
     return {
       type: 'skill.describe',
       characterId,

@@ -264,6 +264,11 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     description: skillDescription.nullable(),
     flavor: skillFlavor.nullable(),
   }),
+  /** GM hands a hand-written skill copy back to the library entry for its name and rarity (MR.4). */
+  'skill.libraryTextUsed': z.strictObject({
+    characterId: recordId,
+    skill: nonBlank,
+  }),
   /** GM sets or clears a skill's Unique tag. */
   'skill.uniqueSet': z.strictObject({
     characterId: recordId,
@@ -574,6 +579,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'skill.nicknamed': 1,
   'skill.described': 1,
   'skill.uniqueSet': 1,
+  'skill.libraryTextUsed': 1,
   'skill.markAwarded': 1,
   'skill.upgraded': 1,
   'skill.merged': 1,
