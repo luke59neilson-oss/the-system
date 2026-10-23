@@ -50,7 +50,8 @@ export function ItemLibrary({ client, state }: { client: LiveClient; state: Camp
   const shown = libraryItems(state, query);
   const command = itemSaveCommand(draft, base ? (loaded ?? base) : null, stats);
   const wearers = base ? wearersOf(state, base.id) : [];
-  const slotBlocked = base !== null && wearers.length > 0 && (draft.slot || null) !== base.slot;
+  const slotBlocked =
+    wearers.length > 0 && command?.type === 'item.edit' && command.slot !== undefined;
   const stale = base !== null && loaded !== null && changedSince(loaded, base);
 
   const open = (def: ItemDef | null) => {
@@ -178,7 +179,9 @@ export function ItemLibrary({ client, state }: { client: LiveClient; state: Camp
           />
         </label>
         <fieldset className="item-bonuses">
-          <legend>Flat stat bonuses while equipped, in stat points (sheet value shown)</legend>
+          <legend>
+            Flat stat bonuses while equipped, in stat points (sheet value before the item cap)
+          </legend>
           {stats.map((s) => (
             <label key={s.id}>
               {s.name}
