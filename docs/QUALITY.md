@@ -234,3 +234,4 @@ reviewers ran 15–20 minutes each in the background.
 - (M5.A review) "Send merge" sends `skill.merge` then `skill.describe`; undoing the merge from the Change Log is refused until the describe is undone. Carry description/flavour in `skill.merge`.
 - (M5.A review) The default re-rating at evolution also drops Identify (race skill), lowering the Identify tier; the builder gives no hint. Per DESIGN §6, but worth a note in the re-rating row. (Q64)
 - (M5.A review) Practice "Remove" has no confirmation (`PracticeCapture.tsx` ~293) while Withdraw does; "Mark all reviewed" repeats the 500 batch limit from `envelope.ts`.
+- (M5.A round 2) `MergeBuilder.tsx` ~18 uses an unpinned default character (`ids[0]`), like the evolution builder before its fix; a character created ahead of the current one mid-build would carry the typed name to the wrong character. Also "1 of these 1 uses" grammar when requiredJointUses is 1.

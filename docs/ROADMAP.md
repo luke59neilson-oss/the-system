@@ -553,7 +553,7 @@ work: Q44–Q48 and Q52.
 - [x] **M5.5 Practice capture.** Quick-add with shortcut; end-of-scene
   prompt; review of player submissions. Needs new events to edit/remove an
   entry and to mark entries reviewed (M1.8 review, Lows 5).
-- [ ] **M5.A Milestone acceptance and review.** Full selection, evolution,
+- [x] **M5.A Milestone acceptance and review.** Full selection, evolution,
   mark-upgrade and merge loops between GM and player.
 
 ## M6 — Items, titles, economy (GM)
