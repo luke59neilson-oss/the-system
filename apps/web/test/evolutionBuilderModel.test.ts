@@ -7,7 +7,7 @@ import {
   type Command,
   type CommandContext,
 } from '@the-system/engine';
-import { evolutionPlan, releaseProblem } from '../src/gm/evolutionBuilderModel';
+import { evolutionPlan, releaseProblem, withdrawableOffers } from '../src/gm/evolutionBuilderModel';
 
 // M5.2: the evolution builder's model agrees with the engine.
 function campaign(classXp: number): Campaign {
@@ -75,5 +75,22 @@ describe('evolution builder model (M5.2)', () => {
     expect(releaseProblem(state, 'jake', [option], [], [])).toBeNull();
     expect(releaseProblem(state, 'jake', [], [], [])).not.toBeNull();
     expect(releaseProblem(state, 'ghost', [option], [], [])).toBe('No such character.');
+  });
+
+  it('limits transforms by the rules and lists no withdrawable offers without any', () => {
+    const plan = evolutionPlan(campaign(400).state!, 'jake')!;
+    expect(plan.transforms).toEqual(DEFAULT_RULES.skills.evolutionTransforms);
+    expect(plan.rarities.at(-1)).toBe('rare');
+    expect(plan.mergePrompts).toEqual([]);
+    expect(withdrawableOffers(campaign(400).state!)).toEqual([]);
+  });
+
+  it('checks a merge transform against the practice log, as the engine does', () => {
+    const state = campaign(400).state!;
+    const merge = {
+      ...option,
+      transforms: [{ skill: 'Basic Archery', merge: 'Basic Stealth', name: 'X', rarity: 'rare' }],
+    };
+    expect(releaseProblem(state, 'jake', [merge], [], [])).toMatch(/must be at least/);
   });
 });

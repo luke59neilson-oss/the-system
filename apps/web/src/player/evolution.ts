@@ -17,8 +17,12 @@ export function transformText(
   me: Pick<OwnSheet, 'skills'>,
   t: EvolutionOption['transforms'][number],
 ): string {
-  const old = me.skills.find((s) => s.name === t.skill);
-  const from = old ? `[${old.name} (${rarityName(rules, old.rarity)})]` : `[${t.skill}]`;
+  const label = (name: string) => {
+    const old = me.skills.find((s) => s.name === name);
+    return old ? `[${old.name} (${rarityName(rules, old.rarity)})]` : `[${name}]`;
+  };
+  // A merge transform (M5.2) consumes a second skill: "[A] + [B] → [New]".
+  const from = t.merge === undefined ? label(t.skill) : `${label(t.skill)} + ${label(t.merge)}`;
   return `${from} → [${t.name} (${rarityName(rules, t.rarity)})]`;
 }
 
@@ -84,6 +88,13 @@ export function evolutionWarnings(
   const out: string[] = [];
   const marks = (n: number) => `${n} mastery ${n === 1 ? 'mark' : 'marks'}`;
   for (const t of option.transforms) {
+    if (t.merge !== undefined) {
+      // A merge (M5.2, DESIGN §6): the originals are consumed; marks start at 0.
+      out.push(
+        `[${t.skill}] and [${t.merge}] merge into [${t.name}]: both are consumed, and the merged skill starts at 0 marks.`,
+      );
+      continue;
+    }
     const s = me.skills.find((k) => k.name === t.skill);
     if (!s || s.marks <= 0) continue;
     const kept = marksAfterRarityChange(rules.marks, s.rarity, t.rarity, s.marks);

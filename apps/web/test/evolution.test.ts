@@ -54,6 +54,23 @@ describe('evolution screen helpers (M3.13)', () => {
     expect(
       transformText(rules, me({ skills: [] }), { skill: 'Gone', name: 'X', rarity: 'rare' }),
     ).toBe('[Gone] → [X (Rare)]');
+    expect(
+      transformText(rules, me(), {
+        skill: 'Basic Archery',
+        merge: 'Gone',
+        name: 'Storm Arrows',
+        rarity: 'rare',
+      }),
+    ).toBe('[Basic Archery (Common)] + [Gone] → [Storm Arrows (Rare)]');
+    expect(
+      evolutionWarnings(rules, me(), {
+        ...option(),
+        classWeights: null,
+        transforms: [
+          { skill: 'Basic Archery', merge: 'Gone', name: 'Storm Arrows', rarity: 'rare' },
+        ],
+      })[0],
+    ).toMatch(/\[Basic Archery\] and \[Gone\] merge into \[Storm Arrows\]: both are consumed/);
   });
 
   it('lists reshaped weights biggest first, ties in stat order', () => {

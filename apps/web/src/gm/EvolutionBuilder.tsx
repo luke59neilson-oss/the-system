@@ -2,7 +2,20 @@ import { useState, type FormEvent } from 'react';
 import type { CampaignState, EvolutionOption } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
-import { evolutionPlan, releaseProblem, type EvolutionPlan } from './evolutionBuilderModel';
+import {
+  evolutionPlan,
+  releaseProblem,
+  withdrawableOffers,
+  type EvolutionPlan,
+} from './evolutionBuilderModel';
+
+interface TransformDraft {
+  skill: string;
+  /** A second skill merged in (M5.2), from a merge prompt. */
+  merge?: string;
+  name: string;
+  rarity: string;
+}
 
 interface OptionDraft {
   className: string;
@@ -13,6 +26,8 @@ interface OptionDraft {
   bonus: Record<string, number>;
   /** Reshaped class weights (DESIGN §4), or null to keep the current ones. */
   weights: Record<string, number> | null;
+  /** Optional skill transforms (DESIGN §6: rare; config minimum 0). */
+  transforms: TransformDraft[];
 }
 
 const blankOption = (className = ''): OptionDraft => ({
@@ -21,6 +36,7 @@ const blankOption = (className = ''): OptionDraft => ({
   allBonus: 0,
   bonus: {},
   weights: null,
+  transforms: [],
 });
 
 const wholeNumber = (v: string) => Math.max(0, Math.floor(Number(v) || 0));
@@ -66,7 +82,54 @@ export function EvolutionBuilder({ client, state }: { client: LiveClient; state:
           />
         </>
       )}
+      <ProfessionOffers client={client} state={state} />
     </section>
+  );
+}
+
+/**
+ * Untaken profession offers with a Withdraw button (M5.2, MQ.6 review): from
+ * the Professions tab and from a release still waiting on the player.
+ */
+function ProfessionOffers({ client, state }: { client: LiveClient; state: CampaignState }) {
+  const rows = withdrawableOffers(state);
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  if (rows.length === 0) return null;
+  const withdraw = async (characterId: string, name: string, profession: string) => {
+    if (!window.confirm(`Withdraw the [${profession}] offer from ${name}?`)) return;
+    const r = await client.command({ type: 'profession.withdrawOffer', characterId, profession });
+    setResult(
+      r.ok
+        ? { ok: true, text: `[${profession}] withdrawn from ${name}` }
+        : { ok: false, text: friendlyError(r.error) },
+    );
+  };
+  return (
+    <>
+      <h3>Untaken profession offers</h3>
+      <ul className="profession-offers" aria-label="Untaken profession offers">
+        {rows.flatMap((row) =>
+          row.offers.map((p) => (
+            <li key={`${row.characterId}:${p}`}>
+              {row.name}: [{p}]{' '}
+              <button
+                type="button"
+                className="secondary"
+                aria-label={`Withdraw ${p} from ${row.name}`}
+                onClick={() => void withdraw(row.characterId, row.name, p)}
+              >
+                Withdraw
+              </button>
+            </li>
+          )),
+        )}
+      </ul>
+      {result && (
+        <p className={result.ok ? 'ok' : 'err'} role={result.ok ? 'status' : 'alert'}>
+          {result.text}
+        </p>
+      )}
+    </>
   );
 }
 
@@ -96,7 +159,12 @@ function ReleaseForm({
     id: `o${i + 1}`,
     className: o.className.trim(),
     description: o.description.trim(),
-    transforms: [],
+    transforms: o.transforms.map((t) => ({
+      skill: t.skill,
+      ...(t.merge === undefined ? {} : { merge: t.merge }),
+      name: t.name.trim(),
+      rarity: t.rarity,
+    })),
     classWeights: o.weights,
     statBonus: Object.fromEntries(
       rules.stats.list
@@ -123,6 +191,7 @@ function ReleaseForm({
       options: engineOptions.map((o) => ({
         className: o.className,
         ...(o.description ? { description: o.description } : {}),
+        ...(o.transforms.length > 0 ? { transforms: o.transforms } : {}),
         ...(Object.keys(o.statBonus).length > 0 ? { statBonus: o.statBonus } : {}),
         ...(o.classWeights ? { classWeights: o.classWeights } : {}),
       })),
@@ -221,6 +290,13 @@ function ReleaseForm({
               </button>
             )}
           </details>
+          <TransformRows
+            plan={plan}
+            skills={character?.skills.map((k) => k.name) ?? []}
+            rarityName={rarityName}
+            transforms={o.transforms}
+            onChange={(transforms) => setOption(i, { transforms })}
+          />
           <label>
             Description{' '}
             <input
@@ -275,8 +351,9 @@ function ReleaseForm({
       </ul>
       {plan.mergePrompts.length > 0 && (
         <p className="muted" data-testid="merge-prompts">
-          Merge ready (consider offering it as part of this evolution):{' '}
-          {plan.mergePrompts.map(([a, b]) => `[${a}] + [${b}]`).join(', ')}
+          Merge ready:{' '}
+          {plan.mergePrompts.map((m) => `[${m.skills[0]}] + [${m.skills[1]}]`).join(', ')}. Offer it
+          as part of this evolution with an option&rsquo;s &ldquo;Offer merge&rdquo; button.
         </p>
       )}
       <button type="submit" disabled={busy || problem !== null}>
@@ -293,5 +370,118 @@ function ReleaseForm({
         </p>
       )}
     </form>
+  );
+}
+
+/**
+ * An option's transforms (DESIGN §6): existing skill → new name and rarity,
+ * up to `skills.evolutionTransforms.max`; a merge prompt adds a row that
+ * merges the pair (the second skill is consumed).
+ */
+function TransformRows({
+  plan,
+  skills,
+  rarityName,
+  transforms,
+  onChange,
+}: {
+  plan: EvolutionPlan;
+  skills: readonly string[];
+  rarityName: (id: string) => string;
+  transforms: TransformDraft[];
+  onChange: (next: TransformDraft[]) => void;
+}) {
+  const full = transforms.length >= plan.transforms.max;
+  const used = new Set(transforms.flatMap((t) => (t.merge ? [t.skill, t.merge] : [t.skill])));
+  const free = skills.filter((k) => !used.has(k));
+  const set = (i: number, patch: Partial<TransformDraft>) =>
+    onChange(transforms.map((t, j) => (j === i ? { ...t, ...patch } : t)));
+  const lowest = plan.rarities[0] ?? '';
+  return (
+    <div className="transforms">
+      <p className="muted">
+        Skill transforms (optional, up to {plan.transforms.max})
+        {transforms.length === 0 ? ': none' : ''}
+      </p>
+      {transforms.map((t, i) => (
+        <div key={i} className="row transform-row" role="group" aria-label={`Transform ${i + 1}`}>
+          {t.merge ? (
+            <span>
+              Merge [{t.skill}] + [{t.merge}] →
+            </span>
+          ) : (
+            <label>
+              Skill{' '}
+              <select value={t.skill} onChange={(e) => set(i, { skill: e.target.value })}>
+                {[t.skill, ...free].map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label>
+            New name{' '}
+            <input
+              value={t.name}
+              maxLength={80}
+              onChange={(e) => set(i, { name: e.target.value })}
+            />
+          </label>
+          <label>
+            Rarity{' '}
+            <select value={t.rarity} onChange={(e) => set(i, { rarity: e.target.value })}>
+              {plan.rarities.map((r) => (
+                <option key={r} value={r}>
+                  {rarityName(r)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="secondary"
+            aria-label={`Remove transform ${i + 1}`}
+            onClick={() => onChange(transforms.filter((_, j) => j !== i))}
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      <div className="row">
+        <button
+          type="button"
+          disabled={full || free.length === 0}
+          onClick={() =>
+            onChange([
+              ...transforms,
+              {
+                skill: free[0] ?? '',
+                name: free[0] ?? '',
+                rarity: plan.rerate.find((r) => r.skill === free[0])?.from ?? lowest,
+              },
+            ])
+          }
+        >
+          Add transform
+        </button>
+        {plan.mergePrompts.map((m) => (
+          <button
+            key={m.skills.join('+')}
+            type="button"
+            disabled={full || used.has(m.skills[0]) || used.has(m.skills[1])}
+            onClick={() =>
+              onChange([
+                ...transforms,
+                { skill: m.skills[0], merge: m.skills[1], name: '', rarity: m.rarity },
+              ])
+            }
+          >
+            Offer merge [{m.skills[0]}] + [{m.skills[1]}]
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

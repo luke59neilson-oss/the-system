@@ -1704,3 +1704,112 @@ describe('tailored professions (MQ.6, DESIGN §2)', () => {
     expect(after, after.join(' | ')).toContain('Jake gained the profession Cook at level 14');
   });
 });
+
+describe('merge transforms (M5.2, DESIGN §6 "offer that merge as part of the evolution")', () => {
+  /** Jake at the G top with [Basic Archery] and [Basic Stealth] Uncommon, logged together `times`. */
+  const mergeReady = (times = 3): Campaign => {
+    let c = atGTop();
+    for (let i = 0; i < times; i++) {
+      c = ok(c, {
+        type: 'practice.log',
+        characterId: 'jake',
+        action: `shot ${i}`,
+        skills: [archery, stealth],
+      });
+    }
+    let session = 0;
+    for (const name of [archery, archery, stealth, stealth]) {
+      const s = char(c).skills.find((k) => k.name === name);
+      const need = s?.rarity === 'inferior' ? 3 : 4;
+      for (let m = s?.marks ?? 0; m < need; m++) {
+        c = ok(c, {
+          type: 'skill.awardMark',
+          characterId: 'jake',
+          skill: name,
+          session: `s${++session}`,
+        });
+      }
+      c = ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: name });
+    }
+    return c;
+  };
+  const mergeRelease = (name = 'Ghost Shot', rarity = 'rare', merge = stealth): Command => ({
+    type: 'evolution.release',
+    characterId: 'jake',
+    options: [{ className: 'Hunter', transforms: [{ skill: archery, merge, name, rarity }] }],
+  });
+  const choose: Command = { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' };
+
+  it('consumes both skills on choosing; the merged skill is new, at 0 marks; the merge counts', () => {
+    let c = ok(mergeReady(), mergeRelease());
+    const me = projectForPlayer(c.state ?? (null as never), 'jake').me;
+    expect(me.evolution?.options[0]?.transforms[0]).toMatchObject({ merge: stealth });
+    c = ok(c, choose, player('jake'));
+    const j = char(c);
+    expect(j.grade).toBe('F');
+    const names = j.skills.map((s) => s.name);
+    expect(names).toContain('Ghost Shot');
+    expect(names).not.toContain(archery);
+    expect(names).not.toContain(stealth);
+    expect(j.skills.find((s) => s.name === 'Ghost Shot')).toMatchObject({
+      rarity: 'rare',
+      marks: 0,
+    });
+    expect(j.merges['G']).toBe(1);
+    const undone = ok(c, { type: 'event.undo', eventId: c.events.at(-1)?.id ?? '' });
+    expect(char(undone).skills.map((s) => s.name)).toContain(stealth);
+  });
+
+  it('refuses a merge the merge rules refuse', () => {
+    expect(reject(mergeReady(2), mergeRelease())).toMatch(/logged together 2 times \(need 3\)/);
+    expect(reject(mergeReady(), mergeRelease('Ghost Shot', 'common'))).toMatch(
+      /cannot be below the higher of the two merged skills/,
+    );
+    expect(reject(mergeReady(), mergeRelease('Ghost Shot', 'epic'))).toMatch(/above the F-grade/);
+    expect(reject(mergeReady(), mergeRelease(stealth))).toMatch(/needs a new name/);
+    expect(reject(mergeReady(), mergeRelease('X', 'rare', archery))).toMatch(/two different/);
+    expect(reject(mergeReady(), mergeRelease('X', 'rare', 'Nope'))).toMatch(/no skill "Nope"/);
+    // [Basic Stealth] is merged in, so it cannot be transformed by the same option too.
+    expect(
+      reject(mergeReady(), {
+        type: 'evolution.release',
+        characterId: 'jake',
+        options: [
+          {
+            className: 'Hunter',
+            transforms: [
+              { skill: archery, merge: stealth, name: 'Ghost Shot', rarity: 'rare' },
+              { skill: stealth, name: 'Shade', rarity: 'rare' },
+            ],
+          },
+        ],
+      }),
+    ).toMatch(/transformed twice/);
+    // Below Uncommon: the starting skills are Inferior.
+    let c = atGTop();
+    for (let i = 0; i < 3; i++) {
+      c = ok(c, {
+        type: 'practice.log',
+        characterId: 'jake',
+        action: 'x',
+        skills: [archery, stealth],
+      });
+    }
+    expect(reject(c, mergeRelease())).toMatch(/must be at least uncommon to merge/);
+  });
+
+  it('counts against the one merge per grade', () => {
+    let c = mergeReady();
+    c = ok(c, {
+      type: 'skill.merge',
+      characterId: 'jake',
+      skills: [archery, stealth],
+      name: 'Twin Shot',
+    });
+    expect(char(c).merges['G']).toBe(1);
+    // Nothing left to merge with, but the allowance is checked first.
+    expect(reject(c, mergeRelease())).toMatch(
+      /can merge 1 time\(s\) per grade \(1 done at G-grade\)/,
+    );
+  });
+});

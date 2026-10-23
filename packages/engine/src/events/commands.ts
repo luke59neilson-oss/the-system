@@ -240,7 +240,9 @@ export type Command =
         id?: string | undefined;
         className: string;
         description?: string | undefined;
-        transforms?: readonly { skill: string; name: string; rarity: string }[] | undefined;
+        transforms?:
+          | readonly { skill: string; name: string; rarity: string; merge?: string | undefined }[]
+          | undefined;
         classWeights?: Readonly<Record<string, number>> | null | undefined;
         statBonus?: Readonly<Record<string, number>> | undefined;
       }[];

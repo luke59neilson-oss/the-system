@@ -1431,6 +1431,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
             event.id,
             legacy === true,
             rerate ?? null,
+            jointUsesOf(state, characterId),
           ),
         ),
       );
@@ -1447,6 +1448,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
           retiredFor(state, character),
           event.payload.releaseId ?? null,
           event.payload.legacy === true,
+          jointUsesOf(state, characterId),
         ),
       );
       // Practice entries follow transformed skills, so pair counts carry over.
@@ -1820,4 +1822,13 @@ export function characterEffectiveStats(
     holdingsOf(state, characterId),
     state.items,
   );
+}
+
+/** Times two of a character's skills were logged together (merge transforms, M5.2). */
+function jointUsesOf(state: CampaignState, characterId: string) {
+  const counts = skillPairCounts(state.practice, characterId);
+  return (x: string, y: string): number => {
+    const [a, b] = x < y ? [x, y] : [y, x];
+    return counts.find((p) => p.skills[0] === a && p.skills[1] === b)?.count ?? 0;
+  };
 }

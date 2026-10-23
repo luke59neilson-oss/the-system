@@ -406,3 +406,13 @@ DESIGN/ROADMAP; do not re-apply them.
     time ("in 20 minutes") or for "the start of the next session". Want
     either of those too? Default: in-game day only (D159).
     Answer:
+
+61. **A merge offered at an evolution.** M5.2 lets the GM offer a ready
+    merge as part of an evolution option: the two skills become one new
+    skill when the player picks that option. It counts as the one merge of
+    the grade being left (so a character who merged earlier in that grade
+    cannot get another at the evolution), and the merged skill is then
+    re-rated with the rest at the *next* evolution, not this one. Should an
+    evolution merge count against the new grade instead? Default: the grade
+    being left (D168).
+    Answer:

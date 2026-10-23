@@ -562,6 +562,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
                 skill: t.skill,
                 name: t.name,
                 rarity: t.rarity,
+                ...(t.merge === undefined ? {} : { merge: t.merge }),
               })),
               classWeights: o.classWeights === null ? null : copyRecord(o.classWeights, statIds),
               statBonus: copyRecord(o.statBonus, statIds),

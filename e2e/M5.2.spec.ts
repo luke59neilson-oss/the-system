@@ -3,8 +3,9 @@ import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
-// M5.2 evolution builder (DESIGN §2, §6; in progress): options with a
-// one-time bonus, re-rating per skill, checked by the engine, released.
+// M5.2 evolution builder (DESIGN §2, §6): options with a one-time bonus,
+// transforms, re-rating per skill, profession offers, checked by the engine,
+// released; the selection warning; withdrawing an untaken offer.
 
 const GM_KEY = 'e2e-gm-key-m52-0123456789abcdef52';
 const shots = path.resolve(import.meta.dirname, '../docs/screens/M5.2');
@@ -90,5 +91,108 @@ test('the GM builds and releases an evolution with re-rating', async ({ browser 
   await form.getByRole('button', { name: 'Release evolution' }).click();
   await expect(builder.getByRole('status')).toHaveText('Evolution released to Sultan');
   await expect(builder.getByTestId('evolution-released')).toContainText('[Storm Hunter]');
+
+  // Sultan's player chooses it: the bonus and the re-rating land.
+  const player = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  const playerErrors = watchErrors(player);
+  await player.goto(server.url);
+  await player.getByRole('link', { name: /Sultan/ }).click();
+  const pending = player.getByTestId('evolution-pending');
+  await pending.getByRole('button', { name: '[Evolve]' }).click();
+  const dialog = player.getByTestId('evolution');
+  const path1 = dialog.getByRole('listitem', { name: '[Storm Hunter]' });
+  await expect(path1.getByTestId('evolution-bonus')).toContainText('+5 Strength');
+  await expect(dialog.getByTestId('evolution-rerate')).toContainText(
+    /Archer.s Eye\] Common → Inferior/,
+  );
+  await dialog.getByRole('button', { name: 'Choose Storm Hunter' }).click();
+  await dialog.getByRole('button', { name: 'Evolve' }).click();
+  await expect(player.getByTestId('class')).toHaveText(/^\[Storm Hunter – lvl \d+\]$/);
+  await expect(player.getByTestId('skills-class')).toContainText(/Archer.s Eye \(Inferior\)/);
+  await expect(builder.getByTestId('no-evolution')).toBeVisible();
   expect(errors).toEqual([]);
+  expect(playerErrors).toEqual([]);
+});
+
+test('the release waits on a selection; transforms, profession offers and withdrawing one', async ({
+  browser,
+}) => {
+  const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  const errors = watchErrors(gm);
+  gm.on('dialog', (d) => void d.accept());
+  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
+  await gm.getByLabel('Campaign name').fill('Evolve');
+  await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await gm.getByRole('button', { name: 'Load demo campaign' }).click();
+  await expect(gm.getByTestId('demo-badge')).toBeVisible();
+  const builder = gm.locator('section[aria-labelledby="evolution-builder"]');
+
+  // Casper (F, Ranger 7) reaches the F top: the level 10 capstone is still owed.
+  await gmCommand(gm, {
+    type: 'xp.award',
+    track: 'class',
+    amount: 5000,
+    participants: [{ characterId: 'demo-casper' }],
+  });
+  await builder.getByLabel('Character').selectOption('demo-casper');
+  const form = builder.getByRole('form', { name: 'Evolution release' });
+  await expect(form.getByTestId('evolution-waits')).toHaveText(
+    'Waits on the capstone selection at lvl 10: the player must choose first.',
+  );
+  await expect(form.getByRole('button', { name: 'Release evolution' })).toBeDisabled();
+  await gmCommand(gm, {
+    type: 'selection.offer',
+    characterId: 'demo-casper',
+    level: 10,
+    options: [
+      { name: 'Hawk Step', rarity: 'rare' },
+      { name: 'Quiet Draw', rarity: 'common' },
+      { name: 'Trail Sign', rarity: 'common' },
+    ],
+  });
+  await gmCommand(gm, {
+    type: 'selection.choose',
+    characterId: 'demo-casper',
+    level: 10,
+    skill: 'Quiet Draw',
+  });
+  await expect(form.getByTestId('evolution-waits')).toHaveCount(0);
+
+  const option = form.getByRole('group', { name: 'Option 1' });
+  await option.getByLabel('Class name').fill('Pathfinder');
+  await option.getByRole('button', { name: 'Add transform' }).click();
+  const row = option.getByRole('group', { name: 'Transform 1' });
+  const skill = await row.getByLabel('Skill').inputValue();
+  await row.getByLabel('New name').fill('Pathfinder’s Eye');
+  await row.getByLabel('Rarity').selectOption('rare');
+  await form.getByLabel(/Professions to offer/).fill('Cook\nAlchemist');
+  await expect(form.getByTestId('release-problem')).toHaveCount(0);
+  await builder.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await gm.screenshot({ path: path.join(shots, 'gm-evolution-transform-1366x768.png') });
+  await form.getByRole('button', { name: 'Release evolution' }).click();
+  await expect(builder.getByRole('status')).toHaveText('Evolution released to Casper');
+
+  // The GM withdraws one untaken offer from the waiting release.
+  const offers = builder.getByRole('list', { name: 'Untaken profession offers' });
+  await expect(offers).toContainText('Casper: [Cook]');
+  await offers.getByRole('button', { name: 'Withdraw Alchemist from Casper' }).click();
+  await expect(offers).not.toContainText('Alchemist');
+
+  const player = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  const playerErrors = watchErrors(player);
+  await player.goto(server.url);
+  await player.getByRole('link', { name: /Casper/ }).click();
+  await player.getByTestId('evolution-pending').getByRole('button', { name: '[Evolve]' }).click();
+  const dialog = player.getByTestId('evolution');
+  await expect(dialog).toContainText(`[${skill}`);
+  await expect(dialog).toContainText('→ [Pathfinder’s Eye (Rare)]');
+  await dialog.getByRole('button', { name: 'Choose Pathfinder' }).click();
+  const profession = dialog.getByLabel('Profession');
+  await expect(profession.locator('option')).toHaveText(['None for now', 'Cook']);
+  await dialog.getByRole('button', { name: 'Evolve' }).click();
+  await expect(player.getByTestId('skills-class')).toContainText('[Pathfinder’s Eye (Rare)]');
+  // "None for now": Cook stays offered and withdrawable.
+  await expect(offers).toContainText('Casper: [Cook]');
+  expect(errors).toEqual([]);
+  expect(playerErrors).toEqual([]);
 });

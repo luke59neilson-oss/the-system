@@ -396,7 +396,15 @@ export const EVENT_PAYLOAD_SCHEMAS = {
           className: nonBlank,
           description: z.string().trim().max(2000),
           transforms: z
-            .array(z.strictObject({ skill: nonBlank, name: nonBlank, rarity: recordId }))
+            .array(
+              z.strictObject({
+                skill: nonBlank,
+                name: nonBlank,
+                rarity: recordId,
+                /** A second skill merged in and consumed (M5.2); optional, additive. */
+                merge: nonBlank.optional(),
+              }),
+            )
             .max(10),
           classWeights: statValues.nullable(),
           /** One-time stat bonus on choosing this option (MQ.1, D98; v2). */

@@ -247,7 +247,13 @@ export function describeEvent(
         : offered
           ? ', no profession for now'
           : '';
-      add('evolution', `${who(id)} evolved into ${line(now.className)}${grade}${prof}`);
+      // A merge offered as part of the evolution (M5.2) is a notable event too.
+      const chosen = was?.evolution?.options.find((o) => o.id === event.payload.optionId);
+      const merged = (chosen?.transforms ?? [])
+        .filter((t) => t.merge !== undefined)
+        .map((t) => `, merged ${line(t.skill)} + ${line(t.merge ?? '')} into ${line(t.name)}`)
+        .join('');
+      add('evolution', `${who(id)} evolved into ${line(now.className)}${grade}${prof}${merged}`);
       break;
     }
     case 'skill.upgraded': {
