@@ -383,7 +383,7 @@ work: Q44–Q48 and Q52.
   library entry for its current name and rarity (disabled when there is
   none). *Accept:* engine tests for an upgrade with and without hand-written
   text and for reconnecting; e2e on the form.
-- [ ] **MR.A Batch acceptance and review.** The batch's e2e specs and the full
+- [x] **MR.A Batch acceptance and review.** The batch's e2e specs and the full
   suite green; `fable` review; then "Preview ready" (LOOP §8.2).
 
 ## M1 (continued) — Rules engine

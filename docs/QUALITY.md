@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** 4cf9f1b (2026-10-23, C) · **Next rotation:** D
+**Last sweep:** 34f6f14 (2026-10-23, D) · **Next rotation:** A
 
 ## Lenses and rotation
 
@@ -96,6 +96,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-23 03:10 | C, 520f6ce..4cf9f1b | Rules · haiku | 0 | 1 | 2 | 1 M (QF.12: no golden uses the new rules flags) | 0 | 154k |
 | 2026-10-23 03:25 | C, 520f6ce..4cf9f1b | Tests · sonnet | 0 | 1 | 6 | 6 L to Backlog; the M (M4.1/M4.2/MQ.13 time out at 4 workers on 2 CPUs) is load, as QF.8 (Flakes) | 1 M | 102k |
 | 2026-10-23 03:25 | C, 520f6ce..4cf9f1b | UX · fable | 0 | 0 | 5 | 5 L to Backlog | 0 | 152k |
+| 2026-10-23 09:16 | D, 4cf9f1b..34f6f14 | Rules · sonnet | 0 | 2 | 1 | 2 M, both also found by the MR.A review and fixed there (stale re-rating D155; `rerate` golden); L to Backlog | 0 | 99k |
+| 2026-10-23 09:16 | D, 4cf9f1b..34f6f14 | Boundaries · fable | 0 | 0 | 1 | L to Backlog (off-lens) | 0 | 166k |
+| 2026-10-23 09:16 | D, 4cf9f1b..34f6f14 | UX · haiku | 0 | 0 | 3 | 3 L to Backlog | 0 | 126k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -202,3 +205,7 @@ reviewers ran 15–20 minutes each in the background.
 - Tests (QF.7 review): the failed-fsync test does not pin the log's bytes after the refusals; the undo path where ftruncate succeeds and its fsync fails is untested; a short write that does not throw is untested.
 - Boundaries (QF.9 review): a non-party player with a trade id gets the reducer's `only "kim" can answer`; an accept failure tells the counterparty the proposer no longer has their offer; a proposal's `get` ids reach the counterparty as bare ids (the proposer's choice, not a probe); items from declined trades stay "seen" for good.
 - Tests (QF.12 review): the `libraryByRarity` pin in `defaults.jsonl` shows as a replay rejection, not a state diff.
+- Rules (sweep D): after the MR.3 overflow migration, undoing an earlier XP award that fed a banked track is refused with "a later event depends on it" and no hint that the migration is why (`reducer.ts` `rules.migrated`).
+- Boundaries (sweep D, off-lens): `migrateOnLoad` (`apps/server/src/migrate.ts` ~14-24) does not close the store when the migration throws, so a failed demo switch keeps the lock and every later switch gets 409 until restart; wrap in try/catch and `store.close()`.
+- UX (sweep D): the GM Skill text form keeps "Library text in use"/"Skill text saved" after the GM switches character or skill (`GmScreen.tsx` SkillText); a disabled Use library text explains itself only by `title=`; `AwardXp` swallows a `previewXpAward` throw and hides the lost-XP warning.
+- UX (MR.A round 2): for a re-rated copy whose old-rarity entry is missing, the Skill text form says "No library entry for this rarity." while Use library text is enabled.

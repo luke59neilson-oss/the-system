@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M3, MS and MQ done; QF.1–QF.12 done; M4.1–M4.4 done; MR.1–MR.3 done; Preview ready: Actions → Release → Run workflow (MQ)
-**Next item:** MR.4 (resume wip/MR.4), then MR.A
+**Status:** in progress: M0–M3, MS, MQ and MR done; QF.1–QF.12 done; M4.1–M4.4 done; Preview ready: Actions → Release → Run workflow (MR)
+**Next item:** M4.5 Party dashboard
 **Blockers:** none
 
 ## Run log
@@ -712,5 +712,15 @@ next item, blockers. -->
 - Tests: 895/896 unit on wip/MR.4 (the generator one above). e2e MR.4, MQ.12, M3.5, MR.1 green. Engine coverage not re-measured.
 - Open `wip/*` branches: wip/MR.4 (unfinished).
 - Next item: finish MR.4, then MR.A (fable review, then Preview ready).
+- Blockers: none.
+
+### Run a6822bf5 · 2026-10-23 09:08–09:53 UTC (ended at minute 45, not one of LOOP §5.5's reasons: the MR.A round-2 review came back at minute 42, too late to begin M4.5 usefully before the 44 hand-off)
+- Preflight: `add_repo` not offered; repo already cloned (local main unrelated to origin/main, reset to origin/main e9d8280). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewers on sonnet, fable and haiku work (blocking; four ran concurrently). No new answers. CI on main: latest completed 75e26f3 green. Hour 09: quality sweep D.
+- MR.4 finished: the property walk now reaches an accepted `skill.useLibraryText` (the library stream gives hand-written copies an entry with text at their name and rarity); round-1 fixes verified myself (round 2 not required); merged wip/MR.4 (34f6f14). **Checked.**
+- Sweep D (4cf9f1b..34f6f14; Rules · sonnet, Boundaries · fable, UX · haiku): 0 High, 2 Medium (both confirmed; the same two the MR.A review found, fixed under MR.A), 5 Lows to Backlog. No new QF items.
+- MR.A: full e2e suite green locally (45 + 5 latency, 9.5 min). Fable round 1: 0 H, 4 M → fixed in e453b15 (stale re-rating dropped when a skill's rarity changes before the choice, D155; Use library text for re-rated copies, D156; new `rerate` golden; Identify tier kept as the open question's default). Round 2: 0 H, 0 M, 2 L (one accepted in D155, one to Backlog). **Checked.** Preview due: "Preview ready (MR)" in Status.
+- Tests: 900 unit (`npm run check` green); e2e MR.1, MR.4, M3.5, M3.13 green after the fixes. Engine coverage not re-measured.
+- Open `wip/*` branches: none new (wip/MR.4 merged).
+- Next item: M4.5 Party dashboard.
 - Blockers: none.
 
