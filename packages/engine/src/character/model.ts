@@ -364,3 +364,29 @@ export function takeOfferedProfession(
   }
   return grantProfession(rules, character, profession);
 }
+
+/**
+ * The GM withdraws an untaken profession offer (M5.2, MQ.6 review): from the
+ * Professions tab and from a pending evolution release. Refused once the
+ * character has a profession (the list is locked) or when it was not offered.
+ */
+export function withdrawProfessionOffer(character: Character, profession: string): Character {
+  if (character.profession !== null) {
+    throw new CharacterRuleError(
+      `${character.name} already has the profession [${character.profession}]; the offers are locked`,
+    );
+  }
+  const pending = character.evolution;
+  const inRelease = pending?.professions.includes(profession) ?? false;
+  if (!character.professionOffers.includes(profession) && !inRelease) {
+    throw new CharacterRuleError(`"${profession}" is not offered to ${character.name}`);
+  }
+  return {
+    ...character,
+    professionOffers: character.professionOffers.filter((p) => p !== profession),
+    evolution:
+      pending && inRelease
+        ? { ...pending, professions: pending.professions.filter((p) => p !== profession) }
+        : pending,
+  };
+}

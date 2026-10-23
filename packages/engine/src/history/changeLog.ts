@@ -77,6 +77,7 @@ export const CHANGE_LOG_PHRASES: Readonly<Record<string, string>> = {
   'character.statsSet': 'stats set by the GM',
   'character.professionGranted': 'profession offered',
   'profession.chosen': 'profession chosen',
+  'profession.offerWithdrawn': 'profession offer withdrawn',
   'freePoints.assigned': 'free points assigned',
   'freePoints.overridden': 'free points changed by the GM',
   'skill.described': 'skill text edited',

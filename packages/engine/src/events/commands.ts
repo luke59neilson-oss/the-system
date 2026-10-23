@@ -45,6 +45,8 @@ export type Command =
   | { type: 'character.grantProfession'; characterId: string; profession: string }
   /** Player: take one of the professions the GM offered (MQ.6). */
   | { type: 'profession.choose'; characterId: string; profession: string }
+  /** GM only: withdraw an untaken profession offer (M5.2). */
+  | { type: 'profession.withdrawOffer'; characterId: string; profession: string }
   | { type: 'title.award'; characterId: string; title: string }
   | { type: 'character.setPools'; characterId: string; pools: Readonly<Record<string, number>> }
   | { type: 'character.setStats'; characterId: string; stats: Readonly<Record<string, number>> }
@@ -473,6 +475,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('character.setPortrait') }),
   z.object({ type: z.literal('character.grantProfession') }),
   z.object({ type: z.literal('profession.choose') }),
+  z.object({ type: z.literal('profession.withdrawOffer') }),
   z.object({ type: z.literal('title.award') }),
   z.object({ type: z.literal('character.setPools'), pools: anyRecord }),
   z.object({ type: z.literal('character.setStats'), stats: anyRecord }),
@@ -729,6 +732,11 @@ function toEvent(
     case 'character.grantProfession':
       return {
         type: 'character.professionGranted',
+        payload: { characterId: command.characterId, profession: command.profession },
+      };
+    case 'profession.withdrawOffer':
+      return {
+        type: 'profession.offerWithdrawn',
         payload: { characterId: command.characterId, profession: command.profession },
       };
     case 'profession.choose':

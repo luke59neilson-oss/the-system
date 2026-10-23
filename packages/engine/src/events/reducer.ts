@@ -4,6 +4,7 @@ import {
   createCharacter,
   grantProfession,
   takeOfferedProfession,
+  withdrawProfessionOffer,
   poolMax,
   type Character,
 } from '../character';
@@ -724,6 +725,13 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       return withCharacter(
         state,
         rule(event, () => takeOfferedProfession(state.rules, character, event.payload.profession)),
+      );
+    }
+    case 'profession.offerWithdrawn': {
+      const character = characterOf(state, event, event.payload.characterId);
+      return withCharacter(
+        state,
+        rule(event, () => withdrawProfessionOffer(character, event.payload.profession)),
       );
     }
     case 'title.awarded': {

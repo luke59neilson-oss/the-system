@@ -1643,6 +1643,34 @@ describe('tailored professions (MQ.6, DESIGN §2)', () => {
     expect(char(c).professionOffers).toEqual(['Smith', 'Cook']);
   });
 
+  it('the GM withdraws an untaken offer (M5.2); players cannot; refused once locked', () => {
+    const withdraw = (profession: string): Command => ({
+      type: 'profession.withdrawOffer',
+      characterId: 'jake',
+      profession,
+    });
+    // While the release waits, the offer leaves the release itself.
+    let c = ok(offeredAtE(), withdraw('Cook'));
+    expect(char(c).evolution?.professions).toEqual(['Smith']);
+    expect(
+      reject(
+        c,
+        { type: 'evolution.choose', characterId: 'jake', optionId: 'o1', profession: 'Cook' },
+        player('jake'),
+      ),
+    ).toMatch(/not an offered profession/);
+    // After "none for now", it leaves the Professions tab.
+    c = ok(declined(), withdraw('Smith'));
+    expect(char(c).professionOffers).toEqual(['Cook']);
+    expect(reject(c, take('Smith'), player('jake'))).toMatch(/not one of your offered/);
+    expect(reject(c, withdraw('Smith'))).toMatch(/not offered to Jake/);
+    expect(reject(declined(), withdraw('Cook'), player('jake'))).toMatch(/GM|not allowed|players/i);
+    const undone = ok(c, { type: 'event.undo', eventId: c.events.at(-1)?.id ?? '' });
+    expect(char(undone).professionOffers).toEqual(['Smith', 'Cook']);
+    const locked = ok(declined(), take('Cook'), player('jake'));
+    expect(reject(locked, withdraw('Smith'))).toMatch(/offers are locked/);
+  });
+
   it('the offers reach only their owner', () => {
     const state = declined().state;
     if (!state) throw new Error('no state');

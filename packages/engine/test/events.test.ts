@@ -913,6 +913,7 @@ describe('property: replay equals incremental state', () => {
     const unreachable = new Set([
       'character.professionGranted',
       'profession.chosen',
+      'profession.offerWithdrawn',
       'skill.merged',
       'selection.offered',
       'selection.chosen',
