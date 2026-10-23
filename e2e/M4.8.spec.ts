@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
@@ -11,6 +11,7 @@ let dataDir: string;
 let server: RunningServer;
 
 test.beforeEach(async () => {
+  mkdirSync(path.resolve(import.meta.dirname, '../docs/screens/M4.8'), { recursive: true });
   dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-e2e-m48-'));
   server = await startBuiltServer({ GM_KEY }, { dataDir });
 });
@@ -46,4 +47,11 @@ test('the GM undoes a broadcast from the change log', async ({ page }) => {
   await expect(log.getByRole('alert')).toBeVisible();
   await log.getByLabel('Filter').fill('only jake');
   await expect(log.getByRole('listitem')).toHaveCount(1);
+  await log.getByLabel('Who').selectOption('player');
+  await expect(log.getByRole('listitem')).toHaveCount(0);
+  await log.getByLabel('Who').selectOption('all');
+  await log.getByLabel('Filter').fill('');
+  await log.screenshot({
+    path: path.resolve(import.meta.dirname, '../docs/screens/M4.8/gm-change-log-1366x768.png'),
+  });
 });
