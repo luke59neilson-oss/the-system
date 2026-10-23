@@ -159,7 +159,11 @@ export function MarksReview({ client, state }: { client: LiveClient; state: Camp
                       <li key={p.skills.join('+')}>
                         Used together: [{p.skills[0]}] + [{p.skills[1]}] ×{p.session} this session ·{' '}
                         {Math.min(p.total, p.needed)}/{p.needed} for a merge
-                        {p.total >= p.needed ? ' (merge alert)' : ''}
+                        {p.total >= p.needed
+                          ? p.rarityOk
+                            ? ' (merge alert)'
+                            : ' (joint uses reached; both skills must reach the merge rarity first)'
+                          : ''}
                       </li>
                     ))}
                   </ul>

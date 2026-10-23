@@ -51,6 +51,8 @@ export interface ReviewPair {
   readonly total: number;
   /** Joint uses a merge needs (rules). */
   readonly needed: number;
+  /** Both skills are at least the merge minimum rarity (DESIGN §6). */
+  readonly rarityOk: boolean;
 }
 
 /** A skill with the marks for its next rarity that the grade allows now. */
@@ -139,6 +141,10 @@ export function marksReview(state: CampaignState, sessionId: string): CharacterM
     const owned = new Set(character.skills.map((k) => k.name));
     const lost = [...new Set(mine.flatMap((e) => e.skills))].filter((n) => !owned.has(n));
     const totals = skillPairCounts(state.practice, id);
+    const ladder = rules.skills.rarities.map((r) => r.id);
+    const min = ladder.indexOf(rules.skills.merge.minRarity);
+    const rarityOf = new Map(character.skills.map((k) => [k.name, k.rarity]));
+    const mergeable = (name: string) => ladder.indexOf(rarityOf.get(name) ?? '') >= min;
     const pairs = skillPairCounts(session, id)
       .filter((p) => owned.has(p.skills[0]) && owned.has(p.skills[1]))
       .map((p) => ({
@@ -148,6 +154,7 @@ export function marksReview(state: CampaignState, sessionId: string): CharacterM
           totals.find((t) => t.skills[0] === p.skills[0] && t.skills[1] === p.skills[1])?.count ??
           p.count,
         needed: rules.skills.merge.requiredJointUses,
+        rarityOk: mergeable(p.skills[0]) && mergeable(p.skills[1]),
       }));
     return [{ characterId: id, name: character.name, used, unused, upgrades, banked, pairs, lost }];
   });
