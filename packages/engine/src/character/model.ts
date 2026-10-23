@@ -22,7 +22,8 @@ export interface CharacterSkill {
   readonly flavor: string | null;
   /**
    * The GM wrote this copy's text by hand (MQ.12): library edits no longer
-   * reach it. Absent = false, so stored states keep their shape.
+   * reach it, nor (MR.4) upgrades, until the GM uses `skill.useLibraryText`.
+   * Absent = false, so stored states keep their shape.
    */
   readonly textEdited?: true;
   /**

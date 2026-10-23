@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState, useSyncExternalStore, type FormEvent } fr
 import {
   DEFAULT_RULES,
   STARTER_CLASSES,
+  entryForSkill,
   largestRemainderSplit,
+  librarySkill,
   previewXpAward,
   raceLevel,
   type CampaignState,
@@ -559,6 +561,32 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
       description: shownDescription,
       flavor: shownFlavor,
     });
+    setReconnected(false);
+    if (r.ok) setDraftFor(null);
+  };
+  // MR.4 (L17): a hand-written copy can be handed back to the library entry for
+  // its current name and rarity; the button is disabled when there is none.
+  const byRarity = state.rules.skills.libraryByRarity;
+  // The entry Use library text would reconnect to (current rarity), and the one
+  // an unedited copy follows now (a re-rated copy keeps its old text rarity).
+  const entry =
+    current &&
+    librarySkill(state.skillLibrary, current.name, byRarity ? current.rarity : undefined);
+  const reconnectable =
+    entry !== undefined &&
+    entry !== null &&
+    (entry.description.trim() !== '' || entry.flavor.trim() !== '');
+  const followed = current && entryForSkill(state.rules, state.skillLibrary, current);
+  const handWritten = current?.textEdited === true;
+  const [reconnected, setReconnected] = useState(false);
+  const reconnect = async () => {
+    if (!character || !current) return;
+    const r = await run({
+      type: 'skill.useLibraryText',
+      characterId: character.id,
+      skill: current.name,
+    });
+    setReconnected(r.ok);
     if (r.ok) setDraftFor(null);
   };
   return (
@@ -614,16 +642,44 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
           maxLength={1000}
         />
       </label>
-      {state.rules.skills.libraryByRarity && (
+      {byRarity && (
         <p className="muted hint">
-          Saving here makes this copy the character’s own: later library edits skip it until it
-          reaches a rarity the library has text for.
+          {state.rules.skills.handTextSurvivesUpgrade
+            ? 'Saving here makes this copy the character’s own: library edits and upgrades keep its text until you press Use library text.'
+            : 'Saving here makes this copy the character’s own: later library edits skip it until it reaches a rarity the library has text for.'}
+        </p>
+      )}
+      {byRarity && current && (
+        <p className="muted" data-testid="skill-text-source">
+          {handWritten
+            ? 'Hand-written text.'
+            : followed
+              ? 'Follows the library entry.'
+              : 'No library entry for this rarity.'}
         </p>
       )}
       <button type="submit" disabled={busy || !current || unchanged}>
         Save skill text
       </button>
-      <Outcome result={result} okText="Skill text saved" />
+      {byRarity && (
+        <button
+          type="button"
+          className="secondary"
+          style={{ marginLeft: 8 }}
+          disabled={busy || !current || !handWritten || !reconnectable}
+          title={
+            !handWritten
+              ? 'This copy already follows the library'
+              : !reconnectable
+                ? 'The library has no entry with text for this skill at its rarity'
+                : 'Replace this copy’s text with the library entry’s and follow later edits'
+          }
+          onClick={() => void reconnect()}
+        >
+          Use library text
+        </button>
+      )}
+      <Outcome result={result} okText={reconnected ? 'Library text in use' : 'Skill text saved'} />
     </form>
   );
 }

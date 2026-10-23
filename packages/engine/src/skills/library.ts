@@ -142,11 +142,13 @@ export function syncCharacterSkills(
     );
     if (!fresh && !hit) return skill;
     const def = entryForSkill(rules, library, skill);
-    // A rarity change on a skill the character already had (mark upgrade,
-    // transform) takes the new rarity's entry text even over a hand edit: the
-    // GM's edit described the old rarity (DESIGN §6, MQ.A review).
+    // Before MR.4 (D133), a rarity change on a skill the character already had
+    // (mark upgrade, transform) took the new rarity's entry text even over a
+    // hand edit. Under `handTextSurvivesUpgrade` (L17) the hand text stays
+    // until the GM presses Use library text.
     const regraded =
       fresh &&
+      !rules.skills.handTextSurvivesUpgrade &&
       had.has(skill.name) &&
       rules.skills.libraryByRarity &&
       def &&
@@ -163,6 +165,39 @@ function withoutEditMark(skill: CharacterSkill): CharacterSkill {
   const { textEdited, ...rest } = skill;
   void textEdited;
   return rest;
+}
+
+/**
+ * MR.4 (L17): hands a hand-written copy back to the library. The copy follows
+ * the entry for its current name and rarity again (a re-rating's text rarity
+ * is dropped), takes that entry's text (a blank field keeps the copy's own),
+ * and later library edits reach it. Refused when the copy is not hand-written
+ * or the library has no entry for it.
+ */
+export function useLibraryText(
+  rules: RulesConfig,
+  character: Character,
+  name: string,
+  library: Readonly<Record<string, SkillDef>>,
+): Character {
+  const index = character.skills.findIndex((s) => s.name === name);
+  const skill = character.skills[index];
+  if (!skill) throw new CharacterRuleError(`${character.name} has no skill "${name}"`);
+  if (!skill.textEdited) throw new CharacterRuleError(`[${name}] already uses the library text`);
+  const def = librarySkill(
+    library,
+    skill.name,
+    rules.skills.libraryByRarity ? skill.rarity : undefined,
+  );
+  // An all-blank entry would leave the hand text in place but unmarked.
+  if (!def || (def.description.trim() === '' && def.flavor.trim() === '')) {
+    throw new CharacterRuleError(`The library has no entry with text for [${name}] at its rarity`);
+  }
+  const { textRarity, ...plain } = withoutEditMark(skill);
+  void textRarity;
+  const synced = syncSkillText(plain, def);
+  const skills = character.skills.map((s, i) => (i === index ? synced : s));
+  return { ...character, skills };
 }
 
 /** Fills a granted skill's empty description and flavour from its library entry. */

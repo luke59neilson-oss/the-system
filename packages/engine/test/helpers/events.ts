@@ -317,6 +317,27 @@ export function randomLibraryCommand(rand: () => number, c: Campaign): Command {
   const pick = <T>(items: readonly T[]): T => items[Math.floor(rand() * items.length)] as T;
   const defs = c.state?.skillLibraryOrder ?? [];
   const name = () => pick(['Identify', 'Basic Archery', 'basic stealth', 'Fireball', ' ']);
+  // MR.4: sometimes give a hand-written copy an entry with text at its own
+  // name and rarity (or fill that entry's text), so Use library text has
+  // something to reconnect to; otherwise random names and rarities rarely
+  // line up with a hand-written copy and the command is never accepted.
+  const handWritten = Object.values(c.state?.characters ?? {}).flatMap((ch) =>
+    ch.skills.filter((s) => s.textEdited),
+  );
+  if (handWritten.length && rand() < 0.3) {
+    const skill = pick(handWritten);
+    const entry = Object.values(c.state?.skillLibrary ?? {}).find(
+      (d) => d.rarity === skill.rarity && d.name.trim().toLowerCase() === skill.name.toLowerCase(),
+    );
+    return entry
+      ? { type: 'skillDef.edit', skillDefId: entry.id, description: 'Library text.' }
+      : {
+          type: 'skillDef.define',
+          name: skill.name,
+          rarity: skill.rarity,
+          description: 'Library text.',
+        };
+  }
   if (defs.length === 0 || rand() < 0.5) {
     return {
       type: 'skillDef.define',
@@ -439,6 +460,29 @@ function randomSkillCommand(
   }
   if (roll < 0.2) {
     return { type: 'skill.setUnique', characterId, skill: someSkill(), unique: rand() < 0.5 };
+  }
+  if (roll < 0.25) {
+    // MR.4: hand a copy back to the library; mostly a hand-written one, so
+    // accepted reconnects do not hinge on luck (refused without an entry).
+    const edited = Object.values(c.state?.characters ?? {}).flatMap((ch) =>
+      ch.skills
+        .filter(
+          (s) =>
+            s.textEdited &&
+            Object.values(c.state?.skillLibrary ?? {}).some(
+              (d) =>
+                d.rarity === s.rarity &&
+                d.name.trim().toLowerCase() === s.name.toLowerCase() &&
+                d.description.trim() + d.flavor.trim() !== '',
+            ),
+        )
+        .map((s) => [ch.id, s.name] as const),
+    );
+    if (rand() < (edited.length ? 0.6 : 0.05)) {
+      const [id, skill] =
+        edited.length && rand() < 0.9 ? pick(edited) : ([characterId, someSkill()] as const);
+      return { type: 'skill.useLibraryText', characterId: id, skill };
+    }
   }
   if (roll < 0.25) {
     return {

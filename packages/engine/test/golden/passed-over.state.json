@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 23,
+  "schemaVersion": 24,
   "name": "Golden: evolution rules (MQ.1)",
   "rules": {
     "configVersion": 1,
@@ -247,6 +247,7 @@
       "marksCarryOver": false,
       "marksResetOnUpgrade": false,
       "libraryByRarity": false,
+      "handTextSurvivesUpgrade": false,
       "merge": {
         "requiredJointUses": 3,
         "minRarity": "uncommon",

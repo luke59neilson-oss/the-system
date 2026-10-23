@@ -179,6 +179,14 @@ export const rulesConfigSchema = z
        * before it read false (name-only fill of empty text, D90).
        */
       libraryByRarity: z.boolean().default(false),
+      /**
+       * DESIGN §6 (MR.4, L17): a copy the GM hand-wrote keeps its text and its
+       * hand-written mark when the skill changes rarity, until the GM presses
+       * Use library text. Rules stored before it read false (D133: the new
+       * rarity's entry text replaces the hand text), so older campaigns replay
+       * as recorded.
+       */
+      handTextSurvivesUpgrade: z.boolean().default(false),
       merge: z.strictObject({
         requiredJointUses: positiveInt,
         minRarity: id,
