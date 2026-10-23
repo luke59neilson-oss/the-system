@@ -116,7 +116,8 @@ export function EvolutionChoice({
         <section className="evolution-rerate" data-testid="evolution-rerate">
           <p className="muted">
             Your skills are re-rated for {evolution.toGrade}-grade: same power, new label. Text and
-            mastery marks stay; the next upgrade costs the new rarity&rsquo;s marks. A skill a path
+            mastery marks stay; the next upgrade costs the new rarity&rsquo;s marks
+            {rules.marks.resetOnUpgrade ? ' and starts the skill again at 0' : ''}. A skill a path
             transforms follows that path instead
             {rules.marks.resetOnUpgrade ? ' and starts at 0 marks' : ''}.
           </p>

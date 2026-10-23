@@ -131,7 +131,7 @@ for (const viewport of [
     await page.getByTestId('evolution-pending').getByRole('button', { name: '[Evolve]' }).click();
     const dialog = page.getByTestId('evolution');
     await expect(dialog.getByTestId('evolution-rerate')).toContainText(
-      'A skill a path transforms follows that path instead and starts at 0 marks.',
+      'the next upgrade costs the new rarity’s marks and starts the skill again at 0. A skill a path transforms follows that path instead and starts at 0 marks.',
     );
     await dialog.getByRole('button', { name: 'Choose Hatchet Ranger' }).click();
     await expect(dialog.getByTestId('evolution-warnings')).toContainText(

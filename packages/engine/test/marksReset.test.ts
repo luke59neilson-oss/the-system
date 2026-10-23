@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { execute, type Campaign, type Command, type CommandContext } from '../src';
+import { defaultRules } from '../src/rules/load';
+import { markRules, marksAfterRarityChange } from '../src/skills/model';
 import { kit, rawRules, run, testContext } from './helpers/events';
 
 /** MR.2 (DESIGN §6, L15): every upgrade starts at 0 marks; only a re-rating keeps them. */
@@ -72,5 +74,22 @@ describe('every upgrade starts at 0 marks (MR.2)', () => {
   it('a downgrade at evolution keeps every mark', () => {
     const c = evolve(mark(base(), eye, 3), []);
     expect(skill(c, eye)).toMatchObject({ rarity: 'inferior', marks: 3 });
+  });
+});
+
+describe('the reset rule wins over carry-over (MR.2)', () => {
+  it('turns carry-over off and resets every rarity change', () => {
+    const rules = defaultRules();
+    const both = {
+      ...rules,
+      skills: { ...rules.skills, marksCarryOver: true, marksResetOnUpgrade: true },
+    };
+    const m = markRules(both);
+    expect(m.carryOver).toBe(false);
+    expect(m.resetOnUpgrade).toBe(true);
+    expect(marksAfterRarityChange(m, 'inferior', 'common', 10)).toBe(0);
+    expect(marksAfterRarityChange(m, 'common', 'common', 4)).toBe(0);
+    // A transform to a lower rarity is still a transform (D152); a re-rating keeps marks instead.
+    expect(marksAfterRarityChange(m, 'rare', 'common', 7)).toBe(0);
   });
 });
