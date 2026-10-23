@@ -113,6 +113,9 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   lootTables: 'gm',
   lootTableOrder: 'gm',
   lootLog: 'gm',
+  // M6.3: the ledger names reasons and every character's balance; a player
+  // learns of their own grants and fines through a notification.
+  ledger: 'gm',
   holdings: 'owner',
   trades: 'owner',
   tradeOrder: 'gm',

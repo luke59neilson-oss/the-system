@@ -60,6 +60,18 @@ export type SystemNotification =
       readonly items: readonly { readonly name: string; readonly count: number }[];
     }
   | {
+      /**
+       * The GM granted or fined currency (M6.3); only that character is told,
+       * with the GM's reason.
+       */
+      readonly kind: 'currency';
+      readonly characterId: string;
+      /** Signed change (a fine is negative). */
+      readonly amount: number;
+      readonly currencyName: string;
+      readonly reason: string;
+    }
+  | {
       /** A trade changed by the other party (M3.7); only the party who did not act is told. */
       readonly kind: 'trade';
       readonly characterId: string;
@@ -161,6 +173,16 @@ export function notificationsBetween(
       : undefined;
   if (lootGift && lootGift.characterId !== null && !isEmptyBundle(lootGift.bundle)) {
     out.push(giftNotice(after, lootGift.characterId, null, lootGift.bundle));
+  }
+  if (event?.type === 'holdings.adjusted' && event.payload.currency !== 0) {
+    const { characterId, currency, reason } = event.payload;
+    out.push({
+      kind: 'currency',
+      characterId,
+      amount: currency,
+      currencyName: after.rules.economy.currencyName,
+      reason,
+    });
   }
   if (event?.type === 'gift.given' && event.payload.to !== null) {
     const { characterId: giver, to, bundle } = event.payload;

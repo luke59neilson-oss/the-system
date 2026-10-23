@@ -42,6 +42,12 @@ export function notificationText(n: LiveNotification): string {
         parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0];
       return `You received ${what ?? 'a gift'} from ${n.from ?? 'the GM'}`;
     }
+    case 'currency': {
+      const why = n.reason.trim() === '' ? '' : `: ${n.reason.trim()}`;
+      return n.amount > 0
+        ? `You received ${n.amount} ${n.currencyName} from the GM${why}`
+        : `Fined ${-n.amount} ${n.currencyName} by the GM${why}`;
+    }
     case 'trade': {
       const who = n.other ?? 'The GM';
       switch (n.action) {

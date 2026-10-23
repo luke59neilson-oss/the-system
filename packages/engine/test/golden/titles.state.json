@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 27,
+  "schemaVersion": 28,
   "name": "Titles",
   "rules": {
     "configVersion": 1,
@@ -477,6 +477,7 @@
   "lootTables": {},
   "lootTableOrder": [],
   "lootLog": [],
+  "ledger": [],
   "skillLibrary": {},
   "skillLibraryOrder": [],
   "classLibrary": {},

@@ -439,3 +439,10 @@ DESIGN/ROADMAP; do not re-apply them.
     GM can keep Identify in the evolution builder's re-rating list (M5.A
     review).
     Answer:
+
+65. **Should players see their own currency ledger?** M6.3 keeps the ledger
+    (every grant, fine, gift, trade and loot with the balance after) on the
+    GM's console; a player sees their balance and a notice for each grant or
+    fine, with the GM's reason. Should players also get a "Credits history"
+    of their own entries? Default: no; the notices are in their history (D176).
+    Answer:

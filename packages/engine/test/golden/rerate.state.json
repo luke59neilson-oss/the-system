@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 27,
+  "schemaVersion": 28,
   "name": "Re-rating golden",
   "rules": {
     "configVersion": 1,
@@ -504,6 +504,7 @@
   "lootTables": {},
   "lootTableOrder": [],
   "lootLog": [],
+  "ledger": [],
   "skillLibrary": {
     "idc": {
       "id": "idc",

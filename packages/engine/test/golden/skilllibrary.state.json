@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 27,
+  "schemaVersion": 28,
   "name": "Skill library",
   "rules": {
     "configVersion": 1,
@@ -583,6 +583,7 @@
   "lootTables": {},
   "lootTableOrder": [],
   "lootLog": [],
+  "ledger": [],
   "skillLibrary": {
     "identify": {
       "id": "identify",

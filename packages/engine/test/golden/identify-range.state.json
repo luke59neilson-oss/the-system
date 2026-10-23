@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 27,
+  "schemaVersion": 28,
   "name": "Golden: Identify range",
   "rules": {
     "configVersion": 1,
@@ -484,6 +484,7 @@
   "lootTables": {},
   "lootTableOrder": [],
   "lootLog": [],
+  "ledger": [],
   "skillLibrary": {},
   "skillLibraryOrder": [],
   "classLibrary": {},

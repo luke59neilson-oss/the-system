@@ -37,6 +37,13 @@ export type LiveNotification =
       items: { name: string; count: number }[];
     }
   | {
+      kind: 'currency';
+      characterId: string;
+      amount: number;
+      currencyName: string;
+      reason: string;
+    }
+  | {
       kind: 'trade';
       characterId: string;
       action: 'proposed' | 'accepted' | 'declined' | 'cancelled';

@@ -20,6 +20,10 @@ import {
   validateLootTable,
   lootBundle,
   LOOT_LOG_LIMIT,
+  LEDGER_LIMIT,
+  ledgerEntries,
+  type LedgerCause,
+  type LedgerEntry,
   type Bundle,
   type Holdings,
   type ItemDef,
@@ -66,7 +70,7 @@ import {
 import { EventRejectedError, type DomainEvent } from './envelope';
 
 /** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 27;
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 28;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -113,6 +117,8 @@ export interface CampaignState {
   readonly lootTableOrder: readonly string[];
   /** The latest loot rolls, oldest first (at most LOOT_LOG_LIMIT). GM-only. */
   readonly lootLog: readonly LootRecord[];
+  /** Currency movements per character, oldest first (latest LEDGER_LIMIT; M6.3). GM-only. */
+  readonly ledger: readonly LedgerEntry[];
   /** Skill library by id (M4.1). GM-only: fills granted skills' text by name. */
   readonly skillLibrary: Readonly<Record<string, SkillDef>>;
   /** Skill library ids in definition order. */
@@ -319,7 +325,48 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
   const next = applyEventRaw(state, event);
   return state === null
     ? next
-    : clampToEffective(state, fillFromLibrary(state, keepRerateCurrent(state, next), event), event);
+    : withLedger(
+        state,
+        clampToEffective(
+          state,
+          fillFromLibrary(state, keepRerateCurrent(state, next), event),
+          event,
+        ),
+        event,
+      );
+}
+
+/** What the ledger records about an event that may move currency (M6.3); null for any other. */
+function ledgerCause(before: CampaignState, event: DomainEvent): LedgerCause | null {
+  switch (event.type) {
+    case 'holdings.adjusted':
+      return { type: event.type, reason: event.payload.reason };
+    case 'gift.given':
+      return { type: event.type, from: event.payload.characterId, to: event.payload.to };
+    case 'trade.accepted': {
+      const id = event.payload.tradeId;
+      const trade = hasOwn(before.trades, id) ? before.trades[id] : undefined;
+      return trade ? { type: event.type, trade } : null;
+    }
+    case 'loot.rolled':
+      return { type: event.type };
+    default:
+      return null;
+  }
+}
+
+/** M6.3: appends a ledger entry for each character whose balance the event changed. */
+function withLedger(
+  before: CampaignState,
+  after: CampaignState,
+  event: DomainEvent,
+): CampaignState {
+  if (before.holdings === after.holdings) return after;
+  const cause = ledgerCause(before, event);
+  if (cause === null) return after;
+  const added = ledgerEntries(before.holdings, after.holdings, after.characterOrder, event, cause);
+  if (added.length === 0) return after;
+  return { ...after, ledger: [...after.ledger, ...added].slice(-LEDGER_LIMIT) };
 }
 
 /**
@@ -683,6 +730,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       lootTables: {},
       lootTableOrder: [],
       lootLog: [],
+      ledger: [],
       skillLibrary: {},
       skillLibraryOrder: [],
       classLibrary: {},

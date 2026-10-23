@@ -2359,3 +2359,56 @@ ol.change-log li.undone .change-text {
 .loot-tables form > label input {
   max-width: 28em;
 }
+
+/* M6.3 currency window */
+.currency-who {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  border: 0;
+  padding: 0;
+  margin: 0 0 10px;
+}
+.currency-balance {
+  margin: 0;
+}
+.currency-fields label:first-child input {
+  width: 8em;
+}
+.currency-each {
+  align-self: center;
+  margin-top: 6px;
+}
+.currency-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+.currency-fields label:last-of-type {
+  flex: 1 1 100%;
+}
+.currency-actions {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+}
+.ledger {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.ledger th,
+.ledger td {
+  text-align: left;
+  padding: 4px 8px 4px 0;
+  border-bottom: 1px solid rgba(156, 194, 255, 0.18);
+  vertical-align: top;
+}
+.ledger-in {
+  color: var(--ok);
+}
+.ledger-out {
+  color: var(--err);
+}

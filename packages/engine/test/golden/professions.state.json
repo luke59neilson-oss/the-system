@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 27,
+  "schemaVersion": 28,
   "name": "Golden: tailored professions (MQ.6)",
   "rules": {
     "configVersion": 1,
@@ -635,6 +635,7 @@
   "lootTables": {},
   "lootTableOrder": [],
   "lootLog": [],
+  "ledger": [],
   "skillLibrary": {},
   "skillLibraryOrder": [],
   "classLibrary": {},

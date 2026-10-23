@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 27,
+  "schemaVersion": 28,
   "name": "Loot",
   "rules": {
     "configVersion": 1,
@@ -562,6 +562,18 @@
           "pelt": 2
         }
       }
+    }
+  ],
+  "ledger": [
+    {
+      "id": "l6",
+      "at": "2026-10-23T22:00:05.000Z",
+      "characterId": "jake",
+      "delta": 20,
+      "balance": 20,
+      "kind": "loot",
+      "other": null,
+      "reason": ""
     }
   ],
   "skillLibrary": {},
