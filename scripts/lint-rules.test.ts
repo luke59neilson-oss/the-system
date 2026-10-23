@@ -95,6 +95,14 @@ describe('engine purity lint', () => {
       'const o: Record<string, number> = {};\nexport const a = o[String(Date)];',
       'no-restricted-syntax',
     ],
+    ['Date.call', 'export const a = Date.call(null);', 'no-restricted-syntax'],
+    ['Date.bind', 'export const a = Date.bind(null)();', 'no-restricted-syntax'],
+    [
+      'Math.apply',
+      'export const a = Math.max.apply(null, [1]) + Math.apply;',
+      'no-restricted-syntax',
+    ],
+    ['constructor.now', 'export const a = new Date(0).constructor.now();', 'no-restricted-syntax'],
   ])('rejects %s', async (_label, code, ruleId) => {
     expect(await ruleIds(code, enginePath)).toContain(ruleId);
   });
