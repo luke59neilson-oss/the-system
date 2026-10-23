@@ -258,7 +258,7 @@ the rest follow in file order. Each gets its own §6 review.
   is refused below Epic and accepted at Epic, through `execute`; the builder
   model prompts Epic for that pair; `practice.review` of one of two entries
   leaves the other unreviewed; each named mutation fails a test.
-- [ ] **QF.17 Table-view panes show every DING.** Sweep B (UX, 2026-10-23):
+- [x] **QF.17 Table-view panes show every DING.** Sweep B (UX, 2026-10-23):
   `PaneLatest` (`PlayerScreen.tsx` ~966) pins only `kind === 'level'`, so a
   skill upgrade, merge or profession DING never shows in the GM's Table-view
   pane. *Accept:* the pane uses the same set as the history's DING filter; an

@@ -721,3 +721,6 @@
 ## 2026-10-23 · Quality sweep B (41be1ee..d6fedf8) · haiku / fable / sonnet
 
 - No fixes made in code from the sweep beyond QF.16 (above); QF.17 queued. Rows in QUALITY.md.
+
+## 2026-10-23 · QF.17 Table-view panes show every DING · sonnet
+- Round 1 (5ce7bbd..e05d943): 0 H / 0 M / 3 L. Lows: e2e covers only the skill-upgrade kind (profession and merge rely on the `isDing` unit test); legibility checked at one pane only; re-captured screenshots changed byte-wise. No fixes needed; Lows noted, not queued.
