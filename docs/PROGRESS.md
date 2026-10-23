@@ -695,10 +695,11 @@ next item, blockers. -->
 - Next item: MR.2 (resume wip/MR.2), then MR.3, MR.4, MR.A.
 - Blockers: none.
 
-### Run 453f2ecb · 2026-10-23 07:09–07:56 UTC (ended at minute 47: both open items finished and reviewed; MR.4 would not start before the 44 hand-off, so the run closed out early with nothing on a wip branch)
+### Run 453f2ecb · 2026-10-23 07:09–07:58 UTC (ended at minute 48; both items finished by the 44 hand-off, close-out 44–48)
 - Preflight: `add_repo` not offered; repo already cloned (local main stale, reset to origin/main 244f552). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewers on sonnet work (blocking). No new answers. CI on main: latest completed f4d07d9 red in `desktop-smoke` only (known splash flake in QUALITY.md); this run's pushes re-run it.
 - MR.2 Every upgrade starts at 0 marks (D152): resumed wip/MR.2; evolution warnings and the re-rate note say a transformed skill starts at 0; e2e `MR.2.spec.ts` + screenshots; M3.13 spec follows the new wording. Sonnet 1 round: 0 H, 0 M, 6 L (3 fixed). Box checked.
 - MR.3 XP overflow for every campaign (D153): `rules.migrate` / `rules.migrated` (GM, logged, not undoable) run by the server when a campaign opens (`migrateOnLoad`); banked XP re-applied under overflow; state schema v23, goldens re-recorded plus `rules-migration` golden; session log line; e2e `MR.3.spec.ts` (stored banking campaign → GM XP form warns 300 lost). Sonnet 2 rounds: R1 0 H 3 M (2 fixed, 1 kept with reason), R2 clean. Box checked.
+- CI on main: 738d8be (MR.2 merge) green; 75e26f3 (MR.3 merge) running at release.
 - Tests: 885 unit. e2e: full suite at `--workers=2` after MR.2 (42 passed, M3.3 failed under load and passed alone: known flake); MR.3, MQ.A, MR.1, MR.2, M3.13 green. Engine coverage not re-measured.
 - Open `wip/*` branches: none new (wip/MR.2 and wip/MR.3 merged).
 - Next item: MR.4, then MR.A (fable review, then Preview ready).
