@@ -95,6 +95,37 @@ describe('skill library keyed by name and rarity (MQ.12)', () => {
     expect(skillOf(c)).toMatchObject({ rarity: 'rare', description: 'Uncommon description.' });
   });
 
+  it('an upgrade takes the next rarity’s text over a hand edit of the old one', () => {
+    let c = ok(run([created], ctx), define('idc', 'common', 'Common'));
+    c = ok(c, define('idu', 'uncommon', 'Uncommon'));
+    c = ok(c, make('jake', 'Jake'));
+    c = ok(c, {
+      type: 'skill.describe',
+      characterId: 'jake',
+      skill: 'Identify',
+      description: 'GM hand text.',
+      flavor: null,
+    });
+    c = upgradeIdentify(c);
+    expect(skillOf(c)).toMatchObject({
+      rarity: 'uncommon',
+      description: 'Uncommon description.',
+      flavor: 'Uncommon flavour.',
+    });
+    expect(skillOf(c)?.textEdited).toBeUndefined();
+    // With no entry for the next rarity, the hand edit stays and stays marked.
+    c = ok(c, {
+      type: 'skill.describe',
+      characterId: 'jake',
+      skill: 'Identify',
+      description: 'GM hand text 2.',
+      flavor: null,
+    });
+    c = upgradeIdentify(c);
+    expect(skillOf(c)).toMatchObject({ rarity: 'rare', description: 'GM hand text 2.' });
+    expect(skillOf(c)?.textEdited).toBe(true);
+  });
+
   it('a library edit reaches every copy the GM has not edited, and only its rarity', () => {
     let c = ok(run([created], ctx), define('idc', 'common', 'Common'));
     c = ok(c, define('idu', 'uncommon', 'Uncommon'));

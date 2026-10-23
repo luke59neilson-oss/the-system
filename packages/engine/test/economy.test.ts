@@ -862,6 +862,20 @@ describe('bonus rules (MQ.14, DESIGN §4, L6)', () => {
     expect(base().state?.items['ring']?.bonuses[0]?.percent).toBe(0.1);
   });
 
+  it('shows a stored item percentage only while item percentages count', () => {
+    const c = base();
+    const shown = projectForPlayer(c.state!, 'jake').inventory.itemDefs['ring']?.bonuses[0];
+    expect(shown).toMatchObject({ flat: 10, percent: 0.1 });
+    // Under flat-only items a stored percentage counts 0%, so it is not shown.
+    const state = c.state!;
+    const flatOnly = {
+      ...state,
+      rules: { ...state.rules, bonuses: { ...state.rules.bonuses, itemsFlatOnly: true } },
+    };
+    const hidden = projectForPlayer(flatOnly, 'jake').inventory.itemDefs['ring']?.bonuses[0];
+    expect(hidden).toEqual({ stat: 'agility', flat: 10 });
+  });
+
   it('caps the total item bonus per stat at 20% of base and tells the owner', () => {
     let c = fresh();
     c = ok(c, { type: 'item.equip', characterId: 'jake', itemId: 'charm', slot: 'necklace' });

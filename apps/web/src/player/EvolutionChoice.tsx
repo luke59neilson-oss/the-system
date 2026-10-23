@@ -107,7 +107,8 @@ export function EvolutionChoice({
       </div>
       <p className="muted" data-testid="evolution-grade">
         Evolve into {evolution.toGrade}-grade: choose one of {evolution.options.length}{' '}
-        {evolution.options.length === 1 ? 'path' : 'paths'}. Evolving refills HP, MP and Stamina.
+        {evolution.options.length === 1 ? 'path' : 'paths'}. Evolving refills{' '}
+        {poolList(rules.pools)}.
       </p>
       {blocked && (
         <p className="err" role="status" data-testid="evolution-blocked">
@@ -220,4 +221,11 @@ export function EvolutionChoice({
       )}
     </dialog>
   );
+}
+
+/** "HP, MP and Stamina" from the rules' pool names (a name's "(abbreviation)" if it has one). */
+export function poolList(pools: readonly { readonly name: string }[]): string {
+  const names = pools.map((p) => /\(([^)]+)\)\s*$/.exec(p.name)?.[1] ?? p.name);
+  if (names.length <= 1) return names.join('');
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }

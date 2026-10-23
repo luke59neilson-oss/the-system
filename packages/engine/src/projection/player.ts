@@ -762,7 +762,11 @@ function copyBundle(b: Bundle): Bundle {
   return { currency: b.currency, items };
 }
 
-function copyItem(def: ItemDef): PlayerItem {
+/**
+ * Under flat-only items (L6, D128) a stored percentage counts for nothing, so
+ * the player is not shown it (MQ.A review).
+ */
+function copyItem(def: ItemDef, flatOnly: boolean): PlayerItem {
   return {
     id: def.id,
     name: def.name,
@@ -772,7 +776,7 @@ function copyItem(def: ItemDef): PlayerItem {
     bonuses: def.bonuses.map((b) => ({
       stat: b.stat,
       ...(b.flat === undefined ? {} : { flat: b.flat }),
-      ...(b.percent === undefined ? {} : { percent: b.percent }),
+      ...(b.percent === undefined || flatOnly ? {} : { percent: b.percent }),
     })),
   };
 }
@@ -818,7 +822,7 @@ function playerInventory(state: CampaignState, viewerId: string): PlayerInventor
   const itemDefs: Record<string, PlayerItem> = {};
   for (const id of wanted) {
     const def = hasOwnKey(state.items, id) ? state.items[id] : undefined;
-    if (def) itemDefs[id] = copyItem(def);
+    if (def) itemDefs[id] = copyItem(def, state.rules.bonuses.itemsFlatOnly);
   }
   return { currency: h.currency, items, equipped, trades, itemDefs };
 }

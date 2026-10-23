@@ -310,3 +310,20 @@ DESIGN/ROADMAP; do not re-apply them.
     Alternative: a "Use library text" button that hands it back to the
     library.
     Answer:
+
+51. **Hand-written skill text when a skill upgrades (follows Q50).** The
+    MQ.A review pointed at DESIGN §6: "an upgrade picks up the higher
+    rarity's text automatically". Default now (D133): when a skill changes
+    rarity and the library has text for the new rarity, the copy takes it,
+    replacing your hand-written text for the old rarity; library edits at the
+    same rarity still leave hand-written copies alone. Alternative: keep your
+    hand-written text through upgrades too (Q50's earlier default).
+    Answer:
+
+52. **Identify at level 0.** A brand-new character (race level 0) can
+    identify nothing of its own grade above level 0, since 1.5 × 0 = 0: a
+    level-1 G-grade rat shows `[??? – lvl ???]` until their first level-up.
+    Default: the rule as written (DESIGN §7); leave grade and level blank on
+    tutorial-start creatures if you want them readable. Alternative: treat a
+    level-0 viewer as level 1 for this rule.
+    Answer:
