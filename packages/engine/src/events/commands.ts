@@ -8,6 +8,7 @@ import {
   type EventType,
 } from './envelope';
 import { CharacterRuleError } from '../character';
+import { titleDefByName } from '../titles';
 import { defaultRerate } from '../evolution';
 import { normalizeTags } from '../skills/library';
 import { missingDefaultEntries } from '../content/defaults';
@@ -56,6 +57,21 @@ export type Command =
   /** GM only: withdraw an untaken profession offer (M5.2). */
   | { type: 'profession.withdrawOffer'; characterId: string; profession: string }
   | { type: 'title.award'; characterId: string; title: string }
+  | {
+      type: 'titleDef.define';
+      /** Optional; a fresh id is generated when omitted. */
+      id?: string | undefined;
+      name: string;
+      text?: string | undefined;
+      bonuses?: readonly StatBonusInput[] | undefined;
+    }
+  | {
+      type: 'titleDef.edit';
+      titleDefId: string;
+      name?: string | undefined;
+      text?: string | undefined;
+      bonuses?: readonly StatBonusInput[] | undefined;
+    }
   | { type: 'character.setPools'; characterId: string; pools: Readonly<Record<string, number>> }
   | { type: 'character.setStats'; characterId: string; stats: Readonly<Record<string, number>> }
   | {
@@ -519,6 +535,8 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('profession.choose') }),
   z.object({ type: z.literal('profession.withdrawOffer') }),
   z.object({ type: z.literal('title.award') }),
+  z.object({ type: z.literal('titleDef.define') }),
+  z.object({ type: z.literal('titleDef.edit') }),
   z.object({ type: z.literal('character.setPools'), pools: anyRecord }),
   z.object({ type: z.literal('character.setStats'), stats: anyRecord }),
   z.object({
@@ -800,12 +818,23 @@ function toEvent(
         type: 'profession.chosen',
         payload: { characterId: command.characterId, profession: command.profession },
       };
-    case 'title.award':
+    case 'title.award': {
+      // M6.4: a name matching a library title (any case) is awarded as the
+      // library spells it. The payload schema trims and checks it; a
+      // non-string is refused there.
+      const def =
+        typeof command.title === 'string' && campaign.state
+          ? titleDefByName(
+              campaign.state.titleLibrary,
+              campaign.state.titleLibraryOrder,
+              command.title,
+            )
+          : undefined;
       return {
         type: 'title.awarded',
-        // The payload schema trims and checks it; a non-string is refused there.
-        payload: { characterId: command.characterId, title: command.title },
+        payload: { characterId: command.characterId, title: def?.name ?? command.title },
       };
+    }
     case 'character.setPools':
       return {
         type: 'character.poolsSet',
@@ -853,6 +882,20 @@ function toEvent(
       };
     case 'broadcast.unschedule':
       return { type: 'broadcast.unscheduled', payload: { id: command.id } };
+    case 'titleDef.define':
+      return {
+        type: 'titleDef.defined',
+        payload: {
+          id: command.id ?? ctx.newId(),
+          name: command.name,
+          text: command.text ?? '',
+          bonuses: command.bonuses ?? [],
+        },
+      };
+    case 'titleDef.edit': {
+      const { titleDefId, name, text, bonuses } = command;
+      return { type: 'titleDef.edited', payload: { titleDefId, name, text, bonuses } };
+    }
     case 'item.define':
       return {
         type: 'item.defined',

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 28,
+  "schemaVersion": 29,
   "name": "Loot",
   "rules": {
     "configVersion": 1,
@@ -576,6 +576,8 @@
       "reason": ""
     }
   ],
+  "titleLibrary": {},
+  "titleLibraryOrder": [],
   "skillLibrary": {},
   "skillLibraryOrder": [],
   "classLibrary": {},

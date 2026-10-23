@@ -1,3 +1,4 @@
+import { TitleRuleError, titleSources, validateTitleDef, type TitleDef } from '../titles';
 import {
   CharacterRuleError,
   clampPools,
@@ -70,7 +71,7 @@ import {
 import { EventRejectedError, type DomainEvent } from './envelope';
 
 /** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 28;
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 29;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -119,6 +120,10 @@ export interface CampaignState {
   readonly lootLog: readonly LootRecord[];
   /** Currency movements per character, oldest first (latest LEDGER_LIMIT; M6.3). GM-only. */
   readonly ledger: readonly LedgerEntry[];
+  /** Title library by id (M6.4). Holders see their own titles' entries. */
+  readonly titleLibrary: Readonly<Record<string, TitleDef>>;
+  /** Title library ids in definition order. */
+  readonly titleLibraryOrder: readonly string[];
   /** Skill library by id (M4.1). GM-only: fills granted skills' text by name. */
   readonly skillLibrary: Readonly<Record<string, SkillDef>>;
   /** Skill library ids in definition order. */
@@ -517,7 +522,10 @@ function clampToEffective(
   after: CampaignState,
   event: DomainEvent,
 ): CampaignState {
-  const itemsChanged = before.items !== after.items || before.rules !== after.rules;
+  const itemsChanged =
+    before.items !== after.items ||
+    before.rules !== after.rules ||
+    before.titleLibrary !== after.titleLibrary;
   let out = after;
   for (const id of after.characterOrder) {
     const c = hasOwn(after.characters, id) ? after.characters[id] : undefined;
@@ -624,12 +632,38 @@ function maximaOf(state: CampaignState, c: Character): Readonly<Record<string, n
   return clampPools(state.rules, effectiveOf(state, c), {});
 }
 
-/** Effective stats of a character in this state (base + equipped items). */
+/** Effective stats of a character in this state (base + equipped items + titles, M6.4). */
 function effectiveOf(state: CampaignState, c: Character): Readonly<Record<string, number>> {
   const held = holdingsOf(state, c.id);
-  // Fast path: nothing worn means no item bonuses (the common case per event).
-  if (Object.keys(held.equipped).length === 0) return c.stats;
-  return itemEffectiveStats(state.rules, c.stats, held, state.items);
+  // Fast path: nothing worn and no titles means no bonuses (the common case per event).
+  if (Object.keys(held.equipped).length === 0 && c.titles.length === 0) return c.stats;
+  return itemEffectiveStats(
+    state.rules,
+    c.stats,
+    held,
+    state.items,
+    titleSources(state.titleLibrary, state.titleLibraryOrder, c.titles),
+  );
+}
+
+function titleRule<T>(event: DomainEvent, f: () => T): T {
+  try {
+    return f();
+  } catch (error) {
+    if (error instanceof TitleRuleError) return fail(event, error.message);
+    throw error;
+  }
+}
+
+/** Stored bonuses without undefined keys (the event's JSON shape). */
+function toBonuses(
+  bonuses: readonly { stat: string; flat?: number | undefined; percent?: number | undefined }[],
+): TitleDef['bonuses'] {
+  return bonuses.map((b) => ({
+    stat: b.stat,
+    ...(b.flat === undefined ? {} : { flat: b.flat }),
+    ...(b.percent === undefined ? {} : { percent: b.percent }),
+  }));
 }
 
 /**
@@ -731,6 +765,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       lootTableOrder: [],
       lootLog: [],
       ledger: [],
+      titleLibrary: {},
+      titleLibraryOrder: [],
       skillLibrary: {},
       skillLibraryOrder: [],
       classLibrary: {},
@@ -813,6 +849,38 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         fail(event, `${character.name} already holds [${title}]`);
       }
       return withCharacter(state, { ...character, titles: [...character.titles, title] });
+    }
+    case 'titleDef.defined': {
+      const { id, name, text, bonuses } = event.payload;
+      if (hasOwn(state.titleLibrary, id)) fail(event, `title "${id}" already exists`);
+      const def: TitleDef = { id, name: name.trim(), text, bonuses: toBonuses(bonuses) };
+      titleRule(event, () =>
+        validateTitleDef(state.rules, def, state.titleLibrary, state.titleLibraryOrder),
+      );
+      return {
+        ...state,
+        titleLibrary: { ...state.titleLibrary, [id]: def },
+        titleLibraryOrder: [...state.titleLibraryOrder, id],
+      };
+    }
+    case 'titleDef.edited': {
+      const { titleDefId, ...changes } = event.payload;
+      const old = hasOwn(state.titleLibrary, titleDefId)
+        ? state.titleLibrary[titleDefId]
+        : undefined;
+      if (!old) return fail(event, `unknown library title "${titleDefId}"`);
+      if (Object.keys(changes).length === 0) fail(event, 'nothing to change');
+      const def: TitleDef = {
+        id: titleDefId,
+        name: changes.name?.trim() ?? old.name,
+        text: changes.text ?? old.text,
+        bonuses: changes.bonuses ? toBonuses(changes.bonuses) : old.bonuses,
+      };
+      if (JSON.stringify(def) === JSON.stringify(old)) fail(event, 'nothing to change');
+      titleRule(event, () =>
+        validateTitleDef(state.rules, def, state.titleLibrary, state.titleLibraryOrder),
+      );
+      return { ...state, titleLibrary: { ...state.titleLibrary, [titleDefId]: def } };
     }
     case 'character.poolsSet': {
       const character = characterOf(state, event, event.payload.characterId);
@@ -1995,6 +2063,7 @@ export function characterEffectiveStats(
     character.stats,
     holdingsOf(state, characterId),
     state.items,
+    titleSources(state.titleLibrary, state.titleLibraryOrder, character.titles),
   );
 }
 

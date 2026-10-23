@@ -42,6 +42,10 @@ export function notificationText(n: LiveNotification): string {
         parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0];
       return `You received ${what ?? 'a gift'} from ${n.from ?? 'the GM'}`;
     }
+    case 'title': {
+      const text = n.text.trim() === '' ? '' : ` - ${n.text.trim()}`;
+      return `*'DING!' Title earned: [${n.title}]${text}*`;
+    }
     case 'currency': {
       const why = n.reason.trim() === '' ? '' : `: ${n.reason.trim()}`;
       return n.amount > 0

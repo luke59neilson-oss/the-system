@@ -1,3 +1,4 @@
+import { titleDefByName, titleSources } from '../titles';
 import {
   poolMax,
   raceLevel,
@@ -116,6 +117,10 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   // M6.3: the ledger names reasons and every character's balance; a player
   // learns of their own grants and fines through a notification.
   ledger: 'gm',
+  // M6.4: the title library is the GM's; each holder gets their own titles'
+  // entries (text and bonuses) in `me.titleDetails`.
+  titleLibrary: 'gm',
+  titleLibraryOrder: 'gm',
   holdings: 'owner',
   trades: 'owner',
   tradeOrder: 'gm',
@@ -216,6 +221,12 @@ export interface OwnSheet {
   readonly pools: readonly OwnPool[];
   readonly freePointBatches: readonly FreePointBatch[];
   readonly titles: readonly string[];
+  /** The System text and bonuses of each held title with a library entry (M6.4). */
+  readonly titleDetails: readonly {
+    readonly name: string;
+    readonly text: string;
+    readonly bonuses: readonly { stat: string; flat?: number; percent?: number }[];
+  }[];
   readonly skills: readonly {
     readonly name: string;
     readonly rarity: string;
@@ -486,7 +497,13 @@ function effectiveFor(state: CampaignState, c: Character): Record<string, number
   const h = hasOwnKey(state.holdings, c.id)
     ? (state.holdings[c.id] ?? EMPTY_HOLDINGS)
     : EMPTY_HOLDINGS;
-  return itemEffectiveStats(state.rules, c.stats, h, state.items);
+  return itemEffectiveStats(
+    state.rules,
+    c.stats,
+    h,
+    state.items,
+    titleSources(state.titleLibrary, state.titleLibraryOrder, c.titles),
+  );
 }
 
 function ownSheet(state: CampaignState, c: Character): OwnSheet {
@@ -526,6 +543,12 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
       locked: b.locked,
     })),
     titles: [...c.titles],
+    titleDetails: c.titles.flatMap((name) => {
+      const def = titleDefByName(state.titleLibrary, state.titleLibraryOrder, name);
+      return def
+        ? [{ name: def.name, text: def.text, bonuses: def.bonuses.map((b) => ({ ...b })) }]
+        : [];
+    }),
     skills: c.skills.map((s) => ({
       name: s.name,
       rarity: s.rarity,

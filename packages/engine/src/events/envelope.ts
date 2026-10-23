@@ -40,6 +40,12 @@ const itemFields = {
   slot: recordId.nullable(),
   bonuses: z.array(statBonus).max(30),
 };
+/** Title library fields (M6.4): System text and percentage (optionally flat) bonuses. */
+const titleDefFields = {
+  name: nonBlank.max(80),
+  text: z.string().trim().max(2000),
+  bonuses: z.array(statBonus).max(30),
+};
 /** Loot table fields (M6.2). Weights are relative; counts per pick run min..max. */
 const lootWeight = z.number().int().min(1).max(1_000_000);
 const lootEntry = z.discriminatedUnion('kind', [
@@ -146,6 +152,15 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   'profession.offerWithdrawn': z.strictObject({ characterId: recordId, profession: nonBlank }),
   /** GM awards a title by name (M1.15; the title library, bonuses and System text are M6.4). */
   'title.awarded': z.strictObject({ characterId: recordId, title: nonBlank.max(80) }),
+  /** GM adds a title to the title library (M6.4). */
+  'titleDef.defined': z.strictObject({ id: recordId, ...titleDefFields }),
+  /** GM edits a library title; omitted fields stay. Every holder follows the entry. */
+  'titleDef.edited': z.strictObject({
+    titleDefId: recordId,
+    name: titleDefFields.name.optional(),
+    text: titleDefFields.text.optional(),
+    bonuses: titleDefFields.bonuses.optional(),
+  }),
   /** GM sets current pool values; each must be within 0..max (D31). */
   'character.poolsSet': z.strictObject({
     characterId: recordId,
@@ -651,6 +666,8 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'profession.chosen': 1,
   'profession.offerWithdrawn': 1,
   'title.awarded': 1,
+  'titleDef.defined': 1,
+  'titleDef.edited': 1,
   'character.poolsSet': 1,
   'character.statsSet': 1,
   'xp.awarded': 1,
