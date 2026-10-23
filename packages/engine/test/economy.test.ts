@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_RULES,
   ITEM_NOT_AVAILABLE,
+  TRADE_NOT_POSSIBLE,
   characterEffectiveStats,
   effectiveStats,
   execute,
@@ -527,15 +528,16 @@ describe('trades', () => {
     // Kim gives the bow away before answering.
     c = ok(c, { type: 'gift.give', characterId: 'kim', to: null, items: { bow: 1 } });
     expect(reject(c, { type: 'trade.accept', tradeId: 'tr1', characterId: 'kim' })).toBe(
-      ITEM_NOT_AVAILABLE,
+      TRADE_NOT_POSSIBLE,
     );
     expect(held(c, 'jake')).toMatchObject({ currency: 100, inventory: { ring: 2, potion: 3 } });
     expect(c.state?.trades['tr1']?.status).toBe('open');
     // And the proposer's side is re-checked too.
     let d = ok(seen(), offer);
     d = ok(d, { type: 'holdings.adjust', characterId: 'jake', currency: -95 });
-    expect(reject(d, { type: 'trade.accept', tradeId: 'tr1', characterId: 'kim' })).toContain(
-      'Not enough Credits',
+    // The same message, never Jake's balance (QF.9 review).
+    expect(reject(d, { type: 'trade.accept', tradeId: 'tr1', characterId: 'kim' })).toBe(
+      TRADE_NOT_POSSIBLE,
     );
     expect(held(d, 'kim')).toMatchObject({ currency: 50, inventory: { bow: 1 } });
   });
@@ -551,7 +553,7 @@ describe('trades', () => {
       get: { items: { bow: 1 } },
     });
     expect(reject(loop, { type: 'trade.accept', tradeId: 'loop', characterId: 'jake' })).toBe(
-      ITEM_NOT_AVAILABLE,
+      TRADE_NOT_POSSIBLE,
     );
     expect(loop.state?.trades['loop']?.status).toBe('open');
     // An item the proposer has never seen cannot be asked for at all.
@@ -577,7 +579,7 @@ describe('trades', () => {
       get: { items: { potion: 3 } },
     });
     expect(reject(c, { type: 'trade.accept', tradeId: 'loop', characterId: 'jake' })).toBe(
-      ITEM_NOT_AVAILABLE,
+      TRADE_NOT_POSSIBLE,
     );
   });
 
@@ -969,7 +971,7 @@ describe('trade proposals reveal nothing (QF.9)', () => {
     const c = ok(seen(), { ...ask(4), tradeId: 'many' }, player('jake'));
     expect(
       reject(c, { type: 'trade.accept', tradeId: 'many', characterId: 'kim' }, player('kim')),
-    ).toBe(ITEM_NOT_AVAILABLE);
+    ).toBe(TRADE_NOT_POSSIBLE);
   });
 
   it('an item the proposer has never seen is refused alike, held or not, known or not', () => {

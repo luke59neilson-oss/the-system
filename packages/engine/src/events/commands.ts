@@ -1193,6 +1193,11 @@ function toEvent(
 
 /** One message for an unknown item and one the character does not hold (QF.2). */
 export const ITEM_NOT_AVAILABLE = 'That item is not available';
+/**
+ * Accepting a trade when either side no longer has its part (QF.9): one
+ * message that names nothing and shows no one's holdings.
+ */
+export const TRADE_NOT_POSSIBLE = 'That trade can no longer go through';
 
 const countOf = (inventory: Readonly<Record<string, number>>, id: string): number =>
   Object.prototype.hasOwnProperty.call(inventory, id) ? (inventory[id] ?? 0) : 0;
@@ -1268,13 +1273,26 @@ function itemOutOfReach(state: NonNullable<Campaign['state']>, command: Command)
     }
   }
   if (command.type === 'trade.accept') {
-    // Both sides must still hold their part; one name-free message (QF.9).
+    // Both sides must still hold their part; one message that names nothing (QF.9).
     const trade = Object.prototype.hasOwnProperty.call(state.trades, command.tradeId)
       ? state.trades[command.tradeId]
       : undefined;
     if (!trade || trade.status !== 'open' || command.characterId !== trade.to) return null;
-    if (trade.from !== null && !holds(trade.from, trade.give.items)) return ITEM_NOT_AVAILABLE;
-    if (trade.to !== null && !holds(trade.to, trade.get.items)) return ITEM_NOT_AVAILABLE;
+    // Currency too: the reducer's message would show the other side's balance.
+    const pays = (who: string, amount: number) =>
+      (Object.prototype.hasOwnProperty.call(state.holdings, who)
+        ? (state.holdings[who]?.currency ?? 0)
+        : 0) >= amount;
+    if (
+      trade.from !== null &&
+      !(holds(trade.from, trade.give.items) && pays(trade.from, trade.give.currency))
+    )
+      return TRADE_NOT_POSSIBLE;
+    if (
+      trade.to !== null &&
+      !(holds(trade.to, trade.get.items) && pays(trade.to, trade.get.currency))
+    )
+      return TRADE_NOT_POSSIBLE;
   }
   return null;
 }

@@ -571,10 +571,117 @@
       "merges": {},
       "selections": [],
       "evolution": null,
+      "portrait": null,
+      "clampedPools": ["hp"]
+    },
+    "lee": {
+      "schemaVersion": 7,
+      "id": "lee",
+      "name": "Lee",
+      "race": "Human",
+      "className": "Archer",
+      "profession": null,
+      "professionOffers": [],
+      "classLevel": 0,
+      "professionLevel": 0,
+      "grade": "G",
+      "xp": {
+        "class": 0,
+        "profession": 0
+      },
+      "classWeights": {
+        "strength": 1,
+        "agility": 1,
+        "endurance": 1,
+        "vitality": 1,
+        "toughness": 1,
+        "wisdom": 1,
+        "intelligence": 1,
+        "perception": 1,
+        "willpower": 1
+      },
+      "classSpreadTotals": {
+        "strength": 0,
+        "agility": 0,
+        "endurance": 0,
+        "vitality": 0,
+        "toughness": 0,
+        "wisdom": 0,
+        "intelligence": 0,
+        "perception": 0,
+        "willpower": 0
+      },
+      "stats": {
+        "strength": 10,
+        "agility": 10,
+        "endurance": 10,
+        "vitality": 10,
+        "toughness": 10,
+        "wisdom": 10,
+        "intelligence": 10,
+        "perception": 10,
+        "willpower": 10
+      },
+      "pools": {
+        "hp": 120,
+        "mp": 100,
+        "stamina": 100
+      },
+      "freePointBatches": [],
+      "titles": [],
+      "skills": [
+        {
+          "name": "Basic Archery",
+          "rarity": "inferior",
+          "kind": "class",
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": [],
+          "description": null,
+          "flavor": null
+        },
+        {
+          "name": "Basic Stealth",
+          "rarity": "inferior",
+          "kind": "class",
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": [],
+          "description": null,
+          "flavor": null
+        },
+        {
+          "name": "Archer’s Eye",
+          "rarity": "common",
+          "kind": "class",
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": [],
+          "description": null,
+          "flavor": null
+        },
+        {
+          "name": "Identify",
+          "rarity": "common",
+          "kind": "race",
+          "nickname": null,
+          "unique": false,
+          "marks": 0,
+          "markSessions": [],
+          "description": "Common description, revised.",
+          "flavor": "Common flavour."
+        }
+      ],
+      "merges": {},
+      "selections": [],
+      "evolution": null,
       "portrait": null
     }
   },
-  "characterOrder": ["jake", "kim"],
+  "characterOrder": ["jake", "kim", "lee"],
   "broadcasts": [],
   "items": {
     "charm": {
@@ -620,12 +727,19 @@
   "professionLibrary": {},
   "professionLibraryOrder": [],
   "holdings": {
-    "kim": {
+    "lee": {
       "currency": 0,
       "inventory": {},
       "equipped": {
         "necklace:0": "charm"
       }
+    },
+    "kim": {
+      "currency": 0,
+      "inventory": {
+        "charm": 1
+      },
+      "equipped": {}
     }
   },
   "trades": {},

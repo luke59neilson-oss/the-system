@@ -25,11 +25,11 @@
       "schemaVersion": 21
     },
     "defaults.jsonl": {
-      "sha256": "54178ec02d6f381232d43a94effe73781699ade4434359ababdb5a39cec629fb",
+      "sha256": "40cdb92ff2d06edb5c44a9c33d05c6302a7f28cd0b37a0721333944fa4d8a011",
       "schemaVersion": 21
     },
     "defaults.state.json": {
-      "sha256": "f55f1ff4e29810f4c94cffe25dc4281fcdad64cec5608256bc45396026d2b450",
+      "sha256": "4de7dac69e8bf40bda8df869c738761dd08b2051594e74ad9568b710a57e1000",
       "schemaVersion": 21
     },
     "economy.jsonl": {
