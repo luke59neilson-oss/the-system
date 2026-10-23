@@ -247,6 +247,23 @@ describe('evolutions re-rate skills (MR.1)', () => {
     expect(skillOf(c, eye)?.rarity).toBe('common');
   });
 
+  it('a skill whose rarity changes after the release takes the default drop from its new rarity (MR.A)', () => {
+    let c = mark(atGTop(), eye, 4);
+    // The release lists Archer's Eye Common → Inferior (default) and keeps Identify.
+    c = ok(c, release({ Identify: 'common' }));
+    // The GM upgrades it while the evolution is pending: Common → Uncommon.
+    c = ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: eye });
+    expect(char(c).evolution?.rerate?.map((r) => r.skill)).not.toContain(eye);
+    c = ok(c, choose, player('jake'));
+    // One step down from Uncommon, not the stale Inferior; its text still
+    // follows the Uncommon entry it was upgraded to (same power, lower label).
+    expect(skillOf(c, eye)).toMatchObject({ rarity: 'common', marks: 0, textRarity: 'uncommon' });
+    // The untouched override still applies.
+    expect(skillOf(c, 'Identify')?.rarity).toBe('common');
+    // And the log replays to the same state.
+    expect(replay(c.events).state).toEqual(c.state);
+  });
+
   it('the owner sees the re-rating; another player does not', () => {
     const c = ok(atGTop(), release());
     const own = projectForPlayer(c.state!, 'jake');

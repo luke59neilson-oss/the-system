@@ -210,6 +210,32 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
     expect(skillOf(c)?.description).toBe('Inferior edited.');
   });
 
+  it('moves a re-rated, library-linked copy to its current rarity’s entry (MR.A)', () => {
+    let c = ok(base(), define('idi', 'inferior', 'Inferior'));
+    c = ok(c, {
+      type: 'xp.award',
+      track: 'class',
+      amount: 400,
+      participants: [{ characterId: 'kim' }],
+    });
+    c = ok(c, { type: 'evolution.release', characterId: 'kim', options: [{ className: 'H' }] });
+    c = ok(c, { type: 'evolution.choose', characterId: 'kim', optionId: 'o1' }, player('kim'));
+    expect(skillOf(c, 'kim')).toMatchObject({
+      rarity: 'inferior',
+      textRarity: 'common',
+      description: 'Common description.',
+    });
+    expect(skillOf(c, 'kim')?.textEdited).toBeUndefined();
+    c = ok(c, useLibrary('kim'));
+    expect(skillOf(c, 'kim')).toMatchObject({ description: 'Inferior description.' });
+    expect(skillOf(c, 'kim')?.textRarity).toBeUndefined();
+    c = ok(c, { type: 'skillDef.edit', skillDefId: 'idi', description: 'Inferior edited.' });
+    expect(skillOf(c, 'kim')?.description).toBe('Inferior edited.');
+    // Now it follows the library at its own rarity, so a second press is refused.
+    expect(reject(c, useLibrary('kim'))).toMatch(/already uses the library text/);
+    expect(replay(c.events).state).toEqual(c.state);
+  });
+
   it('is refused with no entry, on an unedited copy, for players and for unknown skills', () => {
     let c = ok(base(), handWrite('Jake’s own words.'));
     expect(reject(c, useLibrary('kim'))).toMatch(/already uses the library text/);

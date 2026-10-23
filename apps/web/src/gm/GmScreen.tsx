@@ -578,6 +578,13 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
     (entry.description.trim() !== '' || entry.flavor.trim() !== '');
   const followed = current && entryForSkill(state.rules, state.skillLibrary, current);
   const handWritten = current?.textEdited === true;
+  // MR.A: a copy re-rated at evolution follows its old rarity's entry; Use
+  // library text moves it to the entry for its current rarity.
+  const textRarity = current?.textRarity;
+  const rerated = textRarity !== undefined && textRarity !== current?.rarity;
+  const detached = handWritten || rerated;
+  const textRarityName =
+    state.rules.skills.rarities.find((r) => r.id === textRarity)?.name ?? textRarity;
   const [reconnected, setReconnected] = useState(false);
   const reconnect = async () => {
     if (!character || !current) return;
@@ -654,7 +661,9 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
           {handWritten
             ? 'Hand-written text.'
             : followed
-              ? 'Follows the library entry.'
+              ? rerated
+                ? `Follows the ${textRarityName} library entry (re-rated at evolution).`
+                : 'Follows the library entry.'
               : 'No library entry for this rarity.'}
         </p>
       )}
@@ -666,9 +675,9 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
           type="button"
           className="secondary"
           style={{ marginLeft: 8 }}
-          disabled={busy || !current || !handWritten || !reconnectable}
+          disabled={busy || !current || !detached || !reconnectable}
           title={
-            !handWritten
+            !detached
               ? 'This copy already follows the library'
               : !reconnectable
                 ? 'The library has no entry with text for this skill at its rarity'

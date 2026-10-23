@@ -114,14 +114,17 @@ export function rerateLines(
   evolution: Pick<PendingEvolution, 'rerate'>,
 ): string[] {
   const rerate = evolution.rerate;
-  if (!rerate || rerate.length === 0) return [];
+  if (!rerate) return [];
   const to = new Map(rerate.map((r) => [r.skill, r.rarity]));
-  return me.skills.flatMap((s) => {
-    const rarity = to.get(s.name);
-    if (rarity === undefined) return [];
+  const ids = rules.rarities.map((r) => r.id);
+  return me.skills.map((s) => {
+    // A skill the list does not name (gained, or its rarity changed, after the
+    // release) takes the default one-step drop at choose, as the engine does.
+    const index = ids.indexOf(s.rarity);
+    const rarity = to.get(s.name) ?? (index <= 0 ? s.rarity : (ids[index - 1] as string));
     const from = rarityName(rules, s.rarity);
     return rarity === s.rarity
-      ? [`[${s.name}] stays ${from}`]
-      : [`[${s.name}] ${from} → ${rarityName(rules, rarity)}`];
+      ? `[${s.name}] stays ${from}`
+      : `[${s.name}] ${from} → ${rarityName(rules, rarity)}`;
   });
 }

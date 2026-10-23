@@ -697,6 +697,25 @@ function rerateSkill(skill: CharacterSkill, rarity: string | undefined): Charact
   return rarity === textRarity ? { ...rest, rarity } : { ...rest, rarity, textRarity };
 }
 
+/**
+ * MR.A: a release stores each skill's new rarity, worked out from the rarity
+ * it had then. When an event changes a listed skill's rarity while the
+ * evolution is pending (an upgrade by marks, say), that entry no longer
+ * describes the skill, so it leaves the list and the skill takes the default
+ * one-step drop from its new rarity at choose. Returns `after` itself when
+ * nothing changes.
+ */
+export function dropStaleRerates(before: Character | undefined, after: Character): Character {
+  const rerate = after.evolution?.rerate;
+  if (!before || !after.evolution || rerate === undefined) return after;
+  const was = new Map(before.skills.map((s) => [s.name, s.rarity]));
+  const now = new Map(after.skills.map((s) => [s.name, s.rarity]));
+  const kept = rerate.filter((r) => !was.has(r.skill) || was.get(r.skill) === now.get(r.skill));
+  return kept.length === rerate.length
+    ? after
+    : { ...after, evolution: { ...after.evolution, rerate: kept } };
+}
+
 /** Earlier offers first, then new names not already offered (ignoring case). */
 function mergeOffers(was: readonly string[], offered: readonly string[]): readonly string[] {
   const seen = new Set(was.map(lower));

@@ -176,6 +176,14 @@
       "sha256": "553c996e2d5277950fb407e40ead6c3fe7231b3959e12164bf21a5bf299db1cc",
       "schemaVersion": 24
     },
+    "rerate.jsonl": {
+      "sha256": "396d52eebadb7a37cf0bc77964f350b31a6cbc8df608fd53519267df463e5992",
+      "schemaVersion": 24
+    },
+    "rerate.state.json": {
+      "sha256": "0b06e19afd4d900c9f8e0cdb6aa7ab9b3c0441b8771bff5f37842a33e13396f0",
+      "schemaVersion": 24
+    },
     "rules-migration.jsonl": {
       "sha256": "c90a36eb444ff5138d3be80c8303787d8d374ca7d991edd97e1c7481be0f3d12",
       "schemaVersion": 23

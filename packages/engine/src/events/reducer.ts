@@ -39,6 +39,7 @@ import { awardXp, shareXp } from '../progression';
 import {
   chooseEvolution,
   chooseSelection,
+  dropStaleRerates,
   withdrawPassedOver,
   offerSelection,
   releaseEvolution,
@@ -282,7 +283,24 @@ export function applyEvent(state: CampaignState | null, event: DomainEvent): Cam
   const next = applyEventRaw(state, event);
   return state === null
     ? next
-    : clampToEffective(state, fillFromLibrary(state, next, event), event);
+    : clampToEffective(state, fillFromLibrary(state, keepRerateCurrent(state, next), event), event);
+}
+
+/**
+ * MR.A: a pending evolution's re-rating stops naming a skill whose rarity an
+ * event just changed (see `dropStaleRerates`).
+ */
+function keepRerateCurrent(before: CampaignState, after: CampaignState): CampaignState {
+  if (before.characters === after.characters) return after;
+  let characters: Record<string, Character> | null = null;
+  for (const id of after.characterOrder) {
+    const c = hasOwn(after.characters, id) ? after.characters[id] : undefined;
+    const old = hasOwn(before.characters, id) ? before.characters[id] : undefined;
+    if (!c || c === old || !c.evolution?.rerate) continue;
+    const kept = dropStaleRerates(old, c);
+    if (kept !== c) (characters ??= { ...after.characters })[id] = kept;
+  }
+  return characters === null ? after : { ...after, characters };
 }
 
 /**

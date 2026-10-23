@@ -171,8 +171,9 @@ function withoutEditMark(skill: CharacterSkill): CharacterSkill {
  * MR.4 (L17): hands a hand-written copy back to the library. The copy follows
  * the entry for its current name and rarity again (a re-rating's text rarity
  * is dropped), takes that entry's text (a blank field keeps the copy's own),
- * and later library edits reach it. Refused when the copy is not hand-written
- * or the library has no entry for it.
+ * and later library edits reach it. Also moves a copy re-rated at evolution
+ * (MR.A) from its old rarity's entry to its current one. Refused when the copy
+ * is neither, or the library has no entry for it.
  */
 export function useLibraryText(
   rules: RulesConfig,
@@ -183,7 +184,12 @@ export function useLibraryText(
   const index = character.skills.findIndex((s) => s.name === name);
   const skill = character.skills[index];
   if (!skill) throw new CharacterRuleError(`${character.name} has no skill "${name}"`);
-  if (!skill.textEdited) throw new CharacterRuleError(`[${name}] already uses the library text`);
+  // MR.A: a copy re-rated at evolution follows its old rarity's entry, so it
+  // can be moved to its current rarity's entry too.
+  const rerated = skill.textRarity !== undefined && skill.textRarity !== skill.rarity;
+  if (!skill.textEdited && !rerated) {
+    throw new CharacterRuleError(`[${name}] already uses the library text`);
+  }
   const def = librarySkill(
     library,
     skill.name,

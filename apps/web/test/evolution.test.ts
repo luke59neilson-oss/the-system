@@ -174,6 +174,16 @@ describe('rerateLines (MR.1)', () => {
   });
   it('is empty for a release stored before MR.1', () => {
     expect(rerateLines(rules, me, {})).toEqual([]);
-    expect(rerateLines(rules, me, { rerate: [] })).toEqual([]);
+  });
+  it('shows the default one-step drop for a skill the list does not name (MR.A)', () => {
+    const rare = { ...skill('Archer’s Eye', 0), rarity: 'rare' } as OwnSheet['skills'][number];
+    const mine = { skills: [rare, skill('Identify', 2)] };
+    expect(rerateLines(rules, mine, { rerate: [] })).toEqual([
+      '[Archer’s Eye] Rare → Common',
+      '[Identify] stays Common',
+    ]);
+    expect(
+      rerateLines(rules, mine, { rerate: [{ skill: 'Archer’s Eye', rarity: 'rare' }] }),
+    ).toEqual(['[Archer’s Eye] stays Rare', '[Identify] stays Common']);
   });
 });
