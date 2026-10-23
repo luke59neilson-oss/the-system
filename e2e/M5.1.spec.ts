@@ -76,7 +76,9 @@ test('the GM builds, checks and sends a menu, and withdraws a passed-over option
   // His practice log sits beside the menu, with how often each skill came up.
   const practice = builder.getByRole('complementary', { name: 'Practice log' });
   await expect(practice.getByRole('listitem').first()).toBeVisible();
-  await expect(practice.getByTestId('practice-counts')).toHaveText('Used: Perception ×1');
+  await expect(practice.getByTestId('practice-counts')).toHaveText(
+    'Used (whole log): Perception ×1',
+  );
   const menuBox = await builder.getByRole('list', { name: 'Due selections' }).boundingBox();
   const sideBox = await practice.boundingBox();
   expect(sideBox!.x).toBeGreaterThan(menuBox!.x + menuBox!.width - 1);

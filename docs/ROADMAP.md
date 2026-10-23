@@ -536,7 +536,7 @@ work: Q44–Q48 and Q52.
 
 ## M5 — Skills and practice tools (GM)
 
-- [ ] **M5.1 Offer builder.** Per-character menu builder beside the practice
+- [x] **M5.1 Offer builder.** Per-character menu builder beside the practice
   log; capstone check; profession options; send. Lists the character's
   passed-over options with a Withdraw button (`selection.withdrawOption`,
   MQ.3, D112). Show due selections

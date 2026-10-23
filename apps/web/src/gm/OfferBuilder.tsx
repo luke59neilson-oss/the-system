@@ -231,9 +231,10 @@ export function OfferBuilder({
                 <>
                   {counts.length > 0 && (
                     <p className="small" data-testid="practice-counts">
-                      Used: {counts.join(' · ')}
+                      Used (whole log): {counts.join(' · ')}
                     </p>
                   )}
+                  <p className="muted small">Latest {practice.length} entries, newest first:</p>
                   <ul className="offer-practice">
                     {practice.map((p) => (
                       <li key={p.id}>
