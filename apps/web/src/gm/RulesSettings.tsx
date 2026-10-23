@@ -34,7 +34,8 @@ function hasBadNumber(value: Json): boolean {
 }
 
 /** Keys that other data points at, or that only the app may change (D161). */
-const LOCKED_KEYS = new Set(['id', 'configVersion']);
+// `overflow` stays on in every campaign (L16); the engine refuses a change.
+const LOCKED_KEYS = new Set(['id', 'configVersion', 'overflow']);
 
 function itemLabel(value: Json, index: number): string {
   if (value && typeof value === 'object' && !Array.isArray(value)) {

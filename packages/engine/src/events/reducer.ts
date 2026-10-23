@@ -584,8 +584,8 @@ export function rulesEditProblem(current: RulesConfig, next: RulesConfig): strin
   // Off → on must go through rules.migrate, which moves banked XP and says what was lost.
   if (current.xp.overflow !== next.xp.overflow) {
     return current.xp.overflow
-      ? 'XP overflow stays on (Luke, L16)'
-      : 'turn XP overflow on with the rules migration, which moves banked XP first';
+      ? 'XP overflow always stays on'
+      : 'XP overflow is turned on by the rules migration when the campaign opens, which moves banked XP first';
   }
   return null;
 }
