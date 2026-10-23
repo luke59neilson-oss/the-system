@@ -4,7 +4,8 @@ import path from 'node:path';
 import { expect, test } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
-// M4.8 Change log and undo (in progress): the GM sees events in words and undoes one.
+// M4.8 Change log and undo: the GM sees events in words, filters them, and
+// undoes one; a player's action appears live and its undo reaches the player.
 
 const GM_KEY = 'e2e-gm-key-m48-0123456789abcdef48';
 let dataDir: string;
@@ -53,5 +54,49 @@ test('the GM undoes a broadcast from the change log', async ({ page }) => {
   await log.getByLabel('Filter').fill('');
   await log.screenshot({
     path: path.resolve(import.meta.dirname, '../docs/screens/M4.8/gm-change-log-1366x768.png'),
+  });
+});
+
+test("a player's nickname shows up live in the log; the GM undoes it everywhere", async ({
+  browser,
+}) => {
+  const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
+  await gm.getByLabel('Campaign name').fill('Live Log');
+  await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await gm.getByLabel('Name', { exact: true }).fill('Jake');
+  await gm.getByRole('button', { name: 'Create character' }).click();
+  await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
+
+  const player = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await player.goto(server.url);
+  await player.getByRole('link', { name: /Jake/ }).click();
+  await player.getByRole('button', { name: /\[Basic Archery \(Inferior\)\]/ }).click();
+  const detail = player.getByTestId('skill-detail');
+  await detail.getByRole('button', { name: 'Add nickname' }).click();
+  await detail.getByLabel('Nickname').fill('Pew');
+  await detail.getByRole('button', { name: 'Save' }).click();
+  await expect(detail.getByTestId('skill-detail-nickname')).toHaveText('Nickname: “Pew”');
+
+  const log = gm.locator('section[aria-labelledby="change-log"]');
+  const row = log.getByRole('listitem').filter({ hasText: 'Jake skill nicknamed (Basic Archery)' });
+  await expect(row).toHaveCount(1);
+  await expect(row).toContainText('player');
+  await log.getByLabel('Kind').selectOption({ label: 'Skills and practice' });
+  await expect(log.getByRole('listitem')).toHaveCount(1);
+  await log.getByLabel('Kind').selectOption({ label: 'Quests and Identify' });
+  await expect(log.getByText('Nothing matches.')).toBeVisible();
+  await log.getByLabel('Kind').selectOption({ label: 'Everything' });
+  // Raw event types never show as row text.
+  await expect(
+    log.getByRole('listitem').filter({ hasText: /\b[a-z]+\.[a-z][A-Za-z]+\b/ }),
+  ).toHaveCount(0);
+
+  await row.getByRole('button', { name: 'Undo' }).click();
+  await expect(row).toContainText('(undone)');
+  await expect(detail.getByTestId('skill-detail-nickname')).toHaveText('Nickname: none');
+  await gm.screenshot({
+    path: path.resolve(import.meta.dirname, '../docs/screens/M4.8/gm-1366x768.png'),
+    fullPage: true,
   });
 });
