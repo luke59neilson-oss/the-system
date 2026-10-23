@@ -230,7 +230,7 @@ They touch finished engine and player items, so they come before M4.4.
   to new campaigns and, via the rules setting, older ones. *Accept:* engine
   tests for all four DESIGN §2 examples; property test that equip/unequip
   cycles never raise a non-full pool's current value.
-- [ ] **MQ.A Batch acceptance and review.**
+- [x] **MQ.A Batch acceptance and review.**
 
 ## QF — Quality fixes (from sweeps, LOOP §10)
 

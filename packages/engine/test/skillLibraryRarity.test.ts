@@ -113,7 +113,12 @@ describe('skill library keyed by name and rarity (MQ.12)', () => {
       flavor: 'Uncommon flavour.',
     });
     expect(skillOf(c)?.textEdited).toBeUndefined();
-    // With no entry for the next rarity, the hand edit stays and stays marked.
+    // With no text for the next rarity (a blank entry), the hand edit stays and stays marked.
+    c = ok(c, {
+      ...(define('idr', 'rare', '') as object),
+      description: ' ',
+      flavor: '',
+    } as Command);
     c = ok(c, {
       type: 'skill.describe',
       characterId: 'jake',

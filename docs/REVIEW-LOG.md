@@ -567,3 +567,13 @@
   - M fixed: the property test judged fullness from the post-drop state; it now tracks fullness outside the engine (fails on the old code).
   - L fixed: marks drop while the rule is off. L partly: added tests for a set of another pool and undo; rest to no change.
 - Round 2, df508ab: 0 High, 0 Medium, 2 Low (property test covers only equip/unequip/set; `writesPool` is an allowlist a new pool-writing event must join). No change.
+
+## 2026-10-23 · MQ.A Batch acceptance and review · fable (fresh context, 2 rounds)
+- Acceptance: `npm run check` (809 → 811 unit) and the full e2e suite (43/43 on main 567d841; 44/44 with the new `e2e/MQ.A.spec.ts`), both exit 0.
+- Round 1 (06151e3..567d841, whole MQ batch plus QF.1/QF.2/QF.10): 0 High, 2 Medium, 6 Low. Reviewer re-ran check and the MQ e2e specs, viewed every MQ screenshot, probed through `execute` (evolution chain, overflow, marks banking, professions, canary).
+  - M fixed (c3a35be, D133): a hand-edited skill copy kept its old-rarity text through a mark upgrade; it now takes the new rarity's library text.
+  - M fixed (c3a35be, D134): the GM's XP form now shows overflow and loss per character, and a total warning, before the award (enemy grade/level inputs stay with M4.6).
+  - L fixed (D135): stored item percentages hidden under flat-only items; evolution dialog lists the rules' pool names.
+  - L to question: Identify at race level 0 sees nothing of its grade above level 0 (Q52).
+  - L to QUALITY backlog: titles engine-only until M6.4; GM same-value pool set ends the no-heal mark (D129); MQ GM commands without UI yet.
+- Round 2 (567d841..3baa565): 0 High, 0 Medium, 4 Low. Fixed: a blank library entry no longer strips the hand-edit mark (test added); D133 wording on replay. Accepted: silent catch around the preview (no throw path); `poolList` covered by e2e only.
