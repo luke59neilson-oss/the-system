@@ -60,6 +60,8 @@ export interface SheetDraft {
   readonly nicknames: Readonly<Record<string, string>>;
   /** Skill name → Unique tag. */
   readonly unique: Readonly<Record<string, boolean>>;
+  /** Stat and pool fields the GM has typed in (`stats.<id>`, `pools.<id>`). */
+  readonly touched?: readonly string[];
 }
 
 export function draftOf(character: Character): SheetDraft {
@@ -85,11 +87,13 @@ const WHOLE = /^\d+$/;
 /**
  * The audited events a save sends (M4.5): one command per kind of change, in
  * an order the reducer accepts (stats before pools, so a pool can rise to a
- * maximum the new stats give). A field counts as changed only when the GM
- * typed something other than what the editor opened with (`base`), so a pool
- * that moved live while the editor was open (a hit, a heal) is not written
- * back. Values must be whole numbers of 0 or more; the engine checks pool
- * maxima and the rest.
+ * maximum the new stats give). A stat or pool is sent when it differs from
+ * the live value and the GM changed it: typed something other than what the
+ * editor opened with (`base`), or typed in it at all. So a pool that moved
+ * live while the editor was open is not written back unless the GM touched
+ * it, typing the old value back restores it, and a retry after a partial save
+ * does not resend what already landed. Values must be whole numbers of 0 or
+ * more; the engine checks pool maxima and the rest.
  */
 export function sheetPlan(
   rules: RulesConfig,
@@ -107,23 +111,26 @@ export function sheetPlan(
 
   const changed = (
     list: readonly { id: string; name: string }[],
+    group: 'stats' | 'pools',
     typed: Readonly<Record<string, string>>,
     opened: Readonly<Record<string, string>>,
+    live: Readonly<Record<string, number>>,
   ): Record<string, number> | string => {
     const out: Record<string, number> = {};
+    const touched = new Set(draft.touched ?? []);
     for (const { id, name: label } of list) {
       const raw = (typed[id] ?? '').trim();
-      if (raw === (opened[id] ?? '').trim()) continue;
+      if (raw === (opened[id] ?? '').trim() && !touched.has(`${group}.${id}`)) continue;
       if (!WHOLE.test(raw)) return `${label} must be a whole number of 0 or more`;
       const value = Number(raw);
       if (!Number.isSafeInteger(value)) return `${label} is too large`;
-      out[id] = value;
+      if (value !== live[id]) out[id] = value;
     }
     return out;
   };
-  const stats = changed(rules.stats.list, draft.stats, base.stats);
+  const stats = changed(rules.stats.list, 'stats', draft.stats, base.stats, character.stats);
   if (typeof stats === 'string') return { ok: false, error: stats };
-  const pools = changed(rules.pools, draft.pools, base.pools);
+  const pools = changed(rules.pools, 'pools', draft.pools, base.pools, character.pools);
   if (typeof pools === 'string') return { ok: false, error: pools };
   if (Object.keys(stats).length > 0) {
     commands.push({ type: 'character.setStats', characterId, stats });

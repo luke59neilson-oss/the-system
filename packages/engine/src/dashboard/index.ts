@@ -21,7 +21,8 @@ export type CharacterFlag =
       readonly toGrade: string;
       /**
        * ready: the GM can release it. blocked: a skill selection must be chosen
-       * first (DESIGN §2). released: waits on the player's choice.
+       * first (DESIGN §2), before release or before the player's choice.
+       * released: waits on the player's choice.
        */
       readonly status: 'ready' | 'blocked' | 'released';
     }
@@ -59,7 +60,12 @@ export function characterFlags(state: CampaignState, characterId: string): Chara
     flags.push({ kind: 'selection', level: slot.level, capstone: slot.capstone, offered });
   }
   if (character.evolution !== null) {
-    flags.push({ kind: 'evolution', toGrade: character.evolution.toGrade, status: 'released' });
+    // A selection reached after the release must be chosen first (DESIGN §2).
+    flags.push({
+      kind: 'evolution',
+      toGrade: character.evolution.toGrade,
+      status: due.length > 0 ? 'blocked' : 'released',
+    });
   } else {
     const target = evolutionTarget(rules, character);
     if (target) {

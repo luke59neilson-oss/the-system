@@ -203,7 +203,14 @@ function SheetEditor({
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const plan = sheetPlan(rules, c, base, draft);
   const field = (group: 'stats' | 'pools' | 'nicknames', key: string, value: string) =>
-    setDraft((d) => ({ ...d, [group]: { ...d[group], [key]: value } }));
+    setDraft((d) => ({
+      ...d,
+      [group]: { ...d[group], [key]: value },
+      touched:
+        group === 'nicknames'
+          ? (d.touched ?? [])
+          : [...new Set([...(d.touched ?? []), `${group}.${key}`])],
+    }));
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();

@@ -55,6 +55,29 @@ describe('sheetPlan (M4.5)', () => {
     expect(plan.ok && plan.commands.map((c) => c.type)).toEqual(['character.setStats']);
   });
 
+  it('restores a pool the GM typed back to its opening value after it moved live', () => {
+    const base = draftOf(jake);
+    const hit: Character = { ...jake, pools: { ...jake.pools, hp: 40 } };
+    const plan = sheetPlan(rules, hit, base, { ...base, touched: ['pools.hp'] });
+    expect(plan).toEqual({
+      ok: true,
+      commands: [{ type: 'character.setPools', characterId: 'jake', pools: { hp: 100 } }],
+    });
+  });
+
+  it('a retry after a partial save does not resend what already landed', () => {
+    const base = draftOf(jake);
+    const draft = {
+      ...base,
+      stats: { ...base.stats, vitality: '12' },
+      pools: { ...base.pools, hp: '500' },
+    };
+    // setStats landed, setPools was refused: the retry sends only the pool.
+    const landed: Character = { ...jake, stats: { ...jake.stats, vitality: 12 } };
+    const plan = sheetPlan(rules, landed, base, draft);
+    expect(plan.ok && plan.commands.map((c) => c.type)).toEqual(['character.setPools']);
+  });
+
   it('clears a nickname with an empty field', () => {
     const named: Character = {
       ...jake,
