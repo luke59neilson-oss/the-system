@@ -548,7 +548,7 @@ work: Q44–Q48 and Q52.
   untaken offer, MQ.6 review); per-skill re-rating at release (default one
   rarity down, raise/keep/lower; MR.1); release. Warn when a selection (esp. the capstone) is still
   pending (Q21).
-- [ ] **M5.3 Marks review.** End-of-session queue; upgrade prompts.
+- [x] **M5.3 Marks review.** End-of-session queue; upgrade prompts.
 - [ ] **M5.4 Merges.** Alert, build, send.
 - [ ] **M5.5 Practice capture.** Quick-add with shortcut; end-of-scene
   prompt; review of player submissions. Needs new events to edit/remove an
