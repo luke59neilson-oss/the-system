@@ -189,7 +189,10 @@ export function useLibraryText(
     skill.name,
     rules.skills.libraryByRarity ? skill.rarity : undefined,
   );
-  if (!def) throw new CharacterRuleError(`The library has no entry for [${name}] at its rarity`);
+  // An all-blank entry would leave the hand text in place but unmarked.
+  if (!def || (def.description.trim() === '' && def.flavor.trim() === '')) {
+    throw new CharacterRuleError(`The library has no entry with text for [${name}] at its rarity`);
+  }
   const { textRarity, ...plain } = withoutEditMark(skill);
   void textRarity;
   const synced = syncSkillText(plain, def);

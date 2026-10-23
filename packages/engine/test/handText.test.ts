@@ -220,9 +220,46 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
     c = upgradeIdentify(c);
     c = upgradeIdentify(c); // Rare: no entry
     expect(skillOf(c)).toMatchObject({ rarity: 'rare', description: 'Jake’s own words.' });
-    expect(reject(c, useLibrary())).toMatch(/no entry for \[Identify\] at its rarity/);
+    expect(reject(c, useLibrary())).toMatch(/no entry with text for \[Identify\] at its rarity/);
     expect(JSON.stringify(projectForPlayer(c.state!, 'kim'))).not.toContain('Jake’s own words');
     expect(projectForGm(c.state!).characters.jake?.skills.length).toBeGreaterThan(0);
+  });
+
+  it('refuses an all-blank entry, and undo restores the hand-written copy', () => {
+    let c = ok(base(), handWrite('Jake’s own words.'));
+    const before = skillOf(c);
+    c = ok(c, useLibrary());
+    const used = c.events.at(-1)!;
+    c = ok(c, { type: 'event.undo', eventId: used.id });
+    expect(skillOf(c)).toEqual(before);
+    c = ok(c, { type: 'skillDef.edit', skillDefId: 'idc', description: ' ', flavor: '' });
+    expect(reject(c, useLibrary())).toMatch(/no entry with text/);
+  });
+
+  it('a same-name evolution transform keeps hand-written text', () => {
+    let c = ok(base(), handWrite('Jake’s own words.'));
+    c = ok(c, {
+      type: 'xp.award',
+      track: 'class',
+      amount: 400,
+      participants: [{ characterId: 'jake' }],
+    });
+    c = ok(c, {
+      type: 'evolution.release',
+      characterId: 'jake',
+      options: [
+        {
+          className: 'Hunter',
+          transforms: [{ skill: 'Identify', name: 'Identify', rarity: 'uncommon' }],
+        },
+      ],
+    });
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' }, player('jake'));
+    expect(skillOf(c)).toMatchObject({
+      rarity: 'uncommon',
+      description: 'Jake’s own words.',
+      textEdited: true,
+    });
   });
 
   it('under stored rules (D133) an upgrade still replaces hand text with the entry’s', () => {

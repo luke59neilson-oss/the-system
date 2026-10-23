@@ -444,7 +444,18 @@ function randomSkillCommand(
     // MR.4: hand a copy back to the library; mostly a hand-written one, so
     // accepted reconnects do not hinge on luck (refused without an entry).
     const edited = Object.values(c.state?.characters ?? {}).flatMap((ch) =>
-      ch.skills.filter((s) => s.textEdited).map((s) => [ch.id, s.name] as const),
+      ch.skills
+        .filter(
+          (s) =>
+            s.textEdited &&
+            Object.values(c.state?.skillLibrary ?? {}).some(
+              (d) =>
+                d.rarity === s.rarity &&
+                d.name.trim().toLowerCase() === s.name.toLowerCase() &&
+                d.description.trim() + d.flavor.trim() !== '',
+            ),
+        )
+        .map((s) => [ch.id, s.name] as const),
     );
     if (rand() < (edited.length ? 0.6 : 0.05)) {
       const [id, skill] =

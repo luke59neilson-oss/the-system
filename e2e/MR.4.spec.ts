@@ -177,7 +177,10 @@ test('hand-written text survives an upgrade until the GM presses Use library tex
   await expect(detail.getByTestId('skill-detail-description')).toHaveText(HAND);
   await expect(form.getByTestId('skill-text-source')).toHaveText('Hand-written text.');
   await expect(useLibrary).toBeDisabled();
-  await expect(useLibrary).toHaveAttribute('title', /no entry for this skill at its rarity/);
+  await expect(useLibrary).toHaveAttribute(
+    'title',
+    /no entry with text for this skill at its rarity/,
+  );
 
   // Jake's phone shows the hand text in one column.
   const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });

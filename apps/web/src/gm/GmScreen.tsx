@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore, type FormEvent } fr
 import {
   DEFAULT_RULES,
   STARTER_CLASSES,
+  entryForSkill,
   largestRemainderSplit,
   librarySkill,
   previewXpAward,
@@ -566,9 +567,16 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
   // MR.4 (L17): a hand-written copy can be handed back to the library entry for
   // its current name and rarity; the button is disabled when there is none.
   const byRarity = state.rules.skills.libraryByRarity;
+  // The entry Use library text would reconnect to (current rarity), and the one
+  // an unedited copy follows now (a re-rated copy keeps its old text rarity).
   const entry =
     current &&
     librarySkill(state.skillLibrary, current.name, byRarity ? current.rarity : undefined);
+  const reconnectable =
+    entry !== undefined &&
+    entry !== null &&
+    (entry.description.trim() !== '' || entry.flavor.trim() !== '');
+  const followed = current && entryForSkill(state.rules, state.skillLibrary, current);
   const handWritten = current?.textEdited === true;
   const [reconnected, setReconnected] = useState(false);
   const reconnect = async () => {
@@ -645,7 +653,7 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
         <p className="muted" data-testid="skill-text-source">
           {handWritten
             ? 'Hand-written text.'
-            : entry
+            : followed
               ? 'Follows the library entry.'
               : 'No library entry for this rarity.'}
         </p>
@@ -657,12 +665,13 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
         <button
           type="button"
           className="secondary"
-          disabled={busy || !current || !handWritten || !entry}
+          style={{ marginLeft: 8 }}
+          disabled={busy || !current || !handWritten || !reconnectable}
           title={
             !handWritten
               ? 'This copy already follows the library'
-              : !entry
-                ? 'The library has no entry for this skill at its rarity'
+              : !reconnectable
+                ? 'The library has no entry with text for this skill at its rarity'
                 : 'Replace this copy’s text with the library entry’s and follow later edits'
           }
           onClick={() => void reconnect()}
