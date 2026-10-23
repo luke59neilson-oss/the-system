@@ -108,6 +108,11 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   professionLibrary: 'gm',
   professionLibraryOrder: 'gm',
   itemOrder: 'gm',
+  // M6.2: loot tables and rolls are the GM's; what a roll gives a character
+  // reaches them as holdings and a gift notification.
+  lootTables: 'gm',
+  lootTableOrder: 'gm',
+  lootLog: 'gm',
   holdings: 'owner',
   trades: 'owner',
   tradeOrder: 'gm',

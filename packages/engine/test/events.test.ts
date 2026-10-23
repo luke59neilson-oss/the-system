@@ -943,6 +943,11 @@ describe('property: replay equals incremental state', () => {
       // M4.9: rules edits have their own tests (rulesEdit.test.ts) and golden
       // log; editing rules here would change what every later command means.
       'rules.edited',
+      // M6.2: loot tables have their own tests (loot.test.ts) and golden log;
+      // a roll needs a random source the property stream does not inject.
+      'lootTable.defined',
+      'lootTable.edited',
+      'loot.rolled',
     ]);
     expect(
       EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),

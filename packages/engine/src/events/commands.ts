@@ -14,7 +14,14 @@ import { missingDefaultEntries } from '../content/defaults';
 import { largestRemainderSplit } from '../progression';
 import { bankedXp } from './migrations';
 import { defaultRules } from '../rules';
-import { EMPTY_HOLDINGS, itemsSeenBy } from '../economy';
+import {
+  EMPTY_HOLDINGS,
+  EconomyRuleError,
+  itemsSeenBy,
+  rollLoot,
+  type LootEntry,
+  type LootTable,
+} from '../economy';
 import { appendEvent, type Campaign } from './log';
 
 /**
@@ -117,6 +124,27 @@ export type Command =
       description?: string | undefined;
       slot?: string | null | undefined;
       bonuses?: readonly StatBonusInput[] | undefined;
+    }
+  | {
+      type: 'lootTable.define';
+      /** Optional; a fresh id is generated when omitted. */
+      id?: string | undefined;
+      name: string;
+      rolls?: number | undefined;
+      entries: readonly LootEntry[];
+    }
+  | {
+      type: 'lootTable.edit';
+      tableId: string;
+      name?: string | undefined;
+      rolls?: number | undefined;
+      entries?: readonly LootEntry[] | undefined;
+    }
+  | {
+      type: 'loot.roll';
+      tableId: string;
+      /** Who gets what it rolls (a GM gift); null or omitted = the GM only. */
+      characterId?: string | null | undefined;
     }
   | {
       type: 'holdings.adjust';
@@ -475,6 +503,8 @@ export interface CommandContext {
   readonly now: () => string;
   /** Returns a fresh unique id. */
   readonly newId: () => string;
+  /** Random source in [0, 1) for rolls (M6.2); a roll is refused without one. */
+  readonly random?: (() => number) | undefined;
 }
 
 const anyRecord = z.record(z.string(), z.unknown());
@@ -511,6 +541,9 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('broadcast.unschedule'), id: z.string() }),
   z.object({ type: z.literal('item.define') }),
   z.object({ type: z.literal('item.edit') }),
+  z.object({ type: z.literal('lootTable.define'), entries: z.array(z.unknown()) }),
+  z.object({ type: z.literal('lootTable.edit'), entries: z.array(z.unknown()).optional() }),
+  z.object({ type: z.literal('loot.roll') }),
   z.object({ type: z.literal('holdings.adjust') }),
   z.object({ type: z.literal('gift.give') }),
   z.object({ type: z.literal('item.equip') }),
@@ -691,6 +724,14 @@ function pendingOf(campaign: Campaign, characterId: string) {
     : undefined;
 }
 
+function lootTableOf(campaign: Campaign, tableId: string): LootTable {
+  const tables = campaign.state?.lootTables;
+  const table =
+    tables && Object.prototype.hasOwnProperty.call(tables, tableId) ? tables[tableId] : undefined;
+  if (!table) throw new EventRejectedError(`No loot table "${tableId}"`);
+  return table;
+}
+
 /** The default library entries the campaign lacks (`missingDefaultEntries`), with fresh ids. */
 function defaultSeed(campaign: Campaign, ctx: CommandContext) {
   const state = campaign.state;
@@ -829,6 +870,35 @@ function toEvent(
       return {
         type: 'item.edited',
         payload: { itemId, name, rarity, description, slot, bonuses },
+      };
+    }
+    case 'lootTable.define':
+      return {
+        type: 'lootTable.defined',
+        payload: {
+          id: command.id ?? ctx.newId(),
+          name: command.name,
+          rolls: command.rolls ?? 1,
+          entries: command.entries,
+        },
+      };
+    case 'lootTable.edit': {
+      const { tableId, name, rolls, entries } = command;
+      return { type: 'lootTable.edited', payload: { tableId, name, rolls, entries } };
+    }
+    case 'loot.roll': {
+      const table = lootTableOf(campaign, command.tableId);
+      if (!ctx.random) throw new EventRejectedError('No random source to roll with');
+      let picks;
+      try {
+        picks = rollLoot(table, ctx.random);
+      } catch (error) {
+        if (error instanceof EconomyRuleError) throw new EventRejectedError(error.message);
+        throw error;
+      }
+      return {
+        type: 'loot.rolled',
+        payload: { tableId: table.id, characterId: command.characterId ?? null, picks },
       };
     }
     case 'holdings.adjust':

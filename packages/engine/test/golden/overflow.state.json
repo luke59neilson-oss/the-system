@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 26,
+  "schemaVersion": 27,
   "name": "Golden: XP overflow",
   "rules": {
     "configVersion": 1,
@@ -499,6 +499,9 @@
   "scheduledBroadcasts": [],
   "items": {},
   "itemOrder": [],
+  "lootTables": {},
+  "lootTableOrder": [],
+  "lootLog": [],
   "skillLibrary": {},
   "skillLibraryOrder": [],
   "classLibrary": {},

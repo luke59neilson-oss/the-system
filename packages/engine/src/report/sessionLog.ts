@@ -287,6 +287,14 @@ export function describeEvent(
         `${who(event.payload.characterId)} gave ${who(event.payload.to)}: ${bundleText(after, event.payload.bundle)}`,
       );
       break;
+    case 'loot.rolled': {
+      const roll = after.lootLog.find((r) => r.id === event.id);
+      if (roll) {
+        const to = roll.characterId === null ? '' : ` for ${who(roll.characterId)}`;
+        add('item', `GM rolled ${line(roll.tableName)}${to}: ${bundleText(after, roll.bundle)}`);
+      }
+      break;
+    }
     case 'holdings.adjusted': {
       const p = event.payload;
       const reason = p.reason ? ` (${line(p.reason)})` : '';

@@ -3,6 +3,7 @@ import type { DomainEvent } from '../events/envelope';
 import type { Campaign } from '../events/log';
 import { applyEvent, type CampaignState } from '../events/reducer';
 import { hiddenQuestNoticed } from '../quests';
+import { isEmptyBundle, type Bundle } from '../economy';
 
 /**
  * System notifications (DESIGN §9 "DING!") and their history back to day 1
@@ -153,19 +154,17 @@ export function notificationsBetween(
       }
     }
   }
+  // M6.2: loot rolled for a character reaches them as a gift from the GM.
+  const lootGift =
+    event?.type === 'loot.rolled' && event.payload.characterId !== null
+      ? after.lootLog.find((r) => r.id === event.id)
+      : undefined;
+  if (lootGift && lootGift.characterId !== null && !isEmptyBundle(lootGift.bundle)) {
+    out.push(giftNotice(after, lootGift.characterId, null, lootGift.bundle));
+  }
   if (event?.type === 'gift.given' && event.payload.to !== null) {
     const { characterId: giver, to, bundle } = event.payload;
-    out.push({
-      kind: 'gift',
-      characterId: to,
-      from: giver === null ? null : (after.characters[giver]?.name ?? giver),
-      currency: bundle.currency,
-      currencyName: after.rules.economy.currencyName,
-      items: Object.entries(bundle.items).map(([itemId, count]) => ({
-        name: after.items[itemId]?.name ?? itemId,
-        count,
-      })),
-    });
+    out.push(giftNotice(after, to, giver, bundle));
   }
   if (
     event?.type === 'trade.proposed' ||
@@ -290,3 +289,23 @@ export function notificationHistory(campaign: Campaign): HistoryItem[] {
   return out;
 }
 export * from './changeLog';
+
+/** A gift notification for `to` (M3.7); `giver` null = the GM. */
+function giftNotice(
+  after: CampaignState,
+  to: string,
+  giver: string | null,
+  bundle: Bundle,
+): SystemNotification {
+  return {
+    kind: 'gift',
+    characterId: to,
+    from: giver === null ? null : (after.characters[giver]?.name ?? giver),
+    currency: bundle.currency,
+    currencyName: after.rules.economy.currencyName,
+    items: Object.entries(bundle.items).map(([itemId, count]) => ({
+      name: after.items[itemId]?.name ?? itemId,
+      count,
+    })),
+  };
+}

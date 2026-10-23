@@ -17,9 +17,14 @@ import {
   itemEffectiveStats,
   unequip,
   validateItemDef,
+  validateLootTable,
+  lootBundle,
+  LOOT_LOG_LIMIT,
   type Bundle,
   type Holdings,
   type ItemDef,
+  type LootRecord,
+  type LootTable,
   type Trade,
 } from '../economy';
 import { canReadNote, skillPairCounts, type Note, type PracticeEntry } from '../practice';
@@ -60,8 +65,8 @@ import {
 } from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 26;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 27;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -102,6 +107,12 @@ export interface CampaignState {
   readonly items: Readonly<Record<string, ItemDef>>;
   /** Item ids in definition order. */
   readonly itemOrder: readonly string[];
+  /** Loot tables by id (M6.2). GM-only. */
+  readonly lootTables: Readonly<Record<string, LootTable>>;
+  /** Loot table ids in definition order. */
+  readonly lootTableOrder: readonly string[];
+  /** The latest loot rolls, oldest first (at most LOOT_LOG_LIMIT). GM-only. */
+  readonly lootLog: readonly LootRecord[];
   /** Skill library by id (M4.1). GM-only: fills granted skills' text by name. */
   readonly skillLibrary: Readonly<Record<string, SkillDef>>;
   /** Skill library ids in definition order. */
@@ -242,6 +253,11 @@ function transfer(
     next = withHoldings(next, to, held);
   }
   return next;
+}
+
+function lootTableOf(state: CampaignState, event: DomainEvent, id: string): LootTable {
+  const found = hasOwn(state.lootTables, id) ? state.lootTables[id] : undefined;
+  return found ?? fail(event, `unknown loot table "${id}"`);
 }
 
 function openTrade(state: CampaignState, event: DomainEvent, tradeId: string): Trade {
@@ -659,6 +675,9 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       scheduledBroadcasts: [],
       items: {},
       itemOrder: [],
+      lootTables: {},
+      lootTableOrder: [],
+      lootLog: [],
       skillLibrary: {},
       skillLibraryOrder: [],
       classLibrary: {},
@@ -1013,6 +1032,49 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       for (const def of races) next = defineRace(next, event, def);
       for (const def of professions) next = defineProfession(next, event, def);
       return next;
+    }
+    case 'lootTable.defined': {
+      const { id, ...fields } = event.payload;
+      if (hasOwn(state.lootTables, id)) fail(event, `loot table "${id}" already exists`);
+      const table: LootTable = { id, ...fields };
+      rule(event, () => validateLootTable(table, state.items));
+      return {
+        ...state,
+        lootTables: { ...state.lootTables, [id]: table },
+        lootTableOrder: [...state.lootTableOrder, id],
+      };
+    }
+    case 'lootTable.edited': {
+      const { tableId, ...changes } = event.payload;
+      const old = lootTableOf(state, event, tableId);
+      if (Object.keys(changes).length === 0) fail(event, 'nothing to change');
+      const table: LootTable = {
+        id: tableId,
+        name: changes.name ?? old.name,
+        rolls: changes.rolls ?? old.rolls,
+        entries: changes.entries ?? old.entries,
+      };
+      rule(event, () => validateLootTable(table, state.items));
+      return { ...state, lootTables: { ...state.lootTables, [tableId]: table } };
+    }
+    case 'loot.rolled': {
+      const { tableId, characterId, picks } = event.payload;
+      const table = lootTableOf(state, event, tableId);
+      const bundle = rule(event, () => lootBundle(table, picks));
+      const record: LootRecord = {
+        id: event.id,
+        at: event.timestamp,
+        tableId,
+        tableName: table.name,
+        characterId,
+        bundle,
+      };
+      if (characterId !== null) characterOf(state, event, characterId);
+      const given =
+        characterId !== null && !isEmptyBundle(bundle)
+          ? transfer(state, event, null, characterId, bundle)
+          : state;
+      return { ...given, lootLog: [...state.lootLog, record].slice(-LOOT_LOG_LIMIT) };
     }
     case 'holdings.adjusted': {
       const { characterId, currency, items } = event.payload;

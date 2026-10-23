@@ -40,6 +40,29 @@ const itemFields = {
   slot: recordId.nullable(),
   bonuses: z.array(statBonus).max(30),
 };
+/** Loot table fields (M6.2). Weights are relative; counts per pick run min..max. */
+const lootWeight = z.number().int().min(1).max(1_000_000);
+const lootEntry = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('item'),
+    itemId: recordId,
+    weight: lootWeight,
+    min: z.number().int().min(1).max(1_000_000),
+    max: z.number().int().min(1).max(1_000_000),
+  }),
+  z.strictObject({
+    kind: z.literal('currency'),
+    weight: lootWeight,
+    min: z.number().int().nonnegative().max(1_000_000_000),
+    max: z.number().int().nonnegative().max(1_000_000_000),
+  }),
+  z.strictObject({ kind: z.literal('nothing'), weight: lootWeight }),
+]);
+const lootTableFields = {
+  name: nonBlank,
+  rolls: z.number().int().min(1).max(20),
+  entries: z.array(lootEntry).min(1).max(50),
+};
 /** Skill library entry fields (M4.1). Text is trimmed; blank means none. */
 const skillDefFields = {
   name: nonBlank,
@@ -199,6 +222,32 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     description: itemFields.description.optional(),
     slot: itemFields.slot.optional(),
     bonuses: itemFields.bonuses.optional(),
+  }),
+  /** GM adds a loot table (M6.2). */
+  'lootTable.defined': z.strictObject({ id: recordId, ...lootTableFields }),
+  /** GM edits a loot table; omitted fields stay. Past rolls keep what they gave. */
+  'lootTable.edited': z.strictObject({
+    tableId: recordId,
+    name: lootTableFields.name.optional(),
+    rolls: lootTableFields.rolls.optional(),
+    entries: lootTableFields.entries.optional(),
+  }),
+  /**
+   * GM rolls a loot table (M6.2): the picks the random source made, so replay
+   * never rolls again. With a character, what it gives goes to them as a GM gift.
+   */
+  'loot.rolled': z.strictObject({
+    tableId: recordId,
+    characterId: party,
+    picks: z
+      .array(
+        z.strictObject({
+          entry: z.number().int().nonnegative().max(49),
+          count: z.number().int().nonnegative().max(1_000_000_000),
+        }),
+      )
+      .min(1)
+      .max(20),
   }),
   /** GM gives or takes currency and items (signed deltas); nothing may go negative. */
   'holdings.adjusted': z.strictObject({
@@ -610,6 +659,9 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'item.defined': 1,
   'item.edited': 1,
   'holdings.adjusted': 1,
+  'lootTable.defined': 1,
+  'lootTable.edited': 1,
+  'loot.rolled': 1,
   'gift.given': 1,
   'item.equipped': 1,
   'item.unequipped': 1,

@@ -14,6 +14,7 @@ import { feedRows } from './feed';
 import { JoinPanel } from './JoinPanel';
 import { SkillLibrary } from './SkillLibrary';
 import { ItemLibrary } from './ItemLibrary';
+import { LootTables } from './LootTables';
 import { OriginLibrary } from './OriginLibrary';
 import { entriesOf } from './originLibraryModel';
 import { resolvePerspective, type PartyMember, type Perspective } from './perspective';
@@ -162,6 +163,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <SkillText client={client} state={state} />
               <SkillLibrary client={client} state={state} />
               <ItemLibrary client={client} state={state} />
+              <LootTables client={client} state={state} />
               <OriginLibrary client={client} state={state} />
               <RulesSettings client={client} state={state} />
               <Feed live={live} state={state} />

@@ -87,6 +87,8 @@ export const CHANGE_LOG_PHRASES: Readonly<Record<string, string>> = {
   'practice.logged': 'practice logged',
   'item.defined': 'item added to the library',
   'item.edited': 'item edited',
+  'lootTable.defined': 'loot table added',
+  'lootTable.edited': 'loot table edited',
   'item.equipped': 'item equipped',
   'item.unequipped': 'item unequipped',
   'trade.proposed': 'trade proposed',

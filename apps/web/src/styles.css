@@ -2310,3 +2310,52 @@ ol.change-log li.undone .change-text {
   font-size: 0.8rem;
   font-family: var(--mono);
 }
+
+/* GM loot tables (M6.2) */
+.loot-tables {
+  grid-column: 1 / -1;
+}
+.loot-tables h3 {
+  margin: 4px 0 8px;
+  font-size: 1rem;
+}
+.loot-entries {
+  margin: 8px 0;
+  padding-left: 1.4em;
+}
+.loot-entries li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: flex-end;
+  margin-bottom: 6px;
+}
+.loot-entries input {
+  width: 5em;
+}
+.loot-entries [data-testid='loot-chance'] {
+  min-width: 6em;
+  margin-bottom: 10px;
+}
+.loot-entries button {
+  margin-bottom: 10px;
+}
+.loot-roll {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.loot-roll button {
+  margin-bottom: 10px;
+}
+.loot-recent {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.loot-tables form > label input {
+  max-width: 28em;
+}
