@@ -75,14 +75,13 @@ jobs:
 
   # Desktop smoke (QF.6): the real Electron app under xvfb. Main pushes only;
   # the repo is public, so the minutes are free (L10).
-  # Not yet a gate: it failed on its first run (31cf4ec) with no readable
-  # log, so it reports failures as annotations and does not turn main red
-  # until it has passed once (QF.6 stays open until then; D139).
+  # A gate since its first green run (5bca523, D141). The github reporter
+  # turns failures into annotations, the only CI output readable from the
+  # autonomous runs (job logs are not).
   desktop-smoke:
     if: github.event_name == 'push'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

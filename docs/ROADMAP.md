@@ -277,7 +277,7 @@ the rest follow in file order. Each gets its own §6 review.
   pass the engine lint (`eslint.config.js` ~52-59). *Accept:* each of these is
   rejected; `scripts/lint-rules.test.ts` asserts the rule id
   (`no-restricted-syntax`), not just "some message".
-- [ ] **QF.6 Desktop smoke specs run in CI.** `apps/desktop/test/*.spec.ts`
+- [x] **QF.6 Desktop smoke specs run in CI.** `apps/desktop/test/*.spec.ts`
   (GM window connects with the injected key, key leaves the address bar,
   busy-port fallback) run in no workflow. *Accept:* a CI job (public repo, so
   free minutes) installs the Electron binary and runs `npm run desktop:smoke`
@@ -319,7 +319,7 @@ the rest follow in file order. Each gets its own §6 review.
   MQ.14 and MQ.6 specs, each green alone). *Accept:* every spec imports `test`
   from `e2e/helpers/test.ts`, whose automatic fixture closes the contexts a
   test opened; the full suite passes on one worker; no retries added.
-- [ ] **QF.11 (High) A partial download cannot hang.** Luke's first real
+- [x] **QF.11 (High) A partial download cannot hang.** Luke's first real
   download (2026-10-22) stopped at 52 MB of 107 MB; double-clicking the
   portable `.exe` started it anyway and it hung, holding the file so Windows
   would not delete it ("file is open in The System"). electron-builder's
