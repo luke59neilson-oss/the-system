@@ -141,6 +141,14 @@ test('the GM builds, checks and sends a menu, and withdraws a passed-over option
     .evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-withdrawn-1366x768.png') });
 
+  // Profession options only once a profession exists: Miranda (E, Cook) has
+  // the Kind choice; Casper (F, no profession) does not.
+  await builder.getByLabel('Character').selectOption({ label: 'Miranda' });
+  await expect(menu.getByRole('group', { name: 'Option 1' }).getByLabel('Kind')).toBeVisible();
+  await builder.getByLabel('Character').selectOption({ label: 'Casper' });
+  await expect(builder.getByText(/Selection \(lvl|No selection due/).first()).toBeVisible();
+  await expect(menu.getByLabel('Kind')).toHaveCount(0);
+
   // The player sees both open menus, the new options, and not the withdrawn one.
   const laptop = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const playerErrors = watchErrors(laptop);
