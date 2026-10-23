@@ -876,7 +876,7 @@ function Feed({
           />
         </div>
         {live.notifications.length === 0 ? (
-          <p className="muted">Level-ups appear here as they happen.</p>
+          <p className="muted">Level-ups and skill upgrades appear here as they happen.</p>
         ) : rows.length === 0 ? (
           <p className="muted" data-testid="history-empty">
             No notifications match.

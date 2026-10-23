@@ -2207,3 +2207,45 @@ ol.change-log li.undone .change-text {
   list-style: none;
   padding: 0;
 }
+
+/* Marks review (M5.3). */
+.marks-character + .marks-character {
+  border-top: 1px solid var(--border);
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+}
+.marks-list,
+.marks-entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.marks-list > li {
+  margin: 0.4rem 0;
+}
+.marks-entries {
+  padding-left: 1rem;
+  font-size: 0.9em;
+}
+.marks-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  align-items: center;
+}
+.marks-row > button,
+.marks-row > .muted:last-child {
+  margin-left: auto;
+}
+.marks-row > label {
+  margin-bottom: 0;
+}
+.marks-session {
+  max-width: 16rem;
+}
+.marks-repeat {
+  color: #e0b45a;
+}
+.upgrade-prompt {
+  margin: 0.4rem 0;
+}

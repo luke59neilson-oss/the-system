@@ -65,6 +65,15 @@ export type SystemNotification =
       readonly action: 'proposed' | 'accepted' | 'declined' | 'cancelled';
       /** The other party's name, or null for the GM. */
       readonly other: string | null;
+    }
+  | {
+      /** A skill upgraded by mastery marks (M5.3); only its owner is told. */
+      readonly kind: 'skillUpgrade';
+      readonly characterId: string;
+      readonly skill: string;
+      /** Rarity display names before and after. */
+      readonly from: string;
+      readonly to: string;
     };
 
 /** A notification with where it sits in the campaign. */
@@ -171,6 +180,19 @@ export function notificationsBetween(
           other: actor === null ? null : (after.characters[actor]?.name ?? actor),
         });
       }
+    }
+  }
+  if (event?.type === 'skill.upgraded' && before) {
+    const { characterId, skill } = event.payload;
+    const rarityOf = (state: CampaignState) =>
+      (has(state.characters, characterId) ? state.characters[characterId] : undefined)?.skills.find(
+        (s) => s.name === skill,
+      )?.rarity;
+    const from = rarityOf(before);
+    const to = rarityOf(after);
+    if (from && to && from !== to) {
+      const name = (id: string) => after.rules.skills.rarities.find((r) => r.id === id)?.name ?? id;
+      out.push({ kind: 'skillUpgrade', characterId, skill, from: name(from), to: name(to) });
     }
   }
   for (const id of after.characterOrder) {

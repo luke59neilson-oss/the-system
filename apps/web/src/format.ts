@@ -27,6 +27,8 @@ export function notificationText(n: LiveNotification): string {
       return n.unassigned > 0
         ? `Free points waiting to be assigned: ${n.unassigned}`
         : 'All free points assigned';
+    case 'skillUpgrade':
+      return `*'DING!' Skill upgraded: [${n.skill} (${n.from})] → [${n.skill} (${n.to})]*`;
     case 'broadcast':
       return n.text;
     case 'hiddenQuest':

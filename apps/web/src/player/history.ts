@@ -11,7 +11,7 @@ export type HistoryFilter =
   'dings' | 'all' | 'class' | 'profession' | 'race' | 'freePoints' | 'broadcast' | 'items';
 
 export const HISTORY_FILTERS: readonly { id: HistoryFilter; label: string }[] = [
-  { id: 'dings', label: 'Level-ups' },
+  { id: 'dings', label: 'Level-ups and upgrades' },
   { id: 'all', label: 'Everything' },
   { id: 'class', label: 'Class' },
   { id: 'profession', label: 'Profession' },
@@ -26,7 +26,7 @@ export function matchesFilter(n: LiveNotification, filter: HistoryFilter): boole
     case 'all':
       return true;
     case 'dings':
-      return n.kind === 'level' || n.kind === 'profession';
+      return n.kind === 'level' || n.kind === 'profession' || n.kind === 'skillUpgrade';
     case 'profession':
       return n.kind === 'profession' || (n.kind === 'level' && n.track === filter);
     case 'class':

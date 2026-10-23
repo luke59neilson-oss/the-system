@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CampaignState } from '@the-system/engine';
 import { friendlyError, notificationText } from '../src/format';
 import { feedRows } from '../src/gm/feed';
+import { matchesFilter } from '../src/player/history';
 
 describe('notificationText', () => {
   it('a new profession is acquired at a level, not gained from level 1 (MQ.6)', () => {
@@ -105,5 +106,22 @@ describe('feedRows', () => {
       ['Everyone', 'All'],
     ]);
     expect(new Set(rows.map((r) => r.key)).size).toBe(rows.length);
+  });
+});
+
+describe('skill upgrade DING (M5.3)', () => {
+  it('reads like the books and counts as a DING in the history', () => {
+    const n = {
+      kind: 'skillUpgrade' as const,
+      characterId: 'jake',
+      skill: 'Basic Archery',
+      from: 'Inferior',
+      to: 'Common',
+    };
+    expect(notificationText(n)).toBe(
+      "*'DING!' Skill upgraded: [Basic Archery (Inferior)] → [Basic Archery (Common)]*",
+    );
+    expect(matchesFilter(n, 'dings')).toBe(true);
+    expect(matchesFilter(n, 'class')).toBe(false);
   });
 });
