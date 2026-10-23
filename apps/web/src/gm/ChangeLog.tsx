@@ -89,47 +89,44 @@ export function ChangeLog({
   return (
     <section className="window" aria-labelledby="change-log">
       <h2 id="change-log">Change log</h2>
-      <label>
-        Who
-        <select
-          value={who}
-          onChange={(e) => {
-            setWho(e.target.value as 'all' | 'gm' | 'player');
-            setError(null);
-          }}
-        >
-          <option value="all">Everyone</option>
-          <option value="gm">GM and System</option>
-          <option value="player">Players</option>
-        </select>
-      </label>
-      <label>
-        Kind
-        <select
-          value={kind}
-          onChange={(e) => {
-            setKind(e.target.value as 'all' | ChangeLogCategory);
-            setError(null);
-          }}
-        >
-          <option value="all">Everything</option>
-          {CHANGE_LOG_CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {KIND_LABELS[c]}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        Filter
-        <input
-          value={filter}
-          onChange={(e) => {
-            setFilter(e.target.value);
-            setError(null);
-          }}
-        />
-      </label>
+      <label htmlFor="change-log-who">Who</label>
+      <select
+        id="change-log-who"
+        value={who}
+        onChange={(e) => {
+          setWho(e.target.value as 'all' | 'gm' | 'player');
+          setError(null);
+        }}
+      >
+        <option value="all">Everyone</option>
+        <option value="gm">GM and System</option>
+        <option value="player">Players</option>
+      </select>
+      <label htmlFor="change-log-kind">Kind</label>
+      <select
+        id="change-log-kind"
+        value={kind}
+        onChange={(e) => {
+          setKind(e.target.value as 'all' | ChangeLogCategory);
+          setError(null);
+        }}
+      >
+        <option value="all">Everything</option>
+        {CHANGE_LOG_CATEGORIES.map((c) => (
+          <option key={c} value={c}>
+            {KIND_LABELS[c]}
+          </option>
+        ))}
+      </select>
+      <label htmlFor="change-log-filter">Filter</label>
+      <input
+        id="change-log-filter"
+        value={filter}
+        onChange={(e) => {
+          setFilter(e.target.value);
+          setError(null);
+        }}
+      />
       {loadError && (
         <p className="err" role="alert">
           Couldn't load the change log. It reloads after the next change in the game.
