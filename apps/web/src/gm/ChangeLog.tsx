@@ -17,6 +17,7 @@ export function ChangeLog({
 }) {
   const [rows, setRows] = useState<readonly ChangeLogRow[]>([]);
   const [filter, setFilter] = useState('');
+  const [who, setWho] = useState<'all' | 'gm' | 'player'>('all');
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
@@ -33,10 +34,19 @@ export function ChangeLog({
   const q = filter.trim().toLowerCase();
   const shown = [...rows]
     .reverse()
+    .filter((r) => who === 'all' || r.actor === who || (who === 'gm' && r.actor === 'system'))
     .filter((r) => q === '' || r.lines.join(' ').toLowerCase().includes(q) || r.type.includes(q));
   return (
     <section className="window" aria-labelledby="change-log">
       <h2 id="change-log">Change log</h2>
+      <label>
+        Who
+        <select value={who} onChange={(e) => setWho(e.target.value as 'all' | 'gm' | 'player')}>
+          <option value="all">Everyone</option>
+          <option value="gm">GM and System</option>
+          <option value="player">Players</option>
+        </select>
+      </label>
       <label>
         Filter
         <input value={filter} onChange={(e) => setFilter(e.target.value)} />
