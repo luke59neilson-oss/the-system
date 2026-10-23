@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 let server: RunningServer;

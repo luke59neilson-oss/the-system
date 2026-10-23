@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MQ.12 Skill library rules (DESIGN §6, L4): entries are keyed by name and

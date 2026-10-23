@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M3.3 Notifications and history: the book-style DING feed back to day 1

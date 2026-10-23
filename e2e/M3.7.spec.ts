@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M3.7 Inventory, gifts, trades: the demo's equipped ring and bow on Jake's
