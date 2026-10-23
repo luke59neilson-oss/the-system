@@ -312,6 +312,14 @@ the rest follow in file order. Each gets its own §6 review.
   and the counterparty's for items they hold or are offered; engine tests for
   the 1–3/4 probe and the definition; canary still passes.
 
+- [ ] **QF.10 e2e pages close with their test.** Specs open pages with
+  `browser.newPage()` and rarely close them; once a test's server stops, each
+  leftover page keeps reconnecting, so the worker's one browser slows until a
+  late spec times out at its first click (runs 4a0765f3 and 6fcb6693: MQ.13,
+  MQ.14 and MQ.6 specs, each green alone). *Accept:* every spec imports `test`
+  from `e2e/helpers/test.ts`, whose automatic fixture closes the contexts a
+  test opened; the full suite passes on one worker; no retries added.
+
 ## M1 (continued) — Rules engine
 
 - [x] **M1.6 Titles and bonuses.** Flat and percentage bonuses, percentage
