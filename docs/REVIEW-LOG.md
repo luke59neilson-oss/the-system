@@ -724,3 +724,7 @@
 
 ## 2026-10-23 · QF.17 Table-view panes show every DING · sonnet
 - Round 1 (5ce7bbd..e05d943): 0 H / 0 M / 3 L. Lows: e2e covers only the skill-upgrade kind (profession and merge rely on the `isDing` unit test); legibility checked at one pane only; re-captured screenshots changed byte-wise. No fixes needed; Lows noted, not queued.
+
+## 2026-10-23 · M6.2 Loot tables · sonnet
+- Round 1 (52a1b57..03acc45): 0 H / 2 M / 6 L. M: `loot.rolled` stored only picks, so undoing an earlier table edit silently reinterpreted a later roll → the event now carries `bundle` and the reducer refuses picks that no longer give it (test: such an undo is refused; a forged bundle is refused). M: the edit form never reconciled with live state → diffs against the table as opened, "Changed elsewhere… Reload" note. Lows: Roll enabled with unsaved edits (fixed: disabled with a note); `__proto__` item id in `lootBundle` (fixed: Map); status line does not name the drop; uncapped total currency per roll (schema rejects the event); redundant labels; no delete/reorder.
+- Round 2 (03acc45..aa4085d): both Mediums fixed, 0 H / 0 M; Low: the stale check compares JSON key order (cosmetic; Reload clears it).

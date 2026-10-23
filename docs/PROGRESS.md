@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M5, MS, MQ and MR done; QF.1–QF.16 done; M6.1 done; Preview ready: Actions → Release → Run workflow (M5)
-**Next item:** QF.17 Table-view panes show every DING, then M6.2 Loot tables
+**Status:** in progress: M0–M5, MS, MQ and MR done; QF.1–QF.17 done; M6.1–M6.2 done; Preview ready: Actions → Release → Run workflow (M5)
+**Next item:** M6.3 Currency
 **Blockers:** none
 
 ## Run log
@@ -846,3 +846,13 @@ next item, blockers. -->
 - Open `wip/*` branches: none new (wip/M6.1 merged).
 - Next item: QF.17, then M6.2.
 - Blockers: none.
+
+### Run 7a44dcfe · 2026-10-23 22:08–22:55 UTC (end minute 47: hard-stop window; M6.2's round-2 review returned at 45, closed out instead of starting M6.3)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` reset to origin/main, which it did not share history with). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Sonnet reviewers work (worktree; each Agent call blocks, 3–5 min). CI on main green (52b7d42). No new answers. Not a sweep or efficiency hour.
+- QF.17 **checked**: `isDing` in `player/history.ts` is the one DING set for the history filter and the Table-view pane; e2e `QF.17.spec.ts` upgrades a skill in Table view and sees `latest-ding` change (fails without the fix). Sonnet 0 H / 0 M / 3 L.
+- M6.2 Loot tables **checked** (D175): engine `economy/loot.ts`, events `lootTable.defined`/`lootTable.edited`/`loot.rolled` (picks + bundle), injected `random` (server: crypto), roll for the GM only or into a character's inventory as a GM gift, GM-only `lootLog` (latest 50); state schema v27, goldens re-recorded + new `loot.jsonl`; GM "Loot tables" window with odds per pick. Sonnet round 1 0 H / 2 M / 6 L (undo of a table edit rewrote a past roll; stale draft overwrote another GM's edit) → fixed; round 2 0 H / 0 M.
+- Tests: 1,021 unit (`npm run check` green); engine lines 98.7% (reviewer); full e2e 64/64 + latency 6/6 green on 03acc45; M6.2 spec re-run green after the fixes.
+- Open `wip/*` branches: wip/M6.2 (same as main now; leave).
+- Next item: M6.3 Currency.
+- Blockers: none.
+
