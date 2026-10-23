@@ -2038,6 +2038,10 @@ ol.change-log {
   display: grid;
   gap: 4px;
 }
+.change-log-footer {
+  gap: 0.75rem;
+  align-items: center;
+}
 ol.change-log li {
   display: flex;
   align-items: baseline;

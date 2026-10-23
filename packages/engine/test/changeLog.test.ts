@@ -197,6 +197,7 @@ describe('updateChangeLog and changeLogPage (QF.13)', () => {
     expect(head.rows).toHaveLength(CHANGE_LOG_DEFAULT_PAGE);
     expect(head.rows[0]!.lines.join(' ')).toContain('Line 9999');
     expect(head.matching).toBe(10_002);
+    expect(head.undone).toBe(0);
     expect(head.older).toBe(head.rows.at(-1)!.seq);
     const next = changeLogPage(cache.rows, { before: head.older });
     expect(next.rows[0]!.seq).toBe(head.older! - 1);

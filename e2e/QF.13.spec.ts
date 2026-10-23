@@ -75,6 +75,18 @@ test('the change log pages, searches the whole log and stays live', async ({ pag
   await expect(rows.last()).toContainText('Campaign created');
   await page.screenshot({ path: path.join(shots, 'gm-1366x768.png') });
 
+  // Undoing a row on a loaded older page: the list starts over from the
+  // newest page (rows below it may have changed), never showing it un-undone.
+  const old20 = rows.filter({ hasText: 'Line 20.' });
+  await old20.getByRole('button', { name: 'Undo' }).click();
+  await old20.getByRole('button', { name: 'Confirm undo' }).click();
+  await expect(rows).toHaveCount(100);
+  await log.getByLabel('Filter').fill('Line 20.');
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText('(undone)');
+  await log.getByLabel('Filter').fill('');
+  await expect(rows).toHaveCount(100);
+
   // The search runs on the server, so it finds rows no page has loaded.
   await log.getByLabel('Filter').fill('Line 7.');
   await expect(rows).toHaveCount(1);

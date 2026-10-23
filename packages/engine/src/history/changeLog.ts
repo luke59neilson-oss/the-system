@@ -260,6 +260,12 @@ export interface ChangeLogPage {
   readonly older: number | null;
   /** Rows matching the filters across the whole log. */
   readonly matching: number;
+  /**
+   * Undone rows across the whole log, ignoring filters: when it changes, rows
+   * a client loaded earlier may be stale (an undo changes the target row and
+   * can change the words of later ones).
+   */
+  readonly undone: number;
 }
 
 /**
@@ -279,9 +285,11 @@ export function changeLogPage(rows: readonly ChangeLogRow[], query: ChangeLogQue
   const before = query.before ?? Number.POSITIVE_INFINITY;
   const page: ChangeLogRow[] = [];
   let matching = 0;
+  let undone = 0;
   let older: number | null = null;
   for (let i = rows.length - 1; i >= 0; i--) {
     const r = rows[i]!;
+    if (r.undoneBy !== null) undone++;
     if (who !== 'all' && r.actor !== who && !(who === 'gm' && r.actor === 'system')) continue;
     if (kind !== 'all' && r.category !== kind) continue;
     if (text !== '' && !r.lines.join(' ').toLowerCase().includes(text)) continue;
@@ -290,5 +298,5 @@ export function changeLogPage(rows: readonly ChangeLogRow[], query: ChangeLogQue
     if (page.length < limit) page.push(r);
     else if (older === null) older = page.at(-1)!.seq;
   }
-  return { rows: page, older, matching } satisfies ChangeLogPage;
+  return { rows: page, older, matching, undone } satisfies ChangeLogPage;
 }

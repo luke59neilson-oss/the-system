@@ -44,11 +44,13 @@ const REFETCH_MS = 250;
  * pages the newest page simply replaces the list, so it stays one page long.
  * After that, rows only ever arrive at the top, so the new head plus the shown
  * rows below it is contiguous and the older cursor (the bottom row) still
- * holds (`keptOlder`). If the head filled up without reaching the old top,
- * the gap is unknown and the list starts over from the head.
+ * holds (`keptOlder`). The list starts over from the head when that is not
+ * safe: the head filled up without reaching the old top (unknown gap), or an
+ * undo happened since (`undone` changed), which can change rows below the head.
  */
 export function mergeHead(
   shown: readonly ChangeLogRow[],
+  shownUndone: number,
   head: ChangeLogPage,
 ): { rows: readonly ChangeLogRow[]; keptOlder: boolean } {
   const restart = { rows: head.rows, keptOlder: false };
@@ -56,6 +58,7 @@ export function mergeHead(
   const top = shown[0]?.seq;
   if (oldest === undefined || top === undefined) return restart;
   if (shown.length <= CHANGE_LOG_DEFAULT_PAGE) return restart;
+  if (head.undone !== shownUndone) return restart;
   if (head.older !== null && oldest > top) return restart;
   return { rows: [...head.rows, ...shown.filter((r) => r.seq < oldest)], keptOlder: true };
 }
@@ -112,10 +115,17 @@ export function ChangeLog({
   const filterKey = `${who}|${kind}|${text}`;
   // What is on screen and for which filters; read by the refetch, which only
   // a state or filter change triggers.
-  const shownRef = useRef<{ key: string; rows: readonly ChangeLogRow[] }>({ key: '', rows: [] });
+  // `epoch` changes whenever the list starts over, so a late "Load older"
+  // answer for the old list is dropped instead of leaving a gap.
+  const shownRef = useRef<{
+    key: string;
+    rows: readonly ChangeLogRow[];
+    undone: number;
+    epoch: number;
+  }>({ key: '', rows: [], undone: 0, epoch: 0 });
   const [shownKey, setShownKey] = useState<string | null>(null);
   const show = (key: string, next: readonly ChangeLogRow[]) => {
-    shownRef.current = { key, rows: next };
+    shownRef.current = { ...shownRef.current, key, rows: next };
     setRows(next);
     setShownKey(key);
   };
@@ -129,8 +139,10 @@ export function ChangeLog({
           const before = shownRef.current;
           const merged =
             before.key === filterKey
-              ? mergeHead(before.rows, head)
+              ? mergeHead(before.rows, before.undone, head)
               : { rows: head.rows, keptOlder: false };
+          if (!merged.keptOlder) shownRef.current.epoch++;
+          shownRef.current.undone = head.undone;
           show(filterKey, merged.rows);
           if (!merged.keptOlder) setOlder(head.older);
           setMatching(head.matching);
@@ -148,11 +160,16 @@ export function ChangeLog({
   const loadOlder = () => {
     if (older === null) return;
     const key = filterKey;
+    const epoch = shownRef.current.epoch;
     setLoadingOlder(true);
     fetchPage(gmKey, { who, kind, text }, older)
       .then((page) => {
         const current = shownRef.current;
-        if (current.key !== key) return;
+        // The list started over, or an undo may have changed loaded rows:
+        // drop this page; the refetch that follows the change sets the list.
+        if (current.key !== key || current.epoch !== epoch || page.undone !== current.undone) {
+          return;
+        }
         const bottom = current.rows.at(-1)?.seq ?? Number.POSITIVE_INFINITY;
         show(key, [...current.rows, ...page.rows.filter((r) => r.seq < bottom)]);
         setOlder(page.older);
@@ -161,7 +178,8 @@ export function ChangeLog({
       .catch(() => setLoadError(true))
       .finally(() => setLoadingOlder(false));
   };
-  const shown = shownKey === filterKey ? rows : [];
+  // While a new filter loads, the old rows stay (no flash of an empty list).
+  const shown = rows;
   return (
     <section className="window" aria-labelledby="change-log">
       <h2 id="change-log">Change log</h2>
@@ -241,8 +259,12 @@ export function ChangeLog({
                       setError(res.ok ? null : undoError(res.error));
                       // Show it undone at once; the refetch brings the real marker.
                       if (res.ok) {
-                        setRows((all) =>
-                          all.map((x) => (x.id === r.id ? { ...x, undoneBy: 'pending' } : x)),
+                        const current = shownRef.current;
+                        show(
+                          current.key,
+                          current.rows.map((x) =>
+                            x.id === r.id ? { ...x, undoneBy: 'pending' } : x,
+                          ),
                         );
                       }
                     });
@@ -267,7 +289,7 @@ export function ChangeLog({
         ))}
       </ol>
       {shown.length > 0 && (
-        <p className="row muted small">
+        <p className="row muted small change-log-footer">
           <span>
             Showing {shown.length} of {matching} {matching === 1 ? 'change' : 'changes'}.
           </span>

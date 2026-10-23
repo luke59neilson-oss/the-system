@@ -96,6 +96,7 @@ describe('GET /api/gm/changelog (QF.13)', () => {
     apply({ type: 'event.undo', eventId: last.id });
     const after = await get('?text=Line%20249');
     expect(after.rows[0]!.undoneBy).not.toBeNull();
+    expect(after.undone).toBe(1);
   });
 });
 
