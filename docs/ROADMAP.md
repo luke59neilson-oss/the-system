@@ -644,7 +644,7 @@ work: Q44–Q48 and Q52.
 
 ## M9 — Claude bridge and content packs
 
-- [ ] **M9.1 Session report.** Full markdown + JSON report at session end
+- [x] **M9.1 Session report.** Full markdown + JSON report at session end
   (builds on M2.4); "Copy for Claude" button.
 - [ ] **M9.2 Content format.** JSON schemas for skill offers, skills, items,
   titles, evolution options, bestiary entries; `docs/CONTENT-FORMAT.md` with

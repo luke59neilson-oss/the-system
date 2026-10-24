@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { CampaignState } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
@@ -10,8 +10,18 @@ type Outcome = { kind: 'ok' | 'warn' | 'err'; text: string } | null;
  * Play sessions and the in-game day (ROADMAP M4.3). Starting a session makes
  * marks, repeat checks and the running session log count from now; ending it
  * backs the campaign up and writes the session report to the exports folder.
+ * M9.1: each session's report can be copied for Claude (markdown) or saved
+ * as JSON, rebuilt by the server from the event log.
  */
-export function SessionPanel({ client, state }: { client: LiveClient; state: CampaignState }) {
+export function SessionPanel({
+  client,
+  state,
+  gmKey,
+}: {
+  client: LiveClient;
+  state: CampaignState;
+  gmKey: string;
+}) {
   const summary = sessionSummary(state);
   const { running } = summary;
   const [confirming, setConfirming] = useState(false);
@@ -49,6 +59,59 @@ export function SessionPanel({ client, state }: { client: LiveClient; state: Cam
     if (await run({ type: 'session.end' }, `Session ${n} ended: backup saved, report written`)) {
       setConfirming(false);
     }
+  };
+  // A copy the browser refused: the report shown for the GM to copy by hand.
+  const [manual, setManual] = useState<{ n: number; text: string } | null>(null);
+  const manualRef = useRef<HTMLTextAreaElement>(null);
+  // Selected once when it appears, not again on every live update.
+  useEffect(() => manualRef.current?.select(), [manual]);
+  const copied = (n: number) =>
+    setOutcome({ kind: 'ok', text: `Session ${n} report copied: paste it into Claude` });
+  /**
+   * Copies session `n`'s markdown report. The async clipboard write starts
+   * inside the click (a ClipboardItem fed by the fetch), so the click still
+   * counts as the user's gesture when the text arrives; outside a secure
+   * context the legacy copy command is tried, and when that fails too the
+   * report is shown selected for the GM to copy by hand.
+   */
+  const copyReport = (n: number) => {
+    setBusy(true);
+    setManual(null);
+    const text = fetchReport(gmKey, n, 'md');
+    const finish = async () => {
+      const r = await text;
+      if (!r.ok) return setOutcome({ kind: 'err', text: r.error });
+      if (legacyCopy(r.text)) return copied(n);
+      setManual({ n, text: r.text });
+      setOutcome({
+        kind: 'warn',
+        text: 'This browser blocked the copy: select the report below and copy it.',
+      });
+    };
+    const done = () => setBusy(false);
+    if (canWriteClipboard()) {
+      const blob = text.then((r) => {
+        if (!r.ok) throw new Error(r.error);
+        return new Blob([r.text], { type: 'text/plain' });
+      });
+      navigator.clipboard
+        .write([new ClipboardItem({ 'text/plain': blob })])
+        .then(
+          () => copied(n),
+          () => finish(),
+        )
+        .finally(done);
+    } else {
+      void finish().finally(done);
+    }
+  };
+  const saveJson = async (n: number) => {
+    setBusy(true);
+    const r = await fetchReport(gmKey, n, 'json');
+    setBusy(false);
+    if (!r.ok) return setOutcome({ kind: 'err', text: r.error });
+    saveFile(`session-${String(n).padStart(2, '0')}.json`, r.text, 'application/json');
+    setOutcome({ kind: 'ok', text: `Session ${n} report saved as JSON` });
   };
   const advanceBy = parseDays(days);
   const advance = async (e: FormEvent) => {
@@ -94,16 +157,26 @@ export function SessionPanel({ client, state }: { client: LiveClient; state: Cam
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setOutcome(null);
-                setConfirming(true);
-              }}
-            >
-              End session…
-            </button>
+            <div className="row">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setOutcome(null);
+                  setConfirming(true);
+                }}
+              >
+                End session…
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                disabled={busy}
+                onClick={() => copyReport(running.number)}
+              >
+                Copy log for Claude
+              </button>
+            </div>
           )}
         </div>
       ) : (
@@ -151,6 +224,20 @@ export function SessionPanel({ client, state }: { client: LiveClient; state: Cam
           {outcome.text}
         </p>
       )}
+      {manual && (
+        <div className="session-manual-copy">
+          <textarea
+            readOnly
+            aria-label={`Session ${manual.n} report`}
+            value={manual.text}
+            ref={manualRef}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <button type="button" className="secondary small" onClick={() => setManual(null)}>
+            Close
+          </button>
+        </div>
+      )}
       <h3 className="session-past-heading">Past sessions</h3>
       {summary.past.length === 0 ? (
         <p className="muted">None yet.</p>
@@ -160,8 +247,13 @@ export function SessionPanel({ client, state }: { client: LiveClient; state: Cam
             <tr>
               <th scope="col">#</th>
               <th scope="col">Started</th>
-              <th scope="col">Length</th>
+              <th scope="col" className="session-length">
+                Length
+              </th>
               <th scope="col">In game</th>
+              <th scope="col">
+                <span className="sr-only">Report</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -169,8 +261,30 @@ export function SessionPanel({ client, state }: { client: LiveClient; state: Cam
               <tr key={s.id}>
                 <td>{s.number}</td>
                 <td className="wrap">{shortTime(s.startedAt)}</td>
-                <td>{s.endedAt ? duration(s.startedAt, s.endedAt) : ''}</td>
+                <td className="session-length">
+                  {s.endedAt ? duration(s.startedAt, s.endedAt) : ''}
+                </td>
                 <td>{daySpan(s, state.day)}</td>
+                <td className="session-report-actions">
+                  <button
+                    type="button"
+                    className="secondary small"
+                    disabled={busy}
+                    aria-label={`Copy session ${s.number} report for Claude`}
+                    onClick={() => copyReport(s.number)}
+                  >
+                    Copy for Claude
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary small"
+                    disabled={busy}
+                    aria-label={`Save session ${s.number} report as JSON`}
+                    onClick={() => void saveJson(s.number)}
+                  >
+                    JSON
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -183,4 +297,66 @@ export function SessionPanel({ client, state }: { client: LiveClient; state: Cam
 /** Scheduled broadcasts that advancing to `day` would send (M4.7). */
 function dueBroadcasts(state: CampaignState, day: number): number {
   return state.scheduledBroadcasts.filter((b) => b.day <= day).length;
+}
+
+/** Fetches one session's report from the GM route (M9.1). */
+async function fetchReport(
+  gmKey: string,
+  n: number,
+  format: 'md' | 'json',
+): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  try {
+    const r = await fetch(`/api/gm/session-report?n=${n}&format=${format}`, {
+      headers: { 'x-gm-key': gmKey },
+      cache: 'no-store',
+    });
+    if (!r.ok) return { ok: false, error: `Could not load the session ${n} report (${r.status})` };
+    return { ok: true, text: await r.text() };
+  } catch {
+    return { ok: false, error: `Could not load the session ${n} report: is the server running?` };
+  }
+}
+
+/** Whether the async clipboard can take a ClipboardItem (secure contexts only). */
+function canWriteClipboard(): boolean {
+  return (
+    window.isSecureContext &&
+    typeof navigator.clipboard?.write === 'function' &&
+    typeof ClipboardItem === 'function'
+  );
+}
+
+/**
+ * The legacy copy command through a hidden textarea: the only copy a GM
+ * browser on a LAN-IP http origin has. False when the browser refuses it.
+ */
+function legacyCopy(text: string): boolean {
+  const area = document.createElement('textarea');
+  area.value = text;
+  area.setAttribute('readonly', '');
+  area.style.position = 'fixed';
+  area.style.opacity = '0';
+  document.body.appendChild(area);
+  area.select();
+  let ok: boolean;
+  try {
+    // Deprecated, but the only option without a secure context.
+    ok = document.execCommand('copy');
+  } catch {
+    ok = false;
+  }
+  area.remove();
+  return ok;
+}
+
+/** Hands the browser a file to save. */
+function saveFile(name: string, text: string, type: string): void {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

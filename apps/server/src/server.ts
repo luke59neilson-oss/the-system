@@ -24,7 +24,7 @@ import {
   savePortrait,
 } from './portraits';
 import { helloMessage } from './protocol';
-import { SessionLogWriter, type SessionLogOptions } from './sessionLog';
+import { SessionLogWriter, sessionReport, type SessionLogOptions } from './sessionLog';
 import { authPath, gmKeyMatches, isAllowedHost, isAllowedOrigin } from './security';
 import type { CampaignStore } from './store';
 
@@ -345,6 +345,34 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   app.get('/api/gm/export', () => {
     if (!active) return { error: 'No campaign open' };
     return active.store.exportCampaign();
+  });
+
+  // M9.1: one play session's report (or running log) as markdown or JSON, for
+  // the GM's "Copy for Claude" button. GM-only like every /api/gm path: it
+  // includes hidden quests and GM reasons. Rebuilt from the event log, so it
+  // works for any past session even if the exports folder was cleared.
+  app.get('/api/gm/session-report', (request, reply) => {
+    const state = active?.store.campaign.state;
+    if (!active || !state) return reply.code(404).send({ error: 'No campaign open' });
+    const query = request.query as { n?: unknown; format?: unknown };
+    const n = typeof query.n === 'string' && /^[1-9]\d{0,5}$/.test(query.n) ? Number(query.n) : NaN;
+    const format = query.format ?? 'md';
+    if (!Number.isInteger(n) || (format !== 'md' && format !== 'json')) {
+      return reply.code(400).send({ error: 'Send ?n=<session number>&format=md|json' });
+    }
+    const session = state.sessions.find((s) => s.number === n);
+    const report = session
+      ? sessionReport(
+          active.store.campaign,
+          session,
+          options.live?.now() ?? new Date().toISOString(),
+        )
+      : null;
+    if (!report) return reply.code(404).send({ error: `No session ${n}` });
+    reply.header('cache-control', 'no-store');
+    return format === 'json'
+      ? reply.type('application/json; charset=utf-8').send(report.json)
+      : reply.type('text/markdown; charset=utf-8').send(report.markdown);
   });
 
   // Browser navigations to client-side routes get the app shell; anything else

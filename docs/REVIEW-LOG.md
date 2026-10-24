@@ -807,3 +807,10 @@
 - M1 a page reloaded with sound remembered on never resumed its AudioContext (created before any gesture → suspended), so every sound that session was silent; confirmed by reading `playSound` (no `resume`). Fixed: `playSound` resumes a suspended context, and the player page unlocks audio on the first pointerdown/keydown while sound is on; unit test with a suspended context.
 - Low 1 fixed: platinum vs diamond ΔE ≥ 10 now asserted in themes.test.ts. Lows 2–8 to the QUALITY backlog (evolve-ring brightness on dull metals, DING over the swell, count-keyed selection cue, second evolution within 2.4s, M8.1 shot names, slider/evolution dialog not in the keyboard sweep, PNG churn).
 - One Medium, no High: no round 2 (LOOP §6.4); fix verified locally (check 1,146 unit; M3.3, M8.2–M8.4, M8.A e2e green). Box checked.
+
+## 2026-10-24 · M9.1 Session report · reviewer sonnet (worktree), rounds 1–2
+- Round 1 at 5b071c8 (range 3a630aa...5b071c8): 1 High, 2 Medium, 4 Low.
+- H1 the new report column made the phone-width GM console scroll sideways (M4.3's 390px check, 1px after three sessions); reproduced. Fixed: length column hidden ≤600px, report buttons stacked.
+- M1 the copy ran after `await fetch`, so Safari/Firefox could refuse it (activation spent). Fixed: in a secure context the `ClipboardItem` write starts inside the click, fed by the fetch; otherwise the legacy copy; if that is refused too the report is shown selected in a textarea.
+- M2 the fallback e2e did not prove the fallback. Fixed: it removes `navigator.clipboard`, counts `execCommand('copy')` (exactly 1) and reads the clipboard from another page; a new test covers the refused-copy textarea.
+- Round 2 at 884f0c5: 0 High, 0 Medium, 4 Low. Low 2 fixed (the textarea is selected once in an effect, not on every render). Lows 1, 3, 4 to the QUALITY backlog. Box checked.

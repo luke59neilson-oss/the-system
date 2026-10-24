@@ -155,7 +155,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
                   setOfferTarget((t) => ({ characterId, level, n: (t?.n ?? 0) + 1 }))
                 }
               />
-              <SessionPanel client={client} state={state} />
+              <SessionPanel client={client} state={state} gmKey={gmKey} />
               <JoinPanel gmKey={gmKey} />
               <CreateCharacter client={client} gmKey={gmKey} state={state} />
               <XpAward client={client} state={state} />
