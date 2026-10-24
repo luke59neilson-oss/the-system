@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M6, MS, MQ and MR done; M7.1–M7.2 done; QF.1–QF.17 and QF.19–QF.21 done (QF.18 open); Preview ready: Actions → Release → Run workflow (M6)
-**Next item:** M7.3 Encounter panel (QF.18 is not High; it follows in roadmap order)
+**Status:** in progress: M0–M6, MS, MQ and MR done; M7.1–M7.3 done; QF.1–QF.17 and QF.19–QF.21 done (QF.18 open); Preview ready: Actions → Release → Run workflow (M6)
+**Next item:** M7.4 Trackers (QF.18 is not High; it follows in roadmap order)
 **Blockers:** none
 
 ## Run log
@@ -904,4 +904,13 @@ next item, blockers. -->
 - Tests: unit 1,080 green; e2e M6.A and M7.2 green locally (full e2e not run: no shared server or UI shell change).
 - Open `wip/*` branches: none new.
 - Next item: M7.3 Encounter panel. Suggested first step: record each share's race level (or the bonus it got) in `xp.awarded` shares as an optional field (D71 gap (a)); the reducer uses it when present instead of re-deriving `shareBonus` at fold time; additive golden change.
+- Blockers: none.
+
+### Run 3773602035 · 2026-10-24 12:07–12:52 UTC (end minute ~45: M7.3 finished and pushed at minute 43 after two review rounds; under 48 because the next item, M7.4, could not take a first commit and still leave the close-out inside the 52 hard stop)
+- Preflight: `add_repo` not offered; repo already cloned (local main fast-forwarded to e649726). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Sonnet reviewers and auditor work (worktree; Agent calls block; two in one message ran at once). CI on main green (9908a64). No new answers. A Release workflow ran on e649726 at 12:01 (Luke's click, presumably). Efficiency hour (12 UTC).
+- Efficiency check: scorecard row added (end minute 44.8, items/run 1.7, round-2 share 5/10, Highs 4, CI red/day 1). Nothing in trial to judge. Auditor (sonnet) gave two Tier 1 proposals; applied one (D183: blocking agents in one message, worktree reviewers told their SHA), the other waits.
+- M7.3 Encounter panel **checked**: GM Encounter window (contest roller with grade-gap mode, shared rolls as `contest.shared` events with stored outcome, state v31; damage/heal with the grade-wall damage factor; progress clocks with the montage trigger), player contest pop-up, `xp.awarded` shares record `raceLevel` (D71 gap a). D182, Q67. Review: sonnet round 1 0 H / 2 M / 7 L, round 2 0 H / 1 M (accepted as design, Q67) / 5 L.
+- Tests: unit 1,102 green; full e2e 69/70 then the one failure (M7.3's own label) fixed and passing alone; the full run first caught a label collision ("Amount") in 9 specs, fixed. Engine coverage not measured this run.
+- Open `wip/*` branches: wip/M7.3 (merged; leave it).
+- Next item: M7.4 Trackers (hunger fading at E-grade, regions, survivor factions; players see hunger when enabled).
 - Blockers: none.
