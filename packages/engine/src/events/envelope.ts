@@ -110,6 +110,9 @@ const entityLevel = z.number().int().min(0).max(10_000);
 /** M7.2: a bestiary entry's stats (stat id → whole value). */
 const entityStats = z.record(z.string().min(1).max(40), z.number().int().min(0).max(1_000_000));
 const entityNotes = z.string().max(4000);
+/** M7.4: a faction's head count and its standing toward the party, in the GM's words. */
+const factionMembers = z.number().int().min(0).max(1_000_000_000);
+const factionStanding = z.string().trim().max(60);
 const questNoticeTo = z.array(recordId).max(200).nullable();
 /** Identify tiers (M3.9, DESIGN §7): one text per minimum Identify rarity. */
 const identifyTiers = z
@@ -670,6 +673,50 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     entityId: recordId,
     characterIds: z.array(recordId).min(1).max(200),
   }),
+  /**
+   * M7.4 hunger tracker (DESIGN §7): the GM turns it on or off for the
+   * campaign and may rename its steps (lowest first).
+   */
+  'hunger.configured': z.strictObject({
+    enabled: z.boolean(),
+    steps: z.array(z.string().trim().min(1).max(40)).max(12),
+  }),
+  /** M7.4: these characters' hunger steps are now these (absolute, so a replay agrees). */
+  'hunger.levelsSet': z.strictObject({
+    levels: z.record(recordId, z.number().int().min(0).max(11)),
+  }),
+  /** M7.4: GM adds a region (DESIGN §8). */
+  'region.defined': z.strictObject({
+    regionId: recordId,
+    name: nonBlank,
+    notes: entityNotes,
+  }),
+  /** M7.4: GM edits a region; omitted fields stay. */
+  'region.edited': z.strictObject({
+    regionId: recordId,
+    name: nonBlank.optional(),
+    notes: entityNotes.optional(),
+  }),
+  /** M7.4: the party is now in this region (it becomes visited), or nowhere set. */
+  'region.currentSet': z.strictObject({ regionId: recordId.nullable() }),
+  /** M7.4: GM adds a survivor faction (DESIGN §8). GM-only. */
+  'faction.defined': z.strictObject({
+    factionId: recordId,
+    name: nonBlank,
+    regionId: recordId.nullable(),
+    members: factionMembers.nullable(),
+    standing: factionStanding,
+    notes: entityNotes,
+  }),
+  /** M7.4: GM edits a faction; omitted fields stay. */
+  'faction.edited': z.strictObject({
+    factionId: recordId,
+    name: nonBlank.optional(),
+    regionId: recordId.nullable().optional(),
+    members: factionMembers.nullable().optional(),
+    standing: factionStanding.optional(),
+    notes: entityNotes.optional(),
+  }),
   /** The in-game day counter moves forward (quest timers count down). */
   'campaign.dayAdvanced': z.strictObject({ days: z.number().int().min(1).max(1000) }),
   /**
@@ -781,6 +828,13 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'entity.defined': 1,
   'entity.edited': 1,
   'entity.revealed': 1,
+  'hunger.configured': 1,
+  'hunger.levelsSet': 1,
+  'region.defined': 1,
+  'region.edited': 1,
+  'region.currentSet': 1,
+  'faction.defined': 1,
+  'faction.edited': 1,
   'campaign.dayAdvanced': 1,
   'rules.migrated': 1,
   'rules.edited': 1,

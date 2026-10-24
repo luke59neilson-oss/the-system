@@ -955,6 +955,15 @@ describe('property: replay equals incremental state', () => {
       // M7.3: shared contests have their own tests (contests.test.ts) and
       // golden log; adding them here would reshuffle the seeded walk (D118).
       'contest.shared',
+      // M7.4: trackers have their own tests (trackers.test.ts) and golden log
+      // (trackers.jsonl); adding them here would reshuffle the seeded walk (D118).
+      'hunger.configured',
+      'hunger.levelsSet',
+      'region.defined',
+      'region.edited',
+      'region.currentSet',
+      'faction.defined',
+      'faction.edited',
     ]);
     expect(
       EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),

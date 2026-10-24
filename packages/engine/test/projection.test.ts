@@ -146,6 +146,7 @@ describe('player projection', () => {
       'contests',
       'day',
       'hiddenQuests',
+      'hunger',
       'identify',
       'inventory',
       'me',
@@ -155,6 +156,7 @@ describe('player projection', () => {
       'party',
       'practice',
       'quests',
+      'region',
       'rules',
       'viewerId',
     ]);

@@ -28,6 +28,7 @@ import {
 } from '../evolution';
 import { canReadNote } from '../practice';
 import { identifyInRange } from '../entities';
+import { hungerFaded, hungerLevel } from '../trackers';
 import { daysLeft, hiddenQuestNoticed, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
 import { identifyRarity, resolveIdentify } from './identify';
@@ -155,6 +156,17 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   // other side's value cannot be solved from it exactly) and whether they won.
   contests: 'owner',
   contestOrder: 'gm',
+  // M7.4: each player gets their own hunger step, only while the tracker is
+  // on and they have not outgrown it; never anyone else's.
+  hunger: 'owner',
+  // M7.4: players get the current region's name only; the region list, GM
+  // notes and which regions are visited stay with the GM.
+  regions: 'gm',
+  regionOrder: 'gm',
+  currentRegion: 'party',
+  // M7.4: survivor factions are the GM's bookkeeping.
+  factions: 'gm',
+  factionOrder: 'gm',
   day: 'party',
   // M4.3: session bookkeeping is the GM's.
   sessions: 'gm',
@@ -349,6 +361,23 @@ export interface PlayerView {
   readonly montages: readonly PlayerMontage[];
   /** The latest shared contests the viewer took part in, oldest first (M7.3). */
   readonly contests: readonly PlayerContest[];
+  /**
+   * The viewer's hunger (M7.4, DESIGN §7), or null when the campaign has the
+   * tracker off or the viewer has outgrown it.
+   */
+  readonly hunger: PlayerHunger | null;
+  /** The name of the region the party is in (M7.4), or null. */
+  readonly region: string | null;
+}
+
+/** The viewer's own hunger step (M7.4). */
+export interface PlayerHunger {
+  /** Step index, 0 = the first (least hungry) step. */
+  readonly level: number;
+  /** The step's name. */
+  readonly step: string;
+  /** How many steps there are. */
+  readonly steps: number;
 }
 
 /** One of the viewer's practice entries (tags left out: they may name GM-only action tags). */
@@ -745,6 +774,8 @@ export function projectForPlayer(
       return [{ id: m.id, label: m.label, focus: entry?.action ?? null }];
     }),
     contests: playerContests(state, viewer.id),
+    hunger: playerHunger(state, viewer),
+    region: currentRegionName(state),
     hiddenQuests: state.questOrder.filter((id) => {
       const q = hasOwnKey(state.quests, id) ? state.quests[id] : undefined;
       return q !== undefined && hiddenQuestNoticed(q, state.characterOrder).includes(viewer.id);
@@ -931,4 +962,18 @@ function playerContests(state: CampaignState, viewerId: string): PlayerContest[]
     });
   }
   return out.reverse();
+}
+
+/** The viewer's hunger step, or null when the tracker is off or they have outgrown it (M7.4). */
+function playerHunger(state: CampaignState, viewer: Character): PlayerHunger | null {
+  if (!state.hunger.enabled || hungerFaded(state.rules, viewer)) return null;
+  const level = hungerLevel(state.hunger, viewer.id);
+  return { level, step: state.hunger.steps[level] ?? '', steps: state.hunger.steps.length };
+}
+
+/** The current region's name only (M7.4). */
+function currentRegionName(state: CampaignState): string | null {
+  const id = state.currentRegion;
+  if (id === null || !hasOwnKey(state.regions, id)) return null;
+  return state.regions[id]?.name ?? null;
 }

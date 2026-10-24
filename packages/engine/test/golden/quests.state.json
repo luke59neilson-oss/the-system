@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 31,
+  "schemaVersion": 32,
   "name": "Golden: quests",
   "rules": {
     "configVersion": 1,
@@ -537,6 +537,16 @@
   "montageOrder": [],
   "contests": {},
   "contestOrder": [],
+  "hunger": {
+    "enabled": false,
+    "steps": ["Fed", "Peckish", "Hungry", "Famished", "Starving"],
+    "levels": {}
+  },
+  "regions": {},
+  "regionOrder": [],
+  "currentRegion": null,
+  "factions": {},
+  "factionOrder": [],
   "day": 3,
   "sessions": [],
   "currentSession": null
