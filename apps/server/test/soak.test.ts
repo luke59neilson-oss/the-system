@@ -14,7 +14,7 @@ import { createServer } from '../src/server';
 import { CampaignStore } from '../src/store';
 
 export const SOAK_SEED = 0x5eed_1101;
-export const SOAK_STEPS = 2_000;
+export const SOAK_STEPS = Number(process.env['SOAK_STEPS'] ?? 2_000);
 
 /** mulberry32: small, fixed-seed RNG for the command stream. */
 export function rng(seed: number): () => number {
