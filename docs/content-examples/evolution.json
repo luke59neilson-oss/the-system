@@ -1,0 +1,26 @@
+{
+  "format": "the-system/content",
+  "version": 1,
+  "title": "Jake: E-grade evolution",
+  "evolutions": [
+    {
+      "character": "Jake",
+      "options": [
+        {
+          "className": "Canyon Stalker",
+          "description": "An archer who fights from heights and never stands still.",
+          "classWeights": { "perception": 2, "agility": 2, "endurance": 1 },
+          "statBonus": { "agility": 10, "perception": 10 }
+        },
+        {
+          "className": "Marksman of the Rim",
+          "description": "Patience and one perfect shot.",
+          "transforms": [{ "skill": "Archer’s Eye", "name": "Marksman's Eye", "rarity": "rare" }],
+          "statBonus": { "perception": 20 }
+        }
+      ],
+      "professions": ["Fletcher", "Trail Cook"],
+      "rerate": { "Hunter's Mark": "rare" }
+    }
+  ]
+}
