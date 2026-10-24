@@ -21,7 +21,9 @@ export interface ContentPreviewEntry {
   /**
    * A heads-up that does not block: an item, bestiary entry, quest or GM
    * note whose name the campaign already has (these may share names, so
-   * importing a file twice would add a second copy).
+   * importing a file twice would add a second copy); or, for a drafted skill
+   * menu or evolution, whose screen it goes to on Apply, its options, and
+   * the menu or release it replaces (M9.A review).
    */
   readonly note: string | null;
 }
@@ -56,7 +58,7 @@ export function previewContent(
   let scratch = campaign;
   const entries = commands.map(({ path, command }) => {
     if (only && !only.has(path)) return { path, command, error: null, note: null };
-    const note = duplicateItemNote(scratch, command);
+    const note = entryNote(scratch, command);
     const r = execute(scratch, command, ctx);
     if (r.ok) scratch = r.campaign;
     return { path, command, error: r.ok ? null : r.error, note: r.ok ? note : null };
@@ -64,7 +66,7 @@ export function previewContent(
   return { ok: true, title: parsed.content.title ?? null, entries, errors };
 }
 
-function duplicateItemNote(campaign: Campaign, command: ContentCommand['command']): string | null {
+function entryNote(campaign: Campaign, command: ContentCommand['command']): string | null {
   const state = campaign.state;
   if (!state) return null;
   const same = (wanted: string) => (n: { name?: string; title?: string }) =>
@@ -88,7 +90,35 @@ function duplicateItemNote(campaign: Campaign, command: ContentCommand['command'
       )
         ? `There is already a GM note named "${command.title ?? ''}": this adds another`
         : null;
+    case 'selection.offer': {
+      const who = characterOf(state, command.characterId);
+      if (!who) return null;
+      const options = command.options
+        .map((o) => `[${o.name} (${rarityName(state, o.rarity)})]`)
+        .join(', ');
+      const replaces = who.selections.some((r) => r.level === command.level && r.chosen === null)
+        ? `; replaces the level ${command.level} menu ${who.name} has now`
+        : '';
+      return `Goes to ${who.name}'s screen on Apply: ${options}${replaces}`;
+    }
+    case 'evolution.release': {
+      const who = characterOf(state, command.characterId);
+      if (!who) return null;
+      const options = command.options.map((o) => `[${o.className}]`).join(', ');
+      const replaces = who.evolution ? `; replaces the evolution ${who.name} was offered` : '';
+      return `Goes to ${who.name}'s screen on Apply: ${options}${replaces}`;
+    }
     default:
       return null;
   }
 }
+
+function characterOf(state: NonNullable<Campaign['state']>, id: string) {
+  return Object.prototype.hasOwnProperty.call(state.characters, id)
+    ? (state.characters[id] ?? null)
+    : null;
+}
+
+/** The rules' name for a rarity id ("rare" → "Rare"). */
+const rarityName = (state: NonNullable<Campaign['state']>, id: string) =>
+  state.rules.skills.rarities.find((r) => r.id === id)?.name ?? id;

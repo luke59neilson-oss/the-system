@@ -102,6 +102,9 @@ const SECRETS = [
   'Ossuary King',
   'kill-pale-hunter',
   'Tutorial overview',
+  "The Host's Response",
+  'Old scar canyons from something',
+  'warm under the n',
 ];
 
 test('tutorial pack → session → report for Claude → drafted evolution → player', async ({
@@ -167,6 +170,9 @@ test('tutorial pack → session → report for Claude → drafted evolution → 
   const markdown = await clipboard(gm);
   expect(markdown).toMatch(/^# Session 1 report: The Host$/m);
   expect(markdown).toContain(REASON);
+  // The party sheet gives Claude the exact names to draft against.
+  expect(markdown).toContain('- Class: [Archer – lvl 4]');
+  expect(markdown).toContain('[Archer’s Eye (Common)]');
   const report = (await gm.evaluate(
     async ({ url, key }) => (await fetch(url, { headers: { 'x-gm-key': key } })).json(),
     { url: `${server.url}/api/gm/session-report?n=1&format=json`, key: GM_KEY },
@@ -186,6 +192,10 @@ test('tutorial pack → session → report for Claude → drafted evolution → 
   });
   await expect(panel).toContainText('Jake: F-grade evolution');
   await expect(panel.locator('.err')).toHaveCount(0);
+  // The GM sees whose screen it goes to and what Jake will be offered.
+  await expect(panel).toContainText(
+    "Goes to Jake's screen on Apply: [Crown Skirmisher], [Canyon Marksman]",
+  );
   await panel.scrollIntoViewIfNeeded();
   await panel.screenshot({ path: path.join(shots, 'gm-import-evolution-1366x768.png') });
   await panel.getByRole('button', { name: 'Apply 1' }).click();

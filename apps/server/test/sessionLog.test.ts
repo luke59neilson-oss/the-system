@@ -149,7 +149,9 @@ describe('SessionLogWriter', () => {
     expect(cancelled).toBe(true);
     const two = readFileSync(path.join(dataDir, 'exports', 'main', 'session-02.md'), 'utf8');
     expect(two).toContain('Jake earned the title Late Bird');
-    expect(two).not.toContain('Early Bird');
+    expect(two).not.toContain('earned the title Early Bird');
+    // The party sheet stands as at the end of the log, with both titles.
+    expect(two).toContain('- Titles: [Early Bird], [Late Bird]');
     // No temp files left behind.
     expect(readdirSync(path.dirname(file)).sort()).toEqual([
       'session-01.json',
