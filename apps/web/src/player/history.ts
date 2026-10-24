@@ -129,3 +129,27 @@ export function writeSound(storage: KeyValueStore | null, on: boolean): void {
     // Blocked storage: the choice lasts for this page only.
   }
 }
+
+export const VOLUME_KEY = 'the-system:volume';
+/** Default volume (0–100) when this browser never chose one. */
+export const DEFAULT_VOLUME = 70;
+
+/** This browser's sound volume, 0–100 in steps of 10. Never throws. */
+export function readVolume(storage: KeyValueStore | null): number {
+  try {
+    const raw = storage?.getItem(VOLUME_KEY);
+    const v = raw == null || raw.trim() === '' ? NaN : Number(raw);
+    if (!Number.isFinite(v)) return DEFAULT_VOLUME;
+    return Math.min(100, Math.max(0, Math.round(v / 10) * 10));
+  } catch {
+    return DEFAULT_VOLUME;
+  }
+}
+
+export function writeVolume(storage: KeyValueStore | null, volume: number): void {
+  try {
+    storage?.setItem(VOLUME_KEY, String(volume));
+  } catch {
+    // Blocked storage: the choice lasts for this page only.
+  }
+}
