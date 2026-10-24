@@ -2735,3 +2735,29 @@ ol.change-log li.undone .change-text {
     scroll-behavior: auto !important;
   }
 }
+
+/* Import content (M9.3) */
+.import-entries {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+.import-entries li {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(90, 127, 184, 0.25);
+}
+.import-entries label {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+.import-entries input[type='checkbox'] {
+  width: auto;
+  flex: none;
+}
+.import-entries code {
+  opacity: 0.75;
+  font-size: 0.8rem;
+}

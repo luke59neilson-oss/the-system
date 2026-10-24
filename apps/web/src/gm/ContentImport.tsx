@@ -91,6 +91,15 @@ export function ContentImport({ client, gmKey }: { client: LiveClient; gmKey: st
       {preview?.ok && (
         <>
           {preview.title && <p>{preview.title}</p>}
+          {preview.errors.length > 0 && (
+            <ul className="err" role="alert" aria-label="Entries that cannot apply">
+              {preview.errors.map((e) => (
+                <li key={`${e.path}:${e.message}`}>
+                  <code>{e.path}</code>: {e.message}
+                </li>
+              ))}
+            </ul>
+          )}
           <ul className="import-entries">
             {preview.entries.map((e) => (
               <li key={e.path}>
@@ -106,7 +115,7 @@ export function ContentImport({ client, gmKey }: { client: LiveClient; gmKey: st
                       setPicked(next);
                     }}
                   />
-                  <code>{e.path}</code> {String(e.command.name ?? e.command.type)}
+                  <span>{entryLabel(e)}</span> <code>{e.path}</code>
                 </label>
                 {e.error && <span className="err small"> {friendlyError(e.error)}</span>}
               </li>
@@ -120,4 +129,22 @@ export function ContentImport({ client, gmKey }: { client: LiveClient; gmKey: st
       {outcome && <p role="status">{outcome}</p>}
     </section>
   );
+}
+
+const KINDS: Record<string, string> = {
+  'skillDef.define': 'Skill',
+  'item.define': 'Item',
+  'titleDef.define': 'Title',
+  'entity.define': 'Bestiary',
+  'selection.offer': 'Skill menu',
+  'evolution.release': 'Evolution options',
+};
+
+/** "Item: Pale Hide Bracers", "Skill menu: level 10". */
+function entryLabel(e: PreviewEntry): string {
+  const kind = KINDS[e.command.type] ?? e.command.type;
+  const c = e.command;
+  if (typeof c.name === 'string') return `${kind}: ${c.name}`;
+  if (typeof c.level === 'number') return `${kind}: level ${c.level}`;
+  return kind;
 }
