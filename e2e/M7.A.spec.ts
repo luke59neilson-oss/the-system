@@ -6,8 +6,8 @@ import { startBuiltServer, type RunningServer } from './helpers/server';
 // M7.A milestone acceptance (work in progress, wip/M7.A): a sample encounter
 // end to end, and World Stability visible to players only when toggled on.
 // Done so far: setup, a quest whose gauge starts hidden, then toggled on.
-// Next: the encounter (bestiary foe, shared contest, damage, clock and
-// montage, a stability action from the fight), XP, screenshots.
+// The fight has damage so far. Next: a bestiary foe, a shared contest,
+// a clock and montage, a stability action from the fight), XP, screenshots.
 
 const GM_KEY = 'e2e-gm-key-m7a-0123456789abcdef7a';
 const shots = path.resolve(import.meta.dirname, '../docs/screens/M7.A');
@@ -73,6 +73,14 @@ test('a sample encounter end to end; stability reaches players only when shown',
   await form.getByRole('button', { name: 'Save quest' }).click();
   await expect(qm.getByRole('status')).toHaveText('[The world is dying] saved');
   await expect(quest.getByTestId('stability-value')).toHaveText('100%');
+
+  // The fight: Jake takes 30 HP.
+  const win = gm.locator('section[aria-labelledby="encounter"]');
+  const pools = win.locator('form[aria-labelledby="pool-tool"]');
+  await pools.getByLabel('Character').selectOption({ label: 'Jake' });
+  await pools.getByLabel('Points', { exact: true }).fill('30');
+  await pools.getByRole('button', { name: 'Apply' }).click();
+  await expect(page.getByTestId('pool-hp')).toContainText('70/100');
 
   for (const secret of [GM_KEY, 'system beast']) {
     expect(frames.filter((f) => f.includes(secret))).toEqual([]);
