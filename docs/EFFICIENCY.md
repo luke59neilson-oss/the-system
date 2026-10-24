@@ -20,7 +20,7 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
-| D183 blocking Agent calls go out together in one message (LOOP §6.3, §10.2) | 2026-10-24 12:08 | end minute ↑ (sweep runs) | 44.8 | Highs 4/10, round-2 share 5/10, red/day 1 | 2026-10-24 18:00 + 6 runs |
+| D195 `npm run clock` + §5.5 wording: run it after each review and before §8.0; under 44 opens `wip/<next>` | 2026-10-24 18:07 | end minute ↑ (non-sweep runs), items/run ↑ | 44.0, 1.6 | Highs 0/10, round-2 share 7/10, red/day 2 | 2026-10-25 00:00 + 6 runs |
 
 ## Kept
 
@@ -34,12 +34,28 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 ## Reverted
 
+- D183 blocking Agent calls in one message (2026-10-24 18:07, D194): target
+  improved (sweep-run end minute 42 → 52) but guards worsened (round-2 share
+  5/10 → 7/10, red/day 1 → 2), so §9.2 reverts it. The auditor judged both
+  guard moves unrelated (M8.2/M8.3's four-Medium round 1s; a staged-rename
+  slip and a shared test-results dir) and suggests Luke override it (Q71).
+  Kept: telling a worktree reviewer its SHA (an ambiguity fix, not the trial).
+
 - D119 pre-review sibling self-check and D132 no main e2e re-run on an
   identical tree (2026-10-23 06:10, D150): targets improved (round-2 share
   7/10 → 5/10; items/run 1.3 → 2.0) but the Highs guard rose (1 → 4; 0 → 4),
   and D132's CI red/day guard too (7 → 10), so §9.2 reverts both.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-10-24 18:07 auditor (sonnet): Tier 1 applied: `npm run clock` and
+  the §5.5 wording (D195). Waits for a later check (Tier 1): `npm run
+  presubmit` refusing a commit that carries files outside the item's paths,
+  and Playwright runs refusing to share a test-results dir (target: red/day
+  2 → 1). Tier 2 (Q71): judge each trial strictly only on the guards it can
+  plausibly move, others against a noise band (round-2 share ±2/10, red/day
+  ±1) unless the move persists at the next check; and override the D183
+  revert. Default: no change.
 
 - 2026-10-24 12:08 auditor (sonnet): two Tier 1 proposals. Applied (2):
   launch blocking agents together, worktree reviewers told their SHA (D183).

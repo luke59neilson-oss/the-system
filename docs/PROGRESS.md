@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M8, MS, MQ and MR done; QF.1–QF.21 done; Preview ready: Actions → Release → Run workflow (M8)
-**Next item:** M9.1 Session report (resume wip/M9.1)
+**Status:** in progress: M0–M8, MS, MQ and MR done; M9.1–M9.2 done; QF.1–QF.21 done; Preview ready: Actions → Release → Run workflow (M8)
+**Next item:** M9.3 Import with approval (resume wip/M9.3)
 **Blockers:** none
 
 ## Run log
@@ -963,5 +963,16 @@ next item, blockers. -->
 - Tests: unit 1,146 on main; full e2e 85/87 on wip/M8.4 (M3.10 failed only because I ran M8.A at the same time in the same test-results dir; passes alone; M8.A since fixed); M8.2–M8.4, M8.A, M3.3 green on the final code. Engine coverage not measured (no engine changes).
 - Open `wip/*` branches: wip/M9.1 (in progress).
 - Next item: M9.1 Session report (resume wip/M9.1).
+- Blockers: none.
+
+### Run 6fc27cb7 · 2026-10-24 18:07–18:53 UTC (end minute ~46)
+- Preflight: `add_repo` not offered; repo already cloned (local main on an unrelated history; reset to origin/main 8dde3b7). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewers: sonnet works (worktree; Agent calls block). CI on main green at start (723a82f). No new answers. Efficiency hour (§9).
+- §9 efficiency check: scorecard row appended (end minute 44.0, items/run 1.6, round-2 7/10, Highs 0, red/day 2). D183 judged: target up but two guards worse → reverted (D194; SHA wording kept); Q71 (Tier 2) asks Luke about judging unrelated guards against a noise band. Sonnet auditor: applied Tier 1 `npm run clock` + §5.5 wording (D195, in trial); presubmit proposal waits.
+- M9.1 Session report **checked**: GM route `GET /api/gm/session-report?n=N&format=md|json` rebuilds any session's report from the event log; Session window "Copy for Claude" / "JSON" per past session and "Copy log for Claude" while running (ClipboardItem inside the click; legacy copy outside a secure context; selected textarea if refused). Sonnet round 1: 1 H (phone overflow in M4.3) / 2 M; fixed; round 2 0 H / 0 M. D191. Merged (5074a8b).
+- M9.2 Content format **checked**: `packages/engine/src/content/format.ts` (zod, strict, path-tagged errors), generated `docs/content-format.schema.json`, `docs/CONTENT-FORMAT.md`, four examples in `docs/content-examples/`, `contentToCommands` (titles' whole percent → fraction; characters by id or unique name). Sonnet round 1: 1 H (percent unit) / 3 M; fixed; round 2 0 H / 0 M. D192. Pushed (ed76378).
+- M9.3 Import with approval **in progress** on `wip/M9.3` (base ed76378, head cc950a2): engine `previewContent` (scratch-copy run, nothing appended), `POST /api/gm/content/preview`, GM "Import content" window (tick, apply over the GM connection in file order), `e2e/M9.3.spec.ts` + screenshot, D193. Sonnet round 1 at 91668cc: 1 H / 4 M; H (non-preview error replies crashed the window) fixed in cc950a2, unreviewed. Next steps: (1) Mediums: re-preview just the ticked entries before applying (or on every tick) so an entry that depends on an unticked one shows its error; after a part-applied run drop the applied entries from the list; say "the campaign changed since the preview, check again" when an apply is refused; (2) tests: apply stops at a refusal, dependent unticked entry, server error reply, partly invalid preview (disabled rows), character `errors` list, bad file changes nothing (no event appended), 404 with no campaign, wrong key; (3) clear the preview on a network failure; then round 2 sonnet review. Round 2 is due (round 1 had a High).
+- Tests: unit 1,169 on wip/M9.3 (1,166 on main); e2e M9.1, M4.3, M2.A, M9.3 green. Full e2e not run this run (no Mx.A; shared server code touched only by new GM routes). Engine coverage 97.53% lines (reviewer's run).
+- Open `wip/*` branches: wip/M9.3 (in progress).
+- Next item: M9.3 Import with approval (resume wip/M9.3).
 - Blockers: none.
 
