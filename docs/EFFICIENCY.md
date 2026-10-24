@@ -20,6 +20,7 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
+| D183 blocking Agent calls go out together in one message (LOOP §6.3, §10.2) | 2026-10-24 12:08 | end minute ↑ (sweep runs) | 44.8 | Highs 4/10, round-2 share 5/10, red/day 1 | 2026-10-24 18:00 + 6 runs |
 
 ## Kept
 
@@ -39,6 +40,11 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   and D132's CI red/day guard too (7 → 10), so §9.2 reverts both.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-10-24 12:08 auditor (sonnet): two Tier 1 proposals. Applied (2):
+  launch blocking agents together, worktree reviewers told their SHA (D183).
+  Waits for a later check (1): an `npm run clock` helper that prints the phase
+  and a reworded §5.5 so a run under 44 always opens `wip/<next>`.
 
 - 2026-10-23 18:08 auditor (sonnet): no Tier 2 proposals. Applied its Tier 1
   close-out gate (D170). Its `--only-changed` re-evaluation: not worth it

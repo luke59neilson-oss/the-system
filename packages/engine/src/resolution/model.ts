@@ -300,8 +300,9 @@ export interface ContestSideRecord {
 
 /**
  * A contest roll the GM shared with the table (M7.3, DESIGN §7): rolls the GM
- * keeps to themself are never events. The result is derived from the sides,
- * the mode and the stored roll, so a replay cannot disagree with what the GM saw.
+ * keeps to themself are never events. The outcome is settled under the rules
+ * when shared and stored in the event, so a later rules change or undo cannot
+ * flip a result the table already saw.
  */
 export interface SharedContest extends ContestResult {
   readonly id: string;

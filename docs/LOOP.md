@@ -164,7 +164,10 @@ them whole costs about 30k tokens per run for history you do not need):
    and `isolation: "worktree"` (so it tests the item's commit, not your
    working tree), then start the next item while it works. When it reports,
    fix the findings on the reviewed item before continuing. Do not push the
-   item to main to get it reviewed.
+   item to main to get it reviewed. If the Agent tool has no background
+   option (each call blocks until it reports), put every agent you need now
+   (reviewer, auditor, sweep lenses) in **one message** so they run at once,
+   and tell a worktree reviewer the exact SHA to `git checkout --detach`.
 4. Fix every High and Medium, re-run checks. A **second review round only
    if round 1 found a High or two or more Mediums**; otherwise verify your
    fixes yourself and log them. **At most 2 review rounds per
@@ -245,7 +248,8 @@ Lens briefs, the model rotation and the sweep log are in `docs/QUALITY.md`.
    after Orient, then build as usual. Scope: `<Last sweep SHA>..HEAD` on main
    (from QUALITY.md), plus each lens's whole area.
 2. Launch the 3 reviewers that QUALITY.md's rotation names for this sweep,
-   each with `run_in_background: true` and `isolation: "worktree"`, never on
+   each with `run_in_background: true` and `isolation: "worktree"` (all three
+   in one message when Agent calls block, §6.3), never on
    your own model. Each prompt is the common rules plus that lens's brief from
    QUALITY.md, and the scope.
 3. **Verify before fixing.** Confirm every High and Medium yourself (write the

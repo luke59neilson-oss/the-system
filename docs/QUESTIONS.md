@@ -453,3 +453,12 @@ DESIGN/ROADMAP; do not re-apply them.
     and items inside the brackets. Default: keep flats inside (as built);
     the other reading adds them after the multiplier (M6 milestone review).
     Answer:
+
+67. **How much of a contest's odds should players see?** When the GM shares a
+    contest roll (M7.3), each player on it gets a pop-up with their own value,
+    their chance as a whole percent, and Success/Failure. Against a bestiary
+    NPC that lets a player estimate the NPC's stat to a few percent. Default:
+    show the whole-percent chance (DESIGN §7 shows ratio odds; the GM chooses
+    what to share). Other options: coarse words ("likely", "even",
+    "unlikely"), or no odds against NPCs (D182).
+    Answer:

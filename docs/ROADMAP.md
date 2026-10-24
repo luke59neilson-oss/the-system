@@ -615,7 +615,7 @@ work: Q44–Q48 and Q52.
 - [x] **M7.2 Bestiary and NPCs.** Grade, level, stats, Identify tiers, notes.
   Sets an entity's grade and level for the Identify range (D123); warn when a
   label names what an out-of-range target is.
-- [ ] **M7.3 Encounter panel.** Ratio-odds roller (stats + mode), pool
+- [x] **M7.3 Encounter panel.** Ratio-odds roller (stats + mode), pool
   damage/heal, progress clocks, montage trigger. Rolls the GM shares become
   events, and the players involved get a contest result pop-up (from M3.13,
   D88).
