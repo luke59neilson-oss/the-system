@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M7, MS, MQ and MR done; QF.1–QF.21 done; M8.1–M8.2 done; Preview ready: Actions → Release → Run workflow (M7)
-**Next item:** M8.3 Accessibility
+**Status:** in progress: M0–M7, MS, MQ and MR done; QF.1–QF.21 done; M8.1–M8.3 done; Preview ready: Actions → Release → Run workflow (M7)
+**Next item:** M8.4 Sound (resume wip/M8.4)
 **Blockers:** none
 
 ## Run log
@@ -944,3 +944,13 @@ next item, blockers. -->
 - Next item: M8.3 Accessibility.
 - Blockers: none.
 
+
+### Run af11bae8 · 2026-10-24 16:08–16:49 UTC (end minute 41: closed out early to fix red CI on main and hand M8.4 off while its round-2 review is due; no §5.5 reason, a protocol slip)
+- Preflight: `add_repo` not offered; repo already cloned, main reset to origin/main (c76432c). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Sonnet reviewers work (worktree; Agent calls block). CI on main green at start (c76432c). No new answers. Not an efficiency or sweep hour.
+- M8.3 **checked**: contrast ≥ 4.5:1 checked on the theme tokens (unit) and on the rendered page (in-page scanner: GM console, two players × 7 themes, details opened, skill dialog, phone, placeholders); bronze text lightened via a new per-theme `--metal-text`; silver vs platinum CIEDE2000 9.6 → platinum metal #b2d5f5 (11.4); every control a Tab stop with a 2px outline at 3:1; Tab stays inside the skill dialog; reduced motion stops all motion (global net). Review sonnet: round 1 0 H / 4 M, round 2 0 H / 0 M / 4 L. D188.
+- CI red on 8135404: my M8.3 screenshot commit carried a staged `chime.ts → sounds.ts` rename from the M8.4 work, so typecheck failed (latency and desktop-smoke failed after it). Fixed on main (rename reverted); local typecheck clean.
+- M8.4 Sound **in progress** on `wip/M8.4` (head e977766, base 8135404): `sounds.ts` with DING / selection / evolution recipes, per-browser volume slider (default 70) shown while sound is on, Sound: off mutes, selection sound on a new menu, evolution sound with the re-theme; unit tests and `e2e/M8.4.spec.ts` (Web Audio recorder) pass. D189. Round 1 review: 0 H / 2 M (screenshot fixed; tests still missing for View-as pane silence and character-switch silence). Next step: `git merge origin/main` into wip/M8.4 — main renamed `sounds.ts` back to `chime.ts`, so after the merge make sure `sounds.ts` holds the M8.4 content and `chime.ts` is gone (PlayerScreen imports `./sounds`); add the pane and switch tests; run round 2 review; then check the box.
+- Tests: unit 1,140 on main (1,144 on wip/M8.4); full e2e 78/78 on M8.3 (b50f5ff). Engine coverage not measured (no engine changes).
+- Open `wip/*` branches: wip/M8.4 (in progress).
+- Next item: M8.4 Sound (resume wip/M8.4).
+- Blockers: none.

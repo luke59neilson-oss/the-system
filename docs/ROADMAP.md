@@ -634,7 +634,7 @@ work: Q44–Q48 and Q52.
   texture), prismatic diamond (animated; respects reduced motion).
   System-window styling per DESIGN §9.
 - [x] **M8.2 Evolution transition.** Animated re-theme on evolution.
-- [ ] **M8.3 Accessibility.** Text contrast ≥ 4.5:1 in all 7 themes
+- [x] **M8.3 Accessibility.** Text contrast ≥ 4.5:1 in all 7 themes
   (automated); silver vs platinum ΔE ≥ 10 (automated); keyboard navigation;
   reduced motion.
 - [ ] **M8.4 Sound.** Original sounds generated in code (DING, selection,
