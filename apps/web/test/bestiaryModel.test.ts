@@ -121,6 +121,7 @@ describe('bestiary model (M7.2)', () => {
     ]);
     expect(labelLeaks(state, { ...hunter, label: 'F-grade beast' }, [])).toHaveLength(2);
     expect(labelLeaks(state, hunter, [])).toEqual([]);
+    expect(labelLeaks(state, { ...hunter, label: 'Pale stalker(s)' }, [])).toEqual([]);
     // In range (a lower grade) or no rank: nothing to warn about.
     expect(labelLeaks(state, { ...hunter, label: '', grade: 'G', level: '0' }, [])).toEqual([]);
     expect(labelLeaks(state, { ...hunter, label: '', grade: '', level: '' }, [])).toEqual([]);

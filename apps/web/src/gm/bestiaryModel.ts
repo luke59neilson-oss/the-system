@@ -11,8 +11,6 @@ import {
  * D123, D181): an entity's GM name, player-facing label, grade and level
  * (the Identify range), stats, Identify tiers and notes. Stats and notes are
  * GM-only; players see only the label and the tier their Identify unlocks.
- * Work in progress: the define/edit commands and the out-of-range label
- * warning. Next: the Bestiary window, reveal, e2e and screenshots.
  */
 export interface EntityDraft {
   name: string;
@@ -148,7 +146,10 @@ export function labelLeaks(
   const name = clean(draft.name).toLowerCase();
   const label = (clean(draft.label) || clean(draft.name)).toLowerCase();
   if (name === '' || draft.grade === '' || !/^\d+$/u.test(draft.level.trim())) return [];
-  const gradeHint = /\(\s*[a-z]\s*\)|\b(lvl|level)\b\s*\d|\b[a-z]-grade\b/iu.test(label);
+  const raw = clean(draft.label) || clean(draft.name);
+  // Grade letters are capitals ("(F)", "F-grade"), so "Wolf(s)" is no hint.
+  const gradeHint =
+    /\(\s*[A-Z]\s*\)|\b[A-Z]-grade\b/u.test(raw) || /\b(lvl|level)\b\s*\d/iu.test(raw);
   if (!label.includes(name) && !gradeHint) return [];
   const rank = { grade: draft.grade, level: Number(draft.level.trim()) };
   const who = knownBy.length > 0 ? knownBy : state.characterOrder;

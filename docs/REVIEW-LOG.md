@@ -758,3 +758,8 @@
 
 - 0 H / 0 M / 6 L. check green (1,072), M7.1 e2e green; both Mediums confirmed closed. Lows: no cross-tab e2e for the stale warning; offer key uses Date.now; offers not tied to an undone entry; sticky stale note until Reload; vanished reset left the outcome line; list summary wraps in the narrow column.
 - Fixed: the outcome line clears when the open quest vanishes. Others accepted as Lows.
+
+## 2026-10-24 · M7.2 Bestiary and NPCs · sonnet (round 1)
+
+- 0 H / 0 M / 6 L. check green (1,077), M7.2 e2e green; golden diff confirmed additive (v30, `stats: null`, `notes: ""`); no GM-only field in the player projection. Lows: stale "work in progress" comment; grade-hint regex matched "Wolf(s)"; substring name match is noisy for short names; a stat dropped from the rules is discarded on the next stats edit; warning screenshot shows the warning but not the fields above it; tier order compare could send a no-op edit.
+- Fixed: comment removed; the grade hint now needs a capital grade letter (unit test for "Pale stalker(s)"). Others accepted as Lows (the warning is advisory, D181).
