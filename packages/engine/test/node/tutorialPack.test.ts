@@ -103,6 +103,7 @@ describe('tutorial content pack (M9.5)', () => {
     if (!state) throw new Error('no state');
     for (const id of Object.keys(state.entities)) {
       const r = execute(c, { type: 'entity.reveal', entityId: id, characterIds: null }, ctx);
+      expect(r.ok, id).toBe(true);
       if (r.ok) c = r.campaign;
     }
     const view = JSON.stringify(projectForPlayer(c.state ?? state, 'jake'));
@@ -111,7 +112,12 @@ describe('tutorial content pack (M9.5)', () => {
       regions: { name: string; notes: string }[];
       gmNotes: { title: string; body: string }[];
       quests: { title: string; text?: string; stability?: { rules: Record<string, number> } }[];
-      bestiary: { name: string; label?: string; notes?: string }[];
+      bestiary: {
+        name: string;
+        label?: string;
+        notes?: string;
+        tiers: { minRarity: string; text: string }[];
+      }[];
     };
     const secrets = [
       ...json.regions.flatMap((r) => [r.name, r.notes]),
@@ -121,9 +127,25 @@ describe('tutorial content pack (M9.5)', () => {
       ...Object.keys(json.quests[0]?.stability?.rules ?? { missing: 1 }),
       ...json.bestiary.flatMap((b) => [b.notes ?? 'missing']),
       ...json.bestiary.filter((b) => b.label && b.label !== b.name).map((b) => b.name),
-      // Rare-tier text needs Rare Identify; Jake has Common.
-      '[Fever]',
+      // Uncommon and Rare tier text needs that Identify rarity; Jake has Common.
+      ...json.bestiary.flatMap((b) =>
+        b.tiers.filter((t) => t.minRarity !== 'common').map((t) => t.text),
+      ),
     ];
     for (const secret of secrets) expect(view, secret).not.toContain(secret);
+  });
+
+  it('refuses upper-case stability action tags in the file', () => {
+    const p = previewContent(
+      fresh(),
+      {
+        format: 'the-system/content',
+        version: 1,
+        quests: [{ title: 'Q', stability: { rules: { 'Kill-Beast': 1 } } }],
+      },
+      ctx,
+    );
+    expect(p.ok).toBe(false);
+    expect(!p.ok && p.errors[0]?.message).toBe('Action tags are lower case');
   });
 });

@@ -253,14 +253,12 @@ export const contentQuestSchema = z
         visible: z.boolean().optional().describe("Shown to players; default the rules' setting."),
         rules: z
           .record(
-            z
-              .string()
-              .trim()
-              .min(1)
-              .max(CONTENT_LIMITS.tag)
-              .refine((t) => t === t.toLowerCase(), { message: 'Action tags are lower case' }),
+            z.string().trim().min(1).max(CONTENT_LIMITS.tag),
             z.number().refine((n) => n !== 0, { message: 'A delta is never 0' }),
           )
+          .refine((r) => Object.keys(r).every((t) => t === t.toLowerCase()), {
+            message: 'Action tags are lower case',
+          })
           .optional()
           .describe('Action tag → stability change, e.g. { "kill-pale-hunter": -2 }.'),
       })
