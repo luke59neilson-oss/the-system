@@ -748,3 +748,13 @@
 
 - 0 H / 1 M / 9 L. check green (1,062), M6.A e2e green, full e2e 67/67. M-1: library give/take had no reason input, so the take notice's reason was unreachable. Lows: combined currency+items adjust gives two notices (API-only); link-DING with no text/bonus repeats; warning misfired on a library name clash; long split bonus wraps at 390; stale "Trade offered"; history label "Gifts and trades" stale; one-directional leak check; no D-entry; rename follows holders silently.
 - Fixed: M-1 (reason field in the item library, tidied, sent only when non-blank; e2e asserts "The GM took [Hunter Fang]: Evidence for the elders"), L-3 (warning only when no library title has that name), L-6 (label "Items and currency"), L-7 (mirror leak assertions), L-8 (D179). Remaining Lows go to the QUALITY backlog via M11.5. No round 3 (one Medium). Box checked.
+
+## 2026-10-24 · M7.1 Quest manager · sonnet (round 1)
+
+- 0 H / 2 M / 8 L. check green (1,070), M7.1 e2e green. M-1: after a save the form diffed against the live quest with no baseline, so a later edit from another tab was silently reverted. M-2: a pending practice stability offer vanished when the next entry had no quest tag. Lows: vanished quest left a draft that "Add quest" would duplicate; offers kept stale deltas; trimmed vs raw text compare; edit label "(blank: no gauge)" wrong in edit mode; hidden-quest screenshot cut before Add; no nudge-only gauge or start value at creation; datalist only whole-field; e2e gaps (noticeTo edit).
+- Fixed: M-1 (`savedQuest` keeps the saved baseline), M-2 (offers queue as `PendingOffer`s, re-read by `liveOffer`; e2e logs an untagged entry in between), vanished-quest reset, live deltas, trimmed compare, edit label, screenshot, e2e now widens `noticeTo` on an existing quest. Left: nudge-only gauge/start value (D180 scope), datalist.
+
+## 2026-10-24 · M7.1 Quest manager · sonnet (round 2)
+
+- 0 H / 0 M / 6 L. check green (1,072), M7.1 e2e green; both Mediums confirmed closed. Lows: no cross-tab e2e for the stale warning; offer key uses Date.now; offers not tied to an undone entry; sticky stale note until Reload; vanished reset left the outcome line; list summary wraps in the narrow column.
+- Fixed: the outcome line clears when the open quest vanishes. Others accepted as Lows.

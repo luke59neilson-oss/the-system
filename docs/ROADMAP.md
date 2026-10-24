@@ -583,7 +583,7 @@ work: Q44–Q48 and Q52.
 
 ## M7 — Quests, encounters, bestiary
 
-- [ ] **M7.1 Quest manager.** Text, timers, stability rules, nudges,
+- [x] **M7.1 Quest manager.** Text, timers, stability rules, nudges,
   visibility, and for hidden quests who gets the notice (`noticeTo`, D122).
   Offer to apply a quest's stability rule when a practice entry
   carries one of its action tags (D67).
