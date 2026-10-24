@@ -837,3 +837,6 @@
 ## 2026-10-24 · M10.1 Electron wrapper (final) · sonnet
 - Round 1 at 7bd4eff (range ee1a405..7bd4eff): 0 High, 2 Medium, 4 Low. M1 Windows log-off (`session-end`) set `quitting`, so before-quit skipped the server close and the quit backup: fixed (a separate `sessionEnding` flag only skips the question). M2 a stuck listener close let the 5 s exit guard fire before the backup: fixed (`close()` waits at most CLOSE_GRACE_MS 3 s, then backs up and closes the campaign anyway). Lows (unpruned quit backups by design D199, same-second quit backup fails silently, Ethernet path missing from the Windows steps, loopback-only join hint) to the QUALITY backlog.
 - Round 2 at 2fac8ed: 0 High, 0 Medium, 5 Low (in-flight HTTP after the grace close gets a 500; demo campaign LOCK left on a stuck close; no test for the grace path or session-end; screenshot churn). To the backlog. Box checked.
+
+## 2026-10-24 · QF.22 Pin drafted re-ratings and closed menus · sonnet
+- Round 1 at adb3d33: 0 High, 0 Medium, 3 Low (screenshot churn from the concurrent full e2e run, expected; mixed apostrophes match their fixtures; box unchecked in the work commit by design). Both sweep mutations now fail the new tests (confirmed by me and the reviewer). Box checked.

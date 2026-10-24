@@ -475,6 +475,17 @@ describe('session log party sheets (M9.A)', () => {
     expect(renderSessionLog(buildSessionLog(later, 0), meta)).toContain(
       '- Skill menu at level 5, not chosen yet: [Quick Draw (Common)], [Pinning Shot (Uncommon)], [Steady Breath (Rare)]',
     );
+
+    // QF.22: a chosen menu is no longer open.
+    const chosen = run(
+      [{ type: 'selection.choose', characterId: 'jake', level: 5, skill: 'Pinning Shot' }],
+      ctx,
+      later,
+    );
+    expect(buildSessionLog(chosen, 0).party[0]?.openMenus).toEqual([]);
+    expect(renderSessionLog(buildSessionLog(chosen, 0), meta)).not.toContain(
+      'Skill menu at level 5',
+    );
   });
 
   it('says so when the campaign has no characters', () => {

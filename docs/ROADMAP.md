@@ -283,6 +283,13 @@ the rest follow in file order. Each gets its own §6 review.
   out of Jake's range, who then sees `[??? – lvl ???]`. *Accept:* the line
   splits in-range ("can now Identify") from out-of-range characters ("now
   knows of … but is out of Identify range"); unit test and M7.2 e2e.
+- [x] **QF.22 Pin drafted re-ratings and closed menus in the Claude bridge.**
+  Sweep A (Tests, 2026-10-24): dropping `rerate` from the drafted
+  `evolution.release` (`content/toCommands.ts`) or listing chosen menus as
+  open in the session log's Party section (`report/sessionLog.ts`) passed
+  every test. *Accept:* a content test asserts a drafted `rerate` reaches the
+  release command; a session-log test chooses a menu and sees it leave
+  `openMenus` and the markdown; both mutations fail them.
 - [x] **QF.21 Test the hub's default loot random source.** Sweep C (Tests):
   replacing `cryptoRandom` in `hub.ts` with a constant passed every test.
   *Accept:* a hub test with no injected `random` rolls a two-entry,
