@@ -477,3 +477,11 @@ DESIGN/ROADMAP; do not re-apply them.
     broadcasts. Option: a "known to players" toggle that shows a faction's name
     and standing (D184).
     Answer:
+
+70. **Should a contest between two player characters hide each side's stat?**
+    When the GM shares a contest between two characters, each player sees
+    their own stat value and the rounded chance, which together reveal the
+    other player's stat (roughly). Default: keep it as is; the GM chooses to
+    share, like the party's pool bars (sweep D, Low). Option: show players
+    only the chance in words when both sides are characters (D186).
+    Answer:

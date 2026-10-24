@@ -63,6 +63,34 @@ async function shoot(page: Page, theme: string) {
   });
 }
 
+// Average brightness and blueness (blue minus red) of the status window's top
+// frame edge as rendered: a screenshot strip decoded on a canvas in the page.
+async function ringPixels(page: Page) {
+  const box = await page.getByTestId('status').boundingBox();
+  if (!box) throw new Error('status window not laid out');
+  const png = await page.screenshot({
+    clip: { x: box.x + 24, y: box.y, width: 200, height: 3 },
+  });
+  const expr = `(async () => {
+    const img = new Image();
+    img.src = 'data:image/png;base64,${png.toString('base64')}';
+    await img.decode();
+    const c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    const d = g.getImageData(0, 0, c.width, c.height).data;
+    let luma = 0, blue = 0, n = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      luma += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+      blue += d[i + 2] - d[i];
+      n++;
+    }
+    return { luma: luma / n, blue: blue / n };
+  })()`;
+  return page.evaluate<{ luma: number; blue: number }>(expr);
+}
+
 const metalOf = (page: Page) =>
   page
     .getByTestId('status')
@@ -157,6 +185,14 @@ test('each grade metal frames the status window in its own colour', async ({ bro
     );
   expect(await sheen('platinum')).toContain('repeating-linear-gradient');
   expect(await sheen('silver')).not.toContain('repeating-linear-gradient');
+  // And the rendered ring really looks it: platinum's frame is about as bright
+  // as silver's (never a dark ring) and visibly bluer (DESIGN §3).
+  await setTheme(page, 'silver');
+  const silverRing = await ringPixels(page);
+  await setTheme(page, 'platinum');
+  const platinumRing = await ringPixels(page);
+  expect(platinumRing.luma).toBeGreaterThan(silverRing.luma * 0.85);
+  expect(platinumRing.blue).toBeGreaterThan(silverRing.blue + 15);
 
   // Diamond animates; with reduced motion it holds still.
   await setTheme(page, 'diamond');

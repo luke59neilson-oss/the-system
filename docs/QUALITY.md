@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** 3902046 (2026-10-24, C) · **Next rotation:** D
+**Last sweep:** 45da2c5 (2026-10-24, D) · **Next rotation:** A
 
 ## Lenses and rotation
 
@@ -108,6 +108,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-24 03:08 | C, d6fedf8..3902046 | Rules · haiku | 0 | 0 | 3 | 3 L to Backlog (one rated "High by definition", Low by trigger: whitespace-only title duplicates in a pre-D177 log) | 0 | ~207k |
 | 2026-10-24 03:08 | C, d6fedf8..3902046 | Tests · sonnet | 0 | 1 | 6 | 1 M confirmed by mutation (QF.21, fixed this run); 6 L to Backlog | 0 | ~137k |
 | 2026-10-24 03:08 | C, d6fedf8..3902046 | UX · fable | 0 | 2 | 7 | 2 M confirmed in code (QF.19, QF.20, fixed this run); 7 L to Backlog | 0 | ~193k |
+| 2026-10-24 15:13 | D, 3902046..45da2c5 | Rules · sonnet | 0 | 0 | 1 | 1 L to Backlog | 0 | ~85k |
+| 2026-10-24 15:13 | D, 3902046..45da2c5 | Boundaries · fable | 0 | 0 | 2 | 2 L to Backlog (PC-vs-PC contest estimate also asked as Q) | 0 | ~182k |
+| 2026-10-24 15:13 | D, 3902046..45da2c5 | UX · haiku | 0 | 0 | 3 | 3 L to Backlog | 0 | ~133k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -254,3 +257,8 @@ reviewers ran 15–20 minutes each in the background.
 - Tests (sweep C): an empty loot roll (all "nothing") sending no gift notice is untested (`history/index.ts` ~193 `!isEmptyBundle`); `isDing` `title` kind is unpinned in `history.test.ts`; `stabilityOffers` exact-tag match is unpinned (substring mutation survives); `parseStabilityRules('__proto__: +5')` silently drops the rule; the title DING wording has no unit test; boundary mutations survive in `currencyModel.ts` (MAX_AMOUNT, reason 200), `titleLibraryModel.ts` (`parsePercent`, `parseFlat` bounds) and `loot.ts` ~72 (item min 0).
 - UX (sweep C): Title and Item library disable Save with no message for an unparseable bonus ("10%", "0.5"); the Item library reason stays after a Give/Take and rides the next one; Take is enabled for a count above what the character holds; practice stability offers' "Not now" dismisses every offer, not one; Loot tables with an empty item library say only "choose an item"; Credits/Title library leave the right third blank at 1366 while Item library/Loot inputs stretch ~1300 px, and ledger cells wrap; the phone Titles row is crammed into the narrow value column.
 - UX (M7.A review): the bestiary stat fields take whole stat points (17 shows as 1.7) with no hint, unlike the character editor (`Bestiary.tsx` ~189); the contest roller defaults side B's grade to G for an entry with stats but no grade without saying so (`encounterModel.ts` ~103).
+- Rules (sweep D): `hunger.set` over several characters is refused whole when one has outgrown hunger (`commands.ts` hunger.set, `reducer.ts` `hungerFaded`); the console guards per character, but a scripted group set fails for everyone.
+- Boundaries (sweep D): a PC-vs-PC shared contest lets each player solve the other's stat from their own value and the rounded chance (`projection/player.ts` ~946 `playerContests`); the GM chooses to share; D182/Q67 accepted only the NPC case.
+- Boundaries (sweep D): the 1,000-state projection canary seeds no contests, hunger levels, regions or factions (`projection.test.ts` `seed()`); targeted unit tests and e2e frame scans cover them today.
+- UX (sweep D): the encounter roller's Who select and "Players see" field truncate names at 1366 (`Encounter.tsx` ~190, `.contest-side`); Offer montage is hidden with no hint when the clock is under half or has a failure (`Encounter.tsx` ~434); "Party is here" button's accessible name "The party is in …" lacks its visible label (`Trackers.tsx` ~260, WCAG 2.5.3).
+- UX (M8.1 review): diamond animates only on the status ring; the other windows' frames are static; the `.player-grid .window:not(.skill-detail)` rule (0,3,0) outranks single-class border variants on player windows; the phone full-page theme shot is too tall to judge the frame.
