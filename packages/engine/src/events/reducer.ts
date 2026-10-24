@@ -2242,7 +2242,6 @@ function checkEntityStats(
   return { ...stats };
 }
 
-/** Every id must be a character, listed once. */
 /** M7.4: two regions may not share a name (players see it; the GM picks by it). */
 function checkRegionName(
   state: CampaignState,
@@ -2250,14 +2249,17 @@ function checkRegionName(
   name: string,
   regionId: string,
 ): void {
-  const key = name.trim().toLowerCase();
+  const norm = (n: string) => n.trim().replace(/\s+/gu, ' ').toLowerCase();
+  const key = norm(name);
   for (const id of state.regionOrder) {
-    if (id !== regionId && state.regions[id]?.name.trim().toLowerCase() === key) {
+    const other = state.regions[id];
+    if (id !== regionId && other && norm(other.name) === key) {
       fail(event, `a region is already called "${name.trim()}"`);
     }
   }
 }
 
+/** Every id must be a character, listed once. */
 function checkCharacters(state: CampaignState, event: DomainEvent, ids: readonly string[]): void {
   if (new Set(ids).size !== ids.length) fail(event, 'a character is listed twice');
   for (const id of ids) characterOf(state, event, id);

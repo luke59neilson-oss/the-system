@@ -621,7 +621,7 @@ work: Q44–Q48 and Q52.
   D88).
   Store the race level used for the above-level XP bonus in `xp.awarded`
   so a non-latest undo cannot re-price a later award (D71).
-- [ ] **M7.4 Trackers.** Hunger (fades at E-grade by default), regions,
+- [x] **M7.4 Trackers.** Hunger (fades at E-grade by default), regions,
   survivor factions. Players see their hunger tracker when the campaign
   enables it (from M3.13, D88).
 - [ ] **M7.A Milestone acceptance and review.** Sample encounter end to end;
