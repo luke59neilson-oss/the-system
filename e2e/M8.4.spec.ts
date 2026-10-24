@@ -178,10 +178,12 @@ test('DING, selection and evolution each play their own sound at the chosen volu
   const volume = player.getByTestId('volume');
   await expect(volume).toHaveValue('70');
   await volume.fill('50');
-  await player.getByTestId('player-grid').scrollIntoViewIfNeeded();
+  await player.evaluate(() =>
+    (globalThis as unknown as { scrollTo(x: number, y: number): void }).scrollTo(0, 0),
+  );
   await player.screenshot({
     path: path.join(shots, 'volume-1366x768.png'),
-    clip: { x: 0, y: 0, width: 1366, height: 120 },
+    clip: { x: 0, y: 0, width: 1366, height: 160 },
   });
   await player.reload();
   await expect(player.getByTestId('connection')).toHaveText('Connected');
@@ -248,5 +250,6 @@ test('DING, selection and evolution each play their own sound at the chosen volu
   await player.reload();
   await expect(player.getByTestId('connection')).toHaveText('Connected');
   await expect(player.getByTestId('selection-badge')).toHaveText('1 waiting');
+  await player.waitForTimeout(500); // a sound fired a tick late would land here
   expect(await played(player)).toEqual([]);
 });
