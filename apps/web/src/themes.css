@@ -55,15 +55,17 @@
   --metal: #b9d8f0;
   --metal-hi: #eaf6ff;
   --metal-lo: #6f93b0;
-  /* Heavier brushed texture: fine horizontal streaks over a cool gradient. */
+  /* Heavier brushed texture: bold vertical streaks over a cool gradient, so
+     the frame reads as brushed even at ring width (silver is smooth). */
   --sheen:
     repeating-linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.18) 0 1px,
-      rgba(0, 20, 40, 0.12) 1px 3px
+      rgba(255, 255, 255, 0.55) 0 1px,
+      rgba(0, 25, 60, 0.45) 1px 2px,
+      rgba(255, 255, 255, 0.15) 2px 4px
     ),
-    linear-gradient(135deg, #eaf6ff, #b9d8f0 40%, #7fa3c0 70%, #d6ecfb);
-  --glow-strength: 40%;
+    linear-gradient(135deg, #eaf6ff, #9ec6e6 40%, #5f86a8 70%, #cfe8fb);
+  --glow-strength: 45%;
 }
 .theme-diamond {
   --metal: #c9f3ff;
@@ -111,7 +113,7 @@
   content: '';
   position: absolute;
   inset: -1px;
-  padding: 3px;
+  padding: 4px;
   border-radius: inherit;
   background: var(--sheen);
   background-size: 300% 300%;
