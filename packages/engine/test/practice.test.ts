@@ -5,6 +5,7 @@ import {
   nextSelectionLevel,
   practiceAlerts,
   projectForGm,
+  replay,
   repeatedEntryIds,
   searchNotes,
   skillPairCounts,
@@ -533,5 +534,45 @@ describe('montages (M3.11)', () => {
     let d = ok(ok(clocked(2), offer), { type: 'montage.close', montageId: 'm' });
     d = ok(d, { type: 'clock.remove', clockId: 'k' });
     expect(d.state?.montages['m']?.status).toBe('closed');
+  });
+
+  it('replays a v1 clock removal with its old meaning: the montage stays open (D34)', () => {
+    const c = ok(clocked(2), offer);
+    const events = c.events.map((e) => ({ ...e }));
+    const last = events.at(-1);
+    if (!last) throw new Error('no events');
+    const v1Removal = {
+      ...last,
+      id: 'v1-remove',
+      type: 'clock.removed',
+      schemaVersion: 1,
+      payload: { clockId: 'k' },
+    };
+    const v1Focus = {
+      ...last,
+      id: 'v1-focus',
+      actor: { role: 'player', characterId: 'jake' },
+      type: 'montage.focused',
+      schemaVersion: 1,
+      payload: {
+        montageId: 'm',
+        characterId: 'jake',
+        action: 'Scout ahead',
+        skills: [],
+        stat: null,
+      },
+    };
+    const v1Close = {
+      ...last,
+      id: 'v1-close',
+      type: 'montage.closed',
+      schemaVersion: 1,
+      payload: { montageId: 'm' },
+    };
+    const afterRemoval = replay([...events, v1Removal]);
+    expect(afterRemoval.state?.montages['m']?.status).toBe('open');
+    const replayed = replay([...events, v1Removal, v1Focus, v1Close]);
+    expect(replayed.state?.montages['m']?.status).toBe('closed');
+    expect(replayed.state?.clocks['k']).toBeUndefined();
   });
 });

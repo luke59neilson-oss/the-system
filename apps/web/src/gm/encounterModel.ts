@@ -119,7 +119,8 @@ export function refreshSide(prev: CampaignState, next: CampaignState, draft: Sid
   if (draft.source === 'custom') return draft;
   const was = sideDraftFor(prev, draft.source, draft.stat);
   const now = sideDraftFor(next, draft.source, draft.stat);
-  if (now.source !== draft.source) return draft;
+  // The character or entry is gone: fall back to an empty custom side.
+  if (now.source !== draft.source) return now;
   const value = draft.value === was.value ? now.value : draft.value;
   const grade = draft.grade === was.grade ? now.grade : draft.grade;
   const label = draft.label === was.label ? now.label : draft.label;

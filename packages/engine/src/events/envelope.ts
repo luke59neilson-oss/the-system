@@ -550,7 +550,10 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     result: z.enum(['success', 'failure']),
     amount: z.number().int().min(1).max(24),
   }),
-  'clock.removed': z.strictObject({ clockId: recordId }),
+  // v2 (M7.A): removing a clock closes its open montages; a v1 event keeps
+  // the old meaning on replay (`legacy`), so logs where a focus or close
+  // followed the removal still load.
+  'clock.removed': z.strictObject({ clockId: recordId, legacy: z.literal(true).optional() }),
   /** GM offers a montage on a clock that qualifies (M3.11, DESIGN §7). */
   'montage.offered': z.strictObject({
     montageId: recordId,
@@ -815,7 +818,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'evolution.chosen': 2,
   'clock.created': 1,
   'clock.ticked': 1,
-  'clock.removed': 1,
+  'clock.removed': 2,
   'montage.offered': 1,
   'montage.focused': 1,
   'montage.closed': 1,
@@ -869,6 +872,10 @@ export const EVENT_UPCASTERS: EventUpcasters = {
     },
   },
   'evolution.chosen': {
+    1: (payload) => ({ ...(payload as object), legacy: true }),
+  },
+  // M7.A: v1 removals left the clock's open montages open.
+  'clock.removed': {
     1: (payload) => ({ ...(payload as object), legacy: true }),
   },
 };

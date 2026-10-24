@@ -169,7 +169,9 @@ test('a sample encounter end to end; stability reaches players only when shown',
   await award.getByRole('button', { name: 'Award XP' }).click();
   await expect(page.getByTestId('class')).toHaveText(/lvl 2\]/);
   // The roller follows Jake's new Agility from the level-ups (no stale odds).
-  await expect(sideA.getByRole('textbox', { name: 'Value', exact: true })).not.toHaveValue('10');
+  await expect(sideA.getByRole('textbox', { name: 'Value', exact: true })).toHaveValue(
+    /^(1[1-9]|[2-9]\d)$/,
+  );
   await page.getByTestId('quest').scrollIntoViewIfNeeded();
   await page.screenshot({ path: path.join(shots, 'player-after-fight-390x844.png') });
 

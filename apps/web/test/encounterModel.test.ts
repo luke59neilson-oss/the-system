@@ -190,6 +190,27 @@ describe('encounter model: sides follow the campaign (M7.A)', () => {
     const custom: SideDraft = { source: 'custom', stat: '', label: 'Rock', value: '5', grade: 'G' };
     expect(refreshSide(prev, next, custom)).toBe(custom);
   });
+
+  it('follows a bestiary edit and empties a side whose source is gone', () => {
+    const edited = stateOf(
+      apply(before, [
+        {
+          type: 'entity.edit',
+          entityId: 'hunter',
+          name: 'Pale hunter',
+          label: 'Pale stalker',
+          tiers: [{ minRarity: 'common', text: '[Pale stalker]' }],
+          grade: 'F',
+          level: 12,
+          stats: { strength: 42 },
+        },
+      ]),
+    );
+    const hunter = sideDraftFor(prev, 'e:hunter', 'strength');
+    expect(refreshSide(prev, edited, hunter)).toEqual({ ...hunter, value: '42' });
+    const ghost: SideDraft = { ...sideDraftFor(prev, 'c:jake', 'strength'), source: 'c:gone' };
+    expect(refreshSide(prev, next, ghost)).toEqual(sideDraftFor(next, 'custom', ''));
+  });
 });
 
 describe('encounter model: damage and healing (M7.3)', () => {
