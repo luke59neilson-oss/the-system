@@ -120,6 +120,9 @@ function openGmWindow(server: RunningApp, notice: string | null = null): void {
   // campaign is closed and backed up (M10.1 review).
   win.on('session-end', () => {
     sessionEnding = true;
+    // Windows may end the process soon after this returns: copy now, while
+    // there is time (the close below makes no second copy; M10.A review).
+    server.backup();
   });
   let asking = false;
   win.on('close', (event) => {
@@ -127,6 +130,11 @@ function openGmWindow(server: RunningApp, notice: string | null = null): void {
     event.preventDefault();
     if (asking) return;
     asking = true;
+    // An installer upgrading the app sends this polite close and then force-
+    // kills the app a second later, before anyone answers: take the quit
+    // backup now (quitting after this makes no second copy unless something
+    // changed in between; M10.A review).
+    server.backup();
     void dialog
       .showMessageBox(win, {
         type: 'question',

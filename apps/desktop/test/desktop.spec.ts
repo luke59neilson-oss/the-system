@@ -92,3 +92,58 @@ test('double-click start: server up, GM window connected with the key', async ()
     rmSync(userData, { recursive: true, force: true });
   }
 });
+
+// M10.A review: an installer upgrading the app closes the window politely,
+// then force-kills it about a second later, before anyone answers the quit
+// question. The quit backup must already exist by then.
+test('a polite close then a forced kill (an installer upgrading) still leaves the quit backup', async () => {
+  const dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-desktop-'));
+  const userData = mkdtempSync(path.join(tmpdir(), 'the-system-profile-'));
+  const app = await electron.launch({
+    args: [path.join(root, 'dist', 'main.cjs'), '--no-sandbox'],
+    env: {
+      ...process.env,
+      THE_SYSTEM_PORT: '0',
+      THE_SYSTEM_DATA_DIR: dataDir,
+      THE_SYSTEM_USER_DATA_DIR: userData,
+    },
+  });
+  // Captured once: Playwright disposes the app object once the process dies.
+  const proc = app.process();
+  const backups = path.join(dataDir, 'campaigns', 'main', 'backups');
+  const quitCopies = () =>
+    existsSync(backups) ? readdirSync(backups).filter((name) => name.endsWith('-quit')) : [];
+  try {
+    const gm = await gmWindow(app);
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    await gm.getByLabel('Campaign name').fill('Upgrade smoke');
+    await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await expect(gm.getByRole('heading', { name: /Upgrade smoke/ })).toBeVisible();
+    expect(quitCopies()).toEqual([]);
+    // The polite close: the app asks "Quit The System?" and keeps running.
+    await app.evaluate(({ BrowserWindow }) => {
+      BrowserWindow.getAllWindows()
+        .find((w) => w.webContents.getURL().includes('/gm'))
+        ?.close();
+    });
+    await expect.poll(quitCopies).toHaveLength(1);
+    // A second polite close while the question is open asks nothing new.
+    await app.evaluate(({ BrowserWindow }) => {
+      BrowserWindow.getAllWindows()
+        .find((w) => w.webContents.getURL().includes('/gm'))
+        ?.close();
+    });
+    // The forced kill, before anyone answers.
+    const exited = new Promise((resolve) => proc.once('exit', resolve));
+    proc.kill('SIGKILL');
+    await exited;
+    const made = quitCopies();
+    expect(made).toHaveLength(1);
+    const copy = readFileSync(path.join(backups, made[0] ?? '', 'events.jsonl'), 'utf8');
+    expect(copy).toContain('Upgrade smoke');
+  } finally {
+    if (proc.exitCode === null && proc.signalCode === null) await app.close();
+    rmSync(dataDir, { recursive: true, force: true });
+    rmSync(userData, { recursive: true, force: true });
+  }
+});

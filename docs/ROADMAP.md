@@ -678,7 +678,7 @@ work: Q44–Q48 and Q52.
   creates the GitHub Release itself. *Accept:* AppImage builds and launches
   under `xvfb-run` locally; the release workflow's latest run is green with
   all three artifacts (check via the repo-scoped Actions read API).
-- [ ] **M10.A Milestone acceptance and review.**
+- [x] **M10.A Milestone acceptance and review.**
 
 ## M11 — Hardening and docs
 

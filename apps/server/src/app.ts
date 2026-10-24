@@ -49,6 +49,14 @@ export interface RunningApp {
   join: () => JoinInfo;
   /** Folder the running session logs are written to (M2.4). */
   exportsDir: string;
+  /**
+   * Backs the campaign up now under the `backupOnClose` label, without
+   * closing it; a no-op when that option is off, the campaign is empty, or
+   * nothing was appended since the last such backup (M10.A review: the
+   * desktop calls it when the quit question opens, because an installer's
+   * forced kill can follow the polite close before anyone answers).
+   */
+  backup: () => void;
   /** Closes the listener and every open campaign (writing the session logs once more). */
   close: () => Promise<void>;
 }
@@ -107,12 +115,29 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
     const address = app.server.address();
     const port = typeof address === 'object' && address ? address.port : options.port;
     let closing: Promise<void> | null = null;
+    // Event count at the last backup this app made, so asking to quit and
+    // then quitting leaves one copy, not two.
+    let backedUpAt = -1;
+    const backup = () => {
+      const count = store.campaign.events.length;
+      if (options.backupOnClose === undefined || count === 0 || count === backedUpAt) return;
+      try {
+        store.backup(options.backupOnClose);
+        backedUpAt = count;
+      } catch (error) {
+        // A failed copy must never stop the campaign closing cleanly.
+        console.error('The System: backup failed:', error);
+      }
+    };
     return {
       port,
       gmKey,
       exportsDir,
       generatedKey: options.gmKey === undefined,
       join: () => joinInfo(options.host, port, networkInterfaces()),
+      backup: () => {
+        if (closing === null) backup();
+      },
       close: () => {
         // A listener that never finishes closing must not cost the backup or
         // the campaign close: give it CLOSE_GRACE_MS, then carry on (M10.1 review).
@@ -120,15 +145,8 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
           app.close(),
           new Promise<void>((resolve) => setTimeout(resolve, CLOSE_GRACE_MS).unref()),
         ]).finally(() => {
-          // After the listener is closed nothing else can append: the copy is final.
-          if (options.backupOnClose !== undefined && store.campaign.events.length > 0) {
-            try {
-              store.backup(options.backupOnClose);
-            } catch (error) {
-              // A failed copy must never stop the campaign closing cleanly.
-              console.error('The System: backup on close failed:', error);
-            }
-          }
+          // The listener is closed (or the grace ran out): take the last copy.
+          backup();
           store.close();
         });
         return closing;
