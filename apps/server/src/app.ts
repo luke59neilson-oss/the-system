@@ -51,12 +51,23 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
   const store = open('main');
   const exportsDir = exportsDirFor(storeOptions.dataDir);
   const gmKey = options.gmKey ?? newGmKey();
-  let boundPort: number | null = null;
+  // QF.18: the port comes from the live socket, not from a variable set after
+  // listen() resolves, so a request that arrives in between (a GM console
+  // reconnecting the moment a restarted server accepts) never gets a 503.
+  let listening: { address(): unknown } | null = null;
+  const livePort = (): number | null => {
+    const address = listening?.address();
+    return typeof address === 'object' && address !== null && 'port' in address
+      ? Number((address as { port: unknown }).port)
+      : null;
+  };
   try {
     const app = await createServer({
       // Re-read interfaces per request so joining a new wifi shows up without a restart.
-      joinInfo: () =>
-        boundPort === null ? null : joinInfo(options.host, boundPort, networkInterfaces()),
+      joinInfo: () => {
+        const port = livePort();
+        return port === null ? null : joinInfo(options.host, port, networkInterfaces());
+      },
       webRoot: options.webRoot,
       // The demo campaign lives in its own directory (MS.4, D53).
       openCampaign: open,
@@ -69,6 +80,7 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
       },
       live: { store, gmKey, now: () => new Date().toISOString(), newId: () => randomUUID() },
     });
+    listening = app.server;
     try {
       await app.listen({ port: options.port, host: options.host });
     } catch (error) {
@@ -77,7 +89,6 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
     }
     const address = app.server.address();
     const port = typeof address === 'object' && address ? address.port : options.port;
-    boundPort = port;
     let closing: Promise<void> | null = null;
     return {
       port,
