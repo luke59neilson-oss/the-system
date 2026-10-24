@@ -13,6 +13,8 @@ export interface QuestDraft {
   days: string;
   /** "tag: delta" lines; blank = no World Stability. */
   rules: string;
+  /** Hidden quests only: who gets the notice (D122); null = every character. */
+  noticeTo: string[] | null;
 }
 
 export const emptyQuestDraft = (): QuestDraft => ({
@@ -21,6 +23,7 @@ export const emptyQuestDraft = (): QuestDraft => ({
   visible: true,
   days: '',
   rules: '',
+  noticeTo: null,
 });
 
 /** Parses "tag: delta" lines into lower-case tag → non-zero whole delta, or an error. */
@@ -54,6 +57,7 @@ export function questCreateCommand(draft: QuestDraft): Command | string {
     visible: draft.visible,
     days: days === '' ? null : Number(days),
     stability: Object.keys(rules).length === 0 ? null : { rules },
+    ...(draft.visible ? {} : { noticeTo: draft.noticeTo === null ? null : [...draft.noticeTo] }),
   };
 }
 
