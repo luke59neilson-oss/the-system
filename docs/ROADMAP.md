@@ -637,7 +637,7 @@ work: Q44–Q48 and Q52.
 - [x] **M8.3 Accessibility.** Text contrast ≥ 4.5:1 in all 7 themes
   (automated); silver vs platinum ΔE ≥ 10 (automated); keyboard navigation;
   reduced motion.
-- [ ] **M8.4 Sound.** Original sounds generated in code (DING, selection,
+- [x] **M8.4 Sound.** Original sounds generated in code (DING, selection,
   evolution); volume and mute.
 - [ ] **M8.A Milestone acceptance and review.** Screenshots of every theme in
   `docs/screens/themes/`, viewed by the reviewer.
