@@ -19,7 +19,9 @@ export interface TitleDef {
 
 export class TitleRuleError extends Error {}
 
-const key = (name: string) => name.trim().toLowerCase();
+/** How title names compare: trimmed, inner whitespace collapsed, any case. */
+export const titleKey = (name: string) => name.trim().replace(/\s+/gu, ' ').toLowerCase();
+const key = titleKey;
 
 /** The library entry for a held title name, if any (case-insensitive). */
 export function titleDefByName(

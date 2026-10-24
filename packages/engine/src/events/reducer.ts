@@ -1,4 +1,4 @@
-import { TitleRuleError, titleSources, validateTitleDef, type TitleDef } from '../titles';
+import { TitleRuleError, titleKey, titleSources, validateTitleDef, type TitleDef } from '../titles';
 import {
   CharacterRuleError,
   clampPools,
@@ -188,6 +188,9 @@ export interface SessionRecord {
 const hasOwn = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
 
 /** A character's holdings (empty when they hold nothing yet). */
+/** A title name as stored: trimmed, inner whitespace collapsed (M6.4). */
+const tidyName = (name: string) => name.trim().replace(/\s+/gu, ' ');
+
 export function holdingsOf(state: CampaignState, characterId: string): Holdings {
   return hasOwn(state.holdings, characterId)
     ? (state.holdings[characterId] ?? EMPTY_HOLDINGS)
@@ -844,8 +847,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
     }
     case 'title.awarded': {
       const character = characterOf(state, event, event.payload.characterId);
-      const title = event.payload.title.trim();
-      if (character.titles.some((t) => t.toLowerCase() === title.toLowerCase())) {
+      const title = tidyName(event.payload.title);
+      if (character.titles.some((t) => titleKey(t) === titleKey(title))) {
         fail(event, `${character.name} already holds [${title}]`);
       }
       return withCharacter(state, { ...character, titles: [...character.titles, title] });
@@ -853,7 +856,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
     case 'titleDef.defined': {
       const { id, name, text, bonuses } = event.payload;
       if (hasOwn(state.titleLibrary, id)) fail(event, `title "${id}" already exists`);
-      const def: TitleDef = { id, name: name.trim(), text, bonuses: toBonuses(bonuses) };
+      const def: TitleDef = { id, name: tidyName(name), text, bonuses: toBonuses(bonuses) };
       titleRule(event, () =>
         validateTitleDef(state.rules, def, state.titleLibrary, state.titleLibraryOrder),
       );
@@ -872,7 +875,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       if (Object.keys(changes).length === 0) fail(event, 'nothing to change');
       const def: TitleDef = {
         id: titleDefId,
-        name: changes.name?.trim() ?? old.name,
+        name: changes.name === undefined ? old.name : tidyName(changes.name),
         text: changes.text ?? old.text,
         bonuses: changes.bonuses ? toBonuses(changes.bonuses) : old.bonuses,
       };
@@ -880,7 +883,22 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       titleRule(event, () =>
         validateTitleDef(state.rules, def, state.titleLibrary, state.titleLibraryOrder),
       );
-      return { ...state, titleLibrary: { ...state.titleLibrary, [titleDefId]: def } };
+      const next = { ...state, titleLibrary: { ...state.titleLibrary, [titleDefId]: def } };
+      if (def.name === old.name) return next;
+      // A rename follows the title to every holder (they hold it by name,
+      // D69), so nobody loses its bonuses or text; a holder who already had
+      // a title by the new name keeps just one.
+      let characters = next.characters;
+      for (const id of state.characterOrder) {
+        const c = hasOwn(characters, id) ? characters[id] : undefined;
+        if (!c || !c.titles.some((t) => titleKey(t) === titleKey(old.name))) continue;
+        const seen = new Set<string>();
+        const titles = c.titles
+          .map((t) => (titleKey(t) === titleKey(old.name) ? def.name : t))
+          .filter((t) => !seen.has(titleKey(t)) && (seen.add(titleKey(t)), true));
+        characters = { ...characters, [id]: { ...c, titles } };
+      }
+      return { ...next, characters };
     }
     case 'character.poolsSet': {
       const character = characterOf(state, event, event.payload.characterId);

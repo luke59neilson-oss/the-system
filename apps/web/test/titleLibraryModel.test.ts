@@ -96,8 +96,9 @@ describe('titleSaveCommand', () => {
       ],
     });
     expect(edit && savedTitle(spread, edit).bonuses[0]).toEqual({ stat: 'str', percent: 0.15 });
-    const renamed = titleSaveCommand({ ...draft, name: 'Rapid  Spread II' }, spread, stats);
-    expect(renamed).toEqual({ type: 'titleDef.edit', titleDefId: 't1', name: 'Rapid  Spread II' });
+    const renamed = titleSaveCommand({ ...draft, name: ' Rapid  Spread II' }, spread, stats);
+    expect(renamed).toEqual({ type: 'titleDef.edit', titleDefId: 't1', name: 'Rapid Spread II' });
+    expect(titleSaveCommand({ ...draft, name: 'Rapid  Spread' }, spread, stats)).toBeNull();
   });
   it('round-trips awkward fractions without float noise', () => {
     const def = { ...spread, bonuses: [{ stat: 'str', percent: 0.07 }] };

@@ -162,4 +162,34 @@ describe('title library (M6.4)', () => {
     const r = execute(base(), runner, { ...ctx, actor: { role: 'player', characterId: 'jake' } });
     expect(r.ok).toBe(false);
   });
+
+  it('a rename follows the title to every holder, so nobody loses its bonus or text (review)', () => {
+    let c = ok(ok(base(), spread), runner);
+    c = ok(c, { type: 'title.award', characterId: 'jake', title: 'Rapid Spread' });
+    c = ok(c, { type: 'title.award', characterId: 'kim', title: 'Rapid Spread II' });
+    const before = stats(c, 'jake')['agility'];
+    c = ok(c, { type: 'titleDef.edit', titleDefId: 'spread', name: '  Rapid   Spread II ' });
+    expect(c.state?.titleLibrary['spread']?.name).toBe('Rapid Spread II');
+    expect(c.state?.characters['jake']?.titles).toEqual(['Rapid Spread II']);
+    // Kim already held a free-text title by the new name: she keeps one copy.
+    expect(c.state?.characters['kim']?.titles).toEqual(['Rapid Spread II']);
+    expect(stats(c, 'jake')['agility']).toBe(before);
+    const view = projectForPlayer(c.state!, 'jake');
+    expect(view.me.titleDetails.map((t) => t.name)).toEqual(['Rapid Spread II']);
+    // Replay rebuilds the same state; undoing the rename restores the old name.
+    expect(replay(c.events).state).toEqual(c.state);
+    const renameId = c.events.at(-1)!.id;
+    const undone = ok(c, { type: 'event.undo', eventId: renameId });
+    expect(undone.state?.characters['jake']?.titles).toEqual(['Rapid Spread']);
+    expect(stats(undone, 'jake')['agility']).toBe(before);
+  });
+  it('names differing only in case or spacing are the same title', () => {
+    let c = ok(base(), spread);
+    expect(reject(c, { ...spread, id: 'dup', name: 'rapid   SPREAD' })).toMatch(/Rapid Spread/);
+    c = ok(c, { type: 'title.award', characterId: 'jake', title: ' Rapid  Spread ' });
+    expect(c.state?.characters['jake']?.titles).toEqual(['Rapid Spread']);
+    expect(reject(c, { type: 'title.award', characterId: 'jake', title: 'rapid spread' })).toMatch(
+      /already holds/,
+    );
+  });
 });

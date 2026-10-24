@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import type { CampaignState, TitleDef } from '@the-system/engine';
+import { titleKey, type CampaignState, type TitleDef } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 import { bonusPreview } from './itemLibraryModel';
@@ -48,7 +48,7 @@ export function TitleLibrary({ client, state }: { client: LiveClient; state: Cam
   const alreadyHeld =
     base !== null &&
     target !== undefined &&
-    target.titles.some((t) => t.trim().toLowerCase() === base.name.trim().toLowerCase());
+    target.titles.some((t) => titleKey(t) === titleKey(base.name));
 
   const open = (def: TitleDef | null) => {
     setBaseId(def?.id ?? null);
@@ -66,7 +66,7 @@ export function TitleLibrary({ client, state }: { client: LiveClient; state: Cam
     setBusy(true);
     const r = await client.command(command);
     setBusy(false);
-    const name = draft.name.trim();
+    const name = draft.name.trim().replace(/\s+/gu, ' ');
     if (!r.ok) return setOutcome({ ok: false, text: friendlyError(r.error) });
     setOutcome({ ok: true, text: base ? `[${name}] saved` : `[${name}] added to the library` });
     if (base) setLoaded(savedTitle(loaded ?? base, command));
@@ -153,7 +153,7 @@ export function TitleLibrary({ client, state }: { client: LiveClient; state: Cam
               <tr>
                 <th scope="col">Stat</th>
                 <th scope="col">%</th>
-                <th scope="col">Flat</th>
+                <th scope="col">Flat (stat points)</th>
               </tr>
             </thead>
             <tbody>

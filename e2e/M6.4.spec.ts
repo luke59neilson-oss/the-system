@@ -84,7 +84,7 @@ test('the GM defines, awards and edits a title; only the holder sees its text an
 
   // Award it to Jake.
   await list.getByRole('button', { name: /Rapid Spread/ }).click();
-  const award = lib.getByRole('group', { name: 'Award [Rapid Spread]' });
+  const award = lib.getByRole('group', { name: /^Award \[Rapid Spread/ });
   await award.getByLabel('Character to award').selectOption({ label: 'Jake' });
   await award.getByRole('button', { name: 'Award title' }).click();
   await expect(lib.getByRole('status')).toHaveText('Jake earned [Rapid Spread]');
@@ -117,6 +117,17 @@ test('the GM defines, awards and edits a title; only the holder sees its text an
   await expect(form.getByRole('button', { name: 'Save title' })).toBeDisabled();
   await expect(jake.page.getByTestId('title-bonus')).toHaveText(' +0.5 Strength, +20% Vitality');
   await expect(jake.page.getByTestId('pool-hp')).toContainText('120/120');
+
+  // A rename follows the title to its holder, bonus and all.
+  await form.getByLabel('Title name').fill('Rapid  Spread II');
+  await form.getByRole('button', { name: 'Save title' }).click();
+  await expect(lib.getByRole('status')).toHaveText('[Rapid Spread II] saved');
+  await expect(row.locator('.skill-name')).toHaveText('[Rapid Spread II]');
+  await expect(jake.page.getByTestId('title-bonus')).toHaveText(' +0.5 Strength, +20% Vitality');
+  await expect(jake.page.getByTestId('pool-hp')).toContainText('120/120');
+  await expect(form.getByTestId('title-holders')).toHaveText(
+    'Held by Jake. Edits reach every holder.',
+  );
 
   // Kim can be awarded it too; the GM sees the award control for her.
   await award.getByLabel('Character to award').selectOption({ label: 'Kim' });

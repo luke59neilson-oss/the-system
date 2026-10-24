@@ -1,4 +1,4 @@
-import type { CampaignState, Command, TitleDef } from '@the-system/engine';
+import { titleKey, type CampaignState, type Command, type TitleDef } from '@the-system/engine';
 import { percentText, type TitleBonus } from '../player/titles';
 
 export { describeTitleBonuses } from '../player/titles';
@@ -92,7 +92,7 @@ export function titleSaveCommand(
   base: TitleDef | null,
   stats: readonly { id: string }[],
 ): Command | null {
-  const name = draft.name.trim();
+  const name = draft.name.trim().replace(/\s+/gu, ' ');
   const bonuses = parseTitleBonuses(draft, stats);
   if (name === '' || name.length > 80 || bonuses === null) return null;
   const text = draft.text.trim();
@@ -152,11 +152,11 @@ export function holdersOf(
   state: Pick<CampaignState, 'characterOrder' | 'characters'>,
   name: string,
 ): string[] {
-  const k = name.trim().toLowerCase();
+  const k = titleKey(name);
   return state.characterOrder.flatMap((id) => {
     const c = Object.prototype.hasOwnProperty.call(state.characters, id)
       ? state.characters[id]
       : undefined;
-    return c && c.titles.some((t) => t.trim().toLowerCase() === k) ? [c.name] : [];
+    return c && c.titles.some((t) => titleKey(t) === k) ? [c.name] : [];
   });
 }

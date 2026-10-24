@@ -7,7 +7,7 @@ import {
   Fragment,
   type ReactNode,
 } from 'react';
-import type { OwnSheet, PlayerView } from '@the-system/engine';
+import { titleKey, type OwnSheet, type PlayerView } from '@the-system/engine';
 import { friendlyError, notificationText } from '../format';
 import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
@@ -409,9 +409,7 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
             <dd data-testid="titles">
               <ul className="title-list">
                 {me.titles.map((t) => {
-                  const d = me.titleDetails.find(
-                    (x) => x.name.trim().toLowerCase() === t.trim().toLowerCase(),
-                  );
+                  const d = me.titleDetails.find((x) => titleKey(x.name) === titleKey(t));
                   const bonus = d
                     ? describeTitleBonuses(d.bonuses, rules.stats.list, rules.stats)
                     : '';
