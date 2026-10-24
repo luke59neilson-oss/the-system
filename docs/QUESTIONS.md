@@ -446,3 +446,10 @@ DESIGN/ROADMAP; do not re-apply them.
     fine, with the GM's reason. Should players also get a "Credits history"
     of their own entries? Default: no; the notices are in their history (D176).
     Answer:
+
+66. **Do a title's flat stats get multiplied by title percentages?** The
+    engine computes (base + capped items + title flats) × (1 + Σ title %), so
+    a title's +10 flat also grows with a +50% title. DESIGN §4 only names base
+    and items inside the brackets. Default: keep flats inside (as built);
+    the other reading adds them after the multiplier (M6 milestone review).
+    Answer:

@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M5, MS, MQ and MR done; QF.1–QF.17 done; M6.1–M6.3 done; Preview ready: Actions → Release → Run workflow (M5)
-**Next item:** M6.4 Titles (resume `wip/M6.4`)
+**Status:** in progress: M0–M5, MS, MQ and MR done; QF.1–QF.17 done; M6.1–M6.4 done; Preview ready: Actions → Release → Run workflow (M5)
+**Next item:** M6.A milestone review fixes (resume `wip/M6.A`)
 **Blockers:** none
 
 ## Run log
@@ -865,3 +865,14 @@ next item, blockers. -->
 - Open `wip/*` branches: wip/M6.4 (resume). wip/M6.2 is merged; leave.
 - Next item: M6.4 Titles.
 - Blockers: none.
+
+### Run 12ab605a · 2026-10-24 00:07–00:54 UTC (end minute 48: milestone review back at 47, close-out)
+- Preflight: `add_repo` not offered; repo already cloned (shallow; local `main` reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Sonnet and fable reviewers work (worktree; Agent calls block). CI on main green (b1a723d). No new answers.
+- Efficiency check (hour 00): scorecard row appended (end minute 46.2, items/run 1.5, round-2 5/10, Highs 4, CI 47/day, red 8). D170 close-out gate **kept** (D178). Auditor (sonnet): two Tier 1 proposals, (1) start the full e2e with Bash in the background before each blocking review call (this run did that: two full runs overlapped reviews), (2) a label-clash helper script listing specs to run early. Neither applied yet (one per check; next check judges); recorded here for the next check.
+- M6.4 Titles **checked** (D177): GM "Title library" window (search, define/edit with percent and flat-stat-point columns, award to a character), player Titles row with bonuses and System text, title DING; rename follows the title to holders; names compare with whitespace collapsed. Sonnet round 1 1 H / 3 M / 3 L → fixed; round 2 0 H / 0 M / 5 L (one fixed). Pushed to main (74bff4c).
+- M6.A: `e2e/M6.A.spec.ts` (give, trade, loot roll, title award end to end, leak checks) passes; full e2e 73/73 + unit 1,057. Fable milestone review: 0 H / 3 M / 8 L (REVIEW-LOG). **wip/M6.A** (base 74bff4c, head 43891b7). Next: fix M1 (sheet shows items and titles separately, e.g. "items +0.2 capped, titles +10%"), M2 (notify the player on GM item give/take), M3 (DING the holder and warn the GM when defining/renaming a title someone already holds by name); strengthen the ledger assertion; then fable round 2 (two Mediums or more), check M6.A; preview-ready note for M6.
+- Questions: Q66 (title flats inside the % multiplier; default as built).
+- Open `wip/*` branches: wip/M6.A (resume). wip/M6.4 is merged; leave.
+- Next item: M6.A review fixes.
+- Blockers: none.
+
