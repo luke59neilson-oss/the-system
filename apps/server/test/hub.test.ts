@@ -91,6 +91,15 @@ describe('LiveHub', () => {
       type: 'notifications',
       items: [],
     });
+    // M11.2: a phone that saw more events than the log now holds (the disk
+    // lost acknowledged writes) gets its history replaced, not topped up.
+    const ahead: ServerMessage[] = [];
+    const lost = hub.connect((m) => ahead.push(m));
+    lost.receive(
+      JSON.stringify({ type: 'join', role: 'player', characterId: 'jake', lastSeq: hub.seq + 2 }),
+    );
+    expect(ahead.find((m) => m.type === 'notifications')).toMatchObject({ reset: true });
+    lost.close();
     back.close();
     later.close();
     // A failed re-join drops the GM role.

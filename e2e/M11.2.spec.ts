@@ -91,7 +91,7 @@ test('power loss mid-session: hard kill, torn log, stale lock; both screens reco
   for (const page of [gm, jake]) {
     await expect(page.getByTestId('connection')).toHaveText('Reconnecting…', { timeout: 10_000 });
   }
-  await gm.evaluate(() => window.scrollTo(0, 0));
+  await gm.getByRole('heading', { level: 1 }).scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-reconnecting-1366x768.png') });
   await jake.screenshot({ path: path.join(shots, 'player-reconnecting-390x844.png') });
 
@@ -132,7 +132,7 @@ test('power loss mid-session: hard kill, torn log, stale lock; both screens reco
   await expect(gm.locator('section[aria-labelledby="change-log"]')).toContainText(
     'Jake: class Archer 1 → 4',
   );
-  await gm.evaluate(() => window.scrollTo(0, 0));
+  await gm.getByRole('heading', { level: 1 }).scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-recovered-1366x768.png') });
   await jake.screenshot({ path: path.join(shots, 'player-recovered-390x844.png') });
 

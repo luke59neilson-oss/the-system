@@ -358,9 +358,23 @@ export class CampaignStore {
     const logFile = path.join(dir, 'events.jsonl');
     const data = existsSync(logFile) ? readFileSync(logFile) : Buffer.alloc(0);
     const parsed = parseLogText(data);
+    const snapshot = readSnapshot(path.join(dir, 'snapshot.json'));
+    const lost = lostWrites(snapshot, parsed.lines);
+    if (lost) {
+      // The snapshot is written only after its events are fsynced, so a log
+      // shorter than it means the disk lost acknowledged writes (M11.2).
+      // Opening would silently drop them and the next snapshot would erase the
+      // last trace: refuse and change nothing.
+      throw new StoreError(
+        `Campaign "${id}" cannot load: its event log holds ${lost.logEvents} events but its snapshot ` +
+          `recorded ${lost.snapshotEvents}, so the disk lost writes. Nothing was changed. Restore ` +
+          `the campaign from ${path.join(dir, 'backups')}, or move snapshot.json aside to open the ` +
+          `log as it is.`,
+      );
+    }
     let loaded: { campaign: Campaign; usedSnapshot: boolean };
     try {
-      loaded = resume(readSnapshot(path.join(dir, 'snapshot.json')), parsed.lines);
+      loaded = resume(snapshot, parsed.lines);
     } catch (error) {
       if (error instanceof EventRejectedError) {
         throw new StoreError(`Campaign "${id}" cannot load: ${error.message}`);
@@ -522,6 +536,26 @@ export class CampaignStore {
     if (this.broken !== null) throw new StoreError(`Campaign "${this.id}": ${this.broken}`);
     return this.fd;
   }
+}
+
+/**
+ * A snapshot that recorded more events than the log holds, ending at an event
+ * the log does not have: the log lost writes after they were acknowledged.
+ * (A snapshot that merely disagrees with the log is only ignored, D42.)
+ */
+function lostWrites(
+  snapshot: Snapshot | null,
+  lines: readonly unknown[],
+): { logEvents: number; snapshotEvents: number } | null {
+  if (snapshot === null || typeof snapshot !== 'object') return null;
+  const { eventCount, lastEventId } = snapshot as Partial<Snapshot>;
+  if (typeof eventCount !== 'number' || typeof lastEventId !== 'string') return null;
+  if (eventCount <= lines.length) return null;
+  const inLog = lines.some(
+    (line) =>
+      typeof line === 'object' && line !== null && (line as { id?: unknown }).id === lastEventId,
+  );
+  return inLog ? null : { logEvents: lines.length, snapshotEvents: eventCount };
 }
 
 function readSnapshot(file: string): Snapshot | null {

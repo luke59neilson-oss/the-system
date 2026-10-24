@@ -1,8 +1,10 @@
 // M11.2 Recovery: simulated power loss on the event log. A power cut can stop
 // the log at any byte (D42 fsyncs each append, so only the end is at risk),
 // can leave the snapshot ahead of or behind the log, and can leave a
-// half-written snapshot temp file. Reopening must always succeed with exactly
-// the complete events, keep the cut bytes beside the log, and keep working.
+// half-written snapshot temp file. Reopening must succeed with exactly the
+// complete events, keep the cut bytes beside the log, and keep working; a log
+// shorter than its snapshot (the disk lost acknowledged writes) must refuse to
+// load and change nothing rather than silently drop events.
 import {
   cpSync,
   existsSync,
@@ -89,6 +91,8 @@ let source: string;
 let log: Buffer;
 /** Byte offset where each complete line ends (after its newline). */
 let lineEnds: number[];
+/** Events the dead session's snapshot recorded. */
+let snapshotEvents: number;
 const prefixState = new Map<number, unknown>();
 
 const options = (dataDir: string): StoreOptions => ({
@@ -106,6 +110,10 @@ beforeAll(() => {
   // No close(): the power went. The snapshot was last written at event 20.
   source = store.dir;
   log = readFileSync(path.join(source, 'events.jsonl'));
+  snapshotEvents = (
+    JSON.parse(readFileSync(path.join(source, 'snapshot.json'), 'utf8')) as { eventCount: number }
+  ).eventCount;
+  expect(snapshotEvents).toBe(20);
   lineEnds = [];
   for (let i = 0; i < log.length; i++) if (log[i] === 0x0a) lineEnds.push(i + 1);
   expect(lineEnds).toHaveLength(script.length);
@@ -148,6 +156,7 @@ describe('M11.2 power loss on the event log', () => {
     cuts.add(0);
     let n = 0;
     const loads = { snapshot: 0, replay: 0 };
+    let refused = 0;
     for (const cut of [...cuts].sort((a, b) => a - b)) {
       const label = `seed ${RECOVERY_SEED} cut at byte ${cut} of ${log.length}`;
       const dataDir = powerCut(cut, `cut-${n++}`);
@@ -161,11 +170,28 @@ describe('M11.2 power loss on the event log', () => {
       const onlyNewlineLost = cut === (lineEnds[whole] ?? -1) - 1;
       const complete = whole + (onlyNewlineLost ? 1 : 0);
       const repairedLength = onlyNewlineLost ? (lineEnds[whole] as number) : wholeEnd;
+      if (complete < snapshotEvents) {
+        // The log lost events the snapshot already recorded (writes the disk
+        // acknowledged, then lost): refuse, change nothing, say how to recover.
+        // (The stale LOCK it took over is released; everything else stays.)
+        const files = readdirSync(dir)
+          .filter((f) => f !== 'LOCK')
+          .sort();
+        expect(() => CampaignStore.open('main', options(dataDir)), label).toThrow(
+          /disk lost writes. Nothing was changed/,
+        );
+        expect(readdirSync(dir).sort(), label).toEqual(files);
+        expect(readFileSync(path.join(dir, 'snapshot.json')).length, label).toBeGreaterThan(0);
+        expect(readFileSync(path.join(dir, 'events.jsonl')).length, label).toBe(cut);
+        refused++;
+        // Moving the snapshot aside opens the log as it is.
+        rmSync(path.join(dir, 'snapshot.json'));
+      }
       const store = CampaignStore.open('main', options(dataDir));
       try {
         expect(store.campaign, label).toEqual(prefixState.get(complete));
-        // A snapshot ahead of the cut log is never used (D42).
-        if (store.loadedFromSnapshot) expect(complete, label).toBeGreaterThanOrEqual(20);
+        if (store.loadedFromSnapshot)
+          expect(complete, label).toBeGreaterThanOrEqual(snapshotEvents);
         loads[store.loadedFromSnapshot ? 'snapshot' : 'replay']++;
         if (cut === wholeEnd) {
           expect(store.tornCopy, label).toBeNull();
@@ -191,6 +217,8 @@ describe('M11.2 power loss on the event log', () => {
     // Both paths ran: the snapshot plus the log's tail, and a full replay.
     expect(loads.snapshot).toBeGreaterThan(0);
     expect(loads.replay).toBeGreaterThan(0);
+    // Cuts before the snapshot's last event ran, among them the empty log.
+    expect(refused).toBeGreaterThan(0);
   }, 60_000);
 
   it('keeps working after recovery: new events append, and a clean reopen keeps them', () => {

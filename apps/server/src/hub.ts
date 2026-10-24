@@ -344,7 +344,11 @@ export class LiveHub {
     const undoneSince =
       lastSeq > 0 &&
       this.store.campaign.events.slice(lastSeq).some((e) => e.type === 'event.undone');
-    if (undoneSince) {
+    // A client ahead of the log (M11.2): the server came back with fewer events
+    // than it had acknowledged (a disk that lost writes), so the client may hold
+    // notifications that no longer exist. Replace its whole history too.
+    const aheadOfLog = lastSeq > this.seq;
+    if (undoneSince || aheadOfLog) {
       client.send({
         type: 'notifications',
         items: this.filter(client.role, this.history),
