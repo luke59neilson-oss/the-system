@@ -263,7 +263,7 @@ the rest follow in file order. Each gets its own §6 review.
   skill upgrade, merge or profession DING never shows in the GM's Table-view
   pane. *Accept:* the pane uses the same set as the history's DING filter; an
   e2e upgrades a skill in Table view and sees `latest-ding` change.
-- [ ] **QF.18 M2.A restart test: tolerate the expected resource error.**
+- [x] **QF.18 M2.A restart test: tolerate the expected resource error.**
   Repeat flake (QUALITY "Flakes", 2026-10-23 and 2026-10-24): during the
   server restart in `e2e/M2.A.spec.ts` the GM page logs "Failed to load
   resource" (connection reset, then 503) and the console-error check fails;
