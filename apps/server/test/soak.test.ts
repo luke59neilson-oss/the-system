@@ -8,7 +8,7 @@ import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { DEFAULT_RULES } from '@the-system/engine';
+import { DEFAULT_RULES, projectForPlayer } from '@the-system/engine';
 import { newGmKey } from '../src/security';
 import { createServer } from '../src/server';
 import { CampaignStore } from '../src/store';
@@ -132,13 +132,66 @@ describe('M11.1 soak', () => {
     rmSync(webDir, { recursive: true, force: true });
   });
 
-  it('sets up a GM and four players (next: the random command stream)', async () => {
+  it(`runs ${SOAK_STEPS} random valid commands (seed ${SOAK_SEED}) with no desync`, async () => {
+    const random = rng(SOAK_SEED);
+    const pick = <T>(list: readonly T[]): T => list[Math.floor(random() * list.length)] as T;
     const gm = await new Client(`ws://${base}/ws`).open();
     gm.send({ type: 'join', role: 'gm', gmKey });
     await gm.waitFor((m) => m.type === 'joined' && m.role === 'gm');
     const rules = JSON.parse(JSON.stringify(DEFAULT_RULES)) as unknown;
     expect((await gm.command({ type: 'campaign.create', name: 'Soak', rules })).ok).toBe(true);
-    expect(rng(SOAK_SEED)()).toBeGreaterThanOrEqual(0);
-    await gm.close();
-  });
+    const heroes = ['ana', 'bo', 'cy', 'di'] as const;
+    for (const id of heroes) {
+      const created = await gm.command({
+        type: 'character.create',
+        id,
+        name: id,
+        className: 'Archer',
+        classSkills: [
+          { name: `${id} skill a`, rarity: 'inferior' },
+          { name: `${id} skill b`, rarity: 'inferior' },
+          { name: `${id} skill c`, rarity: 'common' },
+        ],
+      });
+      expect(created.ok, JSON.stringify(created)).toBe(true);
+    }
+    const players = await Promise.all(
+      heroes.map(async (id) => {
+        const c = await new Client(`ws://${base}/ws`).open();
+        c.send({ type: 'join', role: 'player', characterId: id });
+        await c.waitFor((m) => m.type === 'view');
+        return { id, client: c };
+      }),
+    );
+    for (let step = 0; step < SOAK_STEPS; step++) {
+      const roll = random();
+      const command =
+        roll < 0.7
+          ? {
+              type: 'xp.award',
+              track: 'class',
+              amount: 1 + Math.floor(random() * 300),
+              participants: heroes
+                .filter((id, i) => i === 0 || random() < 0.6)
+                .map((characterId) => ({ characterId })),
+              reason: `soak step ${step}`,
+            }
+          : { type: 'character.rename', characterId: pick(heroes), name: `Hero ${step}` };
+      const result = await gm.command(command);
+      expect(result.ok, `seed ${SOAK_SEED} step ${step}: ${JSON.stringify(result)}`).toBe(true);
+    }
+    // No desync: every player's latest view is the server's projection for them.
+    const state = store.campaign.state;
+    if (!state) throw new Error('no campaign');
+    for (const { id, client } of players) {
+      const want = JSON.stringify(projectForPlayer(state, id));
+      await expect
+        .poll(() => {
+          const views = client.messages().filter((m) => m.type === 'view');
+          return JSON.stringify(views[views.length - 1]?.['view']);
+        })
+        .toBe(want);
+    }
+    await Promise.all([gm.close(), ...players.map((p) => p.client.close())]);
+  }, 120_000);
 });
