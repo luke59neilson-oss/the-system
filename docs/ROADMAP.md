@@ -682,7 +682,7 @@ work: Q44–Q48 and Q52.
 
 ## M11 — Hardening and docs
 
-- [ ] **M11.1 Soak test.** 1 GM + 4 player clients, 2,000 random valid
+- [x] **M11.1 Soak test.** 1 GM + 4 player clients, 2,000 random valid
   commands (fixed seed): no desync, no crash, heap growth < 20% after warm-up.
 - [ ] **M11.2 Recovery.** Server restart mid-session; client reconnect;
   simulated power loss on the event log.
