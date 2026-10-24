@@ -38,7 +38,24 @@ export function ContentImport({ client, gmKey }: { client: LiveClient; gmKey: st
         headers: { 'x-gm-key': gmKey, 'content-type': 'application/json' },
         body: JSON.stringify(await file.text()),
       });
-      const p = (await r.json()) as Preview;
+      const body = (await r.json().catch(() => null)) as Preview | { error?: string } | null;
+      // Error replies (no campaign, a stale key, a file over 2 MB) have no preview shape.
+      const p: Preview =
+        r.ok && body && 'ok' in body
+          ? body
+          : {
+              ok: false,
+              errors: [
+                {
+                  path: '(file)',
+                  message:
+                    r.status === 413
+                      ? 'The file is too large (over 2 MB)'
+                      : (body && 'error' in body && body.error) ||
+                        `The server refused it (${r.status})`,
+                },
+              ],
+            };
       setPreview(p);
       setPicked(new Set(p.ok ? p.entries.filter((e) => e.error === null).map((e) => e.path) : []));
     } catch {
