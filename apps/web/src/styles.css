@@ -2472,3 +2472,51 @@ ol.change-log li.undone .change-text {
   font-size: 0.9em;
   font-style: italic;
 }
+
+/* GM quest manager (M7.1) */
+.quest-manager .library-tools > span {
+  flex: 1 1 auto;
+  align-self: center;
+  margin-bottom: 10px;
+}
+.quest-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.quest-stability {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.quest-stability form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+.quest-stability form label {
+  flex: 1 1 140px;
+}
+.quest-stability form button {
+  margin-bottom: 10px;
+}
+.stability-offers {
+  margin: 10px 0;
+  padding: 8px 10px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+.stability-offers ul {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+.stability-offers li + li {
+  margin-top: 6px;
+}
