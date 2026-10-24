@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 29,
+  "schemaVersion": 30,
   "name": "Golden: Identify range",
   "rules": {
     "configVersion": 1,
@@ -518,6 +518,8 @@
       ],
       "grade": "G",
       "level": 2,
+      "stats": null,
+      "notes": "",
       "knownBy": ["jake"],
       "createdAt": "2026-12-04T18:00:02.000Z"
     },
@@ -533,6 +535,8 @@
       ],
       "grade": null,
       "level": null,
+      "stats": null,
+      "notes": "",
       "knownBy": ["jake"],
       "createdAt": "2026-12-04T18:00:03.000Z"
     }

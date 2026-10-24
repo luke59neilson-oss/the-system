@@ -327,3 +327,33 @@ describe('Identify range (MQ.8, DESIGN §7)', () => {
     expect(reject(d, { type: 'entity.edit', entityId: 'x', grade: null })).toMatch(/both/);
   });
 });
+
+describe('bestiary stats and notes (M7.2)', () => {
+  it('stores GM-only stats and notes, edits them, and checks stat ids', () => {
+    let c = ok(base(), curse({ stats: { strength: 40, vitality: 55 }, notes: 'Hunts in pairs.' }));
+    expect(c.state?.entities['curse']).toMatchObject({
+      stats: { strength: 40, vitality: 55 },
+      notes: 'Hunts in pairs.',
+    });
+    c = ok(c, { type: 'entity.edit', entityId: 'curse', notes: 'Flees at half HP.' });
+    expect(c.state?.entities['curse']?.stats).toEqual({ strength: 40, vitality: 55 });
+    expect(c.state?.entities['curse']?.notes).toBe('Flees at half HP.');
+    c = ok(c, { type: 'entity.edit', entityId: 'curse', stats: null });
+    expect(c.state?.entities['curse']?.stats).toBeNull();
+    expect(reject(c, { type: 'entity.edit', entityId: 'curse', stats: { luck: 3 } })).toMatch(
+      /unknown stat "luck"/,
+    );
+    expect(reject(base(), curse({ stats: { strength: -1 } }))).toBeTruthy();
+    // Defaults: none and blank.
+    const plain = ok(base(), curse());
+    expect(plain.state?.entities['curse']).toMatchObject({ stats: null, notes: '' });
+  });
+
+  it('never sends stats or notes to players', () => {
+    const c = ok(base(), curse({ stats: { strength: 98765 }, notes: 'SECRET weak to fire' }));
+    const json = JSON.stringify(view(c));
+    expect(json).not.toContain('SECRET');
+    expect(json).not.toContain('98765');
+    expect(replay(c.events).state).toEqual(c.state);
+  });
+});

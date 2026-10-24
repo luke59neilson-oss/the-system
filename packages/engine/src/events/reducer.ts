@@ -70,8 +70,8 @@ import {
 } from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 29;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). v30: entity `stats`/`notes` (bestiary; M7.2). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 30;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -1876,6 +1876,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         tiers: tiers.map((t) => ({ minRarity: t.minRarity, text: t.text })),
         grade,
         level,
+        stats: checkEntityStats(state, event, event.payload.stats ?? null),
+        notes: event.payload.notes ?? '',
         knownBy: [...knownBy],
         createdAt: event.timestamp,
       };
@@ -1894,7 +1896,15 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       if (event.type === 'entity.edited') {
         const { name, label, tiers } = event.payload;
         if (
-          [name, label, tiers, event.payload.grade, event.payload.level].every(
+          [
+            name,
+            label,
+            tiers,
+            event.payload.grade,
+            event.payload.level,
+            event.payload.stats,
+            event.payload.notes,
+          ].every(
             (v) => v === undefined,
           )
         ) {
@@ -1914,6 +1924,11 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
           label: label ?? entity.label,
           grade,
           level,
+          stats:
+            event.payload.stats === undefined
+              ? entity.stats
+              : checkEntityStats(state, event, event.payload.stats),
+          notes: event.payload.notes ?? entity.notes,
           tiers:
             tiers === undefined
               ? entity.tiers
@@ -2023,6 +2038,22 @@ function checkNoticeTo(
   if (ids === null) return null;
   checkCharacters(state, event, ids);
   return [...ids];
+}
+
+/** M7.2: a bestiary entry's stats name only the campaign's stats. */
+function checkEntityStats(
+  state: CampaignState,
+  event: DomainEvent,
+  stats: Readonly<Record<string, number>> | null,
+): Readonly<Record<string, number>> | null {
+  if (stats === null) return null;
+  checkKeys(
+    event,
+    Object.keys(stats),
+    state.rules.stats.list.map((s) => s.id),
+    'stat',
+  );
+  return { ...stats };
 }
 
 /** Every id must be a character, listed once. */

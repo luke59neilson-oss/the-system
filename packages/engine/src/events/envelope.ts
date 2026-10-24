@@ -99,6 +99,9 @@ const stabilityRules = z.record(
 const questText = z.string().trim().max(5000);
 const questDays = z.number().int().min(1).max(10_000).nullable();
 const entityLevel = z.number().int().min(0).max(10_000);
+/** M7.2: a bestiary entry's stats (stat id → whole value). */
+const entityStats = z.record(z.string().min(1).max(40), z.number().int().min(0).max(1_000_000));
+const entityNotes = z.string().max(4000);
 const questNoticeTo = z.array(recordId).max(200).nullable();
 /** Identify tiers (M3.9, DESIGN §7): one text per minimum Identify rarity. */
 const identifyTiers = z
@@ -606,6 +609,10 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     /** MQ.8: grade id and level for the Identify range; absent (older logs) = none. */
     grade: recordId.nullable().optional(),
     level: entityLevel.nullable().optional(),
+    /** M7.2 bestiary (GM-only): stat values, or null; absent (older logs) = none. */
+    stats: entityStats.nullable().optional(),
+    /** M7.2 bestiary (GM-only) notes; absent (older logs) = "". */
+    notes: entityNotes.optional(),
   }),
   /** GM edits an entity; omitted fields stay. */
   'entity.edited': z.strictObject({
@@ -615,6 +622,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     tiers: identifyTiers.optional(),
     grade: recordId.nullable().optional(),
     level: entityLevel.nullable().optional(),
+    stats: entityStats.nullable().optional(),
+    notes: entityNotes.optional(),
   }),
   /** These characters now know the entity and can Identify it. */
   'entity.revealed': z.strictObject({

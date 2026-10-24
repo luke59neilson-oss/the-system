@@ -471,6 +471,10 @@ export type Command =
       /** MQ.8: grade id and level (both or neither) for the Identify range. */
       grade?: string | null | undefined;
       level?: number | null | undefined;
+      /** M7.2 bestiary (GM-only): stat id → value, or null for none. */
+      stats?: Readonly<Record<string, number>> | null | undefined;
+      /** M7.2 bestiary (GM-only) notes. */
+      notes?: string | undefined;
     }
   | {
       type: 'entity.edit';
@@ -480,6 +484,8 @@ export type Command =
       tiers?: readonly { minRarity: string; text: string }[] | undefined;
       grade?: string | null | undefined;
       level?: number | null | undefined;
+      stats?: Readonly<Record<string, number>> | null | undefined;
+      notes?: string | undefined;
     }
   | {
       type: 'entity.reveal';
@@ -1347,10 +1353,13 @@ function toEvent(
           knownBy: command.knownBy ?? [],
           grade: command.grade ?? null,
           level: command.level ?? null,
+          stats: command.stats ? { ...command.stats } : null,
+          notes: command.notes ?? '',
         },
       };
     case 'entity.edit': {
-      const { entityId, name, label, tiers, grade, level } = command;
+      const { entityId, name, label, tiers, grade, level, notes } = command;
+      const stats = command.stats ? { ...command.stats } : command.stats;
       // Undefined fields vanish in the event's JSON round trip (= unchanged).
       return {
         type: 'entity.edited',
@@ -1361,6 +1370,8 @@ function toEvent(
           tiers: tiers?.map((t) => ({ minRarity: t.minRarity, text: t.text })),
           grade,
           level,
+          stats,
+          notes,
         },
       };
     }

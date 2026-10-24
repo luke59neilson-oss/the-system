@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 29,
+  "schemaVersion": 30,
   "name": "Golden: pools follow maxima (MQ.2)",
   "rules": {
     "configVersion": 1,

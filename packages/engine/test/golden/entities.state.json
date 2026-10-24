@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 29,
+  "schemaVersion": 30,
   "name": "Golden: entities",
   "rules": {
     "configVersion": 1,
@@ -625,6 +625,8 @@
       ],
       "grade": null,
       "level": null,
+      "stats": null,
+      "notes": "",
       "knownBy": ["jake", "kim"],
       "createdAt": "2026-12-03T18:00:03.000Z"
     },
@@ -640,6 +642,8 @@
       ],
       "grade": null,
       "level": null,
+      "stats": null,
+      "notes": "",
       "knownBy": [],
       "createdAt": "2026-12-03T18:00:06.000Z"
     }
