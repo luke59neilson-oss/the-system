@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { titleKey, type CampaignState, type TitleDef } from '@the-system/engine';
+import { titleDefByName, titleKey, type CampaignState, type TitleDef } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 import { bonusPreview } from './itemLibraryModel';
@@ -48,7 +48,9 @@ export function TitleLibrary({ client, state }: { client: LiveClient; state: Cam
   // this entry, so they get its bonuses (and a DING). Warn before saving.
   const draftName = draft.name.trim().replace(/\s+/gu, ' ');
   const newHolders =
-    draftName !== '' && (!base || titleKey(draftName) !== titleKey(base.name))
+    draftName !== '' &&
+    (!base || titleKey(draftName) !== titleKey(base.name)) &&
+    titleDefByName(state.titleLibrary, state.titleLibraryOrder, draftName) === undefined
       ? holdersOf(state, draftName)
       : [];
   const target = state.characters[characterId];

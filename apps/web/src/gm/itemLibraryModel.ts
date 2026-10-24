@@ -103,11 +103,19 @@ export function adjustCommand(
   itemId: string,
   count: string,
   sign: 1 | -1,
+  /** Optional reason the holder sees with the notice (M6.A). */
+  reason = '',
 ): Command | null {
   if (!/^\d+$/u.test(count.trim())) return null;
   const n = Number(count.trim());
   if (n < 1) return null;
-  return { type: 'holdings.adjust', characterId, items: { [itemId]: sign * n } };
+  const why = reason.trim().replace(/\s+/gu, ' ').slice(0, 200);
+  return {
+    type: 'holdings.adjust',
+    characterId,
+    items: { [itemId]: sign * n },
+    ...(why === '' ? {} : { reason: why }),
+  };
 }
 
 /**

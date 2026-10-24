@@ -161,9 +161,12 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
 
   // The GM takes Jake's last fang back; he is told what left.
   await giveFang.getByLabel('Count').fill('1');
+  await giveFang.getByLabel('Reason (the player sees this)').fill('Evidence for the elders');
   await giveFang.getByRole('button', { name: 'Take' }).click();
   await expect(items.getByRole('status')).toHaveText('Took 1 × [Hunter Fang] from Jake');
-  await expect(jake.page.getByTestId('ding-toast')).toContainText('The GM took [Hunter Fang]');
+  await expect(jake.page.getByTestId('ding-toast')).toContainText(
+    'The GM took [Hunter Fang]: Evidence for the elders',
+  );
   await expect(jake.inv.getByRole('button', { name: 'Give Hunter Fang' })).toHaveCount(0);
 
   // Trade: Jake offers Kim the charm for 10 Credits; she accepts.
@@ -279,6 +282,8 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
     expect(p.errors).toEqual([]);
   }
   expect(jake.frames.some((f) => f.includes('propagated'))).toBe(false);
+  expect(kim.frames.some((f) => f.includes('First to set foot'))).toBe(false);
+  expect(kim.frames.some((f) => f.includes('Evidence for the elders'))).toBe(false);
   await expect(jake.page.locator('body')).not.toContainText('propagated');
   expect(errors).toEqual([]);
 });
