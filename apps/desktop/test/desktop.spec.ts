@@ -108,6 +108,8 @@ test('a polite close then a forced kill (an installer upgrading) still leaves th
       THE_SYSTEM_USER_DATA_DIR: userData,
     },
   });
+  // Captured once: Playwright disposes the app object once the process dies.
+  const proc = app.process();
   const backups = path.join(dataDir, 'campaigns', 'main', 'backups');
   const quitCopies = () =>
     existsSync(backups) ? readdirSync(backups).filter((name) => name.endsWith('-quit')) : [];
@@ -125,21 +127,22 @@ test('a polite close then a forced kill (an installer upgrading) still leaves th
         ?.close();
     });
     await expect.poll(quitCopies).toHaveLength(1);
-    // Asking twice (the installer retries) makes no second copy.
+    // A second polite close while the question is open asks nothing new.
     await app.evaluate(({ BrowserWindow }) => {
       BrowserWindow.getAllWindows()
         .find((w) => w.webContents.getURL().includes('/gm'))
         ?.close();
     });
     // The forced kill, before anyone answers.
-    app.process().kill('SIGKILL');
-    await new Promise((resolve) => app.process().once('exit', resolve));
+    const exited = new Promise((resolve) => proc.once('exit', resolve));
+    proc.kill('SIGKILL');
+    await exited;
     const made = quitCopies();
     expect(made).toHaveLength(1);
     const copy = readFileSync(path.join(backups, made[0] ?? '', 'events.jsonl'), 'utf8');
     expect(copy).toContain('Upgrade smoke');
   } finally {
-    if (app.process().exitCode === null && app.process().signalCode === null) await app.close();
+    if (proc.exitCode === null && proc.signalCode === null) await app.close();
     rmSync(dataDir, { recursive: true, force: true });
     rmSync(userData, { recursive: true, force: true });
   }

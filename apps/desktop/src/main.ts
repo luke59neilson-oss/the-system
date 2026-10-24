@@ -120,6 +120,9 @@ function openGmWindow(server: RunningApp, notice: string | null = null): void {
   // campaign is closed and backed up (M10.1 review).
   win.on('session-end', () => {
     sessionEnding = true;
+    // Windows may end the process soon after this returns: copy now, while
+    // there is time (the close below makes no second copy; M10.A review).
+    server.backup();
   });
   let asking = false;
   win.on('close', (event) => {

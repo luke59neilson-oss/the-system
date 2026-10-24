@@ -121,6 +121,7 @@ reviewers ran 15–20 minutes each in the background.
 
 ## Flakes
 
+- 2026-10-24 22:45 · local full e2e (run a56191db): `e2e/M8.A.spec.ts` G→A climb hit its 180 s timeout while a reviewer ran `npm ci` and the Electron smoke in parallel on this 2-CPU workspace; alone it passes in 25 s. Load, not a bug; watch for a repeat in CI.
 - 2026-10-24 02:35 · local full e2e (run 805662911): `e2e/M2.A.spec.ts` restart test failed again on a GM console error "Failed to load resource: … 503 (Service Unavailable)"; passed alone and with `--workers=2`. Second occurrence: now QF.18. Fixed by QF.18 (2026-10-24 13:48): the GM change-log refetch in flight at each stop; the test now waits for it.
 - 2026-10-23 19:25 · local full e2e (run 698982a6): `e2e/M2.A.spec.ts` (latency project, restart test) failed once with a GM console error "Failed to load resource: net::ERR_CONNECTION_RESET" while a 2,000-step vitest property run loaded the 2-CPU workspace; passed alone right after. Flake under load; watch for a repeat.
 - 2026-10-22 16:55–17:38 · CI on main red four times (5e72abe, d244b21,
