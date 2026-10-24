@@ -27,7 +27,8 @@ export function isDing(n: LiveNotification): boolean {
     n.kind === 'level' ||
     n.kind === 'profession' ||
     n.kind === 'skillUpgrade' ||
-    n.kind === 'skillMerge'
+    n.kind === 'skillMerge' ||
+    n.kind === 'title'
   );
 }
 

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 28,
+  "schemaVersion": 29,
   "name": "Scheduled broadcasts",
   "rules": {
     "configVersion": 1,
@@ -597,6 +597,8 @@
   "lootTableOrder": [],
   "lootLog": [],
   "ledger": [],
+  "titleLibrary": {},
+  "titleLibraryOrder": [],
   "skillLibrary": {},
   "skillLibraryOrder": [],
   "classLibrary": {},

@@ -241,6 +241,8 @@ export function itemEffectiveStats(
   base: Readonly<Record<string, number>>,
   holdings: Holdings,
   items: Readonly<Record<string, ItemDef>>,
+  /** Title bonus sources (M6.4), added after the items. */
+  titles: readonly BonusSource[] = [],
 ): Record<string, number> {
-  return effectiveStats(rules, base, equippedSources(rules, holdings, items));
+  return effectiveStats(rules, base, [...equippedSources(rules, holdings, items), ...titles]);
 }

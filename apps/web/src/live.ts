@@ -36,6 +36,7 @@ export type LiveNotification =
       currencyName: string;
       items: { name: string; count: number }[];
     }
+  | { kind: 'title'; characterId: string; title: string; text: string }
   | {
       kind: 'currency';
       characterId: string;

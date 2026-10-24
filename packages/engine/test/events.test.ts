@@ -948,6 +948,10 @@ describe('property: replay equals incremental state', () => {
       'lootTable.defined',
       'lootTable.edited',
       'loot.rolled',
+      // M6.4: the title library has its own tests (titleLibrary.test.ts) and
+      // golden log (title-library.jsonl).
+      'titleDef.defined',
+      'titleDef.edited',
     ]);
     expect(
       EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),

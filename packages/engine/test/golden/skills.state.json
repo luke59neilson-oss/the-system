@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 28,
+  "schemaVersion": 29,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -469,6 +469,8 @@
   "lootTableOrder": [],
   "lootLog": [],
   "ledger": [],
+  "titleLibrary": {},
+  "titleLibraryOrder": [],
   "skillLibrary": {},
   "skillLibraryOrder": [],
   "classLibrary": {},

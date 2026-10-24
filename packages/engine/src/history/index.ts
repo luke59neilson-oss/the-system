@@ -3,6 +3,7 @@ import type { DomainEvent } from '../events/envelope';
 import type { Campaign } from '../events/log';
 import { applyEvent, type CampaignState } from '../events/reducer';
 import { hiddenQuestNoticed } from '../quests';
+import { titleDefByName } from '../titles';
 import { isEmptyBundle, type Bundle } from '../economy';
 
 /**
@@ -78,6 +79,14 @@ export type SystemNotification =
       readonly action: 'proposed' | 'accepted' | 'declined' | 'cancelled';
       /** The other party's name, or null for the GM. */
       readonly other: string | null;
+    }
+  | {
+      /** A title awarded (M6.4); only its holder is told, with the System's text. */
+      readonly kind: 'title';
+      readonly characterId: string;
+      readonly title: string;
+      /** The library entry's text, or '' when the title has none. */
+      readonly text: string;
     }
   | {
       /** A skill upgraded by mastery marks (M5.3); only its owner is told. */
@@ -173,6 +182,15 @@ export function notificationsBetween(
       : undefined;
   if (lootGift && lootGift.characterId !== null && !isEmptyBundle(lootGift.bundle)) {
     out.push(giftNotice(after, lootGift.characterId, null, lootGift.bundle));
+  }
+  if (event?.type === 'title.awarded') {
+    const def = titleDefByName(after.titleLibrary, after.titleLibraryOrder, event.payload.title);
+    out.push({
+      kind: 'title',
+      characterId: event.payload.characterId,
+      title: def?.name ?? event.payload.title.trim(),
+      text: def?.text ?? '',
+    });
   }
   if (event?.type === 'holdings.adjusted' && event.payload.currency !== 0) {
     const { characterId, currency, reason } = event.payload;

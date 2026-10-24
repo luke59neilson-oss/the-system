@@ -7,7 +7,7 @@ import {
   Fragment,
   type ReactNode,
 } from 'react';
-import type { OwnSheet, PlayerView } from '@the-system/engine';
+import { titleKey, type OwnSheet, type PlayerView } from '@the-system/engine';
 import { friendlyError, notificationText } from '../format';
 import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
@@ -35,6 +35,7 @@ import { useChangeCount } from './changeCount';
 import { SkillDetail } from './SkillDetail';
 import { SkillSelection } from './SkillSelection';
 import { EvolutionChoice } from './EvolutionChoice';
+import { describeTitleBonuses } from './titles';
 import { ProfessionsPanel } from './ProfessionsPanel';
 import { closedReason, pendingSelections, pendingText, settleNotice } from './selection';
 import {
@@ -405,7 +406,32 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
         {me.titles.length > 0 && (
           <>
             <dt>Titles</dt>
-            <dd data-testid="titles">{me.titles.map((t) => `[${t}]`).join(', ')}</dd>
+            <dd data-testid="titles">
+              <ul className="title-list">
+                {me.titles.map((t) => {
+                  const d = me.titleDetails.find((x) => titleKey(x.name) === titleKey(t));
+                  const bonus = d
+                    ? describeTitleBonuses(d.bonuses, rules.stats.list, rules.stats)
+                    : '';
+                  return (
+                    <li key={t} data-testid="title">
+                      <span className="skill-name">[{d?.name ?? t}]</span>
+                      {bonus !== '' && (
+                        <span className="title-bonus" data-testid="title-bonus">
+                          {' '}
+                          {bonus}
+                        </span>
+                      )}
+                      {d && d.text.trim() !== '' && (
+                        <span className="muted title-text" data-testid="title-text">
+                          {d.text}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </dd>
           </>
         )}
       </dl>

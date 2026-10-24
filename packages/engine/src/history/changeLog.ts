@@ -62,6 +62,7 @@ const CATEGORY_BY_PREFIX: Readonly<Record<string, ChangeLogCategory>> = {
   classDef: 'library',
   raceDef: 'library',
   professionDef: 'library',
+  titleDef: 'library',
   library: 'library',
 };
 
@@ -108,6 +109,8 @@ export const CHANGE_LOG_PHRASES: Readonly<Record<string, string>> = {
   'raceDef.edited': 'library race edited',
   'professionDef.defined': 'profession added to the library',
   'professionDef.edited': 'library profession edited',
+  'titleDef.defined': 'title added to the library',
+  'titleDef.edited': 'library title edited',
   'library.seeded': 'Default libraries added',
   'rules.edited': 'Rules settings changed',
   'clock.created': 'progress clock created',
