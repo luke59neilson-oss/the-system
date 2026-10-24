@@ -313,6 +313,23 @@ describe('content files as commands (M9.2)', () => {
       type: 'evolution.release',
       characterId: 'jake',
       professions: ['Fletcher', 'Trail Cook'],
+      rerate: { "Hunter's Mark": 'rare' },
+    });
+    // QF.22: a drafted re-rating reaches the release command.
+    const file = example('evolution.json');
+    const rerated = contentToCommands(
+      {
+        ...file,
+        evolutions: (file.evolutions ?? []).map((e) => ({
+          ...e,
+          rerate: { 'Archer’s Eye': 'common' },
+        })),
+      },
+      state,
+    );
+    expect(rerated.commands[0]?.command).toMatchObject({
+      type: 'evolution.release',
+      rerate: { 'Archer’s Eye': 'common' },
     });
   });
 });
