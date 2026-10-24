@@ -1,4 +1,4 @@
-/* Base System-window styling. Grade metal themes arrive in M8.1. */
+/* Base System-window styling. Grade metal themes live in themes.css (M8.1). */
 :root {
   color-scheme: dark;
   --bg: #0b0f17;
@@ -252,10 +252,7 @@ h3 {
   border-color: var(--accent);
 }
 
-/* Grade metals (DESIGN §3). Placeholders until the M8.1 themes. */
-:root {
-  --metal: #8a96a8;
-}
+/* Grade metals (DESIGN §3): tokens in themes.css (M8.1). */
 .join {
   max-width: 640px;
   margin: 0 auto;
@@ -315,27 +312,6 @@ h3 {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-.theme-aluminum {
-  --metal: #a7adb4;
-}
-.theme-bronze {
-  --metal: #a5733f;
-}
-.theme-copper {
-  --metal: #d9804f;
-}
-.theme-silver {
-  --metal: #d4d8de;
-}
-.theme-gold {
-  --metal: #e7c25a;
-}
-.theme-platinum {
-  --metal: #b9d8f0;
-}
-.theme-diamond {
-  --metal: #c9f3ff;
 }
 .continue h2 {
   margin-top: 0;

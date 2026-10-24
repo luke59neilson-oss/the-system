@@ -80,3 +80,53 @@
   );
   --glow-strength: 50%;
 }
+
+/* The status window's frame is the metal itself: a sheen ring drawn over the border. */
+.status-window.window {
+  position: relative;
+  border-color: var(--metal-lo);
+  box-shadow:
+    0 0 14px color-mix(in srgb, var(--metal) var(--glow-strength), transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--metal) 20%, transparent);
+}
+.status-window.window::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  padding: 2px;
+  border-radius: inherit;
+  background: var(--sheen);
+  background-size: 300% 300%;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+.theme-platinum .status-window.window::before,
+.status-window.window.theme-platinum::before {
+  background-size:
+    auto,
+    300% 300%;
+}
+.theme-diamond .status-window.window::before,
+.status-window.window.theme-diamond::before {
+  animation: prism 8s linear infinite;
+}
+@keyframes prism {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 300% 50%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-diamond .status-window.window::before,
+  .status-window.window.theme-diamond::before {
+    animation: none;
+  }
+}
