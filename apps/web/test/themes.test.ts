@@ -57,6 +57,28 @@ describe('grade themes', () => {
     expect(contrast(text, windowBg)).toBeGreaterThanOrEqual(4.5);
   });
 
+  it('every rarity colour and shared text colour reads at 4.5:1 on a window', () => {
+    const rarities = [...styles.matchAll(/\.rarity-(\w+) \.skill-name \{\s*color: (#[0-9a-f]+);/g)];
+    expect(rarities.map((m) => m[1])).toEqual([
+      'inferior',
+      'common',
+      'uncommon',
+      'rare',
+      'epic',
+      'ancient',
+      'legendary',
+      'mythical',
+      'divine',
+    ]);
+    const shared = ['--text', '--muted', '--ok', '--err', '--accent'].map((n) => [
+      n,
+      token(styles, ':root', n),
+    ]);
+    for (const [name, hex] of [...rarities.map((m) => [m[1], m[2]]), ...shared]) {
+      expect(contrast(hexToRgb(hex!), windowBg), name).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
   it('every theme sets its own text colour, so nested themes never inherit one', () => {
     for (const grade of GRADES)
       expect(token(themes, `.theme-${grade}`, '--metal-text')).toMatch(/^#/);

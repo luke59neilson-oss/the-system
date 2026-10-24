@@ -14,7 +14,8 @@ export interface ContrastFailure {
  * background it really sits on. The background is composed from the element's
  * ancestors (translucent panels over the page gradient); a gradient layer is
  * judged at every one of its colour stops, so the worst stop counts. Opacity on
- * an ancestor fades the text toward its background. Disabled controls are
+ * an ancestor fades the text toward its background. Placeholders count while
+ * they show. A colour the scanner cannot parse fails. Disabled controls are
  * exempt (WCAG: inactive UI components), as is text hidden from everyone
  * (`visibility: hidden`, zero size, `aria-hidden`).
  *
@@ -85,7 +86,9 @@ const SCAN = (min: number, root: string) => `(() => {
   const failures = [];
   let checked = 0;
   for (const el of scope.querySelectorAll('*')) {
-    const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+    // Placeholder text counts while it shows (the field is empty).
+    const ph = (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.placeholder && !el.value;
+    const own = ph || [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
     if (!own) continue;
     if (el.closest('[aria-hidden="true"], :disabled, [aria-disabled="true"], option, script, style')) continue;
     const cs = getComputedStyle(el);
@@ -95,8 +98,11 @@ const SCAN = (min: number, root: string) => `(() => {
     let alpha = 1;
     for (let n = el; n; n = n.parentElement) alpha *= Number(getComputedStyle(n).opacity);
     if (alpha === 0) continue;
-    const fg = parse(cs.color);
-    if (!fg) continue;
+    const fg = parse(ph ? getComputedStyle(el, '::placeholder').color : cs.color);
+    if (!fg) {
+      failures.push({ where: describe(el), text: 'unparsed colour', fg: cs.color, bg: '', ratio: 0 });
+      continue;
+    }
     checked++;
     let worst = Infinity, worstBg = null;
     for (const bg of backgrounds(el)) {
@@ -107,7 +113,7 @@ const SCAN = (min: number, root: string) => `(() => {
     if (worst < MIN) {
       failures.push({
         where: describe(el),
-        text: el.textContent.trim().slice(0, 40),
+        text: (ph ? el.placeholder : el.textContent.trim()).slice(0, 40),
         fg: cs.color + (alpha < 1 ? ' @' + alpha.toFixed(2) : ''),
         bg: hex(worstBg),
         ratio: Math.round(worst * 100) / 100,

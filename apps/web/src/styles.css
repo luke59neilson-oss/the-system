@@ -112,6 +112,11 @@ textarea {
   border-radius: 4px;
   padding: 6px 8px;
 }
+/* Placeholders read at 4.5:1 like any text (M8.3); browsers default to a dim grey. */
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,

@@ -51,9 +51,13 @@ test('every text on the player screen and GM console reads at 4.5:1 or better', 
     for (const f of scan.failures)
       bad.push(`${label}: ${f.where} "${f.text}" ${f.fg} on ${f.bg} = ${f.ratio}`);
   };
+  const openAll = (p: Page) =>
+    p.evaluate(`document.querySelectorAll('details').forEach((d) => { d.open = true; })`);
+  note('gm', await contrastFailures(gm));
+  await openAll(gm);
   const gmScan = await contrastFailures(gm);
   expect(gmScan.checked).toBeGreaterThan(50);
-  note('gm', gmScan);
+  note('gm (details open)', gmScan);
 
   for (const who of ['demo-jake', 'demo-sultan']) {
     const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
@@ -64,6 +68,11 @@ test('every text on the player screen and GM console reads at 4.5:1 or better', 
       const scan = await contrastFailures(page);
       expect(scan.checked).toBeGreaterThan(40);
       note(`${who} ${theme}`, scan);
+    }
+    await openAll(page);
+    for (const theme of THEMES) {
+      await setTheme(page, theme);
+      note(`${who} ${theme} (details open)`, await contrastFailures(page));
     }
     // An open dialog (a skill's details) over each metal, too.
     await page.locator('.skill-open').first().click();
@@ -92,9 +101,15 @@ test('every text on the player screen and GM console reads at 4.5:1 or better', 
   // The scan can fail: dim text planted in a window is caught.
   await phone
     .getByTestId('party')
-    .evaluate((el) => el.insertAdjacentHTML('beforeend', '<p style="color:#3a4250">dim</p>'));
+    .evaluate((el) =>
+      el.insertAdjacentHTML(
+        'beforeend',
+        '<p style="color:#3a4250">dim</p><style>.dim-ph::placeholder{color:#3a4250}</style>' +
+          '<input class="dim-ph" placeholder="dim placeholder">',
+      ),
+    );
   const planted = await contrastFailures(phone);
-  expect(planted.failures.map((f) => f.text)).toEqual(['dim']);
+  expect(planted.failures.map((f) => f.text)).toEqual(['dim', 'dim placeholder']);
 });
 
 // Marks every visible keyboard stop with data-kb="<n>" and reports those
@@ -124,16 +139,42 @@ const MARK = `(() => {
 })()`;
 
 // The focused element: its keyboard-stop number and whether a focus ring
-// shows (an outline of 2px or more, or a box-shadow ring).
+// shows: an outline of 2px or more (a box-shadow does not count: many windows
+// glow all the time) whose colour reads at 3:1 against the background behind
+// the element (WCAG 1.4.11), composed from the ancestors' background colours
+// over the page gradient's light stop.
 const FOCUSED = `(() => {
   const el = document.activeElement;
   if (!el || el === document.body) return null;
+  const parse = (s) => {
+    const m = s.match(/rgba?\\(([^)]+)\\)/);
+    if (!m) return null;
+    const p = m[1].split(/[ ,/]+/).filter(Boolean).map(Number);
+    return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1];
+  };
+  const lum = (c) => {
+    const ch = c.slice(0, 3).map((v) => {
+      v /= 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+  };
+  const chain = [];
+  for (let n = el.parentElement; n; n = n.parentElement) chain.unshift(n);
+  let bg = [21, 32, 58];
+  for (const n of chain) {
+    const c = parse(getComputedStyle(n).backgroundColor);
+    if (c && c[3] > 0) bg = [0, 1, 2].map((i) => c[i] * c[3] + bg[i] * (1 - c[3]));
+  }
   const cs = getComputedStyle(el);
-  const outline = cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 2;
+  const oc = parse(cs.outlineColor) || [0, 0, 0, 0];
+  const x = lum(oc), y = lum(bg);
+  const q = (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  const outline = cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) >= 2 && oc[3] > 0.9;
   return {
     kb: el.getAttribute('data-kb'),
-    ring: outline || cs.boxShadow !== 'none',
-    label: (el.getAttribute('aria-label') || el.textContent || el.tagName).trim().slice(0, 40),
+    ring: outline && q >= 3,
+    label: (el.getAttribute('aria-label') || el.textContent || el.tagName).trim().slice(0, 40) + ' ' + q.toFixed(2),
   };
 })()`;
 
@@ -178,7 +219,11 @@ test('the player screen and GM console work from the keyboard alone', async ({ b
   // Keyboard only: tab to a skill, Enter opens its details, Escape closes
   // them and focus returns to the skill.
   const skill = page.locator('.skill-open').first();
-  await skill.focus();
+  await page.evaluate(`document.activeElement && document.activeElement.blur()`);
+  for (let i = 0; i < 60; i++) {
+    await page.keyboard.press('Tab');
+    if (await skill.evaluate((el) => el === el.ownerDocument.activeElement)) break;
+  }
   await expect(skill).toBeFocused();
   await page.screenshot({ path: path.join(shots, 'focus-ring-1366x768.png') });
   await page.keyboard.press('Enter');
@@ -186,6 +231,15 @@ test('the player screen and GM console work from the keyboard alone', async ({ b
   await expect(dialog).toBeVisible();
   expect(await dialog.evaluate((d) => d.contains(d.ownerDocument.activeElement))).toBe(true);
   await page.screenshot({ path: path.join(shots, 'skill-detail-keyboard-1366x768.png') });
+  // A modal: Tab cycles inside the dialog, never back to the page behind it.
+  for (let i = 0; i < 8; i++) {
+    await page.keyboard.press('Tab');
+    const inside = await dialog.evaluate((d) => {
+      const a = d.ownerDocument.activeElement;
+      return !a || a === d.ownerDocument.body || d.contains(a);
+    });
+    expect(inside, `Tab ${i + 1} left the dialog`).toBe(true);
+  }
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   await expect(skill).toBeFocused();
