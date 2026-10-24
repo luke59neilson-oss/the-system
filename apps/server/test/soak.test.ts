@@ -38,24 +38,37 @@ class Client {
   /** The latest player view or GM state, kept for the desync check. */
   lastView: unknown = undefined;
   lastState: unknown = undefined;
-  frames = 0;
+  /** The first `error` frame the server sent; it fails every wait. */
+  serverError: string | null = null;
+  /** Set when a frame carried `canary` (GM-only text that must never reach a player). */
+  leaked = false;
   private readonly ws: WebSocket;
   private waiters: {
     test: (m: Record<string, unknown>) => boolean;
     done: (m: Record<string, unknown>) => void;
+    reject: (e: Error) => void;
   }[] = [];
 
-  constructor(url: string) {
+  constructor(
+    url: string,
+    private readonly canary: string | null = null,
+  ) {
     this.ws = new WebSocket(url);
     this.ws.addEventListener('message', (event) => {
-      this.frames++;
       // Parsed once on arrival: re-parsing every frame per wait made the
       // first draft of this test quadratic.
-      const message = JSON.parse(String(event.data)) as Record<string, unknown>;
+      const text = String(event.data);
+      if (this.canary !== null && text.includes(this.canary)) this.leaked = true;
+      const message = JSON.parse(text) as Record<string, unknown>;
       if (message.type === 'view') this.lastView = message['view'];
       if (message.type === 'state') this.lastState = message['state'];
-      if (message.type === 'error')
-        throw new Error(`server error frame: ${JSON.stringify(message)}`);
+      if (message.type === 'error') {
+        this.serverError ??= JSON.stringify(message);
+        const error = new Error(`server error frame: ${this.serverError}`);
+        for (const w of this.waiters) w.reject(error);
+        this.waiters = [];
+        return;
+      }
       this.inbox.push(message);
       this.waiters = this.waiters.filter((w) => {
         if (!w.test(message)) return true;
@@ -70,6 +83,9 @@ class Client {
     test: (m: Record<string, unknown>) => boolean,
     ms = 5000,
   ): Promise<Record<string, unknown>> {
+    if (this.serverError !== null) {
+      return Promise.reject(new Error(`server error frame: ${this.serverError}`));
+    }
     const seen = this.inbox.find(test);
     if (seen) return Promise.resolve(seen);
     return new Promise((resolve, reject) => {
@@ -79,6 +95,10 @@ class Client {
         done: (m) => {
           clearTimeout(timer);
           resolve(m);
+        },
+        reject: (e) => {
+          clearTimeout(timer);
+          reject(e);
         },
       });
     });
@@ -123,6 +143,18 @@ const gc: () => void = (() => {
   return runInNewContext('gc') as () => void;
 })();
 
+/**
+ * Waits until a client's latest frame equals the server's projection (frames
+ * are in flight after the actor's result arrives). Throws with `label` after `ms`.
+ */
+async function settled(read: () => unknown, want: string, label: string, ms = 10_000) {
+  const until = Date.now() + ms;
+  while (JSON.stringify(read()) !== want) {
+    if (Date.now() > until) throw new Error(`desync: ${label}`);
+    await new Promise((resolve) => setTimeout(resolve, 2));
+  }
+}
+
 function liveHeap(): number {
   gc();
   gc();
@@ -156,7 +188,11 @@ describe('M11.1 soak', () => {
     base = `127.0.0.1:${(app.server.address() as AddressInfo).port}`;
   });
 
+  /** Every socket the test opened, closed even when the test fails. */
+  const clients: Client[] = [];
+
   afterAll(async () => {
+    await Promise.all(clients.map((c) => c.close()));
     await app.close();
     store.close();
     rmSync(dataDir, { recursive: true, force: true });
@@ -167,6 +203,7 @@ describe('M11.1 soak', () => {
     const random = rng(SOAK_SEED);
     const pick = <T>(list: readonly T[]): T => list[Math.floor(random() * list.length)] as T;
     const gm = await new Client(`ws://${base}/ws`).open();
+    clients.push(gm);
     gm.send({ type: 'join', role: 'gm', gmKey });
     await gm.waitFor((m) => m.type === 'joined' && m.role === 'gm');
     const rules = JSON.parse(JSON.stringify(DEFAULT_RULES)) as unknown;
@@ -186,11 +223,22 @@ describe('M11.1 soak', () => {
       });
       expect(created.ok, JSON.stringify(created)).toBe(true);
     }
+    // A GM-only note: no player frame may ever carry its text.
+    const canary = 'CANARY-gm-only-7f3a';
+    const secret = await gm.command({
+      type: 'note.create',
+      characterId: null,
+      kind: 'gm',
+      title: 'GM secret',
+      body: canary,
+    });
+    expect(secret.ok, JSON.stringify(secret)).toBe(true);
     const players = await Promise.all(
       heroes.map(async (id) => {
-        const c = await new Client(`ws://${base}/ws`).open();
+        const c = await new Client(`ws://${base}/ws`, canary).open();
         c.send({ type: 'join', role: 'player', characterId: id });
         await c.waitFor((m) => m.type === 'view');
+        clients.push(c);
         return { id, client: c };
       }),
     );
@@ -276,6 +324,23 @@ describe('M11.1 soak', () => {
       counts[String(command['type'])] = (counts[String(command['type'])] ?? 0) + 1;
       for (const p of players) p.client.drain();
       gm.drain();
+      // No desync at any step: once the frames for this command land, every
+      // client holds the server's projection for it. The next command is then
+      // built from an up-to-date view, so it is valid by construction.
+      const now = store.campaign.state;
+      if (!now) throw new Error('no campaign');
+      for (const p of players) {
+        await settled(
+          () => p.client.lastView,
+          JSON.stringify(projectForPlayer(now, p.id)),
+          `seed ${SOAK_SEED} step ${step}: ${p.id}'s view`,
+        );
+      }
+      await settled(
+        () => gm.lastState,
+        JSON.stringify(projectForGm(now)),
+        `seed ${SOAK_SEED} step ${step}: the GM's state`,
+      );
     }
     console.log(`soak seed ${SOAK_SEED}: ${JSON.stringify(counts)}`);
     // Every kind of command ran, players' as well as the GM's.
@@ -292,16 +357,10 @@ describe('M11.1 soak', () => {
       expect(counts[type] ?? 0, `seed ${SOAK_SEED}: no ${type} ran`).toBeGreaterThan(0);
     }
     expect(store.campaign.events.length).toBeGreaterThan(SOAK_STEPS);
-    // No desync: every player's latest view is the server's projection for
-    // them, and the GM's latest state is the server's GM projection (private
-    // journals left out, M1.8).
-    const state = store.campaign.state;
-    if (!state) throw new Error('no campaign');
-    for (const { id, client } of players) {
-      const want = JSON.stringify(projectForPlayer(state, id));
-      await expect.poll(() => JSON.stringify(client.lastView)).toBe(want);
-    }
-    await expect.poll(() => JSON.stringify(gm.lastState)).toBe(JSON.stringify(projectForGm(state)));
+    // The desync checks compared each player's view and the GM's state with
+    // the server's projection (GM: private journals left out, M1.8) after every
+    // step; the GM-only note never reached a player.
+    for (const p of players) expect(p.client.leaked, `${p.id} received GM-only text`).toBe(false);
     // Heap growth after warm-up stays under 20% (live objects, after a full GC).
     const heapAtEnd = liveHeap();
     const growth = (heapAtEnd - heapAtWarmup) / heapAtWarmup;
@@ -310,6 +369,5 @@ describe('M11.1 soak', () => {
         `${(heapAtEnd / 2 ** 20).toFixed(1)} MiB at the end (${(growth * 100).toFixed(1)}%)`,
     );
     expect(growth).toBeLessThan(0.2);
-    await Promise.all([gm.close(), ...players.map((p) => p.client.close())]);
   }, 120_000);
 });
