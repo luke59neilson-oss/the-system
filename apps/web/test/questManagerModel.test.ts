@@ -33,6 +33,12 @@ describe('quest manager model (M7.1)', () => {
       stability: { rules: { cleanse: -5 } },
     });
     expect(questCreateCommand({ ...draft, title: ' ' })).toBe('A quest needs a title');
+    // A hidden quest says who gets the notice (D122); a visible one sends none.
+    expect(questCreateCommand({ ...draft, visible: false, noticeTo: ['kim'] })).toMatchObject({
+      visible: false,
+      noticeTo: ['kim'],
+    });
+    expect(questCreateCommand({ ...draft, noticeTo: ['kim'] })).not.toHaveProperty('noticeTo');
     expect(questCreateCommand({ ...draft, days: '3.5' })).toMatch(/whole number/);
     expect(questCreateCommand({ ...draft, rules: '', days: '' })).toMatchObject({
       days: null,
