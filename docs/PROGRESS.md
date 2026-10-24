@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M8, MS, MQ and MR done; M9.1–M9.2 done; QF.1–QF.21 done; Preview ready: Actions → Release → Run workflow (M8)
-**Next item:** M9.3 Import with approval (resume wip/M9.3)
+**Status:** in progress: M0–M8, MS, MQ and MR done; M9.1–M9.3 and M9.5 done (M9.4 deferred); QF.1–QF.21 done; Preview ready: Actions → Release → Run workflow (M8)
+**Next item:** M9.A Milestone acceptance and review (resume wip/M9.A)
 **Blockers:** none
 
 ## Run log
@@ -974,5 +974,15 @@ next item, blockers. -->
 - Tests: unit 1,169 on wip/M9.3 (1,166 on main); e2e M9.1, M4.3, M2.A, M9.3 green. Full e2e not run this run (no Mx.A; shared server code touched only by new GM routes). Engine coverage 97.53% lines (reviewer's run).
 - Open `wip/*` branches: wip/M9.3 (in progress).
 - Next item: M9.3 Import with approval (resume wip/M9.3).
+- Blockers: none.
+
+### Run 244704ef · 2026-10-24 19:07–19:49 UTC (end minute 42: M9.A started and handed to wip at minute 41; no reviews were outstanding and the rest of M9.A needs the fable milestone review, which would not fit before 50)
+- Preflight: `add_repo` not offered; repo already cloned (local main on an unrelated history; reset to origin/main b50a4e4). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewers: sonnet works (worktree; Agent calls block). CI on main green at start (b50a4e4). No new answers. Hour 19: no efficiency check, no sweep.
+- M9.3 Import with approval **checked**: resumed wip/M9.3. Engine `previewContent(…, only)` and route `{ file, only }` re-check just the ticked entries on every tick (an entry that needs an unticked one, or a campaign changed since the preview, blocks Apply); after a refusal the applied entries leave the list and the rest are re-checked, with "the campaign may have changed"; offline clears the preview; non-blocking note for an item whose name exists; re-picking the same file re-checks it. Sonnet round 2: 0 H / 1 M (no UI test for error replies or a blocked tick) / 4 L; fixed (e2e routes 404, 413, aborted, blocked re-check). D193 updated. Merged (f28dec2).
+- M9.5 Tutorial content pack **checked**: `docs/content-packs/tutorial.json` (DESIGN §8: 30-day quest with World Stability rules, hidden quest for the reveal, seven regions with GM notes, bestiary with the curse tiers, pale hunters, System beasts and three Beast Lords, loot, [Rapid Spread], three GM notes, hunger on). Content format v1 gained optional `quests`, `regions`, `gmNotes`, `hunger` (D196); preview notes duplicate bestiary entries, quests and GM notes. D197, Q72 (numbers to confirm). Sonnet round 1: 0 H / 2 M / 8 L; fixed; round 2: 0 H / 0 M / 4 L, fixed. Merged (d303765).
+- M9.A **started** on `wip/M9.A` (base d303765, head 29ece45): `e2e/M9.A.spec.ts` imports and applies the pack, starts session 1. Next steps: finish the loop in the spec per its TODO (create Jake, 400 XP to the G top, end the session, GET /api/gm/session-report?n=1&format=json shows the level-ups, import a drafted `evolutions` file for Jake, the player sees the evolution choice at 390×844; level-5 menus need the F evolution first), run the full e2e, then the **fable** milestone review (§6.1). After M9.A: Status gets "Preview ready" (§8.2).
+- Tests: unit 1,181 on main; e2e full suite 94/94 at 0e37706 (run during the M9.5 review); M9.3 and M9.5 specs green with 2 workers after the fixes. Engine coverage not re-measured this run (last 97.53%).
+- Open `wip/*` branches: wip/M9.A (in progress).
+- Next item: M9.A Milestone acceptance and review (resume wip/M9.A).
 - Blockers: none.
 
