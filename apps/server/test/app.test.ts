@@ -150,6 +150,35 @@ describe('startApp backupOnClose', () => {
     }
   });
 
+  it('backup() copies now, once per change, and quitting after it makes no second copy', async () => {
+    fresh();
+    try {
+      seed();
+      const app = await startApp({
+        port: 0,
+        host: '127.0.0.1',
+        webRoot,
+        dataDir,
+        backupOnClose: 'quit',
+      });
+      app.backup();
+      expect(backups()).toHaveLength(1);
+      app.backup();
+      await app.close();
+      // Closed: backup() is a no-op, never a throw on the closed store.
+      app.backup();
+      const made = backups();
+      expect(made).toHaveLength(1);
+      expect(made[0]).toMatch(/-quit$/);
+      const off = await startApp({ port: 0, host: '127.0.0.1', webRoot, dataDir });
+      off.backup();
+      await off.close();
+      expect(backups()).toHaveLength(1);
+    } finally {
+      rmSync(dataDir, { recursive: true, force: true });
+    }
+  });
+
   it('makes no backup of an empty campaign, nor when the option is off', async () => {
     fresh();
     try {
