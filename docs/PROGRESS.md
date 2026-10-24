@@ -877,7 +877,7 @@ next item, blockers. -->
 - Blockers: none.
 
 
-### Run 27864315 · 2026-10-24 01:07–01:56 UTC (end minute 49)
+### Run 27864315 · 2026-10-24 01:07–01:50 UTC (end minute 43: closed out early after handing M7.1 to wip; no §5.5 reason, a protocol slip)
 - Preflight: `add_repo` not offered; repo already cloned and current. Lock pushed cleanly. `npm view vitest version` → 5.0.5. Fable reviewer works (worktree; the Agent call blocks, ~20 min). CI on main green (74bff4c) at start. No new answers.
 - M6.A **checked** (D179): round 1 fixes M1 (sheet shows "(items +0.2, capped; titles +0.1)" from owner-view `itemStats`), M2 (GM give → gift notice from the GM; take → new `itemsTaken` notice), M3 (defining/renaming a library title onto a held name DINGs that holder; GM form warns first); ledger assertion strengthened. Fable round 2: 0 H / 1 M / 9 L; fixed the M (item library reason field) and four Lows (name-clash warning, history label, mirror leak check, D179). Merged to main (8cb1188); main CI running at close-out.
 - Tests: unit 1,062 (+ new quest model tests on wip), full e2e 67/67 green; latency MS.3 failed once at 1,457 ms while the reviewer ran in parallel on this 2-CPU box, passed 6/6 alone (local contention, not a CI flake; not logged in QUALITY).
