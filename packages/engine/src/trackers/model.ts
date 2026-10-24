@@ -60,7 +60,13 @@ export function newHungerTracker(rules: RulesConfig): HungerTracker {
  * Whether a character has outgrown hunger (DESIGN §7: fades at E-grade): their
  * grade is `rules.hunger.fadesAtGrade` or higher.
  */
-export function hungerFaded(rules: RulesConfig, character: Pick<Character, 'grade'>): boolean {
+export function hungerFaded(
+  rules: {
+    readonly grades: readonly { readonly id: string }[];
+    readonly hunger: Pick<RulesConfig['hunger'], 'fadesAtGrade'>;
+  },
+  character: Pick<Character, 'grade'>,
+): boolean {
   const order = rules.grades.map((g) => g.id);
   const fade = order.indexOf(rules.hunger.fadesAtGrade);
   const mine = order.indexOf(character.grade);

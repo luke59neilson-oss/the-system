@@ -507,7 +507,11 @@ export type Command =
       characterIds?: readonly string[] | null | undefined;
     }
   /** M7.4: turn the hunger tracker on or off, or rename its steps. Omitted fields stay. */
-  | { type: 'hunger.configure'; enabled?: boolean | undefined; steps?: readonly string[] | undefined }
+  | {
+      type: 'hunger.configure';
+      enabled?: boolean | undefined;
+      steps?: readonly string[] | undefined;
+    }
   | {
       /**
        * M7.4: set these characters' hunger to `level`, or move it by `delta`
@@ -518,7 +522,12 @@ export type Command =
       level?: number | undefined;
       delta?: number | undefined;
     }
-  | { type: 'region.define'; regionId?: string | undefined; name: string; notes?: string | undefined }
+  | {
+      type: 'region.define';
+      regionId?: string | undefined;
+      name: string;
+      notes?: string | undefined;
+    }
   | { type: 'region.edit'; regionId: string; name?: string | undefined; notes?: string | undefined }
   /** M7.4: the party is now in this region (null: none set). */
   | { type: 'region.setCurrent'; regionId: string | null }

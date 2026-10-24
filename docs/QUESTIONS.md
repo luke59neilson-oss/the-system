@@ -462,3 +462,18 @@ DESIGN/ROADMAP; do not re-apply them.
     what to share). Other options: coarse words ("likely", "even",
     "unlikely"), or no odds against NPCs (D182).
     Answer:
+
+68. **Should hunger do anything on its own?** The hunger tracker (M7.4) is
+    bookkeeping: the GM sets each character's step (Fed … Starving, renamable)
+    or moves everyone one step with a button. Default: no automatic change
+    when the day advances and no penalty from hunger; the GM narrates it.
+    Options: every new day moves everyone one step hungrier; a step adds a
+    penalty (for example to Stamina) (D184).
+    Answer:
+
+69. **Should players see the survivor factions?** Factions (M7.4) are GM-only
+    (name, region, head count, standing toward the party, notes); players see
+    only the current region's name. Default: GM-only, shared through notes or
+    broadcasts. Option: a "known to players" toggle that shows a faction's name
+    and standing (D184).
+    Answer:

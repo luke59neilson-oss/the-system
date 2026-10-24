@@ -2670,3 +2670,40 @@ ol.change-log li.undone .change-text {
 .contest-popup.lost .contest-outcome {
   color: var(--err);
 }
+
+/* GM trackers (M7.4) */
+.trackers {
+  grid-column: 1 / -1;
+}
+.trackers > [role='group'] + [role='group'] {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.tracker-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 6px;
+}
+.tracker-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.tracker-list .library-item {
+  flex: 1 1 160px;
+  width: auto;
+}
+.tracker-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0 10px;
+  align-items: end;
+}
+.tracker-form legend {
+  font-weight: 600;
+}

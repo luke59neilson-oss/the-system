@@ -33,6 +33,7 @@ import { MergeBuilder } from './MergeBuilder';
 import { PracticeCapture } from './PracticeCapture';
 import { QuestManager } from './QuestManager';
 import { Bestiary } from './Bestiary';
+import { Trackers } from './Trackers';
 import { Encounter } from './Encounter';
 import { RulesSettings } from './RulesSettings';
 import { uploadPortrait } from './portraitUpload';
@@ -164,6 +165,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <PracticeCapture client={client} state={state} />
               <QuestManager client={client} state={state} />
               <Bestiary client={client} state={state} />
+              <Trackers client={client} state={state} />
               <MarksReview client={client} state={state} />
               <MergeBuilder client={client} state={state} />
               <Broadcast client={client} state={state} />

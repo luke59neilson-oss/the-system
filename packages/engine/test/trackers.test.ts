@@ -34,7 +34,9 @@ describe('hunger tracker (M7.4)', () => {
       steps: ['Fed', 'Peckish', 'Hungry', 'Famished', 'Starving'],
       levels: {},
     });
-    const on = run(setup({ ...DEFAULT_RULES, hunger: { enabledByDefault: true, fadesAtGrade: 'E' } }));
+    const on = run(
+      setup({ ...DEFAULT_RULES, hunger: { enabledByDefault: true, fadesAtGrade: 'E' } }),
+    );
     expect(on.state?.hunger.enabled).toBe(true);
   });
 
@@ -80,9 +82,9 @@ describe('hunger tracker (M7.4)', () => {
     expect(rejects(on, { type: 'hunger.set', characterIds: ['nobody'], level: 1 })).toMatch(
       /nobody/,
     );
-    expect(
-      rejects(on, { type: 'hunger.set', characterIds: ['jake'], level: 1, delta: 1 }),
-    ).toMatch(/not both/);
+    expect(rejects(on, { type: 'hunger.set', characterIds: ['jake'], level: 1, delta: 1 })).toMatch(
+      /not both/,
+    );
     expect(rejects(on, { type: 'hunger.set', characterIds: [], delta: 1 })).toMatch(/at least one/);
   });
 
@@ -199,9 +201,7 @@ describe('survivor factions (M7.4)', () => {
     expect(rejects(c, { type: 'faction.define', factionId: 'f1', name: 'B' })).toMatch(/exists/);
     expect(rejects(c, { type: 'faction.edit', factionId: 'f1' })).toMatch(/nothing/);
     expect(rejects(c, { type: 'faction.edit', factionId: 'f9', name: 'Z' })).toMatch(/f9/);
-    expect(rejects(c, { type: 'faction.edit', factionId: 'f1', regionId: 'nope' })).toMatch(
-      /nope/,
-    );
+    expect(rejects(c, { type: 'faction.edit', factionId: 'f1', regionId: 'nope' })).toMatch(/nope/);
   });
 
   it('only the GM may change trackers', () => {

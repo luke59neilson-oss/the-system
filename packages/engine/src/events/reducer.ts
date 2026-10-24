@@ -1955,7 +1955,10 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       for (const [id, level] of entries) {
         const character = characterOf(state, event, id);
         if (hungerFaded(state.rules, character)) {
-          fail(event, `${character.name} has outgrown hunger (${state.rules.hunger.fadesAtGrade}-grade)`);
+          fail(
+            event,
+            `${character.name} has outgrown hunger (${state.rules.hunger.fadesAtGrade}-grade)`,
+          );
         }
         if (level > state.hunger.steps.length - 1) fail(event, `no hunger step ${level}`);
         levels[id] = level;
@@ -1965,7 +1968,13 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
     case 'region.defined': {
       const { regionId, name, notes } = event.payload;
       if (hasOwn(state.regions, regionId)) fail(event, `region "${regionId}" already exists`);
-      const region: Region = { id: regionId, name, notes, visited: false, createdAt: event.timestamp };
+      const region: Region = {
+        id: regionId,
+        name,
+        notes,
+        visited: false,
+        createdAt: event.timestamp,
+      };
       return {
         ...state,
         regions: { ...state.regions, [regionId]: region },
