@@ -1904,9 +1904,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
             event.payload.level,
             event.payload.stats,
             event.payload.notes,
-          ].every(
-            (v) => v === undefined,
-          )
+          ].every((v) => v === undefined)
         ) {
           fail(event, 'nothing to change');
         }
