@@ -53,6 +53,8 @@ describe('volume per browser', () => {
     expect(readVolume(store('300'))).toBe(100);
     expect(readVolume(store('0'))).toBe(0);
     expect(readVolume(store('loud'))).toBe(DEFAULT_VOLUME);
+    expect(readVolume(store(''))).toBe(DEFAULT_VOLUME);
+    expect(readVolume(store('  '))).toBe(DEFAULT_VOLUME);
     const blocked = {
       getItem: () => {
         throw new Error('blocked');

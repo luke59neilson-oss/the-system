@@ -188,6 +188,14 @@ test('DING, selection and evolution each play their own sound at the chosen volu
   await player.reload();
   await expect(player.getByTestId('connection')).toHaveText('Connected');
   await expect(player.getByTestId('volume')).toHaveValue('50');
+  // The phone header wraps and keeps the slider usable.
+  await player.setViewportSize({ width: 390, height: 844 });
+  await expect(player.getByTestId('volume')).toBeInViewport();
+  await player.screenshot({
+    path: path.join(shots, 'volume-390x844.png'),
+    clip: { x: 0, y: 0, width: 390, height: 260 },
+  });
+  await player.setViewportSize({ width: 1366, height: 768 });
 
   // Evolution: Sultan reaches the top of G and evolves; the swell plays with
   // the re-theme, at half volume.

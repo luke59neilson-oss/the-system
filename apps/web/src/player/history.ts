@@ -138,7 +138,7 @@ export const DEFAULT_VOLUME = 70;
 export function readVolume(storage: KeyValueStore | null): number {
   try {
     const raw = storage?.getItem(VOLUME_KEY);
-    const v = raw == null ? NaN : Number(raw);
+    const v = raw == null || raw.trim() === '' ? NaN : Number(raw);
     if (!Number.isFinite(v)) return DEFAULT_VOLUME;
     return Math.min(100, Math.max(0, Math.round(v / 10) * 10));
   } catch {
