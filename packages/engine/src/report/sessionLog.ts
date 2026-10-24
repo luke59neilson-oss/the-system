@@ -625,11 +625,11 @@ function partySheets(state: CampaignState): SessionLogCharacter[] {
   });
 }
 
-/** `[Basic Archery (Inferior)]`, with marks and a nickname when it has them. */
+/** `[Basic Archery (Inferior)]`, then marks and a nickname when it has them. */
 function skillText(k: SessionLogSkill): string {
-  const marks = k.marks > 0 ? `, ${k.marks} mark${k.marks === 1 ? '' : 's'}` : '';
-  const nick = k.nickname ? ` "${line(k.nickname)}"` : '';
-  return `[${line(k.name)} (${k.rarity}${marks})]${nick}`;
+  const marks = k.marks > 0 ? ` ${k.marks} mark${k.marks === 1 ? '' : 's'}` : '';
+  const nick = k.nickname ? ` nickname "${line(k.nickname)}"` : '';
+  return `[${line(k.name)} (${k.rarity})]${marks}${nick}`;
 }
 
 function renderParty(party: readonly SessionLogCharacter[], out: string[]): void {
@@ -640,7 +640,7 @@ function renderParty(party: readonly SessionLogCharacter[], out: string[]): void
     out.push('');
   } else {
     out.push(
-      'Sheets as they stand at the end of this log. Names are exact: copy them as written when drafting content.',
+      "Sheets as they stand at the end of this log. A skill's name is the text in brackets before its rarity; copy it exactly when drafting content.",
     );
     out.push('');
   }

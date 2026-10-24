@@ -439,7 +439,7 @@ describe('session log party sheets (M9.A)', () => {
     const md = renderSessionLog(log, meta);
     expect(md).toContain('### Jake\n\n- Race: [Human (G) – lvl 4]\n- Class: [Archer – lvl 4]');
     expect(md).toContain(
-      '- Class skills: [Basic Archery (Inferior)], [Basic Stealth (Inferior)], [Archer’s Eye (Common)] "Hawk"',
+      '- Class skills: [Basic Archery (Inferior)], [Basic Stealth (Inferior)], [Archer’s Eye (Common)] nickname "Hawk"',
     );
     expect(md).toContain('- Race skills: [Identify (Common)]');
     expect(md).toContain('- Evolution released, not chosen yet: [Skirmisher], [Marksman]');
