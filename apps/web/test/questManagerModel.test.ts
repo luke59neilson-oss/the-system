@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   emptyQuestDraft,
+  nudgeCommand,
   parseStabilityRules,
   questCreateCommand,
 } from '../src/gm/questManagerModel';
@@ -37,5 +38,23 @@ describe('quest manager model (M7.1)', () => {
       days: null,
       stability: null,
     });
+  });
+});
+
+describe('quest nudges (M7.1)', () => {
+  it('accepts a signed whole number with an optional reason', () => {
+    expect(nudgeCommand('q', ' -3 ', ' fled  ')).toEqual({
+      type: 'stability.nudge',
+      questId: 'q',
+      delta: -3,
+      reason: 'fled',
+    });
+    expect(nudgeCommand('q', '+2', '')).toEqual({
+      type: 'stability.nudge',
+      questId: 'q',
+      delta: 2,
+    });
+    expect(nudgeCommand('q', '0', '')).toMatch(/other than 0/);
+    expect(nudgeCommand('q', 'x', '')).toMatch(/whole number/);
   });
 });
