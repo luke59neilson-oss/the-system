@@ -91,6 +91,12 @@ describe('grade themes', () => {
     expect(deltaE2000(silver, platinum)).toBeGreaterThanOrEqual(10);
   });
 
+  it('platinum and diamond also differ by ΔE of at least 10, so a retune keeps B and A apart (M8.A review)', () => {
+    const platinum = hexToRgb(token(themes, '.theme-platinum', '--metal'));
+    const diamond = hexToRgb(token(themes, '.theme-diamond', '--metal'));
+    expect(deltaE2000(platinum, diamond)).toBeGreaterThanOrEqual(10);
+  });
+
   it('all seven metals are distinct', () => {
     const metals = GRADES.map((t) => token(themes, `.theme-${t}`, '--metal'));
     expect(new Set(metals).size).toBe(GRADES.length);

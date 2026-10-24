@@ -84,6 +84,9 @@ export function playSound(kind: SoundKind, volume: number): void {
   if (volume <= 0) return;
   const ctx = audio();
   if (!ctx) return;
+  // A page reloaded with sound remembered on starts its context suspended
+  // (no gesture yet); ask again each time, so it plays once one has happened.
+  if (ctx.state === 'suspended') void ctx.resume().catch(() => undefined);
   try {
     const start = ctx.currentTime;
     for (const n of SOUNDS[kind]) {
