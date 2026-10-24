@@ -943,9 +943,9 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const sum = shares.reduce((a, s) => a + s.share, 0);
       if (sum !== amount) fail(event, `shares sum to ${sum}, not the award of ${amount}`);
       let next = state;
-      for (const { characterId, share } of shares) {
+      for (const { characterId, share, raceLevel: pricedAt } of shares) {
         const character = characterOf(state, event, characterId);
-        const gained = shareXp(state.rules, character, share, enemyLevel, enemyGrade);
+        const gained = shareXp(state.rules, character, share, enemyLevel, enemyGrade, pricedAt);
         const { character: leveled } = rule(event, () =>
           awardXp(state.rules, character, track, gained),
         );

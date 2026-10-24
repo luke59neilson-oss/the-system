@@ -170,10 +170,12 @@ export function shareXp(
   share: number,
   enemyLevel: number | null | undefined,
   enemyGrade?: string | null,
+  /** Race level the award was priced at (stored in `xp.awarded`, M7.3); default: the current one. */
+  atRaceLevel?: number,
 ): number {
   const factor = gradeGapXpFactor(rules, character.grade, enemyGrade);
   const scaled = factor === 1 ? share : Math.floor(Number((share * factor).toFixed(9)));
-  return scaled + shareBonus(rules, character, scaled, enemyLevel);
+  return scaled + shareBonus(rules, character, scaled, enemyLevel, atRaceLevel);
 }
 
 /** XP a typical session awards at a grade ("typical session ≈ 6 levels", DESIGN §5). */
@@ -223,9 +225,10 @@ export function shareBonus(
   character: Character,
   share: number,
   enemyLevel: number | null | undefined,
+  atRaceLevel: number = raceLevel(rules, character),
 ): number {
   if (enemyLevel === null || enemyLevel === undefined) return 0;
-  const fraction = aboveLevelBonus(rules, raceLevel(rules, character), enemyLevel);
+  const fraction = aboveLevelBonus(rules, atRaceLevel, enemyLevel);
   return Math.floor(Number((share * fraction).toFixed(9)));
 }
 

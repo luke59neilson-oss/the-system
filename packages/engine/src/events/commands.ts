@@ -7,7 +7,7 @@ import {
   type DomainEvent,
   type EventType,
 } from './envelope';
-import { CharacterRuleError } from '../character';
+import { CharacterRuleError, raceLevel } from '../character';
 import { titleDefByName } from '../titles';
 import { defaultRerate } from '../evolution';
 import { normalizeTags } from '../skills/library';
@@ -851,8 +851,22 @@ function toEvent(
         type: 'character.statsSet',
         payload: { characterId: command.characterId, stats: command.stats },
       };
-    case 'xp.award':
-      return { type: 'xp.awarded', payload: awardPayload(command) };
+    case 'xp.award': {
+      const payload = awardPayload(command);
+      // Record each share's race level (M7.3, D71 gap a) so the above-level
+      // bonus is priced now, not re-derived when an earlier event is undone.
+      const state = campaign.state;
+      const shares = payload.shares.map((s) => {
+        const c =
+          state && Object.prototype.hasOwnProperty.call(state.characters, s.characterId)
+            ? state.characters[s.characterId]
+            : undefined;
+        return state && c && payload.enemyLevel !== null
+          ? { ...s, raceLevel: raceLevel(state.rules, c) }
+          : s;
+      });
+      return { type: 'xp.awarded', payload: { ...payload, shares } };
+    }
     case 'freePoints.assign':
       return {
         type: 'freePoints.assigned',

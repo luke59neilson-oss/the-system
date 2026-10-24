@@ -180,7 +180,18 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     track: z.enum(['class', 'profession']),
     amount: z.number().int().nonnegative().max(100_000_000),
     shares: z
-      .array(z.strictObject({ characterId: recordId, share: z.number().int().nonnegative() }))
+      .array(
+        z.strictObject({
+          characterId: recordId,
+          share: z.number().int().nonnegative(),
+          /**
+           * The character's race level when the award was made (M7.3, D71 gap a):
+           * the above-level bonus is priced at it, so undoing an earlier award
+           * cannot re-price this one. Absent in older events (priced at fold time).
+           */
+          raceLevel: z.number().int().nonnegative().max(10_000).optional(),
+        }),
+      )
       .min(1),
     enemyLevel: z.number().int().nonnegative().max(10_000).nullable(),
     /** Target's grade for the grade-gap XP factor (MQ.10); absent in older events. */

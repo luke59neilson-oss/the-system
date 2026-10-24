@@ -510,6 +510,27 @@ describe('xp.award command and event', () => {
     const undone = run([{ type: 'event.undo', eventId: 'y1' }], testContext('u'), c);
     expect(undone.state).toEqual(before.state);
   });
+
+  it('prices the above-level bonus at the race level stored in the award (M7.3, D71)', () => {
+    const c = run(
+      [
+        award([{ characterId: 'a' }], { amount: 300 }),
+        award([{ characterId: 'a' }], { amount: 100, enemyLevel: 5 }),
+      ],
+      testContext('y'),
+      run(setup()),
+    );
+    // Award 1 has no enemy level, so nothing to price; award 2 records race level 3.
+    const [first, second] = c.events.slice(-2);
+    expect(first?.payload).toMatchObject({ shares: [{ characterId: 'a', share: 300 }] });
+    expect((first?.payload as { shares: object[] }).shares[0]).not.toHaveProperty('raceLevel');
+    expect(second?.payload).toMatchObject({ shares: [{ characterId: 'a', raceLevel: 3 }] });
+    // 100 + 20% (two levels above race level 3) = 120: level 4, the G-grade top (the rest is lost).
+    expect(c.state?.characters['a']).toMatchObject({ classLevel: 4, xp: { class: 0 } });
+    // Undoing award 1 keeps award 2 at 120 (re-derived at race level 0 it would be 150).
+    const undone = run([{ type: 'event.undo', eventId: 'y1' }], testContext('u'), c);
+    expect(undone.state?.characters['a']).toMatchObject({ classLevel: 1, xp: { class: 20 } });
+  });
 });
 
 describe('XP overflow, no banking (MQ.11, DESIGN §2)', () => {
