@@ -2625,3 +2625,48 @@ ol.change-log li.undone .change-text {
 .montage-open {
   margin: 6px 0 0;
 }
+
+/* Player contest result pop-up (M7.3) */
+.contest-layer {
+  position: fixed;
+  top: 72px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+  z-index: 11;
+}
+.contest-popup {
+  pointer-events: auto;
+  width: min(420px, 100%);
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 0 18px var(--glow);
+  backdrop-filter: blur(6px);
+  overflow-wrap: anywhere;
+}
+.contest-popup h2 {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 1rem;
+  color: var(--accent);
+}
+.contest-popup p {
+  margin: 4px 0;
+}
+.contest-title {
+  font-family: var(--mono);
+}
+.contest-outcome {
+  font-weight: 700;
+}
+.contest-popup.won .contest-outcome {
+  color: var(--ok);
+}
+.contest-popup.lost .contest-outcome {
+  color: var(--err);
+}

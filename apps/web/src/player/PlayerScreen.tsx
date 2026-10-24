@@ -12,6 +12,7 @@ import { friendlyError, notificationText } from '../format';
 import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
 import { playChime, unlockChime } from './chime';
+import { contestLines, newContests } from './contest';
 import {
   HISTORY_FILTERS,
   filterHistory,
@@ -108,6 +109,7 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
         )}
       </header>
       {!pane && view && <DingQueue key={live.campaign ?? ''} live={live} sound={sound} />}
+      {!pane && view && <ContestPopup key={live.campaign ?? ''} contests={view.contests} />}
       {live.campaign === 'demo' && (
         <p className="demo-badge" data-testid="demo-badge">
           Demo campaign: for trying the app out
@@ -952,6 +954,37 @@ function Feed({
             ))}
           </ol>
         )}
+      </section>
+    </div>
+  );
+}
+
+/**
+ * Contest result pop-up (M7.3, D88): each contest the GM shares while the page
+ * is open, oldest first, until the player dismisses it. Contests shared before
+ * the page loaded never pop up.
+ */
+function ContestPopup({ contests }: { contests: PlayerView['contests'] }) {
+  const [known, setKnown] = useState<ReadonlySet<string>>(() => new Set(contests.map((c) => c.id)));
+  const fresh = newContests(contests, known);
+  const current = fresh[0];
+  if (!current) return null;
+  const lines = contestLines(current);
+  return (
+    <div className="contest-layer">
+      <section
+        className={`contest-popup ${current.won ? 'won' : 'lost'}`}
+        role="dialog"
+        aria-labelledby={`contest-${current.id}`}
+        data-testid="contest-popup"
+      >
+        <h2 id={`contest-${current.id}`}>Contest</h2>
+        <p className="contest-title">{lines.title}</p>
+        <p className="muted">{lines.odds}</p>
+        <p className="contest-outcome">{lines.result}</p>
+        <button type="button" onClick={() => setKnown((k) => new Set(k).add(current.id))}>
+          {fresh.length > 1 ? `Next (${fresh.length - 1} more)` : 'OK'}
+        </button>
       </section>
     </div>
   );
