@@ -1,6 +1,6 @@
 # Progress
 
-**Status:** in progress: M0–M6, MS, MQ and MR done; M7.1–M7.2 done; QF.1–QF.17 done (QF.18 open); Preview ready: Actions → Release → Run workflow (M6)
+**Status:** in progress: M0–M6, MS, MQ and MR done; M7.1–M7.2 done; QF.1–QF.17 and QF.19–QF.21 done (QF.18 open); Preview ready: Actions → Release → Run workflow (M6)
 **Next item:** M7.3 Encounter panel (QF.18 is not High; it follows in roadmap order)
 **Blockers:** none
 
@@ -895,4 +895,13 @@ next item, blockers. -->
 - Tests: unit 1,077; engine line coverage 98.7%; full e2e on M7.2 75/75 green.
 - Open `wip/*` branches: wip/M7.1 and wip/M7.2 merged; leave.
 - Next item: M7.3 Encounter panel.
+- Blockers: none.
+
+### Run 3671869191 · 2026-10-24 03:06–03:48 UTC (end minute ~42: the sweep's three blocking reviewers took until minute 31 (the Tests reviewer ran 30 min); the three confirmed Mediums were fixed, reviewed and pushed by minute 40, and M7.3 had no safe first step that fits before the 44 hand-off, so it starts fresh next run)
+- Preflight: `add_repo` not offered; repo already cloned (fast-forwarded to 64da0bb). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Haiku, sonnet and fable reviewers all work (worktree; each Agent call blocks until it reports). CI on main green (64da0bb). No new answers. Sweep hour (03 UTC), rotation C.
+- Sweep C (d6fedf8..3902046): Rules · haiku 0 H / 0 M / 3 L; Tests · sonnet 0 H / 1 M / 6 L; UX · fable 0 H / 2 M / 7 L. All three Mediums confirmed (code read; QF.21 by mutation) and fixed this run as QF.19 (a GM item give carries its reason to the holder), QF.20 (bestiary Reveal names who is out of Identify range) and QF.21 (hub test for the default loot random source). Lows to the QUALITY Backlog. Last sweep → 3902046, next rotation D.
+- QF.19–QF.21 **checked**: sonnet round 1 0 H / 0 M / 6 L; two Lows fixed (blank-reason and mixed-reveal tests). Pushed to main (9908a64).
+- Tests: unit 1,080 green; e2e M6.A and M7.2 green locally (full e2e not run: no shared server or UI shell change).
+- Open `wip/*` branches: none new.
+- Next item: M7.3 Encounter panel. Suggested first step: record each share's race level (or the bonus it got) in `xp.awarded` shares as an optional field (D71 gap (a)); the reducer uses it when present instead of re-deriving `shareBonus` at fold time; additive golden change.
 - Blockers: none.
