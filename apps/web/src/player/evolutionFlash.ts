@@ -20,28 +20,34 @@ export function isEvolution(
 }
 
 /**
- * M8.2: counts evolutions seen since this screen opened and reports whether
- * the re-theme is playing now (the grid is never remounted, so open panels
- * and drafts survive it).
+ * M8.2: whether the evolution re-theme is playing now. It starts when this
+ * character's grade rises while the screen is open (a reconnect that lands on
+ * a higher grade counts too: the player did evolve). Switching to another
+ * character never plays it. The grid is never remounted, so open panels and
+ * drafts survive.
  */
 export function useEvolutionFlash(
+  characterId: string,
   grades: readonly { id: string }[],
   grade: string | undefined,
-): { playing: boolean; count: number } {
-  const [seen, setSeen] = useState(grade);
-  const [count, setCount] = useState(0);
+): boolean {
+  const [seen, setSeen] = useState({ characterId, grade });
   const [playing, setPlaying] = useState(false);
-  if (grade !== seen) {
-    setSeen(grade);
-    if (isEvolution(grades, seen, grade)) {
-      setCount(count + 1);
+  const [started, setStarted] = useState(0);
+  if (characterId !== seen.characterId) {
+    setSeen({ characterId, grade });
+    setPlaying(false);
+  } else if (grade !== seen.grade) {
+    setSeen({ characterId, grade });
+    if (isEvolution(grades, seen.grade, grade)) {
       setPlaying(true);
+      setStarted(started + 1);
     }
   }
   useEffect(() => {
     if (!playing) return;
     const t = setTimeout(() => setPlaying(false), EVOLUTION_FLASH_MS);
     return () => clearTimeout(t);
-  }, [playing, count]);
-  return { playing, count };
+  }, [playing, started]);
+  return playing;
 }

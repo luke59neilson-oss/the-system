@@ -147,10 +147,13 @@ test('with reduced motion the new metal applies at once', async ({ browser }) =>
   await evolve(phone);
   const grid = phone.getByTestId('player-grid');
   await expect(grid).toHaveClass(/theme-bronze/);
+  // The transition is playing (the class is on), yet nothing moves.
+  await expect(grid).toHaveClass(/evolving/);
   expect(await statusAnimation(phone)).toBe('none');
   expect(await partyAnimation(phone)).toBe('none');
   expect(
     await phone.getByTestId('party').evaluate((el) => getComputedStyle(el).transitionDuration),
   ).toBe('0s');
+  await expect(grid).toHaveClass(/evolving/);
   await phone.screenshot({ path: path.join(shots, 'player-evolved-390x844.png') });
 });

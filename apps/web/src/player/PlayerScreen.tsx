@@ -80,7 +80,7 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
     setSound(next);
   };
   // M8.2: an evolution re-themes the screen with a short animated sweep.
-  const evolution = useEvolutionFlash(view?.rules.grades ?? [], view?.me.grade);
+  const evolving = useEvolutionFlash(characterId, view?.rules.grades ?? [], view?.me.grade);
   return (
     <main className={pane ? 'player pane-mode' : 'player'}>
       <header className="gm-header">
@@ -127,7 +127,7 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
       {view && live.status !== 'refused' && (
         // M8.1: the character's grade metal frames every player window.
         <div
-          className={`player-grid${themeClass(view.rules.grades.find((g) => g.id === view.me.grade)?.theme)}${evolution.playing ? ' evolving' : ''}`}
+          className={`player-grid${themeClass(view.rules.grades.find((g) => g.id === view.me.grade)?.theme)}${evolving ? ' evolving' : ''}`}
           data-testid="player-grid"
         >
           <div className="player-col">
