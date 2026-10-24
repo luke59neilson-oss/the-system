@@ -639,7 +639,7 @@ work: Q44–Q48 and Q52.
   reduced motion.
 - [x] **M8.4 Sound.** Original sounds generated in code (DING, selection,
   evolution); volume and mute.
-- [ ] **M8.A Milestone acceptance and review.** Screenshots of every theme in
+- [x] **M8.A Milestone acceptance and review.** Screenshots of every theme in
   `docs/screens/themes/`, viewed by the reviewer.
 
 ## M9 — Claude bridge and content packs
