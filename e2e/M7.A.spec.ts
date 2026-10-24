@@ -3,11 +3,10 @@ import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
-// M7.A milestone acceptance (work in progress, wip/M7.A): a sample encounter
-// end to end, and World Stability visible to players only when toggled on.
-// Done so far: setup, a quest whose gauge starts hidden, then toggled on.
-// The fight has damage so far. Next: a bestiary foe, a shared contest,
-// a clock and montage, a stability action from the fight), XP, screenshots.
+// M7.A milestone acceptance: a sample encounter end to end (a bestiary foe, a
+// shared contest, damage, a clock and its montage with the player's focus, a
+// World Stability action from the fight, XP for the target), and World
+// Stability visible to players only while its gauge is toggled on.
 
 const GM_KEY = 'e2e-gm-key-m7a-0123456789abcdef7a';
 const shots = path.resolve(import.meta.dirname, '../docs/screens/M7.A');
@@ -34,7 +33,7 @@ function watchErrors(page: Page) {
 test('a sample encounter end to end; stability reaches players only when shown', async ({
   browser,
 }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(150_000);
   const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const errors = watchErrors(gm);
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
@@ -46,6 +45,16 @@ test('a sample encounter end to end; stability reaches players only when shown',
     await create.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
   }
+  // The foe: a same-grade bestiary entry, so the contest is a real roll.
+  const bestiary = gm.locator('form[aria-labelledby="bestiary-form"]');
+  await bestiary.getByLabel('Name (GM only)').fill('SECRET Pale Hunter');
+  await bestiary.getByLabel('Label players see (blank: the name)').fill('Pale hunter');
+  await bestiary.getByLabel('Grade').selectOption('G');
+  await bestiary.getByLabel('Level').fill('2');
+  await bestiary.getByLabel('Agility').fill('17');
+  await bestiary.getByLabel('Common', { exact: true }).fill('[A pale shape]');
+  await bestiary.getByRole('button', { name: 'Add entry' }).click();
+
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const pageErrors = watchErrors(page);
   const frames: string[] = [];
@@ -65,6 +74,8 @@ test('a sample encounter end to end; stability reaches players only when shown',
   const quest = page.getByTestId('quest');
   await expect(quest).toContainText('The world is dying');
   await expect(quest.getByTestId('stability-value')).toHaveCount(0);
+  // While hidden, no player frame carries the stability value.
+  expect(frames.some((f) => f.includes('"stability":100'))).toBe(false);
 
   // Toggle the gauge on: the player now sees World Stability.
   const list = qm.getByRole('list', { name: 'Quest list' });
@@ -74,15 +85,103 @@ test('a sample encounter end to end; stability reaches players only when shown',
   await expect(qm.getByRole('status')).toHaveText('[The world is dying] saved');
   await expect(quest.getByTestId('stability-value')).toHaveText('100%');
 
-  // The fight: Jake takes 30 HP.
+  // The fight opens with a contest against the foe, shared with the table.
   const win = gm.locator('section[aria-labelledby="encounter"]');
+  const roller = win.locator('form[aria-labelledby="contest-roller"]');
+  const sideA = roller.getByRole('group', { name: 'Side A' });
+  const sideB = roller.getByRole('group', { name: 'Side B' });
+  await sideA.getByLabel('Who').selectOption({ label: 'Jake' });
+  await sideA.getByLabel('Stat').selectOption({ label: 'Agility' });
+  await sideB.getByLabel('Who').selectOption({ label: 'SECRET Pale Hunter (bestiary)' });
+  await sideB.getByLabel('Stat').selectOption({ label: 'Agility' });
+  await expect(sideB.getByRole('textbox', { name: 'Value', exact: true })).toHaveValue('17');
+  await expect(sideB.getByRole('textbox', { name: 'Players see', exact: true })).toHaveValue(
+    'Pale hunter',
+  );
+  // Same grade: plain ratio odds, 10 against 17.
+  await expect(roller.getByTestId('contest-chance')).toHaveText(
+    'Jake · Agility: 37% · Pale hunter: 63%',
+  );
+  await roller.getByRole('button', { name: 'Roll' }).click();
+  await expect(roller.getByTestId('contest-result')).toContainText('(Jake · Agility 37%, rolled');
+  await roller.getByRole('button', { name: 'Share with the table' }).click();
+  const popup = page.getByTestId('contest-popup');
+  await expect(popup).toContainText('[Jake · Agility] vs [Pale hunter]');
+  await expect(popup).toContainText('Your chance: 37%');
+  await expect(popup).toContainText(/Success\.|Failure\./);
+  await page.screenshot({ path: path.join(shots, 'player-contest-popup-390x844.png') });
+  await popup.getByRole('button', { name: 'OK' }).click();
+  await expect(popup).toHaveCount(0);
+
+  // The foe hits back: Jake takes 30 HP.
   const pools = win.locator('form[aria-labelledby="pool-tool"]');
   await pools.getByLabel('Character').selectOption({ label: 'Jake' });
   await pools.getByLabel('Points', { exact: true }).fill('30');
   await pools.getByRole('button', { name: 'Apply' }).click();
   await expect(page.getByTestId('pool-hp')).toContainText('70/100');
 
-  for (const secret of [GM_KEY, 'system beast']) {
+  // A clock for the chase; half full with no failures offers a montage.
+  const clocks = win.locator('[aria-labelledby="clocks"]');
+  await clocks.getByLabel('Clock name').fill('Run it down');
+  await clocks.getByLabel('Segments').fill('4');
+  await clocks.getByRole('button', { name: 'Start clock' }).click();
+  const clock = clocks.getByRole('listitem', { name: '[Run it down]' });
+  await clock.getByRole('button', { name: 'Success +1' }).click();
+  await clock.getByRole('button', { name: 'Success +1' }).click();
+  await expect(clock).toContainText('2/4');
+  await clock.getByRole('button', { name: 'Offer montage' }).click();
+  await clock.getByLabel('Players see').fill('Hunting the pale hunter');
+  await clock.getByRole('checkbox', { name: 'Kim' }).uncheck();
+  await clock.getByRole('button', { name: 'Offer', exact: true }).click();
+  await expect(clock).toContainText('Montage “Hunting the pale hunter”: waiting on Jake');
+  const montage = page.getByTestId('practice').getByTestId('montage');
+  await expect(montage).toContainText('Hunting the pale hunter');
+  await montage.getByTestId('montage-form-action').fill('Track it through the canyon');
+  await montage.getByTestId('montage-form-stat').selectOption({ label: 'Perception' });
+  await montage.getByTestId('montage-form-submit').click();
+  await expect(montage.getByTestId('montage-focus')).toContainText('Track it through the canyon');
+  await expect(clock).not.toContainText('waiting on Jake');
+  await clocks.scrollIntoViewIfNeeded();
+  await gm.screenshot({ path: path.join(shots, 'gm-encounter-1366x768.png') });
+
+  // The kill was a System-placed beast: World Stability rises for the player.
+  const stab = qm.getByRole('group', { name: 'World Stability of [The world is dying]' });
+  await list.getByRole('button', { name: /The world is dying/ }).click();
+  await stab.getByRole('combobox', { name: /^Action/ }).selectOption('cleanse');
+  await stab.getByRole('button', { name: 'Apply action' }).click();
+  await expect(stab.getByTestId('quest-stability-value')).toHaveText('95%');
+  await expect(quest.getByTestId('stability-value')).toHaveText('95%');
+  await stab.getByRole('combobox', { name: /^Action/ }).selectOption('system beast');
+  await stab.getByRole('button', { name: 'Apply action' }).click();
+  await expect(quest.getByTestId('stability-value')).toHaveText('97%');
+
+  // XP for the fight: 400 split evenly, the foe two levels above (+20%).
+  const award = gm.getByRole('form', { name: 'Award class XP' });
+  await award.getByLabel('Amount').fill('400');
+  await award.getByLabel('Target’s grade').selectOption('G');
+  await award.getByRole('checkbox', { name: 'Above-level bonus' }).check();
+  await award.getByLabel('Target’s level').fill('2');
+  await award.getByLabel('Reason (GM only)').fill('SECRET reason: the pale hunter');
+  await award.getByRole('button', { name: 'Award XP' }).click();
+  await expect(page.getByTestId('class')).toHaveText(/lvl 2\]/);
+  await page.getByTestId('quest').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: path.join(shots, 'player-after-fight-390x844.png') });
+
+  // Hide the gauge again: the player loses it and later changes never arrive.
+  await list.getByRole('button', { name: /The world is dying/ }).click();
+  await form.getByLabel('Players see the World Stability gauge').uncheck();
+  await form.getByRole('button', { name: 'Save quest' }).click();
+  await expect(qm.getByRole('status')).toHaveText('[The world is dying] saved');
+  await expect(quest.getByTestId('stability-value')).toHaveCount(0);
+  await expect(quest).toContainText('The world is dying');
+  const afterHide = frames.length;
+  await stab.getByLabel('Nudge by').fill('-14');
+  await stab.getByRole('button', { name: 'Nudge' }).click();
+  await expect(stab.getByTestId('quest-stability-value')).toHaveText('83%');
+  await expect(quest.getByTestId('stability-value')).toHaveCount(0);
+  expect(frames.slice(afterHide).some((f) => f.includes('"stability":83'))).toBe(false);
+
+  for (const secret of [GM_KEY, 'system beast', 'SECRET', '"cleanse"']) {
     expect(frames.filter((f) => f.includes(secret))).toEqual([]);
   }
   expect(pageErrors).toEqual([]);
