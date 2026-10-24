@@ -1791,7 +1791,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         delete clocks[clockId];
         // Its open montages close with it: nothing on the GM panel could close them later (M7.A).
         let montages = state.montages;
-        for (const id of state.montageOrder) {
+        const cascade = event.payload.legacy !== true;
+        for (const id of cascade ? state.montageOrder : []) {
           const m = montages[id];
           if (m && m.clockId === clockId && m.status === 'open') {
             montages = { ...montages, [id]: { ...m, status: 'closed' } };
