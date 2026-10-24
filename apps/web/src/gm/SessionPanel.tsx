@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { CampaignState } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
@@ -62,6 +62,9 @@ export function SessionPanel({
   };
   // A copy the browser refused: the report shown for the GM to copy by hand.
   const [manual, setManual] = useState<{ n: number; text: string } | null>(null);
+  const manualRef = useRef<HTMLTextAreaElement>(null);
+  // Selected once when it appears, not again on every live update.
+  useEffect(() => manualRef.current?.select(), [manual]);
   const copied = (n: number) =>
     setOutcome({ kind: 'ok', text: `Session ${n} report copied: paste it into Claude` });
   /**
@@ -227,7 +230,7 @@ export function SessionPanel({
             readOnly
             aria-label={`Session ${manual.n} report`}
             value={manual.text}
-            ref={(el) => el?.select()}
+            ref={manualRef}
             onFocus={(e) => e.currentTarget.select()}
           />
           <button type="button" className="secondary small" onClick={() => setManual(null)}>
