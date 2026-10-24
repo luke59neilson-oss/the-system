@@ -2,6 +2,14 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { CampaignState, PracticeEntry } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
+import {
+  actionCommand,
+  actionTags,
+  parseTags,
+  signed,
+  stabilityOffers,
+  type StabilityOffer,
+} from './questManagerModel';
 
 type Outcome = { ok: boolean; text: string } | null;
 
@@ -22,6 +30,9 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
   const [action, setAction] = useState('');
   const [skills, setSkills] = useState<string[]>([]);
   const [stat, setStat] = useState('');
+  const [tags, setTags] = useState('');
+  // M7.1 (D67): stability rules the last logged entry's tags match.
+  const [offers, setOffers] = useState<{ reason: string; list: StabilityOffer[] } | null>(null);
   const [scene, setScene] = useState(false);
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Outcome>(null);
@@ -64,6 +75,7 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
   const add = async (e: FormEvent) => {
     e.preventDefault();
     if (!character || action.trim() === '') return;
+    const entryTags = parseTags(tags);
     const ok = await run(
       {
         type: 'practice.log',
@@ -71,13 +83,19 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
         action: action.trim(),
         skills,
         stat: stat === '' ? null : stat,
+        ...(entryTags.length === 0 ? {} : { tags: entryTags }),
       },
       `Logged for ${character.name}: ${action.trim()}`,
     );
     if (!ok) return;
+    const list = stabilityOffers(state, { tags: entryTags });
+    setOffers(
+      list.length === 0 ? null : { reason: `Practice: ${character.name}: ${action.trim()}`, list },
+    );
     setAction('');
     setSkills([]);
     setStat('');
+    setTags('');
     if (scene) {
       // End-of-scene prompt: move on to the next character, or finish.
       const next = ids[ids.indexOf(characterId) + 1];
@@ -94,6 +112,16 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
   };
 
   const pending = state.practice.filter((e) => !e.reviewed);
+  const knownTags = actionTags(state);
+  const applyOffer = async (o: StabilityOffer) => {
+    if (!offers) return;
+    const c = actionCommand(o.questId, o.tag, '1', offers.reason);
+    if (typeof c === 'string') return;
+    const ok = await run(c, `Applied "${o.tag}" (${signed(o.delta)}) to [${o.title}]`);
+    if (!ok) return;
+    const left = offers.list.filter((x) => x !== o);
+    setOffers(left.length === 0 ? null : { ...offers, list: left });
+  };
 
   return (
     <section className="window practice-capture" aria-labelledby="practice-capture-heading">
@@ -170,6 +198,20 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
                 ))}
               </select>
             </label>
+            <label>
+              Action tags{' '}
+              <span className="muted">(comma-separated; quest tags offer stability)</span>
+              <input
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                list="practice-quest-tags"
+              />
+              <datalist id="practice-quest-tags">
+                {knownTags.map((t) => (
+                  <option key={t} value={t} />
+                ))}
+              </datalist>
+            </label>
             <button
               type="submit"
               disabled={busy || action.trim() === '' || (skills.length === 0 && stat === '')}
@@ -177,6 +219,28 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
               Log practice
             </button>
           </form>
+          {offers && (
+            <div
+              className="stability-offers"
+              role="group"
+              aria-label="Apply World Stability"
+              data-testid="stability-offers"
+            >
+              <p>This entry carries a quest's action tag. Apply its World Stability rule?</p>
+              <ul>
+                {offers.list.map((o) => (
+                  <li key={`${o.questId} ${o.tag}`}>
+                    <button type="button" disabled={busy} onClick={() => void applyOffer(o)}>
+                      Apply "{o.tag}" ({signed(o.delta)}) to [{o.title}]
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <button type="button" className="secondary" onClick={() => setOffers(null)}>
+                Not now
+              </button>
+            </div>
+          )}
           <h3>To review ({pending.length})</h3>
           {pending.length === 0 ? (
             <p className="muted">Nothing waiting: player and montage entries appear here.</p>
