@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M6, MS, MQ and MR done; M7.1–M7.4 done; QF.1–QF.21 done; M7.A started on wip/M7.A; Preview ready: Actions → Release → Run workflow (M6)
-**Next item:** M7.A Milestone acceptance and review (resume wip/M7.A)
+**Status:** in progress: M0–M7, MS, MQ and MR done; QF.1–QF.21 done; M8.1 started on wip/M8.1; Preview ready: Actions → Release → Run workflow (M7)
+**Next item:** M8.1 Metallic grade themes (resume wip/M8.1)
 **Blockers:** none
 
 ## Run log
@@ -925,3 +925,11 @@ next item, blockers. -->
 - Next item: M7.A.
 - Blockers: none.
 
+### Run a5af4004 · 2026-10-24 14:07–14:51 UTC (end minute ~44)
+- Preflight: `add_repo` not offered; repo already cloned, local main fast-forwarded to origin/main (5183360). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Fable reviewers work (worktree; Agent calls block). CI on main green (1a96f67). No new answers. Not an efficiency or sweep hour.
+- M7.A **checked** (M7 milestone done): `e2e/M7.A.spec.ts` runs a sample encounter end to end (bestiary foe, shared same-grade contest with the player's pop-up, damage, a clock and montage with the player's focus, cleanse and system-beast stability actions, XP with the above-level bonus) and proves World Stability reaches the player only while toggled on (no stability in frames while hidden, before and after). Review: fable round 1 0 H / 2 M / 7 L (orphaned montage on clock removal; stale contest stats), round 2 0 H / 1 M / 3 L (the cascade needed `clock.removed` v2 with a legacy upcaster per D34). All fixed; D185. Two UX Lows to the QUALITY backlog.
+- M8.1 started: `wip/M8.1` (base d828151 merged in, head a8873d3): `apps/web/src/themes.css` with per-grade tokens (`--metal`, `--metal-hi`, `--metal-lo`, `--sheen`, `--glow-strength`), a sheen ring over the status frame, platinum brushed, diamond animated (off under reduced motion); `e2e/M8.1.spec.ts` passes and writes `docs/screens/themes/`. Next step: the frame ring reads thin at 2px; carry the metal to headings and the other player windows' frames (System-window styling per DESIGN §9), drop the duplicate status-window rule in styles.css, check the 390×844 shots, then the full e2e (shared UI) and the sonnet review.
+- Tests: unit 1,125 green; full e2e 72/72 (on the M7.A fixes); M8.1 spec green on the wip. Engine coverage not measured this run.
+- Open `wip/*` branches: wip/M8.1 (resume); wip/M7.A merged (leave it).
+- Next item: M8.1.
+- Blockers: none.
