@@ -33,6 +33,7 @@ import { MergeBuilder } from './MergeBuilder';
 import { PracticeCapture } from './PracticeCapture';
 import { QuestManager } from './QuestManager';
 import { Bestiary } from './Bestiary';
+import { Encounter } from './Encounter';
 import { RulesSettings } from './RulesSettings';
 import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
@@ -157,6 +158,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <JoinPanel gmKey={gmKey} />
               <CreateCharacter client={client} gmKey={gmKey} state={state} />
               <XpAward client={client} state={state} />
+              <Encounter client={client} state={state} />
               <OfferBuilder client={client} state={state} target={offerTarget} />
               <EvolutionBuilder client={client} state={state} />
               <PracticeCapture client={client} state={state} />

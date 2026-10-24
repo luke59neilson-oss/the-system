@@ -2537,3 +2537,91 @@ ol.change-log li.undone .change-text {
 .bestiary-stats input {
   width: 100%;
 }
+
+/* GM encounter panel (M7.3) */
+.encounter {
+  grid-column: 1 / -1;
+}
+.encounter h3 {
+  margin: 4px 0 8px;
+  font-size: 1rem;
+}
+.encounter h4 {
+  margin: 10px 0 4px;
+  font-size: 0.9rem;
+}
+.encounter-pools,
+.encounter-clocks {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.contest-sides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.contest-side {
+  flex: 1 1 260px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.contest-side label {
+  flex: 1 1 110px;
+}
+.contest-side input,
+.contest-side select {
+  width: 100%;
+}
+.contest-result {
+  font-family: var(--mono);
+}
+.contest-recent {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.pool-fields,
+.clock-new {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: flex-end;
+}
+.pool-fields input,
+.clock-new input[type='number'] {
+  width: 6em;
+}
+.clock-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+.clock-list > li {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(90, 127, 184, 0.35);
+}
+.clock-bar {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+.clock-bar .seg {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+.clock-bar .seg.filled {
+  background: var(--accent);
+}
+.montage-offer {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-top: 6px;
+}
+.montage-open {
+  margin: 6px 0 0;
+}
