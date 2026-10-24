@@ -737,3 +737,8 @@
 ## 2026-10-24 · M6.4 Titles · sonnet (2 rounds)
 - Round 1 (b1a723d..b470fd1): 1 H / 3 M / 3 L. H: renaming a library title stranded holders (held by name) → the `titleDef.edited` reducer rewrites holders' copies (dedupes a holder who had the new name), with engine rename/replay/undo test and an e2e rename step. M: whitespace-only name differences → `titleKey` collapses whitespace, stored names tidied (define, edit, award). M: flat units → column "Flat (stat points)" beside the sheet preview. M: undo/replay of a rename → covered by the new test. L (screenshot framing, JSON-order no-op edits, no re-notify when a title is defined after its award): left.
 - Round 2 (b470fd1..d37a4cf): 0 H / 0 M / 5 L. Fixed the misplaced doc comment; noted the replay effect of tidied award names in D177; rest left.
+
+## 2026-10-24 · M6.A milestone (M6.1–M6.4) · fable (round 1)
+- Range d9eda43~1..43891b7; check, build and the M6 specs green; full e2e 73/73.
+- 0 H / 3 M / 8 L. M1: the sheet's "(+0.3, capped)" lumps a title % into the capped item bonus (PlayerScreen.tsx:360-383). M2: GM item give/take from the library sends the player no notice (history/index.ts:195), unlike loot and gifts. M3: defining or renaming a library title silently grants its bonuses to anyone already holding that name as free text, with no DING or GM warning. Lows: title flats sit inside the % multiplier (Q66); un-rollable huge loot tables; party fine is N events; equipment line shows nominal not capped bonus; M6.A ledger assertion weak; title form keeps un-tidied name; stale history label; legend wrap/empty column/persistent "Trade offered".
+- Not fixed this run (back at minute 47); handed to `wip/M6.A`.
