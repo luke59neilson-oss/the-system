@@ -73,6 +73,16 @@ export type SystemNotification =
       readonly reason: string;
     }
   | {
+      /**
+       * The GM took items back (M6.A); only that character is told, with the
+       * GM's reason. Items the GM gives arrive as a `gift` from the GM.
+       */
+      readonly kind: 'itemsTaken';
+      readonly characterId: string;
+      readonly items: readonly { readonly name: string; readonly count: number }[];
+      readonly reason: string;
+    }
+  | {
       /** A trade changed by the other party (M3.7); only the party who did not act is told. */
       readonly kind: 'trade';
       readonly characterId: string;
@@ -192,6 +202,24 @@ export function notificationsBetween(
       text: def?.text ?? '',
     });
   }
+  if ((event?.type === 'titleDef.defined' || event?.type === 'titleDef.edited') && before) {
+    // M6.A: defining or renaming a library title can match a title someone
+    // already holds by name (free text, D69). That holder now gets its
+    // bonuses, so they hear about it like an award.
+    const defId = event.type === 'titleDef.defined' ? event.payload.id : event.payload.titleDefId;
+    const def = has(after.titleLibrary, defId) ? after.titleLibrary[defId] : undefined;
+    const linked = (state: CampaignState, id: string) => {
+      const c = has(state.characters, id) ? state.characters[id] : undefined;
+      return (c?.titles ?? []).some(
+        (t) => titleDefByName(state.titleLibrary, state.titleLibraryOrder, t)?.id === defId,
+      );
+    };
+    for (const characterId of def ? after.characterOrder : []) {
+      if (def && linked(after, characterId) && !linked(before, characterId)) {
+        out.push({ kind: 'title', characterId, title: def.name, text: def.text });
+      }
+    }
+  }
   if (event?.type === 'holdings.adjusted' && event.payload.currency !== 0) {
     const { characterId, currency, reason } = event.payload;
     out.push({
@@ -201,6 +229,28 @@ export function notificationsBetween(
       currencyName: after.rules.economy.currencyName,
       reason,
     });
+  }
+  if (event?.type === 'holdings.adjusted') {
+    // M6.A: items the GM gives or takes reach the holder like loot and gifts.
+    const { characterId, items } = event.payload;
+    const entries = Object.entries(items);
+    const name = (itemId: string) =>
+      (has(after.items, itemId) ? after.items[itemId]?.name : undefined) ?? itemId;
+    const given = entries.filter(([, n]) => n > 0);
+    if (given.length > 0) {
+      out.push(
+        giftNotice(after, characterId, null, { currency: 0, items: Object.fromEntries(given) }),
+      );
+    }
+    const taken = entries.filter(([, n]) => n < 0);
+    if (taken.length > 0) {
+      out.push({
+        kind: 'itemsTaken',
+        characterId,
+        items: taken.map(([itemId, n]) => ({ name: name(itemId), count: -n })),
+        reason: event.payload.reason,
+      });
+    }
   }
   if (event?.type === 'gift.given' && event.payload.to !== null) {
     const { characterId: giver, to, bundle } = event.payload;

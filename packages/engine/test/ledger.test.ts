@@ -181,6 +181,9 @@ describe('currency ledger (M6.3)', () => {
       },
     ]);
     const items = ok(before, { type: 'holdings.adjust', characterId: 'jake', items: { pelt: 1 } });
-    expect(notificationsBetween(before.state, items.state, items.events.at(-1))).toEqual([]);
+    // M6.A: an item-only adjustment is told as a gift from the GM, not as currency.
+    expect(
+      notificationsBetween(before.state, items.state, items.events.at(-1)).map((n) => n.kind),
+    ).toEqual(['gift']);
   });
 });

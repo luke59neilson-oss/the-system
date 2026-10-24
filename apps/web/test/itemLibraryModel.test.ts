@@ -102,6 +102,11 @@ describe('item library model (M6.1)', () => {
     });
     expect(adjustCommand('jake', 'charm', ' 1 ', -1)).toMatchObject({ items: { charm: -1 } });
     expect(adjustCommand('jake', 'charm', '0', 1)).toBeNull();
+    // M6.A: an optional reason the holder sees, tidied; blank sends none.
+    expect(adjustCommand('jake', 'charm', '1', -1, '  Broke   the seal ')).toMatchObject({
+      reason: 'Broke the seal',
+    });
+    expect(adjustCommand('jake', 'charm', '1', -1, '   ')).not.toHaveProperty('reason');
     expect(adjustCommand('jake', 'charm', '-3', 1)).toBeNull();
   });
 });

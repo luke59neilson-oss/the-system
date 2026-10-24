@@ -18,7 +18,7 @@ export const HISTORY_FILTERS: readonly { id: HistoryFilter; label: string }[] = 
   { id: 'race', label: 'Race' },
   { id: 'freePoints', label: 'Free points' },
   { id: 'broadcast', label: 'System messages' },
-  { id: 'items', label: 'Gifts and trades' },
+  { id: 'items', label: 'Items and currency' },
 ];
 
 /** A DING: a level-up, a profession taken, a skill upgrade or a merge. */
@@ -48,7 +48,9 @@ export function matchesFilter(n: LiveNotification, filter: HistoryFilter): boole
     case 'broadcast':
       return n.kind === 'broadcast' || n.kind === 'hiddenQuest';
     case 'items':
-      return n.kind === 'gift' || n.kind === 'trade' || n.kind === 'currency';
+      return (
+        n.kind === 'gift' || n.kind === 'itemsTaken' || n.kind === 'trade' || n.kind === 'currency'
+      );
   }
 }
 

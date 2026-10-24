@@ -47,6 +47,7 @@ export function ItemLibrary({ client, state }: { client: LiveClient; state: Camp
   const [who, setWho] = useState('');
   const characterId = ids.includes(who) ? who : (ids[0] ?? '');
   const [count, setCount] = useState('1');
+  const [reason, setReason] = useState('');
   const shown = libraryItems(state, query);
   const command = itemSaveCommand(draft, base ? (loaded ?? base) : null, stats);
   const wearers = base ? wearersOf(state, base.id) : [];
@@ -74,7 +75,7 @@ export function ItemLibrary({ client, state }: { client: LiveClient; state: Camp
   };
   const adjust = async (sign: 1 | -1) => {
     if (!base) return;
-    const c = adjustCommand(characterId, base.id, count, sign);
+    const c = adjustCommand(characterId, base.id, count, sign, reason);
     if (!c) return;
     setBusy(true);
     const r = await client.command(c);
@@ -230,6 +231,15 @@ export function ItemLibrary({ client, state }: { client: LiveClient; state: Camp
           <label>
             Count
             <input inputMode="numeric" value={count} onChange={(e) => setCount(e.target.value)} />
+          </label>
+          <label>
+            Reason (the player sees this)
+            <input
+              value={reason}
+              maxLength={200}
+              placeholder="Optional"
+              onChange={(e) => setReason(e.target.value)}
+            />
           </label>
           <p className="muted" data-testid="item-held">
             {state.characters[characterId]?.name} holds {held}

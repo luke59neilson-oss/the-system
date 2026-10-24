@@ -5,6 +5,24 @@ import { feedRows } from '../src/gm/feed';
 import { matchesFilter } from '../src/player/history';
 
 describe('notificationText', () => {
+  it('says what the GM took, with the reason, and files it under items (M6.A)', () => {
+    const n = {
+      kind: 'itemsTaken' as const,
+      characterId: 'j',
+      items: [
+        { name: 'Hunter Fang', count: 2 },
+        { name: 'Bone Charm', count: 1 },
+      ],
+      reason: ' Confiscated ',
+    };
+    expect(notificationText(n)).toBe('The GM took [Hunter Fang] ×2 and [Bone Charm]: Confiscated');
+    expect(notificationText({ ...n, items: [{ name: 'Pelt', count: 1 }], reason: '' })).toBe(
+      'The GM took [Pelt]',
+    );
+    expect(matchesFilter(n, 'items')).toBe(true);
+    expect(matchesFilter(n, 'dings')).toBe(false);
+  });
+
   it('a new profession is acquired at a level, not gained from level 1 (MQ.6)', () => {
     expect(
       notificationText({ kind: 'profession', characterId: 'j', name: 'Beast Tamer', level: 17 }),

@@ -218,6 +218,11 @@ export interface OwnSheet {
   readonly effectiveStats: Readonly<Record<string, number>>;
   /** Stats whose item bonus hit the item cap (MQ.14, DESIGN §4), shown as capped. */
   readonly itemCappedStats: readonly string[];
+  /**
+   * Stats with equipped item bonuses only, before titles (M6.A): the sheet
+   * shows what items and what titles add separately.
+   */
+  readonly itemStats: Readonly<Record<string, number>>;
   readonly pools: readonly OwnPool[];
   readonly freePointBatches: readonly FreePointBatch[];
   readonly titles: readonly string[];
@@ -531,6 +536,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
     stats: copyRecord(c.stats, statIds),
     effectiveStats: copyRecord(effective, statIds),
     itemCappedStats: itemCappedStats(rules, c.stats, h, state.items),
+    itemStats: copyRecord(itemEffectiveStats(rules, c.stats, h, state.items), statIds),
     pools: rules.pools.map((p) => ({
       id: p.id,
       current: own(c.pools, p.id) ?? 0,

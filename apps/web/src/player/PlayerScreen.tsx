@@ -360,13 +360,20 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
           // M3.7 (D81): the effective value, with what gear adds beside it.
           const base = me.stats[s.id] ?? 0;
           const value = me.effectiveStats[s.id] ?? base;
+          const withItems = me.itemStats[s.id] ?? value;
           const delta = value - base;
+          // M6.A: titles apply after items (DESIGN §4), so split what each adds.
+          const itemDelta = withItems - base;
+          const titleDelta = value - withItems;
           // MQ.14 (DESIGN §4): gear adds at most a share of the base; say so when it hits it.
           const capped = me.itemCappedStats.includes(s.id);
+          const signed = (n: number) =>
+            `${n > 0 ? '+' : n < 0 ? '−' : '+'}${formatStatValue(rules, Math.abs(n))}`;
+          const split = titleDelta !== 0 && (itemDelta !== 0 || capped);
           return (
             <li key={s.id} data-testid={`stat-${s.id}`}>
               <span>{s.name}</span> <LiveStrong value={formatStatValue(rules, value)} />
-              {(delta !== 0 || capped) && (
+              {(delta !== 0 || capped || titleDelta !== 0) && (
                 <span
                   className="muted stat-bonus"
                   data-testid={`bonus-${s.id}`}
@@ -376,10 +383,22 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
                       : undefined
                   }
                 >
-                  {' '}
-                  ({delta > 0 ? '+' : delta < 0 ? '−' : '+'}
-                  {formatStatValue(rules, Math.abs(delta))}
-                  {capped && <span data-testid={`capped-${s.id}`}>, capped</span>})
+                  {' ('}
+                  {split ? (
+                    <>
+                      items {signed(itemDelta)}
+                      {capped && <span data-testid={`capped-${s.id}`}>, capped</span>}
+                      {`; titles ${signed(titleDelta)}`}
+                    </>
+                  ) : titleDelta !== 0 ? (
+                    `titles ${signed(titleDelta)}`
+                  ) : (
+                    <>
+                      {signed(delta)}
+                      {capped && <span data-testid={`capped-${s.id}`}>, capped</span>}
+                    </>
+                  )}
+                  {')'}
                 </span>
               )}
             </li>
