@@ -361,6 +361,11 @@ describe('M11.1 soak', () => {
     // the server's projection (GM: private journals left out, M1.8) after every
     // step; the GM-only note never reached a player.
     for (const p of players) expect(p.client.leaked, `${p.id} received GM-only text`).toBe(false);
+    // The canary really is in the server's state (the check above is not vacuous),
+    // and no client got an error frame the waits did not see.
+    const final = store.campaign.state;
+    expect(JSON.stringify(final && projectForGm(final))).toContain(canary);
+    for (const c of clients) expect(c.serverError, `seed ${SOAK_SEED}`).toBeNull();
     // Heap growth after warm-up stays under 20% (live objects, after a full GC).
     const heapAtEnd = liveHeap();
     const growth = (heapAtEnd - heapAtWarmup) / heapAtWarmup;
@@ -368,6 +373,6 @@ describe('M11.1 soak', () => {
       `soak heap: ${(heapAtWarmup / 2 ** 20).toFixed(1)} MiB at step ${SOAK_WARMUP}, ` +
         `${(heapAtEnd / 2 ** 20).toFixed(1)} MiB at the end (${(growth * 100).toFixed(1)}%)`,
     );
-    expect(growth).toBeLessThan(0.2);
+    expect(growth, `seed ${SOAK_SEED}: heap growth`).toBeLessThan(0.2);
   }, 120_000);
 });
