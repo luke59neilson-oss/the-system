@@ -219,6 +219,7 @@ describe('session log (M2.4)', () => {
     const markdown = renderSessionLog(buildSessionLog(campaign, fromSeq), meta);
     expect(markdown).toContain('> ## Heading\n> line two');
     expect(markdown.split('\n').filter((l) => l.startsWith('## '))).toEqual([
+      '## Party',
       '## Timeline',
       '## Practice',
       '## Notes',
@@ -381,6 +382,105 @@ describe('session log (M2.4)', () => {
     );
     expect(noteIsExportable({ ...note, kind: 'gm', tags: [' EXPORT '], shareable: false })).toBe(
       true,
+    );
+  });
+});
+
+describe('session log party sheets (M9.A)', () => {
+  it('gives Claude each sheet at the end of the log: levels, exact skill names, open menus, a pending evolution', () => {
+    const c = run(
+      [
+        { type: 'campaign.create', name: 'Whale', rules: rawRules() },
+        {
+          type: 'character.create',
+          id: 'jake',
+          name: 'Jake',
+          className: 'Archer',
+          classSkills: kit,
+        },
+        {
+          type: 'xp.award',
+          track: 'class',
+          amount: 400,
+          participants: [{ characterId: 'jake' }],
+        },
+        { type: 'skill.nickname', characterId: 'jake', skill: 'Archer’s Eye', nickname: 'Hawk' },
+        { type: 'title.award', characterId: 'jake', title: 'Forerunner' },
+        {
+          type: 'evolution.release',
+          characterId: 'jake',
+          options: [{ className: 'Skirmisher' }, { className: 'Marksman' }],
+        },
+      ],
+      ctx,
+    );
+    const log = buildSessionLog(c, 0);
+    expect(log.party).toEqual([
+      {
+        name: 'Jake',
+        race: 'Human',
+        raceLevel: 4,
+        grade: 'G',
+        className: 'Archer',
+        classLevel: 4,
+        profession: null,
+        professionLevel: null,
+        titles: ['Forerunner'],
+        skills: [
+          { name: 'Basic Archery', rarity: 'Inferior', kind: 'class', marks: 0, nickname: null },
+          { name: 'Basic Stealth', rarity: 'Inferior', kind: 'class', marks: 0, nickname: null },
+          { name: 'Archer’s Eye', rarity: 'Common', kind: 'class', marks: 0, nickname: 'Hawk' },
+          { name: 'Identify', rarity: 'Common', kind: 'race', marks: 0, nickname: null },
+        ],
+        openMenus: [],
+        evolution: ['Skirmisher', 'Marksman'],
+      },
+    ]);
+    const md = renderSessionLog(log, meta);
+    expect(md).toContain('### Jake\n\n- Race: [Human (G) – lvl 4]\n- Class: [Archer – lvl 4]');
+    expect(md).toContain(
+      '- Class skills: [Basic Archery (Inferior)], [Basic Stealth (Inferior)], [Archer’s Eye (Common)] nickname "Hawk"',
+    );
+    expect(md).toContain('- Race skills: [Identify (Common)]');
+    expect(md).toContain('- Evolution released, not chosen yet: [Skirmisher], [Marksman]');
+
+    // After evolving and reaching level 5: the open menu with its options.
+    const later = run(
+      [
+        { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' },
+        { type: 'xp.award', track: 'class', amount: 300, participants: [{ characterId: 'jake' }] },
+        {
+          type: 'selection.offer',
+          characterId: 'jake',
+          level: 5,
+          options: [
+            { name: 'Quick Draw', rarity: 'common' },
+            { name: 'Pinning Shot', rarity: 'uncommon' },
+            { name: 'Steady Breath', rarity: 'rare' },
+          ],
+        },
+      ],
+      ctx,
+      c,
+    );
+    const sheet = buildSessionLog(later, 0).party[0];
+    expect(sheet?.evolution).toBeNull();
+    expect(sheet?.grade).toBe('F');
+    expect(sheet?.openMenus).toEqual([
+      {
+        level: 5,
+        options: ['Quick Draw (Common)', 'Pinning Shot (Uncommon)', 'Steady Breath (Rare)'],
+      },
+    ]);
+    expect(renderSessionLog(buildSessionLog(later, 0), meta)).toContain(
+      '- Skill menu at level 5, not chosen yet: [Quick Draw (Common)], [Pinning Shot (Uncommon)], [Steady Breath (Rare)]',
+    );
+  });
+
+  it('says so when the campaign has no characters', () => {
+    const c = run([{ type: 'campaign.create', name: 'Whale', rules: rawRules() }], ctx);
+    expect(renderSessionLog(buildSessionLog(c, 0), meta)).toContain(
+      '## Party\n\nNo characters yet.\n\n## Timeline',
     );
   });
 });

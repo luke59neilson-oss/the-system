@@ -82,3 +82,84 @@ describe('previewContent (M9.3)', () => {
     expect(p.entries[1]?.note).toContain('[Salt]');
   });
 });
+
+describe('previewContent: drafted menus and evolutions say where they go (M9.A)', () => {
+  const atTop = (extra: Parameters<typeof run>[0] = []) =>
+    run(
+      [
+        { type: 'campaign.create', name: 'Whale', rules: rawRules() },
+        {
+          type: 'character.create',
+          id: 'jake',
+          name: 'Jake',
+          className: 'Archer',
+          classSkills: kit,
+        },
+        {
+          type: 'xp.award',
+          amount: 400,
+          track: 'class',
+          participants: [{ characterId: 'jake' }],
+        },
+        ...extra,
+      ],
+      ctx,
+    );
+  const evolution = (className: string) => ({
+    character: 'Jake',
+    options: [{ className }, { className: `${className} II` }],
+  });
+
+  it('names the player and the options, and a release it replaces', () => {
+    const p = previewContent(
+      atTop(),
+      {
+        format: 'the-system/content',
+        version: 1,
+        evolutions: [evolution('Skirmisher'), evolution('Marksman')],
+      },
+      ctx,
+    );
+    if (!p.ok) throw new Error('expected a preview');
+    expect(p.entries.map((e) => e.error)).toEqual([null, null]);
+    expect(p.entries[0]?.note).toBe(
+      "Goes to Jake's screen on Apply: [Skirmisher], [Skirmisher II]",
+    );
+    expect(p.entries[1]?.note).toBe(
+      "Goes to Jake's screen on Apply: [Marksman], [Marksman II]; replaces the evolution Jake was offered",
+    );
+  });
+
+  it('names a menu’s options with their rarities, and the open menu it replaces', () => {
+    const evolved = atTop([
+      { type: 'evolution.release', characterId: 'jake', options: [{ className: 'Hunter' }] },
+      { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' },
+      {
+        type: 'xp.award',
+        amount: 300,
+        track: 'class',
+        participants: [{ characterId: 'jake' }],
+      },
+    ]);
+    const menu = {
+      character: 'Jake',
+      level: 5,
+      options: [
+        { name: 'Quick Draw', rarity: 'common' },
+        { name: 'Pinning Shot', rarity: 'uncommon' },
+        { name: 'Steady Breath', rarity: 'rare' },
+      ],
+    };
+    const p = previewContent(
+      evolved,
+      { format: 'the-system/content', version: 1, skillOffers: [menu, menu] },
+      ctx,
+    );
+    if (!p.ok) throw new Error('expected a preview');
+    expect(p.entries.map((e) => e.error)).toEqual([null, null]);
+    expect(p.entries[0]?.note).toBe(
+      "Goes to Jake's screen on Apply: [Quick Draw (Common)], [Pinning Shot (Uncommon)], [Steady Breath (Rare)]",
+    );
+    expect(p.entries[1]?.note).toContain('; replaces the level 5 menu Jake has now');
+  });
+});

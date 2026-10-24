@@ -656,7 +656,7 @@ work: Q44–Q48 and Q52.
   `campaign/inbox/*.json` into the import queue. Off by default. Tested
   against a mocked API.
 - [x] **M9.5 Tutorial content pack.** DESIGN §8 as an importable pack.
-- [ ] **M9.A Milestone acceptance and review.**
+- [x] **M9.A Milestone acceptance and review.**
 
 ## M10 — Desktop app (double-click)
 

@@ -22,6 +22,17 @@ Paste the session report and something like:
 > 1; spec in docs/CONTENT-FORMAT.md), draft a level 10 skill selection menu
 > for Jake with three options, one Rare. Reply with only the JSON.
 
+The report's **Party** section lists every character's sheet at the end of
+the session: levels, grade, titles, skills with their exact names, rarities
+and marks, open skill menus and any evolution released but not chosen.
+Transforms and re-rates must name skills exactly as written there.
+
+**When to import a drafted menu or evolution:** once the character can take
+it. A menu applies only at or below the character's class level, and an
+evolution only once the evolution is due (race level at the top of the grade,
+every selection chosen); earlier, the preview marks the entry and it cannot
+be ticked. Keep the file and import it after the level-up.
+
 ## The file
 
 One JSON object. `format` and `version` are required; every section is an
@@ -128,8 +139,11 @@ text.
 
 ### `skillOffers`: drafted selection menus
 
-A menu for one character's skill selection (DESIGN §6). It reaches the player
-only when the GM approves it and sends it as that selection's offer.
+A menu for one character's skill selection (DESIGN §6). Applying it offers
+it to that character at once: it is on the player's screen as soon as the GM
+clicks Apply, and it replaces a menu offered at that level and not chosen yet.
+The preview says whose screen it goes to, lists its options and says what it
+replaces, so the GM checks it before ticking it.
 
 | Key | Required | Meaning |
 | --- | --- | --- |
@@ -139,8 +153,11 @@ only when the GM approves it and sends it as that selection's offer.
 
 ### `evolutions`: drafted evolution options
 
-Options for one character's next evolution (DESIGN §2, §6), released by the
-GM in the evolution builder.
+Options for one character's next evolution (DESIGN §2, §6). Applying the
+entry releases the evolution at once, as the evolution builder's Release
+does: the player can take it straight away, and it replaces an evolution
+already released and not chosen yet. The preview says whose screen it goes
+to, lists its options and says what it replaces.
 
 | Key | Required | Meaning |
 | --- | --- | --- |
