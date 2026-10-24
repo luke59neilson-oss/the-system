@@ -115,7 +115,10 @@ textarea {
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
-button:focus-visible {
+button:focus-visible,
+summary:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -1495,7 +1498,7 @@ button.danger {
 }
 .party-name {
   margin: 0 0 4px;
-  color: var(--metal, var(--text));
+  color: var(--metal-text, var(--text));
 }
 .party-tracks {
   display: grid;
@@ -2673,4 +2676,20 @@ ol.change-log li.undone .change-text {
 }
 .tracker-form legend {
   font-weight: 600;
+}
+
+/*
+ * Reduced motion (M8.3): a safety net under every component's own
+ * reduced-motion rule. Nothing animates or transitions anywhere, including
+ * rules added later that forget their own media query; state changes apply
+ * at once.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }

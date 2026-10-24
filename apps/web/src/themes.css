@@ -6,11 +6,16 @@
  *   --sheen      the frame's surface (dull metals flat, shiny ones bright,
  *                platinum brushed, diamond prismatic and animated)
  *   --glow-strength how far the frame glows (dull metals barely)
+ *   --metal-text the metal as a text colour (headings, names): the metal
+ *                itself where it reads at 4.5:1 on a window, lightened where
+ *                it does not (bronze). Every theme sets it, so a nested theme
+ *                never inherits another's (M8.3).
  * Platinum is a cool blue-white with a heavier brushed texture so it reads
  * differently from silver (DESIGN §3; ΔE checked in M8.3).
  */
 :root {
   --metal: #8a96a8;
+  --metal-text: #8a96a8;
   --metal-hi: #b8c2d0;
   --metal-lo: #4d5868;
   --sheen: linear-gradient(135deg, var(--metal-hi), var(--metal) 45%, var(--metal-lo));
@@ -18,6 +23,7 @@
 }
 .theme-aluminum {
   --metal: #a7adb4;
+  --metal-text: #a7adb4;
   --metal-hi: #c3c8ce;
   --metal-lo: #6e747b;
   --sheen: linear-gradient(160deg, #b4b9bf, #9ba1a8 60%, #868c93);
@@ -25,6 +31,7 @@
 }
 .theme-bronze {
   --metal: #a5733f;
+  --metal-text: #bc8854;
   --metal-hi: #bf8d58;
   --metal-lo: #6b4824;
   --sheen: linear-gradient(160deg, #b07e4b, #96683a 60%, #7d5530);
@@ -32,6 +39,7 @@
 }
 .theme-copper {
   --metal: #d9804f;
+  --metal-text: #d9804f;
   --metal-hi: #ffb38a;
   --metal-lo: #8f4a26;
   --sheen: linear-gradient(135deg, #ffb38a, #d9804f 40%, #a85a32 70%, #f0a070);
@@ -39,6 +47,7 @@
 }
 .theme-silver {
   --metal: #d4d8de;
+  --metal-text: #d4d8de;
   --metal-hi: #ffffff;
   --metal-lo: #8d939b;
   --sheen: linear-gradient(135deg, #ffffff, #d4d8de 35%, #9ea4ac 65%, #eef0f3);
@@ -46,13 +55,15 @@
 }
 .theme-gold {
   --metal: #e7c25a;
+  --metal-text: #e7c25a;
   --metal-hi: #fff0b0;
   --metal-lo: #a07c22;
   --sheen: linear-gradient(135deg, #fff0b0, #e7c25a 40%, #b8902e 70%, #f7da85);
   --glow-strength: 40%;
 }
 .theme-platinum {
-  --metal: #b9d8f0;
+  --metal: #b2d5f5;
+  --metal-text: #b2d5f5;
   --metal-hi: #f2f9ff;
   --metal-lo: #8fb4d2;
   /* Heavier brushed texture: bright vertical streaks with pale blue grain over
@@ -70,6 +81,7 @@
 }
 .theme-diamond {
   --metal: #c9f3ff;
+  --metal-text: #c9f3ff;
   --metal-hi: #ffffff;
   --metal-lo: #7fb6d6;
   --sheen: linear-gradient(
@@ -98,7 +110,7 @@
 /* Zero-specificity scope: beats the base h2/h3 accent (this file loads
    later) but never a class such as a skill's rarity colour. */
 :where(.player-grid .window, .status-window) :is(h2, h3) {
-  color: var(--metal);
+  color: var(--metal-text);
 }
 
 /* The status window's frame is the metal itself: a sheen ring drawn over the border. */

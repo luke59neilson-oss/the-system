@@ -150,7 +150,7 @@ test('each grade metal frames the status window in its own colour', async ({ bro
   await setTheme(page, 'platinum');
   const platinum = await look();
   expect(copper.heading).toBe('rgb(217, 128, 79)'); // copper --metal #d9804f
-  expect(platinum.heading).toBe('rgb(185, 216, 240)'); // platinum --metal #b9d8f0
+  expect(platinum.heading).toBe('rgb(178, 213, 245)'); // platinum --metal #b2d5f5 (M8.3 ΔE)
   expect(copper.border).not.toBe(platinum.border);
   // Every player window (not only the party one) wears the copper frame.
   await setTheme(page, 'copper');
