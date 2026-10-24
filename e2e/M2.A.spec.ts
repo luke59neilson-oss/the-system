@@ -94,8 +94,9 @@ test(
     await gm.getByRole('button', { name: 'Send broadcast' }).click();
     await expect(miranda.page.getByTestId('messages')).toHaveText(WHISPER);
     // QF.18: the GM change log refetches after every change; let that request
-    // finish before the power loss, or the stop resets it mid-flight and the
-    // console logs "Failed to load resource" (a test race, not an app error).
+    // finish before the power loss, or the stop resets it mid-flight (or
+    // Fastify answers it 503 while closing) and the console logs "Failed to
+    // load resource": a test race, not an app error.
     await expect(gm.locator('section[aria-labelledby="change-log"]')).toContainText(WHISPER);
 
     // Power loss: the server stops (writing the session log), then half an event is left at the end of the log.
@@ -133,6 +134,12 @@ test(
     await expect(jake.page.getByTestId('class')).toHaveText('[Archer – lvl 4]', { timeout: 2000 });
     await expect(miranda.page.getByTestId('class')).toHaveText('[Archer – lvl 1]');
 
+    // QF.18: as before the first stop, let the change log's refetch for this
+    // award finish, or the final stop resets it (or Fastify answers it 503
+    // while closing) and the GM console logs "Failed to load resource".
+    await expect(gm.locator('section[aria-labelledby="change-log"]')).toContainText(
+      'Jake: class Archer 1 → 4',
+    );
     // The GM export carries the events, never the GM key; players can't fetch it.
     const exportRes = await gm.request.get(`${server.url}/api/gm/export`, {
       headers: { 'x-gm-key': GM_KEY },
