@@ -792,6 +792,16 @@ button.secondary:hover {
   padding: 3px 10px;
   font-size: 0.8rem;
 }
+.gm-header label.volume {
+  margin: 0;
+  flex-direction: row;
+  align-items: center;
+}
+.volume input[type='range'] {
+  width: 90px;
+  padding: 0;
+  accent-color: var(--accent);
+}
 .sound-toggle[aria-pressed='true'] {
   color: var(--accent);
   border-color: var(--accent);

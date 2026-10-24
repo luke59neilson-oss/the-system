@@ -11,7 +11,7 @@ import { titleKey, type OwnSheet, type PlayerView } from '@the-system/engine';
 import { friendlyError, notificationText } from '../format';
 import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
-import { playChime, unlockChime } from './chime';
+import { playSound, unlockSound } from './sounds';
 import { contestLines, newContests } from './contest';
 import {
   HISTORY_FILTERS,
@@ -20,8 +20,10 @@ import {
   nextArrival,
   notificationKey,
   readSound,
+  readVolume,
   whenLabel,
   writeSound,
+  writeVolume,
   type HistoryFilter,
 } from './history';
 import { allocationText, assignedBatches, nextBatch, spent, step } from './freePoints';
@@ -75,12 +77,39 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
   const [sound, setSound] = useState(() => readSound(browserStorage()));
   const toggleSound = () => {
     const next = !sound;
-    if (next) unlockChime();
+    if (next) unlockSound();
     writeSound(browserStorage(), next);
     setSound(next);
   };
+  // M8.4: volume per browser; Sound: off is the mute.
+  const [volume, setVolume] = useState(() => readVolume(browserStorage()));
+  const level = sound ? volume : 0;
+  const changeVolume = (v: number) => {
+    writeVolume(browserStorage(), v);
+    setVolume(v);
+  };
   // M8.2: an evolution re-themes the screen with a short animated sweep.
   const evolving = useEvolutionFlash(characterId, view?.rules.grades ?? [], view?.me.grade);
+  // M8.4: the evolution sound plays with the re-theme; the selection sound when
+  // a new skill selection arrives while the page is open (never on load, never
+  // in the GM's View-as panes).
+  // A ref, so a volume change mid-transition never replays it.
+  const levelRef = useRef(level);
+  useEffect(() => {
+    levelRef.current = level;
+  }, [level]);
+  useEffect(() => {
+    if (evolving && !pane) playSound('evolution', levelRef.current);
+  }, [evolving, pane]);
+  const waitingSelections = view ? pendingSelections(view.me.selections).length : null;
+  const seenSelections = useRef<{ id: string; count: number } | null>(null);
+  useEffect(() => {
+    if (waitingSelections === null) return;
+    const seen = seenSelections.current;
+    seenSelections.current = { id: characterId, count: waitingSelections };
+    if (pane || !seen || seen.id !== characterId) return;
+    if (waitingSelections > seen.count) playSound('selection', levelRef.current);
+  }, [waitingSelections, characterId, pane]);
   return (
     <main className={pane ? 'player pane-mode' : 'player'}>
       <header className="gm-header">
@@ -105,13 +134,28 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
             Sound: {sound ? 'on' : 'off'}
           </button>
         )}
+        {!pane && sound && (
+          <label className="volume">
+            <span className="sr-only">Sound volume</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={10}
+              value={volume}
+              data-testid="volume"
+              aria-valuetext={`${volume}%`}
+              onChange={(e) => changeVolume(Number(e.target.value))}
+            />
+          </label>
+        )}
         {!pane && (
           <a className="muted" href="/">
             Switch character
           </a>
         )}
       </header>
-      {!pane && view && <DingQueue key={live.campaign ?? ''} live={live} sound={sound} />}
+      {!pane && view && <DingQueue key={live.campaign ?? ''} live={live} volume={level} />}
       {!pane && view && <ContestPopup key={live.campaign ?? ''} contests={view.contests} />}
       {live.campaign === 'demo' && (
         <p className="demo-badge" data-testid="demo-badge">
@@ -1015,7 +1059,7 @@ const DING_MS = 2600;
  * (M3.3), oldest first, each with the optional chime. Click to skip ahead.
  * Older history never pops up; it is in the Notifications list.
  */
-function DingQueue({ live, sound }: { live: LiveSnapshot; sound: boolean }) {
+function DingQueue({ live, volume }: { live: LiveSnapshot; volume: number }) {
   const [shown, setShown] = useState<ReadonlySet<string>>(() => new Set());
   const { current, waiting } = nextArrival(live.notifications, live.liveSince, shown);
   const key = current ? notificationKey(current) : null;
@@ -1025,13 +1069,13 @@ function DingQueue({ live, sound }: { live: LiveSnapshot; sound: boolean }) {
     const timer = setTimeout(() => done(key), DING_MS);
     return () => clearTimeout(timer);
   }, [key]);
-  // The chime plays once per DING, not again when sound is toggled.
+  // The DING sound plays once per DING, not again when sound is toggled.
   const chimed = useRef<string | null>(null);
   useEffect(() => {
     if (key === null || chimed.current === key) return;
     chimed.current = key;
-    if (sound) playChime();
-  }, [key, sound]);
+    playSound('ding', volume);
+  }, [key, volume]);
   return (
     <div className="ding-layer" aria-live="polite">
       {current && (
