@@ -1790,8 +1790,17 @@ button.danger {
 .session-report-actions button {
   margin: 2px 0 2px 4px;
 }
+.session-manual-copy textarea {
+  width: 100%;
+  min-height: 8rem;
+  font-family: inherit;
+  font-size: 0.8rem;
+}
 @media (max-width: 600px) {
-  /* Phone width: the two buttons stack so the table fits. */
+  /* Phone width: no length column, and the two buttons stack, so the table fits. */
+  .session-past .session-length {
+    display: none;
+  }
   .session-report-actions button {
     display: block;
     width: 100%;

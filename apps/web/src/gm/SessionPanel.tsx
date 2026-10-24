@@ -60,27 +60,55 @@ export function SessionPanel({
       setConfirming(false);
     }
   };
-  const report = async (n: number, format: 'md' | 'json') => {
+  // A copy the browser refused: the report shown for the GM to copy by hand.
+  const [manual, setManual] = useState<{ n: number; text: string } | null>(null);
+  const copied = (n: number) =>
+    setOutcome({ kind: 'ok', text: `Session ${n} report copied: paste it into Claude` });
+  /**
+   * Copies session `n`'s markdown report. The async clipboard write starts
+   * inside the click (a ClipboardItem fed by the fetch), so the click still
+   * counts as the user's gesture when the text arrives; outside a secure
+   * context the legacy copy command is tried, and when that fails too the
+   * report is shown selected for the GM to copy by hand.
+   */
+  const copyReport = (n: number) => {
     setBusy(true);
-    const r = await fetchReport(gmKey, n, format);
-    if (!r.ok) {
-      setBusy(false);
-      setOutcome({ kind: 'err', text: r.error });
-      return;
+    setManual(null);
+    const text = fetchReport(gmKey, n, 'md');
+    const finish = async () => {
+      const r = await text;
+      if (!r.ok) return setOutcome({ kind: 'err', text: r.error });
+      if (legacyCopy(r.text)) return copied(n);
+      setManual({ n, text: r.text });
+      setOutcome({
+        kind: 'warn',
+        text: 'This browser blocked the copy: select the report below and copy it.',
+      });
+    };
+    const done = () => setBusy(false);
+    if (canWriteClipboard()) {
+      const blob = text.then((r) => {
+        if (!r.ok) throw new Error(r.error);
+        return new Blob([r.text], { type: 'text/plain' });
+      });
+      navigator.clipboard
+        .write([new ClipboardItem({ 'text/plain': blob })])
+        .then(
+          () => copied(n),
+          () => finish(),
+        )
+        .finally(done);
+    } else {
+      void finish().finally(done);
     }
-    if (format === 'json') {
-      saveFile(`session-${String(n).padStart(2, '0')}.json`, r.text, 'application/json');
-      setBusy(false);
-      setOutcome({ kind: 'ok', text: `Session ${n} report saved as JSON` });
-      return;
-    }
-    const copied = await copyText(r.text);
+  };
+  const saveJson = async (n: number) => {
+    setBusy(true);
+    const r = await fetchReport(gmKey, n, 'json');
     setBusy(false);
-    setOutcome(
-      copied
-        ? { kind: 'ok', text: `Session ${n} report copied: paste it into Claude` }
-        : { kind: 'err', text: 'Could not copy here. Use JSON to save the report instead.' },
-    );
+    if (!r.ok) return setOutcome({ kind: 'err', text: r.error });
+    saveFile(`session-${String(n).padStart(2, '0')}.json`, r.text, 'application/json');
+    setOutcome({ kind: 'ok', text: `Session ${n} report saved as JSON` });
   };
   const advanceBy = parseDays(days);
   const advance = async (e: FormEvent) => {
@@ -141,7 +169,7 @@ export function SessionPanel({
                 type="button"
                 className="secondary"
                 disabled={busy}
-                onClick={() => void report(running.number, 'md')}
+                onClick={() => copyReport(running.number)}
               >
                 Copy log for Claude
               </button>
@@ -193,6 +221,20 @@ export function SessionPanel({
           {outcome.text}
         </p>
       )}
+      {manual && (
+        <div className="session-manual-copy">
+          <textarea
+            readOnly
+            aria-label={`Session ${manual.n} report`}
+            value={manual.text}
+            ref={(el) => el?.select()}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <button type="button" className="secondary small" onClick={() => setManual(null)}>
+            Close
+          </button>
+        </div>
+      )}
       <h3 className="session-past-heading">Past sessions</h3>
       {summary.past.length === 0 ? (
         <p className="muted">None yet.</p>
@@ -202,7 +244,9 @@ export function SessionPanel({
             <tr>
               <th scope="col">#</th>
               <th scope="col">Started</th>
-              <th scope="col">Length</th>
+              <th scope="col" className="session-length">
+                Length
+              </th>
               <th scope="col">In game</th>
               <th scope="col">
                 <span className="sr-only">Report</span>
@@ -214,7 +258,9 @@ export function SessionPanel({
               <tr key={s.id}>
                 <td>{s.number}</td>
                 <td className="wrap">{shortTime(s.startedAt)}</td>
-                <td>{s.endedAt ? duration(s.startedAt, s.endedAt) : ''}</td>
+                <td className="session-length">
+                  {s.endedAt ? duration(s.startedAt, s.endedAt) : ''}
+                </td>
                 <td>{daySpan(s, state.day)}</td>
                 <td className="session-report-actions">
                   <button
@@ -222,7 +268,7 @@ export function SessionPanel({
                     className="secondary small"
                     disabled={busy}
                     aria-label={`Copy session ${s.number} report for Claude`}
-                    onClick={() => void report(s.number, 'md')}
+                    onClick={() => copyReport(s.number)}
                   >
                     Copy for Claude
                   </button>
@@ -231,7 +277,7 @@ export function SessionPanel({
                     className="secondary small"
                     disabled={busy}
                     aria-label={`Save session ${s.number} report as JSON`}
-                    onClick={() => void report(s.number, 'json')}
+                    onClick={() => void saveJson(s.number)}
                   >
                     JSON
                   </button>
@@ -268,20 +314,20 @@ async function fetchReport(
   }
 }
 
+/** Whether the async clipboard can take a ClipboardItem (secure contexts only). */
+function canWriteClipboard(): boolean {
+  return (
+    window.isSecureContext &&
+    typeof navigator.clipboard?.write === 'function' &&
+    typeof ClipboardItem === 'function'
+  );
+}
+
 /**
- * Copies text to the clipboard. The async API is missing outside a secure
- * context (a GM browser on a LAN-IP origin), so fall back to a hidden
- * textarea and the legacy copy command there.
+ * The legacy copy command through a hidden textarea: the only copy a GM
+ * browser on a LAN-IP http origin has. False when the browser refuses it.
  */
-async function copyText(text: string): Promise<boolean> {
-  if (navigator.clipboard && window.isSecureContext) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      // Fall through to the legacy path (a denied permission, say).
-    }
-  }
+function legacyCopy(text: string): boolean {
   const area = document.createElement('textarea');
   area.value = text;
   area.setAttribute('readonly', '');
@@ -291,7 +337,7 @@ async function copyText(text: string): Promise<boolean> {
   area.select();
   let ok: boolean;
   try {
-    // Deprecated but the only option without a secure context.
+    // Deprecated, but the only option without a secure context.
     ok = document.execCommand('copy');
   } catch {
     ok = false;

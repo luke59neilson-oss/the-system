@@ -162,10 +162,24 @@ test('without a secure context the copy falls back to the legacy copy command', 
   });
   const gm = await context.newPage();
   const gmWatch = watch(gm);
-  // A GM on a LAN-IP origin over http has no secure context.
-  await gm.addInitScript(() =>
-    Object.defineProperty(globalThis, 'isSecureContext', { value: false }),
-  );
+  // A GM on a LAN-IP origin over http: no secure context and no async
+  // clipboard. Count the legacy copy commands.
+  await gm.addInitScript(() => {
+    const g = globalThis as unknown as {
+      isSecureContext: boolean;
+      navigator: object;
+      document: { execCommand: (c: string) => boolean };
+      legacyCopies: number;
+    };
+    Object.defineProperty(g, 'isSecureContext', { value: false });
+    Object.defineProperty(g.navigator, 'clipboard', { value: undefined });
+    g.legacyCopies = 0;
+    const real = g.document.execCommand.bind(g.document);
+    g.document.execCommand = (c: string) => {
+      if (c === 'copy') g.legacyCopies++;
+      return real(c);
+    };
+  });
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   const panel = gm.locator('section[aria-labelledby="session-heading"]');
   const row = panel.getByRole('table').getByRole('row').nth(1);
@@ -173,7 +187,49 @@ test('without a secure context the copy falls back to the legacy copy command', 
   await expect(panel.getByRole('status')).toHaveText(
     'Session 1 report copied: paste it into Claude',
   );
-  expect(await clipboard(gm)).toMatch(/^# Session 1 report: Report Test$/m);
+  expect(
+    await gm.evaluate(() => (globalThis as unknown as { legacyCopies: number }).legacyCopies),
+  ).toBe(1);
+  // Read the clipboard from a normal page in the same browser.
+  const reader = await context.newPage();
+  await reader.goto(server.url);
+  expect(await clipboard(reader)).toMatch(/^# Session 1 report: Report Test$/m);
   expect(gmWatch.errors).toEqual([]);
   await context.close();
+});
+
+test('when every copy is refused the report is shown selected to copy by hand', async ({
+  browser,
+}) => {
+  const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  const gmWatch = watch(gm);
+  await gm.addInitScript(() => {
+    const g = globalThis as unknown as {
+      isSecureContext: boolean;
+      navigator: object;
+      document: { execCommand: (c: string) => boolean };
+    };
+    Object.defineProperty(g, 'isSecureContext', { value: false });
+    Object.defineProperty(g.navigator, 'clipboard', { value: undefined });
+    g.document.execCommand = () => false;
+  });
+  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
+  const panel = gm.locator('section[aria-labelledby="session-heading"]');
+  const row = panel.getByRole('table').getByRole('row').nth(1);
+  await row.getByRole('button', { name: 'Copy session 1 report for Claude' }).click();
+  await expect(panel.getByRole('alert')).toHaveText(
+    'This browser blocked the copy: select the report below and copy it.',
+  );
+  const area = panel.getByRole('textbox', { name: 'Session 1 report', exact: true });
+  await expect(area).toHaveValue(/^# Session 1 report: Report Test$/m);
+  const selected = await area.evaluate((el) => {
+    const t = el as unknown as { selectionStart: number; selectionEnd: number; value: string };
+    return t.selectionEnd - t.selectionStart === t.value.length;
+  });
+  expect(selected).toBe(true);
+  await panel.screenshot({ path: path.join(shots, 'gm-session-manual-copy-1366x768.png') });
+  await panel.getByRole('button', { name: 'Close' }).click();
+  await expect(area).toHaveCount(0);
+  expect(gmWatch.errors).toEqual([]);
+  await gm.close();
 });
