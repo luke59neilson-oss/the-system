@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M6, MS, MQ and MR done; QF.1–QF.17 done; Preview ready: Actions → Release → Run workflow (M6)
-**Next item:** M7.1 Quest manager (resume `wip/M7.1`)
+**Status:** in progress: M0–M6, MS, MQ and MR done; M7.1–M7.2 done; QF.1–QF.17 done (QF.18 open); Preview ready: Actions → Release → Run workflow (M6)
+**Next item:** M7.3 Encounter panel (QF.18 is not High; it follows in roadmap order)
 **Blockers:** none
 
 ## Run log
@@ -885,4 +885,14 @@ next item, blockers. -->
 - M7.1 started: **wip/M7.1** (base 8cb1188, head 06e63fd): `apps/web/src/gm/questManagerModel.ts` (create command with stability rules "tag: delta", timer, visibility, hidden-quest `noticeTo`; nudge command) + unit tests. Next: GM QuestManager window (list, create/edit, status, nudges, apply action, noticeTo picker), the practice-tag stability offer (D67), e2e `e2e/M7.1.spec.ts` + screenshots, sonnet review.
 - Open `wip/*` branches: wip/M7.1 (resume). wip/M6.A merged; leave.
 - Next item: M7.1 Quest manager.
+- Blockers: none.
+
+### Run 805662911 · 2026-10-24 02:06–02:53 UTC (end minute 46: both reviewed items closed and the full e2e ran in the 44–52 close-out window; M7.3 not started because M7.2 finished at minute 45, past the 44 handoff)
+- Preflight: `add_repo` not offered; repo already cloned (fast-forwarded). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Sonnet reviewers work (worktree; each Agent call blocks ~2.5 min). CI on main green (8cb1188) at start. No new answers.
+- M7.1 **checked** (D180): GM Quests window (create/edit with only-changed fields and a stale warning, timer, visibility, stability rules and gauge toggle, hidden-quest notice picker, complete/fail/reopen, tagged actions, nudges) and the D67 practice offer (GM quick-add "Quest tags"; queued Apply offers re-read live). Sonnet round 1: 0 H / 2 M / 8 L, all Mediums fixed; round 2: 0 H / 0 M / 6 L. Pushed to main (bc71ed6).
+- M7.2 **checked** (D181): entities gain GM-only `stats` and `notes` (campaign state v30, golden states bumped additively); GM "Bestiary and NPCs" window (name, label, grade/level, stats, Identify tiers per rarity, notes, reveal) with the out-of-range label warning. Sonnet round 1: 0 H / 0 M / 6 L; two Lows fixed.
+- Full e2e on M7.1: 72/74 at first: M5.5 broke on an ambiguous `/^Action/` label (fixed: the field reads "Quest tags"); M2.A restart test failed on a GM "503" console error, passed alone and with 2 workers: a repeat flake, now QF.18.
+- Tests: unit 1,077; engine line coverage 98.7%; full e2e on M7.2 75/75 green.
+- Open `wip/*` branches: wip/M7.1 and wip/M7.2 merged; leave.
+- Next item: M7.3 Encounter panel.
 - Blockers: none.

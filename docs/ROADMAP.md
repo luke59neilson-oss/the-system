@@ -596,7 +596,7 @@ work: Q44–Q48 and Q52.
   visibility, and for hidden quests who gets the notice (`noticeTo`, D122).
   Offer to apply a quest's stability rule when a practice entry
   carries one of its action tags (D67).
-- [ ] **M7.2 Bestiary and NPCs.** Grade, level, stats, Identify tiers, notes.
+- [x] **M7.2 Bestiary and NPCs.** Grade, level, stats, Identify tiers, notes.
   Sets an entity's grade and level for the Identify range (D123); warn when a
   label names what an out-of-range target is.
 - [ ] **M7.3 Encounter panel.** Ratio-odds roller (stats + mode), pool
