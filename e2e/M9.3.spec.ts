@@ -116,3 +116,65 @@ test('entries that cannot apply are shown; a changed campaign stops the apply', 
   await other.close();
   await gm.close();
 });
+
+test('server refusals and a lost server show as messages, and a blocked tick stops Apply', async ({
+  browser,
+}) => {
+  const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
+  await gm.getByLabel('Campaign name').fill('Import Errors');
+  await gm.getByRole('button', { name: 'Create campaign' }).click();
+  const panel = gm.locator('section[aria-labelledby="import-heading"]');
+  const input = panel.getByLabel('Content file (.json)');
+  const library = path.join(examples, 'library.json');
+  const route = '**/api/gm/content/preview';
+
+  // Error replies have no preview shape: they show as a problem with the file.
+  await gm.route(route, (r) =>
+    r.fulfill({
+      status: 404,
+      contentType: 'application/json',
+      body: '{"error":"No campaign open"}',
+    }),
+  );
+  await input.setInputFiles(library);
+  await expect(panel.getByRole('alert', { name: 'Problems in the file' })).toContainText(
+    'No campaign open',
+  );
+  await gm.unroute(route);
+  await gm.route(route, (r) => r.fulfill({ status: 413, body: 'too large' }));
+  await input.setInputFiles(library);
+  await expect(panel.getByRole('alert', { name: 'Problems in the file' })).toContainText(
+    'The file is too large',
+  );
+  await gm.unroute(route);
+  await gm.route(route, (r) => r.abort());
+  await input.setInputFiles(library);
+  await expect(panel.getByRole('status')).toHaveText(
+    'Could not check the file: is the server running?',
+  );
+  await expect(panel.getByRole('checkbox')).toHaveCount(0);
+  await gm.unroute(route);
+
+  // A real preview; then the re-check of the ticked entries (as when an entry
+  // needs one the GM unticked) reports an error: Apply is blocked until the
+  // GM unticks it.
+  await input.setInputFiles(library);
+  await expect(panel.getByRole('button', { name: 'Apply 3' })).toBeEnabled();
+  await gm.route(route, async (r) => {
+    const res = await r.fetch();
+    const body = (await res.json()) as { entries: { path: string; error: string | null }[] };
+    for (const e of body.entries) if (e.path === 'titles[0]') e.error = 'Needs [Canyon Salt]';
+    await r.fulfill({ response: res, json: body });
+  });
+  await panel.getByRole('checkbox').nth(1).uncheck();
+  await expect(panel.getByText('Needs [Canyon Salt]')).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Apply 2' })).toBeDisabled();
+  await expect(panel.getByText('Untick the entries marked above')).toBeVisible();
+  await panel.getByRole('checkbox').nth(2).uncheck();
+  await expect(panel.getByRole('button', { name: 'Apply 1' })).toBeEnabled();
+  await gm.unroute(route);
+  await panel.getByRole('button', { name: 'Apply 1' }).click();
+  await expect(panel.getByRole('status')).toHaveText('Applied 1 entry');
+  await gm.close();
+});

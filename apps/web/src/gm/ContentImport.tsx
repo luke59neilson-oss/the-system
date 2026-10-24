@@ -97,6 +97,20 @@ export function ContentImport({ client, gmKey }: { client: LiveClient; gmKey: st
             .map((e) => [e.path, e.error ?? '']),
         ),
       );
+      // Notes ("this adds another") follow the campaign as it is now.
+      const notes = new Map(p.entries.map((e) => [e.path, e.note]));
+      setPreview((cur) =>
+        cur?.ok
+          ? {
+              ...cur,
+              entries: cur.entries.map((e) =>
+                notes.has(e.path) && paths.has(e.path)
+                  ? { ...e, note: notes.get(e.path) ?? null }
+                  : e,
+              ),
+            }
+          : cur,
+      );
     } catch {
       if (run === checkRun.current) offline();
     } finally {

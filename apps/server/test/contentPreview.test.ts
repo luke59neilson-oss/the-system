@@ -90,7 +90,7 @@ describe('POST /api/gm/content/preview (M9.3)', () => {
     expect((await post({ format: 'x', version: 1 })).json()).toMatchObject({ ok: false });
   });
 
-  it('refuses a wrong key and a player key, and an invalid file appends nothing', async () => {
+  it('refuses a wrong key, and an invalid file appends nothing', async () => {
     const { post, store } = await setup();
     expect(
       (await post({ format: 'the-system/content', version: 1 }, 'w'.repeat(32))).statusCode,
