@@ -29,7 +29,12 @@ test('tutorial pack → session → report for Claude → drafted menu → playe
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const panel = gm.locator('section[aria-labelledby="import-heading"]');
   await panel.getByLabel('Content file (.json)').setInputFiles(pack);
-  await expect(panel.getByRole('button', { name: /^Apply \d+$/ })).toBeEnabled();
+  const apply = panel.getByRole('button', { name: /^Apply \d+$/ });
+  await expect(apply).toBeEnabled();
+  await apply.click();
+  await expect(panel.getByRole('status')).toContainText('Applied');
+  // Note for the next run: /api/gm/session-report replies 400 without `?n=`
+  // (the session number); fetch it with n=1 after session.end.
   // TODO (next run): create Jake, start a session, award XP to class level 5,
   // end the session, fetch /api/gm/session-report?format=json and check the
   // level-up is in it, import a skill-offer file for level 5, and check the
