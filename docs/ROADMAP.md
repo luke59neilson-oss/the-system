@@ -684,7 +684,7 @@ work: Q44–Q48 and Q52.
 
 - [x] **M11.1 Soak test.** 1 GM + 4 player clients, 2,000 random valid
   commands (fixed seed): no desync, no crash, heap growth < 20% after warm-up.
-- [ ] **M11.2 Recovery.** Server restart mid-session; client reconnect;
+- [x] **M11.2 Recovery.** Server restart mid-session; client reconnect;
   simulated power loss on the event log.
 - [ ] **M11.3 Performance.** Player sheet interactive < 2 s on localhost
   (Playwright timing); 50,000-event log loads < 3 s.

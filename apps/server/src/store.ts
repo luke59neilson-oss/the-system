@@ -368,7 +368,7 @@ export class CampaignStore {
       throw new StoreError(
         `Campaign "${id}" cannot load: its event log holds ${lost.logEvents} events but its snapshot ` +
           `recorded ${lost.snapshotEvents}, so the disk lost writes. Nothing was changed. Restore ` +
-          `the campaign from ${path.join(dir, 'backups')}, or move snapshot.json aside to open the ` +
+          `the campaign from ${path.join(dir, 'backups')}, or rename snapshot.json (keep it: it shows how many events were lost) to open the ` +
           `log as it is.`,
       );
     }
