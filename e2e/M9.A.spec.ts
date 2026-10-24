@@ -33,11 +33,17 @@ test('tutorial pack → session → report for Claude → drafted menu → playe
   await expect(apply).toBeEnabled();
   await apply.click();
   await expect(panel.getByRole('status')).toContainText('Applied');
-  // Note for the next run: /api/gm/session-report replies 400 without `?n=`
-  // (the session number); fetch it with n=1 after session.end.
-  // TODO (next run): create Jake, start a session, award XP to class level 5,
-  // end the session, fetch /api/gm/session-report?format=json and check the
-  // level-up is in it, import a skill-offer file for level 5, and check the
-  // player's menu at 390×844 (screenshots in docs/screens/M9.A/).
+  // A session: Jake reaches the top of G (race level 4), where an evolution
+  // is due. Note for the next run: create Jake first (gmCommand as in
+  // e2e/M9.5.spec.ts), and /api/gm/session-report needs `?n=1`.
+  const session = gm.locator('section[aria-labelledby="session-heading"]');
+  await session.getByRole('button', { name: 'Start session 1' }).click();
+  await expect(session.getByRole('status')).toHaveText('Session 1 started');
+  // TODO (next run): award 400 XP (class 4 = G top), end the session, fetch
+  // /api/gm/session-report?n=1&format=json and check the level-ups are in it,
+  // import an `evolutions` file Claude would draft for Jake (two or three
+  // F-grade options), and check the player's evolution choice at 390×844
+  // (screenshots in docs/screens/M9.A/). Level 5 skill menus need the F
+  // evolution first, so the drafted file is an evolution, not a menu.
   await gm.close();
 });
