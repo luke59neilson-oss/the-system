@@ -150,3 +150,54 @@
     animation: none;
   }
 }
+
+/*
+ * Evolution transition (M8.2). The new metal fades in over the old one, then
+ * a bright pulse runs round every frame and the status ring sweeps once.
+ * Reduced motion: the new theme applies at once, nothing moves.
+ */
+/* Only while evolving: the theme class and .evolving arrive together, so the
+   new colours ease in; a theme change at any other time is instant. */
+.player-grid.evolving .window,
+.player-grid.evolving :is(h2, h3) {
+  transition:
+    border-color 0.9s ease,
+    box-shadow 0.9s ease,
+    color 0.9s ease;
+}
+.player-grid.evolving .window:not(.skill-detail) {
+  animation: evolve-frame 2.4s ease-out;
+}
+.player-grid.evolving .status-window.window::before {
+  animation: evolve-ring 2.4s ease-in-out;
+}
+@keyframes evolve-frame {
+  0% {
+    box-shadow: 0 0 0 color-mix(in srgb, var(--metal-hi) 0%, transparent);
+  }
+  35% {
+    box-shadow:
+      0 0 28px color-mix(in srgb, var(--metal-hi) 85%, transparent),
+      inset 0 0 22px color-mix(in srgb, var(--metal) 35%, transparent);
+  }
+}
+@keyframes evolve-ring {
+  from {
+    background-position: 0% 50%;
+    filter: brightness(1.8);
+  }
+  to {
+    background-position: 300% 50%;
+    filter: brightness(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .player-grid.evolving .window,
+  .player-grid.evolving :is(h2, h3) {
+    transition: none;
+  }
+  .player-grid.evolving .window:not(.skill-detail),
+  .player-grid.evolving .status-window.window::before {
+    animation: none;
+  }
+}

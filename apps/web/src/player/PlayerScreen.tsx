@@ -36,6 +36,7 @@ import { useChangeCount } from './changeCount';
 import { SkillDetail } from './SkillDetail';
 import { SkillSelection } from './SkillSelection';
 import { EvolutionChoice } from './EvolutionChoice';
+import { useEvolutionFlash } from './evolutionFlash';
 import { describeTitleBonuses } from './titles';
 import { ProfessionsPanel } from './ProfessionsPanel';
 import { closedReason, pendingSelections, pendingText, settleNotice } from './selection';
@@ -78,6 +79,8 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
     writeSound(browserStorage(), next);
     setSound(next);
   };
+  // M8.2: an evolution re-themes the screen with a short animated sweep.
+  const evolution = useEvolutionFlash(view?.rules.grades ?? [], view?.me.grade);
   return (
     <main className={pane ? 'player pane-mode' : 'player'}>
       <header className="gm-header">
@@ -124,7 +127,7 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
       {view && live.status !== 'refused' && (
         // M8.1: the character's grade metal frames every player window.
         <div
-          className={`player-grid${themeClass(view.rules.grades.find((g) => g.id === view.me.grade)?.theme)}`}
+          className={`player-grid${themeClass(view.rules.grades.find((g) => g.id === view.me.grade)?.theme)}${evolution.playing ? ' evolving' : ''}`}
           data-testid="player-grid"
         >
           <div className="player-col">
