@@ -46,4 +46,39 @@ describe('previewContent (M9.3)', () => {
     ]);
     expect(previewContent(campaign(), '{', ctx).ok).toBe(false);
   });
+
+  it('previews only the ticked entries, still in file order', () => {
+    const skill = { name: 'Twice', rarity: 'rare' };
+    const file = { format: 'the-system/content', version: 1, skills: [skill, skill] };
+    const all = previewContent(campaign(), file, ctx);
+    expect(all.ok && all.entries.map((e) => e.error === null)).toEqual([true, false]);
+    // With the first left out, the second no longer clashes with it.
+    const second = previewContent(campaign(), file, ctx, new Set(['skills[1]']));
+    expect(second.ok && second.entries.map((e) => e.error)).toEqual([null, null]);
+    // With both, the clash is reported on the later one.
+    const both = previewContent(campaign(), file, ctx, new Set(['skills[0]', 'skills[1]']));
+    expect(both.ok && both.entries[1]?.error).toBeTruthy();
+  });
+
+  it('says so when no campaign is open', () => {
+    const p = previewContent(
+      { events: [], state: null } as unknown as Campaign,
+      { format: 'the-system/content', version: 1 },
+      ctx,
+    );
+    expect(p).toEqual({ ok: false, errors: [{ path: '(file)', message: 'No campaign is open' }] });
+  });
+
+  it('notes, without blocking, an item whose name the library already has', () => {
+    const item = { name: 'Salt', rarity: 'common' };
+    const p = previewContent(
+      campaign(),
+      { format: 'the-system/content', version: 1, items: [item, item] },
+      ctx,
+    );
+    if (!p.ok) throw new Error('expected a preview');
+    expect(p.entries.map((e) => e.error)).toEqual([null, null]);
+    expect(p.entries[0]?.note).toBeNull();
+    expect(p.entries[1]?.note).toContain('[Salt]');
+  });
 });

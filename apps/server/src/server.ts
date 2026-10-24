@@ -383,12 +383,29 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     if (!active?.store.campaign.state) return reply.code(404).send({ error: 'No campaign open' });
     let n = 0;
     const now = options.live?.now ?? (() => new Date().toISOString());
-    return previewContent(active.store.campaign, request.body, {
-      actor: { role: 'gm' },
-      sessionId: active.store.campaign.state.currentSession ?? null,
-      now,
-      newId: () => `preview-${++n}`,
-    });
+    // The body is the file (its text or its JSON), or `{ file, only }` to
+    // re-check just the entries the GM ticked (a content file never has a
+    // top-level `file` key: unknown keys are errors).
+    const body = request.body as unknown;
+    const wrapped =
+      typeof body === 'object' && body !== null && !Array.isArray(body) && 'file' in body
+        ? (body as { file: unknown; only?: unknown })
+        : null;
+    const only =
+      wrapped && Array.isArray(wrapped.only)
+        ? new Set(wrapped.only.filter((p): p is string => typeof p === 'string'))
+        : undefined;
+    return previewContent(
+      active.store.campaign,
+      wrapped ? wrapped.file : body,
+      {
+        actor: { role: 'gm' },
+        sessionId: active.store.campaign.state.currentSession ?? null,
+        now,
+        newId: () => `preview-${++n}`,
+      },
+      only,
+    );
   });
 
   // Browser navigations to client-side routes get the app shell; anything else

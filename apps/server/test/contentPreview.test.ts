@@ -63,8 +63,12 @@ async function setup() {
     app.inject({
       method: 'POST',
       url: '/api/gm/content/preview',
-      headers: key === null ? {} : { 'x-gm-key': key },
-      payload: body as object,
+      // As the GM screen sends it: JSON, with a file's text as a JSON string.
+      headers: {
+        'content-type': 'application/json',
+        ...(key === null ? {} : { 'x-gm-key': key }),
+      },
+      payload: JSON.stringify(body),
     });
   return { apply, get, post, store, player: ctx({ role: 'player', characterId: 'jake' }) };
 }
@@ -84,5 +88,73 @@ describe('POST /api/gm/content/preview (M9.3)', () => {
     expect(res.json()).toMatchObject({ ok: true, entries: [{ path: 'skills[0]', error: null }] });
     expect(store.campaign.events.length).toBe(before);
     expect((await post({ format: 'x', version: 1 })).json()).toMatchObject({ ok: false });
+  });
+
+  it('refuses a wrong key and a player key, and an invalid file appends nothing', async () => {
+    const { post, store } = await setup();
+    expect(
+      (await post({ format: 'the-system/content', version: 1 }, 'w'.repeat(32))).statusCode,
+    ).toBe(403);
+    const before = store.campaign.events.length;
+    const bad = await post('{"format":"the-system/content","version":1,"items":[{"name":""}]}');
+    expect(bad.statusCode).toBe(200);
+    expect(bad.json()).toMatchObject({ ok: false });
+    expect(store.campaign.events.length).toBe(before);
+  });
+
+  it('re-checks only the ticked entries with { file, only }', async () => {
+    const { post } = await setup();
+    const skill = { name: 'Twice', rarity: 'rare' };
+    const file = JSON.stringify({
+      format: 'the-system/content',
+      version: 1,
+      skills: [skill, skill],
+    });
+    const all = (await post(file)).json() as { entries: { error: string | null }[] };
+    expect(all.entries.map((e) => e.error === null)).toEqual([true, false]);
+    const one = (await post({ file, only: ['skills[1]'] })).json() as {
+      entries: { error: string | null }[];
+    };
+    expect(one.entries.map((e) => e.error)).toEqual([null, null]);
+    // A wrapped file is still checked for shape.
+    expect((await post({ file: { format: 'x' }, only: [] })).json()).toMatchObject({ ok: false });
+  });
+
+  it('reports characters that are not in the campaign', async () => {
+    const { post } = await setup();
+    const res = await post({
+      format: 'the-system/content',
+      version: 1,
+      skillOffers: [{ character: 'Nobody', level: 5, options: [{ name: 'A', rarity: 'common' }] }],
+    });
+    expect(res.json()).toMatchObject({
+      ok: true,
+      entries: [],
+      errors: [{ path: 'skillOffers[0].character' }],
+    });
+  });
+});
+
+describe('POST /api/gm/content/preview with no campaign', () => {
+  it('replies 404', async () => {
+    const dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-sr-'));
+    const webRoot = mkdtempSync(path.join(tmpdir(), 'the-system-web-'));
+    dirs.push(dataDir, webRoot);
+    writeFileSync(path.join(webRoot, 'index.html'), '<!doctype html><title>shell</title>');
+    const now = () => '2026-10-24T12:00:00.000Z';
+    let n = 0;
+    const store = CampaignStore.open('main', { dataDir, now });
+    const app = await createServer({
+      webRoot,
+      live: { store, gmKey: KEY, now, newId: () => `n${++n}` },
+    });
+    apps.push(app);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/gm/content/preview',
+      headers: { 'x-gm-key': KEY },
+      payload: { format: 'the-system/content', version: 1 },
+    });
+    expect(res.statusCode).toBe(404);
   });
 });
