@@ -81,6 +81,18 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
     writeSound(browserStorage(), next);
     setSound(next);
   };
+  // Sound remembered on from an earlier visit: the first click or key on the
+  // page lets the browser start audio (M8.A review).
+  useEffect(() => {
+    if (!sound || pane) return;
+    const unlock = () => unlockSound();
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, [sound, pane]);
   // M8.4: volume per browser; Sound: off is the mute.
   const [volume, setVolume] = useState(() => readVolume(browserStorage()));
   const level = sound ? volume : 0;

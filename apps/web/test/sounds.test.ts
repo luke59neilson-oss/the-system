@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { SOUNDS, scaledPeak } from '../src/player/sounds';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SOUNDS, playSound, scaledPeak } from '../src/player/sounds';
 import { DEFAULT_VOLUME, readVolume, writeVolume } from '../src/player/history';
 
 // M8.4: three original sounds made in code, with volume and mute.
@@ -68,5 +68,34 @@ describe('volume per browser', () => {
     const s = store(null);
     writeVolume(s, 30);
     expect(readVolume(s)).toBe(30);
+  });
+});
+
+describe('a suspended audio context', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it('is asked to resume when a sound plays (page reloaded with sound on, no gesture yet)', () => {
+    const resumed: number[] = [];
+    const node = () => ({
+      connect: (n: unknown) => n,
+      gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} },
+      frequency: { value: 0 },
+      start() {},
+      stop() {},
+    });
+    class Suspended {
+      state = 'suspended';
+      currentTime = 0;
+      destination = {};
+      resume() {
+        resumed.push(1);
+        return Promise.resolve();
+      }
+      createOscillator = node;
+      createGain = node;
+    }
+    vi.stubGlobal('window', { AudioContext: Suspended });
+    playSound('ding', 70);
+    playSound('selection', 70);
+    expect(resumed.length).toBe(2);
   });
 });
