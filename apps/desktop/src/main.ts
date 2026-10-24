@@ -87,6 +87,8 @@ let gmWindow: BrowserWindow | null = null;
 let splash: BrowserWindow | null = null;
 /** Set once quitting starts, so closing the window no longer asks. */
 let quitting = false;
+/** Windows log-off or shutdown: close without asking (the quit itself still backs up). */
+let sessionEnding = false;
 /** True while the server is starting: a quit then waits for start() to finish and close it. */
 let starting = false;
 /** A stuck close (e.g. a client that never finishes the WebSocket close) must not hang Quit. */
@@ -114,12 +116,14 @@ function openGmWindow(server: RunningApp, notice: string | null = null): void {
   // The dialog is async: the server shares this process and must keep serving
   // players while the question is open.
   // Windows log-off or shutdown: never hold it up with a question.
+  // It only skips the question: before-quit still closes the server, so the
+  // campaign is closed and backed up (M10.1 review).
   win.on('session-end', () => {
-    quitting = true;
+    sessionEnding = true;
   });
   let asking = false;
   win.on('close', (event) => {
-    if (quitting) return;
+    if (quitting || sessionEnding) return;
     event.preventDefault();
     if (asking) return;
     asking = true;

@@ -34,6 +34,12 @@ export interface StartOptions {
   platform?: string | undefined;
 }
 
+/**
+ * How long close() waits for the listener before backing up and closing the
+ * campaign anyway; under the desktop's 5 s quit guard.
+ */
+export const CLOSE_GRACE_MS = 3_000;
+
 export interface RunningApp {
   port: number;
   gmKey: string;
@@ -108,7 +114,12 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
       generatedKey: options.gmKey === undefined,
       join: () => joinInfo(options.host, port, networkInterfaces()),
       close: () => {
-        closing ??= app.close().finally(() => {
+        // A listener that never finishes closing must not cost the backup or
+        // the campaign close: give it CLOSE_GRACE_MS, then carry on (M10.1 review).
+        closing ??= Promise.race([
+          app.close(),
+          new Promise<void>((resolve) => setTimeout(resolve, CLOSE_GRACE_MS).unref()),
+        ]).finally(() => {
           // After the listener is closed nothing else can append: the copy is final.
           if (options.backupOnClose !== undefined && store.campaign.events.length > 0) {
             try {
