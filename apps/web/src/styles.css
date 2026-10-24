@@ -1783,6 +1783,24 @@ button.danger {
 .session-past td.wrap {
   white-space: normal;
 }
+.session-past td.session-report-actions {
+  text-align: right;
+  white-space: normal;
+}
+.session-report-actions button {
+  margin: 2px 0 2px 4px;
+}
+@media (max-width: 600px) {
+  /* Phone width: the two buttons stack so the table fits. */
+  .session-report-actions button {
+    display: block;
+    width: 100%;
+    margin: 2px 0;
+  }
+}
+.session-now .row {
+  flex-wrap: wrap;
+}
 .session-past th,
 .session-past td {
   text-align: left;
