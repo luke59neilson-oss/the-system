@@ -121,7 +121,7 @@ test('the GM rolls and shares contests, deals damage and runs a clock', async ({
   // Damage: 30 to Jake's HP at full damage.
   const pools = win.locator('form[aria-labelledby="pool-tool"]');
   await pools.getByLabel('Character').selectOption({ label: 'Jake' });
-  await pools.getByLabel('Points').fill('30');
+  await pools.getByLabel('Points', { exact: true }).fill('30');
   await expect(pools.getByTestId('pool-preview')).toHaveText(
     'Health Points (HP) 100 → 70 / 100 · full damage',
   );
