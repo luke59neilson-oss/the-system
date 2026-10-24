@@ -14,7 +14,7 @@
       "description": "Shown to the GM in the import queue.",
       "type": "string",
       "minLength": 1,
-      "maxLength": 100
+      "maxLength": 80
     },
     "notes": {
       "description": "For the GM: what this file is for.",
@@ -30,12 +30,12 @@
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 80
           },
           "rarity": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100,
+            "maxLength": 80,
             "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
           },
           "tags": {
@@ -44,17 +44,17 @@
             "items": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 100
+              "maxLength": 40
             }
           },
           "description": {
             "description": "What the owner reads on their sheet.",
             "type": "string",
-            "maxLength": 4000
+            "maxLength": 2000
           },
           "flavor": {
             "type": "string",
-            "maxLength": 4000
+            "maxLength": 1000
           },
           "effects": {
             "description": "Mechanical effects; shown to the owner only.",
@@ -79,17 +79,17 @@
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 80
           },
           "rarity": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100,
+            "maxLength": 80,
             "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
           },
           "description": {
             "type": "string",
-            "maxLength": 4000
+            "maxLength": 2000
           },
           "slot": {
             "description": "Equipment slot id; null or omitted = not wearable.",
@@ -97,7 +97,7 @@
               {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 100,
+                "maxLength": 80,
                 "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
               },
               {
@@ -115,7 +115,7 @@
                 "stat": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 100,
+                  "maxLength": 80,
                   "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                 },
                 "flat": {
@@ -149,12 +149,12 @@
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 80
           },
           "text": {
             "description": "System-style text shown to the player.",
             "type": "string",
-            "maxLength": 4000
+            "maxLength": 2000
           },
           "bonuses": {
             "maxItems": 12,
@@ -165,7 +165,7 @@
                 "stat": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 100,
+                  "maxLength": 80,
                   "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                 },
                 "flat": {
@@ -174,9 +174,10 @@
                   "maximum": 10000
                 },
                 "percent": {
+                  "description": "Whole percent: 5 means +5% (the import stores 0.05).",
                   "type": "number",
-                  "minimum": -100,
-                  "maximum": 1000
+                  "minimum": -99,
+                  "maximum": 10000
                 }
               },
               "required": [
@@ -202,14 +203,14 @@
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100,
+            "maxLength": 80,
             "description": "The GM's own name; never sent to players."
           },
           "label": {
             "description": "What players see in their Identify list; defaults to name.",
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 80
           },
           "tiers": {
             "minItems": 1,
@@ -221,13 +222,13 @@
                 "minRarity": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 100,
+                  "maxLength": 80,
                   "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                 },
                 "text": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 4000
+                  "maxLength": 1000
                 }
               },
               "required": [
@@ -243,7 +244,7 @@
               {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 100,
+                "maxLength": 80,
                 "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
               },
               {
@@ -271,15 +272,15 @@
                 "propertyNames": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 100,
+                  "maxLength": 80,
                   "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                 },
                 "additionalProperties": {
                   "type": "integer",
-                  "minimum": -10000,
-                  "maximum": 10000
+                  "minimum": 0,
+                  "maximum": 1000000
                 },
-                "description": "Stat id → points."
+                "description": "Stat id → whole points, 0 or more."
               },
               {
                 "type": "null"
@@ -309,7 +310,7 @@
           "character": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100,
+            "maxLength": 80,
             "description": "A character, by name (any case) or id."
           },
           "level": {
@@ -328,12 +329,12 @@
                 "name": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 100
+                  "maxLength": 80
                 },
                 "rarity": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 100,
+                  "maxLength": 80,
                   "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                 },
                 "kind": {
@@ -346,7 +347,7 @@
                 },
                 "description": {
                   "type": "string",
-                  "maxLength": 4000
+                  "maxLength": 2000
                 }
               },
               "required": [
@@ -376,7 +377,7 @@
           "character": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100,
+            "maxLength": 80,
             "description": "A character, by name (any case) or id."
           },
           "options": {
@@ -390,16 +391,16 @@
                   "description": "Optional; \"o1\", \"o2\"... by position when omitted.",
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 100
+                  "maxLength": 80
                 },
                 "className": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 100
+                  "maxLength": 80
                 },
                 "description": {
                   "type": "string",
-                  "maxLength": 4000
+                  "maxLength": 2000
                 },
                 "transforms": {
                   "maxItems": 10,
@@ -410,25 +411,25 @@
                       "skill": {
                         "type": "string",
                         "minLength": 1,
-                        "maxLength": 100,
+                        "maxLength": 80,
                         "description": "The skill it transforms (current name)."
                       },
                       "name": {
                         "type": "string",
                         "minLength": 1,
-                        "maxLength": 100
+                        "maxLength": 80
                       },
                       "rarity": {
                         "type": "string",
                         "minLength": 1,
-                        "maxLength": 100,
+                        "maxLength": 80,
                         "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                       },
                       "merge": {
                         "description": "A second skill consumed into it.",
                         "type": "string",
                         "minLength": 1,
-                        "maxLength": 100
+                        "maxLength": 80
                       }
                     },
                     "required": [
@@ -447,15 +448,15 @@
                       "propertyNames": {
                         "type": "string",
                         "minLength": 1,
-                        "maxLength": 100,
+                        "maxLength": 80,
                         "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                       },
                       "additionalProperties": {
                         "type": "integer",
-                        "minimum": -10000,
-                        "maximum": 10000
+                        "minimum": 0,
+                        "maximum": 1000000
                       },
-                      "description": "Stat id → points."
+                      "description": "Stat id → whole points, 0 or more."
                     },
                     {
                       "type": "null"
@@ -468,13 +469,13 @@
                   "propertyNames": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 100,
+                    "maxLength": 80,
                     "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                   },
                   "additionalProperties": {
                     "type": "integer",
-                    "minimum": -10000,
-                    "maximum": 10000
+                    "minimum": 0,
+                    "maximum": 1000000
                   }
                 }
               },
@@ -491,7 +492,7 @@
             "items": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 100
+              "maxLength": 80
             }
           },
           "rerate": {
@@ -500,12 +501,12 @@
             "propertyNames": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 100
+              "maxLength": 80
             },
             "additionalProperties": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 100,
+              "maxLength": 80,
               "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
             }
           }

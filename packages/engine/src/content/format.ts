@@ -23,9 +23,14 @@ export const CONTENT_FORMAT = 'the-system/content';
 export const CONTENT_FORMAT_VERSION = 1;
 
 /** Upper bounds that keep one file from swamping the GM's review. */
+/** Text limits match the engine's event checks, so a file that passes imports. */
 export const CONTENT_LIMITS = {
-  name: 100,
+  name: 80,
+  description: 2000,
+  flavor: 1000,
+  tierText: 1000,
   text: 4000,
+  tag: 40,
   tags: 12,
   entries: 500,
   options: 10,
@@ -35,6 +40,7 @@ export const CONTENT_LIMITS = {
 
 const name = z.string().trim().min(1).max(CONTENT_LIMITS.name);
 const text = z.string().max(CONTENT_LIMITS.text);
+const description = z.string().max(CONTENT_LIMITS.description);
 const id = z
   .string()
   .trim()
@@ -43,15 +49,30 @@ const id = z
   .describe('An id from the rules config, e.g. "rare", "vitality", "ring", "E".');
 const characterRef = name.describe('A character, by name (any case) or id.');
 const statMap = z
-  .record(id, z.number().int().min(-10_000).max(10_000))
-  .describe('Stat id → points.');
+  .record(id, z.number().int().min(0).max(1_000_000))
+  .describe('Stat id → whole points, 0 or more.');
+/** Each stat at most once in a bonus list. */
+const uniqueStats = (bonuses: readonly { stat: string }[]) =>
+  new Set(bonuses.map((b) => b.stat)).size === bonuses.length;
+const uniqueBy =
+  <T>(key: (x: T) => string | undefined) =>
+  (list: readonly T[]) => {
+    const seen = new Set<string>();
+    for (const x of list) {
+      const k = key(x)?.toLowerCase();
+      if (k === undefined) continue;
+      if (seen.has(k)) return false;
+      seen.add(k);
+    }
+    return true;
+  };
 
 const skillOption = z
   .strictObject({
     name,
     rarity: id,
     kind: z.enum(['class', 'profession']).optional().describe('Default "class".'),
-    description: text.optional(),
+    description: description.optional(),
   })
   .describe('One option in a skill selection menu.');
 
@@ -59,9 +80,12 @@ export const contentSkillSchema = z
   .strictObject({
     name,
     rarity: id,
-    tags: z.array(name).max(CONTENT_LIMITS.tags).optional(),
-    description: text.optional().describe('What the owner reads on their sheet.'),
-    flavor: text.optional(),
+    tags: z
+      .array(z.string().trim().min(1).max(CONTENT_LIMITS.tag))
+      .max(CONTENT_LIMITS.tags)
+      .optional(),
+    description: description.optional().describe('What the owner reads on their sheet.'),
+    flavor: z.string().max(CONTENT_LIMITS.flavor).optional(),
     effects: text.optional().describe('Mechanical effects; shown to the owner only.'),
   })
   .describe('A skill library entry: one per name and rarity (DESIGN §6).');
@@ -70,11 +94,12 @@ export const contentItemSchema = z
   .strictObject({
     name,
     rarity: id,
-    description: text.optional(),
+    description: description.optional(),
     slot: id.nullable().optional().describe('Equipment slot id; null or omitted = not wearable.'),
     bonuses: z
       .array(z.strictObject({ stat: id, flat: z.number().int().min(-10_000).max(10_000) }))
       .max(CONTENT_LIMITS.bonuses)
+      .refine(uniqueStats, { message: 'Each stat at most once' })
       .optional()
       .describe('Flat stat bonuses only (DESIGN §4: items never give percentages).'),
   })
@@ -83,20 +108,26 @@ export const contentItemSchema = z
 export const contentTitleSchema = z
   .strictObject({
     name,
-    text: text.optional().describe('System-style text shown to the player.'),
+    text: description.optional().describe('System-style text shown to the player.'),
     bonuses: z
       .array(
         z
           .strictObject({
             stat: id,
             flat: z.number().int().min(-10_000).max(10_000).optional(),
-            percent: z.number().min(-100).max(1000).optional(),
+            percent: z
+              .number()
+              .min(-99)
+              .max(10_000)
+              .optional()
+              .describe('Whole percent: 5 means +5% (the import stores 0.05).'),
           })
           .refine((b) => b.flat !== undefined || b.percent !== undefined, {
             message: 'Give flat, percent or both',
           }),
       )
       .max(CONTENT_LIMITS.bonuses)
+      .refine(uniqueStats, { message: 'Each stat at most once' })
       .optional(),
   })
   .describe('A title library entry (DESIGN §4: percentages, optionally flat).');
@@ -106,7 +137,12 @@ export const contentBestiarySchema = z
     name: name.describe("The GM's own name; never sent to players."),
     label: name.optional().describe('What players see in their Identify list; defaults to name.'),
     tiers: z
-      .array(z.strictObject({ minRarity: id, text: text.min(1) }))
+      .array(
+        z.strictObject({
+          minRarity: id,
+          text: z.string().trim().min(1).max(CONTENT_LIMITS.tierText),
+        }),
+      )
       .min(1)
       .max(CONTENT_LIMITS.tiers)
       .describe('Identify text per minimum Identify rarity (DESIGN §7).'),
@@ -125,7 +161,14 @@ export const contentSkillOfferSchema = z
   .strictObject({
     character: characterRef,
     level: z.number().int().min(1).max(10_000).describe('The class level of the selection.'),
-    options: z.array(skillOption).min(1).max(CONTENT_LIMITS.options),
+    options: z
+      .array(skillOption)
+      .min(1)
+      .max(CONTENT_LIMITS.options)
+      .refine(
+        uniqueBy((o: { name: string }) => o.name),
+        { message: 'Each option name at most once' },
+      ),
   })
   .describe("A drafted skill selection menu for one character's selection (DESIGN §6).");
 
@@ -137,7 +180,7 @@ export const contentEvolutionSchema = z
         z.strictObject({
           id: id.optional().describe('Optional; "o1", "o2"... by position when omitted.'),
           className: name,
-          description: text.optional(),
+          description: description.optional(),
           transforms: z
             .array(
               z.strictObject({
@@ -148,16 +191,28 @@ export const contentEvolutionSchema = z
               }),
             )
             .max(CONTENT_LIMITS.options)
+            .refine(
+              uniqueBy((t: { skill: string }) => t.skill),
+              { message: 'Each skill transforms at most once' },
+            )
             .optional(),
           classWeights: statMap.nullable().optional().describe('New class spread weights.'),
           statBonus: statMap.optional().describe('One-time stat bonus on evolving.'),
         }),
       )
       .min(1)
-      .max(CONTENT_LIMITS.options),
+      .max(CONTENT_LIMITS.options)
+      .refine(
+        uniqueBy((o: { id?: string | undefined }) => o.id),
+        { message: 'Each option id at most once' },
+      ),
     professions: z
       .array(name)
       .max(CONTENT_LIMITS.options)
+      .refine(
+        uniqueBy((p: string) => p),
+        { message: 'Each profession at most once' },
+      )
       .optional()
       .describe('Professions offered (at the profession unlock grade).'),
     rerate: z

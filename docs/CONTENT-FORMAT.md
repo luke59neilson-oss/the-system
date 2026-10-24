@@ -55,9 +55,20 @@ Rules that apply everywhere:
 - **Characters** are named by their name (any case) or id.
 - **Skills** in transforms and re-ratings are named exactly as on the sheet
   (the starting `Archer’s Eye` uses a curly apostrophe).
-- Sizes: names up to 100 characters, texts up to 4,000, up to 500 entries per
-  section, 10 options per menu or evolution, 8 Identify tiers, 12 bonuses.
+- Sizes (the same limits the app enforces): names up to 80 characters;
+  descriptions and title text up to 2,000; flavour and Identify tier text up
+  to 1,000; effects and notes up to 4,000; tags up to 40 characters, 12 per
+  skill; up to 500 entries per section, 10 options per menu or evolution, 8
+  Identify tiers and 12 bonuses per entry. Stat values are whole numbers, 0
+  or more (bonuses may be negative).
+- Lists may not repeat themselves: a stat twice in one bonus list, two menu
+  options with the same name, two evolution options with the same id, a
+  skill transformed twice, or a profession listed twice is an error.
 - The file check reports at most 50 errors (then "…and N more").
+- The JSON Schema cannot express a few rules that the app still checks: a
+  title bonus needs `flat` or `percent`, a bestiary entry takes `grade` and
+  `level` together, and the no-repeats rule above. The app's own check is
+  the authority.
 - The shape check knows nothing about the campaign. Whether each id,
   character and skill exists is checked when the file is imported, and the
   GM sees every problem before anything changes.
@@ -94,7 +105,7 @@ text.
 | --- | --- | --- |
 | `name` | yes | Shown as `[Name]`. |
 | `text` | no | System-style text shown to the player. |
-| `bonuses` | no | `[{ "stat": "agility", "percent": 5, "flat": 2 }]`; each bonus needs `percent`, `flat` or both. Percentages add, never compound (DESIGN §4). |
+| `bonuses` | no | `[{ "stat": "agility", "percent": 5, "flat": 2 }]`; each bonus needs `percent`, `flat` or both. `percent` is **whole percent**: `5` means +5% (−99 to 10,000). Percentages add, never compound (DESIGN §4). |
 
 ### `bestiary`: things players can Identify
 
@@ -116,7 +127,7 @@ only when the GM approves it and sends it as that selection's offer.
 | --- | --- | --- |
 | `character` | yes | Name or id. |
 | `level` | yes | The class level of the selection (5, 10, 15…). |
-| `options` | yes | 1–10 `{ "name", "rarity", "kind"?, "description"? }`. `kind` is `class` (default) or `profession`. The capstone selection before an evolution must include one option at the grade's rarity ceiling. |
+| `options` | yes | `{ "name", "rarity", "kind"?, "description"? }`. `kind` is `class` (default) or `profession`. The default rules want **3–4 options** (Settings → menu size). The capstone (the last selection before an evolution: level 10 at F, 45 at E, 90 at D, 140, 190, 240) must include one option at the grade's rarity ceiling (Rare at G–F, Epic at E, Ancient at D, Legendary at C–B, Mythical at A). Options above the ceiling are refused. |
 
 ### `evolutions`: drafted evolution options
 
@@ -126,7 +137,7 @@ GM in the evolution builder.
 | Key | Required | Meaning |
 | --- | --- | --- |
 | `character` | yes | Name or id. |
-| `options` | yes | 1–10 options, below. |
+| `options` | yes | Options, below; the default rules want **3–4**. |
 | `professions` | no | Professions offered (at the profession unlock grade, E). |
 | `rerate` | no | Skill name → rarity after the evolution. Skills not named drop one rarity (never below Inferior). |
 
@@ -137,7 +148,7 @@ Each option:
 | `className` | yes | The evolved class's name. |
 | `id` | no | Defaults to `o1`, `o2`… by position. |
 | `description` | no | |
-| `transforms` | no | `[{ "skill": "<current name>", "name": "<new name>", "rarity", "merge"? }]`. Rare by design; `merge` names a second skill consumed into it. |
+| `transforms` | no | `[{ "skill": "<current name>", "name": "<new name>", "rarity", "merge"? }]`. Evolutions rarely transform skills: the default rules allow at most 2 per option, and a transform never lowers a skill's rarity. `merge` names a second skill consumed into it; the merged skill is exactly one rarity above the higher of the two, and both must be at least Uncommon (DESIGN §6). |
 | `classWeights` | no | New class spread weights, `{ "perception": 2, "agility": 2 }`. |
 | `statBonus` | no | One-time stat bonus on evolving, `{ "agility": 10 }`. |
 

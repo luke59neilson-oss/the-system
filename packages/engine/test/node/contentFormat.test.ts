@@ -10,8 +10,13 @@ import {
   CONTENT_LIMITS,
   MAX_CONTENT_ERRORS,
   contentJsonSchema,
+  contentToCommands,
+  execute,
   parseContentFile,
+  type Campaign,
+  type ContentFile,
 } from '../../src';
+import { kit, rawRules, run, testContext } from '../helpers/events';
 
 const docs = path.resolve(import.meta.dirname, '../../../../docs');
 const examplesDir = path.join(docs, 'content-examples');
@@ -147,5 +152,162 @@ describe('content files (M9.2)', () => {
     const generated = `${JSON.stringify(contentJsonSchema(), null, 2)}\n`;
     if (process.env.UPDATE_CONTENT_SCHEMA === '1') writeFileSync(schemaFile, generated);
     expect(readFileSync(schemaFile, 'utf8')).toBe(generated);
+  });
+
+  it('rejects negative stat blocks, out-of-range percents, duplicates and engine-length texts', () => {
+    const paths = errorsOf({
+      ...head,
+      titles: [
+        { name: 'Big', bonuses: [{ stat: 'agility', percent: 20_000 }] },
+        {
+          name: 'Twice',
+          bonuses: [
+            { stat: 'agility', flat: 1 },
+            { stat: 'agility', flat: 2 },
+          ],
+        },
+        { name: 'x'.repeat(CONTENT_LIMITS.name + 1) },
+      ],
+      bestiary: [
+        {
+          name: 'Neg',
+          tiers: [{ minRarity: 'common', text: 'x'.repeat(CONTENT_LIMITS.tierText + 1) }],
+          stats: { strength: -3 },
+        },
+      ],
+      skills: [
+        {
+          name: 'S',
+          rarity: 'rare',
+          flavor: 'x'.repeat(CONTENT_LIMITS.flavor + 1),
+          tags: ['t'.repeat(41)],
+        },
+      ],
+      skillOffers: [
+        {
+          character: 'Jake',
+          level: 5,
+          options: [
+            { name: 'A', rarity: 'common' },
+            { name: 'a', rarity: 'rare' },
+          ],
+        },
+      ],
+      evolutions: [
+        {
+          character: 'Jake',
+          options: [
+            { id: 'o1', className: 'A' },
+            { id: 'o1', className: 'B' },
+          ],
+          professions: ['Cook', 'cook'],
+        },
+      ],
+    }).map((e) => e.path);
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        'titles[0].bonuses[0].percent',
+        'titles[1].bonuses',
+        'titles[2].name',
+        'bestiary[0].tiers[0].text',
+        'bestiary[0].stats.strength',
+        'skills[0].flavor',
+        'skills[0].tags[0]',
+        'skillOffers[0].options',
+        'evolutions[0].options',
+        'evolutions[0].professions',
+      ]),
+    );
+  });
+});
+
+describe('content files as commands (M9.2)', () => {
+  const ctx = testContext('cf');
+  const campaign = (): Campaign =>
+    run(
+      [
+        { type: 'campaign.create', name: 'Whale', rules: rawRules() },
+        {
+          type: 'character.create',
+          id: 'jake',
+          name: 'Jake',
+          className: 'Archer',
+          classSkills: kit,
+        },
+        {
+          type: 'character.create',
+          id: 'kim1',
+          name: 'Kim',
+          className: 'Archer',
+          classSkills: kit,
+        },
+        {
+          type: 'character.create',
+          id: 'kim2',
+          name: 'kim',
+          className: 'Archer',
+          classSkills: kit,
+        },
+      ],
+      ctx,
+    );
+  const example = (file: string): ContentFile => {
+    const r = parseContentFile(readFileSync(path.join(examplesDir, file), 'utf8'));
+    if (!r.ok) throw new Error(JSON.stringify(r.errors));
+    return r.content;
+  };
+
+  it('the library and bestiary examples define through the real commands; title percents become fractions', () => {
+    let c = campaign();
+    for (const file of ['library.json', 'bestiary.json', 'skill-offer.json']) {
+      const { commands, errors } = contentToCommands(example(file), c.state!);
+      expect(errors).toEqual([]);
+      for (const { path: at, command } of commands) {
+        if (command.type === 'selection.offer') continue; // Needs a pending selection (M9.3).
+        const r = execute(c, command, ctx);
+        if (!r.ok) throw new Error(`${file} ${at}: ${r.error}`);
+        c = r.campaign;
+      }
+    }
+    const state = c.state!;
+    const title = Object.values(state.titleLibrary).find((t) => t.name === 'Rapid Spread');
+    expect(title?.bonuses).toEqual([
+      { stat: 'agility', percent: 0.05 },
+      { stat: 'endurance', flat: 2, percent: 0.05 },
+    ]);
+    expect(Object.values(state.skillLibrary).map((s) => s.name)).toContain("Hunter's Mark");
+  });
+
+  it('resolves characters by id or unique name, and reports the rest', () => {
+    const state = campaign().state!;
+    const offer = (character: string) => ({
+      character,
+      level: 5,
+      options: [{ name: 'A', rarity: 'common' }],
+    });
+    const { commands, errors } = contentToCommands(
+      {
+        ...head,
+        format: CONTENT_FORMAT,
+        version: 1,
+        skillOffers: [offer('JAKE'), offer('kim1'), offer('Kim'), offer('Nobody')],
+      } as ContentFile,
+      state,
+    );
+    expect(commands.map((x) => (x.command as { characterId: string }).characterId)).toEqual([
+      'jake',
+      'kim1',
+    ]);
+    expect(errors).toEqual([
+      { path: 'skillOffers[2].character', message: '2 characters are named "Kim": use the id' },
+      { path: 'skillOffers[3].character', message: 'No character named "Nobody"' },
+    ]);
+    const evo = contentToCommands(example('evolution.json'), state);
+    expect(evo.errors).toEqual([]);
+    expect(evo.commands[0]?.command).toMatchObject({
+      type: 'evolution.release',
+      characterId: 'jake',
+      professions: ['Fletcher', 'Trail Cook'],
+    });
   });
 });
