@@ -624,7 +624,7 @@ work: Q44–Q48 and Q52.
 - [x] **M7.4 Trackers.** Hunger (fades at E-grade by default), regions,
   survivor factions. Players see their hunger tracker when the campaign
   enables it (from M3.13, D88).
-- [ ] **M7.A Milestone acceptance and review.** Sample encounter end to end;
+- [x] **M7.A Milestone acceptance and review.** Sample encounter end to end;
   stability visible to players only when toggled on.
 
 ## M8 — Look and feel
