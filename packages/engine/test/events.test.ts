@@ -952,6 +952,9 @@ describe('property: replay equals incremental state', () => {
       // golden log (title-library.jsonl).
       'titleDef.defined',
       'titleDef.edited',
+      // M7.3: shared contests have their own tests (contests.test.ts) and
+      // golden log; adding them here would reshuffle the seeded walk (D118).
+      'contest.shared',
     ]);
     expect(
       EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),

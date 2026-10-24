@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 30,
+  "schemaVersion": 31,
   "name": "Evolution builder golden",
   "rules": {
     "configVersion": 1,
@@ -693,6 +693,8 @@
   "entityOrder": [],
   "montages": {},
   "montageOrder": [],
+  "contests": {},
+  "contestOrder": [],
   "day": 1,
   "sessions": [],
   "currentSession": null

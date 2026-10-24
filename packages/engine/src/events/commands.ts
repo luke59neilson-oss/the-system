@@ -8,6 +8,7 @@ import {
   type EventType,
 } from './envelope';
 import { CharacterRuleError, raceLevel } from '../character';
+import type { ContestSideRecord, GradeGapMode } from '../resolution';
 import { titleDefByName } from '../titles';
 import { defaultRerate } from '../evolution';
 import { normalizeTags } from '../skills/library';
@@ -332,6 +333,17 @@ export type Command =
     }
   | { type: 'clock.remove'; clockId: string }
   | {
+      /** GM shares a contest rolled on their screen with the table (M7.3). */
+      type: 'contest.share';
+      contestId?: string | undefined;
+      a: ContestSideRecord;
+      b: ContestSideRecord;
+      /** Default: the campaign's grade-gap mode. */
+      mode?: GradeGapMode | undefined;
+      /** The roll drawn, or null when a grade wall settled it. */
+      roll: number | null;
+    }
+  | {
       type: 'montage.offer';
       /** Optional; a fresh id is generated when omitted. */
       montageId?: string | undefined;
@@ -603,6 +615,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('clock.create') }),
   z.object({ type: z.literal('clock.tick') }),
   z.object({ type: z.literal('clock.remove') }),
+  z.object({ type: z.literal('contest.share'), a: anyRecord, b: anyRecord }),
   z.object({ type: z.literal('montage.offer'), characterIds: z.array(z.string()) }),
   z.object({ type: z.literal('montage.focus') }),
   z.object({ type: z.literal('montage.close') }),
@@ -1222,6 +1235,17 @@ function toEvent(
       return { type: 'montage.closed', payload: { montageId: command.montageId } };
     case 'clock.remove':
       return { type: 'clock.removed', payload: { clockId: command.clockId } };
+    case 'contest.share':
+      return {
+        type: 'contest.shared',
+        payload: {
+          contestId: command.contestId ?? ctx.newId(),
+          a: command.a,
+          b: command.b,
+          mode: command.mode ?? campaign.state?.rules.resolution.gradeGapMode ?? 'gradeWalls',
+          roll: command.roll,
+        },
+      };
     case 'quest.create': {
       const st = command.stability;
       return {

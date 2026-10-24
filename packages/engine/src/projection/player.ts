@@ -149,6 +149,11 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   // their own focus; never the clock, the other participants or their focuses.
   montages: 'owner',
   montageOrder: 'gm',
+  // M7.3: each player gets the shared contests they took part in, from their
+  // side: their side's label and stat value, the other side's label only (an
+  // NPC's stats stay GM-only), their chance and whether they won.
+  contests: 'owner',
+  contestOrder: 'gm',
   day: 'party',
   // M4.3: session bookkeeping is the GM's.
   sessions: 'gm',
@@ -295,6 +300,24 @@ export interface PartyMember {
 }
 
 /** Everything one player's browser receives. */
+/** A shared contest roll as one of its participants sees it (M7.3). */
+export interface PlayerContest {
+  readonly id: string;
+  readonly at: string;
+  /** The viewer's side: its label, stat and value. */
+  readonly yours: { readonly label: string; readonly stat: string | null; readonly value: number };
+  /** The other side's label only. */
+  readonly theirs: string;
+  /** The viewer's side's chance to win, 0..1. */
+  readonly chance: number;
+  /** True when a grade wall settled it with no roll. */
+  readonly walled: boolean;
+  readonly won: boolean;
+}
+
+/** How many recent shared contests a player view carries (M7.3). */
+export const PLAYER_CONTEST_LIMIT = 10;
+
 export interface PlayerView {
   readonly viewerId: string;
   readonly campaignName: string;
@@ -323,6 +346,8 @@ export interface PlayerView {
   readonly practice: readonly PlayerPractice[];
   /** Open montages offered to the viewer, in offer order (M3.11). */
   readonly montages: readonly PlayerMontage[];
+  /** The latest shared contests the viewer took part in, oldest first (M7.3). */
+  readonly contests: readonly PlayerContest[];
 }
 
 /** One of the viewer's practice entries (tags left out: they may name GM-only action tags). */
@@ -718,6 +743,7 @@ export function projectForPlayer(
         entryId === undefined ? undefined : state.practice.find((p) => p.id === entryId);
       return [{ id: m.id, label: m.label, focus: entry?.action ?? null }];
     }),
+    contests: playerContests(state, viewer.id),
     hiddenQuests: state.questOrder.filter((id) => {
       const q = hasOwnKey(state.quests, id) ? state.quests[id] : undefined;
       return q !== undefined && hiddenQuestNoticed(q, state.characterOrder).includes(viewer.id);
@@ -872,4 +898,27 @@ function playerInventory(state: CampaignState, viewerId: string): PlayerInventor
     if (def) itemDefs[id] = copyItem(def, state.rules.bonuses.itemsFlatOnly);
   }
   return { currency: h.currency, items, equipped, trades, itemDefs };
+}
+
+/** The latest shared contests `viewerId` took part in, from their side (M7.3). */
+function playerContests(state: CampaignState, viewerId: string): PlayerContest[] {
+  const out: PlayerContest[] = [];
+  for (let i = state.contestOrder.length - 1; i >= 0 && out.length < PLAYER_CONTEST_LIMIT; i--) {
+    const id = state.contestOrder[i] as string;
+    const c = hasOwnKey(state.contests, id) ? state.contests[id] : undefined;
+    if (!c) continue;
+    const onA = c.a.characterIds.includes(viewerId);
+    if (!onA && !c.b.characterIds.includes(viewerId)) continue;
+    const mine = onA ? c.a : c.b;
+    out.push({
+      id: c.id,
+      at: c.sharedAt,
+      yours: { label: mine.label, stat: mine.stat, value: mine.value },
+      theirs: (onA ? c.b : c.a).label,
+      chance: onA ? c.chance : 1 - c.chance,
+      walled: c.walled,
+      won: onA ? c.success : !c.success,
+    });
+  }
+  return out.reverse();
 }

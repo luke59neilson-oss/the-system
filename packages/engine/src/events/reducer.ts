@@ -56,7 +56,15 @@ import {
   releaseEvolution,
   retiredSkillNames,
 } from '../evolution';
-import { montageAvailable, newClock, tickClock, type Clock, type Montage } from '../resolution';
+import {
+  montageAvailable,
+  newClock,
+  settleContest,
+  tickClock,
+  type Clock,
+  type Montage,
+  type SharedContest,
+} from '../resolution';
 import { applyAction, checkStabilityRules, nudge, type Quest } from '../quests';
 import { parseRulesConfig, type RulesConfig } from '../rules';
 import { rankProblem, tierProblem, type Entity } from '../entities';
@@ -70,8 +78,8 @@ import {
 } from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). v30: entity `stats`/`notes` (bestiary; M7.2). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 30;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). v30: entity `stats`/`notes` (bestiary; M7.2). v31: shared contests (M7.3). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 31;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -161,6 +169,10 @@ export interface CampaignState {
   readonly entities: Readonly<Record<string, Entity>>;
   /** Entity ids in definition order. */
   readonly entityOrder: readonly string[];
+  /** Contest rolls the GM shared (M7.3). Each player sees the ones they took part in. */
+  readonly contests: Readonly<Record<string, SharedContest>>;
+  /** Contest ids in share order. */
+  readonly contestOrder: readonly string[];
   /** Montages offered on clocks (M3.11). Players see only their own open offers. */
   readonly montages: Readonly<Record<string, Montage>>;
   /** Montage ids in offer order. */
@@ -792,6 +804,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       entityOrder: [],
       montages: {},
       montageOrder: [],
+      contests: {},
+      contestOrder: [],
       day: 1,
       sessions: [],
       currentSession: null,
@@ -1758,6 +1772,36 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         tickClock(clock, event.payload.result, event.payload.amount),
       );
       return { ...state, clocks: { ...state.clocks, [clockId]: ticked } };
+    }
+    case 'contest.shared': {
+      const { contestId, a, b, mode, roll } = event.payload;
+      if (hasOwn(state.contests, contestId)) fail(event, `contest "${contestId}" already exists`);
+      const grades = state.rules.grades.map((g) => g.id);
+      const statIds = state.rules.stats.list.map((s) => s.id);
+      const seen = new Set<string>();
+      for (const side of [a, b]) {
+        checkKeys(event, [side.grade], grades, 'grade');
+        if (side.stat !== null) checkKeys(event, [side.stat], statIds, 'stat');
+        for (const id of side.characterIds) {
+          characterOf(state, event, id);
+          if (seen.has(id)) fail(event, `character "${id}" is listed twice`);
+          seen.add(id);
+        }
+      }
+      const result = rule(event, () => settleContest(state.rules, a, b, mode, roll));
+      const contest: SharedContest = {
+        id: contestId,
+        a: { ...a, characterIds: [...a.characterIds] },
+        b: { ...b, characterIds: [...b.characterIds] },
+        mode,
+        sharedAt: event.timestamp,
+        ...result,
+      };
+      return {
+        ...state,
+        contests: { ...state.contests, [contestId]: contest },
+        contestOrder: [...state.contestOrder, contestId],
+      };
     }
     case 'quest.created': {
       const { questId, title, text, visible, days, stability } = event.payload;

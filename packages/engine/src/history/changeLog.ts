@@ -119,6 +119,7 @@ export const CHANGE_LOG_PHRASES: Readonly<Record<string, string>> = {
   'montage.offered': 'montage offered',
   'montage.focused': 'montage focus given',
   'montage.closed': 'montage closed',
+  'contest.shared': 'contest roll shared',
   'entity.defined': 'Identify entry added',
   'entity.edited': 'Identify entry edited',
   'entity.revealed': 'Identify entry revealed',

@@ -143,6 +143,7 @@ describe('player projection', () => {
     expect(JSON.stringify(view)).not.toContain('secret');
     expect(Object.keys(view).sort()).toEqual([
       'campaignName',
+      'contests',
       'day',
       'hiddenQuests',
       'identify',

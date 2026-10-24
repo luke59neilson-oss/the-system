@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 30,
+  "schemaVersion": 31,
   "name": "Golden: Identify range",
   "rules": {
     "configVersion": 1,
@@ -544,6 +544,8 @@
   "entityOrder": ["rat", "lord"],
   "montages": {},
   "montageOrder": [],
+  "contests": {},
+  "contestOrder": [],
   "day": 1,
   "sessions": [],
   "currentSession": null

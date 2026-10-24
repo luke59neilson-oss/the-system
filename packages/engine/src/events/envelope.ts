@@ -21,6 +21,14 @@ const skillFlavor = z.string().max(1000);
 /** A portrait file name the server stored (M4.4); the bytes never enter the log. */
 const portraitRef = z.string().regex(PORTRAIT_REF, 'must be a stored portrait file name');
 const statValues = z.record(z.string().min(1), z.number().int().nonnegative());
+/** One side of a shared contest (M7.3). */
+const contestSide = z.strictObject({
+  label: z.string().trim().min(1).max(80),
+  value: z.number().nonnegative().max(1_000_000_000),
+  grade: z.string().min(1).max(40),
+  characterIds: z.array(z.string().min(1).max(100)).max(20),
+  stat: z.string().min(1).max(100).nullable(),
+});
 /** A party in a gift or trade: a character id, or null for the GM. */
 const party = recordId.nullable();
 const itemCount = z.number().int().positive().max(1_000_000);
@@ -557,6 +565,18 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   }),
   /** GM closes a montage (narrated, cost added); no more focuses. */
   'montage.closed': z.strictObject({ montageId: recordId }),
+  /**
+   * GM shares a contest roll with the table (M7.3, DESIGN §7). The roll was
+   * made on the GM's screen; the result is derived from it on apply. The
+   * characters on either side get a result pop-up.
+   */
+  'contest.shared': z.strictObject({
+    contestId: recordId,
+    a: contestSide,
+    b: contestSide,
+    mode: z.enum(['none', 'multiplier', 'lowerGradeFraction', 'gradeWalls']),
+    roll: z.number().min(0).lt(1).nullable(),
+  }),
   /** GM creates a quest (M1.12, DESIGN §7), optionally with a day timer and World Stability. */
   'quest.created': z.strictObject({
     questId: recordId,
@@ -743,6 +763,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'montage.offered': 1,
   'montage.focused': 1,
   'montage.closed': 1,
+  'contest.shared': 1,
   'quest.created': 1,
   'quest.edited': 1,
   'quest.statusSet': 1,

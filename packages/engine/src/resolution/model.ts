@@ -284,3 +284,49 @@ export function montageAvailable(rules: RulesConfig, clock: Clock): boolean {
     clock.filled >= Math.ceil(Number((rules.montage.minClockFill * clock.segments).toFixed(9)))
   );
 }
+
+/** One side of a contest the GM shared (M7.3): who rolled what, as the table saw it. */
+export interface ContestSideRecord {
+  /** What the table calls this side ("Jake · Perception", "Pale hunter"). */
+  readonly label: string;
+  /** The stat value used, in stat units (after the GM's own adjustments). */
+  readonly value: number;
+  readonly grade: string;
+  /** Characters on this side (they get the result pop-up); empty for an NPC side. */
+  readonly characterIds: readonly string[];
+  /** The stat rolled, when it is one of the nine; null for a free value. */
+  readonly stat: string | null;
+}
+
+/**
+ * A contest roll the GM shared with the table (M7.3, DESIGN §7): rolls the GM
+ * keeps to themself are never events. The result is derived from the sides,
+ * the mode and the stored roll, so a replay cannot disagree with what the GM saw.
+ */
+export interface SharedContest extends ContestResult {
+  readonly id: string;
+  readonly a: ContestSideRecord;
+  readonly b: ContestSideRecord;
+  readonly mode: GradeGapMode;
+  readonly sharedAt: string;
+}
+
+/**
+ * Re-derives a shared contest from the stored roll: null when a grade wall
+ * settled it (no roll), else a number in [0, 1).
+ */
+export function settleContest(
+  rules: RulesConfig,
+  a: ContestSide,
+  b: ContestSide,
+  mode: GradeGapMode,
+  roll: number | null,
+): ContestResult {
+  const isWalled = walled(rules, a, b, mode);
+  if (isWalled !== (roll === null)) {
+    throw new CharacterRuleError(
+      isWalled ? 'A grade wall settles this contest; it has no roll' : 'This contest needs a roll',
+    );
+  }
+  return rollContest(rules, a, b, () => roll ?? 0, mode);
+}
