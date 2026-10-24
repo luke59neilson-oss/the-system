@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** 45da2c5 (2026-10-24, D) · **Next rotation:** A
+**Last sweep:** ee1a405 (2026-10-24, A) · **Next rotation:** B
 
 ## Lenses and rotation
 
@@ -111,6 +111,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-24 15:13 | D, 3902046..45da2c5 | Rules · sonnet | 0 | 0 | 1 | 1 L to Backlog | 0 | ~85k |
 | 2026-10-24 15:13 | D, 3902046..45da2c5 | Boundaries · fable | 0 | 0 | 2 | 2 L to Backlog (PC-vs-PC contest estimate also asked as Q) | 0 | ~182k |
 | 2026-10-24 15:13 | D, 3902046..45da2c5 | UX · haiku | 0 | 0 | 3 | 3 L to Backlog | 0 | ~133k |
+| 2026-10-24 21:10 | A, 45da2c5..ee1a405 | Rules · fable | 0 | 0 | 2 | 2 L to Backlog | 0 | ~195k |
+| 2026-10-24 21:10 | A, 45da2c5..ee1a405 | Boundaries · sonnet | 0 | 0 | 0 | none | 0 | ~75k |
+| 2026-10-24 21:10 | A, 45da2c5..ee1a405 | Tests · haiku | 0 | 3 | 7 | 2 M confirmed by mutation and fixed this run (QF.22); 1 M not a defect (withdrawn options exist only on chosen menus, so the filter is dead for open menus; Low); 7 L to Backlog | 1 M | ~188k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -270,3 +273,5 @@ reviewers ran 15–20 minutes each in the background.
 - (M10.1 review) Quit backups are never pruned (D199) and a same-second quit backup failure is only logged; the Windows firewall steps give the Wi-Fi path only (no Ethernet); a loopback-only join address gets no "no network found" hint.
 - (M10.1 review r2) After the 3 s close grace an in-flight HTTP handler can hit the closed store (500); a stuck close leaves the demo campaign's LOCK (recoverable); no test drives the grace path or Windows `session-end`.
 - (M10.2 review) The `mac:` block in electron-builder.yml is unbuilt and untested (D200/Q73); the newest green Release run is a manual dispatch, the `release` push path last ran on 2026-10-23; the AppImage smoke step ends with a broad `pkill -f`.
+- (Sweep A 2026-10-24, Rules · fable) The session report's Party section prints rarity names ("Common") while content files take rarity ids, so a re-rate Claude copies from the report is refused as an unknown rarity; the tutorial pack's Rare Identify tier is out of reach in five sessions, and the F→E re-rate drops Identify below every tier unless the GM keeps it.
+- (Sweep A 2026-10-24, Tests · haiku) Untested: the 2 MB preview body limit (only a mocked 413), `report: false` for a running session's JSON, case-insensitive duplicate notes beyond items; content boundary tests derive from CONTENT_LIMITS itself; M9.5 checks secrets in page text only, not frames; M4.7/M8.4 use fixed waits before negative frame checks; M3.3 timed out once at 4 workers (load).

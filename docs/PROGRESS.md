@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M9 done (M9.4 deferred), MS, MQ and MR done; QF.1–QF.21 done; Preview ready: Actions → Release → Run workflow (M9)
-**Next item:** M10.1 Electron wrapper (final) (resume wip/M10.1)
+**Status:** in progress: M0–M9 done (M9.4 deferred), M10.1–M10.2 done, MS, MQ and MR done; QF.1–QF.22 done; Preview ready: Actions → Release → Run workflow (M9)
+**Next item:** M10.A Milestone acceptance and review (resume wip/M10.A)
 **Blockers:** none
 
 ## Run log
@@ -993,5 +993,16 @@ next item, blockers. -->
 - Preview due for M9 (§8.2): Actions → Release → Run workflow.
 - Open `wip/*` branches: wip/M10.1 (base 8a72f63, no commits yet). Where I stopped: MS.5 already covers launch, GM key injection, join URL + QR, app-data folder and single instance (D54). Still missing for M10.1: a backup on quit (call the store's `backup('quit')` when closing campaigns in `apps/desktop/src/main.ts`), Windows firewall help (a GM-console note or dialog on win32 when the first player has not connected), and the acceptance under `xvfb-run` (`/health`, GM window connects with the key, a plain browser cannot act as GM) in `apps/desktop/test/desktop.spec.ts`.
 - Next item: M10.1 Electron wrapper (final) (resume wip/M10.1).
+- Blockers: none.
+
+### Run cf2945f3 · 2026-10-24 21:07–21:53 UTC (end minute 46: M10.A opened on wip/M10.A at 42 and handed off at 44; its fable milestone review blocks the session for ~20 minutes, so it could not start and return before 50)
+- Preflight: `add_repo` not offered; repo already cloned (local main on an unrelated shallow history; reset to origin/main c34d9b7). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewers: sonnet, fable and haiku all work (worktree; Agent calls block, so the M10.1 review and the three sweep lenses ran in one message). CI on main green at start (8a72f63). No new answers. Hour 21: quality sweep A.
+- Sweep A (45da2c5..ee1a405): Rules fable 0/0/2, Boundaries sonnet 0/0/0, Tests haiku 0/3/7 (H/M/L). Two Mediums confirmed by mutation and fixed as QF.22; one Medium not a defect (Low); Lows to the QUALITY backlog. Last sweep ee1a405, next rotation B.
+- M10.1 Electron wrapper (final) **checked**: quit backs the real campaign up to `backups/<stamp>-quit/` (`startApp` `backupOnClose`, D199); the join panel folds away "Players can't connect?" with Windows Firewall / macOS / generic steps from the server's `platform` on GM-only `/api/join`. Sonnet round 1: 0 H / 2 M (Windows log-off skipped the close and backup; a stuck listener close could beat the backup), both fixed; round 2 0 H / 0 M. Merged.
+- QF.22 **checked**: tests pin a drafted `rerate` reaching `evolution.release` and chosen menus leaving the report's open menus (both sweep mutations now fail). Sonnet 0 H / 0 M.
+- M10.2 Packaging and releases (final) **checked**: D200/Q73 keep D97's two artifacts (Windows installer, Linux AppImage; macOS out until Luke asks). Local `--linux` package built the AppImage, the packaged smoke passed (now also proving the quit backup in the packaged app), the AppImage answered /health under xvfb; Release run 40092258606 green with both files. Sonnet 0 H / 0 M.
+- Tests: unit 1,189; e2e full suite 97/97 (91 e2e + 6 latency) at the M10.1 merge; desktop smoke 6/6; packaged smoke 1/1. Engine coverage not re-measured (last 97.53%).
+- Open `wip/*` branches: wip/M10.A (base 5ac1948, no commits). Where I stopped: run the M10 acceptance (desktop smoke, `npm run package -w @the-system/desktop -- --linux` + packaged smoke, full e2e), then the fable milestone review over 8a72f63..HEAD for M10.1–M10.2; launch it first thing so it returns well before 44.
+- Next item: M10.A Milestone acceptance and review (resume wip/M10.A).
 - Blockers: none.
 
