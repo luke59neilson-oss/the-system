@@ -345,3 +345,58 @@ describe('LiveHub scheduled broadcasts (M4.7)', () => {
     store.close();
   });
 });
+
+describe('LiveHub loot randomness (QF.21)', () => {
+  it('rolls loot from a real random source when none is injected', () => {
+    dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-hub-'));
+    const store = CampaignStore.open('main', { dataDir, now: () => '2026-10-24T00:00:00.000Z' });
+    let n = 0;
+    const now = () => '2026-10-24T00:00:00.000Z';
+    const gm = { actor: { role: 'gm' as const }, sessionId: null, now, newId: () => `e${++n}` };
+    for (const command of [
+      { type: 'campaign.create', name: 'W', rules: JSON.parse(JSON.stringify(DEFAULT_RULES)) },
+      {
+        type: 'lootTable.define',
+        id: 'purse',
+        name: 'Purse',
+        rolls: 1,
+        entries: [
+          { kind: 'currency', weight: 1, min: 1, max: 1_000_000 },
+          { kind: 'nothing', weight: 1 },
+        ],
+      },
+    ]) {
+      const result = execute(store.campaign, command as never, gm);
+      if (!result.ok) throw new Error(result.error);
+      store.appendAll(result.events);
+    }
+    // No `random` option: the hub's own (OS) source picks.
+    const hub = new LiveHub(store, { gmKey: 'k'.repeat(32), now, newId: () => `h${++n}` });
+    const got: ServerMessage[] = [];
+    const conn = hub.connect((m) => got.push(m));
+    conn.receive(JSON.stringify({ type: 'join', role: 'gm', gmKey: 'k'.repeat(32), lastSeq: 0 }));
+    for (let i = 0; i < 40; i++) {
+      conn.receive(
+        JSON.stringify({
+          type: 'command',
+          requestId: `r${i}`,
+          command: { type: 'loot.roll', tableId: 'purse' },
+        }),
+      );
+    }
+    expect(got.filter((m) => m.type === 'result' && m.ok).length).toBe(40);
+    const picks = store.campaign.events
+      .filter((e) => e.type === 'loot.rolled')
+      .map((e) => (e.payload as { picks: { entry: number; count: number }[] }).picks[0]);
+    expect(picks).toHaveLength(40);
+    const entries = new Set(picks.map((p) => p?.entry));
+    // Both entries come up (each misses all 40 with odds 2^-40).
+    expect(entries).toEqual(new Set([0, 1]));
+    const counts = picks.filter((p) => p?.entry === 0).map((p) => p?.count ?? 0);
+    for (const c of counts) expect(c >= 1 && c <= 1_000_000).toBe(true);
+    // A fixed source would repeat one count across a million-wide range.
+    expect(new Set(counts).size).toBeGreaterThan(1);
+    conn.close();
+    store.close();
+  });
+});

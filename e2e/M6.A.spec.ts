@@ -140,12 +140,13 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
   const giveFang = items.getByRole('group', { name: 'Give or take [Hunter Fang]' });
   await giveFang.getByLabel('Character').selectOption({ label: 'Jake' });
   await giveFang.getByLabel('Count').fill('2');
+  await giveFang.getByLabel('Reason (the player sees this)').fill('Spoils of the hunt');
   await giveFang.getByRole('button', { name: 'Give' }).click();
   await expect(items.getByRole('status')).toHaveText('Gave 2 × [Hunter Fang] to Jake');
   await expect(jake.inv).toContainText('[Hunter Fang (Inferior)] ×2');
   // The holder hears about it, like loot (review M2).
   await expect(jake.page.getByTestId('ding-toast')).toContainText(
-    'You received [Hunter Fang] ×2 from the GM',
+    'You received [Hunter Fang] ×2 from the GM: Spoils of the hunt',
   );
 
   // Give: Jake gifts Kim one fang.

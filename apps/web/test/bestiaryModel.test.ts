@@ -14,6 +14,7 @@ import {
   entityDraftOf,
   entityEditCommand,
   labelLeaks,
+  revealOutcome,
 } from '../src/gm/bestiaryModel';
 
 function stateOf(): CampaignState {
@@ -125,5 +126,22 @@ describe('bestiary model (M7.2)', () => {
     // In range (a lower grade) or no rank: nothing to warn about.
     expect(labelLeaks(state, { ...hunter, label: '', grade: 'G', level: '0' }, [])).toEqual([]);
     expect(labelLeaks(state, { ...hunter, label: '', grade: '', level: '' }, [])).toEqual([]);
+  });
+});
+
+describe('revealOutcome (QF.20)', () => {
+  it('says in-range characters can Identify and out-of-range ones only know of it', () => {
+    const state = stateOf();
+    const near = { grade: 'G', level: 0, label: 'Rat' };
+    expect(revealOutcome(state, near, ['jake', 'kim'])).toBe('Jake, Kim can now Identify Rat');
+    const far = { grade: 'F', level: 12, label: 'Pale stalker' };
+    expect(revealOutcome(state, far, ['jake'])).toBe(
+      'Jake now knows of Pale stalker but is out of Identify range (sees [??? – lvl ???])',
+    );
+    expect(revealOutcome(state, far, ['jake', 'kim'])).toBe(
+      'Jake, Kim now know of Pale stalker but are out of Identify range (sees [??? – lvl ???])',
+    );
+    const place = { grade: null, level: null, label: 'Rake Canyons' };
+    expect(revealOutcome(state, place, ['kim'])).toBe('Kim can now Identify Rake Canyons');
   });
 });

@@ -158,3 +158,28 @@ export function labelLeaks(
     .filter((c) => c !== undefined && !identifyInRange(state.rules, c, rank))
     .map((c) => c?.name ?? '');
 }
+
+/**
+ * QF.20: the GM's line after a reveal. A character the entity is out of
+ * Identify range for learns of it but sees `[??? – lvl ???]`, so the line
+ * says so instead of "can now Identify" (DESIGN §7, D123).
+ */
+export function revealOutcome(
+  state: CampaignState,
+  entity: Pick<Entity, 'grade' | 'level' | 'label'>,
+  characterIds: readonly string[],
+): string {
+  const chars = characterIds.map((id) => state.characters[id]).filter((c) => c !== undefined);
+  const inRange = chars.filter((c) => identifyInRange(state.rules, c, entity)).map((c) => c.name);
+  const outOfRange = chars
+    .filter((c) => !identifyInRange(state.rules, c, entity))
+    .map((c) => c.name);
+  const parts: string[] = [];
+  if (inRange.length > 0) parts.push(`${inRange.join(', ')} can now Identify ${entity.label}`);
+  if (outOfRange.length > 0) {
+    parts.push(
+      `${outOfRange.join(', ')} now ${outOfRange.length === 1 ? 'knows' : 'know'} of ${entity.label} but ${outOfRange.length === 1 ? 'is' : 'are'} out of Identify range (sees [??? – lvl ???])`,
+    );
+  }
+  return parts.join('; ');
+}

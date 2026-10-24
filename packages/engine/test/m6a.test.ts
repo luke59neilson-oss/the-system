@@ -111,6 +111,16 @@ describe('M6.A review fixes', () => {
         reason: 'Confiscated',
       },
     ]);
+    // QF.19: a give with a reason carries it to the holder.
+    const why = step(c, {
+      type: 'holdings.adjust',
+      characterId: 'jake',
+      items: { fang: 1 },
+      reason: ' Reward for the bridge ',
+    });
+    expect(why.notices).toEqual([
+      expect.objectContaining({ kind: 'gift', reason: 'Reward for the bridge' }),
+    ]);
     // A currency-only grant still sends just the currency notice.
     const paid = step(c, { type: 'holdings.adjust', characterId: 'kim', currency: 5 });
     expect(paid.notices.map((n) => n.kind)).toEqual(['currency']);

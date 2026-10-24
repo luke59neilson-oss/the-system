@@ -23,6 +23,24 @@ describe('notificationText', () => {
     expect(matchesFilter(n, 'dings')).toBe(false);
   });
 
+  it('a GM give shows its reason when it has one (QF.19)', () => {
+    const n = {
+      kind: 'gift' as const,
+      characterId: 'j',
+      from: null,
+      currency: 0,
+      currencyName: 'Credits',
+      items: [{ name: 'Hunter Fang', count: 2 }],
+    };
+    expect(notificationText(n)).toBe('You received [Hunter Fang] ×2 from the GM');
+    expect(notificationText({ ...n, reason: ' For the bridge ' })).toBe(
+      'You received [Hunter Fang] ×2 from the GM: For the bridge',
+    );
+    expect(notificationText({ ...n, reason: '  ' })).toBe(
+      'You received [Hunter Fang] ×2 from the GM',
+    );
+  });
+
   it('a new profession is acquired at a level, not gained from level 1 (MQ.6)', () => {
     expect(
       notificationText({ kind: 'profession', characterId: 'j', name: 'Beast Tamer', level: 17 }),

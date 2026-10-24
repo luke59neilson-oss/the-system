@@ -8,6 +8,7 @@ import {
   entityDraftOf,
   entityEditCommand,
   labelLeaks,
+  revealOutcome,
   type EntityDraft,
 } from './bestiaryModel';
 
@@ -88,7 +89,7 @@ export function Bestiary({ client, state }: { client: LiveClient; state: Campaig
     const who = pickedReveal === '' ? unknownTo : [pickedReveal];
     void run(
       { type: 'entity.reveal', entityId: current.id, characterIds: who },
-      `${who.map(nameOf).join(', ')} can now Identify ${current.label}`,
+      revealOutcome(state, current, who),
     );
   };
   const rank = (e: Entity) =>

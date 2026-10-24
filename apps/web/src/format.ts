@@ -40,7 +40,8 @@ export function notificationText(n: LiveNotification): string {
       if (n.currency > 0) parts.push(`${n.currency} ${n.currencyName}`);
       const what =
         parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0];
-      return `You received ${what ?? 'a gift'} from ${n.from ?? 'the GM'}`;
+      const why = (n.reason ?? '').trim() === '' ? '' : `: ${(n.reason ?? '').trim()}`;
+      return `You received ${what ?? 'a gift'} from ${n.from ?? 'the GM'}${why}`;
     }
     case 'title': {
       const text = n.text.trim() === '' ? '' : ` - ${n.text.trim()}`;

@@ -85,7 +85,9 @@ test('the GM keeps a bestiary; players see only labels and unlocked tiers', asyn
   const reveal = win.getByRole('group', { name: 'Reveal SECRET Pale hunter' });
   await reveal.getByLabel('Reveal to').selectOption({ label: 'Jake' });
   await reveal.getByRole('button', { name: 'Reveal' }).click();
-  await expect(win.getByRole('status')).toHaveText('Jake can now Identify Pale stalker');
+  await expect(win.getByRole('status')).toHaveText(
+    'Jake now knows of Pale stalker but is out of Identify range (sees [??? – lvl ???])',
+  );
   const identify = page.getByTestId('identify');
   await expect(identify).toContainText('Pale stalker');
   await identify.getByRole('button', { name: /Pale stalker/ }).click();

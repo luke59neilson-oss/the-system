@@ -272,6 +272,22 @@ the rest follow in file order. Each gets its own §6 review.
   client not log it as an error during a known reconnect or filter exactly
   that message during the restart window only, with a reason; the test
   passes 10/10 under a parallel vitest load.
+- [ ] **QF.19 A GM item give carries its reason to the holder.** Sweep C
+  (UX, 2026-10-24): the Item library's Give sends the reason the field says
+  "the player sees", but the gift notice drops it (`history/index.ts`
+  `holdings.adjusted`). *Accept:* the gift notice carries a non-empty reason
+  and the toast/history read "You received … from the GM: <reason>"; unit
+  and e2e (M6.A) assert it.
+- [ ] **QF.20 Bestiary reveal says who is out of Identify range.** Sweep C
+  (UX): Reveal reported "Jake can now Identify Pale stalker" for a target
+  out of Jake's range, who then sees `[??? – lvl ???]`. *Accept:* the line
+  splits in-range ("can now Identify") from out-of-range characters ("now
+  knows of … but is out of Identify range"); unit test and M7.2 e2e.
+- [ ] **QF.21 Test the hub's default loot random source.** Sweep C (Tests):
+  replacing `cryptoRandom` in `hub.ts` with a constant passed every test.
+  *Accept:* a hub test with no injected `random` rolls a two-entry,
+  wide-range table many times and sees both entries and varied counts; the
+  constant mutation fails it.
 - [x] **QF.15 Pin the grade-gap floor and scheduled broadcasts in the leak
   property.** Sweep A (Tests, 2026-10-23): `Math.floor`→`Math.round` on the
   grade-gap scaled share (`progression/xp.ts` ~175, ~274, ~496) left every

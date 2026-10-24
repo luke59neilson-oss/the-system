@@ -59,6 +59,8 @@ export type SystemNotification =
       readonly currency: number;
       readonly currencyName: string;
       readonly items: readonly { readonly name: string; readonly count: number }[];
+      /** QF.19: the GM's reason for an item give (M6.A), when one was given. */
+      readonly reason?: string;
     }
   | {
       /**
@@ -238,8 +240,15 @@ export function notificationsBetween(
       (has(after.items, itemId) ? after.items[itemId]?.name : undefined) ?? itemId;
     const given = entries.filter(([, n]) => n > 0);
     if (given.length > 0) {
+      // QF.19: the Give form says the player sees the reason, so carry it.
       out.push(
-        giftNotice(after, characterId, null, { currency: 0, items: Object.fromEntries(given) }),
+        giftNotice(
+          after,
+          characterId,
+          null,
+          { currency: 0, items: Object.fromEntries(given) },
+          event.payload.reason,
+        ),
       );
     }
     const taken = entries.filter(([, n]) => n < 0);
@@ -386,8 +395,11 @@ function giftNotice(
   to: string,
   giver: string | null,
   bundle: Bundle,
+  reason = '',
 ): SystemNotification {
+  const why = reason.trim();
   return {
+    ...(why === '' ? {} : { reason: why }),
     kind: 'gift',
     characterId: to,
     from: giver === null ? null : (after.characters[giver]?.name ?? giver),
