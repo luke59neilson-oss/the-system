@@ -10,6 +10,9 @@ file applies until the GM approves it (M9.3).
 - Machine-readable schema: [`content-format.schema.json`](content-format.schema.json)
   (JSON Schema draft 2020-12, generated from `packages/engine/src/content/format.ts`).
 - Examples (each one is checked by the tests): [`content-examples/`](content-examples/).
+- Content packs, ready to import: [`content-packs/tutorial.json`](content-packs/tutorial.json),
+  the five-session tutorial on the Host (DESIGN §8). Import it into a new
+  campaign before session 1 (GM console → Import content).
 
 ## Asking Claude for content
 
@@ -36,7 +39,11 @@ content.
   "titles": [],
   "bestiary": [],
   "skillOffers": [],
-  "evolutions": []
+  "evolutions": [],
+  "quests": [],
+  "regions": [],
+  "gmNotes": [],
+  "hunger": { "enabled": true }
 }
 ```
 
@@ -152,6 +159,50 @@ Each option:
 | `transforms` | no | `[{ "skill": "<current name>", "name": "<new name>", "rarity", "merge"? }]`. Evolutions rarely transform skills: the default rules allow at most 2 per option, and a transform never lowers a skill's rarity. `merge` names a second skill consumed into it; the merged skill is exactly one rarity above the higher of the two, and both must be at least Uncommon (DESIGN §6). |
 | `classWeights` | no | New class spread weights, `{ "perception": 2, "agility": 2 }`. |
 | `statBonus` | no | One-time stat bonus on evolving, `{ "agility": 10 }`. |
+
+### `quests`: quests
+
+| Key | Required | Meaning |
+| --- | --- | --- |
+| `title` | yes | |
+| `text` | no | What players read. |
+| `visible` | no | Default `true`. A hidden quest gives players only a System notice that one exists (DESIGN §7). |
+| `days` | no | Timer in in-game days, counted from the day the GM imports it. Omit for none. |
+| `stability` | no | A World Stability meter: `{ "initial": 100, "visible": true, "rules": { "kill-pale-hunter": -2 } }`. Rules map an action tag (lower case, no spaces around it) to a non-zero change; the GM applies actions in the Quests window. |
+
+### `regions`: map regions
+
+| Key | Required | Meaning |
+| --- | --- | --- |
+| `name` | yes | Unique within the campaign. |
+| `notes` | no | GM-only notes. |
+
+### `gmNotes`: GM private notes
+
+| Key | Required | Meaning |
+| --- | --- | --- |
+| `title` | yes | |
+| `body` | no | |
+| `tags` | no | Up to 12 short tags. |
+
+Players never see GM notes.
+
+### `hunger`: the hunger tracker (one object, not a list)
+
+| Key | Required | Meaning |
+| --- | --- | --- |
+| `enabled` | no | Turn the tracker on (`true`) or off. |
+| `steps` | no | 2–10 hunger levels from fed to starving. |
+
+Importing a setting the campaign already has is refused as "nothing to change".
+
+## Importing twice
+
+The preview catches what would double up. Skills, titles and regions the
+campaign already has, and a hunger setting it already uses, show an error and
+cannot be ticked. Items and bestiary entries may share names, so a second
+copy only gets a note. Quests and GM notes can repeat: untick
+them when importing a file again (the preview notes a quest or GM note whose title the campaign already has).
 
 ## Versions
 

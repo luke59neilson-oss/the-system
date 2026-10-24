@@ -518,6 +518,162 @@
         "additionalProperties": false,
         "description": "Drafted evolution options for one character (DESIGN §2)."
       }
+    },
+    "quests": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "text": {
+            "description": "The quest text players read.",
+            "type": "string",
+            "maxLength": 4000
+          },
+          "visible": {
+            "description": "Default true. A hidden quest gives players only a notice that it exists.",
+            "type": "boolean"
+          },
+          "days": {
+            "description": "Timer in in-game days from the day it is imported; omit for none.",
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stability": {
+            "description": "An optional World Stability meter (DESIGN §7).",
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "initial": {
+                    "description": "Starting World Stability; default the rules' start (100).",
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "visible": {
+                    "description": "Shown to players; default the rules' setting.",
+                    "type": "boolean"
+                  },
+                  "rules": {
+                    "description": "Action tag → stability change, e.g. { \"kill-pale-hunter\": -2 }.",
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40
+                    },
+                    "additionalProperties": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "additionalProperties": false,
+        "description": "A quest (DESIGN §7)."
+      }
+    },
+    "regions": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "notes": {
+            "description": "GM-only notes.",
+            "type": "string",
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "A region of the map (GM-only until the party gets there)."
+      }
+    },
+    "gmNotes": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "tags": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            }
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "additionalProperties": false,
+        "description": "A GM private note; players never see it."
+      }
+    },
+    "hunger": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Turn the hunger tracker on or off.",
+          "type": "boolean"
+        },
+        "steps": {
+          "description": "Hunger levels from fed to starving.",
+          "minItems": 2,
+          "maxItems": 10,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        }
+      },
+      "additionalProperties": false,
+      "description": "Hunger tracker settings for the campaign (DESIGN §7)."
     }
   },
   "required": [

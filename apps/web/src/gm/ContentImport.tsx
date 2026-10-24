@@ -242,6 +242,10 @@ const KINDS: Record<string, string> = {
   'entity.define': 'Bestiary',
   'selection.offer': 'Skill menu',
   'evolution.release': 'Evolution options',
+  'quest.create': 'Quest',
+  'region.define': 'Region',
+  'note.create': 'GM note',
+  'hunger.configure': 'Hunger tracker',
 };
 
 /** "Item: Pale Hide Bracers", "Skill menu: level 10". */
@@ -249,6 +253,7 @@ function entryLabel(e: PreviewEntry): string {
   const kind = KINDS[e.command.type] ?? e.command.type;
   const c = e.command;
   if (typeof c.name === 'string') return `${kind}: ${c.name}`;
+  if (typeof c.title === 'string') return `${kind}: ${c.title}`;
   if (typeof c.level === 'number') return `${kind}: level ${c.level}`;
   return kind;
 }

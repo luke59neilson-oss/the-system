@@ -10,6 +10,7 @@ import {
   CONTENT_LIMITS,
   MAX_CONTENT_ERRORS,
   contentJsonSchema,
+  contentFileSchema,
   contentToCommands,
   execute,
   parseContentFile,
@@ -32,13 +33,17 @@ const errorsOf = (input: unknown) => {
 describe('content files (M9.2)', () => {
   const examples = readdirSync(examplesDir).filter((f) => f.endsWith('.json'));
 
-  it('has an example for every section', () => {
+  it('has an example (or the tutorial pack, M9.5) for every section', () => {
+    const files = [
+      ...examples.map((f) => path.join(examplesDir, f)),
+      path.join(docs, 'content-packs', 'tutorial.json'),
+    ];
     const sections = new Set(
-      examples.flatMap((f) =>
-        Object.keys(JSON.parse(readFileSync(path.join(examplesDir, f), 'utf8')) as object),
-      ),
+      files.flatMap((f) => Object.keys(JSON.parse(readFileSync(f, 'utf8')) as object)),
     );
-    for (const s of ['skills', 'items', 'titles', 'bestiary', 'skillOffers', 'evolutions']) {
+    for (const s of Object.keys(contentFileSchema.shape).filter(
+      (k) => !['format', 'version', 'title', 'notes'].includes(k),
+    )) {
       expect(sections, s).toContain(s);
     }
   });

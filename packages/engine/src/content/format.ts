@@ -227,6 +227,77 @@ export const contentEvolutionSchema = z
   })
   .describe('Drafted evolution options for one character (DESIGN §2).');
 
+export const contentQuestSchema = z
+  .strictObject({
+    title: name,
+    text: text.optional().describe('The quest text players read.'),
+    visible: z
+      .boolean()
+      .optional()
+      .describe('Default true. A hidden quest gives players only a notice that it exists.'),
+    days: z
+      .number()
+      .int()
+      .min(1)
+      .max(10_000)
+      .nullable()
+      .optional()
+      .describe('Timer in in-game days from the day it is imported; omit for none.'),
+    stability: z
+      .strictObject({
+        initial: z
+          .number()
+          .nullable()
+          .optional()
+          .describe("Starting World Stability; default the rules' start (100)."),
+        visible: z.boolean().optional().describe("Shown to players; default the rules' setting."),
+        rules: z
+          .record(
+            z.string().trim().min(1).max(CONTENT_LIMITS.tag),
+            z.number().refine((n) => n !== 0, { message: 'A delta is never 0' }),
+          )
+          .refine((r) => Object.keys(r).every((t) => t === t.toLowerCase()), {
+            message: 'Action tags are lower case',
+          })
+          .optional()
+          .describe('Action tag → stability change, e.g. { "kill-pale-hunter": -2 }.'),
+      })
+      .nullable()
+      .optional()
+      .describe('An optional World Stability meter (DESIGN §7).'),
+  })
+  .describe('A quest (DESIGN §7).');
+
+export const contentRegionSchema = z
+  .strictObject({
+    name,
+    notes: text.optional().describe('GM-only notes.'),
+  })
+  .describe('A region of the map (GM-only until the party gets there).');
+
+export const contentGmNoteSchema = z
+  .strictObject({
+    title: name,
+    body: text.optional(),
+    tags: z
+      .array(z.string().trim().min(1).max(CONTENT_LIMITS.tag))
+      .max(CONTENT_LIMITS.tags)
+      .optional(),
+  })
+  .describe('A GM private note; players never see it.');
+
+export const contentHungerSchema = z
+  .strictObject({
+    enabled: z.boolean().optional().describe('Turn the hunger tracker on or off.'),
+    steps: z
+      .array(z.string().trim().min(1).max(CONTENT_LIMITS.name))
+      .min(2)
+      .max(CONTENT_LIMITS.options)
+      .optional()
+      .describe('Hunger levels from fed to starving.'),
+  })
+  .describe('Hunger tracker settings for the campaign (DESIGN §7).');
+
 const list = <T extends z.ZodType>(schema: T) =>
   z.array(schema).max(CONTENT_LIMITS.entries).optional();
 
@@ -242,6 +313,10 @@ export const contentFileSchema = z
     bestiary: list(contentBestiarySchema),
     skillOffers: list(contentSkillOfferSchema),
     evolutions: list(contentEvolutionSchema),
+    quests: list(contentQuestSchema),
+    regions: list(contentRegionSchema),
+    gmNotes: list(contentGmNoteSchema),
+    hunger: contentHungerSchema.optional(),
   })
   .describe('A content file for The System (docs/CONTENT-FORMAT.md).');
 
@@ -252,6 +327,7 @@ export type ContentTitle = z.infer<typeof contentTitleSchema>;
 export type ContentBestiaryEntry = z.infer<typeof contentBestiarySchema>;
 export type ContentSkillOffer = z.infer<typeof contentSkillOfferSchema>;
 export type ContentEvolution = z.infer<typeof contentEvolutionSchema>;
+export type ContentQuest = z.infer<typeof contentQuestSchema>;
 
 /** One problem in a content file: where (`skills[2].rarity`) and what. */
 export interface ContentError {
