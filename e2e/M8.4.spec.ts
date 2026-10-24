@@ -253,3 +253,101 @@ test('DING, selection and evolution each play their own sound at the chosen volu
   await player.waitForTimeout(500); // a sound fired a tick late would land here
   expect(await played(player)).toEqual([]);
 });
+
+test("the GM's View-as pane stays silent, and switching character plays nothing", async ({
+  browser,
+}) => {
+  test.setTimeout(90_000);
+  const gm = await setUp(browser);
+  // The player's own laptop (sound on) evolves; a pane of the same character
+  // in the same browser profile (so its storage says sound on too) listens.
+  const player = await listening(browser, 'demo-sultan');
+  await player.getByTestId('sound').click();
+  await expect(player.getByTestId('volume')).toHaveValue('70');
+  const context = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+  await context.addInitScript(() => {
+    try {
+      localStorage.setItem('the-system:sound', 'on');
+      localStorage.setItem('the-system:volume', '100');
+    } catch {
+      // Storage blocked: the pane would be silent anyway.
+    }
+  });
+  const pane = await context.newPage();
+  await pane.addInitScript(() => {
+    const w = globalThis as unknown as { played: number; AudioContext: unknown };
+    w.played = 0;
+    w.AudioContext = class {
+      currentTime = 0;
+      destination = {};
+      resume() {
+        return Promise.resolve();
+      }
+      createGain() {
+        return {
+          gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} },
+          connect: (n: unknown) => n,
+        };
+      }
+      createOscillator() {
+        return {
+          type: 'sine',
+          frequency: { value: 0 },
+          connect: (n: unknown) => n,
+          start() {
+            w.played += 1;
+          },
+          stop() {},
+        };
+      }
+    };
+  });
+  await pane.goto(`${server.url}/play/demo-sultan?pane=1`);
+  await expect(pane.getByTestId('connection')).toHaveText('Connected');
+  const paneNotes = () => pane.evaluate(() => (globalThis as unknown as { played: number }).played);
+
+  // Evolution: the player's laptop plays the swell; the pane re-themes in silence.
+  await release(gm, player);
+  await clear(player);
+  await evolve(player);
+  await expect.poll(async () => (await played(player)).length).toBeGreaterThan(0);
+  await expect(pane.getByText('[Longbow Adept – lvl 4]')).toBeVisible();
+
+  // Selection: a menu arrives; the laptop hears it, the pane does not.
+  await clear(player);
+  await gmCommand(gm, {
+    type: 'xp.award',
+    amount: 300,
+    track: 'class',
+    participants: [{ characterId: 'demo-sultan' }],
+  });
+  await gmCommand(gm, {
+    type: 'selection.offer',
+    characterId: 'demo-sultan',
+    level: 5,
+    options: [
+      { name: 'Quick Nock', rarity: 'common' },
+      { name: 'Steady Aim', rarity: 'uncommon' },
+      { name: 'Wind Read', rarity: 'rare' },
+    ],
+  });
+  await expect
+    .poll(async () => (await played(player)).filter((n) => n.wave === 'triangle').length)
+    .toBe(3);
+  await expect(pane.getByTestId('selection-badge')).toHaveText('1 waiting');
+  await pane.waitForTimeout(500);
+  expect(await paneNotes()).toBe(0);
+
+  // Switching character on the laptop: Jake has a selection waiting from
+  // before. Arriving on his screen is a load, not a new selection, so nothing
+  // plays.
+  await clear(player);
+  await player.getByRole('link', { name: 'Switch character' }).click();
+  await player.getByTestId('join-demo-jake').click();
+  await expect(player).toHaveURL(/\/play\/demo-jake$/);
+  await expect(player.getByTestId('connection')).toHaveText('Connected');
+  await expect(player.getByTestId('selection-badge')).toHaveText(/waiting/);
+  await player.waitForTimeout(500);
+  expect(await played(player)).toEqual([]);
+  await context.close();
+});
