@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M6, MS, MQ and MR done; M7.1–M7.3 done; QF.1–QF.17 and QF.19–QF.21 done (QF.18 open); Preview ready: Actions → Release → Run workflow (M6)
-**Next item:** M7.4 Trackers (QF.18 is not High; it follows in roadmap order)
+**Status:** in progress: M0–M6, MS, MQ and MR done; M7.1–M7.4 done; QF.1–QF.21 done; M7.A started on wip/M7.A; Preview ready: Actions → Release → Run workflow (M6)
+**Next item:** M7.A Milestone acceptance and review (resume wip/M7.A)
 **Blockers:** none
 
 ## Run log
@@ -914,3 +914,14 @@ next item, blockers. -->
 - Open `wip/*` branches: wip/M7.3 (merged; leave it).
 - Next item: M7.4 Trackers (hunger fading at E-grade, regions, survivor factions; players see hunger when enabled).
 - Blockers: none.
+
+### Run e0da578e · 2026-10-24 13:08–13:52 UTC (end minute ~44)
+- Preflight: `add_repo` not offered; repo already cloned (local main reset to origin/main 15f1f8b). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Sonnet reviewers work (worktree; Agent calls block). CI on main green (4b8d21a). No new answers. Not an efficiency or sweep hour.
+- M7.4 Trackers **checked**: hunger tracker (campaign state, renamable steps, fades at `rules.hunger.fadesAtGrade`), regions (current region's name reaches players), survivor factions (GM-only); state v32, trackers golden log, GM Trackers window, player Hunger row and region beside the day. D184, Q68, Q69. Review: sonnet round 1 0 H / 2 M / 6 L, round 2 0 H / 0 M / 6 L.
+- QF.18 **checked**: the M2.A restart flake was the GM change-log refetch in flight at each `server.stop()` (reset, or Fastify's 503 while closing); the test waits for it before both stops; `/api/join` reads the port from the live socket. 10/10 under a looping vitest load. Review: sonnet round 1 0 H / 2 M, round 2 0 H / 0 M / 2 L.
+- M7.A started: `wip/M7.A` (base 1a96f67, head f5249a0): `e2e/M7.A.spec.ts` covers setup, a quest whose stability gauge stays hidden then is toggled on, and damage. Next step: add a bestiary foe and a shared contest (a first try at the contest step hung at the Roll/Share step and was not committed; check the roller's state after selecting a bestiary side), clock and montage, a stability action from the fight, XP, screenshots; then the full e2e and the `fable` milestone review.
+- Tests: unit 1,120 green; full e2e 71/71 (on the M7.4 feature commit); M7.4 spec and M2.A ×10 after the review fixes green. Engine coverage not measured this run.
+- Open `wip/*` branches: wip/M7.A (resume); wip/M7.4 and wip/QF.18 merged (leave them).
+- Next item: M7.A.
+- Blockers: none.
+
