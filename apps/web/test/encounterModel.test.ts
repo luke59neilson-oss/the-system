@@ -198,6 +198,7 @@ describe('encounter model: damage and healing (M7.3)', () => {
     expect(poolChange(state, { ...base, amount: '1.5' })).toBe(
       'The amount must be a whole number ≥ 1',
     );
+    expect(poolChange(state, { ...base, amount: ' ' })).toBe('Enter an amount');
     expect(poolChange(state, { ...base, characterId: 'nobody' })).toBe('Pick a character');
   });
 

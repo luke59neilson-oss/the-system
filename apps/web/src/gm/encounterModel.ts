@@ -232,8 +232,9 @@ export function poolChange(state: CampaignState, input: PoolChangeInput): PoolCh
     : undefined;
   if (!c) return 'Pick a character';
   if (!state.rules.pools.some((p) => p.id === input.pool)) return 'Pick a pool';
+  if (input.amount.trim() === '') return 'Enter an amount';
   const amount = Number(input.amount.trim());
-  if (input.amount.trim() === '' || !Number.isInteger(amount) || amount < 1) {
+  if (!Number.isInteger(amount) || amount < 1) {
     return 'The amount must be a whole number ≥ 1';
   }
   let stats: Record<string, number>;
