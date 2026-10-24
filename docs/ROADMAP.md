@@ -646,7 +646,7 @@ work: Q44–Q48 and Q52.
 
 - [x] **M9.1 Session report.** Full markdown + JSON report at session end
   (builds on M2.4); "Copy for Claude" button.
-- [ ] **M9.2 Content format.** JSON schemas for skill offers, skills, items,
+- [x] **M9.2 Content format.** JSON schemas for skill offers, skills, items,
   titles, evolution options, bestiary entries; `docs/CONTENT-FORMAT.md` with
   examples.
 - [ ] **M9.3 Import with approval.** Invalid files show errors and change

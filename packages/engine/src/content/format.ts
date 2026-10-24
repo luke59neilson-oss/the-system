@@ -45,9 +45,14 @@ const id = z
   .string()
   .trim()
   .min(1)
-  .max(CONTENT_LIMITS.name)
+  .max(40)
   .describe('An id from the rules config, e.g. "rare", "vitality", "ring", "E".');
-const characterRef = name.describe('A character, by name (any case) or id.');
+const characterRef = z
+  .string()
+  .trim()
+  .min(1)
+  .max(100)
+  .describe('A character, by id or else by name (any case).');
 const statMap = z
   .record(id, z.number().int().min(0).max(1_000_000))
   .describe('Stat id → whole points, 0 or more.');

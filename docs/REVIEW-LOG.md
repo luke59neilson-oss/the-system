@@ -814,3 +814,10 @@
 - M1 the copy ran after `await fetch`, so Safari/Firefox could refuse it (activation spent). Fixed: in a secure context the `ClipboardItem` write starts inside the click, fed by the fetch; otherwise the legacy copy; if that is refused too the report is shown selected in a textarea.
 - M2 the fallback e2e did not prove the fallback. Fixed: it removes `navigator.clipboard`, counts `execCommand('copy')` (exactly 1) and reads the clipboard from another page; a new test covers the refused-copy textarea.
 - Round 2 at 884f0c5: 0 High, 0 Medium, 4 Low. Low 2 fixed (the textarea is selected once in an effect, not on every render). Lows 1, 3, 4 to the QUALITY backlog. Box checked.
+
+## 2026-10-24 · M9.2 Content format · reviewer sonnet (worktree), rounds 1–2
+- Round 1 at cf7d306 (range 5074a8b..cf7d306): 1 High, 3 Medium, 5 Low. The reviewer ran the examples through the real commands.
+- H1 title `percent` unit: the engine stores fractions, the doc/example taught whole numbers (5 → +500%). Fixed: files use whole percent (−99..10,000), `contentToCommands` divides by 100; a test runs the library and bestiary examples through `execute` and checks 0.05.
+- M1 text limits looser than the event checks (names 80, descriptions 2,000, flavour/tier text 1,000, tags 40). Fixed to match. M2 stat maps allowed negatives. Fixed: 0..1,000,000. M3 doc overstated option counts. Fixed: states the 3–4 default menu size, capstone levels and ceilings, ≤2 transforms, merge rarity rule.
+- Lows fixed: no-repeat refinements (bonus stats, option names/ids, transforms, professions); doc says the JSON Schema can't express the refinements; example capstone explained by the doc; mapping tested.
+- Round 2 at ae42ff3: 0 High, 0 Medium, 5 Low. Fixed Lows 1–3 (rules ids ≤ 40, character refs ≤ 100, doc: an exact id wins). Low 4 (duplicates across entries) is for M9.3's preview; Low 5 harmless. Box checked.

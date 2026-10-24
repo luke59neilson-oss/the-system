@@ -35,7 +35,7 @@
           "rarity": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 80,
+            "maxLength": 40,
             "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
           },
           "tags": {
@@ -84,7 +84,7 @@
           "rarity": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 80,
+            "maxLength": 40,
             "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
           },
           "description": {
@@ -97,7 +97,7 @@
               {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 80,
+                "maxLength": 40,
                 "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
               },
               {
@@ -115,7 +115,7 @@
                 "stat": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 80,
+                  "maxLength": 40,
                   "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                 },
                 "flat": {
@@ -165,7 +165,7 @@
                 "stat": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 80,
+                  "maxLength": 40,
                   "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                 },
                 "flat": {
@@ -222,7 +222,7 @@
                 "minRarity": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 80,
+                  "maxLength": 40,
                   "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                 },
                 "text": {
@@ -244,7 +244,7 @@
               {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 80,
+                "maxLength": 40,
                 "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
               },
               {
@@ -272,7 +272,7 @@
                 "propertyNames": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 80,
+                  "maxLength": 40,
                   "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                 },
                 "additionalProperties": {
@@ -310,8 +310,8 @@
           "character": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 80,
-            "description": "A character, by name (any case) or id."
+            "maxLength": 100,
+            "description": "A character, by id or else by name (any case)."
           },
           "level": {
             "type": "integer",
@@ -334,7 +334,7 @@
                 "rarity": {
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 80,
+                  "maxLength": 40,
                   "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                 },
                 "kind": {
@@ -377,8 +377,8 @@
           "character": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 80,
-            "description": "A character, by name (any case) or id."
+            "maxLength": 100,
+            "description": "A character, by id or else by name (any case)."
           },
           "options": {
             "minItems": 1,
@@ -391,7 +391,7 @@
                   "description": "Optional; \"o1\", \"o2\"... by position when omitted.",
                   "type": "string",
                   "minLength": 1,
-                  "maxLength": 80
+                  "maxLength": 40
                 },
                 "className": {
                   "type": "string",
@@ -422,7 +422,7 @@
                       "rarity": {
                         "type": "string",
                         "minLength": 1,
-                        "maxLength": 80,
+                        "maxLength": 40,
                         "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                       },
                       "merge": {
@@ -448,7 +448,7 @@
                       "propertyNames": {
                         "type": "string",
                         "minLength": 1,
-                        "maxLength": 80,
+                        "maxLength": 40,
                         "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                       },
                       "additionalProperties": {
@@ -469,7 +469,7 @@
                   "propertyNames": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 80,
+                    "maxLength": 40,
                     "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
                   },
                   "additionalProperties": {
@@ -506,7 +506,7 @@
             "additionalProperties": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 80,
+              "maxLength": 40,
               "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
             }
           }

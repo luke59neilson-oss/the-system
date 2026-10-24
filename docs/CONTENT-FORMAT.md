@@ -52,14 +52,15 @@ Rules that apply everywhere:
   - Equipment slots: `ring`, `necklace`, `chest`, `legs`, `boots`, `bracers`,
     `mask`, `cloak`, `gloves`, `mainHand`, `offHand`.
   - Grades: `G`, `F`, `E`, `D`, `C`, `B`, `A`.
-- **Characters** are named by their name (any case) or id.
+- **Characters** are named by id or by name (any case); an exact id wins. Two
+  characters with the same name need the id.
 - **Skills** in transforms and re-ratings are named exactly as on the sheet
   (the starting `Archer’s Eye` uses a curly apostrophe).
 - Sizes (the same limits the app enforces): names up to 80 characters;
   descriptions and title text up to 2,000; flavour and Identify tier text up
   to 1,000; effects and notes up to 4,000; tags up to 40 characters, 12 per
   skill; up to 500 entries per section, 10 options per menu or evolution, 8
-  Identify tiers and 12 bonuses per entry. Stat values are whole numbers, 0
+  Identify tiers and 12 bonuses per entry; rules ids up to 40 characters. Stat values are whole numbers, 0
   or more (bonuses may be negative).
 - Lists may not repeat themselves: a stat twice in one bonus list, two menu
   options with the same name, two evolution options with the same id, a
