@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M7, MS, MQ and MR done; QF.1–QF.21 done; M8.1 started on wip/M8.1; Preview ready: Actions → Release → Run workflow (M7)
-**Next item:** M8.1 Metallic grade themes (resume wip/M8.1)
+**Status:** in progress: M0–M7, MS, MQ and MR done; QF.1–QF.21 done; M8.1–M8.2 done; Preview ready: Actions → Release → Run workflow (M7)
+**Next item:** M8.3 Accessibility
 **Blockers:** none
 
 ## Run log
@@ -933,3 +933,14 @@ next item, blockers. -->
 - Open `wip/*` branches: wip/M8.1 (resume); wip/M7.A merged (leave it).
 - Next item: M8.1.
 - Blockers: none.
+
+### Run cffd8016 · 2026-10-24 15:07–15:58 UTC (end minute ~52)
+- Preflight: `add_repo` not offered; repo already cloned, local main fast-forwarded to origin/main (66ba2af). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Sonnet, fable and haiku reviewers work (worktree; Agent calls block, so the M8.1 review and the three sweep lenses ran in one message). CI on main green (d828151). No new answers. Sweep hour (15): sweep D.
+- Sweep D (3902046..45da2c5): Rules sonnet 0/0/1, Boundaries fable 0/0/2, UX haiku 0/0/3 (H/M/L). All six Lows to the QUALITY backlog; Q70 (PC-vs-PC contest reveals the other player's stat roughly; default keep). Last sweep 45da2c5, next rotation A.
+- M8.1 **checked**: the grade metal is a theme class on the player grid (every player window's border, glow and headings), a 4px masked sheen ring on the status window, platinum brushed blue-white, diamond animated unless reduced motion. Review sonnet: round 1 0 H / 2 M, round 2 0 H / 1 M (platinum ring rendered dark → brightened; spec now measures the rendered ring). The full e2e caught a metal-heading rule outranking rarity colours (M3.5) → zero-specificity `:where`. D186.
+- M8.2 **checked**: an evolution plays a 2.4s re-theme (new metal eases in, frames pulse, status ring sweeps); undo, character switches and level-ups never play it; reduced motion swaps at once. Review sonnet: round 1 0 H / 4 M, round 2 0 H / 0 M / 4 L. D187.
+- Tests: unit 1,127 green; full e2e 79/79 on M8.1; full e2e 81/81 on M8.2. Engine coverage not measured (no engine changes).
+- Open `wip/*` branches: wip/M8.1 and wip/M8.2 merged (leave them).
+- Next item: M8.3 Accessibility.
+- Blockers: none.
+

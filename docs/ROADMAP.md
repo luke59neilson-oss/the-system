@@ -633,7 +633,7 @@ work: Q44–Q48 and Q52.
   (dull), copper, silver, gold, platinum (cool blue-white, heavier brushed
   texture), prismatic diamond (animated; respects reduced motion).
   System-window styling per DESIGN §9.
-- [ ] **M8.2 Evolution transition.** Animated re-theme on evolution.
+- [x] **M8.2 Evolution transition.** Animated re-theme on evolution.
 - [ ] **M8.3 Accessibility.** Text contrast ≥ 4.5:1 in all 7 themes
   (automated); silver vs platinum ΔE ≥ 10 (automated); keyboard navigation;
   reduced motion.
