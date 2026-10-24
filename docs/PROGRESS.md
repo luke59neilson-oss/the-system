@@ -945,7 +945,7 @@ next item, blockers. -->
 - Blockers: none.
 
 
-### Run af11bae8 · 2026-10-24 16:08–16:52 UTC (end minute ~44, hand-off; close-out after)
+### Run af11bae8 · 2026-10-24 16:08–16:49 UTC (end minute 41: closed out early to fix red CI on main and hand M8.4 off while its round-2 review is due; no §5.5 reason, a protocol slip)
 - Preflight: `add_repo` not offered; repo already cloned, main reset to origin/main (c76432c). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Sonnet reviewers work (worktree; Agent calls block). CI on main green at start (c76432c). No new answers. Not an efficiency or sweep hour.
 - M8.3 **checked**: contrast ≥ 4.5:1 checked on the theme tokens (unit) and on the rendered page (in-page scanner: GM console, two players × 7 themes, details opened, skill dialog, phone, placeholders); bronze text lightened via a new per-theme `--metal-text`; silver vs platinum CIEDE2000 9.6 → platinum metal #b2d5f5 (11.4); every control a Tab stop with a 2px outline at 3:1; Tab stays inside the skill dialog; reduced motion stops all motion (global net). Review sonnet: round 1 0 H / 4 M, round 2 0 H / 0 M / 4 L. D188.
 - CI red on 8135404: my M8.3 screenshot commit carried a staged `chime.ts → sounds.ts` rename from the M8.4 work, so typecheck failed (latency and desktop-smoke failed after it). Fixed on main (rename reverted); local typecheck clean.
