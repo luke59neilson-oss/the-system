@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M9 done (M9.4 deferred), M10.1–M10.2 done, MS, MQ and MR done; QF.1–QF.22 done; Preview ready: Actions → Release → Run workflow (M9)
-**Next item:** M10.A Milestone acceptance and review (resume wip/M10.A)
+**Status:** in progress: M0–M9 done (M9.4 deferred), M10 done, MS, MQ and MR done; QF.1–QF.22 done; Preview ready: Actions → Release → Run workflow (M10)
+**Next item:** M11.1 Soak test (resume wip/M11.1)
 **Blockers:** none
 
 ## Run log
@@ -1006,3 +1006,12 @@ next item, blockers. -->
 - Next item: M10.A Milestone acceptance and review (resume wip/M10.A).
 - Blockers: none.
 
+
+### Run a56191db · 2026-10-24 22:08–22:51 UTC (end minute 43: M11.1 opened on wip/M11.1 at 35 and handed off; close-out needed the rest before the 52 stop)
+- Preflight: `add_repo` not offered; repo already cloned (local main on an unrelated history; reset to origin/main 813664d). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer: fable worked (worktree; Agent calls block). CI on main green at start (5ac1948). No new answers. Hour 22: no efficiency check or sweep.
+- M10.A Milestone acceptance and review **checked**: check green (1,190 unit); desktop smoke 7/7 (35/35 at --repeat-each=5); full e2e 90/91 (+ latency 6/6), the miss was `M8.A` timing out under reviewer load and passes alone in 25 s (logged under Flakes); fable packaged the AppImage and ran the packaged smoke. Fable round 1: 0 H / 2 M (release evidence predated the M10 code → Release dry run 40138628866 on `release-dry-run` green on Windows and Linux; an installer's polite close then forced kill skipped the quit backup → backup taken when the quit question opens, D201). Round 2: 0 H / 1 M (the new Electron test's cleanup touched a disposed process handle → fixed). Merged ac1bf1e.
+- Preview ready for M10: Actions → Release → Run workflow (D93).
+- Tests: unit 1,190; e2e 91 + 6 latency; desktop smoke 7. Engine coverage not re-measured (last 97.53%).
+- Open `wip/*` branches: wip/M11.1 (base ac1bf1e, head 4cca4982). Where I stopped: `apps/server/test/soak.test.ts` has the server, GM + 4 players, a mulberry32 stream (seed 0x5eed1101) of xp awards and renames, and a desync check against `projectForPlayer`; it passes at `SOAK_STEPS=400` (7.5 s) and 1,000 (41 s) but 2,000 exceeds 120 s: per-command cost grows with history (quadratic). First: profile one late command (suspect a whole-history fold, projection or stringify per command/broadcast) and fix it in the server or engine; that also serves M11.3. Then add player commands (free points), the heap-growth check (< 20% after warm-up), and decide vitest vs e2e placement.
+- Next item: M11.1 Soak test (resume wip/M11.1).
+- Blockers: none.
