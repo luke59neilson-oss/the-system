@@ -187,10 +187,10 @@ export interface SessionRecord {
 
 const hasOwn = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
 
-/** A character's holdings (empty when they hold nothing yet). */
 /** A title name as stored: trimmed, inner whitespace collapsed (M6.4). */
 const tidyName = (name: string) => name.trim().replace(/\s+/gu, ' ');
 
+/** A character's holdings (empty when they hold nothing yet). */
 export function holdingsOf(state: CampaignState, characterId: string): Holdings {
   return hasOwn(state.holdings, characterId)
     ? (state.holdings[characterId] ?? EMPTY_HOLDINGS)
