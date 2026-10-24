@@ -5,9 +5,11 @@ import type { LiveClient } from '../live';
 import {
   actionCommand,
   actionTags,
+  liveOffer,
   parseTags,
   signed,
   stabilityOffers,
+  type PendingOffer,
   type StabilityOffer,
 } from './questManagerModel';
 
@@ -31,8 +33,8 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
   const [skills, setSkills] = useState<string[]>([]);
   const [stat, setStat] = useState('');
   const [tags, setTags] = useState('');
-  // M7.1 (D67): stability rules the last logged entry's tags match.
-  const [offers, setOffers] = useState<{ reason: string; list: StabilityOffer[] } | null>(null);
+  // M7.1 (D67): stability rules logged entries' tags match, kept until applied or dismissed.
+  const [offers, setOffers] = useState<PendingOffer[]>([]);
   const [scene, setScene] = useState(false);
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Outcome>(null);
@@ -88,10 +90,14 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
       `Logged for ${character.name}: ${action.trim()}`,
     );
     if (!ok) return;
-    const list = stabilityOffers(state, { tags: entryTags });
-    setOffers(
-      list.length === 0 ? null : { reason: `Practice: ${character.name}: ${action.trim()}`, list },
-    );
+    const reason = `Practice: ${character.name}: ${action.trim()}`;
+    const fresh = stabilityOffers(state, { tags: entryTags }).map((o, i) => ({
+      key: `${Date.now()}-${i}-${o.questId}-${o.tag}`,
+      reason,
+      questId: o.questId,
+      tag: o.tag,
+    }));
+    if (fresh.length > 0) setOffers((old) => [...old, ...fresh]);
     setAction('');
     setSkills([]);
     setStat('');
@@ -113,14 +119,14 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
 
   const pending = state.practice.filter((e) => !e.reviewed);
   const knownTags = actionTags(state);
-  const applyOffer = async (o: StabilityOffer) => {
-    if (!offers) return;
-    const c = actionCommand(o.questId, o.tag, '1', offers.reason);
+  const shownOffers = offers
+    .map((p) => ({ pending: p, live: liveOffer(state, p) }))
+    .filter((x): x is { pending: PendingOffer; live: StabilityOffer } => x.live !== null);
+  const applyOffer = async (p: PendingOffer, o: StabilityOffer) => {
+    const c = actionCommand(o.questId, o.tag, '1', p.reason);
     if (typeof c === 'string') return;
     const ok = await run(c, `Applied "${o.tag}" (${signed(o.delta)}) to [${o.title}]`);
-    if (!ok) return;
-    const left = offers.list.filter((x) => x !== o);
-    setOffers(left.length === 0 ? null : { ...offers, list: left });
+    if (ok) setOffers((old) => old.filter((x) => x.key !== p.key));
   };
 
   return (
@@ -219,24 +225,25 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
               Log practice
             </button>
           </form>
-          {offers && (
+          {shownOffers.length > 0 && (
             <div
               className="stability-offers"
               role="group"
               aria-label="Apply World Stability"
               data-testid="stability-offers"
             >
-              <p>This entry carries a quest's action tag. Apply its World Stability rule?</p>
+              <p>Practice carried a quest's action tag. Apply its World Stability rule?</p>
               <ul>
-                {offers.list.map((o) => (
-                  <li key={`${o.questId} ${o.tag}`}>
-                    <button type="button" disabled={busy} onClick={() => void applyOffer(o)}>
+                {shownOffers.map(({ pending: p, live: o }) => (
+                  <li key={p.key}>
+                    <span className="muted">{p.reason.replace(/^Practice: /u, '')}</span>{' '}
+                    <button type="button" disabled={busy} onClick={() => void applyOffer(p, o)}>
                       Apply "{o.tag}" ({signed(o.delta)}) to [{o.title}]
                     </button>
                   </li>
                 ))}
               </ul>
-              <button type="button" className="secondary" onClick={() => setOffers(null)}>
+              <button type="button" className="secondary" onClick={() => setOffers([])}>
                 Not now
               </button>
             </div>

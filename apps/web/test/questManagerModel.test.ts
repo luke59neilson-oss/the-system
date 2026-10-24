@@ -11,6 +11,8 @@ import {
   questDraftOf,
   questEditCommand,
   rulesText,
+  liveOffer,
+  savedQuest,
   stabilityOffers,
 } from '../src/gm/questManagerModel';
 
@@ -184,5 +186,35 @@ describe('tagged actions and practice offers (M7.1, D67)', () => {
     ]);
     expect(stabilityOffers(state, { tags: [] })).toEqual([]);
     expect(parseTags(' Cleanse , kill   beast,, cleanse')).toEqual(['cleanse', 'kill beast']);
+  });
+});
+
+describe('quest manager review fixes (M7.1)', () => {
+  it('keeps diffing against what was saved', () => {
+    const q = quest('q', { text: 'Text  ' });
+    // Stored trailing spaces are not a change.
+    expect(questEditCommand(q, questDraftOf(q))).toBeNull();
+    const draft = { ...questDraftOf(q), title: 'Renamed' };
+    const cmd = questEditCommand(q, draft);
+    if (cmd === null || typeof cmd === 'string') throw new Error('expected a command');
+    const saved = savedQuest(q, cmd);
+    expect(saved.title).toBe('Renamed');
+    expect(questEditCommand(saved, draft)).toBeNull();
+    expect(savedQuest(q, { type: 'quest.setStatus', questId: 'q', status: 'failed' })).toBe(q);
+  });
+
+  it('re-reads a pending offer against the quest as it is now', () => {
+    const p = { key: 'k', reason: 'Practice: Jake: x', questId: 'a', tag: 'cleanse' };
+    expect(liveOffer(stateOf([quest('a')]), p)).toEqual({
+      questId: 'a',
+      title: 'Quest a',
+      tag: 'cleanse',
+      delta: -5,
+    });
+    expect(liveOffer(stateOf([quest('a', { status: 'completed' })]), p)).toBeNull();
+    expect(
+      liveOffer(stateOf([quest('a', { stability: { value: 1, visible: true, rules: {} } })]), p),
+    ).toBeNull();
+    expect(liveOffer(stateOf([]), p)).toBeNull();
   });
 });

@@ -122,7 +122,7 @@ export function questEditCommand(quest: Quest, draft: QuestDraft): Command | str
   const text = draft.text.trim();
   const change: Record<string, unknown> = {};
   if (title !== quest.title) change['title'] = title;
-  if (text !== quest.text) change['text'] = text;
+  if (text !== quest.text.trim()) change['text'] = text;
   if (draft.visible !== quest.visible) change['visible'] = draft.visible;
   if (days !== quest.days) change['days'] = days;
   if (quest.stability) {
@@ -136,6 +136,29 @@ export function questEditCommand(quest: Quest, draft: QuestDraft): Command | str
   }
   if (Object.keys(change).length === 0) return null;
   return { type: 'quest.edit', questId: quest.id, ...change } as Command;
+}
+
+/**
+ * The quest as it stands after `command` (a quest.edit from questEditCommand)
+ * lands, so the form keeps diffing against what this GM last saved.
+ */
+export function savedQuest(quest: Quest, command: Command): Quest {
+  if (command.type !== 'quest.edit') return quest;
+  const c = command;
+  return {
+    ...quest,
+    title: c.title ?? quest.title,
+    text: c.text ?? quest.text,
+    visible: c.visible ?? quest.visible,
+    days: c.days === undefined ? quest.days : c.days,
+    noticeTo:
+      c.noticeTo === undefined ? quest.noticeTo : c.noticeTo === null ? null : [...c.noticeTo],
+    stability: quest.stability && {
+      ...quest.stability,
+      visible: c.stabilityVisible ?? quest.stability.visible,
+      rules: c.stabilityRules === undefined ? quest.stability.rules : { ...c.stabilityRules },
+    },
+  };
 }
 
 /** A manual stability nudge (signed whole number, not 0), or an error. */
@@ -220,6 +243,30 @@ export function stabilityOffers(
     }
   }
   return out;
+}
+
+/** A practice offer waiting for the GM: which entry it came from and what it applies. */
+export interface PendingOffer {
+  readonly key: string;
+  /** Reason recorded with the action ("Practice: Jake: Burned out a curse zone"). */
+  readonly reason: string;
+  readonly questId: string;
+  readonly tag: string;
+}
+
+/**
+ * A pending offer as it stands now: the quest's current title and delta, or
+ * null once the quest is closed, gone, or no longer has the rule.
+ */
+export function liveOffer(state: CampaignState, offer: PendingOffer): StabilityOffer | null {
+  const q = Object.prototype.hasOwnProperty.call(state.quests, offer.questId)
+    ? state.quests[offer.questId]
+    : undefined;
+  if (!q || q.status !== 'active' || !q.stability) return null;
+  const delta = Object.prototype.hasOwnProperty.call(q.stability.rules, offer.tag)
+    ? q.stability.rules[offer.tag]
+    : undefined;
+  return delta === undefined ? null : { questId: q.id, title: q.title, tag: offer.tag, delta };
 }
 
 /** "+5" / "-3": a signed delta for labels. */

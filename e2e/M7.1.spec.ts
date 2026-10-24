@@ -122,6 +122,14 @@ test('the GM runs quests and World Stability; players see only what is visible',
     name: 'Apply "cleanse" (-5) to [The world is dying]',
   });
   await expect(offer).toBeVisible();
+  // The next entry (no quest tag) offers nothing new and keeps the pending offer.
+  await quick.getByLabel('Character').selectOption({ label: 'Kim' });
+  await quick.getByLabel(/^Action \(Alt/).fill('Climbed a canyon wall');
+  await quick.getByLabel('Stat').selectOption('agility');
+  await quick.getByRole('button', { name: 'Log practice' }).click();
+  await expect(practice.getByRole('status')).toHaveText('Logged for Kim: Climbed a canyon wall');
+  await expect(offers.getByRole('listitem')).toHaveCount(1);
+  await expect(offers.getByRole('listitem')).toContainText('Jake: Burned out a curse zone');
   await offers.scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-practice-stability-offer-1366x768.png') });
   await offer.click();
@@ -130,12 +138,6 @@ test('the GM runs quests and World Stability; players see only what is visible',
   );
   await expect(offers).toHaveCount(0);
   await expect(jakeQuest.getByTestId('stability-value')).toHaveText('88%');
-  // An entry with no quest tag offers nothing.
-  await quick.getByLabel(/^Action \(Alt/).fill('Climbed a canyon wall');
-  await quick.getByLabel('Stat').selectOption('agility');
-  await quick.getByRole('button', { name: 'Log practice' }).click();
-  await expect(practice.getByRole('status')).toHaveText('Logged for Jake: Climbed a canyon wall');
-  await expect(offers).toHaveCount(0);
 
   await jakeQuest.scrollIntoViewIfNeeded();
   await jake.page.screenshot({ path: path.join(shots, 'player-quest-390x844.png') });
@@ -149,7 +151,7 @@ test('the GM runs quests and World Stability; players see only what is visible',
   await expect(form.getByTestId('quest-notice-nobody')).toBeVisible();
   await form.getByRole('group', { name: 'Characters told' }).getByLabel('Kim').check();
   await form.getByLabel(/World Stability rules/).fill('secret-tag: -7');
-  await form.getByRole('group', { name: 'Characters told' }).scrollIntoViewIfNeeded();
+  await form.getByRole('button', { name: 'Add quest' }).scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-hidden-quest-1366x768.png') });
   await form.getByRole('button', { name: 'Add quest' }).click();
   await expect(qm.getByRole('status')).toHaveText('[SECRET Heart of the Host] added');
@@ -160,6 +162,15 @@ test('the GM runs quests and World Stability; players see only what is visible',
     '[Hidden quest] A hidden quest exists and can be triggered.',
   );
   await expect(jake.page.getByTestId('hidden-quests')).toHaveCount(0);
+  // Widening the notice to everyone tells Jake too.
+  await list.getByRole('button', { name: /SECRET Heart/ }).click();
+  await form.getByLabel('Every character (and characters created later)').check();
+  await form.getByRole('button', { name: 'Save quest' }).click();
+  await expect(qm.getByRole('status')).toHaveText('[SECRET Heart of the Host] saved');
+  await expect(jake.page.getByTestId('hidden-quests')).toHaveText(
+    '[Hidden quest] A hidden quest exists and can be triggered.',
+  );
+  await expect(form.getByRole('button', { name: 'Save quest' })).toBeDisabled();
 
   // Editing: hide the first quest's gauge, then complete it.
   await list.getByRole('button', { name: /The world is dying/ }).click();

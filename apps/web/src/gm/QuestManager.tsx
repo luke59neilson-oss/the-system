@@ -9,6 +9,7 @@ import {
   questCreateCommand,
   questDraftOf,
   questEditCommand,
+  savedQuest,
   signed,
   type QuestDraft,
 } from './questManagerModel';
@@ -53,6 +54,15 @@ export function QuestManager({ client, state }: { client: LiveClient; state: Cam
   const [delta, setDelta] = useState('');
   const [nudgeReason, setNudgeReason] = useState('');
 
+  // The open quest vanished (an undo, a campaign switch): back to a blank form
+  // rather than offering to re-create it from the old draft.
+  const vanished = questId !== null && current === null;
+  if (vanished) {
+    setQuestId(null);
+    setLoaded(null);
+    setDraft(emptyQuestDraft(state.rules.stability.visibleToPlayersByDefault));
+  }
+
   const baseline = current ? (loaded ?? current) : null;
   const command: Command | string | null = baseline
     ? questEditCommand(baseline, draft)
@@ -95,7 +105,8 @@ export function QuestManager({ client, state }: { client: LiveClient; state: Cam
     const title = draft.title.trim().replace(/\s+/gu, ' ');
     const ok = await run(command, current ? `[${title}] saved` : `[${title}] added`);
     if (!ok) return;
-    if (current) setLoaded(null);
+    // Keep diffing against what this GM saved, so a later edit elsewhere still warns.
+    if (current) setLoaded(savedQuest(loaded ?? current, command));
     else setDraft(emptyQuestDraft(state.rules.stability.visibleToPlayersByDefault));
   };
   const setStatus = (status: Quest['status']) => {
@@ -280,7 +291,8 @@ export function QuestManager({ client, state }: { client: LiveClient; state: Cam
             </p>
           ) : (
             <label>
-              World Stability rules, one “action tag: change” per line (blank: no gauge)
+              World Stability rules, one “action tag: change” per line{' '}
+              {current ? '(blank: no rules; the gauge stays)' : '(blank: no gauge)'}
               <textarea
                 value={draft.rules}
                 onChange={(e) => edit({ rules: e.target.value })}
