@@ -112,6 +112,7 @@ reviewers ran 15–20 minutes each in the background.
 
 ## Flakes
 
+- 2026-10-24 02:35 · local full e2e (run 805662911): `e2e/M2.A.spec.ts` restart test failed again on a GM console error "Failed to load resource: … 503 (Service Unavailable)"; passed alone and with `--workers=2`. Second occurrence: now QF.18.
 - 2026-10-23 19:25 · local full e2e (run 698982a6): `e2e/M2.A.spec.ts` (latency project, restart test) failed once with a GM console error "Failed to load resource: net::ERR_CONNECTION_RESET" while a 2,000-step vitest property run loaded the 2-CPU workspace; passed alone right after. Flake under load; watch for a repeat.
 - 2026-10-22 16:55–17:38 · CI on main red four times (5e72abe, d244b21,
   176523f, 6ca3e7e). Not a flake: `e2e/M3.7.spec.ts` "View-as panes" relied

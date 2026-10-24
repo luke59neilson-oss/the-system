@@ -114,7 +114,7 @@ test('the GM runs quests and World Stability; players see only what is visible',
   await quick.getByLabel('Character').selectOption({ label: 'Jake' });
   await quick.getByLabel(/^Action \(Alt/).fill('Burned out a curse zone');
   await quick.getByLabel('Stat').selectOption('strength');
-  await quick.getByLabel(/^Action tags/).fill('Cleanse, fire');
+  await quick.getByLabel(/^Quest tags/).fill('Cleanse, fire');
   await quick.getByRole('button', { name: 'Log practice' }).click();
   const offers = practice.getByTestId('stability-offers');
   await expect(offers).toBeVisible();

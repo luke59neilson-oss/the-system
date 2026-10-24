@@ -205,8 +205,7 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
               </select>
             </label>
             <label>
-              Action tags{' '}
-              <span className="muted">(comma-separated; quest tags offer stability)</span>
+              Quest tags <span className="muted">(comma-separated; offer World Stability)</span>
               <input
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
