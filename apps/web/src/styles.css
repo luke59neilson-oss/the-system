@@ -636,10 +636,23 @@ a {
   margin: 0 0 6px;
   word-break: break-all;
 }
+/* "Players can't connect?" firewall help (M10.1). */
+.connect-help {
+  margin-top: 12px;
+}
+.connect-help ol {
+  margin: 8px 0 0;
+  padding-left: 1.4em;
+  line-height: 1.45;
+}
+.connect-help li + li {
+  margin-top: 4px;
+}
 /* GM link for another browser on the host (MS.A). */
 .gm-link {
   margin-top: 12px;
 }
+.connect-help summary,
 .gm-link summary {
   cursor: pointer;
   color: var(--muted);

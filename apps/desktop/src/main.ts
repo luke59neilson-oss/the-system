@@ -21,6 +21,8 @@ import {
  * data lives in the OS app-data folder; one instance at a time.
  * MS.7: a splash appears at once, a second launch focuses the first, and a
  * taken port moves to the next free one.
+ * M10.1: quitting backs the campaign up first; the join panel carries
+ * firewall help for this computer's OS.
  */
 
 // Tests only: a separate profile so test instances never meet a real one (the
@@ -194,6 +196,10 @@ async function start(): Promise<void> {
         dataDir: process.env['THE_SYSTEM_DATA_DIR'] ?? dataDirFor(app.getPath('userData')),
         gmKey,
         machineId: machineIdFor(app.getPath('userData')),
+        // M10.1: every quit leaves a copy of the campaign in its backups folder.
+        backupOnClose: 'quit',
+        // Tests only: show another OS's firewall help in the join panel.
+        platform: (!app.isPackaged && process.env['THE_SYSTEM_TEST_PLATFORM']) || process.platform,
       }),
     );
     // Tests only: a slow start (server and campaign already open), so the

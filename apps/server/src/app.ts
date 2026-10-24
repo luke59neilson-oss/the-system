@@ -24,6 +24,14 @@ export interface StartOptions {
   machineId?: string | undefined;
   /** Session log autosave interval (M2.4); 5 minutes when omitted. */
   sessionLogIntervalMs?: number | undefined;
+  /**
+   * M10.1: when set, closing backs up the real campaign (never the demo) to
+   * `backups/<stamp>-<label>/` first, if it has any events. The desktop app
+   * passes "quit".
+   */
+  backupOnClose?: string | undefined;
+  /** OS shown in the join help (M10.1); `process.platform` when omitted. */
+  platform?: string | undefined;
 }
 
 export interface RunningApp {
@@ -51,6 +59,7 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
   const store = open('main');
   const exportsDir = exportsDirFor(storeOptions.dataDir);
   const gmKey = options.gmKey ?? newGmKey();
+  const platform = options.platform ?? process.platform;
   // QF.18: the port comes from the live socket, not from a variable set after
   // listen() resolves, so a request that arrives in between (a GM console
   // reconnecting the moment a restarted server accepts) never gets a 503.
@@ -66,7 +75,9 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
       // Re-read interfaces per request so joining a new wifi shows up without a restart.
       joinInfo: () => {
         const port = livePort();
-        return port === null ? null : joinInfo(options.host, port, networkInterfaces());
+        return port === null
+          ? null
+          : { ...joinInfo(options.host, port, networkInterfaces()), platform };
       },
       webRoot: options.webRoot,
       // The demo campaign lives in its own directory (MS.4, D53).
@@ -97,7 +108,18 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
       generatedKey: options.gmKey === undefined,
       join: () => joinInfo(options.host, port, networkInterfaces()),
       close: () => {
-        closing ??= app.close().finally(() => store.close());
+        closing ??= app.close().finally(() => {
+          // After the listener is closed nothing else can append: the copy is final.
+          if (options.backupOnClose !== undefined && store.campaign.events.length > 0) {
+            try {
+              store.backup(options.backupOnClose);
+            } catch (error) {
+              // A failed copy must never stop the campaign closing cleanly.
+              console.error('The System: backup on close failed:', error);
+            }
+          }
+          store.close();
+        });
         return closing;
       },
     };
