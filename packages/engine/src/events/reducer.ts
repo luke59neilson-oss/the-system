@@ -1940,6 +1940,9 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const { enabled, steps } = event.payload;
       const problem = hungerStepsProblem(steps);
       if (problem) fail(event, problem);
+      if (enabled === state.hunger.enabled && steps.join('\n') === state.hunger.steps.join('\n')) {
+        fail(event, 'nothing to change');
+      }
       const top = steps.length - 1;
       const levels: Record<string, number> = {};
       for (const [id, level] of Object.entries(state.hunger.levels)) {
@@ -1968,6 +1971,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
     case 'region.defined': {
       const { regionId, name, notes } = event.payload;
       if (hasOwn(state.regions, regionId)) fail(event, `region "${regionId}" already exists`);
+      checkRegionName(state, event, name, regionId);
       const region: Region = {
         id: regionId,
         name,
@@ -1986,6 +1990,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const region = hasOwn(state.regions, regionId) ? state.regions[regionId] : undefined;
       if (!region) return fail(event, `unknown region "${regionId}"`);
       if (name === undefined && notes === undefined) fail(event, 'nothing to change');
+      if (name !== undefined) checkRegionName(state, event, name, regionId);
       const next: Region = { ...region, name: name ?? region.name, notes: notes ?? region.notes };
       return { ...state, regions: { ...state.regions, [regionId]: next } };
     }
@@ -2238,6 +2243,21 @@ function checkEntityStats(
 }
 
 /** Every id must be a character, listed once. */
+/** M7.4: two regions may not share a name (players see it; the GM picks by it). */
+function checkRegionName(
+  state: CampaignState,
+  event: DomainEvent,
+  name: string,
+  regionId: string,
+): void {
+  const key = name.trim().toLowerCase();
+  for (const id of state.regionOrder) {
+    if (id !== regionId && state.regions[id]?.name.trim().toLowerCase() === key) {
+      fail(event, `a region is already called "${name.trim()}"`);
+    }
+  }
+}
+
 function checkCharacters(state: CampaignState, event: DomainEvent, ids: readonly string[]): void {
   if (new Set(ids).size !== ids.length) fail(event, 'a character is listed twice');
   for (const id of ids) characterOf(state, event, id);

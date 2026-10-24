@@ -114,6 +114,7 @@ describe('hunger tracker (M7.4)', () => {
     expect(c.state?.hunger.levels['jake']).toBe(2);
     expect(rejects(c, { type: 'hunger.configure', steps: ['Only'] })).toMatch(/at least two/);
     expect(rejects(c, { type: 'hunger.configure', steps: ['A', 'a'] })).toMatch(/twice/);
+    expect(rejects(c, { type: 'hunger.configure', enabled: true })).toMatch(/nothing to change/);
   });
 });
 
@@ -162,6 +163,10 @@ describe('regions (M7.4)', () => {
     expect(rejects(c, { type: 'region.define', regionId: 'crown', name: 'X' })).toMatch(/exists/);
     expect(rejects(c, { type: 'region.edit', regionId: 'crown' })).toMatch(/nothing/);
     expect(rejects(c, { type: 'region.define', name: '  ' })).toMatch(/blank/);
+    expect(rejects(c, { type: 'region.define', name: ' the crown ' })).toMatch(/already called/);
+    expect(rejects(c, { type: 'region.edit', regionId: 'drum', name: 'The Crown' })).toMatch(
+      /already called/,
+    );
   });
 });
 

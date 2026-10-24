@@ -110,12 +110,12 @@ test('the GM keeps hunger, regions and factions; players see their own hunger an
   await factionForm.getByLabel('Based in').selectOption({ label: 'The Crown' });
   await factionForm.getByLabel('Survivors').fill('twelve');
   await expect(factions.getByText('Members must be a whole number (or blank)')).toBeVisible();
-  await factionForm.getByLabel('Survivors').fill('12');
+  await factionForm.getByLabel('Survivors').fill('4217');
   await factionForm.getByLabel('Standing toward the party').fill('Wary');
   await factionForm.getByRole('button', { name: 'Add faction' }).click();
   await expect(win.getByRole('status')).toHaveText('SECRET Canyon Watch added');
   await expect(factions.getByRole('list', { name: 'Factions' })).toHaveText(
-    'SECRET Canyon Watch Wary · 12 survivors · The Crown',
+    'SECRET Canyon Watch Wary · 4217 survivors · The Crown',
   );
   await factions.getByRole('button', { name: /Canyon Watch/ }).click();
   const editFaction = factions.getByRole('form', { name: 'Edit SECRET Canyon Watch' });
@@ -126,6 +126,8 @@ test('the GM keeps hunger, regions and factions; players see their own hunger an
 
   await win.evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-trackers-1366x768.png') });
+  await factions.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await gm.screenshot({ path: path.join(shots, 'gm-factions-1366x768.png') });
   await status.scrollIntoViewIfNeeded();
   await page.screenshot({ path: path.join(shots, 'player-hunger-390x844.png') });
   await page.getByTestId('quests').scrollIntoViewIfNeeded();
@@ -136,7 +138,17 @@ test('the GM keeps hunger, regions and factions; players see their own hunger an
   await expect(win.getByRole('status')).toHaveText('Hunger tracker off: players no longer see it');
   await expect(page.getByTestId('hunger')).toHaveCount(0);
 
-  for (const secret of ['SECRET', 'Ravenous', GM_KEY]) {
+  for (const secret of [
+    'SECRET',
+    'spawn knolls',
+    'The Drum',
+    'Canyon Watch',
+    'Wary',
+    'Friendly',
+    '4217',
+    'Ravenous',
+    GM_KEY,
+  ]) {
     expect(frames.filter((f) => f.includes(secret))).toEqual([]);
   }
   expect(pageErrors).toEqual([]);

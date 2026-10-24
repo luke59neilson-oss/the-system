@@ -58,7 +58,7 @@ describe('hunger tracker model (M7.4)', () => {
     expect(hungryIds(state)).toEqual(['jake', 'kim']);
     const faded = stateOf({
       ...DEFAULT_RULES,
-      hunger: { enabledByDefault: true, fadesAtGrade: 'G' },
+      hunger: { enabledByDefault: false, fadesAtGrade: 'G' },
     });
     expect(hungerRows(faded).every((r) => r.faded)).toBe(true);
     expect(hungryIds(faded)).toEqual([]);

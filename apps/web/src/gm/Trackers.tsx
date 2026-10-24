@@ -58,8 +58,12 @@ function HungerSection({ state, busy, run }: SectionProps) {
   const { hunger, rules } = state;
   const rows = hungerRows(state);
   const hungry = hungryIds(state);
-  const [stepsText, setStepsText] = useState<string | null>(null);
-  const text = stepsText ?? hunger.steps.join('\n');
+  // The draft remembers the steps it was typed over, so a change from
+  // elsewhere (another tab, an undo) replaces a stale draft instead of being
+  // overwritten by it.
+  const saved = hunger.steps.join('\n');
+  const [draft, setDraft] = useState<{ text: string; base: string } | null>(null);
+  const text = draft !== null && draft.base === saved ? draft.text : saved;
   const steps = stepsCommand(state, text);
   const set = (ids: string[], change: { level: number } | { delta: number }, done: string) =>
     void run({ type: 'hunger.set', characterIds: ids, ...change }, done);
@@ -149,7 +153,7 @@ function HungerSection({ state, busy, run }: SectionProps) {
               value={text}
               rows={Math.min(Math.max(hunger.steps.length, 3), 8)}
               disabled={busy}
-              onChange={(e) => setStepsText(e.target.value)}
+              onChange={(e) => setDraft({ text: e.target.value, base: saved })}
             />
           </label>
           {typeof steps === 'string' && <p className="err">{steps}</p>}
@@ -159,7 +163,7 @@ function HungerSection({ state, busy, run }: SectionProps) {
             onClick={() => {
               if (steps === null || typeof steps === 'string') return;
               void run(steps, 'Hunger steps saved').then((ok) => {
-                if (ok) setStepsText(null);
+                if (ok) setDraft(null);
               });
             }}
           >
