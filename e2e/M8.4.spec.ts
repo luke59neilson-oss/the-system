@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { expect, test, type Browser, type Page } from './helpers/test';
+import type { Browser } from '@playwright/test';
+import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M8.4 sound: three original sounds made in code (DING, selection,
