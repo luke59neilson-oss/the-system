@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M9 done (M9.4 deferred), M10 done, MS, MQ and MR done; QF.1–QF.22 done; Preview ready: Actions → Release → Run workflow (M10)
-**Next item:** M11.1 Soak test (resume wip/M11.1)
+**Status:** in progress: M0–M9 done (M9.4 deferred), M10 done, MS, MQ and MR done; QF.1–QF.22 done; M11.1–M11.2 done; Preview ready: Actions → Release → Run workflow (M10)
+**Next item:** M11.3 Performance (resume wip/M11.3)
 **Blockers:** none
 
 ## Run log
@@ -1014,4 +1014,14 @@ next item, blockers. -->
 - Tests: unit 1,190; e2e 91 + 6 latency; desktop smoke 7. Engine coverage not re-measured (last 97.53%).
 - Open `wip/*` branches: wip/M11.1 (base ac1bf1e, head 4cca4982). Where I stopped: `apps/server/test/soak.test.ts` has the server, GM + 4 players, a mulberry32 stream (seed 0x5eed1101) of xp awards and renames, and a desync check against `projectForPlayer`; it passes at `SOAK_STEPS=400` (7.5 s) and 1,000 (41 s) but 2,000 exceeds 120 s: per-command cost grows with history (quadratic). First: profile one late command (suspect a whole-history fold, projection or stringify per command/broadcast) and fix it in the server or engine; that also serves M11.3. Then add player commands (free points), the heap-growth check (< 20% after warm-up), and decide vitest vs e2e placement.
 - Next item: M11.1 Soak test (resume wip/M11.1).
+- Blockers: none.
+
+### Run 6cf41e9c · 2026-10-24 23:07–23:53 UTC (end minute 45: M11.3 opened on wip/M11.3 at 37 and handed off at 38; full e2e ran to minute 43, then close-out)
+- Preflight: `add_repo` not offered; repo already cloned (local main on an unrelated history; reset to origin/main d8064e1). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer: sonnet worked (worktree, background). No new answers. Hour 23: no efficiency check or sweep.
+- CI on main at start: latest completed (ac1bf1e) red in `desktop-smoke` only: the splash screenshot failed with "Unable to capture screenshot" while the hand-over was held (a new mode, not the QF.14 race); logged under Flakes in QUALITY.md; this run's pushes re-run CI.
+- M11.1 Soak test **checked**: the "quadratic server" from the last run was the test client re-parsing every frame per wait; the server is near-linear. Soak: real server, GM + 4 players, 2,000 seeded commands from both roles, desync checked against both projections after every step, GM-only canary, live-heap growth after warm-up 5–7% (D202). Sonnet: round 1 0 H / 2 M (stale-view race failing at 4,000 steps; end-only desync check) fixed; round 2 0 H / 0 M. Merged 0f7eeed.
+- M11.2 Recovery **checked**: vitest power loss at every byte of the log tail plus 60 seeded cuts; e2e SIGKILL mid-session with a torn multi-byte tail, stale lock and half-written snapshot temp file; outage command fails visibly and is never replayed (D203). Sonnet round 1: 1 H (e2e typecheck) / 2 M (a log shorter than its snapshot opened silently → now refuses and changes nothing; a client ahead of the log kept stale notifications → reset) fixed; round 2: 0 H / 0 M. Merged 4b74195.
+- Tests: unit 1,195 (+ perf test on wip); e2e 92 + 6 latency (full e2e 92/92 locally, 7.6 min under reviewer load); desktop smoke not run (no desktop change). Engine coverage not re-measured (last 97.53%).
+- Open `wip/*` branches: wip/M11.3 (base wip/M11.2 991b1ec, head 6370677). Where I stopped: `apps/server/test/perf.test.ts` builds a 50,000-event log and times `CampaignStore.open` with full replay: 1.1–1.4 s (< 3 s ✓). But building that log through `execute` is quadratic (0.09 ms per command at 0 events, 0.8 ms at 40k; the build takes 30 s): profile `execute` (suspects: `overLimit`/`itemOutOfReach` or a validation that scans `campaign.events`) and fix it, then shorten the test's build. Still to do: player sheet interactive < 2 s on localhost (Playwright timing, e2e/M11.3.spec.ts, ideally against a large campaign) and screenshots.
+- Next item: M11.3 Performance (resume wip/M11.3).
 - Blockers: none.
