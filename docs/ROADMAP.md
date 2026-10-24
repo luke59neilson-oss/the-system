@@ -629,7 +629,7 @@ work: Q44–Q48 and Q52.
 
 ## M8 — Look and feel
 
-- [ ] **M8.1 Metallic grade themes.** Tokens for aluminum (dull), bronze
+- [x] **M8.1 Metallic grade themes.** Tokens for aluminum (dull), bronze
   (dull), copper, silver, gold, platinum (cool blue-white, heavier brushed
   texture), prismatic diamond (animated; respects reduced motion).
   System-window styling per DESIGN §9.
