@@ -124,6 +124,20 @@ describe('SessionLogWriter', () => {
     const report = readFileSync(file, 'utf8');
     expect(report).toMatch(/^# Session 1 report: Whale$/m);
     expect(report).toContain('- In-game days: 1–3');
+    // M9.1: the same report as JSON beside the markdown.
+    const json = JSON.parse(readFileSync(file.replace(/\.md$/, '.json'), 'utf8')) as {
+      format: string;
+      version: number;
+      report: boolean;
+      session: { number: number; endDay: number };
+      entries: { text: string }[];
+    };
+    expect(json.format).toBe('the-system/session-report');
+    expect(json.version).toBe(1);
+    expect(json.report).toBe(true);
+    expect(json.session.number).toBe(1);
+    expect(json.session.endDay).toBe(3);
+    expect(JSON.stringify(json.entries)).toContain('Pale hunters');
     // Between sessions the report stays as it was.
     apply(store, { type: 'title.award', characterId: 'jake', title: 'Early Bird' }, gm);
     expect(writer.flush()).toBe(false);
@@ -137,7 +151,12 @@ describe('SessionLogWriter', () => {
     expect(two).toContain('Jake earned the title Late Bird');
     expect(two).not.toContain('Early Bird');
     // No temp files left behind.
-    expect(readdirSync(path.dirname(file)).sort()).toEqual(['session-01.md', 'session-02.md']);
+    expect(readdirSync(path.dirname(file)).sort()).toEqual([
+      'session-01.json',
+      'session-01.md',
+      'session-02.json',
+      'session-02.md',
+    ]);
     store.close();
   });
 

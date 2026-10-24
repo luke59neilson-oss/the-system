@@ -168,6 +168,10 @@ export class SessionLogWriter {
           gone.file,
           `# Session ${gone.number}: undone\n\nThe GM undid the start of this session (${this.options.now()}); its events now belong to no session.\n`,
         );
+        writeAtomic(
+          gone.file.replace(/\.md$/, '.json'),
+          `${JSON.stringify({ format: 'the-system/session-report', version: 1, writtenAt: this.options.now(), undone: true, number: gone.number }, null, 2)}\n`,
+        );
         if (!plan || plan.key === this.writtenKey) return true;
       }
     }
