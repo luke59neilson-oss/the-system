@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M8, MS, MQ and MR done; M9.1–M9.3 and M9.5 done (M9.4 deferred); QF.1–QF.21 done; Preview ready: Actions → Release → Run workflow (M8)
-**Next item:** M9.A Milestone acceptance and review (resume wip/M9.A)
+**Status:** in progress: M0–M9 done (M9.4 deferred), MS, MQ and MR done; QF.1–QF.21 done; Preview ready: Actions → Release → Run workflow (M9)
+**Next item:** M10.1 Electron wrapper (final) (resume wip/M10.1)
 **Blockers:** none
 
 ## Run log
@@ -984,5 +984,14 @@ next item, blockers. -->
 - Tests: unit 1,181 on main; e2e full suite 94/94 at 0e37706 (run during the M9.5 review); M9.3 and M9.5 specs green with 2 workers after the fixes. Engine coverage not re-measured this run (last 97.53%).
 - Open `wip/*` branches: wip/M9.A (in progress).
 - Next item: M9.A Milestone acceptance and review (resume wip/M9.A).
+- Blockers: none.
+
+### Run fef87149 · 2026-10-24 20:07–20:49 UTC (end minute 42: M9.A checked and merged at 41; M10.1 opened on wip/M10.1 at 41 and handed off, since no review could start and return before 50)
+- Preflight: `add_repo` not offered; repo already cloned (local main on an unrelated history; reset to origin/main 6ee33d4). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewers: fable works (worktree; Agent calls block). CI on main green at start (d303765). No new answers. Hour 20: no efficiency check, no sweep.
+- M9.A Milestone acceptance and review **checked**: resumed wip/M9.A. `e2e/M9.A.spec.ts` runs the Claude loop on the tutorial pack: import, session 1 (Jake to the top of G with 400 XP), end, Copy for Claude (markdown on the clipboard) and the JSON report's level lines, a drafted `evolutions` file imported back, and the player evolving into a drafted path at 390×844; GM-only strings never reach the phone. Fable round 1: 0 H / 2 M / 6 L: drafted menus and evolutions now say in the import preview whose screen they go to, their options and what they replace; session logs and reports gain a Party section (sheets with exact skill names, open menus, unchosen release). Round 2: 0 H / 0 M / 3 L (bracketed names made exact; rest to the QUALITY backlog). D198. Merged (8a72f63).
+- Tests: unit 1,185; e2e full suite 95/95 twice (at 0c4c6d1 and 407a703, during the reviews). Engine coverage not re-measured this run (last 97.53%).
+- Preview due for M9 (§8.2): Actions → Release → Run workflow.
+- Open `wip/*` branches: wip/M10.1 (base 8a72f63, no commits yet). Where I stopped: MS.5 already covers launch, GM key injection, join URL + QR, app-data folder and single instance (D54). Still missing for M10.1: a backup on quit (call the store's `backup('quit')` when closing campaigns in `apps/desktop/src/main.ts`), Windows firewall help (a GM-console note or dialog on win32 when the first player has not connected), and the acceptance under `xvfb-run` (`/health`, GM window connects with the key, a plain browser cannot act as GM) in `apps/desktop/test/desktop.spec.ts`.
+- Next item: M10.1 Electron wrapper (final) (resume wip/M10.1).
 - Blockers: none.
 
