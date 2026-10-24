@@ -81,6 +81,24 @@
   --glow-strength: 50%;
 }
 
+/*
+ * System windows on the player screen (DESIGN §9): the grade metal is the
+ * frame and the accent. Every window gets a thin metal border and glow and a
+ * metal heading; the status window wears the full sheen ring.
+ */
+.player-grid .window:not(.skill-detail) {
+  border-color: color-mix(in srgb, var(--metal) 55%, var(--metal-lo));
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--metal) calc(var(--glow-strength) * 0.7), transparent),
+    inset 0 0 18px rgba(90, 127, 184, 0.1);
+}
+.player-grid .window h2,
+.player-grid .window h3,
+.status-window h2,
+.status-window h3 {
+  color: var(--metal);
+}
+
 /* The status window's frame is the metal itself: a sheen ring drawn over the border. */
 .status-window.window {
   position: relative;
@@ -93,7 +111,7 @@
   content: '';
   position: absolute;
   inset: -1px;
-  padding: 2px;
+  padding: 3px;
   border-radius: inherit;
   background: var(--sheen);
   background-size: 300% 300%;

@@ -122,7 +122,11 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
         </p>
       )}
       {view && live.status !== 'refused' && (
-        <div className="player-grid">
+        // M8.1: the character's grade metal frames every player window.
+        <div
+          className={`player-grid${themeClass(view.rules.grades.find((g) => g.id === view.me.grade)?.theme)}`}
+          data-testid="player-grid"
+        >
           <div className="player-col">
             <Status view={view} client={pane ? null : client} />
             <ProfessionsPanel view={view} client={pane ? null : client} />

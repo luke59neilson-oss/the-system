@@ -7,6 +7,18 @@ import { startBuiltServer, type RunningServer } from './helpers/server';
 // the status window with its own colour and sheen; platinum is brushed and
 // cooler than silver; diamond's prism animates unless reduced motion is on.
 
+// The e2e tsconfig has no DOM lib; these browser globals run inside evaluate().
+declare const getComputedStyle: (
+  el: unknown,
+  pseudo?: string,
+) => {
+  getPropertyValue(name: string): string;
+  animationName: string;
+  color: string;
+  borderTopColor: string;
+};
+declare const document: { documentElement: { scrollWidth: number } };
+
 const GM_KEY = 'e2e-gm-key-m81-0123456789abcdef81';
 const shots = path.resolve(import.meta.dirname, '../docs/screens/themes');
 const THEMES = ['aluminum', 'bronze', 'copper', 'silver', 'gold', 'platinum', 'diamond'];
@@ -21,11 +33,15 @@ test.afterEach(async () => {
   await server.stop();
 });
 
+// Wears another grade's metal on the whole player screen (the grid and the
+// status window both carry the character's theme class).
 async function setTheme(page: Page, theme: string) {
-  await page.getByTestId('status').evaluate((el, t) => {
-    for (const c of [...el.classList]) if (c.startsWith('theme-')) el.classList.remove(c);
-    el.classList.add(`theme-${t}`);
-  }, theme);
+  for (const id of ['player-grid', 'status']) {
+    await page.getByTestId(id).evaluate((el, t) => {
+      for (const c of [...el.classList]) if (c.startsWith('theme-')) el.classList.remove(c);
+      el.classList.add(`theme-${t}`);
+    }, theme);
+  }
 }
 
 const metalOf = (page: Page) =>
@@ -47,8 +63,10 @@ test('each grade metal frames the status window in its own colour', async ({ bro
   await page.goto(`${server.url}/play/demo-jake`);
   await expect(page.getByTestId('connection')).toHaveText('Connected');
   const status = page.getByTestId('status');
-  // The real grade (D) wears silver.
+  // The real grade (D) wears silver, on the status window and on the grid
+  // that holds every other player window.
   await expect(status).toHaveClass(/theme-silver/);
+  await expect(page.getByTestId('player-grid')).toHaveClass(/theme-silver/);
 
   const metals = new Set<string>();
   for (const theme of THEMES) {
@@ -57,6 +75,26 @@ test('each grade metal frames the status window in its own colour', async ({ bro
     await status.screenshot({ path: path.join(shots, `${theme}-1366x768.png`) });
   }
   expect(metals.size).toBe(THEMES.length);
+
+  // The metal is the accent of every player window, not only the status one:
+  // the party window's heading and border follow the grade.
+  const party = page.getByTestId('party');
+  const look = () =>
+    party.evaluate((el) => {
+      const h = el.querySelector('h2');
+      return {
+        heading: h ? getComputedStyle(h).color : '',
+        border: getComputedStyle(el).borderTopColor,
+      };
+    });
+  await setTheme(page, 'copper');
+  const copper = await look();
+  await page.screenshot({ path: path.join(shots, 'player-copper-1366x768.png') });
+  await setTheme(page, 'platinum');
+  const platinum = await look();
+  expect(copper.heading).toBe('rgb(217, 128, 79)'); // copper --metal #d9804f
+  expect(platinum.heading).toBe('rgb(185, 216, 240)'); // platinum --metal #b9d8f0
+  expect(copper.border).not.toBe(platinum.border);
 
   // Platinum's sheen is brushed (a repeating streak layer); silver's is not.
   const sheen = (t: string) =>
@@ -78,4 +116,8 @@ test('each grade metal frames the status window in its own colour', async ({ bro
   await phone.goto(`${server.url}/play/demo-jake`);
   await expect(phone.getByTestId('connection')).toHaveText('Connected');
   await phone.getByTestId('status').screenshot({ path: path.join(shots, 'silver-390x844.png') });
+  await setTheme(phone, 'gold');
+  await phone.screenshot({ path: path.join(shots, 'player-gold-390x844.png'), fullPage: true });
+  const width = await phone.evaluate(() => document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual(390);
 });

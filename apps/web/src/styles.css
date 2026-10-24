@@ -654,16 +654,7 @@ button.secondary:hover {
   border-color: var(--accent);
 }
 
-/* Status screen (M3.2): grade-metal frame, rarity colours, live glow. */
-.status-window.window {
-  border-color: var(--metal);
-  box-shadow:
-    0 0 14px color-mix(in srgb, var(--metal) 35%, transparent),
-    inset 0 0 0 1px color-mix(in srgb, var(--metal) 20%, transparent);
-}
-.status-window h2 {
-  color: var(--metal);
-}
+/* Status screen (M3.2): rarity colours, live glow; the metal frame is in themes.css. */
 .pool-bar {
   display: block;
   height: 4px;
