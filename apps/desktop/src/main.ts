@@ -21,6 +21,8 @@ import {
  * data lives in the OS app-data folder; one instance at a time.
  * MS.7: a splash appears at once, a second launch focuses the first, and a
  * taken port moves to the next free one.
+ * M10.1: quitting backs the campaign up first; the join panel carries
+ * firewall help for this computer's OS.
  */
 
 // Tests only: a separate profile so test instances never meet a real one (the
@@ -85,6 +87,8 @@ let gmWindow: BrowserWindow | null = null;
 let splash: BrowserWindow | null = null;
 /** Set once quitting starts, so closing the window no longer asks. */
 let quitting = false;
+/** Windows log-off or shutdown: close without asking (the quit itself still backs up). */
+let sessionEnding = false;
 /** True while the server is starting: a quit then waits for start() to finish and close it. */
 let starting = false;
 /** A stuck close (e.g. a client that never finishes the WebSocket close) must not hang Quit. */
@@ -112,12 +116,14 @@ function openGmWindow(server: RunningApp, notice: string | null = null): void {
   // The dialog is async: the server shares this process and must keep serving
   // players while the question is open.
   // Windows log-off or shutdown: never hold it up with a question.
+  // It only skips the question: before-quit still closes the server, so the
+  // campaign is closed and backed up (M10.1 review).
   win.on('session-end', () => {
-    quitting = true;
+    sessionEnding = true;
   });
   let asking = false;
   win.on('close', (event) => {
-    if (quitting) return;
+    if (quitting || sessionEnding) return;
     event.preventDefault();
     if (asking) return;
     asking = true;
@@ -194,6 +200,10 @@ async function start(): Promise<void> {
         dataDir: process.env['THE_SYSTEM_DATA_DIR'] ?? dataDirFor(app.getPath('userData')),
         gmKey,
         machineId: machineIdFor(app.getPath('userData')),
+        // M10.1: every quit leaves a copy of the campaign in its backups folder.
+        backupOnClose: 'quit',
+        // Tests only: show another OS's firewall help in the join panel.
+        platform: (!app.isPackaged && process.env['THE_SYSTEM_TEST_PLATFORM']) || process.platform,
       }),
     );
     // Tests only: a slow start (server and campaign already open), so the

@@ -19,6 +19,11 @@ export interface JoinInfo {
   qrSvg: string;
   /** Every join URL with its own QR, same order as `urls`, so the GM can pick another. */
   options: { url: string; qrSvg: string }[];
+  /**
+   * The server computer's OS (M10.1), so the GM screen's "Players can't
+   * connect?" help names the right firewall. Set by `startApp`.
+   */
+  platform?: string;
 }
 
 /**

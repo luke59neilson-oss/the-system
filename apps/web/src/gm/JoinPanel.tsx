@@ -4,6 +4,8 @@ interface JoinInfo {
   url: string;
   qrSvg: string;
   options: { url: string; qrSvg: string }[];
+  /** The server computer's OS (M10.1): picks the firewall steps below. */
+  platform?: string;
 }
 
 const svgSrc = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -60,8 +62,58 @@ export function JoinPanel({ gmKey }: { gmKey: string }) {
           </div>
         </div>
       )}
+      {info && <ConnectHelp platform={info.platform} />}
       <GmLink gmKey={gmKey} />
     </section>
+  );
+}
+
+/** Firewall steps per OS (M10.1). Plain words; the GM reads them at the table. */
+function firewallSteps(platform: string | undefined): { name: string; steps: string[] } {
+  if (platform === 'win32') {
+    return {
+      name: 'Windows Firewall',
+      steps: [
+        'Set this wifi to Private: Settings → Network & internet → Wi-Fi → your network → Network profile type → Private.',
+        'Allow The System through the firewall: open Start, type “Allow an app through Windows Firewall”, press Change settings, and tick The System under Private.',
+        'If Windows asked when The System first started and you pressed Cancel, the steps above fix that too.',
+      ],
+    };
+  }
+  if (platform === 'darwin') {
+    return {
+      name: 'the macOS firewall',
+      steps: [
+        'If macOS asked whether The System may accept incoming connections, choose Allow.',
+        'Otherwise open System Settings → Network → Firewall → Options and set The System to allow incoming connections.',
+      ],
+    };
+  }
+  return {
+    name: 'the firewall',
+    steps: [
+      'If this computer runs a firewall (for example ufw), allow incoming connections on the port in the address above.',
+    ],
+  };
+}
+
+/**
+ * "Players can't connect?" (M10.1): the usual causes, the firewall for this
+ * computer's OS first. Folded away until the GM needs it.
+ */
+export function ConnectHelp({ platform }: { platform: string | undefined }) {
+  const firewall = firewallSteps(platform);
+  return (
+    <details className="connect-help" data-testid="connect-help">
+      <summary>Players can’t connect? Check {firewall.name}</summary>
+      <ol>
+        {firewall.steps.map((step) => (
+          <li key={step}>{step}</li>
+        ))}
+        <li>Players must be on the same wifi as this computer, not a guest network.</li>
+        <li>Type the address exactly, with http:// and the port, or try another address above.</li>
+      </ol>
+    </details>
   );
 }
 

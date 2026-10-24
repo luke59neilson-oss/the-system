@@ -660,7 +660,7 @@ work: Q44–Q48 and Q52.
 
 ## M10 — Desktop app (double-click)
 
-- [ ] **M10.1 Electron wrapper (final).** Builds on MS.5. Double-click starts the server and opens
+- [x] **M10.1 Electron wrapper (final).** Builds on MS.5. Double-click starts the server and opens
   the GM console with the GM key injected; shows join URL + QR; data in the
   OS app-data folder; single instance; backup on quit; Windows firewall help.
   *Accept:* launches under `xvfb-run` in the workspace; `/health` responds;
