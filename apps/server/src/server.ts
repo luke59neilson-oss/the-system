@@ -12,6 +12,7 @@ import {
   type ChangeLogCache,
   type ChangeLogQuery,
   type DomainEvent,
+  previewContent,
 } from '@the-system/engine';
 import { LiveHub, type HubOptions } from './hub';
 import type { JoinInfo } from './join';
@@ -373,6 +374,38 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     return format === 'json'
       ? reply.type('application/json; charset=utf-8').send(report.json)
       : reply.type('text/markdown; charset=utf-8').send(report.markdown);
+  });
+
+  // M9.3: import preview. The GM's content file is checked against the open
+  // campaign on a scratch copy (nothing changes); the GM screen then sends
+  // the approved entries' commands over its own GM connection.
+  app.post('/api/gm/content/preview', { bodyLimit: 2 * 1024 * 1024 }, (request, reply) => {
+    if (!active?.store.campaign.state) return reply.code(404).send({ error: 'No campaign open' });
+    let n = 0;
+    const now = options.live?.now ?? (() => new Date().toISOString());
+    // The body is the file (its text or its JSON), or `{ file, only }` to
+    // re-check just the entries the GM ticked (a content file never has a
+    // top-level `file` key: unknown keys are errors).
+    const body = request.body as unknown;
+    const wrapped =
+      typeof body === 'object' && body !== null && !Array.isArray(body) && 'file' in body
+        ? (body as { file: unknown; only?: unknown })
+        : null;
+    const only =
+      wrapped && Array.isArray(wrapped.only)
+        ? new Set(wrapped.only.filter((p): p is string => typeof p === 'string'))
+        : undefined;
+    return previewContent(
+      active.store.campaign,
+      wrapped ? wrapped.file : body,
+      {
+        actor: { role: 'gm' },
+        sessionId: active.store.campaign.state.currentSession ?? null,
+        now,
+        newId: () => `preview-${++n}`,
+      },
+      only,
+    );
   });
 
   // Browser navigations to client-side routes get the app shell; anything else

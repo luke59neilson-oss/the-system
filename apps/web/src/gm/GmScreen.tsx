@@ -22,6 +22,7 @@ import { entriesOf } from './originLibraryModel';
 import { resolvePerspective, type PartyMember, type Perspective } from './perspective';
 import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
 import { SessionPanel } from './SessionPanel';
+import { ContentImport } from './ContentImport';
 import { PortraitPicker } from './PortraitControls';
 import { PartyDashboard } from './PartyDashboard';
 import { XpAward } from './XpAward';
@@ -156,6 +157,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
                 }
               />
               <SessionPanel client={client} state={state} gmKey={gmKey} />
+              <ContentImport client={client} gmKey={gmKey} />
               <JoinPanel gmKey={gmKey} />
               <CreateCharacter client={client} gmKey={gmKey} state={state} />
               <XpAward client={client} state={state} />

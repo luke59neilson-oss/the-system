@@ -649,7 +649,7 @@ work: Q44–Q48 and Q52.
 - [x] **M9.2 Content format.** JSON schemas for skill offers, skills, items,
   titles, evolution options, bestiary entries; `docs/CONTENT-FORMAT.md` with
   examples.
-- [ ] **M9.3 Import with approval.** Invalid files show errors and change
+- [x] **M9.3 Import with approval.** Invalid files show errors and change
   nothing; GM approves what applies.
 - [ ] **M9.4 Optional GitHub sync (deferred: Luke chose folder export for now; skip and leave unchecked until he asks).** Token stored in OS app data only, never
   exported. Session end pushes the report to `campaign/sessions/`; pulls
