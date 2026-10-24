@@ -63,7 +63,7 @@ test('item bonuses are flat and capped at 20% of base; the status screen says so
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   await gm.getByLabel('Name', { exact: true }).fill('Ada');
   await gm.getByRole('button', { name: 'Create character' }).click();
-  await expect(gm.getByRole('cell', { name: 'Ada', exact: true })).toBeVisible();
+  await expect(gm.getByRole('heading', { level: 3, name: 'Ada', exact: true })).toBeVisible();
 
   // A percentage on an item is refused.
   expect(

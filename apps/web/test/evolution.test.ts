@@ -4,6 +4,7 @@ import {
   bonusText,
   evolutionBlocked,
   evolutionWarnings,
+  rerateLines,
   transformText,
   weightsText,
 } from '../src/player/evolution';
@@ -53,6 +54,23 @@ describe('evolution screen helpers (M3.13)', () => {
     expect(
       transformText(rules, me({ skills: [] }), { skill: 'Gone', name: 'X', rarity: 'rare' }),
     ).toBe('[Gone] → [X (Rare)]');
+    expect(
+      transformText(rules, me(), {
+        skill: 'Basic Archery',
+        merge: 'Gone',
+        name: 'Storm Arrows',
+        rarity: 'rare',
+      }),
+    ).toBe('[Basic Archery (Common)] + [Gone] → [Storm Arrows (Rare)]');
+    expect(
+      evolutionWarnings(rules, me(), {
+        ...option(),
+        classWeights: null,
+        transforms: [
+          { skill: 'Basic Archery', merge: 'Gone', name: 'Storm Arrows', rarity: 'rare' },
+        ],
+      })[0],
+    ).toMatch(/\[Basic Archery\] and \[Gone\] merge into \[Storm Arrows\]: both are consumed/);
   });
 
   it('lists reshaped weights biggest first, ties in stat order', () => {
@@ -111,6 +129,32 @@ describe('evolution warnings with marks carrying over (MQ.4, D114)', () => {
   });
 });
 
+describe('evolution warnings when every upgrade starts at 0 marks (MR.2, L15)', () => {
+  const resetting = { marks: { ...rules.marks, carryOver: false, resetOnUpgrade: true } };
+  const at = (marks: number) => me({ skills: [skill('Basic Archery', marks)] });
+  it('says a transform that raises the rarity resets every mark', () => {
+    expect(evolutionWarnings(resetting, at(6), option())[0]).toBe(
+      '[Basic Archery] becomes [Expert Archery]: a transformed skill starts at 0 marks, so its 6 mastery marks reset.',
+    );
+    expect(evolutionWarnings(resetting, at(1), option())[0]).toBe(
+      '[Basic Archery] becomes [Expert Archery]: a transformed skill starts at 0 marks, so its 1 mastery mark resets.',
+    );
+  });
+  it('says a transform at the same rarity resets them too', () => {
+    const keep = option({
+      transforms: [{ skill: 'Basic Archery', name: 'Expert Archery', rarity: 'common' }],
+    });
+    expect(evolutionWarnings(resetting, at(3), keep)[0]).toBe(
+      '[Basic Archery] becomes [Expert Archery]: a transformed skill starts at 0 marks, so its 3 mastery marks reset.',
+    );
+  });
+  it('says nothing about a skill with no marks', () => {
+    expect(evolutionWarnings(resetting, at(0), option())).toEqual([
+      'The choice is final; the other options will be gone.',
+    ]);
+  });
+});
+
 describe('evolution waits for selections (MQ.1, D103)', () => {
   it('blocks while any earned selection is unchosen, offered or not', () => {
     expect(evolutionBlocked({ selectionsDue: 0 })).toBeNull();
@@ -130,5 +174,33 @@ describe('evolution stat bonus (MQ.1)', () => {
     expect(bonusText(rules, { strength: 0 })).toBeNull();
     expect(bonusText(rules, {})).toBeNull();
     expect(bonusText(rules, undefined)).toBeNull();
+  });
+});
+
+describe('rerateLines (MR.1)', () => {
+  const me = { skills: [skill('Basic Archery', 0), skill('Identify', 2)] };
+  it('lists each re-rated skill in sheet order, old → new or "stays"', () => {
+    expect(
+      rerateLines(rules, me, {
+        rerate: [
+          { skill: 'Identify', rarity: 'common' },
+          { skill: 'Basic Archery', rarity: 'rare' },
+        ],
+      }),
+    ).toEqual(['[Basic Archery] Common → Rare', '[Identify] stays Common']);
+  });
+  it('is empty for a release stored before MR.1', () => {
+    expect(rerateLines(rules, me, {})).toEqual([]);
+  });
+  it('shows the default one-step drop for a skill the list does not name (MR.A)', () => {
+    const rare = { ...skill('Archer’s Eye', 0), rarity: 'rare' } as OwnSheet['skills'][number];
+    const mine = { skills: [rare, skill('Identify', 2)] };
+    expect(rerateLines(rules, mine, { rerate: [] })).toEqual([
+      '[Archer’s Eye] Rare → Common',
+      '[Identify] stays Common',
+    ]);
+    expect(
+      rerateLines(rules, mine, { rerate: [{ skill: 'Archer’s Eye', rarity: 'rare' }] }),
+    ).toEqual(['[Archer’s Eye] stays Rare', '[Identify] stays Common']);
   });
 });

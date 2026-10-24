@@ -1,0 +1,159 @@
+import { describe, expect, it } from 'vitest';
+import {
+  DEFAULT_RULES,
+  emptyCampaign,
+  execute,
+  type CampaignState,
+  type Command,
+  type CommandContext,
+  type Entity,
+} from '@the-system/engine';
+import {
+  emptyEntityDraft,
+  entityDefineCommand,
+  entityDraftOf,
+  entityEditCommand,
+  labelLeaks,
+  revealOutcome,
+} from '../src/gm/bestiaryModel';
+
+function stateOf(): CampaignState {
+  let n = 0;
+  const ctx: CommandContext = {
+    actor: { role: 'gm' },
+    sessionId: null,
+    now: () => '2026-10-24T02:00:00.000Z',
+    newId: () => `e${++n}`,
+  };
+  const kit = [
+    { name: 'Basic Archery', rarity: 'inferior' },
+    { name: 'Basic One-Handed Weapon', rarity: 'inferior' },
+    { name: 'Archer’s Eye', rarity: 'common' },
+  ];
+  const commands: Command[] = [
+    { type: 'campaign.create', name: 'Beasts', rules: DEFAULT_RULES },
+    { type: 'character.create', id: 'jake', name: 'Jake', className: 'Archer', classSkills: kit },
+    { type: 'character.create', id: 'kim', name: 'Kim', className: 'Archer', classSkills: kit },
+  ];
+  let c = emptyCampaign();
+  for (const command of commands) {
+    const r = execute(c, command, ctx);
+    if (!r.ok) throw new Error(r.error);
+    c = r.campaign;
+  }
+  if (!c.state) throw new Error('no state');
+  return c.state;
+}
+
+const hunter = {
+  ...emptyEntityDraft(),
+  name: ' Pale  hunter ',
+  label: 'Pale stalker',
+  grade: 'F',
+  level: '12',
+  stats: { strength: '30', agility: ' ' },
+  tiers: { common: '[Pale Hunter]', rare: ' [Immune cell] ' },
+  notes: 'Hunts in pairs.',
+};
+
+describe('bestiary model (M7.2)', () => {
+  it('builds the define command from the draft', () => {
+    const state = stateOf();
+    expect(entityDefineCommand(state, hunter)).toEqual({
+      type: 'entity.define',
+      name: 'Pale hunter',
+      label: 'Pale stalker',
+      tiers: [
+        { minRarity: 'common', text: '[Pale Hunter]' },
+        { minRarity: 'rare', text: '[Immune cell]' },
+      ],
+      grade: 'F',
+      level: 12,
+      stats: { strength: 30 },
+      notes: 'Hunts in pairs.',
+    });
+    expect(entityDefineCommand(state, { ...hunter, label: '' })).toMatchObject({
+      label: 'Pale hunter',
+    });
+    expect(entityDefineCommand(state, { ...hunter, name: '' })).toBe('Give it a name');
+    expect(entityDefineCommand(state, { ...hunter, level: '' })).toMatch(/both a grade/i);
+    expect(entityDefineCommand(state, { ...hunter, stats: { strength: 'x' } })).toMatch(
+      /Strength must be a whole number/,
+    );
+    expect(entityDefineCommand(state, { ...hunter, tiers: {} })).toMatch(/at least one/);
+  });
+
+  it('edits only what changed', () => {
+    const state = stateOf();
+    const entity: Entity = {
+      id: 'h',
+      name: 'Pale hunter',
+      label: 'Pale stalker',
+      tiers: [{ minRarity: 'common', text: '[Pale Hunter]' }],
+      grade: 'F',
+      level: 12,
+      stats: { strength: 30 },
+      notes: 'Hunts in pairs.',
+      knownBy: [],
+      createdAt: '2026-10-24T02:00:00.000Z',
+    };
+    const draft = entityDraftOf(entity);
+    expect(entityEditCommand(state, entity, draft)).toBeNull();
+    expect(entityEditCommand(state, entity, { ...draft, level: '14', notes: 'x' })).toEqual({
+      type: 'entity.edit',
+      entityId: 'h',
+      grade: 'F',
+      level: 14,
+      notes: 'x',
+    });
+    expect(entityEditCommand(state, entity, { ...draft, stats: {} })).toEqual({
+      type: 'entity.edit',
+      entityId: 'h',
+      stats: null,
+    });
+  });
+
+  it('warns when an out-of-range target’s label gives it away (D181)', () => {
+    const state = stateOf();
+    // Level-0 G-grade characters cannot Identify an F-grade beast.
+    expect(labelLeaks(state, { ...hunter, label: '' }, [])).toEqual(['Jake', 'Kim']);
+    expect(labelLeaks(state, { ...hunter, label: 'Pale hunter (F) lvl 12' }, ['kim'])).toEqual([
+      'Kim',
+    ]);
+    expect(labelLeaks(state, { ...hunter, label: 'F-grade beast' }, [])).toHaveLength(2);
+    expect(labelLeaks(state, hunter, [])).toEqual([]);
+    expect(labelLeaks(state, { ...hunter, label: 'Pale stalker(s)' }, [])).toEqual([]);
+    // In range (a lower grade) or no rank: nothing to warn about.
+    expect(labelLeaks(state, { ...hunter, label: '', grade: 'G', level: '0' }, [])).toEqual([]);
+    expect(labelLeaks(state, { ...hunter, label: '', grade: '', level: '' }, [])).toEqual([]);
+  });
+});
+
+describe('revealOutcome (QF.20)', () => {
+  it('says in-range characters can Identify and out-of-range ones only know of it', () => {
+    const state = stateOf();
+    const near = { grade: 'G', level: 0, label: 'Rat' };
+    expect(revealOutcome(state, near, ['jake', 'kim'])).toBe('Jake, Kim can now Identify Rat');
+    const far = { grade: 'F', level: 12, label: 'Pale stalker' };
+    expect(revealOutcome(state, far, ['jake'])).toBe(
+      'Jake now knows of Pale stalker but is out of Identify range (sees [??? – lvl ???])',
+    );
+    expect(revealOutcome(state, far, ['jake', 'kim'])).toBe(
+      'Jake, Kim now know of Pale stalker but are out of Identify range (sees [??? – lvl ???])',
+    );
+    const mixed = { grade: 'G', level: 0, label: 'Rat' };
+    expect(revealOutcome(state, { ...mixed, grade: 'F', level: 0 }, ['jake'])).toContain(
+      'out of Identify range',
+    );
+    expect(revealOutcome(state, mixed, ['kim', 'jake'])).toBe('Kim, Jake can now Identify Rat');
+    // An F-grade Kim reads any G-grade target; level-0 Jake cannot read a G lvl 12.
+    const kim = state.characters['kim'];
+    if (kim === undefined) throw new Error('no kim');
+    const split = { ...state, characters: { ...state.characters, kim: { ...kim, grade: 'F' } } };
+    expect(revealOutcome(split, { grade: 'G', level: 12, label: 'Boar' }, ['jake', 'kim'])).toBe(
+      'Kim can now Identify Boar; Jake now knows of Boar but is out of Identify range (sees [??? – lvl ???])',
+    );
+    const place = { grade: null, level: null, label: 'Rake Canyons' };
+    expect(revealOutcome(state, place, ['kim'])).toBe('Kim can now Identify Rake Canyons');
+  });
+});

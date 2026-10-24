@@ -27,6 +27,10 @@ export function notificationText(n: LiveNotification): string {
       return n.unassigned > 0
         ? `Free points waiting to be assigned: ${n.unassigned}`
         : 'All free points assigned';
+    case 'skillUpgrade':
+      return `*'DING!' Skill upgraded: [${n.skill} (${n.from})] → [${n.skill} (${n.to})]*`;
+    case 'skillMerge':
+      return `*'DING!' Skills merged: [${n.skills[0]}] + [${n.skills[1]}] → [${n.name} (${n.rarity})]*`;
     case 'broadcast':
       return n.text;
     case 'hiddenQuest':
@@ -36,7 +40,25 @@ export function notificationText(n: LiveNotification): string {
       if (n.currency > 0) parts.push(`${n.currency} ${n.currencyName}`);
       const what =
         parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0];
-      return `You received ${what ?? 'a gift'} from ${n.from ?? 'the GM'}`;
+      const why = (n.reason ?? '').trim() === '' ? '' : `: ${(n.reason ?? '').trim()}`;
+      return `You received ${what ?? 'a gift'} from ${n.from ?? 'the GM'}${why}`;
+    }
+    case 'title': {
+      const text = n.text.trim() === '' ? '' : ` - ${n.text.trim()}`;
+      return `*'DING!' Title earned: [${n.title}]${text}*`;
+    }
+    case 'currency': {
+      const why = n.reason.trim() === '' ? '' : `: ${n.reason.trim()}`;
+      return n.amount > 0
+        ? `You received ${n.amount} ${n.currencyName} from the GM${why}`
+        : `Fined ${-n.amount} ${n.currencyName} by the GM${why}`;
+    }
+    case 'itemsTaken': {
+      const parts = n.items.map((i) => (i.count > 1 ? `[${i.name}] ×${i.count}` : `[${i.name}]`));
+      const what =
+        parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0];
+      const why = n.reason.trim() === '' ? '' : `: ${n.reason.trim()}`;
+      return `The GM took ${what ?? 'an item'}${why}`;
     }
     case 'trade': {
       const who = n.other ?? 'The GM';

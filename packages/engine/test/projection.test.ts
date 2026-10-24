@@ -143,8 +143,10 @@ describe('player projection', () => {
     expect(JSON.stringify(view)).not.toContain('secret');
     expect(Object.keys(view).sort()).toEqual([
       'campaignName',
+      'contests',
       'day',
       'hiddenQuests',
+      'hunger',
       'identify',
       'inventory',
       'me',
@@ -154,6 +156,7 @@ describe('player projection', () => {
       'party',
       'practice',
       'quests',
+      'region',
       'rules',
       'viewerId',
     ]);
@@ -180,7 +183,15 @@ describe('player projection', () => {
     // Derived: race level, effective stats (base + equipped items, D81) and
     // the count of earned selections still to choose (MQ.1, D103).
     expect(Object.keys(view.me).sort()).toEqual(
-      [...ownFields, 'raceLevel', 'effectiveStats', 'itemCappedStats', 'selectionsDue'].sort(),
+      [
+        ...ownFields,
+        'raceLevel',
+        'effectiveStats',
+        'itemCappedStats',
+        'itemStats',
+        'selectionsDue',
+        'titleDetails',
+      ].sort(),
     );
   });
 
@@ -196,7 +207,12 @@ describe('player projection', () => {
       'stats',
     ]);
     // Mark costs are already on each owned skill (marksNeeded); nothing else rides along.
-    expect(Object.keys(rules.marks).sort()).toEqual(['carryOver', 'order', 'upgrades']);
+    expect(Object.keys(rules.marks).sort()).toEqual([
+      'carryOver',
+      'order',
+      'resetOnUpgrade',
+      'upgrades',
+    ]);
     const json = JSON.stringify(rules);
     for (const hidden of ['stability', 'evolutionGate', 'multiplier', 'gradeGapMultiplier'])
       expect(json).not.toContain(hidden);
@@ -449,6 +465,25 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
     (s as Record<string, unknown>).broadcasts = [
       ...s.broadcasts.map((b) => ({ ...b, gmNote: `${GM}-broadcast` })),
       ...whispers,
+    ];
+    // Scheduled broadcasts (M4.7) stay GM-only until their day is reached,
+    // even those addressed to everyone or to the viewer (QF.15).
+    (s as Record<string, unknown>).scheduledBroadcasts = [
+      ...s.scheduledBroadcasts.map((b) => ({ ...b, text: `${GM}-scheduled-${b.id}` })),
+      {
+        id: 'sched-all',
+        text: `${GM}-scheduled-all`,
+        characterIds: null,
+        day: s.day + 1,
+        scheduledAt: '2026-10-21T12:00:00.000Z',
+      },
+      ...ids.map((id) => ({
+        id: `sched-${id}`,
+        text: `${GM}-scheduled-${id}`,
+        characterIds: [id],
+        day: s.day + 1,
+        scheduledAt: '2026-10-21T12:00:00.000Z',
+      })),
     ];
     // Economy (M3.7): each player gets only their own holdings, their own
     // trades and the definitions of the items those mention. The rest of the

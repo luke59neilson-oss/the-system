@@ -348,3 +348,174 @@ DESIGN/ROADMAP; do not re-apply them.
     and 5,000 per character. The GM has no limits. Default: these numbers (they live in
     the rules config). Alternative: tell me other numbers.
     Answer:
+
+54. **No portable Windows build.** Your first download stopped halfway and the
+    portable `.exe` started anyway and hung (QF.11). The installer checks
+    itself and says "integrity check failed" instead. Default (D140): Windows
+    gets only the installer; the release notes list each file's size and
+    SHA-256 so a short download is easy to spot. Alternative: bring back a
+    portable build with its own integrity check (more to build and test).
+    Answer:
+
+55. **What a player can ask for in a trade.** So that a proposal never reveals
+    what another player holds (QF.9), a player may ask only for items they have
+    seen: ones they hold or wear, or ones offered to them or by them in a
+    trade. Asking for 4 of something the other player holds 1 of is now
+    accepted and only fails when they accept. The trade screen already asks
+    only for currency ("ask in person and let them offer"). Default (D143):
+    this rule. Alternative: let players ask for any item in the library by
+    name, which would tell them which items exist.
+    Answer:
+
+56. **Does Identify drop at evolution too?** MR.1 re-rates every skill one
+    rarity down by default, and that includes the race skill Identify, so a
+    Common Identify becomes Inferior at the G → F evolution and shows less
+    about the same targets until it climbs back (it keeps its marks). The GM
+    can keep it in the release. Default (D149): Identify drops like any other
+    skill. Alternative: race skills (or Identify alone) keep their rarity by
+    default.
+    Answer:
+
+57. **Faster reviews (efficiency check, Tier 2).** (a) The builder pastes its
+    own `npm run check` and e2e results with the commit SHA into the review
+    prompt, and the reviewer re-runs only what it doubts; (b) two small,
+    independent items (no engine, save format or golden changes, no `Mx.A`)
+    share one reviewer. Each saves a few minutes of a blocking review per run.
+    Default: no change (reviewers re-run everything, one item each).
+    Answer:
+
+58. **Efficiency guard on Highs.** Trials are reverted when the number of
+    High review findings rises, but recent Highs all came from sweep-found
+    QF items, so two harmless changes (D119, D132) were reverted on noise
+    (D150). Count only non-QF items for that guard? Default: no change.
+    Answer:
+
+59. **GM sheet edits: levels, XP and grade.** The M4.5 sheet editor edits
+    name, base stats, current pools, skill nicknames and the Unique tag, and
+    can return an assigned free-point batch to the player. It does not set
+    class/profession level, XP or grade directly: those would skip the class
+    spread, free points, selections and evolutions, so they change only
+    through XP awards and evolutions (and undo). Should the GM have a raw
+    "set level" override anyway? Default: no (D157).
+    Answer:
+
+60. **When a scheduled System broadcast goes out.** M4.7 schedules a
+    broadcast for a later **in-game day**: it is sent the moment the GM
+    advances the day counter to that day (or past it), so it survives app
+    restarts and undo, and needs no clock. It does not schedule by real
+    time ("in 20 minutes") or for "the start of the next session". Want
+    either of those too? Default: in-game day only (D159).
+    Answer:
+
+61. **A merge offered at an evolution.** M5.2 lets the GM offer a ready
+    merge as part of an evolution option: the two skills become one new
+    skill when the player picks that option. It counts as the one merge of
+    the grade being left (so a character who merged earlier in that grade
+    cannot get another at the evolution), and the merged skill is then
+    re-rated with the rest at the *next* evolution, not this one. Should an
+    evolution merge count against the new grade instead? Default: the grade
+    being left (D168).
+    Answer:
+
+62. **Who accepts a merge?** M5.4 lets the GM build a merge from a merge
+    alert (two skills logged together 3 times, both at least Uncommon) and
+    send it: it applies at once and the player gets the System's merge DING.
+    Should the player be able to accept or decline a merge first (keeping
+    both originals), like a selection menu? Default: the GM's send applies
+    it; the GM asks at the table first (D171).
+    Answer:
+
+63. **End-of-scene prompt for players?** M5.5's "End scene" walks the GM's
+    console through the party one character at a time. Should it also ask
+    each player, on their own screen, to log what they practised? Default:
+    no; players keep their own practice panel (D172).
+    Answer:
+
+64. **Should evolutions re-rate race skills like Identify?** DESIGN §6 drops
+    every kept skill one rarity at evolution by default, so Identify (Common)
+    becomes Inferior at the F evolution unless the GM keeps it, and the
+    Identify tier the player sees drops with it. Should race skills (or just
+    Identify) keep their rarity by default? Default: the rule as written; the
+    GM can keep Identify in the evolution builder's re-rating list (M5.A
+    review).
+    Answer:
+
+65. **Should players see their own currency ledger?** M6.3 keeps the ledger
+    (every grant, fine, gift, trade and loot with the balance after) on the
+    GM's console; a player sees their balance and a notice for each grant or
+    fine, with the GM's reason. Should players also get a "Credits history"
+    of their own entries? Default: no; the notices are in their history (D176).
+    Answer:
+
+66. **Do a title's flat stats get multiplied by title percentages?** The
+    engine computes (base + capped items + title flats) × (1 + Σ title %), so
+    a title's +10 flat also grows with a +50% title. DESIGN §4 only names base
+    and items inside the brackets. Default: keep flats inside (as built);
+    the other reading adds them after the multiplier (M6 milestone review).
+    Answer:
+
+67. **How much of a contest's odds should players see?** When the GM shares a
+    contest roll (M7.3), each player on it gets a pop-up with their own value,
+    their chance as a whole percent, and Success/Failure. Against a bestiary
+    NPC that lets a player estimate the NPC's stat to a few percent. Default:
+    show the whole-percent chance (DESIGN §7 shows ratio odds; the GM chooses
+    what to share). Other options: coarse words ("likely", "even",
+    "unlikely"), or no odds against NPCs (D182).
+    Answer:
+
+68. **Should hunger do anything on its own?** The hunger tracker (M7.4) is
+    bookkeeping: the GM sets each character's step (Fed … Starving, renamable)
+    or moves everyone one step with a button. Default: no automatic change
+    when the day advances and no penalty from hunger; the GM narrates it.
+    Options: every new day moves everyone one step hungrier; a step adds a
+    penalty (for example to Stamina) (D184).
+    Answer:
+
+69. **Should players see the survivor factions?** Factions (M7.4) are GM-only
+    (name, region, head count, standing toward the party, notes); players see
+    only the current region's name. Default: GM-only, shared through notes or
+    broadcasts. Option: a "known to players" toggle that shows a faction's name
+    and standing (D184).
+    Answer:
+
+70. **Should a contest between two player characters hide each side's stat?**
+    When the GM shares a contest between two characters, each player sees
+    their own stat value and the rounded chance, which together reveal the
+    other player's stat (roughly). Default: keep it as is; the GM chooses to
+    share, like the party's pool bars (sweep D, Low). Option: show players
+    only the chance in words when both sides are characters (D186).
+    Answer:
+
+71. **Efficiency trials: should unrelated guards be judged against a noise band? (Tier 2, LOOP §9.4)**
+    The D183 trial (blocking agents launched together) lifted sweep-run end
+    minutes 42 → 52, but the round-2 share went 5/10 → 7/10 and main CI
+    red/day 1 → 2, so §9.2 reverted it (D194). The auditor traced both guard
+    moves to causes D183 cannot touch. Proposal: when a trial starts, list
+    the guards it could move; judge those strictly and the rest against a
+    band (round-2 ±2 of 10, red/day ±1), reverting on an out-of-band move only
+    if it persists at the next check; and restore D183. Default: no change
+    (D183 stays reverted).
+    Answer:
+
+72. **Tutorial pack numbers (M9.5).** The tutorial pack (`docs/content-packs/tutorial.json`)
+    needed numbers DESIGN §8 does not give. Defaults used: World Stability
+    starts at 100 and players see it; cleansing a curse zone −5, killing a
+    pale hunter −2, killing a System-placed beast +1, killing a Beast Lord
+    +5. Beast Lords: Gale Warden F-grade lvl 14, Clotmother E lvl 22,
+    Ossuary King E lvl 28. [Rapid Spread] gives +5% Agility and +5%
+    Endurance; a second title [Lordbreaker] gives +3% Strength and +2
+    Strength. The hidden quest "The Host's Response" is there for the reveal;
+    players see "a hidden quest exists" from day 1 (DESIGN §7), so untick it
+    at import and add it later if that gives the twist away. Stability starts
+    at its maximum, so the + actions only matter once something has lowered it.
+    Every value is an ordinary library entry: change it in the app, or tell
+    me and the pack changes (D197).
+    Answer:
+
+73. **macOS build (M10.2).** M10.2's text asks for a macOS dmg, but D97
+    (your Q1 answer: you use Windows) dropped macOS from the release, and the
+    workflow builds Windows and Linux only. Default: keep it that way and read
+    M10.2's "all three artifacts" as the two D97 keeps. Since the repo went
+    public (L10) macOS runners cost nothing, so say "add macOS" if any player
+    or co-GM uses a Mac and it goes back in (unsigned dmg).
+    Answer:

@@ -32,9 +32,13 @@ export function markProgress(rules: PlayerRules, grade: string, skill: Skill): M
       banked: skill.marks >= skill.marksNeeded,
     };
   }
+  // MR.2: an upgraded skill is new to the character and starts at 0 marks.
+  const fresh = rules.marks.resetOnUpgrade ? ' The upgraded skill starts at 0 marks.' : '';
   return {
     text:
-      skill.marks >= skill.marksNeeded ? `${toward}. Ready: the GM can upgrade it.` : `${toward}.`,
+      skill.marks >= skill.marksNeeded
+        ? `${toward}. Ready: the GM can upgrade it.${fresh}`
+        : `${toward}.`,
     percent,
     banked: false,
   };

@@ -102,10 +102,15 @@ them whole costs about 30k tokens per run for history you do not need):
 3. Tests first where practical, then code. Before every push to main run
    `npm run check` and the relevant e2e specs; main must stay green.
 4. Commit small. End every commit message with the attribution lines from your
-   session's system reminder. `git fetch && git rebase origin/main` before
-   pushing main (never rebase `wip/*` branches). Never force-push.
+   session's system reminder. Commit locally; push main once per item,
+   after its §6 review fixes are in, not once per commit or review round (the
+   reviewer tests the local commit in a worktree, so it needs no push). Push
+   main earlier only for a red-CI fix. `git fetch && git rebase origin/main`
+   before pushing main (never rebase `wip/*` branches). Never force-push.
 5. **Timebox: fixed clock, no forecasting.** All times are minutes after you
-   took the lock. Runs have been ending around minute 39 because they guessed
+   took the lock; `npm run clock` prints the minute, the phase and the next
+   deadline. Run it after every review returns and before §8.0; if it says
+   build, open `wip/<next item>` before anything else. Runs have been ending around minute 39 because they guessed
    the next item would not fit; that guess is never a reason to stop.
    - **0–44: build.** When an item passes its checks, launch its reviewer in
      the background (§6.3) and start the next item in the same minute, however
@@ -124,15 +129,17 @@ them whole costs about 30k tokens per run for history you do not need):
    - Ending before minute 48 needs one of these reasons, written in the
      PROGRESS entry: `docs/DONE.md` written, a Blocker, or every remaining
      item is blocked or deferred.
+   - **Gate (D170):** finishing an item, its review or the full e2e run is
+     never the end of the build phase. If the clock is under 44 and an
+     unblocked item remains, start it now (its first commit goes to
+     `wip/<item-id>` at 44). Run the full e2e while the last review works,
+     not after it, so it does not read as the run's last step.
    - Remote branches cannot be deleted from here; leave finished `wip/*`
      branches alone.
 6. **Test scope.** Before each push to main: `npm run check` plus the e2e
    specs for the items you touched. Run the full e2e suite before every
    `Mx.A` and whenever you change shared server or UI code. CI runs the full
-   suite on every push; a red main is the next run's first task. A full run
-   on a branch head counts for main when, after the merge,
-   `git diff --quiet <branch-head> main` shows the same tree (D132); note it
-   in PROGRESS instead of running it again.
+   suite on every push; a red main is the next run's first task.
 7. Banned in committed code: `.skip`, `.only`, `@ts-ignore`,
    `@ts-expect-error` without a reason, `eslint-disable`, lowering the
    coverage threshold. Property and simulation tests use fixed seeds and
@@ -155,15 +162,13 @@ them whole costs about 30k tokens per run for history you do not need):
    tests (banned patterns in §5.7), GM-only data reaching players, and UX
    problems; report High / Medium / Low with file:line and a concrete failure
    scenario; do not edit files.
-   **Before launching it, self-check siblings (about 2 minutes)** and paste
-   the results into the prompt: (a) `grep` every other caller of each rule or
-   command you changed; (b) `grep` UI and help text that describes the changed
-   behaviour; (c) confirm each new test goes through the public command path
-   (`execute`), not a helper. Fix what this finds first.
 3. **Review in parallel.** Launch the reviewer with `run_in_background: true`
    and `isolation: "worktree"` (so it tests the item's commit, not your
    working tree), then start the next item while it works. When it reports,
-   fix the findings on the reviewed item before continuing.
+   fix the findings on the reviewed item before continuing. Do not push the
+   item to main to get it reviewed. If the Agent tool has no background
+   option (each call blocks until it reports), tell a worktree reviewer the
+   exact SHA to `git checkout --detach`.
 4. Fix every High and Medium, re-run checks. A **second review round only
    if round 1 found a High or two or more Mediums**; otherwise verify your
    fixes yourself and log them. **At most 2 review rounds per
@@ -181,6 +186,8 @@ should weigh in on also go in `docs/QUESTIONS.md` with the default you used.
 
 ## 8. Finish the run
 
+0. Before writing close-out notes, check the clock: under 44 with an
+   unblocked item and no §5.5 reason means go back to §5 and start it.
 1. Append a run entry to `docs/PROGRESS.md`: start/end UTC (and the end
    minute; if before 48, the reason from §5.5), preflight results,
    items finished, test counts, engine coverage, review summary, open `wip/*`

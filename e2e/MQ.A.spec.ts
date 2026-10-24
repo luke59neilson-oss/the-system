@@ -27,7 +27,7 @@ test('the XP form warns when an award passes the grade top and would be lost', a
   await page.getByRole('button', { name: 'Create campaign' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Jake');
   await page.getByRole('button', { name: 'Create character' }).click();
-  await expect(page.getByRole('cell', { name: 'Jake', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
 
   const characters = (await (await fetch(`${server.url}/api/characters`)).json()) as {
     id: string;

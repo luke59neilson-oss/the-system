@@ -2,8 +2,45 @@ import { describe, expect, it } from 'vitest';
 import type { CampaignState } from '@the-system/engine';
 import { friendlyError, notificationText } from '../src/format';
 import { feedRows } from '../src/gm/feed';
+import { matchesFilter } from '../src/player/history';
 
 describe('notificationText', () => {
+  it('says what the GM took, with the reason, and files it under items (M6.A)', () => {
+    const n = {
+      kind: 'itemsTaken' as const,
+      characterId: 'j',
+      items: [
+        { name: 'Hunter Fang', count: 2 },
+        { name: 'Bone Charm', count: 1 },
+      ],
+      reason: ' Confiscated ',
+    };
+    expect(notificationText(n)).toBe('The GM took [Hunter Fang] ×2 and [Bone Charm]: Confiscated');
+    expect(notificationText({ ...n, items: [{ name: 'Pelt', count: 1 }], reason: '' })).toBe(
+      'The GM took [Pelt]',
+    );
+    expect(matchesFilter(n, 'items')).toBe(true);
+    expect(matchesFilter(n, 'dings')).toBe(false);
+  });
+
+  it('a GM give shows its reason when it has one (QF.19)', () => {
+    const n = {
+      kind: 'gift' as const,
+      characterId: 'j',
+      from: null,
+      currency: 0,
+      currencyName: 'Credits',
+      items: [{ name: 'Hunter Fang', count: 2 }],
+    };
+    expect(notificationText(n)).toBe('You received [Hunter Fang] ×2 from the GM');
+    expect(notificationText({ ...n, reason: ' For the bridge ' })).toBe(
+      'You received [Hunter Fang] ×2 from the GM: For the bridge',
+    );
+    expect(notificationText({ ...n, reason: '  ' })).toBe(
+      'You received [Hunter Fang] ×2 from the GM',
+    );
+  });
+
   it('a new profession is acquired at a level, not gained from level 1 (MQ.6)', () => {
     expect(
       notificationText({ kind: 'profession', characterId: 'j', name: 'Beast Tamer', level: 17 }),
@@ -105,5 +142,22 @@ describe('feedRows', () => {
       ['Everyone', 'All'],
     ]);
     expect(new Set(rows.map((r) => r.key)).size).toBe(rows.length);
+  });
+});
+
+describe('skill upgrade DING (M5.3)', () => {
+  it('reads like the books and counts as a DING in the history', () => {
+    const n = {
+      kind: 'skillUpgrade' as const,
+      characterId: 'jake',
+      skill: 'Basic Archery',
+      from: 'Inferior',
+      to: 'Common',
+    };
+    expect(notificationText(n)).toBe(
+      "*'DING!' Skill upgraded: [Basic Archery (Inferior)] → [Basic Archery (Common)]*",
+    );
+    expect(matchesFilter(n, 'dings')).toBe(true);
+    expect(matchesFilter(n, 'class')).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 21,
+  "schemaVersion": 32,
   "name": "Golden: evolution",
   "rules": {
     "configVersion": 1,
@@ -245,7 +245,9 @@
       },
       "maxMarksPerSkillPerSession": 1,
       "marksCarryOver": false,
+      "marksResetOnUpgrade": false,
       "libraryByRarity": false,
+      "handTextSurvivesUpgrade": false,
       "merge": {
         "requiredJointUses": 3,
         "minRarity": "uncommon",
@@ -508,7 +510,7 @@
       "titles": [],
       "skills": [
         {
-          "name": "Hunter\u2019s Archery",
+          "name": "Hunter’s Archery",
           "rarity": "uncommon",
           "kind": "class",
           "nickname": null,
@@ -530,7 +532,7 @@
           "flavor": null
         },
         {
-          "name": "Archer\u2019s Eye",
+          "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -597,8 +599,15 @@
   },
   "characterOrder": ["jake"],
   "broadcasts": [],
+  "scheduledBroadcasts": [],
   "items": {},
   "itemOrder": [],
+  "lootTables": {},
+  "lootTableOrder": [],
+  "lootLog": [],
+  "ledger": [],
+  "titleLibrary": {},
+  "titleLibraryOrder": [],
   "skillLibrary": {},
   "skillLibraryOrder": [],
   "classLibrary": {},
@@ -617,10 +626,11 @@
       "sessionId": "s1",
       "characterId": "jake",
       "action": "Pinned a pale hunter",
-      "skills": ["Hunter\u2019s Archery", "Basic Stealth"],
+      "skills": ["Hunter’s Archery", "Basic Stealth"],
       "stat": null,
       "tags": [],
-      "source": "gm"
+      "source": "gm",
+      "reviewed": true
     }
   ],
   "notes": {},
@@ -633,6 +643,18 @@
   "entityOrder": [],
   "montages": {},
   "montageOrder": [],
+  "contests": {},
+  "contestOrder": [],
+  "hunger": {
+    "enabled": false,
+    "steps": ["Fed", "Peckish", "Hungry", "Famished", "Starving"],
+    "levels": {}
+  },
+  "regions": {},
+  "regionOrder": [],
+  "currentRegion": null,
+  "factions": {},
+  "factionOrder": [],
   "day": 1,
   "sessions": [],
   "currentSession": null

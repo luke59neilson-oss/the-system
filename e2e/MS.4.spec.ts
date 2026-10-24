@@ -45,7 +45,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   await gm.getByLabel('Name', { exact: true }).fill('Ada');
   await gm.getByRole('button', { name: 'Create character' }).click();
-  await expect(gm.getByRole('cell', { name: 'Ada', exact: true })).toBeVisible();
+  await expect(gm.getByRole('heading', { level: 3, name: 'Ada', exact: true })).toBeVisible();
   await gm.getByLabel('Amount').fill('150');
   await gm.getByRole('button', { name: 'Award XP' }).click();
   await expect(gm.getByTestId('demo-badge')).toHaveCount(0);

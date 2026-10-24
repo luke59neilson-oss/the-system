@@ -18,6 +18,7 @@ import {
   type Character,
   type Command,
   type CommandContext,
+  retiredSkillNames,
 } from '../src';
 import { kit, rawRules, run, testContext } from './helpers/events';
 
@@ -27,8 +28,11 @@ import { kit, rawRules, run, testContext } from './helpers/events';
  * that behaviour). Overflow has its own tests in progression.test.ts.
  */
 const bankingRules = () => {
-  const raw = rawRules() as { xp: Record<string, unknown> };
+  const raw = rawRules() as { xp: Record<string, unknown>; skills: Record<string, unknown> };
   raw.xp.overflow = false;
+  // Same era for marks: MQ.4's carry-over, before MR.2 reset them on upgrade.
+  raw.skills.marksCarryOver = true;
+  raw.skills.marksResetOnUpgrade = false;
   return raw;
 };
 const rules = defaultRules();
@@ -480,8 +484,9 @@ describe('evolution', () => {
     expect(j.skills.map((s) => [s.name, s.rarity])).toEqual([
       ['Twin Shot', 'rare'],
       [stealth, 'common'],
-      ['Archer’s Eye', 'common'],
-      ['Identify', 'common'],
+      // Kept skills drop one rarity by default (MR.1).
+      ['Archer’s Eye', 'inferior'],
+      ['Identify', 'inferior'],
     ]);
     // Spread reshaped: new weights govern, totals restart from the evolution.
     expect(j.classWeights).toMatchObject({ agility: 2, perception: 1, strength: 0 });
@@ -1452,7 +1457,8 @@ describe('marks carry over through evolutions (MQ.4, D113, D114)', () => {
     expect(reject(c, { type: 'skill.upgrade', characterId: 'jake', skill: archery })).toMatch(
       /ceiling/,
     );
-    // Evolve G → F (still Rare) → E (Epic), with no transforms.
+    // Evolve G → F (still Rare) → E (Epic), with no transforms; the GM keeps
+    // its rarity at each re-rating (MR.1).
     for (let step = 0; step < 200 && char(c).grade !== 'E'; step++) {
       c = pickAll(c);
       const target = evolutionTarget(rules, char(c));
@@ -1461,6 +1467,7 @@ describe('marks carry over through evolutions (MQ.4, D113, D114)', () => {
           type: 'evolution.release',
           characterId: 'jake',
           options: [{ className: 'Hunter', transforms: [] }],
+          rerate: { [archery]: 'rare' },
         });
         c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
       } else {
@@ -1637,6 +1644,34 @@ describe('tailored professions (MQ.6, DESIGN §2)', () => {
     expect(char(c).professionOffers).toEqual(['Smith', 'Cook']);
   });
 
+  it('the GM withdraws an untaken offer (M5.2); players cannot; refused once locked', () => {
+    const withdraw = (profession: string): Command => ({
+      type: 'profession.withdrawOffer',
+      characterId: 'jake',
+      profession,
+    });
+    // While the release waits, the offer leaves the release itself.
+    let c = ok(offeredAtE(), withdraw('Cook'));
+    expect(char(c).evolution?.professions).toEqual(['Smith']);
+    expect(
+      reject(
+        c,
+        { type: 'evolution.choose', characterId: 'jake', optionId: 'o1', profession: 'Cook' },
+        player('jake'),
+      ),
+    ).toMatch(/not an offered profession/);
+    // After "none for now", it leaves the Professions tab.
+    c = ok(declined(), withdraw('Smith'));
+    expect(char(c).professionOffers).toEqual(['Cook']);
+    expect(reject(c, take('Smith'), player('jake'))).toMatch(/not one of your offered/);
+    expect(reject(c, withdraw('Smith'))).toMatch(/not offered to Jake/);
+    expect(reject(declined(), withdraw('Cook'), player('jake'))).toMatch(/GM|not allowed|players/i);
+    const undone = ok(c, { type: 'event.undo', eventId: c.events.at(-1)?.id ?? '' });
+    expect(char(undone).professionOffers).toEqual(['Smith', 'Cook']);
+    const locked = ok(declined(), take('Cook'), player('jake'));
+    expect(reject(locked, withdraw('Smith'))).toMatch(/offers are locked/);
+  });
+
   it('the offers reach only their owner', () => {
     const state = declined().state;
     if (!state) throw new Error('no state');
@@ -1668,5 +1703,151 @@ describe('tailored professions (MQ.6, DESIGN §2)', () => {
     const taken = ok(c, take('Cook'), player('jake'));
     const after = buildSessionLog(taken, taken.events.length - 1).entries.map((e) => e.text);
     expect(after, after.join(' | ')).toContain('Jake gained the profession Cook at level 14');
+  });
+});
+
+describe('merge transforms (M5.2, DESIGN §6 "offer that merge as part of the evolution")', () => {
+  /** Jake at the G top with [Basic Archery] and [Basic Stealth] Uncommon, logged together `times`. */
+  const mergeReady = (times = 3): Campaign => {
+    let c = atGTop();
+    for (let i = 0; i < times; i++) {
+      c = ok(c, {
+        type: 'practice.log',
+        characterId: 'jake',
+        action: `shot ${i}`,
+        skills: [archery, stealth],
+      });
+    }
+    let session = 0;
+    for (const name of [archery, archery, stealth, stealth]) {
+      const s = char(c).skills.find((k) => k.name === name);
+      const need = s?.rarity === 'inferior' ? 3 : 4;
+      for (let m = s?.marks ?? 0; m < need; m++) {
+        c = ok(c, {
+          type: 'skill.awardMark',
+          characterId: 'jake',
+          skill: name,
+          session: `s${++session}`,
+        });
+      }
+      c = ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: name });
+    }
+    return c;
+  };
+  const mergeRelease = (name = 'Ghost Shot', rarity = 'rare', merge = stealth): Command => ({
+    type: 'evolution.release',
+    characterId: 'jake',
+    options: [{ className: 'Hunter', transforms: [{ skill: archery, merge, name, rarity }] }],
+  });
+  const choose: Command = { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' };
+
+  it('consumes both skills on choosing; the merged skill is new, at 0 marks; the merge counts', () => {
+    let c = ok(
+      mergeReady(),
+      { type: 'skill.nickname', characterId: 'jake', skill: archery, nickname: 'Old Faithful' },
+      player('jake'),
+    );
+    c = ok(c, { type: 'skill.setUnique', characterId: 'jake', skill: archery, unique: true });
+    c = ok(c, mergeRelease());
+    const me = projectForPlayer(c.state ?? (null as never), 'jake').me;
+    expect(me.evolution?.options[0]?.transforms[0]).toMatchObject({ merge: stealth });
+    c = ok(c, choose, player('jake'));
+    const j = char(c);
+    expect(j.grade).toBe('F');
+    const names = j.skills.map((s) => s.name);
+    expect(names).toContain('Ghost Shot');
+    expect(names).not.toContain(archery);
+    expect(names).not.toContain(stealth);
+    expect(j.skills.find((s) => s.name === 'Ghost Shot')).toMatchObject({
+      rarity: 'rare',
+      marks: 0,
+    });
+    expect(j.merges['G']).toBe(1);
+    // A fresh skill: no nickname, Unique tag or mark sessions from the original.
+    const merged = j.skills.find((s) => s.name === 'Ghost Shot');
+    expect(merged?.nickname ?? null).toBeNull();
+    expect(merged?.unique ?? false).toBe(false);
+    expect(merged?.markSessions ?? []).toEqual([]);
+    // Practice entries follow the transformed skill; the consumed name is retired.
+    const entries = c.state?.practice.filter((e) => e.characterId === 'jake') ?? [];
+    expect(entries.some((e) => e.skills.includes('Ghost Shot'))).toBe(true);
+    expect(
+      retiredSkillNames(
+        j,
+        entries.flatMap((e) => e.skills),
+      ).has(stealth.toLowerCase()),
+    ).toBe(true);
+    const undone = ok(c, { type: 'event.undo', eventId: c.events.at(-1)?.id ?? '' });
+    expect(char(undone).skills.map((s) => s.name)).toContain(stealth);
+  });
+
+  it('lands one rarity above the higher skill when the two differ (QF.16)', () => {
+    let c = mergeReady();
+    // [Basic Archery] Uncommon → Rare; [Basic Stealth] stays Uncommon.
+    for (let m = 0; m < 6; m++) {
+      c = ok(c, {
+        type: 'skill.awardMark',
+        characterId: 'jake',
+        skill: archery,
+        session: `r${m}`,
+      });
+    }
+    c = ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: archery });
+    expect(char(c).skills.find((s) => s.name === archery)?.rarity).toBe('rare');
+    expect(reject(c, mergeRelease('Ghost Shot', 'rare'))).toMatch(/must be epic/);
+    expect(reject(c, mergeRelease('Ghost Shot', 'epic'))).toMatch(/ceiling/);
+  });
+
+  it('refuses a merge the merge rules refuse', () => {
+    expect(reject(mergeReady(2), mergeRelease())).toMatch(/logged together 2 times \(need 3\)/);
+    expect(reject(mergeReady(), mergeRelease('Ghost Shot', 'common'))).toMatch(
+      /must be rare \(one above the higher merged skill\)/,
+    );
+    expect(reject(mergeReady(), mergeRelease('Ghost Shot', 'epic'))).toMatch(/must be rare/);
+    expect(reject(mergeReady(), mergeRelease(stealth))).toMatch(/needs a new name/);
+    expect(reject(mergeReady(), mergeRelease('X', 'rare', archery))).toMatch(/two different/);
+    expect(reject(mergeReady(), mergeRelease('X', 'rare', 'Nope'))).toMatch(/no skill "Nope"/);
+    // [Basic Stealth] is merged in, so it cannot be transformed by the same option too.
+    expect(
+      reject(mergeReady(), {
+        type: 'evolution.release',
+        characterId: 'jake',
+        options: [
+          {
+            className: 'Hunter',
+            transforms: [
+              { skill: archery, merge: stealth, name: 'Ghost Shot', rarity: 'rare' },
+              { skill: stealth, name: 'Shade', rarity: 'rare' },
+            ],
+          },
+        ],
+      }),
+    ).toMatch(/transformed twice/);
+    // Below Uncommon: the starting skills are Inferior.
+    let c = atGTop();
+    for (let i = 0; i < 3; i++) {
+      c = ok(c, {
+        type: 'practice.log',
+        characterId: 'jake',
+        action: 'x',
+        skills: [archery, stealth],
+      });
+    }
+    expect(reject(c, mergeRelease())).toMatch(/must be at least uncommon to merge/);
+  });
+
+  it('counts against the one merge per grade', () => {
+    let c = mergeReady();
+    c = ok(c, {
+      type: 'skill.merge',
+      characterId: 'jake',
+      skills: [archery, stealth],
+      name: 'Twin Shot',
+    });
+    expect(char(c).merges['G']).toBe(1);
+    // Nothing left to merge with, but the allowance is checked first.
+    expect(reject(c, mergeRelease())).toMatch(
+      /can merge 1 time\(s\) per grade \(1 done at G-grade\)/,
+    );
   });
 });

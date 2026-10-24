@@ -103,6 +103,8 @@ export function marksToUpgrade(rules: RulesConfig, skill: CharacterSkill): numbe
 export interface MarkRules {
   /** Marks beyond a step's cost carry into the next rarity (MQ.4). */
   readonly carryOver: boolean;
+  /** Every upgrade, transforms included, starts at 0 marks (MR.2); wins over carryOver. */
+  readonly resetOnUpgrade: boolean;
   /** Marks to step up from each rarity id. */
   readonly upgrades: Readonly<Record<string, number>>;
   /** Rarity ids, lowest first. */
@@ -111,7 +113,8 @@ export interface MarkRules {
 
 export function markRules(rules: RulesConfig): MarkRules {
   return {
-    carryOver: rules.skills.marksCarryOver,
+    carryOver: rules.skills.marksCarryOver && !rules.skills.marksResetOnUpgrade,
+    resetOnUpgrade: rules.skills.marksResetOnUpgrade,
     upgrades: { ...rules.skills.markUpgrades },
     order: rules.skills.rarities.map((r) => r.id),
   };
@@ -130,6 +133,8 @@ export function marksAfterRarityChange(
   to: string,
   marks: number,
 ): number {
+  // MR.2: a transformed skill is new to the character, whatever its rarity.
+  if (m.resetOnUpgrade) return 0;
   if (from === to) return marks;
   if (!m.carryOver) return 0;
   const a = m.order.indexOf(from);
@@ -216,8 +221,11 @@ export function upgradeSkill(rules: RulesConfig, character: Character, name: str
     );
   }
   const next = rules.skills.rarities[rarityIndex(rules, skill.rarity) + 1];
-  const marks = rules.skills.marksCarryOver ? skill.marks - needed : 0;
-  return withSkill(character, index, { ...skill, rarity: next?.id ?? skill.rarity, marks });
+  const marks = markRules(rules).carryOver ? skill.marks - needed : 0;
+  // The upgraded copy follows its new rarity's entry, not a re-rated one (MR.1).
+  const { textRarity, ...rest } = skill;
+  void textRarity;
+  return withSkill(character, index, { ...rest, rarity: next?.id ?? skill.rarity, marks });
 }
 
 /**

@@ -1,0 +1,29 @@
+{
+  "format": "the-system/content",
+  "version": 1,
+  "title": "Twin Spouts bestiary",
+  "bestiary": [
+    {
+      "name": "Pale hunter (immune cell)",
+      "label": "Pale Hunter",
+      "grade": "F",
+      "level": 8,
+      "tiers": [
+        { "minRarity": "common", "text": "[Pale Hunter – lvl 8]" },
+        { "minRarity": "uncommon", "text": "[Pale Hunter – lvl 8] A pursuer that gathers where the land is wounded." },
+        { "minRarity": "rare", "text": "[Pale Hunter – lvl 8] The Host's own defender. It hunts infection." }
+      ],
+      "stats": { "strength": 30, "agility": 45, "toughness": 25 },
+      "notes": "Killing one lowers World Stability by 2."
+    },
+    {
+      "name": "Curse energy",
+      "label": "Malignant Miasma",
+      "tiers": [
+        { "minRarity": "common", "text": "[Malignant Miasma]" },
+        { "minRarity": "uncommon", "text": "[Fever]" },
+        { "minRarity": "rare", "text": "[The Host's Response]" }
+      ]
+    }
+  ]
+}

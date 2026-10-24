@@ -74,7 +74,25 @@ export interface StoreOptions {
    * with the network on macOS, so a lock left by a crash could look foreign.
    */
   readonly machineId?: string;
+  /**
+   * The event log's write, fsync and truncate calls. Tests replace them to
+   * inject disk faults; the server always uses node:fs.
+   */
+  readonly logIo?: Partial<LogIo>;
 }
+
+/** The file calls an append makes on the event log (see StoreOptions.logIo). */
+export interface LogIo {
+  write(fd: number, data: Buffer, offset: number, length: number): number;
+  fsync(fd: number): void;
+  ftruncate(fd: number, length: number): void;
+}
+
+const NODE_LOG_IO: LogIo = {
+  write: (fd, data, offset, length) => writeSync(fd, data, offset, length),
+  fsync: (fd) => fsyncSync(fd),
+  ftruncate: (fd, length) => ftruncateSync(fd, length),
+};
 
 const CAMPAIGN_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
 /** Windows device names that cannot be directory names. */
@@ -142,10 +160,10 @@ export function parseLogText(data: Buffer | string): TornLogResult {
 const stamp = (iso: string) => iso.replace(/[:.]/g, '-');
 
 /** writeSync until every byte is written (it may write fewer). */
-function writeAll(fd: number, data: Buffer): void {
+function writeAll(fd: number, data: Buffer, write: LogIo['write'] = NODE_LOG_IO.write): void {
   let done = 0;
   while (done < data.length) {
-    const n = writeSync(fd, data, done, data.length - done);
+    const n = write(fd, data, done, data.length - done);
     if (n <= 0) throw new StoreError('Write made no progress');
     done += n;
   }
@@ -400,19 +418,20 @@ export class CampaignStore {
     for (const event of events) next = appendEvent(next, event);
     if (events.length === 0) return next;
     const bytes = Buffer.from(events.map((e) => `${JSON.stringify(e)}\n`).join(''), 'utf8');
+    const io = { ...NODE_LOG_IO, ...this.options.logIo };
     try {
-      writeAll(fd, bytes);
+      writeAll(fd, bytes, io.write);
     } catch (error) {
       try {
-        ftruncateSync(fd, this.goodBytes);
-        fsyncSync(fd);
+        io.ftruncate(fd, this.goodBytes);
+        io.fsync(fd);
       } catch (undoError) {
         this.broken = `a failed write could not be undone (${String(undoError)})`;
       }
       throw error;
     }
     try {
-      fsyncSync(fd);
+      io.fsync(fd);
     } catch (error) {
       // After a failed fsync the file's durable contents are unknown: stop writing.
       this.broken = `the event log could not be synced to disk (${String(error)})`;

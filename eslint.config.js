@@ -124,7 +124,11 @@ export default tseslint.config(
       'coverage/**',
       'test-results/**',
       'playwright-report/**',
+      'test-results-latency/**',
+      'playwright-report-latency/**',
       'apps/desktop/release/**',
+      // Reviewer worktrees (gitignored) hold whole repo copies.
+      '.claude/worktrees/**',
     ],
   },
   {

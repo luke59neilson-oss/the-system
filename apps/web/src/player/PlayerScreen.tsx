@@ -7,19 +7,23 @@ import {
   Fragment,
   type ReactNode,
 } from 'react';
-import type { OwnSheet, PlayerView } from '@the-system/engine';
+import { titleKey, type OwnSheet, type PlayerView } from '@the-system/engine';
 import { friendlyError, notificationText } from '../format';
 import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
-import { playChime, unlockChime } from './chime';
+import { playSound, unlockSound } from './sounds';
+import { contestLines, newContests } from './contest';
 import {
   HISTORY_FILTERS,
   filterHistory,
+  isDing,
   nextArrival,
   notificationKey,
   readSound,
+  readVolume,
   whenLabel,
   writeSound,
+  writeVolume,
   type HistoryFilter,
 } from './history';
 import { allocationText, assignedBatches, nextBatch, spent, step } from './freePoints';
@@ -34,6 +38,8 @@ import { useChangeCount } from './changeCount';
 import { SkillDetail } from './SkillDetail';
 import { SkillSelection } from './SkillSelection';
 import { EvolutionChoice } from './EvolutionChoice';
+import { useEvolutionFlash } from './evolutionFlash';
+import { describeTitleBonuses } from './titles';
 import { ProfessionsPanel } from './ProfessionsPanel';
 import { closedReason, pendingSelections, pendingText, settleNotice } from './selection';
 import {
@@ -71,10 +77,51 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
   const [sound, setSound] = useState(() => readSound(browserStorage()));
   const toggleSound = () => {
     const next = !sound;
-    if (next) unlockChime();
+    if (next) unlockSound();
     writeSound(browserStorage(), next);
     setSound(next);
   };
+  // Sound remembered on from an earlier visit: the first click or key on the
+  // page lets the browser start audio (M8.A review).
+  useEffect(() => {
+    if (!sound || pane) return;
+    const unlock = () => unlockSound();
+    window.addEventListener('pointerdown', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, [sound, pane]);
+  // M8.4: volume per browser; Sound: off is the mute.
+  const [volume, setVolume] = useState(() => readVolume(browserStorage()));
+  const level = sound ? volume : 0;
+  const changeVolume = (v: number) => {
+    writeVolume(browserStorage(), v);
+    setVolume(v);
+  };
+  // M8.2: an evolution re-themes the screen with a short animated sweep.
+  const evolving = useEvolutionFlash(characterId, view?.rules.grades ?? [], view?.me.grade);
+  // M8.4: the evolution sound plays with the re-theme; the selection sound when
+  // a new skill selection arrives while the page is open (never on load, never
+  // in the GM's View-as panes).
+  // A ref, so a volume change mid-transition never replays it.
+  const levelRef = useRef(level);
+  useEffect(() => {
+    levelRef.current = level;
+  }, [level]);
+  useEffect(() => {
+    if (evolving && !pane) playSound('evolution', levelRef.current);
+  }, [evolving, pane]);
+  const waitingSelections = view ? pendingSelections(view.me.selections).length : null;
+  const seenSelections = useRef<{ id: string; count: number } | null>(null);
+  useEffect(() => {
+    if (waitingSelections === null) return;
+    const seen = seenSelections.current;
+    seenSelections.current = { id: characterId, count: waitingSelections };
+    if (pane || !seen || seen.id !== characterId) return;
+    if (waitingSelections > seen.count) playSound('selection', levelRef.current);
+  }, [waitingSelections, characterId, pane]);
   return (
     <main className={pane ? 'player pane-mode' : 'player'}>
       <header className="gm-header">
@@ -99,13 +146,29 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
             Sound: {sound ? 'on' : 'off'}
           </button>
         )}
+        {!pane && sound && (
+          <label className="volume">
+            <span className="sr-only">Sound volume</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={10}
+              value={volume}
+              data-testid="volume"
+              aria-valuetext={`${volume}%`}
+              onChange={(e) => changeVolume(Number(e.target.value))}
+            />
+          </label>
+        )}
         {!pane && (
           <a className="muted" href="/">
             Switch character
           </a>
         )}
       </header>
-      {!pane && view && <DingQueue key={live.campaign ?? ''} live={live} sound={sound} />}
+      {!pane && view && <DingQueue key={live.campaign ?? ''} live={live} volume={level} />}
+      {!pane && view && <ContestPopup key={live.campaign ?? ''} contests={view.contests} />}
       {live.campaign === 'demo' && (
         <p className="demo-badge" data-testid="demo-badge">
           Demo campaign: for trying the app out
@@ -118,7 +181,11 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
         </p>
       )}
       {view && live.status !== 'refused' && (
-        <div className="player-grid">
+        // M8.1: the character's grade metal frames every player window.
+        <div
+          className={`player-grid${themeClass(view.rules.grades.find((g) => g.id === view.me.grade)?.theme)}${evolving ? ' evolving' : ''}`}
+          data-testid="player-grid"
+        >
           <div className="player-col">
             <Status view={view} client={pane ? null : client} />
             <ProfessionsPanel view={view} client={pane ? null : client} />
@@ -351,6 +418,16 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
             </Live>
           </div>
         ))}
+        {view.hunger && (
+          // M7.4: the campaign's hunger tracker, while it is on and not outgrown.
+          <>
+            <dt>Hunger</dt>
+            <Live
+              testId="hunger"
+              value={`${view.hunger.step} (${view.hunger.level + 1}/${view.hunger.steps})`}
+            />
+          </>
+        )}
       </dl>
       <h3>Stats</h3>
       <ul className="stats">
@@ -358,13 +435,20 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
           // M3.7 (D81): the effective value, with what gear adds beside it.
           const base = me.stats[s.id] ?? 0;
           const value = me.effectiveStats[s.id] ?? base;
+          const withItems = me.itemStats[s.id] ?? value;
           const delta = value - base;
+          // M6.A: titles apply after items (DESIGN §4), so split what each adds.
+          const itemDelta = withItems - base;
+          const titleDelta = value - withItems;
           // MQ.14 (DESIGN §4): gear adds at most a share of the base; say so when it hits it.
           const capped = me.itemCappedStats.includes(s.id);
+          const signed = (n: number) =>
+            `${n > 0 ? '+' : n < 0 ? '−' : '+'}${formatStatValue(rules, Math.abs(n))}`;
+          const split = titleDelta !== 0 && (itemDelta !== 0 || capped);
           return (
             <li key={s.id} data-testid={`stat-${s.id}`}>
               <span>{s.name}</span> <LiveStrong value={formatStatValue(rules, value)} />
-              {(delta !== 0 || capped) && (
+              {(delta !== 0 || capped || titleDelta !== 0) && (
                 <span
                   className="muted stat-bonus"
                   data-testid={`bonus-${s.id}`}
@@ -374,10 +458,22 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
                       : undefined
                   }
                 >
-                  {' '}
-                  ({delta > 0 ? '+' : delta < 0 ? '−' : '+'}
-                  {formatStatValue(rules, Math.abs(delta))}
-                  {capped && <span data-testid={`capped-${s.id}`}>, capped</span>})
+                  {' ('}
+                  {split ? (
+                    <>
+                      items {signed(itemDelta)}
+                      {capped && <span data-testid={`capped-${s.id}`}>, capped</span>}
+                      {`; titles ${signed(titleDelta)}`}
+                    </>
+                  ) : titleDelta !== 0 ? (
+                    `titles ${signed(titleDelta)}`
+                  ) : (
+                    <>
+                      {signed(delta)}
+                      {capped && <span data-testid={`capped-${s.id}`}>, capped</span>}
+                    </>
+                  )}
+                  {')'}
                 </span>
               )}
             </li>
@@ -404,7 +500,32 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
         {me.titles.length > 0 && (
           <>
             <dt>Titles</dt>
-            <dd data-testid="titles">{me.titles.map((t) => `[${t}]`).join(', ')}</dd>
+            <dd data-testid="titles">
+              <ul className="title-list">
+                {me.titles.map((t) => {
+                  const d = me.titleDetails.find((x) => titleKey(x.name) === titleKey(t));
+                  const bonus = d
+                    ? describeTitleBonuses(d.bonuses, rules.stats.list, rules.stats)
+                    : '';
+                  return (
+                    <li key={t} data-testid="title">
+                      <span className="skill-name">[{d?.name ?? t}]</span>
+                      {bonus !== '' && (
+                        <span className="title-bonus" data-testid="title-bonus">
+                          {' '}
+                          {bonus}
+                        </span>
+                      )}
+                      {d && d.text.trim() !== '' && (
+                        <span className="muted title-text" data-testid="title-text">
+                          {d.text}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </dd>
           </>
         )}
       </dl>
@@ -876,7 +997,7 @@ function Feed({
           />
         </div>
         {live.notifications.length === 0 ? (
-          <p className="muted">Level-ups appear here as they happen.</p>
+          <p className="muted">Level-ups and skill upgrades appear here as they happen.</p>
         ) : rows.length === 0 ? (
           <p className="muted" data-testid="history-empty">
             No notifications match.
@@ -911,6 +1032,37 @@ function Feed({
   );
 }
 
+/**
+ * Contest result pop-up (M7.3, D88): each contest the GM shares while the page
+ * is open, oldest first, until the player dismisses it. Contests shared before
+ * the page loaded never pop up.
+ */
+function ContestPopup({ contests }: { contests: PlayerView['contests'] }) {
+  const [known, setKnown] = useState<ReadonlySet<string>>(() => new Set(contests.map((c) => c.id)));
+  const fresh = newContests(contests, known);
+  const current = fresh[0];
+  if (!current) return null;
+  const lines = contestLines(current);
+  return (
+    <div className="contest-layer">
+      <section
+        className={`contest-popup ${current.won ? 'won' : 'lost'}`}
+        role="dialog"
+        aria-labelledby={`contest-${current.id}`}
+        data-testid="contest-popup"
+      >
+        <h2 id={`contest-${current.id}`}>Contest</h2>
+        <p className="contest-title">{lines.title}</p>
+        <p className="muted">{lines.odds}</p>
+        <p className="contest-outcome">{lines.result}</p>
+        <button type="button" onClick={() => setKnown((k) => new Set(k).add(current.id))}>
+          {fresh.length > 1 ? `Next (${fresh.length - 1} more)` : 'OK'}
+        </button>
+      </section>
+    </div>
+  );
+}
+
 /** How long each queued DING stays up (ms). UI timing, not a rule number. */
 const DING_MS = 2600;
 
@@ -919,7 +1071,7 @@ const DING_MS = 2600;
  * (M3.3), oldest first, each with the optional chime. Click to skip ahead.
  * Older history never pops up; it is in the Notifications list.
  */
-function DingQueue({ live, sound }: { live: LiveSnapshot; sound: boolean }) {
+function DingQueue({ live, volume }: { live: LiveSnapshot; volume: number }) {
   const [shown, setShown] = useState<ReadonlySet<string>>(() => new Set());
   const { current, waiting } = nextArrival(live.notifications, live.liveSince, shown);
   const key = current ? notificationKey(current) : null;
@@ -929,13 +1081,13 @@ function DingQueue({ live, sound }: { live: LiveSnapshot; sound: boolean }) {
     const timer = setTimeout(() => done(key), DING_MS);
     return () => clearTimeout(timer);
   }, [key]);
-  // The chime plays once per DING, not again when sound is toggled.
+  // The DING sound plays once per DING, not again when sound is toggled.
   const chimed = useRef<string | null>(null);
   useEffect(() => {
     if (key === null || chimed.current === key) return;
     chimed.current = key;
-    if (sound) playChime();
-  }, [key, sound]);
+    playSound('ding', volume);
+  }, [key, volume]);
   return (
     <div className="ding-layer" aria-live="polite">
       {current && (
@@ -963,7 +1115,7 @@ function DingQueue({ live, sound }: { live: LiveSnapshot; sound: boolean }) {
  * so the GM sees them land in a small Table-view pane without scrolling.
  */
 function PaneLatest({ live, view }: { live: LiveSnapshot; view: PlayerView | null }) {
-  const latest = live.notifications.filter((n) => n.notification.kind === 'level').at(-1);
+  const latest = live.notifications.filter((n) => isDing(n.notification)).at(-1);
   const message = view?.messages.at(-1);
   if (!latest && !message) return null;
   return (

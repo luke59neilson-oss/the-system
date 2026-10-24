@@ -225,6 +225,7 @@ exports[`default rules > match the snapshot 1`] = `
       "max": 2,
       "min": 0,
     },
+    "handTextSurvivesUpgrade": true,
     "libraryByRarity": true,
     "markUpgrades": {
       "ancient": 12,
@@ -235,7 +236,8 @@ exports[`default rules > match the snapshot 1`] = `
       "rare": 8,
       "uncommon": 6,
     },
-    "marksCarryOver": true,
+    "marksCarryOver": false,
+    "marksResetOnUpgrade": true,
     "maxMarksPerSkillPerSession": 1,
     "menuSize": {
       "max": 4,

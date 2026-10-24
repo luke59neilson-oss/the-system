@@ -95,8 +95,14 @@ describe('skill library keyed by name and rarity (MQ.12)', () => {
     expect(skillOf(c)).toMatchObject({ rarity: 'rare', description: 'Uncommon description.' });
   });
 
-  it('an upgrade takes the next rarity’s text over a hand edit of the old one', () => {
-    let c = ok(run([created], ctx), define('idc', 'common', 'Common'));
+  it('before MR.4 (D133), an upgrade took the next rarity’s text over a hand edit', () => {
+    // Stored rules from before MR.4; new campaigns keep hand text (handText.test.ts).
+    const raw = rawRules() as { skills: Record<string, unknown> };
+    raw.skills.handTextSurvivesUpgrade = false;
+    let c = ok(
+      run([{ type: 'campaign.create', name: 'Old', rules: raw }], ctx),
+      define('idc', 'common', 'Common'),
+    );
     c = ok(c, define('idu', 'uncommon', 'Uncommon'));
     c = ok(c, make('jake', 'Jake'));
     c = ok(c, {

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 21,
+  "schemaVersion": 32,
   "name": "Golden: Identify range",
   "rules": {
     "configVersion": 1,
@@ -245,7 +245,9 @@
       },
       "maxMarksPerSkillPerSession": 1,
       "marksCarryOver": true,
+      "marksResetOnUpgrade": false,
       "libraryByRarity": false,
+      "handTextSurvivesUpgrade": false,
       "merge": {
         "requiredJointUses": 3,
         "minRarity": "uncommon",
@@ -476,8 +478,15 @@
   },
   "characterOrder": ["jake"],
   "broadcasts": [],
+  "scheduledBroadcasts": [],
   "items": {},
   "itemOrder": [],
+  "lootTables": {},
+  "lootTableOrder": [],
+  "lootLog": [],
+  "ledger": [],
+  "titleLibrary": {},
+  "titleLibraryOrder": [],
   "skillLibrary": {},
   "skillLibraryOrder": [],
   "classLibrary": {},
@@ -509,6 +518,8 @@
       ],
       "grade": "G",
       "level": 2,
+      "stats": null,
+      "notes": "",
       "knownBy": ["jake"],
       "createdAt": "2026-12-04T18:00:02.000Z"
     },
@@ -524,6 +535,8 @@
       ],
       "grade": null,
       "level": null,
+      "stats": null,
+      "notes": "",
       "knownBy": ["jake"],
       "createdAt": "2026-12-04T18:00:03.000Z"
     }
@@ -531,6 +544,18 @@
   "entityOrder": ["rat", "lord"],
   "montages": {},
   "montageOrder": [],
+  "contests": {},
+  "contestOrder": [],
+  "hunger": {
+    "enabled": false,
+    "steps": ["Fed", "Peckish", "Hungry", "Famished", "Starving"],
+    "levels": {}
+  },
+  "regions": {},
+  "regionOrder": [],
+  "currentRegion": null,
+  "factions": {},
+  "factionOrder": [],
   "day": 1,
   "sessions": [],
   "currentSession": null

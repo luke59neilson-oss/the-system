@@ -23,6 +23,10 @@ export interface Entity {
    */
   readonly grade: string | null;
   readonly level: number | null;
+  /** M7.2 bestiary (GM-only): stat id → value, or null when not statted. */
+  readonly stats: Readonly<Record<string, number>> | null;
+  /** M7.2 bestiary (GM-only) notes. */
+  readonly notes: string;
   /** Character ids that know it, in reveal order. */
   readonly knownBy: readonly string[];
   readonly createdAt: string;

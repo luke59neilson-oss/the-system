@@ -1,0 +1,685 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "string",
+      "const": "the-system/content"
+    },
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "title": {
+      "description": "Shown to the GM in the import queue.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "notes": {
+      "description": "For the GM: what this file is for.",
+      "type": "string",
+      "maxLength": 4000
+    },
+    "skills": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "rarity": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
+          },
+          "tags": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            }
+          },
+          "description": {
+            "description": "What the owner reads on their sheet.",
+            "type": "string",
+            "maxLength": 2000
+          },
+          "flavor": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "effects": {
+            "description": "Mechanical effects; shown to the owner only.",
+            "type": "string",
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "name",
+          "rarity"
+        ],
+        "additionalProperties": false,
+        "description": "A skill library entry: one per name and rarity (DESIGN §6)."
+      }
+    },
+    "items": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "rarity": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "slot": {
+            "description": "Equipment slot id; null or omitted = not wearable.",
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40,
+                "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bonuses": {
+            "description": "Flat stat bonuses only (DESIGN §4: items never give percentages).",
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "stat": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40,
+                  "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
+                },
+                "flat": {
+                  "type": "integer",
+                  "minimum": -10000,
+                  "maximum": 10000
+                }
+              },
+              "required": [
+                "stat",
+                "flat"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "name",
+          "rarity"
+        ],
+        "additionalProperties": false,
+        "description": "An item library entry."
+      }
+    },
+    "titles": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "text": {
+            "description": "System-style text shown to the player.",
+            "type": "string",
+            "maxLength": 2000
+          },
+          "bonuses": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "stat": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40,
+                  "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
+                },
+                "flat": {
+                  "type": "integer",
+                  "minimum": -10000,
+                  "maximum": 10000
+                },
+                "percent": {
+                  "description": "Whole percent: 5 means +5% (the import stores 0.05).",
+                  "type": "number",
+                  "minimum": -99,
+                  "maximum": 10000
+                }
+              },
+              "required": [
+                "stat"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "A title library entry (DESIGN §4: percentages, optionally flat)."
+      }
+    },
+    "bestiary": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "description": "The GM's own name; never sent to players."
+          },
+          "label": {
+            "description": "What players see in their Identify list; defaults to name.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "tiers": {
+            "minItems": 1,
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "minRarity": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40,
+                  "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "required": [
+                "minRarity",
+                "text"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Identify text per minimum Identify rarity (DESIGN §7)."
+          },
+          "grade": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40,
+                "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "level": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stats": {
+            "description": "GM-only stat block.",
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40,
+                  "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
+                },
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "description": "Stat id → whole points, 0 or more."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "description": "GM-only notes.",
+            "type": "string",
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "name",
+          "tiers"
+        ],
+        "additionalProperties": false,
+        "description": "A bestiary entry: something players can Identify."
+      }
+    },
+    "skillOffers": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "character": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "A character, by id or else by name (any case)."
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "description": "The class level of the selection."
+          },
+          "options": {
+            "minItems": 1,
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "rarity": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40,
+                  "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
+                },
+                "kind": {
+                  "description": "Default \"class\".",
+                  "type": "string",
+                  "enum": [
+                    "class",
+                    "profession"
+                  ]
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "name",
+                "rarity"
+              ],
+              "additionalProperties": false,
+              "description": "One option in a skill selection menu."
+            }
+          }
+        },
+        "required": [
+          "character",
+          "level",
+          "options"
+        ],
+        "additionalProperties": false,
+        "description": "A drafted skill selection menu for one character's selection (DESIGN §6)."
+      }
+    },
+    "evolutions": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "character": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "A character, by id or else by name (any case)."
+          },
+          "options": {
+            "minItems": 1,
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "description": "Optional; \"o1\", \"o2\"... by position when omitted.",
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 40
+                },
+                "className": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "transforms": {
+                  "maxItems": 10,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "skill": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80,
+                        "description": "The skill it transforms (current name)."
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      },
+                      "rarity": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40,
+                        "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
+                      },
+                      "merge": {
+                        "description": "A second skill consumed into it.",
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      }
+                    },
+                    "required": [
+                      "skill",
+                      "name",
+                      "rarity"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "classWeights": {
+                  "description": "New class spread weights.",
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40,
+                        "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
+                      },
+                      "additionalProperties": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "description": "Stat id → whole points, 0 or more."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "statBonus": {
+                  "description": "One-time stat bonus on evolving.",
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40,
+                    "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
+                  },
+                  "additionalProperties": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  }
+                }
+              },
+              "required": [
+                "className"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "professions": {
+            "description": "Professions offered (at the profession unlock grade).",
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          },
+          "rerate": {
+            "description": "Skill name → rarity after the evolution; others drop one rarity (DESIGN §6).",
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40,
+              "description": "An id from the rules config, e.g. \"rare\", \"vitality\", \"ring\", \"E\"."
+            }
+          }
+        },
+        "required": [
+          "character",
+          "options"
+        ],
+        "additionalProperties": false,
+        "description": "Drafted evolution options for one character (DESIGN §2)."
+      }
+    },
+    "quests": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "text": {
+            "description": "The quest text players read.",
+            "type": "string",
+            "maxLength": 4000
+          },
+          "visible": {
+            "description": "Default true. A hidden quest gives players only a notice that it exists.",
+            "type": "boolean"
+          },
+          "days": {
+            "description": "Timer in in-game days from the day it is imported; omit for none.",
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stability": {
+            "description": "An optional World Stability meter (DESIGN §7).",
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "initial": {
+                    "description": "Starting World Stability; default the rules' start (100).",
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "visible": {
+                    "description": "Shown to players; default the rules' setting.",
+                    "type": "boolean"
+                  },
+                  "rules": {
+                    "description": "Action tag → stability change, e.g. { \"kill-pale-hunter\": -2 }.",
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40
+                    },
+                    "additionalProperties": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "additionalProperties": false,
+        "description": "A quest (DESIGN §7)."
+      }
+    },
+    "regions": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "notes": {
+            "description": "GM-only notes.",
+            "type": "string",
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "A region of the map (GM-only until the party gets there)."
+      }
+    },
+    "gmNotes": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "tags": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 40
+            }
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "additionalProperties": false,
+        "description": "A GM private note; players never see it."
+      }
+    },
+    "hunger": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Turn the hunger tracker on or off.",
+          "type": "boolean"
+        },
+        "steps": {
+          "description": "Hunger levels from fed to starving.",
+          "minItems": 2,
+          "maxItems": 10,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        }
+      },
+      "additionalProperties": false,
+      "description": "Hunger tracker settings for the campaign (DESIGN §7)."
+    }
+  },
+  "required": [
+    "format",
+    "version"
+  ],
+  "additionalProperties": false,
+  "description": "A content file for The System (docs/CONTENT-FORMAT.md)."
+}

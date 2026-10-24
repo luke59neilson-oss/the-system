@@ -281,6 +281,25 @@ function randomNotesCommand(
       ...(rand() < 0.2 ? { source: pick(['gm', 'player', 'montage'] as const) } : {}),
     };
   }
+  if (roll < 0.48) {
+    // M5.5: the GM corrects, removes or reviews entries (sometimes unknown ones).
+    const entries = c.state?.practice ?? [];
+    const entryId = entries.length === 0 || rand() < 0.1 ? 'none' : pick(entries).id;
+    const kind = rand();
+    if (kind < 0.4) {
+      const entry = entries.find((e) => e.id === entryId);
+      const own = entry ? (c.state?.characters[entry.characterId]?.skills ?? []) : [];
+      return {
+        type: 'practice.edit',
+        entryId,
+        ...(rand() < 0.5 ? { action: pick(['Volley again', ' ', 'Long shot']) } : {}),
+        ...(rand() < 0.5 ? { skills: own.filter(() => rand() < 0.5).map((sk) => sk.name) } : {}),
+        ...(rand() < 0.3 ? { stat: pick(['agility', null, 'luck']) } : {}),
+      };
+    }
+    if (kind < 0.7) return { type: 'practice.remove', entryId };
+    return { type: 'practice.review', entryIds: [entryId] };
+  }
   const noteIds = c.state?.noteOrder ?? [];
   const author = () => (rand() < 0.4 ? null : someId());
   if (roll < 0.7 || noteIds.length === 0) {
@@ -317,6 +336,27 @@ export function randomLibraryCommand(rand: () => number, c: Campaign): Command {
   const pick = <T>(items: readonly T[]): T => items[Math.floor(rand() * items.length)] as T;
   const defs = c.state?.skillLibraryOrder ?? [];
   const name = () => pick(['Identify', 'Basic Archery', 'basic stealth', 'Fireball', ' ']);
+  // MR.4: sometimes give a hand-written copy an entry with text at its own
+  // name and rarity (or fill that entry's text), so Use library text has
+  // something to reconnect to; otherwise random names and rarities rarely
+  // line up with a hand-written copy and the command is never accepted.
+  const handWritten = Object.values(c.state?.characters ?? {}).flatMap((ch) =>
+    ch.skills.filter((s) => s.textEdited),
+  );
+  if (handWritten.length && rand() < 0.3) {
+    const skill = pick(handWritten);
+    const entry = Object.values(c.state?.skillLibrary ?? {}).find(
+      (d) => d.rarity === skill.rarity && d.name.trim().toLowerCase() === skill.name.toLowerCase(),
+    );
+    return entry
+      ? { type: 'skillDef.edit', skillDefId: entry.id, description: 'Library text.' }
+      : {
+          type: 'skillDef.define',
+          name: skill.name,
+          rarity: skill.rarity,
+          description: 'Library text.',
+        };
+  }
   if (defs.length === 0 || rand() < 0.5) {
     return {
       type: 'skillDef.define',
@@ -439,6 +479,29 @@ function randomSkillCommand(
   }
   if (roll < 0.2) {
     return { type: 'skill.setUnique', characterId, skill: someSkill(), unique: rand() < 0.5 };
+  }
+  if (roll < 0.25) {
+    // MR.4: hand a copy back to the library; mostly a hand-written one, so
+    // accepted reconnects do not hinge on luck (refused without an entry).
+    const edited = Object.values(c.state?.characters ?? {}).flatMap((ch) =>
+      ch.skills
+        .filter(
+          (s) =>
+            s.textEdited &&
+            Object.values(c.state?.skillLibrary ?? {}).some(
+              (d) =>
+                d.rarity === s.rarity &&
+                d.name.trim().toLowerCase() === s.name.toLowerCase() &&
+                d.description.trim() + d.flavor.trim() !== '',
+            ),
+        )
+        .map((s) => [ch.id, s.name] as const),
+    );
+    if (rand() < (edited.length ? 0.6 : 0.05)) {
+      const [id, skill] =
+        edited.length && rand() < 0.9 ? pick(edited) : ([characterId, someSkill()] as const);
+      return { type: 'skill.useLibraryText', characterId: id, skill };
+    }
   }
   if (roll < 0.25) {
     return {
@@ -653,4 +716,29 @@ function randomQuestCommand(
   if (roll < 0.9)
     return { type: 'stability.nudge', questId: someQuest(), delta: pick([-10, 5, 0]) };
   return { type: 'campaign.advanceDay', days: pick([1, 3, 0]) };
+}
+
+/** M4.7: broadcasts scheduled for a later in-game day, cancelled, and sent as days pass. */
+export function randomBroadcastCommand(rand: () => number, c: Campaign): Command {
+  const pick = <T>(items: readonly T[]): T => items[Math.floor(rand() * items.length)] as T;
+  const day = c.state?.day ?? 1;
+  const roll = rand();
+  if (roll < 0.55) {
+    const chars = c.state?.characterOrder ?? [];
+    return {
+      type: 'broadcast.schedule',
+      id: `sb${Math.floor(rand() * 4)}`,
+      text: pick(['Day breaks.', ' ', 'The Host stirs.']),
+      characterIds: rand() < 0.5 || chars.length === 0 ? null : [pick(chars)],
+      day: day + pick([1, 2, 0]),
+    };
+  }
+  if (roll < 0.75) {
+    const pending = c.state?.scheduledBroadcasts ?? [];
+    return {
+      type: 'broadcast.unschedule',
+      id: pending.length && rand() < 0.8 ? pick(pending).id : 'sb-none',
+    };
+  }
+  return { type: 'campaign.advanceDay', days: pick([1, 2]) };
 }

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 21,
+  "schemaVersion": 32,
   "name": "Golden: pools follow maxima (MQ.2)",
   "rules": {
     "configVersion": 1,
@@ -245,7 +245,9 @@
       },
       "maxMarksPerSkillPerSession": 1,
       "marksCarryOver": false,
+      "marksResetOnUpgrade": false,
       "libraryByRarity": false,
+      "handTextSurvivesUpgrade": false,
       "merge": {
         "requiredJointUses": 3,
         "minRarity": "uncommon",
@@ -494,6 +496,7 @@
   },
   "characterOrder": ["jake"],
   "broadcasts": [],
+  "scheduledBroadcasts": [],
   "items": {
     "charm": {
       "id": "charm",
@@ -510,6 +513,12 @@
     }
   },
   "itemOrder": ["charm"],
+  "lootTables": {},
+  "lootTableOrder": [],
+  "lootLog": [],
+  "ledger": [],
+  "titleLibrary": {},
+  "titleLibraryOrder": [],
   "skillLibrary": {},
   "skillLibraryOrder": [],
   "classLibrary": {},
@@ -540,6 +549,18 @@
   "entityOrder": [],
   "montages": {},
   "montageOrder": [],
+  "contests": {},
+  "contestOrder": [],
+  "hunger": {
+    "enabled": false,
+    "steps": ["Fed", "Peckish", "Hungry", "Famished", "Starving"],
+    "levels": {}
+  },
+  "regions": {},
+  "regionOrder": [],
+  "currentRegion": null,
+  "factions": {},
+  "factionOrder": [],
   "day": 1,
   "sessions": [],
   "currentSession": null

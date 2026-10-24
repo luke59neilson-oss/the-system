@@ -3,7 +3,17 @@ import path from 'node:path';
 import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { buildDemoEvents, portraitUrl, type DomainEvent } from '@the-system/engine';
+import {
+  CHANGE_LOG_CATEGORIES,
+  buildDemoEvents,
+  changeLogPage,
+  portraitUrl,
+  updateChangeLog,
+  type ChangeLogCache,
+  type ChangeLogQuery,
+  type DomainEvent,
+  previewContent,
+} from '@the-system/engine';
 import { LiveHub, type HubOptions } from './hub';
 import type { JoinInfo } from './join';
 import {
@@ -15,7 +25,7 @@ import {
   savePortrait,
 } from './portraits';
 import { helloMessage } from './protocol';
-import { SessionLogWriter, type SessionLogOptions } from './sessionLog';
+import { SessionLogWriter, sessionReport, type SessionLogOptions } from './sessionLog';
 import { authPath, gmKeyMatches, isAllowedHost, isAllowedOrigin } from './security';
 import type { CampaignStore } from './store';
 
@@ -321,9 +331,81 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     return info;
   });
 
+  // M4.8: the GM's change log (GM-only: every event, in words, with undo state).
+  // QF.13: rows are kept per campaign and extended as events arrive, so a
+  // request costs a filter over cached rows and returns one bounded page.
+  const changeLogs = new WeakMap<CampaignStore, ChangeLogCache>();
+  app.get('/api/gm/changelog', (request, reply) => {
+    if (!active) return reply.code(404).send({ error: 'No campaign open' });
+    const store = active.store;
+    const cache = updateChangeLog(changeLogs.get(store) ?? null, store.campaign);
+    changeLogs.set(store, cache);
+    return changeLogPage(cache.rows, parseChangeLogQuery(request.query));
+  });
+
   app.get('/api/gm/export', () => {
     if (!active) return { error: 'No campaign open' };
     return active.store.exportCampaign();
+  });
+
+  // M9.1: one play session's report (or running log) as markdown or JSON, for
+  // the GM's "Copy for Claude" button. GM-only like every /api/gm path: it
+  // includes hidden quests and GM reasons. Rebuilt from the event log, so it
+  // works for any past session even if the exports folder was cleared.
+  app.get('/api/gm/session-report', (request, reply) => {
+    const state = active?.store.campaign.state;
+    if (!active || !state) return reply.code(404).send({ error: 'No campaign open' });
+    const query = request.query as { n?: unknown; format?: unknown };
+    const n = typeof query.n === 'string' && /^[1-9]\d{0,5}$/.test(query.n) ? Number(query.n) : NaN;
+    const format = query.format ?? 'md';
+    if (!Number.isInteger(n) || (format !== 'md' && format !== 'json')) {
+      return reply.code(400).send({ error: 'Send ?n=<session number>&format=md|json' });
+    }
+    const session = state.sessions.find((s) => s.number === n);
+    const report = session
+      ? sessionReport(
+          active.store.campaign,
+          session,
+          options.live?.now() ?? new Date().toISOString(),
+        )
+      : null;
+    if (!report) return reply.code(404).send({ error: `No session ${n}` });
+    reply.header('cache-control', 'no-store');
+    return format === 'json'
+      ? reply.type('application/json; charset=utf-8').send(report.json)
+      : reply.type('text/markdown; charset=utf-8').send(report.markdown);
+  });
+
+  // M9.3: import preview. The GM's content file is checked against the open
+  // campaign on a scratch copy (nothing changes); the GM screen then sends
+  // the approved entries' commands over its own GM connection.
+  app.post('/api/gm/content/preview', { bodyLimit: 2 * 1024 * 1024 }, (request, reply) => {
+    if (!active?.store.campaign.state) return reply.code(404).send({ error: 'No campaign open' });
+    let n = 0;
+    const now = options.live?.now ?? (() => new Date().toISOString());
+    // The body is the file (its text or its JSON), or `{ file, only }` to
+    // re-check just the entries the GM ticked (a content file never has a
+    // top-level `file` key: unknown keys are errors).
+    const body = request.body as unknown;
+    const wrapped =
+      typeof body === 'object' && body !== null && !Array.isArray(body) && 'file' in body
+        ? (body as { file: unknown; only?: unknown })
+        : null;
+    const only =
+      wrapped && Array.isArray(wrapped.only)
+        ? new Set(wrapped.only.filter((p): p is string => typeof p === 'string'))
+        : undefined;
+    return previewContent(
+      active.store.campaign,
+      wrapped ? wrapped.file : body,
+      {
+        actor: { role: 'gm' },
+        sessionId: active.store.campaign.state.currentSession ?? null,
+        now,
+        newId: () => `preview-${++n}`,
+      },
+      only,
+    );
   });
 
   // Browser navigations to client-side routes get the app shell; anything else
@@ -350,4 +432,20 @@ export function isReservedPath(pathname: string): boolean {
   return RESERVED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
+}
+
+/** Query string → change-log page query; anything malformed falls back to the default. */
+export function parseChangeLogQuery(query: unknown): ChangeLogQuery {
+  const q = (query && typeof query === 'object' ? query : {}) as Record<string, unknown>;
+  const int = (v: unknown) =>
+    typeof v === 'string' && /^\d{1,9}$/.test(v) ? Number.parseInt(v, 10) : null;
+  const who = q.who === 'gm' || q.who === 'player' ? q.who : 'all';
+  const kind = CHANGE_LOG_CATEGORIES.find((c) => c === q.kind) ?? 'all';
+  return {
+    before: int(q.before),
+    limit: int(q.limit),
+    who,
+    kind,
+    text: typeof q.text === 'string' ? q.text.slice(0, 200) : '',
+  };
 }

@@ -54,14 +54,14 @@ test('GM creates a campaign and characters, awards XP, and broadcasts', async ({
   };
   for (const name of ['Jake', 'Miranda']) {
     await createCharacter(name);
-    await expect(page.getByRole('cell', { name, exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
   }
   // Bad input is refused with the engine's reason, without the event id.
   await createCharacter('   ');
   await expect(page.getByRole('alert')).toHaveText('Name: must not be blank');
   await createCharacter('Casper');
   await expect(page.getByText('Character created')).toBeVisible();
-  await expect(page.getByRole('cell', { name: '[Archer]' })).toHaveCount(3);
+  await expect(page.getByTestId(/^party-class-/).filter({ hasText: /^Archer$/ })).toHaveCount(3);
 
   const characters = (await (await fetch(`${server.url}/api/characters`)).json()) as {
     id: string;

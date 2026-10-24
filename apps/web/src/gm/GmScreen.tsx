@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState, useSyncExternalStore, type FormEvent } fr
 import {
   DEFAULT_RULES,
   STARTER_CLASSES,
-  largestRemainderSplit,
-  previewXpAward,
-  raceLevel,
+  entryForSkill,
+  librarySkill,
   type CampaignState,
 } from '@the-system/engine';
 import { friendlyError } from '../format';
@@ -14,12 +13,30 @@ import { CampaignSwitch } from './CampaignSwitch';
 import { feedRows } from './feed';
 import { JoinPanel } from './JoinPanel';
 import { SkillLibrary } from './SkillLibrary';
+import { ItemLibrary } from './ItemLibrary';
+import { LootTables } from './LootTables';
+import { CurrencyLedger } from './CurrencyLedger';
+import { TitleLibrary } from './TitleLibrary';
 import { OriginLibrary } from './OriginLibrary';
 import { entriesOf } from './originLibraryModel';
 import { resolvePerspective, type PartyMember, type Perspective } from './perspective';
 import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
 import { SessionPanel } from './SessionPanel';
-import { PortraitCell, PortraitPicker } from './PortraitControls';
+import { ContentImport } from './ContentImport';
+import { PortraitPicker } from './PortraitControls';
+import { PartyDashboard } from './PartyDashboard';
+import { XpAward } from './XpAward';
+import { OfferBuilder, type OfferTarget } from './OfferBuilder';
+import { ChangeLog } from './ChangeLog';
+import { EvolutionBuilder } from './EvolutionBuilder';
+import { MarksReview } from './MarksReview';
+import { MergeBuilder } from './MergeBuilder';
+import { PracticeCapture } from './PracticeCapture';
+import { QuestManager } from './QuestManager';
+import { Bestiary } from './Bestiary';
+import { Trackers } from './Trackers';
+import { Encounter } from './Encounter';
+import { RulesSettings } from './RulesSettings';
 import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
 
@@ -79,6 +96,8 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
   const state = live.state;
   const [wanted, setWanted] = useState<Perspective>({ kind: 'gm' });
   const [picked, setPicked] = useState<string[] | null>(null);
+  // A dashboard selection chip asks the offer builder to open that selection (M5.1).
+  const [offerTarget, setOfferTarget] = useState<OfferTarget | null>(null);
   // Once opened, Table view's panes stay connected (hidden) across switches.
   const [tableOpened, setTableOpened] = useState(false);
   const party = useMemo(() => partyOf(state), [state]);
@@ -129,15 +148,38 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
           {/* Kept mounted while viewing as a character so half-filled GM forms survive. */}
           <div className="gm-pane" hidden={view.kind === 'character'}>
             <div className="gm-grid">
-              <Party client={client} gmKey={gmKey} state={state} />
-              <SessionPanel client={client} state={state} />
+              <PartyDashboard
+                client={client}
+                gmKey={gmKey}
+                state={state}
+                onBuildMenu={(characterId, level) =>
+                  setOfferTarget((t) => ({ characterId, level, n: (t?.n ?? 0) + 1 }))
+                }
+              />
+              <SessionPanel client={client} state={state} gmKey={gmKey} />
+              <ContentImport client={client} gmKey={gmKey} />
               <JoinPanel gmKey={gmKey} />
               <CreateCharacter client={client} gmKey={gmKey} state={state} />
-              <AwardXp client={client} state={state} />
+              <XpAward client={client} state={state} />
+              <Encounter client={client} state={state} />
+              <OfferBuilder client={client} state={state} target={offerTarget} />
+              <EvolutionBuilder client={client} state={state} />
+              <PracticeCapture client={client} state={state} />
+              <QuestManager client={client} state={state} />
+              <Bestiary client={client} state={state} />
+              <Trackers client={client} state={state} />
+              <MarksReview client={client} state={state} />
+              <MergeBuilder client={client} state={state} />
               <Broadcast client={client} state={state} />
+              <ChangeLog client={client} gmKey={gmKey} state={state} />
               <SkillText client={client} state={state} />
               <SkillLibrary client={client} state={state} />
+              <ItemLibrary client={client} state={state} />
+              <LootTables client={client} state={state} />
+              <CurrencyLedger client={client} state={state} />
+              <TitleLibrary client={client} state={state} />
               <OriginLibrary client={client} state={state} />
+              <RulesSettings client={client} state={state} />
               <Feed live={live} state={state} />
             </div>
           </div>
@@ -225,61 +267,6 @@ function CreateCampaign({ client }: { client: LiveClient }) {
       </button>
       <Outcome result={result} okText="Campaign created" />
     </form>
-  );
-}
-
-function Party({
-  client,
-  gmKey,
-  state,
-}: {
-  client: LiveClient;
-  gmKey: string;
-  state: CampaignState;
-}) {
-  const characters = state.characterOrder.flatMap((id) => state.characters[id] ?? []);
-  return (
-    <section className="window party" aria-labelledby="party">
-      <h2 id="party">{state.name} · Party</h2>
-      {characters.length === 0 ? (
-        <p className="muted">No characters yet.</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Portrait</th>
-              <th scope="col">Name</th>
-              <th scope="col">Class</th>
-              <th scope="col">Class lvl</th>
-              <th scope="col">Race lvl</th>
-              <th scope="col">Grade</th>
-              <th scope="col">XP</th>
-              <th scope="col">Free pts</th>
-            </tr>
-          </thead>
-          <tbody>
-            {characters.map((c) => (
-              <tr key={c.id} data-testid={`row-${c.id}`}>
-                <td>
-                  <PortraitCell client={client} gmKey={gmKey} state={state} characterId={c.id} />
-                </td>
-                <td data-testid={`party-name-${c.id}`}>{c.name}</td>
-                <td>[{c.className}]</td>
-                <td data-testid={`class-level-${c.id}`}>{c.classLevel}</td>
-                <td>{raceLevel(state.rules, c)}</td>
-                <td>{c.grade}</td>
-                <td>{c.xp.class}</td>
-                <td>
-                  {c.freePointBatches
-                    .filter((b) => b.allocation === null)
-                    .reduce((a, b) => a + b.points, 0)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </section>
   );
 }
 
@@ -400,121 +387,6 @@ function CreateCharacter({
   );
 }
 
-function AwardXp({ client, state }: { client: LiveClient; state: CampaignState }) {
-  const [amount, setAmount] = useState('');
-  const [excluded, setExcluded] = useState<ReadonlySet<string>>(new Set());
-  const [reason, setReason] = useState('');
-  const { busy, result, run } = useCommand(client);
-  const ids = state.characterOrder.filter((id) => state.characters[id]);
-  const chosen = ids.filter((id) => !excluded.has(id));
-  const value = Number(amount);
-  const valid = amount !== '' && Number.isInteger(value) && value > 0 && chosen.length > 0;
-  const preview = valid
-    ? largestRemainderSplit(
-        value,
-        chosen.map(() => 1),
-      )
-    : [];
-  // MQ.11 (DESIGN §2): say what overflows or is lost before the GM confirms.
-  const outcome = (() => {
-    if (!valid) return new Map<string, { overflowed: number; lost: number }>();
-    try {
-      const rows = previewXpAward(state.rules, state.characters, 'class', {
-        amount: value,
-        participants: chosen.map((characterId) => ({ characterId })),
-      });
-      return new Map(rows.map((r) => [r.characterId, r]));
-    } catch {
-      return new Map<string, { overflowed: number; lost: number }>();
-    }
-  })();
-  const totalLost = [...outcome.values()].reduce((a, r) => a + r.lost, 0);
-  const toggle = (id: string) =>
-    setExcluded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!valid) return;
-    const r = await run({
-      type: 'xp.award',
-      track: 'class',
-      amount: value,
-      participants: chosen.map((characterId) => ({ characterId })),
-      reason,
-    });
-    if (r.ok) {
-      setAmount('');
-      setReason('');
-    }
-  };
-  return (
-    <form className="window" onSubmit={(e) => void submit(e)} aria-labelledby="award-xp">
-      <h2 id="award-xp">Award class XP</h2>
-      <label>
-        Amount
-        <input
-          type="number"
-          min={1}
-          step={1}
-          inputMode="numeric"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          required
-        />
-      </label>
-      <fieldset>
-        <legend>Participants (even split)</legend>
-        {ids.length === 0 && <p className="muted">Create a character first.</p>}
-        {ids.map((id) => {
-          const i = chosen.indexOf(id);
-          return (
-            <label key={id} className="check">
-              <input type="checkbox" checked={!excluded.has(id)} onChange={() => toggle(id)} />
-              {state.characters[id]?.name}
-              {i >= 0 && preview[i] !== undefined && (
-                <span className="muted" data-testid={`share-${id}`}>
-                  {' '}
-                  · {preview[i]} XP
-                </span>
-              )}
-              {i >= 0 && (outcome.get(id)?.overflowed ?? 0) > 0 && (
-                <span className="muted" data-testid={`overflow-${id}`}>
-                  {' '}
-                  · {outcome.get(id)?.overflowed} to profession
-                </span>
-              )}
-              {i >= 0 && (outcome.get(id)?.lost ?? 0) > 0 && (
-                <span className="warn" data-testid={`lost-${id}`}>
-                  {' '}
-                  · {outcome.get(id)?.lost} lost
-                </span>
-              )}
-            </label>
-          );
-        })}
-      </fieldset>
-      {totalLost > 0 && (
-        <p className="warn" data-testid="xp-lost">
-          {totalLost} XP will be lost: those tracks are at the top of their grade and nothing can
-          take the overflow.
-        </p>
-      )}
-      <label>
-        Reason (GM only)
-        <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={200} />
-      </label>
-      <button type="submit" disabled={busy || !valid}>
-        Award XP
-      </button>
-      <Outcome result={result} okText="XP awarded" />
-    </form>
-  );
-}
-
 /**
  * Writes a skill's System description and flavour (M3.5, D78) until the skill
  * library (M4.1) does it on grant. Picking a skill loads its current text.
@@ -559,6 +431,39 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
       description: shownDescription,
       flavor: shownFlavor,
     });
+    setReconnected(false);
+    if (r.ok) setDraftFor(null);
+  };
+  // MR.4 (L17): a hand-written copy can be handed back to the library entry for
+  // its current name and rarity; the button is disabled when there is none.
+  const byRarity = state.rules.skills.libraryByRarity;
+  // The entry Use library text would reconnect to (current rarity), and the one
+  // an unedited copy follows now (a re-rated copy keeps its old text rarity).
+  const entry =
+    current &&
+    librarySkill(state.skillLibrary, current.name, byRarity ? current.rarity : undefined);
+  const reconnectable =
+    entry !== undefined &&
+    entry !== null &&
+    (entry.description.trim() !== '' || entry.flavor.trim() !== '');
+  const followed = current && entryForSkill(state.rules, state.skillLibrary, current);
+  const handWritten = current?.textEdited === true;
+  // MR.A: a copy re-rated at evolution follows its old rarity's entry; Use
+  // library text moves it to the entry for its current rarity.
+  const textRarity = current?.textRarity;
+  const rerated = textRarity !== undefined && textRarity !== current?.rarity;
+  const detached = handWritten || rerated;
+  const textRarityName =
+    state.rules.skills.rarities.find((r) => r.id === textRarity)?.name ?? textRarity;
+  const [reconnected, setReconnected] = useState(false);
+  const reconnect = async () => {
+    if (!character || !current) return;
+    const r = await run({
+      type: 'skill.useLibraryText',
+      characterId: character.id,
+      skill: current.name,
+    });
+    setReconnected(r.ok);
     if (r.ok) setDraftFor(null);
   };
   return (
@@ -614,16 +519,46 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
           maxLength={1000}
         />
       </label>
-      {state.rules.skills.libraryByRarity && (
+      {byRarity && (
         <p className="muted hint">
-          Saving here makes this copy the character’s own: later library edits skip it until it
-          reaches a rarity the library has text for.
+          {state.rules.skills.handTextSurvivesUpgrade
+            ? 'Saving here makes this copy the character’s own: library edits and upgrades keep its text until you press Use library text.'
+            : 'Saving here makes this copy the character’s own: later library edits skip it until it reaches a rarity the library has text for.'}
+        </p>
+      )}
+      {byRarity && current && (
+        <p className="muted" data-testid="skill-text-source">
+          {handWritten
+            ? 'Hand-written text.'
+            : followed
+              ? rerated
+                ? `Follows the ${textRarityName} library entry (re-rated at evolution).`
+                : 'Follows the library entry.'
+              : 'No library entry for this rarity.'}
         </p>
       )}
       <button type="submit" disabled={busy || !current || unchanged}>
         Save skill text
       </button>
-      <Outcome result={result} okText="Skill text saved" />
+      {byRarity && (
+        <button
+          type="button"
+          className="secondary"
+          style={{ marginLeft: 8 }}
+          disabled={busy || !current || !detached || !reconnectable}
+          title={
+            !detached
+              ? 'This copy already follows the library'
+              : !reconnectable
+                ? 'The library has no entry with text for this skill at its rarity'
+                : 'Replace this copy’s text with the library entry’s and follow later edits'
+          }
+          onClick={() => void reconnect()}
+        >
+          Use library text
+        </button>
+      )}
+      <Outcome result={result} okText={reconnected ? 'Library text in use' : 'Skill text saved'} />
     </form>
   );
 }
@@ -631,16 +566,35 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
 function Broadcast({ client, state }: { client: LiveClient; state: CampaignState }) {
   const [text, setText] = useState('');
   const [to, setTo] = useState('all');
+  const [several, setSeveral] = useState<ReadonlySet<string>>(new Set());
+  const [when, setWhen] = useState<'now' | 'day'>('now');
+  const [day, setDay] = useState('');
   const { busy, result, run } = useCommand(client);
+  const cancel = useCommand(client);
+  const [okText, setOkText] = useState('Broadcast sent');
+  const name = (id: string) => state.characters[id]?.name ?? id;
+  const recipients: string[] | null =
+    to === 'all'
+      ? null
+      : to === 'several'
+        ? state.characterOrder.filter((id) => several.has(id))
+        : [to];
+  const dayValue = /^\d+$/.test(day.trim()) ? Number(day.trim()) : NaN;
+  const dayOk = when === 'now' || (Number.isSafeInteger(dayValue) && dayValue > state.day);
+  const noOne = recipients !== null && recipients.length === 0;
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const r = await run({
-      type: 'system.broadcast',
-      text,
-      characterIds: to === 'all' ? null : [to],
-    });
-    if (r.ok) setText('');
+    const r = await run(
+      when === 'now'
+        ? { type: 'system.broadcast', text, characterIds: recipients }
+        : { type: 'broadcast.schedule', text, characterIds: recipients, day: dayValue },
+    );
+    if (r.ok) {
+      setOkText(when === 'now' ? 'Broadcast sent' : `Scheduled for day ${dayValue}`);
+      setText('');
+    }
   };
+  const pending = state.scheduledBroadcasts;
   return (
     <form className="window" onSubmit={(e) => void submit(e)} aria-labelledby="broadcast">
       <h2 id="broadcast">System broadcast</h2>
@@ -654,21 +608,109 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
           rows={3}
         />
       </label>
-      <label>
-        To
-        <select aria-label="Recipients" value={to} onChange={(e) => setTo(e.target.value)}>
-          <option value="all">Everyone</option>
+      <div className="broadcast-row">
+        <label>
+          To
+          <select aria-label="Recipients" value={to} onChange={(e) => setTo(e.target.value)}>
+            <option value="all">Everyone</option>
+            {state.characterOrder.map((id) => (
+              <option key={id} value={id}>
+                {name(id)}
+              </option>
+            ))}
+            {state.characterOrder.length > 1 && <option value="several">Several…</option>}
+          </select>
+        </label>
+        <label>
+          When
+          <select
+            aria-label="When"
+            value={when}
+            onChange={(e) => setWhen(e.target.value as 'now' | 'day')}
+          >
+            <option value="now">Now</option>
+            <option value="day">On a later in-game day</option>
+          </select>
+        </label>
+        {when === 'day' && (
+          <label>
+            Send on day
+            <input
+              type="number"
+              inputMode="numeric"
+              min={state.day + 1}
+              step={1}
+              value={day}
+              placeholder={String(state.day + 1)}
+              onChange={(e) => setDay(e.target.value)}
+            />
+          </label>
+        )}
+      </div>
+      {to === 'several' && (
+        <fieldset>
+          <legend>Recipients</legend>
           {state.characterOrder.map((id) => (
-            <option key={id} value={id}>
-              {state.characters[id]?.name}
-            </option>
+            <label key={id} className="check">
+              <input
+                type="checkbox"
+                checked={several.has(id)}
+                onChange={(e) => {
+                  const next = new Set(several);
+                  if (e.target.checked) next.add(id);
+                  else next.delete(id);
+                  setSeveral(next);
+                }}
+              />
+              {name(id)}
+            </label>
           ))}
-        </select>
-      </label>
-      <button type="submit" disabled={busy}>
-        Send broadcast
+        </fieldset>
+      )}
+      {when === 'day' && (
+        <p className="muted small">
+          Today is day {state.day}. It is sent when the in-game day reaches the day you pick
+          (Session panel: advance the day).
+          {day.trim() !== '' && !dayOk && (
+            <span className="err" role="alert">
+              {' '}
+              Pick a whole day after day {state.day}.
+            </span>
+          )}
+        </p>
+      )}
+      <button type="submit" disabled={busy || !dayOk || noOne || text.trim() === ''}>
+        {when === 'now' ? 'Send broadcast' : 'Schedule broadcast'}
       </button>
-      <Outcome result={result} okText="Broadcast sent" />
+      {noOne && <p className="muted small">Tick at least one recipient.</p>}
+      <Outcome result={result} okText={okText} />
+      {pending.length > 0 && (
+        <section aria-labelledby="scheduled-broadcasts">
+          <h3 id="scheduled-broadcasts">Scheduled (GM only until sent)</h3>
+          <ul className="scheduled">
+            {[...pending]
+              .map((b, i) => ({ b, i }))
+              .sort((x, y) => x.b.day - y.b.day || x.i - y.i)
+              .map(({ b }) => (
+                <li key={b.id} data-testid={`scheduled-${b.id}`}>
+                  <strong>Day {b.day}</strong> · to{' '}
+                  {b.characterIds === null ? 'everyone' : b.characterIds.map(name).join(', ')}:{' '}
+                  <span className="scheduled-text">{b.text}</span>{' '}
+                  <button
+                    type="button"
+                    className="secondary small"
+                    disabled={cancel.busy}
+                    aria-label={`Cancel the day ${b.day} broadcast to ${b.characterIds === null ? 'everyone' : b.characterIds.map(name).join(', ')}`}
+                    onClick={() => void cancel.run({ type: 'broadcast.unschedule', id: b.id })}
+                  >
+                    Cancel
+                  </button>
+                </li>
+              ))}
+          </ul>
+          <Outcome result={cancel.result} okText="Scheduled message cancelled" />
+        </section>
+      )}
     </form>
   );
 }

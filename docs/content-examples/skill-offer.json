@@ -1,0 +1,39 @@
+{
+  "format": "the-system/content",
+  "version": 1,
+  "title": "Jake: level 10 selection",
+  "notes": "Jake used Archer's Eye to spot the pale hunters three times this session and fought from the canyon rim.",
+  "skillOffers": [
+    {
+      "character": "Jake",
+      "level": 10,
+      "options": [
+        {
+          "name": "Rim Walker",
+          "rarity": "uncommon",
+          "description": "Your footing holds on any ledge; you move along edges as if on open ground."
+        },
+        {
+          "name": "Hunter's Mark",
+          "rarity": "rare",
+          "description": "Mark a creature you can see; your shots at it find gaps more easily."
+        },
+        {
+          "name": "Steady Draw",
+          "rarity": "common",
+          "description": "Hold a drawn bow far longer without tiring."
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Hunter's Mark",
+      "rarity": "rare",
+      "tags": ["archer", "mark"],
+      "description": "Mark a creature you can see; your shots at it find gaps more easily.",
+      "flavor": "Once seen, never lost.",
+      "effects": "+1 step on ranged attacks against the marked target for the scene; one mark at a time."
+    }
+  ]
+}

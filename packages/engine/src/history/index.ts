@@ -3,6 +3,8 @@ import type { DomainEvent } from '../events/envelope';
 import type { Campaign } from '../events/log';
 import { applyEvent, type CampaignState } from '../events/reducer';
 import { hiddenQuestNoticed } from '../quests';
+import { titleDefByName } from '../titles';
+import { isEmptyBundle, type Bundle } from '../economy';
 
 /**
  * System notifications (DESIGN §9 "DING!") and their history back to day 1
@@ -57,6 +59,30 @@ export type SystemNotification =
       readonly currency: number;
       readonly currencyName: string;
       readonly items: readonly { readonly name: string; readonly count: number }[];
+      /** QF.19: the GM's reason for an item give (M6.A), when one was given. */
+      readonly reason?: string;
+    }
+  | {
+      /**
+       * The GM granted or fined currency (M6.3); only that character is told,
+       * with the GM's reason.
+       */
+      readonly kind: 'currency';
+      readonly characterId: string;
+      /** Signed change (a fine is negative). */
+      readonly amount: number;
+      readonly currencyName: string;
+      readonly reason: string;
+    }
+  | {
+      /**
+       * The GM took items back (M6.A); only that character is told, with the
+       * GM's reason. Items the GM gives arrive as a `gift` from the GM.
+       */
+      readonly kind: 'itemsTaken';
+      readonly characterId: string;
+      readonly items: readonly { readonly name: string; readonly count: number }[];
+      readonly reason: string;
     }
   | {
       /** A trade changed by the other party (M3.7); only the party who did not act is told. */
@@ -65,6 +91,32 @@ export type SystemNotification =
       readonly action: 'proposed' | 'accepted' | 'declined' | 'cancelled';
       /** The other party's name, or null for the GM. */
       readonly other: string | null;
+    }
+  | {
+      /** A title awarded (M6.4); only its holder is told, with the System's text. */
+      readonly kind: 'title';
+      readonly characterId: string;
+      readonly title: string;
+      /** The library entry's text, or '' when the title has none. */
+      readonly text: string;
+    }
+  | {
+      /** A skill upgraded by mastery marks (M5.3); only its owner is told. */
+      readonly kind: 'skillUpgrade';
+      readonly characterId: string;
+      readonly skill: string;
+      /** Rarity display names before and after. */
+      readonly from: string;
+      readonly to: string;
+    }
+  | {
+      /** Two skills merged into one (M5.4); only their owner is told. */
+      readonly kind: 'skillMerge';
+      readonly characterId: string;
+      readonly skills: readonly [string, string];
+      readonly name: string;
+      /** Rarity display name of the merged skill. */
+      readonly rarity: string;
     };
 
 /** A notification with where it sits in the campaign. */
@@ -104,6 +156,14 @@ export function notificationsBetween(
       out.push({ kind: 'broadcast', characterId, text: event.payload.text });
     }
   }
+  if (event?.type === 'campaign.dayAdvanced' && before) {
+    // M4.7: scheduled broadcasts sent as the day counter reached their day.
+    for (const b of after.broadcasts.slice(before.broadcasts.length)) {
+      for (const characterId of b.characterIds ?? after.characterOrder) {
+        out.push({ kind: 'broadcast', characterId, text: b.text });
+      }
+    }
+  }
   if (
     event?.type === 'quest.created' ||
     event?.type === 'quest.edited' ||
@@ -127,19 +187,83 @@ export function notificationsBetween(
       }
     }
   }
+  // M6.2: loot rolled for a character reaches them as a gift from the GM.
+  const lootGift =
+    event?.type === 'loot.rolled' && event.payload.characterId !== null
+      ? after.lootLog.find((r) => r.id === event.id)
+      : undefined;
+  if (lootGift && lootGift.characterId !== null && !isEmptyBundle(lootGift.bundle)) {
+    out.push(giftNotice(after, lootGift.characterId, null, lootGift.bundle));
+  }
+  if (event?.type === 'title.awarded') {
+    const def = titleDefByName(after.titleLibrary, after.titleLibraryOrder, event.payload.title);
+    out.push({
+      kind: 'title',
+      characterId: event.payload.characterId,
+      title: def?.name ?? event.payload.title.trim(),
+      text: def?.text ?? '',
+    });
+  }
+  if ((event?.type === 'titleDef.defined' || event?.type === 'titleDef.edited') && before) {
+    // M6.A: defining or renaming a library title can match a title someone
+    // already holds by name (free text, D69). That holder now gets its
+    // bonuses, so they hear about it like an award.
+    const defId = event.type === 'titleDef.defined' ? event.payload.id : event.payload.titleDefId;
+    const def = has(after.titleLibrary, defId) ? after.titleLibrary[defId] : undefined;
+    const linked = (state: CampaignState, id: string) => {
+      const c = has(state.characters, id) ? state.characters[id] : undefined;
+      return (c?.titles ?? []).some(
+        (t) => titleDefByName(state.titleLibrary, state.titleLibraryOrder, t)?.id === defId,
+      );
+    };
+    for (const characterId of def ? after.characterOrder : []) {
+      if (def && linked(after, characterId) && !linked(before, characterId)) {
+        out.push({ kind: 'title', characterId, title: def.name, text: def.text });
+      }
+    }
+  }
+  if (event?.type === 'holdings.adjusted' && event.payload.currency !== 0) {
+    const { characterId, currency, reason } = event.payload;
+    out.push({
+      kind: 'currency',
+      characterId,
+      amount: currency,
+      currencyName: after.rules.economy.currencyName,
+      reason,
+    });
+  }
+  if (event?.type === 'holdings.adjusted') {
+    // M6.A: items the GM gives or takes reach the holder like loot and gifts.
+    const { characterId, items } = event.payload;
+    const entries = Object.entries(items);
+    const name = (itemId: string) =>
+      (has(after.items, itemId) ? after.items[itemId]?.name : undefined) ?? itemId;
+    const given = entries.filter(([, n]) => n > 0);
+    if (given.length > 0) {
+      // QF.19: the Give form says the player sees the reason, so carry it.
+      out.push(
+        giftNotice(
+          after,
+          characterId,
+          null,
+          { currency: 0, items: Object.fromEntries(given) },
+          event.payload.reason,
+        ),
+      );
+    }
+    const taken = entries.filter(([, n]) => n < 0);
+    if (taken.length > 0) {
+      out.push({
+        kind: 'itemsTaken',
+        characterId,
+        items: taken.map(([itemId, n]) => ({ name: name(itemId), count: -n })),
+        reason: event.payload.reason,
+      });
+    }
+  }
   if (event?.type === 'gift.given' && event.payload.to !== null) {
     const { characterId: giver, to, bundle } = event.payload;
-    out.push({
-      kind: 'gift',
-      characterId: to,
-      from: giver === null ? null : (after.characters[giver]?.name ?? giver),
-      currency: bundle.currency,
-      currencyName: after.rules.economy.currencyName,
-      items: Object.entries(bundle.items).map(([itemId, count]) => ({
-        name: after.items[itemId]?.name ?? itemId,
-        count,
-      })),
-    });
+    out.push(giftNotice(after, to, giver, bundle));
   }
   if (
     event?.type === 'trade.proposed' ||
@@ -163,6 +287,30 @@ export function notificationsBetween(
           other: actor === null ? null : (after.characters[actor]?.name ?? actor),
         });
       }
+    }
+  }
+  if (event?.type === 'skill.upgraded' && before) {
+    const { characterId, skill } = event.payload;
+    const rarityOf = (state: CampaignState) =>
+      (has(state.characters, characterId) ? state.characters[characterId] : undefined)?.skills.find(
+        (s) => s.name === skill,
+      )?.rarity;
+    const from = rarityOf(before);
+    const to = rarityOf(after);
+    if (from && to && from !== to) {
+      const name = (id: string) => after.rules.skills.rarities.find((r) => r.id === id)?.name ?? id;
+      out.push({ kind: 'skillUpgrade', characterId, skill, from: name(from), to: name(to) });
+    }
+  }
+  if (event?.type === 'skill.merged') {
+    const { characterId, skills, name } = event.payload;
+    const merged = (
+      has(after.characters, characterId) ? after.characters[characterId] : undefined
+    )?.skills.find((s) => s.name === name);
+    if (merged) {
+      const rarity =
+        after.rules.skills.rarities.find((r) => r.id === merged.rarity)?.name ?? merged.rarity;
+      out.push({ kind: 'skillMerge', characterId, skills: [skills[0], skills[1]], name, rarity });
     }
   }
   for (const id of after.characterOrder) {
@@ -238,4 +386,28 @@ export function notificationHistory(campaign: Campaign): HistoryItem[] {
     state = after;
   });
   return out;
+}
+export * from './changeLog';
+
+/** A gift notification for `to` (M3.7); `giver` null = the GM. */
+function giftNotice(
+  after: CampaignState,
+  to: string,
+  giver: string | null,
+  bundle: Bundle,
+  reason = '',
+): SystemNotification {
+  const why = reason.trim();
+  return {
+    ...(why === '' ? {} : { reason: why }),
+    kind: 'gift',
+    characterId: to,
+    from: giver === null ? null : (after.characters[giver]?.name ?? giver),
+    currency: bundle.currency,
+    currencyName: after.rules.economy.currencyName,
+    items: Object.entries(bundle.items).map(([itemId, count]) => ({
+      name: after.items[itemId]?.name ?? itemId,
+      count,
+    })),
+  };
 }

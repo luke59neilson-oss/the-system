@@ -1,4 +1,4 @@
-import { mkdtempSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { _electron as electron, chromium, expect, test } from '@playwright/test';
@@ -7,6 +7,9 @@ import { gmWindow } from './windows';
 // MS.5 smoke: the real Electron app starts the server, opens the GM console
 // with the key injected, shows the join URL + QR, and keeps data in the
 // app-data folder; a plain browser cannot act as GM.
+// M10.1: quitting leaves a "-quit" backup of the campaign, and the join panel
+// carries firewall help for the computer's OS (Windows here, via a test-only
+// override, since this workspace runs Linux).
 
 // This package is CommonJS (Electron main), so Playwright loads the spec as CJS.
 const root = path.resolve(__dirname, '..');
@@ -22,6 +25,7 @@ test('double-click start: server up, GM window connected with the key', async ()
       THE_SYSTEM_PORT: '0',
       THE_SYSTEM_DATA_DIR: dataDir,
       THE_SYSTEM_USER_DATA_DIR: userData,
+      THE_SYSTEM_TEST_PLATFORM: 'win32',
     },
   });
   // Everything the app prints, to prove the GM key never appears in it (QF.6).
@@ -42,6 +46,9 @@ test('double-click start: server up, GM window connected with the key', async ()
     await expect(gm.getByRole('heading', { name: /Desktop smoke/ })).toBeVisible();
     await expect(gm.getByTestId('join-url')).toHaveText(/^http:\/\/.+:\d+\/?$/);
     await expect(gm.getByRole('img', { name: /QR code/ })).toBeVisible();
+    await expect(gm.getByTestId('connect-help').locator('summary')).toHaveText(
+      'Players can’t connect? Check Windows Firewall',
+    );
     await gm.setViewportSize({ width: 1366, height: 768 });
     await gm.screenshot({
       path: path.resolve(root, '../../docs/screens/MS.5/gm-desktop-1366x768.png'),
@@ -69,8 +76,70 @@ test('double-click start: server up, GM window connected with the key', async ()
     await expect.poll(() => printed).toContain('desktop ready on port');
     expect(printed).not.toContain(gmKey ?? '');
     expect(printed).not.toContain(encodeURIComponent(gmKey ?? ''));
+    // M10.1: quitting backs the campaign up first.
+    await app.close();
+    const backups = path.join(dataDir, 'campaigns', 'main', 'backups');
+    const made = readdirSync(backups).filter((name) => name.endsWith('-quit'));
+    expect(made).toHaveLength(1);
+    const copy = readFileSync(path.join(backups, made[0] ?? '', 'events.jsonl'), 'utf8');
+    expect(copy).toContain('Desktop smoke');
+    expect(copy).toBe(
+      readFileSync(path.join(dataDir, 'campaigns', 'main', 'events.jsonl'), 'utf8'),
+    );
   } finally {
     await app.close();
+    rmSync(dataDir, { recursive: true, force: true });
+    rmSync(userData, { recursive: true, force: true });
+  }
+});
+
+// M10.A review: an installer upgrading the app closes the window politely,
+// then force-kills it about a second later, before anyone answers the quit
+// question. The quit backup must already exist by then.
+test('a polite close then a forced kill (an installer upgrading) still leaves the quit backup', async () => {
+  const dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-desktop-'));
+  const userData = mkdtempSync(path.join(tmpdir(), 'the-system-profile-'));
+  const app = await electron.launch({
+    args: [path.join(root, 'dist', 'main.cjs'), '--no-sandbox'],
+    env: {
+      ...process.env,
+      THE_SYSTEM_PORT: '0',
+      THE_SYSTEM_DATA_DIR: dataDir,
+      THE_SYSTEM_USER_DATA_DIR: userData,
+    },
+  });
+  const backups = path.join(dataDir, 'campaigns', 'main', 'backups');
+  const quitCopies = () =>
+    existsSync(backups) ? readdirSync(backups).filter((name) => name.endsWith('-quit')) : [];
+  try {
+    const gm = await gmWindow(app);
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    await gm.getByLabel('Campaign name').fill('Upgrade smoke');
+    await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await expect(gm.getByRole('heading', { name: /Upgrade smoke/ })).toBeVisible();
+    expect(quitCopies()).toEqual([]);
+    // The polite close: the app asks "Quit The System?" and keeps running.
+    await app.evaluate(({ BrowserWindow }) => {
+      BrowserWindow.getAllWindows()
+        .find((w) => w.webContents.getURL().includes('/gm'))
+        ?.close();
+    });
+    await expect.poll(quitCopies).toHaveLength(1);
+    // Asking twice (the installer retries) makes no second copy.
+    await app.evaluate(({ BrowserWindow }) => {
+      BrowserWindow.getAllWindows()
+        .find((w) => w.webContents.getURL().includes('/gm'))
+        ?.close();
+    });
+    // The forced kill, before anyone answers.
+    app.process().kill('SIGKILL');
+    await new Promise((resolve) => app.process().once('exit', resolve));
+    const made = quitCopies();
+    expect(made).toHaveLength(1);
+    const copy = readFileSync(path.join(backups, made[0] ?? '', 'events.jsonl'), 'utf8');
+    expect(copy).toContain('Upgrade smoke');
+  } finally {
+    if (app.process().exitCode === null && app.process().signalCode === null) await app.close();
     rmSync(dataDir, { recursive: true, force: true });
     rmSync(userData, { recursive: true, force: true });
   }

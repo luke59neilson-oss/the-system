@@ -9,6 +9,10 @@ export function QuestLog({ view }: { view: PlayerView }) {
       <h2 id="quests-heading">Quests</h2>
       <p className="muted quest-day" data-testid="day">
         Day {view.day}
+        {view.region !== null && (
+          // M7.4: where the party is, as the GM set it.
+          <span data-testid="region"> · {view.region}</span>
+        )}
       </p>
       {active.length === 0 && view.hiddenQuests === 0 && <p className="muted">No active quests.</p>}
       {active.map((q) => (

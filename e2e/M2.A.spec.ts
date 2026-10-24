@@ -51,107 +51,122 @@ const sessionLogs = () => {
   }
 };
 
-test('GM and two players through a torn write and a restart; session log on shutdown', async ({
-  browser,
-}) => {
-  server = await startBuiltServer({ GM_KEY }, { dataDir });
-  const port = Number(new URL(server.url).port);
+test(
+  'GM and two players through a torn write and a restart; session log on shutdown',
+  { tag: '@latency' },
+  async ({ browser }) => {
+    server = await startBuiltServer({ GM_KEY }, { dataDir });
+    const port = Number(new URL(server.url).port);
 
-  const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
-  const gmWatch = watch(gm);
-  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
-  await gm.getByLabel('Campaign name').fill('Milestone Two');
-  await gm.getByRole('button', { name: 'Create campaign' }).click();
-  await gm.getByRole('button', { name: 'Start session 1' }).click();
-  await expect(gm.getByTestId('session-chip')).toHaveText('Session 1 · Day 1');
-  for (const name of ['Jake', 'Miranda']) {
-    await gm.getByLabel('Name', { exact: true }).fill(name);
-    await gm.getByRole('button', { name: 'Create character' }).click();
-    await expect(gm.getByRole('cell', { name, exact: true })).toBeVisible();
-  }
+    const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+    const gmWatch = watch(gm);
+    await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
+    await gm.getByLabel('Campaign name').fill('Milestone Two');
+    await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await gm.getByRole('button', { name: 'Start session 1' }).click();
+    await expect(gm.getByTestId('session-chip')).toHaveText('Session 1 · Day 1');
+    for (const name of ['Jake', 'Miranda']) {
+      await gm.getByLabel('Name', { exact: true }).fill(name);
+      await gm.getByRole('button', { name: 'Create character' }).click();
+      await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
+    }
 
-  const join = async (name: string) => {
-    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
-    const watched = watch(page);
-    await page.goto(server?.url ?? '');
-    await page.getByRole('link', { name: new RegExp(name) }).click();
-    await expect(page.getByTestId('connection')).toHaveText('Connected');
-    return { page, watched };
-  };
-  const jake = await join('Jake');
-  const miranda = await join('Miranda');
+    const join = async (name: string) => {
+      const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      const watched = watch(page);
+      await page.goto(server?.url ?? '');
+      await page.getByRole('link', { name: new RegExp(name) }).click();
+      await expect(page.getByTestId('connection')).toHaveText('Connected');
+      return { page, watched };
+    };
+    const jake = await join('Jake');
+    const miranda = await join('Miranda');
 
-  // Live updates to both phones; a whisper only to Miranda.
-  await gm.getByLabel('Amount').fill('300');
-  await gm.getByLabel('Reason (GM only)').fill(REASON);
-  await gm.getByRole('button', { name: 'Award XP' }).click();
-  for (const p of [jake.page, miranda.page]) {
-    await expect(p.getByTestId('class')).toHaveText('[Archer – lvl 1]', { timeout: 2000 });
-  }
-  await gm.getByLabel('Message').fill(WHISPER);
-  await gm.getByLabel('Recipients').selectOption({ label: 'Miranda' });
-  await gm.getByRole('button', { name: 'Send broadcast' }).click();
-  await expect(miranda.page.getByTestId('messages')).toHaveText(WHISPER);
+    // Live updates to both phones; a whisper only to Miranda.
+    await gm.getByLabel('Amount').fill('300');
+    await gm.getByLabel('Reason (GM only)').fill(REASON);
+    await gm.getByRole('button', { name: 'Award XP' }).click();
+    for (const p of [jake.page, miranda.page]) {
+      await expect(p.getByTestId('class')).toHaveText('[Archer – lvl 1]', { timeout: 2000 });
+    }
+    await gm.getByLabel('Message').fill(WHISPER);
+    await gm.getByLabel('Recipients').selectOption({ label: 'Miranda' });
+    await gm.getByRole('button', { name: 'Send broadcast' }).click();
+    await expect(miranda.page.getByTestId('messages')).toHaveText(WHISPER);
+    // QF.18: the GM change log refetches after every change; let that request
+    // finish before the power loss, or the stop resets it mid-flight (or
+    // Fastify answers it 503 while closing) and the console logs "Failed to
+    // load resource": a test race, not an app error.
+    await expect(gm.locator('section[aria-labelledby="change-log"]')).toContainText(WHISPER);
 
-  // Power loss: the server stops (writing the session log), then half an event is left at the end of the log.
-  await server.stop();
-  server = null;
-  const logs = sessionLogs();
-  expect(logs).toHaveLength(1);
-  const first = readFileSync(logs[0] ?? '', 'utf8');
-  expect(first).toContain('# Session 1 log (running): Milestone Two');
-  expect(first).toContain('New character Jake');
-  expect(first).toContain(`for ${REASON}`);
-  expect(first).toContain('Jake: class Archer 0 → 1');
-  expect(first).toContain(`System message to Miranda: ${WHISPER}`);
-  const eventLog = path.join(dataDir, 'campaigns', 'main', 'events.jsonl');
-  appendFileSync(eventLog, '{"id":"torn","type":"xp.aw');
+    // Power loss: the server stops (writing the session log), then half an event is left at the end of the log.
+    await server.stop();
+    server = null;
+    const logs = sessionLogs();
+    expect(logs).toHaveLength(1);
+    const first = readFileSync(logs[0] ?? '', 'utf8');
+    expect(first).toContain('# Session 1 log (running): Milestone Two');
+    expect(first).toContain('New character Jake');
+    expect(first).toContain(`for ${REASON}`);
+    expect(first).toContain('Jake: class Archer 0 → 1');
+    expect(first).toContain(`System message to Miranda: ${WHISPER}`);
+    const eventLog = path.join(dataDir, 'campaigns', 'main', 'events.jsonl');
+    appendFileSync(eventLog, '{"id":"torn","type":"xp.aw');
 
-  server = await startBuiltServer({ GM_KEY }, { dataDir, port });
-  for (const p of [jake.page, miranda.page]) {
-    await expect(p.getByTestId('connection')).toHaveText('Connected', { timeout: 10_000 });
-    await expect(p.getByTestId('class')).toHaveText('[Archer – lvl 1]');
-  }
-  await expect(miranda.page.getByTestId('messages')).toHaveText(WHISPER);
-  // The torn bytes were kept beside the log, never deleted.
-  const campaignFiles = readdirSync(path.dirname(eventLog));
-  expect(campaignFiles.some((f) => f.startsWith('events.jsonl.torn-'))).toBe(true);
+    server = await startBuiltServer({ GM_KEY }, { dataDir, port });
+    for (const p of [jake.page, miranda.page]) {
+      await expect(p.getByTestId('connection')).toHaveText('Connected', { timeout: 10_000 });
+      await expect(p.getByTestId('class')).toHaveText('[Archer – lvl 1]');
+    }
+    await expect(miranda.page.getByTestId('messages')).toHaveText(WHISPER);
+    // The torn bytes were kept beside the log, never deleted.
+    const campaignFiles = readdirSync(path.dirname(eventLog));
+    expect(campaignFiles.some((f) => f.startsWith('events.jsonl.torn-'))).toBe(true);
 
-  // Play goes on in the same session; the next shutdown rewrites its log.
-  await expect(gm.getByRole('heading', { name: /Milestone Two/ })).toBeVisible({ timeout: 10_000 });
-  await expect(gm.getByTestId('session-chip')).toHaveText('Session 1 · Day 1');
-  await gm.getByRole('checkbox', { name: 'Miranda' }).first().uncheck();
-  await gm.getByLabel('Amount').fill('300');
-  await gm.getByRole('button', { name: 'Award XP' }).click();
-  await expect(jake.page.getByTestId('class')).toHaveText('[Archer – lvl 4]', { timeout: 2000 });
-  await expect(miranda.page.getByTestId('class')).toHaveText('[Archer – lvl 1]');
+    // Play goes on in the same session; the next shutdown rewrites its log.
+    await expect(gm.getByRole('heading', { name: /Milestone Two/ })).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(gm.getByTestId('session-chip')).toHaveText('Session 1 · Day 1');
+    await gm.getByRole('checkbox', { name: 'Miranda' }).first().uncheck();
+    await gm.getByLabel('Amount').fill('300');
+    await gm.getByRole('button', { name: 'Award XP' }).click();
+    await expect(jake.page.getByTestId('class')).toHaveText('[Archer – lvl 4]', { timeout: 2000 });
+    await expect(miranda.page.getByTestId('class')).toHaveText('[Archer – lvl 1]');
 
-  // The GM export carries the events, never the GM key; players can't fetch it.
-  const exportRes = await gm.request.get(`${server.url}/api/gm/export`, {
-    headers: { 'x-gm-key': GM_KEY },
-  });
-  expect(exportRes.status()).toBe(200);
-  const exported = await exportRes.text();
-  expect(exported).toContain('"format":"the-system-campaign"');
-  expect(exported).not.toContain(GM_KEY);
-  expect((await jake.page.request.get(`${server.url}/api/gm/export`)).status()).toBe(403);
+    // QF.18: as before the first stop, let the change log's refetch for this
+    // award finish, or the final stop resets it (or Fastify answers it 503
+    // while closing) and the GM console logs "Failed to load resource".
+    await expect(gm.locator('section[aria-labelledby="change-log"]')).toContainText(
+      'Jake: class Archer 1 → 4',
+    );
+    // The GM export carries the events, never the GM key; players can't fetch it.
+    const exportRes = await gm.request.get(`${server.url}/api/gm/export`, {
+      headers: { 'x-gm-key': GM_KEY },
+    });
+    expect(exportRes.status()).toBe(200);
+    const exported = await exportRes.text();
+    expect(exported).toContain('"format":"the-system-campaign"');
+    expect(exported).not.toContain(GM_KEY);
+    expect((await jake.page.request.get(`${server.url}/api/gm/export`)).status()).toBe(403);
 
-  await server.stop();
-  server = null;
-  const after = sessionLogs();
-  expect(after).toEqual(logs);
-  const second = readFileSync(after[0] ?? '', 'utf8');
-  expect(second).toContain('Jake: class Archer 1 → 4');
-  expect(second).toContain('New character Jake');
+    await server.stop();
+    server = null;
+    const after = sessionLogs();
+    expect(after).toEqual(logs);
+    const second = readFileSync(after[0] ?? '', 'utf8');
+    expect(second).toContain('Jake: class Archer 1 → 4');
+    expect(second).toContain('New character Jake');
 
-  // Canary: no GM-only data or Miranda's whisper reached Jake; nothing GM-only reached either phone.
-  for (const { watched } of [jake, miranda]) {
-    const frames = watched.frames.join('\n');
-    expect(frames).not.toContain(REASON);
-    expect(frames).not.toContain(GM_KEY);
-    expect(watched.errors).toEqual([]);
-  }
-  expect(jake.watched.frames.join('\n')).not.toContain(WHISPER);
-  expect(gmWatch.errors).toEqual([]);
-  await Promise.all([gm.close(), jake.page.close(), miranda.page.close()]);
-});
+    // Canary: no GM-only data or Miranda's whisper reached Jake; nothing GM-only reached either phone.
+    for (const { watched } of [jake, miranda]) {
+      const frames = watched.frames.join('\n');
+      expect(frames).not.toContain(REASON);
+      expect(frames).not.toContain(GM_KEY);
+      expect(watched.errors).toEqual([]);
+    }
+    expect(jake.watched.frames.join('\n')).not.toContain(WHISPER);
+    expect(gmWatch.errors).toEqual([]);
+    await Promise.all([gm.close(), jake.page.close(), miranda.page.close()]);
+  },
+);

@@ -3,6 +3,7 @@ import {
   gradeIndexOf,
   isAtCap,
   raceLevel,
+  trackCap,
   type Character,
   type FreePointBatch,
 } from '../character';
@@ -169,10 +170,12 @@ export function shareXp(
   share: number,
   enemyLevel: number | null | undefined,
   enemyGrade?: string | null,
+  /** Race level the award was priced at (stored in `xp.awarded`, M7.3); default: the current one. */
+  atRaceLevel?: number,
 ): number {
   const factor = gradeGapXpFactor(rules, character.grade, enemyGrade);
   const scaled = factor === 1 ? share : Math.floor(Number((share * factor).toFixed(9)));
-  return scaled + shareBonus(rules, character, scaled, enemyLevel);
+  return scaled + shareBonus(rules, character, scaled, enemyLevel, atRaceLevel);
 }
 
 /** XP a typical session awards at a grade ("typical session ≈ 6 levels", DESIGN §5). */
@@ -181,15 +184,51 @@ export function typicalSessionXp(rules: RulesConfig, gradeId: string): number {
   return rules.campaign.typicalLevelsPerSession * grade.xpPerLevel;
 }
 
+/**
+ * XP a character can still use at its current grade before any is lost
+ * (M4.6): the XP left to the top level on the class track plus, with a
+ * profession, on the profession track. Infinity when `xp.overflow` is off
+ * (older campaigns bank XP at the top).
+ */
+export function xpRoom(rules: RulesConfig, character: Character): number {
+  if (!rules.xp.overflow) return Number.POSITIVE_INFINITY;
+  const top = trackCap(rules, character.grade);
+  const per = xpPerLevel(rules, character);
+  const room = (level: number, xp: number) => Math.max(0, (top - level) * per - xp);
+  const cls = room(character.classLevel, character.xp.class);
+  if (character.profession === null) return cls;
+  return cls + room(character.professionLevel, character.xp.profession);
+}
+
+/**
+ * The "typical session" amount for an even split between these characters of
+ * one grade (M4.6): each gets the typical session's XP, or less when someone
+ * has less room left at the grade (so the helper's own suggestion loses
+ * nothing for anyone who can still level). Characters with no room left still
+ * count as participants but do not lower the amount; 0 when none has room.
+ */
+export function typicalSessionAward(
+  rules: RulesConfig,
+  gradeId: string,
+  characters: readonly Character[],
+): number {
+  const typical = typicalSessionXp(rules, gradeId);
+  const rooms = characters.map((c) => xpRoom(rules, c)).filter((r) => r > 0);
+  if (rooms.length === 0) return 0;
+  const each = Math.min(typical, ...rooms);
+  return each * characters.length;
+}
+
 /** Whole above-level bonus XP on top of a share (floored, float noise removed). */
 export function shareBonus(
   rules: RulesConfig,
   character: Character,
   share: number,
   enemyLevel: number | null | undefined,
+  atRaceLevel: number = raceLevel(rules, character),
 ): number {
   if (enemyLevel === null || enemyLevel === undefined) return 0;
-  const fraction = aboveLevelBonus(rules, raceLevel(rules, character), enemyLevel);
+  const fraction = aboveLevelBonus(rules, atRaceLevel, enemyLevel);
   return Math.floor(Number((share * fraction).toFixed(9)));
 }
 
@@ -422,4 +461,79 @@ export function statBudgetTotal(character: Character): number {
     .filter((b) => b.allocation === null)
     .reduce((a, b) => a + b.points, 0);
   return stats + unassigned;
+}
+
+/** An award's input with every share set by hand (shares must sum to the amount). */
+export interface ManualSplitInput {
+  amount: number;
+  shares: readonly { characterId: string; share: number }[];
+  enemyLevel?: number | undefined;
+  enemyGrade?: string | undefined;
+}
+
+/**
+ * The GM's award preview for shares set by hand (M4.6): the same outcome the
+ * reducer applies to an `xp.award` whose participants all carry a `share`.
+ */
+export function previewXpShares(
+  rules: RulesConfig,
+  characters: Readonly<Record<string, Character>>,
+  track: XpTrack,
+  input: ManualSplitInput,
+): XpPreview[] {
+  const ids = input.shares.map((s) => s.characterId);
+  if (new Set(ids).size !== ids.length)
+    throw new CharacterRuleError('A participant is listed twice');
+  const sum = input.shares.reduce((a, s) => a + s.share, 0);
+  if (sum !== input.amount) {
+    throw new CharacterRuleError(`Shares sum to ${sum}, not the award of ${input.amount}`);
+  }
+  return input.shares.map(({ characterId, share }) => {
+    if (!isWhole(share)) throw new CharacterRuleError('A share must be a whole number ≥ 0');
+    const character = Object.prototype.hasOwnProperty.call(characters, characterId)
+      ? characters[characterId]
+      : undefined;
+    if (!character) throw new CharacterRuleError(`Unknown character "${characterId}"`);
+    const gained = shareXp(rules, character, share, input.enemyLevel, input.enemyGrade);
+    const factor = gradeGapXpFactor(rules, character.grade, input.enemyGrade);
+    const scaled = factor === 1 ? share : Math.floor(Number((share * factor).toFixed(9)));
+    const r = awardXp(rules, character, track, gained);
+    return {
+      characterId,
+      share,
+      bonus: gained - scaled,
+      gained,
+      overflowed: r.overflowed,
+      lost: r.lost,
+      levelUps: r.levelUps,
+    };
+  });
+}
+
+/**
+ * Shares with the GM's edits kept and the last share balancing the rest
+ * (M4.6): `fixed` holds the shares typed by hand (by index, never the last);
+ * the others split what remains evenly (largest remainder). null when the
+ * typed shares already exceed the amount.
+ */
+export function balancedShares(
+  amount: number,
+  count: number,
+  fixed: ReadonlyMap<number, number>,
+): number[] | null {
+  if (count <= 0) return [];
+  const typed = [...fixed.entries()].filter(([i]) => i >= 0 && i < count - 1);
+  const used = typed.reduce((a, [, v]) => a + v, 0);
+  if (used > amount) return null;
+  const free = Array.from({ length: count }, (_, i) => i).filter(
+    (i) => !typed.some(([j]) => j === i),
+  );
+  const parts = largestRemainderSplit(
+    amount - used,
+    free.map(() => 1),
+  );
+  const out = new Array<number>(count).fill(0);
+  for (const [i, v] of typed) out[i] = v;
+  free.forEach((i, k) => (out[i] = parts[k] as number));
+  return out;
 }

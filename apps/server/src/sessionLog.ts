@@ -15,6 +15,7 @@ import {
   sessionEventRange,
   sessionLogBase,
   sessionLogBaseIsCurrent,
+  type Campaign,
   type CampaignState,
   type SessionLogBase,
   type SessionRecord,
@@ -90,6 +91,45 @@ function targetSession(state: CampaignState | null): SessionRecord | null {
   if (!state) return null;
   const id = state.currentSession;
   return (id === null ? state.sessions.at(-1) : state.sessions.find((x) => x.id === id)) ?? null;
+}
+
+/** Format tag of the JSON session log and report (M9.1). */
+export const SESSION_REPORT_FORMAT = 'the-system/session-report';
+
+/**
+ * One play session's log (while it runs) or report (once it ended), as
+ * markdown and as JSON (M9.1). Built from the event log, so any past
+ * session's report can be rebuilt on request. Null when the session has no
+ * counting start. GM-only: it carries hidden quests and GM reasons.
+ */
+export function sessionReport(
+  campaign: Campaign,
+  session: SessionRecord,
+  writtenAt: string,
+  base?: SessionLogBase,
+): { readonly markdown: string; readonly json: string } | null {
+  const range = sessionEventRange(campaign, session.id);
+  if (!range) return null;
+  const toSeq = range.toSeq ?? campaign.events.length;
+  const fold =
+    base && base.fromSeq === range.fromSeq && sessionLogBaseIsCurrent(campaign, base)
+      ? base
+      : sessionLogBase(campaign, range.fromSeq);
+  const log = buildSessionLog(campaign, range.fromSeq, fold, toSeq);
+  const markdown = renderSessionLog(log, { startedAt: session.startedAt, writtenAt, session });
+  const json = `${JSON.stringify(
+    {
+      format: SESSION_REPORT_FORMAT,
+      version: 1,
+      writtenAt,
+      session,
+      report: session.endedAt !== null,
+      ...log,
+    },
+    null,
+    2,
+  )}\n`;
+  return { markdown, json };
 }
 
 export class SessionLogWriter {
@@ -168,6 +208,10 @@ export class SessionLogWriter {
           gone.file,
           `# Session ${gone.number}: undone\n\nThe GM undid the start of this session (${this.options.now()}); its events now belong to no session.\n`,
         );
+        writeAtomic(
+          gone.file.replace(/\.md$/, '.json'),
+          `${JSON.stringify({ format: SESSION_REPORT_FORMAT, version: 1, writtenAt: this.options.now(), undone: true, number: gone.number }, null, 2)}\n`,
+        );
         if (!plan || plan.key === this.writtenKey) return true;
       }
     }
@@ -182,14 +226,12 @@ export class SessionLogWriter {
     ) {
       this.base = sessionLogBase(campaign, plan.fromSeq);
     }
-    const log = buildSessionLog(campaign, plan.fromSeq, this.base, plan.toSeq);
-    const text = renderSessionLog(log, {
-      startedAt: plan.session.startedAt,
-      writtenAt: this.options.now(),
-      session: plan.session,
-    });
+    const report = sessionReport(campaign, plan.session, this.options.now(), this.base);
+    if (!report) return false;
     mkdirSync(path.dirname(plan.file), { recursive: true });
-    writeAtomic(plan.file, text);
+    writeAtomic(plan.file, report.markdown);
+    // M9.1: the same log as JSON beside it, for Claude or other tools.
+    writeAtomic(plan.file.replace(/\.md$/, '.json'), report.json);
     this.writtenKey = plan.key;
     this.lastWritten = { id: plan.session.id, number: plan.session.number, file: plan.file };
     return true;

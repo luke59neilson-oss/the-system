@@ -1,3 +1,4 @@
+import { titleDefByName, titleSources } from '../titles';
 import {
   poolMax,
   raceLevel,
@@ -10,9 +11,11 @@ import {
   EMPTY_HOLDINGS,
   itemCappedStats,
   itemEffectiveStats,
+  itemsSeenBy,
   type Bundle,
   type Holdings,
   type ItemDef,
+  type Trade,
   type TradeStatus,
 } from '../economy';
 import {
@@ -25,6 +28,7 @@ import {
 } from '../evolution';
 import { canReadNote } from '../practice';
 import { identifyInRange } from '../entities';
+import { hungerFaded, hungerLevel } from '../trackers';
 import { daysLeft, hiddenQuestNoticed, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
 import { identifyRarity, resolveIdentify } from './identify';
@@ -89,6 +93,8 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   characterOrder: 'party',
   // Each player gets only the broadcasts addressed to them, without the recipient list.
   broadcasts: 'owner',
+  // M4.7: a scheduled broadcast is the GM's until its day comes (then it is in `broadcasts`).
+  scheduledBroadcasts: 'gm',
   // M1.7 economy, projected as `inventory` (M3.7): the library may hold items
   // the GM has not handed out, so players get only the definitions of items
   // they hold, wear or see in an own trade; holdings and trades only their own.
@@ -104,6 +110,18 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   professionLibrary: 'gm',
   professionLibraryOrder: 'gm',
   itemOrder: 'gm',
+  // M6.2: loot tables and rolls are the GM's; what a roll gives a character
+  // reaches them as holdings and a gift notification.
+  lootTables: 'gm',
+  lootTableOrder: 'gm',
+  lootLog: 'gm',
+  // M6.3: the ledger names reasons and every character's balance; a player
+  // learns of their own grants and fines through a notification.
+  ledger: 'gm',
+  // M6.4: the title library is the GM's; each holder gets their own titles'
+  // entries (text and bonuses) in `me.titleDetails`.
+  titleLibrary: 'gm',
+  titleLibraryOrder: 'gm',
   holdings: 'owner',
   trades: 'owner',
   tradeOrder: 'gm',
@@ -132,6 +150,23 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   // their own focus; never the clock, the other participants or their focuses.
   montages: 'owner',
   montageOrder: 'gm',
+  // M7.3: each player gets the shared contests they took part in, from their
+  // side: their side's label and stat value, the other side's label only (an
+  // NPC's stats stay GM-only), their chance rounded to a whole percent (so the
+  // other side's value cannot be solved from it exactly) and whether they won.
+  contests: 'owner',
+  contestOrder: 'gm',
+  // M7.4: each player gets their own hunger step, only while the tracker is
+  // on and they have not outgrown it; never anyone else's.
+  hunger: 'owner',
+  // M7.4: players get the current region's name only; the region list, GM
+  // notes and which regions are visited stay with the GM.
+  regions: 'gm',
+  regionOrder: 'gm',
+  currentRegion: 'party',
+  // M7.4: survivor factions are the GM's bookkeeping.
+  factions: 'gm',
+  factionOrder: 'gm',
   day: 'party',
   // M4.3: session bookkeeping is the GM's.
   sessions: 'gm',
@@ -201,9 +236,20 @@ export interface OwnSheet {
   readonly effectiveStats: Readonly<Record<string, number>>;
   /** Stats whose item bonus hit the item cap (MQ.14, DESIGN §4), shown as capped. */
   readonly itemCappedStats: readonly string[];
+  /**
+   * Stats with equipped item bonuses only, before titles (M6.A): the sheet
+   * shows what items and what titles add separately.
+   */
+  readonly itemStats: Readonly<Record<string, number>>;
   readonly pools: readonly OwnPool[];
   readonly freePointBatches: readonly FreePointBatch[];
   readonly titles: readonly string[];
+  /** The System text and bonuses of each held title with a library entry (M6.4). */
+  readonly titleDetails: readonly {
+    readonly name: string;
+    readonly text: string;
+    readonly bonuses: readonly { stat: string; flat?: number; percent?: number }[];
+  }[];
   readonly skills: readonly {
     readonly name: string;
     readonly rarity: string;
@@ -267,6 +313,24 @@ export interface PartyMember {
 }
 
 /** Everything one player's browser receives. */
+/** A shared contest roll as one of its participants sees it (M7.3). */
+export interface PlayerContest {
+  readonly id: string;
+  readonly at: string;
+  /** The viewer's side: its label, stat and value. */
+  readonly yours: { readonly label: string; readonly stat: string | null; readonly value: number };
+  /** The other side's label only. */
+  readonly theirs: string;
+  /** The viewer's side's chance to win, 0..1, rounded to a whole percent (1..99 unless certain). */
+  readonly chance: number;
+  /** True when a grade wall settled it with no roll. */
+  readonly walled: boolean;
+  readonly won: boolean;
+}
+
+/** How many recent shared contests a player view carries (M7.3). */
+export const PLAYER_CONTEST_LIMIT = 10;
+
 export interface PlayerView {
   readonly viewerId: string;
   readonly campaignName: string;
@@ -295,6 +359,25 @@ export interface PlayerView {
   readonly practice: readonly PlayerPractice[];
   /** Open montages offered to the viewer, in offer order (M3.11). */
   readonly montages: readonly PlayerMontage[];
+  /** The latest shared contests the viewer took part in, oldest first (M7.3). */
+  readonly contests: readonly PlayerContest[];
+  /**
+   * The viewer's hunger (M7.4, DESIGN §7), or null when the campaign has the
+   * tracker off or the viewer has outgrown it.
+   */
+  readonly hunger: PlayerHunger | null;
+  /** The name of the region the party is in (M7.4), or null. */
+  readonly region: string | null;
+}
+
+/** The viewer's own hunger step (M7.4). */
+export interface PlayerHunger {
+  /** Step index, 0 = the first (least hungry) step. */
+  readonly level: number;
+  /** The step's name. */
+  readonly step: string;
+  /** How many steps there are. */
+  readonly steps: number;
 }
 
 /** One of the viewer's practice entries (tags left out: they may name GM-only action tags). */
@@ -391,7 +474,7 @@ export interface PlayerInventory {
   readonly equipped: Readonly<Record<string, string>>;
   /** Own trades, oldest first. */
   readonly trades: readonly PlayerTrade[];
-  /** Definitions of every item above (held, equipped or in an own trade). */
+  /** Definitions of the items the viewer has seen: held, equipped, offered by or to them (QF.9). */
   readonly itemDefs: Readonly<Record<string, PlayerItem>>;
 }
 
@@ -474,7 +557,13 @@ function effectiveFor(state: CampaignState, c: Character): Record<string, number
   const h = hasOwnKey(state.holdings, c.id)
     ? (state.holdings[c.id] ?? EMPTY_HOLDINGS)
     : EMPTY_HOLDINGS;
-  return itemEffectiveStats(state.rules, c.stats, h, state.items);
+  return itemEffectiveStats(
+    state.rules,
+    c.stats,
+    h,
+    state.items,
+    titleSources(state.titleLibrary, state.titleLibraryOrder, c.titles),
+  );
 }
 
 function ownSheet(state: CampaignState, c: Character): OwnSheet {
@@ -502,6 +591,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
     stats: copyRecord(c.stats, statIds),
     effectiveStats: copyRecord(effective, statIds),
     itemCappedStats: itemCappedStats(rules, c.stats, h, state.items),
+    itemStats: copyRecord(itemEffectiveStats(rules, c.stats, h, state.items), statIds),
     pools: rules.pools.map((p) => ({
       id: p.id,
       current: own(c.pools, p.id) ?? 0,
@@ -514,6 +604,12 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
       locked: b.locked,
     })),
     titles: [...c.titles],
+    titleDetails: c.titles.flatMap((name) => {
+      const def = titleDefByName(state.titleLibrary, state.titleLibraryOrder, name);
+      return def
+        ? [{ name: def.name, text: def.text, bonuses: def.bonuses.map((b) => ({ ...b })) }]
+        : [];
+    }),
     skills: c.skills.map((s) => ({
       name: s.name,
       rarity: s.rarity,
@@ -558,11 +654,15 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
                 skill: t.skill,
                 name: t.name,
                 rarity: t.rarity,
+                ...(t.merge === undefined ? {} : { merge: t.merge }),
               })),
               classWeights: o.classWeights === null ? null : copyRecord(o.classWeights, statIds),
               statBonus: copyRecord(o.statBonus, statIds),
             })),
             professions: [...c.evolution.professions],
+            ...(c.evolution.rerate === undefined
+              ? {}
+              : { rerate: c.evolution.rerate.map((r) => ({ skill: r.skill, rarity: r.rarity })) }),
           },
     portrait: portraitUrl(c.portrait),
   };
@@ -673,6 +773,9 @@ export function projectForPlayer(
         entryId === undefined ? undefined : state.practice.find((p) => p.id === entryId);
       return [{ id: m.id, label: m.label, focus: entry?.action ?? null }];
     }),
+    contests: playerContests(state, viewer.id),
+    hunger: playerHunger(state, viewer),
+    region: currentRegionName(state),
     hiddenQuests: state.questOrder.filter((id) => {
       const q = hasOwnKey(state.quests, id) ? state.quests[id] : undefined;
       return q !== undefined && hiddenQuestNoticed(q, state.characterOrder).includes(viewer.id);
@@ -802,12 +905,11 @@ function playerInventory(state: CampaignState, viewerId: string): PlayerInventor
     wanted.add(id);
   }
   const trades: PlayerTrade[] = [];
+  const own: Trade[] = [];
   for (const id of state.tradeOrder) {
     const t = hasOwnKey(state.trades, id) ? state.trades[id] : undefined;
     if (!t || (t.from !== viewerId && t.to !== viewerId)) continue;
-    for (const itemId of [...Object.keys(t.give.items), ...Object.keys(t.get.items)]) {
-      wanted.add(itemId);
-    }
+    own.push(t);
     trades.push({
       id: t.id,
       from: t.from,
@@ -819,10 +921,59 @@ function playerInventory(state: CampaignState, viewerId: string): PlayerInventor
       closedAt: t.closedAt,
     });
   }
+  // Definitions only for items the viewer has seen (QF.9): an item a trade
+  // asks for, but the viewer neither holds nor was offered, stays an id.
+  for (const id of itemsSeenBy(h, own, viewerId)) wanted.add(id);
   const itemDefs: Record<string, PlayerItem> = {};
   for (const id of wanted) {
     const def = hasOwnKey(state.items, id) ? state.items[id] : undefined;
     if (def) itemDefs[id] = copyItem(def, state.rules.bonuses.itemsFlatOnly);
   }
   return { currency: h.currency, items, equipped, trades, itemDefs };
+}
+
+/**
+ * A chance rounded to a whole percent (kept off 0 and 100 unless certain), so
+ * the exact ratio cannot be solved back to an NPC's GM-only stat (M7.3).
+ */
+function wholePercent(chance: number): number {
+  if (chance <= 0 || chance >= 1) return chance <= 0 ? 0 : 1;
+  return Math.min(99, Math.max(1, Math.round(chance * 100))) / 100;
+}
+
+/** The latest shared contests `viewerId` took part in, from their side (M7.3). */
+function playerContests(state: CampaignState, viewerId: string): PlayerContest[] {
+  const out: PlayerContest[] = [];
+  for (let i = state.contestOrder.length - 1; i >= 0 && out.length < PLAYER_CONTEST_LIMIT; i--) {
+    const id = state.contestOrder[i] as string;
+    const c = hasOwnKey(state.contests, id) ? state.contests[id] : undefined;
+    if (!c) continue;
+    const onA = c.a.characterIds.includes(viewerId);
+    if (!onA && !c.b.characterIds.includes(viewerId)) continue;
+    const mine = onA ? c.a : c.b;
+    out.push({
+      id: c.id,
+      at: c.sharedAt,
+      yours: { label: mine.label, stat: mine.stat, value: mine.value },
+      theirs: (onA ? c.b : c.a).label,
+      chance: wholePercent(onA ? c.chance : 1 - c.chance),
+      walled: c.walled,
+      won: onA ? c.success : !c.success,
+    });
+  }
+  return out.reverse();
+}
+
+/** The viewer's hunger step, or null when the tracker is off or they have outgrown it (M7.4). */
+function playerHunger(state: CampaignState, viewer: Character): PlayerHunger | null {
+  if (!state.hunger.enabled || hungerFaded(state.rules, viewer)) return null;
+  const level = hungerLevel(state.hunger, viewer.id);
+  return { level, step: state.hunger.steps[level] ?? '', steps: state.hunger.steps.length };
+}
+
+/** The current region's name only (M7.4). */
+function currentRegionName(state: CampaignState): string | null {
+  const id = state.currentRegion;
+  if (id === null || !hasOwnKey(state.regions, id)) return null;
+  return state.regions[id]?.name ?? null;
 }

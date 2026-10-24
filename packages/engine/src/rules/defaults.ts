@@ -157,8 +157,10 @@ export const DEFAULT_RULES: RulesConfigInput = {
       legendary: 15,
     },
     maxMarksPerSkillPerSession: 1,
-    marksCarryOver: true, // §6, MQ.4
+    marksCarryOver: false, // §6: replaced by marksResetOnUpgrade (MR.2)
+    marksResetOnUpgrade: true, // §6, MR.2 (L15)
     libraryByRarity: true, // §6 skill library, MQ.12
+    handTextSurvivesUpgrade: true, // §6, MR.4 (L17)
     merge: {
       requiredJointUses: 3,
       minRarity: 'uncommon',

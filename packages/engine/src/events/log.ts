@@ -58,6 +58,8 @@ function checkUndoTarget(
   if (!target) return reject(`no earlier event "${targetId}"`);
   if (target.type === 'event.undone') return reject('an undo cannot be undone');
   if (target.type === 'campaign.created') return reject('campaign creation cannot be undone');
+  // MR.3: a rules migration would re-run on the next load, so it stays.
+  if (target.type === 'rules.migrated') return reject('a rules migration cannot be undone');
   if (has(campaign.undone, targetId)) return reject(`event "${targetId}" is already undone`);
   return target;
 }

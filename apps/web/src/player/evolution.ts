@@ -2,6 +2,7 @@ import {
   marksAfterRarityChange,
   type EvolutionOption,
   type OwnSheet,
+  type PendingEvolution,
   type PlayerRules,
 } from '@the-system/engine';
 import { rarityName } from './sheet';
@@ -16,8 +17,12 @@ export function transformText(
   me: Pick<OwnSheet, 'skills'>,
   t: EvolutionOption['transforms'][number],
 ): string {
-  const old = me.skills.find((s) => s.name === t.skill);
-  const from = old ? `[${old.name} (${rarityName(rules, old.rarity)})]` : `[${t.skill}]`;
+  const label = (name: string) => {
+    const old = me.skills.find((s) => s.name === name);
+    return old ? `[${old.name} (${rarityName(rules, old.rarity)})]` : `[${name}]`;
+  };
+  // A merge transform (M5.2) consumes a second skill: "[A] + [B] → [New]".
+  const from = t.merge === undefined ? label(t.skill) : `${label(t.skill)} + ${label(t.merge)}`;
   return `${from} → [${t.name} (${rarityName(rules, t.rarity)})]`;
 }
 
@@ -71,7 +76,7 @@ export function evolutionBlocked(me: Pick<OwnSheet, 'selectionsDue'>): string | 
 
 /**
  * What the player should know before confirming an option: marks a transform
- * spends or resets (MQ.4, D114), a reshaped spread, and that it is final.
+ * spends or resets (MQ.4, D114; every transform resets them under MR.2), a reshaped spread, and that it is final.
  * Free points are untouched by evolving, so not listed. Waiting selections
  * block the choice instead (evolutionBlocked).
  */
@@ -83,6 +88,13 @@ export function evolutionWarnings(
   const out: string[] = [];
   const marks = (n: number) => `${n} mastery ${n === 1 ? 'mark' : 'marks'}`;
   for (const t of option.transforms) {
+    if (t.merge !== undefined) {
+      // A merge (M5.2, DESIGN §6): the originals are consumed; marks start at 0.
+      out.push(
+        `[${t.skill}] and [${t.merge}] merge into [${t.name}]: both are consumed, and the merged skill starts at 0 marks.`,
+      );
+      continue;
+    }
     const s = me.skills.find((k) => k.name === t.skill);
     if (!s || s.marks <= 0) continue;
     const kept = marksAfterRarityChange(rules.marks, s.rarity, t.rarity, s.marks);
@@ -90,7 +102,9 @@ export function evolutionWarnings(
     const lead = `[${s.name}] becomes [${t.name}]: `;
     out.push(
       kept === 0
-        ? `${lead}its ${marks(s.marks)} ${s.marks === 1 ? 'resets' : 'reset'} to 0.`
+        ? rules.marks.resetOnUpgrade
+          ? `${lead}a transformed skill starts at 0 marks, so its ${marks(s.marks)} ${s.marks === 1 ? 'resets' : 'reset'}.`
+          : `${lead}its ${marks(s.marks)} ${s.marks === 1 ? 'resets' : 'reset'} to 0.`
         : `${lead}the rarity gain spends ${marks(s.marks - kept)}; ${kept} ${kept === 1 ? 'carries' : 'carry'} on.`,
     );
   }
@@ -98,4 +112,30 @@ export function evolutionWarnings(
     out.push('Your class stat spread changes for every class level from now on.');
   out.push('The choice is final; the other options will be gone.');
   return out;
+}
+
+/**
+ * The release's re-rating (MR.1, DESIGN §6), one line per skill in sheet
+ * order: "[Archer's Eye] Common → Inferior", or "[Identify] stays Common".
+ * Empty for releases stored before MR.1 (they re-rate nothing).
+ */
+export function rerateLines(
+  rules: PlayerRules,
+  me: Pick<OwnSheet, 'skills'>,
+  evolution: Pick<PendingEvolution, 'rerate'>,
+): string[] {
+  const rerate = evolution.rerate;
+  if (!rerate) return [];
+  const to = new Map(rerate.map((r) => [r.skill, r.rarity]));
+  const ids = rules.rarities.map((r) => r.id);
+  return me.skills.map((s) => {
+    // A skill the list does not name (gained, or its rarity changed, after the
+    // release) takes the default one-step drop at choose, as the engine does.
+    const index = ids.indexOf(s.rarity);
+    const rarity = to.get(s.name) ?? (index <= 0 ? s.rarity : (ids[index - 1] as string));
+    const from = rarityName(rules, s.rarity);
+    return rarity === s.rarity
+      ? `[${s.name}] stays ${from}`
+      : `[${s.name}] ${from} → ${rarityName(rules, rarity)}`;
+  });
 }

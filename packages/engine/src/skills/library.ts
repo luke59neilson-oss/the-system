@@ -91,9 +91,18 @@ export function librarySkill(
 export function entryForSkill(
   rules: RulesConfig,
   library: Readonly<Record<string, SkillDef>>,
-  skill: Pick<CharacterSkill, 'name' | 'rarity'>,
+  skill: Pick<CharacterSkill, 'name' | 'rarity' | 'textRarity'>,
 ): SkillDef | undefined {
-  return librarySkill(library, skill.name, rules.skills.libraryByRarity ? skill.rarity : undefined);
+  return librarySkill(
+    library,
+    skill.name,
+    rules.skills.libraryByRarity ? textRarityOf(skill) : undefined,
+  );
+}
+
+/** The rarity whose entry a copy's text follows: its own, unless re-rated (MR.1). */
+export function textRarityOf(skill: Pick<CharacterSkill, 'rarity' | 'textRarity'>): string {
+  return skill.textRarity ?? skill.rarity;
 }
 
 /**
@@ -122,18 +131,24 @@ export function syncCharacterSkills(
   library: Readonly<Record<string, SkillDef>>,
   touched: readonly SkillDef[],
 ): Character {
-  const had = new Map(before?.skills.map((s) => [s.name, s.rarity]) ?? []);
+  // Keyed by the rarity each copy's text follows, so a re-rating at evolution
+  // (label only, MR.1) is not a rarity change here and keeps the copy's text.
+  const had = new Map(before?.skills.map((s) => [s.name, textRarityOf(s)]) ?? []);
   let changed = false;
   const skills = after.skills.map((skill) => {
-    const fresh = had.get(skill.name) !== skill.rarity;
-    const hit = touched.some((t) => t.rarity === skill.rarity && sameName(t.name, skill.name));
+    const fresh = had.get(skill.name) !== textRarityOf(skill);
+    const hit = touched.some(
+      (t) => t.rarity === textRarityOf(skill) && sameName(t.name, skill.name),
+    );
     if (!fresh && !hit) return skill;
     const def = entryForSkill(rules, library, skill);
-    // A rarity change on a skill the character already had (mark upgrade,
-    // transform) takes the new rarity's entry text even over a hand edit: the
-    // GM's edit described the old rarity (DESIGN §6, MQ.A review).
+    // Before MR.4 (D133), a rarity change on a skill the character already had
+    // (mark upgrade, transform) took the new rarity's entry text even over a
+    // hand edit. Under `handTextSurvivesUpgrade` (L17) the hand text stays
+    // until the GM presses Use library text.
     const regraded =
       fresh &&
+      !rules.skills.handTextSurvivesUpgrade &&
       had.has(skill.name) &&
       rules.skills.libraryByRarity &&
       def &&
@@ -150,6 +165,45 @@ function withoutEditMark(skill: CharacterSkill): CharacterSkill {
   const { textEdited, ...rest } = skill;
   void textEdited;
   return rest;
+}
+
+/**
+ * MR.4 (L17): hands a hand-written copy back to the library. The copy follows
+ * the entry for its current name and rarity again (a re-rating's text rarity
+ * is dropped), takes that entry's text (a blank field keeps the copy's own),
+ * and later library edits reach it. Also moves a copy re-rated at evolution
+ * (MR.A) from its old rarity's entry to its current one. Refused when the copy
+ * is neither, or the library has no entry for it.
+ */
+export function useLibraryText(
+  rules: RulesConfig,
+  character: Character,
+  name: string,
+  library: Readonly<Record<string, SkillDef>>,
+): Character {
+  const index = character.skills.findIndex((s) => s.name === name);
+  const skill = character.skills[index];
+  if (!skill) throw new CharacterRuleError(`${character.name} has no skill "${name}"`);
+  // MR.A: a copy re-rated at evolution follows its old rarity's entry, so it
+  // can be moved to its current rarity's entry too.
+  const rerated = skill.textRarity !== undefined && skill.textRarity !== skill.rarity;
+  if (!skill.textEdited && !rerated) {
+    throw new CharacterRuleError(`[${name}] already uses the library text`);
+  }
+  const def = librarySkill(
+    library,
+    skill.name,
+    rules.skills.libraryByRarity ? skill.rarity : undefined,
+  );
+  // An all-blank entry would leave the hand text in place but unmarked.
+  if (!def || (def.description.trim() === '' && def.flavor.trim() === '')) {
+    throw new CharacterRuleError(`The library has no entry with text for [${name}] at its rarity`);
+  }
+  const { textRarity, ...plain } = withoutEditMark(skill);
+  void textRarity;
+  const synced = syncSkillText(plain, def);
+  const skills = character.skills.map((s, i) => (i === index ? synced : s));
+  return { ...character, skills };
 }
 
 /** Fills a granted skill's empty description and flavour from its library entry. */

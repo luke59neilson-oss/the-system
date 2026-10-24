@@ -5,6 +5,7 @@ import {
   nextSelectionLevel,
   practiceAlerts,
   projectForGm,
+  replay,
   repeatedEntryIds,
   searchNotes,
   skillPairCounts,
@@ -83,11 +84,69 @@ describe('practice log', () => {
         stat: 'perception',
         tags: ['combat'],
         source: 'player',
+        reviewed: false,
       },
     ]);
     const gm = ok(c, { ...log('kim', 'Montage: drills', [eye]), source: 'montage' });
     expect(gm.state?.practice[1]).toMatchObject({ source: 'montage', sessionId: 's1' });
     expect(ok(c, log('kim', 'Ran', [], 'agility')).state?.practice[1]?.source).toBe('gm');
+    // M5.5: the GM's own entries start reviewed; player and montage ones do not.
+    expect(gm.state?.practice[1]?.reviewed).toBe(false);
+    expect(ok(c, log('kim', 'Ran', [], 'agility')).state?.practice[1]?.reviewed).toBe(true);
+  });
+
+  it('the GM corrects, reviews and removes entries (M5.5)', () => {
+    const c = ok(
+      ok(base(), log('jake', 'Sniped the hunter', [archery], 'perception'), player('jake')),
+      { ...log('jake', 'Montage: drills', [archery]), source: 'montage' },
+    );
+    const [first, montage] = c.state!.practice;
+    const edited = ok(c, {
+      type: 'practice.edit',
+      entryId: first!.id,
+      action: 'Sniped the pale hunter',
+      skills: [archery, stealth],
+      stat: null,
+    });
+    expect(edited.state?.practice[0]).toMatchObject({
+      action: 'Sniped the pale hunter',
+      skills: [archery, stealth],
+      stat: null,
+      reviewed: true,
+      source: 'player',
+    });
+    // Omitted fields stay.
+    const kept = ok(c, { type: 'practice.edit', entryId: first!.id, action: 'Shot it' });
+    expect(kept.state?.practice[0]).toMatchObject({ skills: [archery], stat: 'perception' });
+    expect(
+      reject(c, { type: 'practice.edit', entryId: first!.id, skills: [], stat: null }),
+    ).toContain('name a skill or a stat');
+    expect(
+      reject(c, { type: 'practice.edit', entryId: first!.id, skills: ['Fireball'] }),
+    ).toContain('has no skill "Fireball"');
+    expect(
+      reject(c, { type: 'practice.edit', entryId: first!.id, skills: [archery, archery] }),
+    ).toContain('listed twice');
+    expect(reject(c, { type: 'practice.edit', entryId: 'nope' })).toContain(
+      'unknown practice entry',
+    );
+
+    // Reviewing one entry leaves the others pending (QF.16).
+    const one = ok(c, { type: 'practice.review', entryIds: [montage!.id] });
+    expect(one.state?.practice.map((e) => e.reviewed)).toEqual([false, true]);
+    const reviewed = ok(c, { type: 'practice.review', entryIds: [first!.id, montage!.id] });
+    expect(reviewed.state?.practice.map((e) => e.reviewed)).toEqual([true, true]);
+    expect(reject(c, { type: 'practice.review', entryIds: ['nope'] })).toContain(
+      'unknown practice entry',
+    );
+
+    const removed = ok(c, { type: 'practice.remove', entryId: first!.id });
+    expect(removed.state?.practice.map((e) => e.id)).toEqual([montage!.id]);
+    expect(reject(c, { type: 'practice.remove', entryId: montage!.id })).toContain(
+      'montage focus cannot be removed',
+    );
+    // Players cannot touch the log this way.
+    expect(reject(c, { type: 'practice.remove', entryId: first!.id }, player('jake'))).not.toBe('');
   });
 
   it.each([
@@ -125,6 +184,7 @@ describe('practice log', () => {
     stat: null,
     tags: [],
     source: 'gm',
+    reviewed: true,
   });
 
   it('flags repeats: same character, session, action and skills', () => {
@@ -463,5 +523,56 @@ describe('montages (M3.11)', () => {
     const reopened = ok(ok(clocked(2), offer), { type: 'montage.close', montageId: 'm' });
     expect(reject(reopened, focus('jake'), player('jake'))).toContain('closed');
     expect(reject(ok(clocked(2), offer), focus('jake', 'x', ['Nope']))).toContain('no skill');
+  });
+
+  it('closes a clock’s open montage when the clock is removed (M7.A)', () => {
+    let c = ok(clocked(2), offer);
+    c = ok(c, { type: 'clock.remove', clockId: 'k' });
+    expect(c.state?.montages['m']?.status).toBe('closed');
+    expect(reject(c, focus('jake'), player('jake'))).toContain('closed');
+    // A montage that was already closed stays closed and the removal still works.
+    let d = ok(ok(clocked(2), offer), { type: 'montage.close', montageId: 'm' });
+    d = ok(d, { type: 'clock.remove', clockId: 'k' });
+    expect(d.state?.montages['m']?.status).toBe('closed');
+  });
+
+  it('replays a v1 clock removal with its old meaning: the montage stays open (D34)', () => {
+    const c = ok(clocked(2), offer);
+    const events = c.events.map((e) => ({ ...e }));
+    const last = events.at(-1);
+    if (!last) throw new Error('no events');
+    const v1Removal = {
+      ...last,
+      id: 'v1-remove',
+      type: 'clock.removed',
+      schemaVersion: 1,
+      payload: { clockId: 'k' },
+    };
+    const v1Focus = {
+      ...last,
+      id: 'v1-focus',
+      actor: { role: 'player', characterId: 'jake' },
+      type: 'montage.focused',
+      schemaVersion: 1,
+      payload: {
+        montageId: 'm',
+        characterId: 'jake',
+        action: 'Scout ahead',
+        skills: [],
+        stat: null,
+      },
+    };
+    const v1Close = {
+      ...last,
+      id: 'v1-close',
+      type: 'montage.closed',
+      schemaVersion: 1,
+      payload: { montageId: 'm' },
+    };
+    const afterRemoval = replay([...events, v1Removal]);
+    expect(afterRemoval.state?.montages['m']?.status).toBe('open');
+    const replayed = replay([...events, v1Removal, v1Focus, v1Close]);
+    expect(replayed.state?.montages['m']?.status).toBe('closed');
+    expect(replayed.state?.clocks['k']).toBeUndefined();
   });
 });

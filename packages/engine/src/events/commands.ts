@@ -7,10 +7,25 @@ import {
   type DomainEvent,
   type EventType,
 } from './envelope';
-import { CharacterRuleError } from '../character';
+import { CharacterRuleError, raceLevel } from '../character';
+import { settleContest, type ContestSideRecord, type GradeGapMode } from '../resolution';
+import { titleDefByName } from '../titles';
+import { hungerLevel } from '../trackers';
+import { defaultRerate } from '../evolution';
 import { normalizeTags } from '../skills/library';
 import { missingDefaultEntries } from '../content/defaults';
 import { largestRemainderSplit } from '../progression';
+import { bankedXp } from './migrations';
+import { defaultRules } from '../rules';
+import {
+  EMPTY_HOLDINGS,
+  EconomyRuleError,
+  itemsSeenBy,
+  lootBundle,
+  rollLoot,
+  type LootEntry,
+  type LootTable,
+} from '../economy';
 import { appendEvent, type Campaign } from './log';
 
 /**
@@ -41,7 +56,24 @@ export type Command =
   | { type: 'character.grantProfession'; characterId: string; profession: string }
   /** Player: take one of the professions the GM offered (MQ.6). */
   | { type: 'profession.choose'; characterId: string; profession: string }
+  /** GM only: withdraw an untaken profession offer (M5.2). */
+  | { type: 'profession.withdrawOffer'; characterId: string; profession: string }
   | { type: 'title.award'; characterId: string; title: string }
+  | {
+      type: 'titleDef.define';
+      /** Optional; a fresh id is generated when omitted. */
+      id?: string | undefined;
+      name: string;
+      text?: string | undefined;
+      bonuses?: readonly StatBonusInput[] | undefined;
+    }
+  | {
+      type: 'titleDef.edit';
+      titleDefId: string;
+      name?: string | undefined;
+      text?: string | undefined;
+      bonuses?: readonly StatBonusInput[] | undefined;
+    }
   | { type: 'character.setPools'; characterId: string; pools: Readonly<Record<string, number>> }
   | { type: 'character.setStats'; characterId: string; stats: Readonly<Record<string, number>> }
   | {
@@ -83,6 +115,17 @@ export type Command =
       characterIds?: readonly string[] | null | undefined;
     }
   | {
+      /** M4.7: send on a later in-game day instead of now. */
+      type: 'broadcast.schedule';
+      /** Optional; a fresh id is generated when omitted. */
+      id?: string | undefined;
+      text: string;
+      /** Recipients; omitted or null = every character (when it is sent). */
+      characterIds?: readonly string[] | null | undefined;
+      day: number;
+    }
+  | { type: 'broadcast.unschedule'; id: string }
+  | {
       type: 'item.define';
       /** Optional; a fresh id is generated when omitted. */
       id?: string | undefined;
@@ -100,6 +143,27 @@ export type Command =
       description?: string | undefined;
       slot?: string | null | undefined;
       bonuses?: readonly StatBonusInput[] | undefined;
+    }
+  | {
+      type: 'lootTable.define';
+      /** Optional; a fresh id is generated when omitted. */
+      id?: string | undefined;
+      name: string;
+      rolls?: number | undefined;
+      entries: readonly LootEntry[];
+    }
+  | {
+      type: 'lootTable.edit';
+      tableId: string;
+      name?: string | undefined;
+      rolls?: number | undefined;
+      entries?: readonly LootEntry[] | undefined;
+    }
+  | {
+      type: 'loot.roll';
+      tableId: string;
+      /** Who gets what it rolls (a GM gift); null or omitted = the GM only. */
+      characterId?: string | null | undefined;
     }
   | {
       type: 'holdings.adjust';
@@ -147,6 +211,15 @@ export type Command =
       source?: 'gm' | 'player' | 'montage' | undefined;
     }
   | {
+      type: 'practice.edit';
+      entryId: string;
+      action?: string | undefined;
+      skills?: readonly string[] | undefined;
+      stat?: string | null | undefined;
+    }
+  | { type: 'practice.remove'; entryId: string }
+  | { type: 'practice.review'; entryIds: readonly string[] }
+  | {
       type: 'note.create';
       /** Optional; a fresh id is generated when omitted. */
       noteId?: string | undefined;
@@ -178,6 +251,8 @@ export type Command =
       flavor: string | null;
     }
   | { type: 'skill.setUnique'; characterId: string; skill: string; unique: boolean }
+  /** GM hands a hand-written skill copy back to the library (MR.4). */
+  | { type: 'skill.useLibraryText'; characterId: string; skill: string }
   | {
       type: 'skill.awardMark';
       characterId: string;
@@ -221,12 +296,19 @@ export type Command =
         id?: string | undefined;
         className: string;
         description?: string | undefined;
-        transforms?: readonly { skill: string; name: string; rarity: string }[] | undefined;
+        transforms?:
+          | readonly { skill: string; name: string; rarity: string; merge?: string | undefined }[]
+          | undefined;
         classWeights?: Readonly<Record<string, number>> | null | undefined;
         statBonus?: Readonly<Record<string, number>> | undefined;
       }[];
       /** Offered at the profession unlock grade; default none. */
       professions?: readonly string[] | undefined;
+      /**
+       * GM override of the re-rating (MR.1): skill name → rarity after the
+       * evolution. Skills not named drop one rarity (never below the lowest).
+       */
+      rerate?: Readonly<Record<string, string>> | undefined;
     }
   | {
       type: 'evolution.choose';
@@ -251,6 +333,17 @@ export type Command =
       amount?: number | undefined;
     }
   | { type: 'clock.remove'; clockId: string }
+  | {
+      /** GM shares a contest rolled on their screen with the table (M7.3). */
+      type: 'contest.share';
+      contestId?: string | undefined;
+      a: ContestSideRecord;
+      b: ContestSideRecord;
+      /** Default: the campaign's grade-gap mode. */
+      mode?: GradeGapMode | undefined;
+      /** The roll drawn, or null when a grade wall settled it. */
+      roll: number | null;
+    }
   | {
       type: 'montage.offer';
       /** Optional; a fresh id is generated when omitted. */
@@ -391,6 +484,10 @@ export type Command =
       /** MQ.8: grade id and level (both or neither) for the Identify range. */
       grade?: string | null | undefined;
       level?: number | null | undefined;
+      /** M7.2 bestiary (GM-only): stat id → value, or null for none. */
+      stats?: Readonly<Record<string, number>> | null | undefined;
+      /** M7.2 bestiary (GM-only) notes. */
+      notes?: string | undefined;
     }
   | {
       type: 'entity.edit';
@@ -400,6 +497,8 @@ export type Command =
       tiers?: readonly { minRarity: string; text: string }[] | undefined;
       grade?: string | null | undefined;
       level?: number | null | undefined;
+      stats?: Readonly<Record<string, number>> | null | undefined;
+      notes?: string | undefined;
     }
   | {
       type: 'entity.reveal';
@@ -407,7 +506,55 @@ export type Command =
       /** Omitted or null = every character who does not know it yet. */
       characterIds?: readonly string[] | null | undefined;
     }
+  /** M7.4: turn the hunger tracker on or off, or rename its steps. Omitted fields stay. */
+  | {
+      type: 'hunger.configure';
+      enabled?: boolean | undefined;
+      steps?: readonly string[] | undefined;
+    }
+  | {
+      /**
+       * M7.4: set these characters' hunger to `level`, or move it by `delta`
+       * (clamped to the steps). Give exactly one.
+       */
+      type: 'hunger.set';
+      characterIds: readonly string[];
+      level?: number | undefined;
+      delta?: number | undefined;
+    }
+  | {
+      type: 'region.define';
+      regionId?: string | undefined;
+      name: string;
+      notes?: string | undefined;
+    }
+  | { type: 'region.edit'; regionId: string; name?: string | undefined; notes?: string | undefined }
+  /** M7.4: the party is now in this region (null: none set). */
+  | { type: 'region.setCurrent'; regionId: string | null }
+  | {
+      type: 'faction.define';
+      factionId?: string | undefined;
+      name: string;
+      regionId?: string | null | undefined;
+      members?: number | null | undefined;
+      standing?: string | undefined;
+      notes?: string | undefined;
+    }
+  | {
+      type: 'faction.edit';
+      factionId: string;
+      name?: string | undefined;
+      regionId?: string | null | undefined;
+      members?: number | null | undefined;
+      standing?: string | undefined;
+      notes?: string | undefined;
+    }
   | { type: 'campaign.advanceDay'; days?: number | undefined }
+  | { type: 'rules.migrate'; migration: 'xpOverflow' }
+  /** M4.9: replaces the campaign's rules with an edited copy (validated). */
+  | { type: 'rules.set'; rules: unknown }
+  /** M4.9: puts the rules back to the DESIGN defaults. */
+  | { type: 'rules.reset' }
   /** Starts a play session (M4.3); the id is generated when omitted. */
   | { type: 'session.start'; sessionId?: string | undefined }
   /** Ends the running play session. */
@@ -435,6 +582,8 @@ export interface CommandContext {
   readonly now: () => string;
   /** Returns a fresh unique id. */
   readonly newId: () => string;
+  /** Random source in [0, 1) for rolls (M6.2); a roll is refused without one. */
+  readonly random?: (() => number) | undefined;
 }
 
 const anyRecord = z.record(z.string(), z.unknown());
@@ -446,7 +595,10 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('character.setPortrait') }),
   z.object({ type: z.literal('character.grantProfession') }),
   z.object({ type: z.literal('profession.choose') }),
+  z.object({ type: z.literal('profession.withdrawOffer') }),
   z.object({ type: z.literal('title.award') }),
+  z.object({ type: z.literal('titleDef.define') }),
+  z.object({ type: z.literal('titleDef.edit') }),
   z.object({ type: z.literal('character.setPools'), pools: anyRecord }),
   z.object({ type: z.literal('character.setStats'), stats: anyRecord }),
   z.object({
@@ -461,8 +613,18 @@ const commandSchema = z.discriminatedUnion('type', [
     text: z.string(),
     characterIds: z.array(z.string()).nullable().optional(),
   }),
+  z.object({
+    type: z.literal('broadcast.schedule'),
+    text: z.string(),
+    characterIds: z.array(z.string()).nullable().optional(),
+    day: z.number(),
+  }),
+  z.object({ type: z.literal('broadcast.unschedule'), id: z.string() }),
   z.object({ type: z.literal('item.define') }),
   z.object({ type: z.literal('item.edit') }),
+  z.object({ type: z.literal('lootTable.define'), entries: z.array(z.unknown()) }),
+  z.object({ type: z.literal('lootTable.edit'), entries: z.array(z.unknown()).optional() }),
+  z.object({ type: z.literal('loot.roll') }),
   z.object({ type: z.literal('holdings.adjust') }),
   z.object({ type: z.literal('gift.give') }),
   z.object({ type: z.literal('item.equip') }),
@@ -472,12 +634,16 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('trade.decline') }),
   z.object({ type: z.literal('trade.cancel') }),
   z.object({ type: z.literal('practice.log') }),
+  z.object({ type: z.literal('practice.edit') }),
+  z.object({ type: z.literal('practice.remove') }),
+  z.object({ type: z.literal('practice.review') }),
   z.object({ type: z.literal('note.create') }),
   z.object({ type: z.literal('note.edit') }),
   z.object({ type: z.literal('note.delete') }),
   z.object({ type: z.literal('skill.nickname') }),
   z.object({ type: z.literal('skill.describe') }),
   z.object({ type: z.literal('skill.setUnique') }),
+  z.object({ type: z.literal('skill.useLibraryText') }),
   z.object({ type: z.literal('skill.awardMark') }),
   z.object({ type: z.literal('skill.upgrade') }),
   z.object({ type: z.literal('skill.merge'), skills: z.array(z.unknown()) }),
@@ -487,11 +653,13 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('evolution.release'),
     options: z.array(z.record(z.string(), z.unknown())),
+    rerate: z.record(z.string(), z.string()).optional(),
   }),
   z.object({ type: z.literal('evolution.choose') }),
   z.object({ type: z.literal('clock.create') }),
   z.object({ type: z.literal('clock.tick') }),
   z.object({ type: z.literal('clock.remove') }),
+  z.object({ type: z.literal('contest.share'), a: anyRecord, b: anyRecord }),
   z.object({ type: z.literal('montage.offer'), characterIds: z.array(z.string()) }),
   z.object({ type: z.literal('montage.focus') }),
   z.object({ type: z.literal('montage.close') }),
@@ -523,7 +691,17 @@ const commandSchema = z.discriminatedUnion('type', [
     type: z.literal('entity.reveal'),
     characterIds: z.array(z.string()).nullable().optional(),
   }),
+  z.object({ type: z.literal('hunger.configure'), steps: z.array(z.string()).optional() }),
+  z.object({ type: z.literal('hunger.set'), characterIds: z.array(z.string()) }),
+  z.object({ type: z.literal('region.define') }),
+  z.object({ type: z.literal('region.edit') }),
+  z.object({ type: z.literal('region.setCurrent') }),
+  z.object({ type: z.literal('faction.define') }),
+  z.object({ type: z.literal('faction.edit') }),
   z.object({ type: z.literal('campaign.advanceDay') }),
+  z.object({ type: z.literal('rules.migrate'), migration: z.literal('xpOverflow') }),
+  z.object({ type: z.literal('rules.set'), rules: z.unknown() }),
+  z.object({ type: z.literal('rules.reset') }),
   z.object({ type: z.literal('session.start'), sessionId: z.string().optional() }),
   z.object({ type: z.literal('session.end') }),
   z.object({ type: z.literal('event.undo') }),
@@ -611,11 +789,36 @@ function awardPayload(command: Extract<Command, { type: 'xp.award' }>) {
 }
 
 /** The character a choice is made for, if it exists (choices default to what is pending). */
+/** The release's full re-rating: the default drop plus the GM's overrides (MR.1). */
+function rerateFor(
+  campaign: Campaign,
+  characterId: string,
+  overrides: Readonly<Record<string, string>>,
+): { skill: string; rarity: string }[] {
+  const character = pendingOf(campaign, characterId);
+  const rules = campaign.state?.rules;
+  if (!character || !rules) return [];
+  const known = new Set(character.skills.map((s) => s.name));
+  // A name the character lacks stays in the list, so the release is refused.
+  const extra = Object.entries(overrides)
+    .filter(([name]) => !known.has(name))
+    .map(([skill, rarity]) => ({ skill, rarity }));
+  return [...defaultRerate(rules, character, overrides), ...extra];
+}
+
 function pendingOf(campaign: Campaign, characterId: string) {
   const characters = campaign.state?.characters;
   return characters && Object.prototype.hasOwnProperty.call(characters, characterId)
     ? characters[characterId]
     : undefined;
+}
+
+function lootTableOf(campaign: Campaign, tableId: string): LootTable {
+  const tables = campaign.state?.lootTables;
+  const table =
+    tables && Object.prototype.hasOwnProperty.call(tables, tableId) ? tables[tableId] : undefined;
+  if (!table) throw new EventRejectedError(`No loot table "${tableId}"`);
+  return table;
 }
 
 /** The default library entries the campaign lacks (`missingDefaultEntries`), with fresh ids. */
@@ -675,17 +878,33 @@ function toEvent(
         type: 'character.professionGranted',
         payload: { characterId: command.characterId, profession: command.profession },
       };
+    case 'profession.withdrawOffer':
+      return {
+        type: 'profession.offerWithdrawn',
+        payload: { characterId: command.characterId, profession: command.profession },
+      };
     case 'profession.choose':
       return {
         type: 'profession.chosen',
         payload: { characterId: command.characterId, profession: command.profession },
       };
-    case 'title.award':
+    case 'title.award': {
+      // M6.4: a name matching a library title (any case) is awarded as the
+      // library spells it. The payload schema trims and checks it; a
+      // non-string is refused there.
+      const def =
+        typeof command.title === 'string' && campaign.state
+          ? titleDefByName(
+              campaign.state.titleLibrary,
+              campaign.state.titleLibraryOrder,
+              command.title,
+            )
+          : undefined;
       return {
         type: 'title.awarded',
-        // The payload schema trims and checks it; a non-string is refused there.
-        payload: { characterId: command.characterId, title: command.title },
+        payload: { characterId: command.characterId, title: def?.name ?? command.title },
       };
+    }
     case 'character.setPools':
       return {
         type: 'character.poolsSet',
@@ -696,8 +915,22 @@ function toEvent(
         type: 'character.statsSet',
         payload: { characterId: command.characterId, stats: command.stats },
       };
-    case 'xp.award':
-      return { type: 'xp.awarded', payload: awardPayload(command) };
+    case 'xp.award': {
+      const payload = awardPayload(command);
+      // Record each share's race level (M7.3, D71 gap a) so the above-level
+      // bonus is priced now, not re-derived when an earlier event is undone.
+      const state = campaign.state;
+      const shares = payload.shares.map((s) => {
+        const c =
+          state && Object.prototype.hasOwnProperty.call(state.characters, s.characterId)
+            ? state.characters[s.characterId]
+            : undefined;
+        return state && c && payload.enemyLevel !== null
+          ? { ...s, raceLevel: raceLevel(state.rules, c) }
+          : s;
+      });
+      return { type: 'xp.awarded', payload: { ...payload, shares } };
+    }
     case 'freePoints.assign':
       return {
         type: 'freePoints.assigned',
@@ -721,6 +954,32 @@ function toEvent(
         type: 'system.broadcast',
         payload: { text: command.text, characterIds: command.characterIds ?? null },
       };
+    case 'broadcast.schedule':
+      return {
+        type: 'broadcast.scheduled',
+        payload: {
+          id: command.id ?? ctx.newId(),
+          text: command.text,
+          characterIds: command.characterIds ?? null,
+          day: command.day,
+        },
+      };
+    case 'broadcast.unschedule':
+      return { type: 'broadcast.unscheduled', payload: { id: command.id } };
+    case 'titleDef.define':
+      return {
+        type: 'titleDef.defined',
+        payload: {
+          id: command.id ?? ctx.newId(),
+          name: command.name,
+          text: command.text ?? '',
+          bonuses: command.bonuses ?? [],
+        },
+      };
+    case 'titleDef.edit': {
+      const { titleDefId, name, text, bonuses } = command;
+      return { type: 'titleDef.edited', payload: { titleDefId, name, text, bonuses } };
+    }
     case 'item.define':
       return {
         type: 'item.defined',
@@ -739,6 +998,37 @@ function toEvent(
       return {
         type: 'item.edited',
         payload: { itemId, name, rarity, description, slot, bonuses },
+      };
+    }
+    case 'lootTable.define':
+      return {
+        type: 'lootTable.defined',
+        payload: {
+          id: command.id ?? ctx.newId(),
+          name: command.name,
+          rolls: command.rolls ?? 1,
+          entries: command.entries,
+        },
+      };
+    case 'lootTable.edit': {
+      const { tableId, name, rolls, entries } = command;
+      return { type: 'lootTable.edited', payload: { tableId, name, rolls, entries } };
+    }
+    case 'loot.roll': {
+      const table = lootTableOf(campaign, command.tableId);
+      if (!ctx.random) throw new EventRejectedError('No random source to roll with');
+      let picks;
+      let bundle;
+      try {
+        picks = rollLoot(table, ctx.random);
+        bundle = lootBundle(table, picks);
+      } catch (error) {
+        if (error instanceof EconomyRuleError) throw new EventRejectedError(error.message);
+        throw error;
+      }
+      return {
+        type: 'loot.rolled',
+        payload: { tableId: table.id, characterId: command.characterId ?? null, bundle, picks },
       };
     }
     case 'holdings.adjust':
@@ -814,6 +1104,15 @@ function toEvent(
           source: command.source ?? (ctx.actor.role === 'player' ? 'player' : 'gm'),
         },
       };
+    case 'practice.edit': {
+      const { entryId, action, skills, stat } = command;
+      // Undefined fields vanish in the event's JSON round trip (= unchanged).
+      return { type: 'practice.edited', payload: { entryId, action, skills, stat } };
+    }
+    case 'practice.remove':
+      return { type: 'practice.removed', payload: { entryId: command.entryId } };
+    case 'practice.review':
+      return { type: 'practice.reviewed', payload: { entryIds: [...command.entryIds] } };
     case 'note.create':
       return {
         type: 'note.created',
@@ -858,6 +1157,11 @@ function toEvent(
           description: command.description,
           flavor: command.flavor,
         },
+      };
+    case 'skill.useLibraryText':
+      return {
+        type: 'skill.libraryTextUsed',
+        payload: { characterId: command.characterId, skill: command.skill },
       };
     case 'skill.setUnique':
       return {
@@ -929,6 +1233,7 @@ function toEvent(
             statBonus: o.statBonus ?? {},
           })),
           professions: command.professions ?? [],
+          rerate: rerateFor(campaign, command.characterId, command.rerate ?? {}),
         },
       };
     case 'evolution.choose':
@@ -981,6 +1286,34 @@ function toEvent(
       return { type: 'montage.closed', payload: { montageId: command.montageId } };
     case 'clock.remove':
       return { type: 'clock.removed', payload: { clockId: command.clockId } };
+    case 'contest.share': {
+      const rules = campaign.state?.rules;
+      if (!rules) throw new EventRejectedError('No campaign yet');
+      const mode = command.mode ?? rules.resolution.gradeGapMode;
+      let result;
+      try {
+        result = settleContest(rules, command.a, command.b, mode, command.roll);
+      } catch (error) {
+        if (error instanceof CharacterRuleError) throw new EventRejectedError(error.message);
+        throw error;
+      }
+      const { yours, theirs, chance, walled, success } = result;
+      return {
+        type: 'contest.shared',
+        payload: {
+          contestId: command.contestId ?? ctx.newId(),
+          a: command.a,
+          b: command.b,
+          mode,
+          roll: command.roll,
+          yours,
+          theirs,
+          chance,
+          walled,
+          success,
+        },
+      };
+    }
     case 'quest.create': {
       const st = command.stability;
       return {
@@ -1126,10 +1459,13 @@ function toEvent(
           knownBy: command.knownBy ?? [],
           grade: command.grade ?? null,
           level: command.level ?? null,
+          stats: command.stats ? { ...command.stats } : null,
+          notes: command.notes ?? '',
         },
       };
     case 'entity.edit': {
-      const { entityId, name, label, tiers, grade, level } = command;
+      const { entityId, name, label, tiers, grade, level, notes } = command;
+      const stats = command.stats ? { ...command.stats } : command.stats;
       // Undefined fields vanish in the event's JSON round trip (= unchanged).
       return {
         type: 'entity.edited',
@@ -1140,6 +1476,8 @@ function toEvent(
           tiers: tiers?.map((t) => ({ minRarity: t.minRarity, text: t.text })),
           grade,
           level,
+          stats,
+          notes,
         },
       };
     }
@@ -1173,8 +1511,83 @@ function toEvent(
         type: 'stability.nudged',
         payload: { questId: command.questId, delta: command.delta, reason: command.reason ?? '' },
       };
+    case 'hunger.configure': {
+      const state = campaign.state;
+      if (!state) throw new EventRejectedError('Create a campaign first');
+      return {
+        type: 'hunger.configured',
+        payload: {
+          enabled: command.enabled ?? state.hunger.enabled,
+          steps: (command.steps ?? state.hunger.steps).map((s) => s.trim()),
+        },
+      };
+    }
+    case 'hunger.set': {
+      const state = campaign.state;
+      if (!state) throw new EventRejectedError('Create a campaign first');
+      if ((command.level === undefined) === (command.delta === undefined)) {
+        throw new EventRejectedError('Give a hunger level or a change, not both');
+      }
+      const top = state.hunger.steps.length - 1;
+      const levels: Record<string, number> = {};
+      for (const id of command.characterIds) {
+        const next = command.level ?? hungerLevel(state.hunger, id) + (command.delta ?? 0);
+        levels[id] = Math.min(Math.max(Math.trunc(next), 0), top);
+      }
+      return { type: 'hunger.levelsSet', payload: { levels } };
+    }
+    case 'region.define':
+      return {
+        type: 'region.defined',
+        payload: {
+          regionId: command.regionId ?? ctx.newId(),
+          name: command.name,
+          notes: command.notes ?? '',
+        },
+      };
+    case 'region.edit':
+      return {
+        type: 'region.edited',
+        payload: { regionId: command.regionId, name: command.name, notes: command.notes },
+      };
+    case 'region.setCurrent':
+      return { type: 'region.currentSet', payload: { regionId: command.regionId } };
+    case 'faction.define':
+      return {
+        type: 'faction.defined',
+        payload: {
+          factionId: command.factionId ?? ctx.newId(),
+          name: command.name,
+          regionId: command.regionId ?? null,
+          members: command.members ?? null,
+          standing: command.standing ?? '',
+          notes: command.notes ?? '',
+        },
+      };
+    case 'faction.edit': {
+      const { factionId, name, regionId, members, standing, notes } = command;
+      // Undefined fields vanish in the event's JSON round trip (= unchanged).
+      return {
+        type: 'faction.edited',
+        payload: { factionId, name, regionId, members, standing, notes },
+      };
+    }
     case 'campaign.advanceDay':
       return { type: 'campaign.dayAdvanced', payload: { days: command.days ?? 1 } };
+    case 'rules.migrate': {
+      const state = campaign.state;
+      if (!state || state.rules.xp.overflow) {
+        throw new EventRejectedError('XP overflow is already on');
+      }
+      return {
+        type: 'rules.migrated',
+        payload: { migration: 'xpOverflow', banked: bankedXp(state) },
+      };
+    }
+    case 'rules.set':
+      return { type: 'rules.edited', payload: { rules: command.rules } };
+    case 'rules.reset':
+      return { type: 'rules.edited', payload: { rules: defaultRules() } };
     case 'session.start':
       if ((campaign.state?.currentSession ?? null) !== null) {
         throw new EventRejectedError('A session is already running; end it first');
@@ -1192,6 +1605,11 @@ function toEvent(
 
 /** One message for an unknown item and one the character does not hold (QF.2). */
 export const ITEM_NOT_AVAILABLE = 'That item is not available';
+/**
+ * Accepting a trade when either side no longer has its part (QF.9): one
+ * message that names nothing and shows no one's holdings.
+ */
+export const TRADE_NOT_POSSIBLE = 'That trade can no longer go through';
 
 const countOf = (inventory: Readonly<Record<string, number>>, id: string): number =>
   Object.prototype.hasOwnProperty.call(inventory, id) ? (inventory[id] ?? 0) : 0;
@@ -1222,6 +1640,16 @@ function itemOutOfReach(state: NonNullable<Campaign['state']>, command: Command)
         known(id) &&
         countOf(inv(who), id) >= n,
     );
+  const asksOnlySeen = (who: string, items: Readonly<Record<string, unknown>>) => {
+    const holdings = Object.prototype.hasOwnProperty.call(state.holdings, who)
+      ? (state.holdings[who] ?? EMPTY_HOLDINGS)
+      : EMPTY_HOLDINGS;
+    const seen = itemsSeenBy(holdings, Object.values(state.trades), who);
+    return Object.entries(items).every(
+      ([id, n]) =>
+        typeof n === 'number' && Number.isSafeInteger(n) && n > 0 && known(id) && seen.has(id),
+    );
+  };
   if (command.type === 'item.equip') {
     return known(command.itemId) && countOf(inv(command.characterId), command.itemId) >= 1
       ? null
@@ -1244,10 +1672,39 @@ function itemOutOfReach(state: NonNullable<Campaign['state']>, command: Command)
     const get = command.get.items ?? {};
     if (command.characterId !== null && !holds(command.characterId, give))
       return ITEM_NOT_AVAILABLE;
-    if (command.to !== null && !holds(command.to, get)) return ITEM_NOT_AVAILABLE;
     if (command.to === null && command.characterId !== null && Object.keys(get).length > 0) {
       return 'A trade with the GM can ask only for currency; the GM offers items';
     }
+    if (command.characterId === null) {
+      // The GM sees every inventory, so it may ask only for what is there.
+      if (command.to !== null && !holds(command.to, get)) return ITEM_NOT_AVAILABLE;
+    } else if (!asksOnlySeen(command.characterId, get)) {
+      // A character's ask never depends on the counterparty's holdings (QF.9):
+      // only items the proposer has seen, checked again on accept.
+      return ITEM_NOT_AVAILABLE;
+    }
+  }
+  if (command.type === 'trade.accept') {
+    // Both sides must still hold their part; one message that names nothing (QF.9).
+    const trade = Object.prototype.hasOwnProperty.call(state.trades, command.tradeId)
+      ? state.trades[command.tradeId]
+      : undefined;
+    if (!trade || trade.status !== 'open' || command.characterId !== trade.to) return null;
+    // Currency too: the reducer's message would show the other side's balance.
+    const pays = (who: string, amount: number) =>
+      (Object.prototype.hasOwnProperty.call(state.holdings, who)
+        ? (state.holdings[who]?.currency ?? 0)
+        : 0) >= amount;
+    if (
+      trade.from !== null &&
+      !(holds(trade.from, trade.give.items) && pays(trade.from, trade.give.currency))
+    )
+      return TRADE_NOT_POSSIBLE;
+    if (
+      trade.to !== null &&
+      !(holds(trade.to, trade.get.items) && pays(trade.to, trade.get.currency))
+    )
+      return TRADE_NOT_POSSIBLE;
   }
   return null;
 }

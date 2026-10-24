@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 21,
+  "schemaVersion": 32,
   "name": "Skill library",
   "rules": {
     "configVersion": 1,
@@ -245,7 +245,9 @@
       },
       "maxMarksPerSkillPerSession": 1,
       "marksCarryOver": false,
+      "marksResetOnUpgrade": false,
       "libraryByRarity": false,
+      "handTextSurvivesUpgrade": false,
       "merge": {
         "requiredJointUses": 3,
         "minRarity": "uncommon",
@@ -439,7 +441,7 @@
           "flavor": null
         },
         {
-          "name": "Archer\u2019s Eye",
+          "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -545,7 +547,7 @@
           "flavor": null
         },
         {
-          "name": "Archer\u2019s Eye",
+          "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -575,8 +577,15 @@
   },
   "characterOrder": ["jake", "casper"],
   "broadcasts": [],
+  "scheduledBroadcasts": [],
   "items": {},
   "itemOrder": [],
+  "lootTables": {},
+  "lootTableOrder": [],
+  "lootLog": [],
+  "ledger": [],
+  "titleLibrary": {},
+  "titleLibraryOrder": [],
   "skillLibrary": {
     "identify": {
       "id": "identify",
@@ -627,6 +636,18 @@
   "entityOrder": [],
   "montages": {},
   "montageOrder": [],
+  "contests": {},
+  "contestOrder": [],
+  "hunger": {
+    "enabled": false,
+    "steps": ["Fed", "Peckish", "Hungry", "Famished", "Starving"],
+    "levels": {}
+  },
+  "regions": {},
+  "regionOrder": [],
+  "currentRegion": null,
+  "factions": {},
+  "factionOrder": [],
   "day": 1,
   "sessions": [],
   "currentSession": null

@@ -1,4 +1,4 @@
-/* Base System-window styling. Grade metal themes arrive in M8.1. */
+/* Base System-window styling. Grade metal themes live in themes.css (M8.1). */
 :root {
   color-scheme: dark;
   --bg: #0b0f17;
@@ -112,10 +112,18 @@ textarea {
   border-radius: 4px;
   padding: 6px 8px;
 }
+/* Placeholders read at 4.5:1 like any text (M8.3); browsers default to a dim grey. */
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
-button:focus-visible {
+button:focus-visible,
+summary:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -252,10 +260,7 @@ h3 {
   border-color: var(--accent);
 }
 
-/* Grade metals (DESIGN §3). Placeholders until the M8.1 themes. */
-:root {
-  --metal: #8a96a8;
-}
+/* Grade metals (DESIGN §3): tokens in themes.css (M8.1). */
 .join {
   max-width: 640px;
   margin: 0 auto;
@@ -315,27 +320,6 @@ h3 {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-.theme-aluminum {
-  --metal: #a7adb4;
-}
-.theme-bronze {
-  --metal: #a5733f;
-}
-.theme-copper {
-  --metal: #d9804f;
-}
-.theme-silver {
-  --metal: #d4d8de;
-}
-.theme-gold {
-  --metal: #e7c25a;
-}
-.theme-platinum {
-  --metal: #b9d8f0;
-}
-.theme-diamond {
-  --metal: #c9f3ff;
 }
 .continue h2 {
   margin-top: 0;
@@ -652,10 +636,23 @@ a {
   margin: 0 0 6px;
   word-break: break-all;
 }
+/* "Players can't connect?" firewall help (M10.1). */
+.connect-help {
+  margin-top: 12px;
+}
+.connect-help ol {
+  margin: 8px 0 0;
+  padding-left: 1.4em;
+  line-height: 1.45;
+}
+.connect-help li + li {
+  margin-top: 4px;
+}
 /* GM link for another browser on the host (MS.A). */
 .gm-link {
   margin-top: 12px;
 }
+.connect-help summary,
 .gm-link summary {
   cursor: pointer;
   color: var(--muted);
@@ -678,16 +675,7 @@ button.secondary:hover {
   border-color: var(--accent);
 }
 
-/* Status screen (M3.2): grade-metal frame, rarity colours, live glow. */
-.status-window.window {
-  border-color: var(--metal);
-  box-shadow:
-    0 0 14px color-mix(in srgb, var(--metal) 35%, transparent),
-    inset 0 0 0 1px color-mix(in srgb, var(--metal) 20%, transparent);
-}
-.status-window h2 {
-  color: var(--metal);
-}
+/* Status screen (M3.2): rarity colours, live glow; the metal frame is in themes.css. */
 .pool-bar {
   display: block;
   height: 4px;
@@ -816,6 +804,16 @@ button.secondary:hover {
   border: 1px solid rgba(90, 127, 184, 0.5);
   padding: 3px 10px;
   font-size: 0.8rem;
+}
+.gm-header label.volume {
+  margin: 0;
+  flex-direction: row;
+  align-items: center;
+}
+.volume input[type='range'] {
+  width: 90px;
+  padding: 0;
+  accent-color: var(--accent);
 }
 .sound-toggle[aria-pressed='true'] {
   color: var(--accent);
@@ -1528,7 +1526,7 @@ button.danger {
 }
 .party-name {
   margin: 0 0 4px;
-  color: var(--metal, var(--text));
+  color: var(--metal-text, var(--text));
 }
 .party-tracks {
   display: grid;
@@ -1585,6 +1583,7 @@ button.danger {
 
 /* M3.13 evolution screen */
 .evolution-transforms,
+.evolution-rerate ul,
 .evolution-warnings {
   margin: 4px 0 8px;
   padding-left: 1.2em;
@@ -1595,6 +1594,9 @@ button.danger {
 }
 .evolution-warnings li:last-child {
   color: var(--err);
+}
+.evolution-rerate p {
+  margin: 4px 0 6px;
 }
 .evolution-profession {
   display: grid;
@@ -1794,6 +1796,33 @@ button.danger {
 .session-past td.wrap {
   white-space: normal;
 }
+.session-past td.session-report-actions {
+  text-align: right;
+  white-space: normal;
+}
+.session-report-actions button {
+  margin: 2px 0 2px 4px;
+}
+.session-manual-copy textarea {
+  width: 100%;
+  min-height: 8rem;
+  font-family: inherit;
+  font-size: 0.8rem;
+}
+@media (max-width: 600px) {
+  /* Phone width: no length column, and the two buttons stack, so the table fits. */
+  .session-past .session-length {
+    display: none;
+  }
+  .session-report-actions button {
+    display: block;
+    width: 100%;
+    margin: 2px 0;
+  }
+}
+.session-now .row {
+  flex-wrap: wrap;
+}
 .session-past th,
 .session-past td {
   text-align: left;
@@ -1863,4 +1892,885 @@ p.small {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
+}
+
+/* Party dashboard (M4.5). */
+.party-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  gap: 12px;
+}
+.party-card {
+  border: 1px solid rgba(90, 127, 184, 0.45);
+  border-left: 4px solid var(--metal, var(--accent));
+  border-radius: 4px;
+  padding: 10px 12px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.party-card-head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.party-card-title {
+  min-width: 0;
+  flex: 1;
+  font-family: var(--mono);
+}
+.party-card h3.party-name {
+  font-size: 1rem;
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
+.party-card .party-tracks dd {
+  overflow-wrap: anywhere;
+}
+.party-card > button {
+  align-self: flex-start;
+}
+.flags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.flag {
+  font-size: 0.85rem;
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid rgba(90, 127, 184, 0.45);
+  overflow-wrap: anywhere;
+}
+.flag-gm {
+  border-color: #e7c25a;
+  background: rgba(231, 194, 90, 0.1);
+}
+.flag-owner {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.flag-gm .flag-owner {
+  color: #e7c25a;
+}
+.sheet-editor {
+  border-top: 1px dashed rgba(90, 127, 184, 0.45);
+  padding-top: 8px;
+}
+.sheet-stats,
+.sheet-pools {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 0 10px;
+}
+.sheet-stats legend,
+.sheet-pools legend {
+  grid-column: 1 / -1;
+}
+.sheet-stats input,
+.sheet-pools input {
+  width: 100%;
+}
+.sheet-skill {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0 10px;
+}
+.sheet-skill label:first-child {
+  flex: 1 1 180px;
+}
+.sheet-batches {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+/* XP award dialog (M4.6). */
+.xp-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0 10px;
+}
+.xp-participant {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(90, 127, 184, 0.2);
+}
+.xp-participant label.check {
+  margin-bottom: 2px;
+}
+.xp-outcome {
+  font-size: 0.85rem;
+  padding-left: 26px;
+  overflow-wrap: anywhere;
+}
+.xp-share {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding-left: 26px;
+  margin: 4px 0 0;
+}
+.xp-share input {
+  width: 7em;
+}
+
+/* M4.7 System broadcast: recipients, when, and the GM's scheduled list. */
+.broadcast-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: flex-end;
+}
+.broadcast-row label {
+  flex: 1 1 140px;
+}
+ul.scheduled {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+ul.scheduled li {
+  border-left: 2px solid var(--accent, currentColor);
+  padding: 4px 8px;
+  overflow-wrap: anywhere;
+}
+.scheduled-text {
+  font-style: italic;
+}
+
+/* M4.8 change log. */
+ol.change-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 420px;
+  overflow-y: auto;
+  display: grid;
+  gap: 4px;
+}
+.change-log-footer {
+  gap: 0.75rem;
+  align-items: center;
+}
+ol.change-log li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  overflow-wrap: anywhere;
+}
+ol.change-log .change-text {
+  flex: 1;
+}
+ol.change-log li > button {
+  flex: none;
+}
+ol.change-log li.undone {
+  opacity: 0.7;
+}
+ol.change-log li.undone .change-text {
+  text-decoration: line-through;
+}
+
+/* M4.9 Rules settings: every config value, grouped by section. */
+.rules-settings {
+  grid-column: 1 / -1;
+}
+.rules-settings .rules-section {
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  padding: 0.35rem 0;
+}
+.rules-settings .rules-section > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.rules-settings .rules-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.5rem 1rem;
+  align-items: start;
+  padding: 0.5rem 0;
+}
+.rules-settings .rules-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.35rem 0.75rem;
+  min-width: 0;
+  align-items: start;
+}
+/* A list of entries (slots, grades, stats) spans the row. */
+.rules-settings .rules-body > .rules-group:has(> .rules-group) {
+  grid-column: 1 / -1;
+}
+.rules-settings .rules-field {
+  display: grid;
+  gap: 0.15rem;
+}
+.rules-settings .rules-field.check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.rules-settings .rules-field input[readonly] {
+  opacity: 0.6;
+}
+.rules-settings .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.rules-settings .rules-group .rules-group {
+  grid-template-columns: 1fr;
+}
+.rules-settings .rules-field input:not([type='checkbox']) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* M5.1 offer builder: menu on the left, the practice log beside it */
+.offer-builder {
+  grid-column: 1 / -1;
+}
+.offer-builder:focus {
+  outline: none;
+}
+.offer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 16px;
+  margin-top: 8px;
+}
+.offer-side {
+  border-left: 1px dashed rgba(90, 127, 184, 0.45);
+  padding-left: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.offer-side h3 {
+  margin-top: 0;
+}
+@media (max-width: 700px) {
+  .offer-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .offer-side {
+    border-left: none;
+    padding-left: 0;
+  }
+}
+.flag-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline dotted;
+  cursor: pointer;
+  text-align: left;
+}
+.offer-builder .due-selections {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+}
+.offer-builder .due-selections label {
+  margin-bottom: 4px;
+}
+.offer-builder .offer-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  column-gap: 8px;
+}
+.offer-builder .offer-row label:last-child {
+  grid-column: 1 / -1;
+}
+.offer-builder .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.offer-builder .offer-practice {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+}
+.offer-builder > label select {
+  max-width: 360px;
+}
+
+/* M5.2 evolution builder */
+.evolution-builder .stat-bonus {
+  grid-column: 1 / -1;
+  margin-bottom: 6px;
+}
+.evolution-builder .stat-bonus[open] {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 8px;
+}
+.evolution-builder .stat-bonus summary {
+  grid-column: 1 / -1;
+  cursor: pointer;
+}
+.evolution-builder .rerate {
+  list-style: none;
+  padding: 0;
+}
+
+/* Marks review (M5.3). */
+.marks-character + .marks-character {
+  border-top: 1px solid var(--border);
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+}
+.marks-list,
+.marks-pairs,
+.marks-entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.marks-list > li {
+  margin: 0.4rem 0;
+}
+.marks-entries {
+  padding-left: 1rem;
+  font-size: 0.9em;
+}
+.marks-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  align-items: center;
+}
+.marks-row > button,
+.marks-row > .muted:last-child {
+  margin-left: auto;
+}
+.marks-row > label {
+  margin-bottom: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+/* A long skill list must not widen a phone-width console (M4.3 at 390px). */
+.marks-row > label select {
+  max-width: 100%;
+}
+.marks-session {
+  max-width: 16rem;
+}
+.marks-repeat {
+  color: #e0b45a;
+}
+.upgrade-prompt {
+  margin: 0.4rem 0;
+}
+.marks-montage {
+  margin: 0.2rem 0 0;
+  font-size: 0.9em;
+}
+/* Merge builder (M5.4). */
+.merge-candidates {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+}
+
+/* GM item library (M6.1) */
+.item-library {
+  grid-column: 1 / -1;
+}
+.item-library h3 {
+  margin: 4px 0 8px;
+  font-size: 1rem;
+}
+.item-bonuses {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 4px 10px;
+}
+.item-bonuses legend {
+  grid-column: 1 / -1;
+}
+.item-bonuses input {
+  width: 100%;
+}
+.item-give {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.item-give input {
+  width: 6em;
+}
+.item-give p {
+  margin: 0 0 10px;
+}
+.item-give button {
+  margin-bottom: 10px;
+}
+.bonus-preview {
+  display: block;
+  min-height: 1.2em;
+  font-size: 0.8rem;
+  font-family: var(--mono);
+}
+
+/* GM loot tables (M6.2) */
+.loot-tables {
+  grid-column: 1 / -1;
+}
+.loot-tables h3 {
+  margin: 4px 0 8px;
+  font-size: 1rem;
+}
+.loot-entries {
+  margin: 8px 0;
+  padding-left: 1.4em;
+}
+.loot-entries li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: flex-end;
+  margin-bottom: 6px;
+}
+.loot-entries input {
+  width: 5em;
+}
+.loot-entries [data-testid='loot-chance'] {
+  min-width: 6em;
+  margin-bottom: 10px;
+}
+.loot-entries button {
+  margin-bottom: 10px;
+}
+.loot-roll {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.loot-roll button {
+  margin-bottom: 10px;
+}
+.loot-recent {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.loot-tables form > label input {
+  max-width: 28em;
+}
+
+/* M6.3 currency window */
+.currency-who {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  border: 0;
+  padding: 0;
+  margin: 0 0 10px;
+}
+.currency-balance {
+  display: inline-flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.currency-balance[aria-pressed='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+  background: rgba(156, 194, 255, 0.14);
+}
+.currency-fields label:first-child input {
+  width: 8em;
+}
+.currency-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+.currency-fields label:last-of-type {
+  flex: 1 1 100%;
+}
+.currency-actions {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+}
+.ledger {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.ledger th,
+.ledger td {
+  text-align: left;
+  padding: 4px 8px 4px 0;
+  border-bottom: 1px solid rgba(156, 194, 255, 0.18);
+  vertical-align: top;
+}
+.ledger-in {
+  color: var(--ok);
+}
+.ledger-out {
+  color: var(--err);
+}
+
+/* M6.4 title library (GM) and the player's Titles row. */
+.title-fields {
+  display: grid;
+  gap: 8px;
+}
+.title-bonuses table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.title-bonuses th,
+.title-bonuses td {
+  padding: 2px 6px 2px 0;
+  text-align: left;
+  vertical-align: top;
+}
+.title-bonuses th[scope='row'] {
+  font-weight: normal;
+}
+.title-bonuses input {
+  width: 6em;
+}
+.title-bonuses .bonus-preview {
+  display: inline;
+  margin-left: 6px;
+}
+.title-award {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.title-award > span {
+  align-self: center;
+}
+.title-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.title-list li + li {
+  margin-top: 4px;
+}
+.title-bonus {
+  color: var(--accent);
+}
+.title-text {
+  display: block;
+  font-size: 0.9em;
+  font-style: italic;
+}
+
+/* GM quest manager (M7.1) */
+.quest-manager .library-tools > span {
+  flex: 1 1 auto;
+  align-self: center;
+  margin-bottom: 10px;
+}
+.quest-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.quest-stability {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.quest-stability form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+.quest-stability form label {
+  flex: 1 1 140px;
+}
+.quest-stability form button {
+  margin-bottom: 10px;
+}
+.stability-offers {
+  margin: 10px 0;
+  padding: 8px 10px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+.stability-offers ul {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+.stability-offers li + li {
+  margin-top: 6px;
+}
+
+/* GM bestiary (M7.2) */
+.bestiary-rank {
+  display: flex;
+  gap: 10px;
+}
+.bestiary-rank label {
+  flex: 1 1 0;
+}
+.bestiary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0 10px;
+}
+.bestiary-stats input {
+  width: 100%;
+}
+
+/* GM encounter panel (M7.3) */
+.encounter {
+  grid-column: 1 / -1;
+}
+.encounter h3 {
+  margin: 4px 0 8px;
+  font-size: 1rem;
+}
+.encounter h4 {
+  margin: 10px 0 4px;
+  font-size: 0.9rem;
+}
+.encounter-pools,
+.encounter-clocks {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.contest-sides {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.contest-side {
+  flex: 1 1 260px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.contest-side label {
+  flex: 1 1 110px;
+}
+.contest-side input,
+.contest-side select {
+  width: 100%;
+}
+.contest-result {
+  font-family: var(--mono);
+}
+.contest-recent {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.pool-fields,
+.clock-new {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: flex-end;
+}
+.pool-fields input,
+.clock-new input[type='number'] {
+  width: 6em;
+}
+.clock-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+.clock-list > li {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(90, 127, 184, 0.35);
+}
+.clock-bar {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+.clock-bar .seg {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+.clock-bar .seg.filled {
+  background: var(--accent);
+}
+.montage-offer {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-top: 6px;
+}
+.montage-open {
+  margin: 6px 0 0;
+}
+
+/* Player contest result pop-up (M7.3) */
+.contest-layer {
+  position: fixed;
+  top: 72px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+  z-index: 11;
+}
+.contest-popup {
+  pointer-events: auto;
+  width: min(420px, 100%);
+  padding: 12px 16px;
+  background: #141c2c;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 0 18px var(--glow);
+  backdrop-filter: blur(6px);
+  overflow-wrap: anywhere;
+}
+.contest-popup h2 {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 1rem;
+  color: var(--accent);
+}
+.contest-popup p {
+  margin: 4px 0;
+}
+.contest-title {
+  font-family: var(--mono);
+}
+.contest-outcome {
+  font-weight: 700;
+}
+.contest-popup.won .contest-outcome {
+  color: var(--ok);
+}
+.contest-popup.lost .contest-outcome {
+  color: var(--err);
+}
+
+/* GM trackers (M7.4) */
+.trackers {
+  grid-column: 1 / -1;
+}
+.trackers > [role='group'] + [role='group'] {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.tracker-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 6px;
+}
+.tracker-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.tracker-list .library-item {
+  flex: 1 1 160px;
+  width: auto;
+}
+.tracker-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0 10px;
+  align-items: end;
+}
+.tracker-form legend {
+  font-weight: 600;
+}
+
+/*
+ * Reduced motion (M8.3): a safety net under every component's own
+ * reduced-motion rule. Nothing animates or transitions anywhere, including
+ * rules added later that forget their own media query; state changes apply
+ * at once.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Import content (M9.3) */
+.import-entries {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+}
+.import-entries li {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(90, 127, 184, 0.25);
+}
+.import-entries label {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+.import-entries input[type='checkbox'] {
+  width: auto;
+  flex: none;
+}
+.import-entries code {
+  opacity: 0.75;
+  font-size: 0.8rem;
 }

@@ -37,3 +37,10 @@ lives in the OS app-data folder (`<userData>/data`). One instance at a time.
   same id and whose notes list the commits since the previous preview
   (`scripts/release-notes.mjs`); a push to `release-dry-run` builds and
   checks the same names without publishing.
+
+## Quit backup and firewall help (M10.1)
+
+Every quit copies the campaign log to
+`<app data>/campaigns/main/backups/<time>-quit/` before closing (D199). The GM
+console's join panel has a folded "Players can't connect?" list with the
+firewall steps for this computer's OS.

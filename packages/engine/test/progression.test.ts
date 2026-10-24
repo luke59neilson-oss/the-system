@@ -3,6 +3,7 @@ import {
   aboveLevelBonus,
   buildDemoEvents,
   previewXpAward,
+  previewXpShares,
   replay,
   type Campaign,
   type XpTrack,
@@ -365,6 +366,24 @@ describe('xp helpers', () => {
         { amount: 90, participants: [{ characterId: 'c1' }], enemyGrade: 'F' },
       ),
     ).toEqual([{ characterId: 'c1', share: 90, bonus: 0, gained: 30 }]);
+    // The scaled share is floored, not rounded (D120): 200 × ⅓ = 66.67 → 66,
+    // and the bonus is reported on the floored 66 (QF.15).
+    expect(shareXp(rules, e, 200, null, 'F')).toBe(66);
+    expect(shareXp(rules, e, 200, 5, 'F')).toBe(66 + 33);
+    expect(
+      splitXp(
+        rules,
+        { c1: e },
+        { amount: 200, participants: [{ characterId: 'c1' }], enemyLevel: 5, enemyGrade: 'F' },
+      ),
+    ).toEqual([{ characterId: 'c1', share: 200, bonus: 33, gained: 99 }]);
+    const [manual] = previewXpShares(rules, { c1: e }, 'class', {
+      amount: 200,
+      shares: [{ characterId: 'c1', share: 200 }],
+      enemyLevel: 5,
+      enemyGrade: 'F',
+    });
+    expect(manual).toMatchObject({ share: 200, bonus: 33, gained: 99 });
   });
 
   it('xpForLevels counts XP already held', () => {
@@ -490,6 +509,27 @@ describe('xp.award command and event', () => {
     expect(c.state?.characters['a']).toMatchObject({ classLevel: 1, xp: { class: 50 } });
     const undone = run([{ type: 'event.undo', eventId: 'y1' }], testContext('u'), c);
     expect(undone.state).toEqual(before.state);
+  });
+
+  it('prices the above-level bonus at the race level stored in the award (M7.3, D71)', () => {
+    const c = run(
+      [
+        award([{ characterId: 'a' }], { amount: 300 }),
+        award([{ characterId: 'a' }], { amount: 100, enemyLevel: 5 }),
+      ],
+      testContext('y'),
+      run(setup()),
+    );
+    // Award 1 has no enemy level, so nothing to price; award 2 records race level 3.
+    const [first, second] = c.events.slice(-2);
+    expect(first?.payload).toMatchObject({ shares: [{ characterId: 'a', share: 300 }] });
+    expect((first?.payload as { shares: object[] }).shares[0]).not.toHaveProperty('raceLevel');
+    expect(second?.payload).toMatchObject({ shares: [{ characterId: 'a', raceLevel: 3 }] });
+    // 100 + 20% (two levels above race level 3) = 120: level 4, the G-grade top (the rest is lost).
+    expect(c.state?.characters['a']).toMatchObject({ classLevel: 4, xp: { class: 0 } });
+    // Undoing award 1 keeps award 2 at 120 (re-derived at race level 0 it would be 150).
+    const undone = run([{ type: 'event.undo', eventId: 'y1' }], testContext('u'), c);
+    expect(undone.state?.characters['a']).toMatchObject({ classLevel: 1, xp: { class: 20 } });
   });
 });
 

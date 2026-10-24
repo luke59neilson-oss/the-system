@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 21,
+  "schemaVersion": 32,
   "name": "Golden: entities",
   "rules": {
     "configVersion": 1,
@@ -245,7 +245,9 @@
       },
       "maxMarksPerSkillPerSession": 1,
       "marksCarryOver": false,
+      "marksResetOnUpgrade": false,
       "libraryByRarity": false,
+      "handTextSurvivesUpgrade": false,
       "merge": {
         "requiredJointUses": 3,
         "minRarity": "uncommon",
@@ -439,7 +441,7 @@
           "flavor": null
         },
         {
-          "name": "Archer\u2019s Eye",
+          "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -545,7 +547,7 @@
           "flavor": null
         },
         {
-          "name": "Archer\u2019s Eye",
+          "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -575,8 +577,15 @@
   },
   "characterOrder": ["jake", "kim"],
   "broadcasts": [],
+  "scheduledBroadcasts": [],
   "items": {},
   "itemOrder": [],
+  "lootTables": {},
+  "lootTableOrder": [],
+  "lootLog": [],
+  "ledger": [],
+  "titleLibrary": {},
+  "titleLibraryOrder": [],
   "skillLibrary": {},
   "skillLibraryOrder": [],
   "classLibrary": {},
@@ -611,12 +620,14 @@
         },
         {
           "minRarity": "rare",
-          "text": "[The Host\u2019s Response]"
+          "text": "[The Host’s Response]"
         }
       ],
-      "knownBy": ["jake", "kim"],
       "grade": null,
       "level": null,
+      "stats": null,
+      "notes": "",
+      "knownBy": ["jake", "kim"],
       "createdAt": "2026-12-03T18:00:03.000Z"
     },
     "drum": {
@@ -629,15 +640,29 @@
           "text": "[The Heart]"
         }
       ],
-      "knownBy": [],
       "grade": null,
       "level": null,
+      "stats": null,
+      "notes": "",
+      "knownBy": [],
       "createdAt": "2026-12-03T18:00:06.000Z"
     }
   },
   "entityOrder": ["curse", "drum"],
   "montages": {},
   "montageOrder": [],
+  "contests": {},
+  "contestOrder": [],
+  "hunger": {
+    "enabled": false,
+    "steps": ["Fed", "Peckish", "Hungry", "Famished", "Starving"],
+    "levels": {}
+  },
+  "regions": {},
+  "regionOrder": [],
+  "currentRegion": null,
+  "factions": {},
+  "factionOrder": [],
   "day": 1,
   "sessions": [],
   "currentSession": null

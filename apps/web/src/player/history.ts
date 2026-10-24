@@ -11,22 +11,33 @@ export type HistoryFilter =
   'dings' | 'all' | 'class' | 'profession' | 'race' | 'freePoints' | 'broadcast' | 'items';
 
 export const HISTORY_FILTERS: readonly { id: HistoryFilter; label: string }[] = [
-  { id: 'dings', label: 'Level-ups' },
+  { id: 'dings', label: 'Level-ups and upgrades' },
   { id: 'all', label: 'Everything' },
   { id: 'class', label: 'Class' },
   { id: 'profession', label: 'Profession' },
   { id: 'race', label: 'Race' },
   { id: 'freePoints', label: 'Free points' },
   { id: 'broadcast', label: 'System messages' },
-  { id: 'items', label: 'Gifts and trades' },
+  { id: 'items', label: 'Items and currency' },
 ];
+
+/** A DING: a level-up, a profession taken, a skill upgrade or a merge. */
+export function isDing(n: LiveNotification): boolean {
+  return (
+    n.kind === 'level' ||
+    n.kind === 'profession' ||
+    n.kind === 'skillUpgrade' ||
+    n.kind === 'skillMerge' ||
+    n.kind === 'title'
+  );
+}
 
 export function matchesFilter(n: LiveNotification, filter: HistoryFilter): boolean {
   switch (filter) {
     case 'all':
       return true;
     case 'dings':
-      return n.kind === 'level' || n.kind === 'profession';
+      return isDing(n);
     case 'profession':
       return n.kind === 'profession' || (n.kind === 'level' && n.track === filter);
     case 'class':
@@ -37,7 +48,9 @@ export function matchesFilter(n: LiveNotification, filter: HistoryFilter): boole
     case 'broadcast':
       return n.kind === 'broadcast' || n.kind === 'hiddenQuest';
     case 'items':
-      return n.kind === 'gift' || n.kind === 'trade';
+      return (
+        n.kind === 'gift' || n.kind === 'itemsTaken' || n.kind === 'trade' || n.kind === 'currency'
+      );
   }
 }
 
@@ -112,6 +125,30 @@ export function readSound(storage: KeyValueStore | null): boolean {
 export function writeSound(storage: KeyValueStore | null, on: boolean): void {
   try {
     storage?.setItem(SOUND_KEY, on ? 'on' : 'off');
+  } catch {
+    // Blocked storage: the choice lasts for this page only.
+  }
+}
+
+export const VOLUME_KEY = 'the-system:volume';
+/** Default volume (0–100) when this browser never chose one. */
+export const DEFAULT_VOLUME = 70;
+
+/** This browser's sound volume, 0–100 in steps of 10. Never throws. */
+export function readVolume(storage: KeyValueStore | null): number {
+  try {
+    const raw = storage?.getItem(VOLUME_KEY);
+    const v = raw == null || raw.trim() === '' ? NaN : Number(raw);
+    if (!Number.isFinite(v)) return DEFAULT_VOLUME;
+    return Math.min(100, Math.max(0, Math.round(v / 10) * 10));
+  } catch {
+    return DEFAULT_VOLUME;
+  }
+}
+
+export function writeVolume(storage: KeyValueStore | null, volume: number): void {
+  try {
+    storage?.setItem(VOLUME_KEY, String(volume));
   } catch {
     // Blocked storage: the choice lasts for this page only.
   }

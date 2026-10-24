@@ -1,0 +1,32 @@
+{
+  "format": "the-system/content",
+  "version": 1,
+  "title": "Rake Canyons loot and titles",
+  "items": [
+    {
+      "name": "Pale Hide Bracers",
+      "rarity": "uncommon",
+      "description": "Stiff, chalk-white leather cut from a pale hunter.",
+      "slot": "bracers",
+      "bonuses": [
+        { "stat": "toughness", "flat": 2 },
+        { "stat": "agility", "flat": 1 }
+      ]
+    },
+    {
+      "name": "Canyon Salt",
+      "rarity": "common",
+      "description": "Crystals scraped from the old scar walls. Traders like it."
+    }
+  ],
+  "titles": [
+    {
+      "name": "Rapid Spread",
+      "text": "You have propagated through the Host faster than any before you.",
+      "bonuses": [
+        { "stat": "agility", "percent": 5 },
+        { "stat": "endurance", "percent": 5, "flat": 2 }
+      ]
+    }
+  ]
+}

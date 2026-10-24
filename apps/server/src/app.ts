@@ -6,6 +6,7 @@ import { newGmKey } from './security';
 import { createServer } from './server';
 import { exportsDirFor } from './sessionLog';
 import { CampaignStore } from './store';
+import { migrateOnLoad } from './migrate';
 
 /**
  * Starts the whole server: opens the real campaign, builds the app and
@@ -23,7 +24,21 @@ export interface StartOptions {
   machineId?: string | undefined;
   /** Session log autosave interval (M2.4); 5 minutes when omitted. */
   sessionLogIntervalMs?: number | undefined;
+  /**
+   * M10.1: when set, closing backs up the real campaign (never the demo) to
+   * `backups/<stamp>-<label>/` first, if it has any events. The desktop app
+   * passes "quit".
+   */
+  backupOnClose?: string | undefined;
+  /** OS shown in the join help (M10.1); `process.platform` when omitted. */
+  platform?: string | undefined;
 }
+
+/**
+ * How long close() waits for the listener before backing up and closing the
+ * campaign anyway; under the desktop's 5 s quit guard.
+ */
+export const CLOSE_GRACE_MS = 3_000;
 
 export interface RunningApp {
   port: number;
@@ -34,6 +49,14 @@ export interface RunningApp {
   join: () => JoinInfo;
   /** Folder the running session logs are written to (M2.4). */
   exportsDir: string;
+  /**
+   * Backs the campaign up now under the `backupOnClose` label, without
+   * closing it; a no-op when that option is off, the campaign is empty, or
+   * nothing was appended since the last such backup (M10.A review: the
+   * desktop calls it when the quit question opens, because an installer's
+   * forced kill can follow the polite close before anyone answers).
+   */
+  backup: () => void;
   /** Closes the listener and every open campaign (writing the session logs once more). */
   close: () => Promise<void>;
 }
@@ -44,18 +67,35 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
     now: () => new Date().toISOString(),
     ...(options.machineId === undefined ? {} : { machineId: options.machineId }),
   };
-  const store = CampaignStore.open('main', storeOptions);
+  // Stored campaigns pick up rules migrations as they load (MR.3).
+  const open = (id: string) =>
+    migrateOnLoad(CampaignStore.open(id, storeOptions), storeOptions.now, () => randomUUID());
+  const store = open('main');
   const exportsDir = exportsDirFor(storeOptions.dataDir);
   const gmKey = options.gmKey ?? newGmKey();
-  let boundPort: number | null = null;
+  const platform = options.platform ?? process.platform;
+  // QF.18: the port comes from the live socket, not from a variable set after
+  // listen() resolves, so a request that arrives in between (a GM console
+  // reconnecting the moment a restarted server accepts) never gets a 503.
+  let listening: { address(): unknown } | null = null;
+  const livePort = (): number | null => {
+    const address = listening?.address();
+    return typeof address === 'object' && address !== null && 'port' in address
+      ? Number((address as { port: unknown }).port)
+      : null;
+  };
   try {
     const app = await createServer({
       // Re-read interfaces per request so joining a new wifi shows up without a restart.
-      joinInfo: () =>
-        boundPort === null ? null : joinInfo(options.host, boundPort, networkInterfaces()),
+      joinInfo: () => {
+        const port = livePort();
+        return port === null
+          ? null
+          : { ...joinInfo(options.host, port, networkInterfaces()), platform };
+      },
       webRoot: options.webRoot,
       // The demo campaign lives in its own directory (MS.4, D53).
-      openCampaign: (id) => CampaignStore.open(id, storeOptions),
+      openCampaign: open,
       sessionLog: {
         exportsDir,
         now: storeOptions.now,
@@ -65,6 +105,7 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
       },
       live: { store, gmKey, now: () => new Date().toISOString(), newId: () => randomUUID() },
     });
+    listening = app.server;
     try {
       await app.listen({ port: options.port, host: options.host });
     } catch (error) {
@@ -73,16 +114,41 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
     }
     const address = app.server.address();
     const port = typeof address === 'object' && address ? address.port : options.port;
-    boundPort = port;
     let closing: Promise<void> | null = null;
+    // Event count at the last backup this app made, so asking to quit and
+    // then quitting leaves one copy, not two.
+    let backedUpAt = -1;
+    const backup = () => {
+      const count = store.campaign.events.length;
+      if (options.backupOnClose === undefined || count === 0 || count === backedUpAt) return;
+      try {
+        store.backup(options.backupOnClose);
+        backedUpAt = count;
+      } catch (error) {
+        // A failed copy must never stop the campaign closing cleanly.
+        console.error('The System: backup failed:', error);
+      }
+    };
     return {
       port,
       gmKey,
       exportsDir,
       generatedKey: options.gmKey === undefined,
       join: () => joinInfo(options.host, port, networkInterfaces()),
+      backup: () => {
+        if (closing === null) backup();
+      },
       close: () => {
-        closing ??= app.close().finally(() => store.close());
+        // A listener that never finishes closing must not cost the backup or
+        // the campaign close: give it CLOSE_GRACE_MS, then carry on (M10.1 review).
+        closing ??= Promise.race([
+          app.close(),
+          new Promise<void>((resolve) => setTimeout(resolve, CLOSE_GRACE_MS).unref()),
+        ]).finally(() => {
+          // The listener is closed (or the grace ran out): take the last copy.
+          backup();
+          store.close();
+        });
         return closing;
       },
     };

@@ -1,4 +1,5 @@
-import { raceLevel, type Character } from '../character';
+import { raceLevel, type Character, type CharacterSkill } from '../character';
+import type { SelectionRecord } from '../evolution/model';
 import type { DomainEvent } from '../events/envelope';
 import type { Campaign } from '../events/log';
 import { applyEvent, type CampaignState } from '../events/reducer';
@@ -29,6 +30,7 @@ export type SessionLogKind =
   | 'quest'
   | 'stability'
   | 'day'
+  | 'rules'
   | 'session'
   | 'undo';
 
@@ -64,6 +66,38 @@ export interface SessionLogNote {
   readonly updatedAt: string;
 }
 
+/** One skill on a party sheet, as the report gives it to Claude. */
+export interface SessionLogSkill {
+  /** Exact name (copy it as written when drafting a transform or a re-rate). */
+  readonly name: string;
+  readonly rarity: string;
+  readonly kind: CharacterSkill['kind'];
+  readonly marks: number;
+  readonly nickname: string | null;
+}
+
+/**
+ * A character's sheet as it stands at the end of the log (M9.A review): what
+ * Claude needs to draft the next menu or evolution without guessing names.
+ */
+export interface SessionLogCharacter {
+  readonly name: string;
+  readonly race: string;
+  readonly raceLevel: number;
+  /** Grade id (G, F, ...). */
+  readonly grade: string;
+  readonly className: string;
+  readonly classLevel: number;
+  readonly profession: string | null;
+  readonly professionLevel: number | null;
+  readonly titles: readonly string[];
+  readonly skills: readonly SessionLogSkill[];
+  /** Menus offered and not chosen yet, with their options (rarity names). */
+  readonly openMenus: readonly { readonly level: number; readonly options: readonly string[] }[];
+  /** Class names of an evolution released and not chosen yet; null for none. */
+  readonly evolution: readonly string[] | null;
+}
+
 export interface SessionLog {
   readonly campaignName: string;
   /** First event index covered. */
@@ -74,6 +108,8 @@ export interface SessionLog {
   readonly entries: readonly SessionLogEntry[];
   readonly practice: readonly SessionLogPractice[];
   readonly notes: readonly SessionLogNote[];
+  /** Every character's sheet at the end of the log, in party order. */
+  readonly party: readonly SessionLogCharacter[];
 }
 
 /** The tag a GM puts on a GM note to include it in session logs and reports. */
@@ -158,7 +194,7 @@ function levelLines(before: CampaignState | null, after: CampaignState): string[
 }
 
 /** Log lines for one counted event, given the state before and after it. */
-function describe(
+export function describeEvent(
   before: CampaignState | null,
   after: CampaignState,
   event: DomainEvent,
@@ -246,7 +282,13 @@ function describe(
         : offered
           ? ', no profession for now'
           : '';
-      add('evolution', `${who(id)} evolved into ${line(now.className)}${grade}${prof}`);
+      // A merge offered as part of the evolution (M5.2) is a notable event too.
+      const chosen = was?.evolution?.options.find((o) => o.id === event.payload.optionId);
+      const merged = (chosen?.transforms ?? [])
+        .filter((t) => t.merge !== undefined)
+        .map((t) => `, merged ${line(t.skill)} + ${line(t.merge ?? '')} into ${line(t.name)}`)
+        .join('');
+      add('evolution', `${who(id)} evolved into ${line(now.className)}${grade}${prof}${merged}`);
       break;
     }
     case 'skill.upgraded': {
@@ -280,6 +322,14 @@ function describe(
         `${who(event.payload.characterId)} gave ${who(event.payload.to)}: ${bundleText(after, event.payload.bundle)}`,
       );
       break;
+    case 'loot.rolled': {
+      const roll = after.lootLog.find((r) => r.id === event.id);
+      if (roll) {
+        const to = roll.characterId === null ? '' : ` for ${who(roll.characterId)}`;
+        add('item', `GM rolled ${line(roll.tableName)}${to}: ${bundleText(after, roll.bundle)}`);
+      }
+      break;
+    }
     case 'holdings.adjusted': {
       const p = event.payload;
       const reason = p.reason ? ` (${line(p.reason)})` : '';
@@ -303,6 +353,20 @@ function describe(
       const to = event.payload.characterIds;
       const audience = to === null ? 'everyone' : to.map((id) => who(id)).join(', ');
       add('broadcast', `System message to ${audience}: ${line(event.payload.text)}`);
+      break;
+    }
+    case 'broadcast.scheduled': {
+      const to = event.payload.characterIds;
+      const audience = to === null ? 'everyone' : to.map((id) => who(id)).join(', ');
+      add(
+        'broadcast',
+        `System message scheduled for day ${event.payload.day} to ${audience}: ${line(event.payload.text)}`,
+      );
+      break;
+    }
+    case 'broadcast.unscheduled': {
+      const b = before?.scheduledBroadcasts.find((x) => x.id === event.payload.id);
+      add('broadcast', `Scheduled System message cancelled${b ? `: ${line(b.text)}` : ''}`);
       break;
     }
     case 'quest.created': {
@@ -340,9 +404,28 @@ function describe(
       add('stability', `World Stability (${line(q.title)}): ${from} → ${to} (${how}${reason})`);
       break;
     }
-    case 'campaign.dayAdvanced':
-      add('day', `Day ${before?.day ?? after.day - event.payload.days} → ${after.day}`);
+    case 'rules.migrated': {
+      // MR.3 (L16, D153): logged like any change, with the banked XP it cleared.
+      const cleared = event.payload.banked.map(
+        (x) => `${who(x.characterId)} ${x.xp} ${x.track} XP`,
+      );
+      add(
+        'rules',
+        `Rules updated: XP now overflows (DESIGN §2)${cleared.length ? `; banked XP re-applied under overflow: ${cleared.join(', ')}` : ''}`,
+      );
       break;
+    }
+    case 'campaign.dayAdvanced': {
+      add('day', `Day ${before?.day ?? after.day - event.payload.days} → ${after.day}`);
+      for (const b of after.broadcasts.slice(
+        before?.broadcasts.length ?? after.broadcasts.length,
+      )) {
+        const to = b.characterIds;
+        const audience = to === null ? 'everyone' : to.map((id) => who(id)).join(', ');
+        add('broadcast', `Scheduled System message to ${audience}: ${line(b.text)}`);
+      }
+      break;
+    }
     case 'session.started':
     case 'session.ended': {
       const s = after.sessions.find((x) => x.id === event.payload.sessionId);
@@ -452,7 +535,7 @@ export function buildSessionLog(
     if (has(campaign.undone, event.id)) continue;
     const after = applyEvent(state, event);
     if (seq >= start) {
-      for (const e of describe(state, after, event)) {
+      for (const e of describeEvent(state, after, event)) {
         entries.push({ seq, at: event.timestamp, ...e });
       }
       if (event.type === 'practice.logged') practiceIds.add(event.id);
@@ -501,7 +584,97 @@ export function buildSessionLog(
     entries,
     practice,
     notes,
+    party: final ? partySheets(final) : [],
   };
+}
+
+function partySheets(state: CampaignState): SessionLogCharacter[] {
+  return state.characterOrder.flatMap((id) => {
+    const c = has(state.characters, id) ? state.characters[id] : undefined;
+    if (!c) return [];
+    const withheld = (r: SelectionRecord) => new Set(r.withdrawn ?? []);
+    return [
+      {
+        name: c.name,
+        race: c.race,
+        raceLevel: raceLevel(state.rules, c),
+        grade: c.grade,
+        className: c.className,
+        classLevel: c.classLevel,
+        profession: c.profession,
+        professionLevel: c.profession === null ? null : c.professionLevel,
+        titles: [...c.titles],
+        skills: c.skills.map((k) => ({
+          name: k.name,
+          rarity: rarityName(state, k.rarity),
+          kind: k.kind,
+          marks: k.marks,
+          nickname: k.nickname,
+        })),
+        openMenus: c.selections
+          .filter((r) => r.chosen === null)
+          .map((r) => ({
+            level: r.level,
+            options: r.options
+              .filter((o) => !withheld(r).has(o.name))
+              .map((o) => `${o.name} (${rarityName(state, o.rarity)})`),
+          })),
+        evolution: c.evolution ? c.evolution.options.map((o) => o.className) : null,
+      },
+    ];
+  });
+}
+
+/** `[Basic Archery (Inferior)]`, then marks and a nickname when it has them. */
+function skillText(k: SessionLogSkill): string {
+  const marks = k.marks > 0 ? ` ${k.marks} mark${k.marks === 1 ? '' : 's'}` : '';
+  const nick = k.nickname ? ` nickname "${line(k.nickname)}"` : '';
+  return `[${line(k.name)} (${k.rarity})]${marks}${nick}`;
+}
+
+function renderParty(party: readonly SessionLogCharacter[], out: string[]): void {
+  out.push('## Party');
+  out.push('');
+  if (party.length === 0) {
+    out.push('No characters yet.');
+    out.push('');
+  } else {
+    out.push(
+      "Sheets as they stand at the end of this log. A skill's name is the text in brackets before its rarity; copy it exactly when drafting content.",
+    );
+    out.push('');
+  }
+  for (const c of party) {
+    out.push(`### ${line(c.name)}`);
+    out.push('');
+    out.push(`- Race: [${line(c.race)} (${c.grade}) – lvl ${c.raceLevel}]`);
+    out.push(`- Class: [${line(c.className)} – lvl ${c.classLevel}]`);
+    out.push(
+      c.profession === null
+        ? '- Profession: none'
+        : `- Profession: [${line(c.profession)} – lvl ${c.professionLevel ?? 0}]`,
+    );
+    out.push(
+      `- Titles: ${c.titles.length ? c.titles.map((t) => `[${line(t)}]`).join(', ') : 'none'}`,
+    );
+    for (const kind of ['class', 'profession', 'race'] as const) {
+      const skills = c.skills.filter((k) => k.kind === kind);
+      if (skills.length === 0) continue;
+      const head = kind.charAt(0).toUpperCase() + kind.slice(1);
+      out.push(`- ${head} skills: ${skills.map(skillText).join(', ')}`);
+    }
+    for (const m of c.openMenus) {
+      out.push(
+        `- Skill menu at level ${m.level}, not chosen yet: ${m.options.map((o) => `[${line(o)}]`).join(', ')}`,
+      );
+    }
+    if (c.evolution) {
+      out.push(
+        `- Evolution released, not chosen yet: ${c.evolution.map((o) => `[${line(o)}]`).join(', ')}`,
+      );
+    }
+    out.push('');
+  }
 }
 
 /** `2026-10-21T19:02:03.000Z` → `19:02:03`. */
@@ -591,6 +764,7 @@ export function renderSessionLog(
     '- Times are UTC. Unshared journal entries and GM notes not tagged "export" are left out.',
   );
   out.push('');
+  renderParty(log.party, out);
   out.push('## Timeline');
   out.push('');
   if (log.entries.length === 0) out.push('Nothing notable yet.');

@@ -21,6 +21,14 @@ const skillFlavor = z.string().max(1000);
 /** A portrait file name the server stored (M4.4); the bytes never enter the log. */
 const portraitRef = z.string().regex(PORTRAIT_REF, 'must be a stored portrait file name');
 const statValues = z.record(z.string().min(1), z.number().int().nonnegative());
+/** One side of a shared contest (M7.3). */
+const contestSide = z.strictObject({
+  label: z.string().trim().min(1).max(80),
+  value: z.number().nonnegative().max(1_000_000_000),
+  grade: z.string().min(1).max(40),
+  characterIds: z.array(z.string().min(1).max(100)).max(20),
+  stat: z.string().min(1).max(100).nullable(),
+});
 /** A party in a gift or trade: a character id, or null for the GM. */
 const party = recordId.nullable();
 const itemCount = z.number().int().positive().max(1_000_000);
@@ -39,6 +47,35 @@ const itemFields = {
   description: z.string().trim().max(2000),
   slot: recordId.nullable(),
   bonuses: z.array(statBonus).max(30),
+};
+/** Title library fields (M6.4): System text and percentage (optionally flat) bonuses. */
+const titleDefFields = {
+  name: nonBlank.max(80),
+  text: z.string().trim().max(2000),
+  bonuses: z.array(statBonus).max(30),
+};
+/** Loot table fields (M6.2). Weights are relative; counts per pick run min..max. */
+const lootWeight = z.number().int().min(1).max(1_000_000);
+const lootEntry = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('item'),
+    itemId: recordId,
+    weight: lootWeight,
+    min: z.number().int().min(1).max(1_000_000),
+    max: z.number().int().min(1).max(1_000_000),
+  }),
+  z.strictObject({
+    kind: z.literal('currency'),
+    weight: lootWeight,
+    min: z.number().int().nonnegative().max(1_000_000_000),
+    max: z.number().int().nonnegative().max(1_000_000_000),
+  }),
+  z.strictObject({ kind: z.literal('nothing'), weight: lootWeight }),
+]);
+const lootTableFields = {
+  name: nonBlank,
+  rolls: z.number().int().min(1).max(20),
+  entries: z.array(lootEntry).min(1).max(50),
 };
 /** Skill library entry fields (M4.1). Text is trimmed; blank means none. */
 const skillDefFields = {
@@ -70,6 +107,12 @@ const stabilityRules = z.record(
 const questText = z.string().trim().max(5000);
 const questDays = z.number().int().min(1).max(10_000).nullable();
 const entityLevel = z.number().int().min(0).max(10_000);
+/** M7.2: a bestiary entry's stats (stat id → whole value). */
+const entityStats = z.record(z.string().min(1).max(40), z.number().int().min(0).max(1_000_000));
+const entityNotes = z.string().max(4000);
+/** M7.4: a faction's head count and its standing toward the party, in the GM's words. */
+const factionMembers = z.number().int().min(0).max(1_000_000_000);
+const factionStanding = z.string().trim().max(60);
 const questNoticeTo = z.array(recordId).max(200).nullable();
 /** Identify tiers (M3.9, DESIGN §7): one text per minimum Identify rarity. */
 const identifyTiers = z
@@ -119,8 +162,19 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   'character.professionGranted': z.strictObject({ characterId: recordId, profession: nonBlank }),
   /** The player takes one of their offered professions later (MQ.6; the Professions tab). */
   'profession.chosen': z.strictObject({ characterId: recordId, profession: nonBlank }),
+  /** GM withdraws an untaken profession offer (M5.2, MQ.6 review). */
+  'profession.offerWithdrawn': z.strictObject({ characterId: recordId, profession: nonBlank }),
   /** GM awards a title by name (M1.15; the title library, bonuses and System text are M6.4). */
   'title.awarded': z.strictObject({ characterId: recordId, title: nonBlank.max(80) }),
+  /** GM adds a title to the title library (M6.4). */
+  'titleDef.defined': z.strictObject({ id: recordId, ...titleDefFields }),
+  /** GM edits a library title; omitted fields stay. Every holder follows the entry. */
+  'titleDef.edited': z.strictObject({
+    titleDefId: recordId,
+    name: titleDefFields.name.optional(),
+    text: titleDefFields.text.optional(),
+    bonuses: titleDefFields.bonuses.optional(),
+  }),
   /** GM sets current pool values; each must be within 0..max (D31). */
   'character.poolsSet': z.strictObject({
     characterId: recordId,
@@ -137,7 +191,18 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     track: z.enum(['class', 'profession']),
     amount: z.number().int().nonnegative().max(100_000_000),
     shares: z
-      .array(z.strictObject({ characterId: recordId, share: z.number().int().nonnegative() }))
+      .array(
+        z.strictObject({
+          characterId: recordId,
+          share: z.number().int().nonnegative(),
+          /**
+           * The character's race level when the award was made (M7.3, D71 gap a):
+           * the above-level bonus is priced at it, so undoing an earlier award
+           * cannot re-price this one. Absent in older events (priced at fold time).
+           */
+          raceLevel: z.number().int().nonnegative().max(10_000).optional(),
+        }),
+      )
       .min(1),
     enemyLevel: z.number().int().nonnegative().max(10_000).nullable(),
     /** Target's grade for the grade-gap XP factor (MQ.10); absent in older events. */
@@ -171,6 +236,22 @@ export const EVENT_PAYLOAD_SCHEMAS = {
       .refine((t) => t.length <= 2000, 'must be at most 2000 characters'),
     characterIds: z.array(recordId).min(1).nullable(),
   }),
+  /**
+   * GM schedules a System broadcast for a later in-game day (M4.7, D159): it
+   * is sent when the day counter reaches `day`. GM-only until then.
+   */
+  'broadcast.scheduled': z.strictObject({
+    id: recordId,
+    text: z
+      .string()
+      .trim()
+      .min(1, 'must not be blank')
+      .refine((t) => t.length <= 2000, 'must be at most 2000 characters'),
+    characterIds: z.array(recordId).min(1).nullable(),
+    day: z.number().int().min(2).max(100000),
+  }),
+  /** GM cancels a scheduled broadcast before it is sent (M4.7). */
+  'broadcast.unscheduled': z.strictObject({ id: recordId }),
   /** GM adds an item definition to the campaign library (M1.7). */
   'item.defined': z.strictObject({ id: recordId, ...itemFields }),
   /** GM edits a definition (rarity edits etc.); every copy changes. Omitted fields stay. */
@@ -181,6 +262,35 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     description: itemFields.description.optional(),
     slot: itemFields.slot.optional(),
     bonuses: itemFields.bonuses.optional(),
+  }),
+  /** GM adds a loot table (M6.2). */
+  'lootTable.defined': z.strictObject({ id: recordId, ...lootTableFields }),
+  /** GM edits a loot table; omitted fields stay. Past rolls keep what they gave. */
+  'lootTable.edited': z.strictObject({
+    tableId: recordId,
+    name: lootTableFields.name.optional(),
+    rolls: lootTableFields.rolls.optional(),
+    entries: lootTableFields.entries.optional(),
+  }),
+  /**
+   * GM rolls a loot table (M6.2): the picks the random source made and what
+   * they give, so replay never rolls again. The reducer refuses a roll whose
+   * picks no longer give `bundle` (an undone table edit cannot rewrite a past
+   * roll). With a character, `bundle` goes to them as a GM gift.
+   */
+  'loot.rolled': z.strictObject({
+    tableId: recordId,
+    characterId: party,
+    bundle,
+    picks: z
+      .array(
+        z.strictObject({
+          entry: z.number().int().nonnegative().max(49),
+          count: z.number().int().nonnegative().max(1_000_000_000),
+        }),
+      )
+      .min(1)
+      .max(20),
   }),
   /** GM gives or takes currency and items (signed deltas); nothing may go negative. */
   'holdings.adjusted': z.strictObject({
@@ -231,6 +341,17 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     tags: z.array(nonBlank).max(20),
     source: z.enum(['gm', 'player', 'montage']),
   }),
+  /** The GM corrects a practice entry (M5.5); omitted fields stay. Marks it reviewed. */
+  'practice.edited': z.strictObject({
+    entryId: recordId,
+    action: nonBlank.optional(),
+    skills: z.array(nonBlank).max(10).optional(),
+    stat: recordId.nullable().optional(),
+  }),
+  /** The GM removes a practice entry (M5.5); montage focuses cannot be removed. */
+  'practice.removed': z.strictObject({ entryId: recordId }),
+  /** The GM marks practice entries reviewed (M5.5). */
+  'practice.reviewed': z.strictObject({ entryIds: z.array(recordId).min(1).max(500) }),
   /** A note; `characterId` is the author as the actor acts (null = the GM). */
   'note.created': z.strictObject({
     noteId: recordId,
@@ -263,6 +384,11 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     skill: nonBlank,
     description: skillDescription.nullable(),
     flavor: skillFlavor.nullable(),
+  }),
+  /** GM hands a hand-written skill copy back to the library entry for its name and rarity (MR.4). */
+  'skill.libraryTextUsed': z.strictObject({
+    characterId: recordId,
+    skill: nonBlank,
   }),
   /** GM sets or clears a skill's Unique tag. */
   'skill.uniqueSet': z.strictObject({
@@ -373,7 +499,15 @@ export const EVENT_PAYLOAD_SCHEMAS = {
           className: nonBlank,
           description: z.string().trim().max(2000),
           transforms: z
-            .array(z.strictObject({ skill: nonBlank, name: nonBlank, rarity: recordId }))
+            .array(
+              z.strictObject({
+                skill: nonBlank,
+                name: nonBlank,
+                rarity: recordId,
+                /** A second skill merged in and consumed (M5.2); optional, additive. */
+                merge: nonBlank.optional(),
+              }),
+            )
             .max(10),
           classWeights: statValues.nullable(),
           /** One-time stat bonus on choosing this option (MQ.1, D98; v2). */
@@ -383,6 +517,14 @@ export const EVENT_PAYLOAD_SCHEMAS = {
       .min(1)
       .max(10),
     professions: z.array(nonBlank).max(10),
+    /**
+     * Each kept skill's rarity after the evolution (MR.1, DESIGN §6); absent in
+     * releases stored before MR.1, which re-rate nothing.
+     */
+    rerate: z
+      .array(z.strictObject({ skill: nonBlank, rarity: recordId }))
+      .max(200)
+      .optional(),
     /** Upcast from v1: released under the old rules (no pending-selection gate). */
     legacy: z.literal(true).optional(),
   }),
@@ -408,7 +550,10 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     result: z.enum(['success', 'failure']),
     amount: z.number().int().min(1).max(24),
   }),
-  'clock.removed': z.strictObject({ clockId: recordId }),
+  // v2 (M7.A): removing a clock closes its open montages; a v1 event keeps
+  // the old meaning on replay (`legacy`), so logs where a focus or close
+  // followed the removal still load.
+  'clock.removed': z.strictObject({ clockId: recordId, legacy: z.literal(true).optional() }),
   /** GM offers a montage on a clock that qualifies (M3.11, DESIGN §7). */
   'montage.offered': z.strictObject({
     montageId: recordId,
@@ -426,6 +571,27 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   }),
   /** GM closes a montage (narrated, cost added); no more focuses. */
   'montage.closed': z.strictObject({ montageId: recordId }),
+  /**
+   * GM shares a contest roll with the table (M7.3, DESIGN §7). The roll was
+   * made on the GM's screen; the result is derived from it on apply. The
+   * characters on either side get a result pop-up.
+   */
+  'contest.shared': z.strictObject({
+    contestId: recordId,
+    a: contestSide,
+    b: contestSide,
+    mode: z.enum(['none', 'multiplier', 'lowerGradeFraction', 'gradeWalls']),
+    roll: z.number().min(0).lt(1).nullable(),
+    /**
+     * The outcome as the table saw it, settled under the rules when shared, so
+     * a later rules change or undo cannot flip a result players already saw.
+     */
+    yours: z.number().nonnegative(),
+    theirs: z.number().nonnegative(),
+    chance: z.number().min(0).max(1),
+    walled: z.boolean(),
+    success: z.boolean(),
+  }),
   /** GM creates a quest (M1.12, DESIGN §7), optionally with a day timer and World Stability. */
   'quest.created': z.strictObject({
     questId: recordId,
@@ -489,6 +655,10 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     /** MQ.8: grade id and level for the Identify range; absent (older logs) = none. */
     grade: recordId.nullable().optional(),
     level: entityLevel.nullable().optional(),
+    /** M7.2 bestiary (GM-only): stat values, or null; absent (older logs) = none. */
+    stats: entityStats.nullable().optional(),
+    /** M7.2 bestiary (GM-only) notes; absent (older logs) = "". */
+    notes: entityNotes.optional(),
   }),
   /** GM edits an entity; omitted fields stay. */
   'entity.edited': z.strictObject({
@@ -498,14 +668,80 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     tiers: identifyTiers.optional(),
     grade: recordId.nullable().optional(),
     level: entityLevel.nullable().optional(),
+    stats: entityStats.nullable().optional(),
+    notes: entityNotes.optional(),
   }),
   /** These characters now know the entity and can Identify it. */
   'entity.revealed': z.strictObject({
     entityId: recordId,
     characterIds: z.array(recordId).min(1).max(200),
   }),
+  /**
+   * M7.4 hunger tracker (DESIGN §7): the GM turns it on or off for the
+   * campaign and may rename its steps (lowest first).
+   */
+  'hunger.configured': z.strictObject({
+    enabled: z.boolean(),
+    steps: z.array(z.string().trim().min(1).max(40)).max(12),
+  }),
+  /** M7.4: these characters' hunger steps are now these (absolute, so a replay agrees). */
+  'hunger.levelsSet': z.strictObject({
+    levels: z.record(recordId, z.number().int().min(0).max(11)),
+  }),
+  /** M7.4: GM adds a region (DESIGN §8). */
+  'region.defined': z.strictObject({
+    regionId: recordId,
+    name: nonBlank,
+    notes: entityNotes,
+  }),
+  /** M7.4: GM edits a region; omitted fields stay. */
+  'region.edited': z.strictObject({
+    regionId: recordId,
+    name: nonBlank.optional(),
+    notes: entityNotes.optional(),
+  }),
+  /** M7.4: the party is now in this region (it becomes visited), or nowhere set. */
+  'region.currentSet': z.strictObject({ regionId: recordId.nullable() }),
+  /** M7.4: GM adds a survivor faction (DESIGN §8). GM-only. */
+  'faction.defined': z.strictObject({
+    factionId: recordId,
+    name: nonBlank,
+    regionId: recordId.nullable(),
+    members: factionMembers.nullable(),
+    standing: factionStanding,
+    notes: entityNotes,
+  }),
+  /** M7.4: GM edits a faction; omitted fields stay. */
+  'faction.edited': z.strictObject({
+    factionId: recordId,
+    name: nonBlank.optional(),
+    regionId: recordId.nullable().optional(),
+    members: factionMembers.nullable().optional(),
+    standing: factionStanding.optional(),
+    notes: entityNotes.optional(),
+  }),
   /** The in-game day counter moves forward (quest timers count down). */
   'campaign.dayAdvanced': z.strictObject({ days: z.number().int().min(1).max(1000) }),
+  /**
+   * MR.3 (L16): a rules migration applied when a stored campaign loads. The
+   * `xpOverflow` migration turns on `rules.xp.overflow` and applies the XP each
+   * capped track had banked again under overflow (D153); `banked` lists it.
+   */
+  /**
+   * M4.9: the GM's edited rules, whole (D161): replaces the campaign's rules
+   * after validation. Stat, pool, grade, rarity and slot ids may not change.
+   */
+  'rules.edited': z.strictObject({ rules: z.unknown() }),
+  'rules.migrated': z.strictObject({
+    migration: z.literal('xpOverflow'),
+    banked: z.array(
+      z.strictObject({
+        characterId: z.string(),
+        track: z.enum(['class', 'profession']),
+        xp: z.number().int().min(1),
+      }),
+    ),
+  }),
   /** GM starts a play session (M4.3); events until its end carry its id. */
   'session.started': z.strictObject({ sessionId: recordId }),
   /** GM ends the running play session (the server backs up and writes the report). */
@@ -527,16 +763,24 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'character.portraitSet': 1,
   'character.professionGranted': 1,
   'profession.chosen': 1,
+  'profession.offerWithdrawn': 1,
   'title.awarded': 1,
+  'titleDef.defined': 1,
+  'titleDef.edited': 1,
   'character.poolsSet': 1,
   'character.statsSet': 1,
   'xp.awarded': 1,
   'freePoints.assigned': 1,
   'freePoints.overridden': 1,
   'system.broadcast': 1,
+  'broadcast.scheduled': 1,
+  'broadcast.unscheduled': 1,
   'item.defined': 1,
   'item.edited': 1,
   'holdings.adjusted': 1,
+  'lootTable.defined': 1,
+  'lootTable.edited': 1,
+  'loot.rolled': 1,
   'gift.given': 1,
   'item.equipped': 1,
   'item.unequipped': 1,
@@ -545,12 +789,16 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'trade.declined': 1,
   'trade.cancelled': 1,
   'practice.logged': 1,
+  'practice.edited': 1,
+  'practice.removed': 1,
+  'practice.reviewed': 1,
   'note.created': 1,
   'note.edited': 1,
   'note.deleted': 1,
   'skill.nicknamed': 1,
   'skill.described': 1,
   'skill.uniqueSet': 1,
+  'skill.libraryTextUsed': 1,
   'skill.markAwarded': 1,
   'skill.upgraded': 1,
   'skill.merged': 1,
@@ -570,10 +818,11 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'evolution.chosen': 2,
   'clock.created': 1,
   'clock.ticked': 1,
-  'clock.removed': 1,
+  'clock.removed': 2,
   'montage.offered': 1,
   'montage.focused': 1,
   'montage.closed': 1,
+  'contest.shared': 1,
   'quest.created': 1,
   'quest.edited': 1,
   'quest.statusSet': 1,
@@ -582,7 +831,16 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'entity.defined': 1,
   'entity.edited': 1,
   'entity.revealed': 1,
+  'hunger.configured': 1,
+  'hunger.levelsSet': 1,
+  'region.defined': 1,
+  'region.edited': 1,
+  'region.currentSet': 1,
+  'faction.defined': 1,
+  'faction.edited': 1,
   'campaign.dayAdvanced': 1,
+  'rules.migrated': 1,
+  'rules.edited': 1,
   'session.started': 1,
   'session.ended': 1,
   'event.undone': 1,
@@ -614,6 +872,10 @@ export const EVENT_UPCASTERS: EventUpcasters = {
     },
   },
   'evolution.chosen': {
+    1: (payload) => ({ ...(payload as object), legacy: true }),
+  },
+  // M7.A: v1 removals left the clock's open montages open.
+  'clock.removed': {
     1: (payload) => ({ ...(payload as object), legacy: true }),
   },
 };

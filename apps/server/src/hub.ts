@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import {
   EventRejectedError,
   ProjectionError,
@@ -32,6 +33,8 @@ export interface HubOptions {
   /** ISO-8601 UTC clock. */
   readonly now: () => string;
   readonly newId: () => string;
+  /** Random source in [0, 1) for loot rolls (M6.2); default crypto-backed. */
+  readonly random?: () => number;
   readonly sessionId?: string | null;
   /**
    * Runs after a command's events are saved, before anyone is told (e.g. the
@@ -51,6 +54,9 @@ export interface RateLimit {
   readonly burst: number;
   readonly perSecond: number;
 }
+
+/** A uniform number in [0, 1) from the OS's secure source. */
+const cryptoRandom = (): number => randomInt(0x1_0000_0000) / 0x1_0000_0000;
 
 /** QF.3 (D136): far above a person tapping, far below a script flooding the hub. */
 export const DEFAULT_RATE_LIMIT: RateLimit = { burst: 30, perSecond: 5 };
@@ -229,6 +235,7 @@ export class LiveHub {
         sessionId: this.options.sessionId ?? null,
         now: this.options.now,
         newId: this.options.newId,
+        random: this.options.random ?? cryptoRandom,
       });
     } catch {
       return fail('The command could not be run');

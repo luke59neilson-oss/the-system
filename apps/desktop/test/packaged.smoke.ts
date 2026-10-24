@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { _electron as electron, expect, test } from '@playwright/test';
@@ -30,6 +30,13 @@ test('packaged app: server up, web build served, GM window connected', async () 
     const home = await fetch(`http://127.0.0.1:${port}/`);
     expect(home.status).toBe(200);
     expect(await home.text()).toContain('<div id="root"');
+    // M10.1 in the packaged app: a campaign, then quitting leaves a "-quit" backup.
+    await gm.getByLabel('Campaign name').fill('Packaged smoke');
+    await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await expect(gm.getByRole('heading', { name: /Packaged smoke/ })).toBeVisible();
+    await app.close();
+    const backups = path.join(dataDir, 'campaigns', 'main', 'backups');
+    expect(readdirSync(backups).filter((name) => name.endsWith('-quit'))).toHaveLength(1);
   } finally {
     await app.close();
     rmSync(dataDir, { recursive: true, force: true });

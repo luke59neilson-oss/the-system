@@ -67,7 +67,7 @@ test('a player reads a skill and nicknames it; the official name stays', async (
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   await gm.getByLabel('Name', { exact: true }).fill('Jake');
   await gm.getByRole('button', { name: 'Create character' }).click();
-  await expect(gm.getByRole('cell', { name: 'Jake', exact: true })).toBeVisible();
+  await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
 
   const laptop = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const errors = watchErrors(laptop);

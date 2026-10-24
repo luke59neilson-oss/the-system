@@ -238,6 +238,72 @@ Confirmed findings from quality sweeps (`docs/QUALITY.md`). Items marked
 **(High)** are taken before any other new item, wherever they sit (LOOP §5.2);
 the rest follow in file order. Each gets its own §6 review.
 
+- [x] **QF.14 The desktop splash test does not race the hand-over.**
+  `apps/desktop/test/launch.spec.ts:33` screenshots the splash, which closes
+  by design once the GM console is ready, so CI's desktop-smoke job fails
+  with "Target page ... has been closed" (f4d07d9 at 06:43 and ab3f114 at
+  10:31 UTC on 2026-10-23; QUALITY.md, Flakes). *Accept:* the test asserts the
+  splash text and takes any screenshot before the hand-over can happen (or
+  holds the hand-over in a test-only way); `--repeat-each=20` on that test
+  green under xvfb; no retries added. (Numbered 14 because `wip/M4.A` holds
+  QF.13.)
+- [x] **QF.16 Pin the merge rarity and a partial practice review.** Sweep B
+  (Tests, 2026-10-23): every evolution-merge test merges two skills of the
+  same rarity, so `Math.max`→`Math.min` in `checkOption`
+  (`evolution/model.ts` ~507) and in the builder's `mergePrompts`
+  (`evolutionBuilderModel.ts` ~88) survives (DESIGN §6: one rarity above the
+  *higher*); and no test reviews a subset of pending entries, so dropping
+  `ids.has(e.id)` in `practice.reviewed` (`reducer.ts` ~1220) marks every
+  entry reviewed unnoticed. *Accept:* an Uncommon + Rare merge at evolution
+  is refused below Epic and accepted at Epic, through `execute`; the builder
+  model prompts Epic for that pair; `practice.review` of one of two entries
+  leaves the other unreviewed; each named mutation fails a test.
+- [x] **QF.17 Table-view panes show every DING.** Sweep B (UX, 2026-10-23):
+  `PaneLatest` (`PlayerScreen.tsx` ~966) pins only `kind === 'level'`, so a
+  skill upgrade, merge or profession DING never shows in the GM's Table-view
+  pane. *Accept:* the pane uses the same set as the history's DING filter; an
+  e2e upgrades a skill in Table view and sees `latest-ding` change.
+- [x] **QF.18 M2.A restart test: tolerate the expected resource error.**
+  Repeat flake (QUALITY "Flakes", 2026-10-23 and 2026-10-24): during the
+  server restart in `e2e/M2.A.spec.ts` the GM page logs "Failed to load
+  resource" (connection reset, then 503) and the console-error check fails;
+  passes alone and with 2 workers. *Accept:* find which request hits the
+  restarting server (likely a GM HTTP poll or asset) and either make the
+  client not log it as an error during a known reconnect or filter exactly
+  that message during the restart window only, with a reason; the test
+  passes 10/10 under a parallel vitest load.
+- [x] **QF.19 A GM item give carries its reason to the holder.** Sweep C
+  (UX, 2026-10-24): the Item library's Give sends the reason the field says
+  "the player sees", but the gift notice drops it (`history/index.ts`
+  `holdings.adjusted`). *Accept:* the gift notice carries a non-empty reason
+  and the toast/history read "You received … from the GM: <reason>"; unit
+  and e2e (M6.A) assert it.
+- [x] **QF.20 Bestiary reveal says who is out of Identify range.** Sweep C
+  (UX): Reveal reported "Jake can now Identify Pale stalker" for a target
+  out of Jake's range, who then sees `[??? – lvl ???]`. *Accept:* the line
+  splits in-range ("can now Identify") from out-of-range characters ("now
+  knows of … but is out of Identify range"); unit test and M7.2 e2e.
+- [x] **QF.22 Pin drafted re-ratings and closed menus in the Claude bridge.**
+  Sweep A (Tests, 2026-10-24): dropping `rerate` from the drafted
+  `evolution.release` (`content/toCommands.ts`) or listing chosen menus as
+  open in the session log's Party section (`report/sessionLog.ts`) passed
+  every test. *Accept:* a content test asserts a drafted `rerate` reaches the
+  release command; a session-log test chooses a menu and sees it leave
+  `openMenus` and the markdown; both mutations fail them.
+- [x] **QF.21 Test the hub's default loot random source.** Sweep C (Tests):
+  replacing `cryptoRandom` in `hub.ts` with a constant passed every test.
+  *Accept:* a hub test with no injected `random` rolls a two-entry,
+  wide-range table many times and sees both entries and varied counts; the
+  constant mutation fails it.
+- [x] **QF.15 Pin the grade-gap floor and scheduled broadcasts in the leak
+  property.** Sweep A (Tests, 2026-10-23): `Math.floor`→`Math.round` on the
+  grade-gap scaled share (`progression/xp.ts` ~175, ~274, ~496) left every
+  test green (200 × ⅓ gives 67, not 66, D120); and the random-state GM-leak
+  property (`projection.test.ts`) never seeded `scheduledBroadcasts`, so
+  merging them into a player's messages passed it. *Accept:* each of the three
+  floor sites mutated to `Math.round` fails a test; the property seeds
+  GM-only scheduled broadcasts (to everyone and to each character) and fails
+  when `projectForPlayer` includes them; no production code changes.
 - [x] **QF.1 (High) Chosen options never return as passed-over options.**
   `passedOverOptions` (`packages/engine/src/evolution/model.ts` ~276) drops a
   menu's chosen option only while a skill of that name is owned, so after an
@@ -272,23 +338,23 @@ the rest follow in file order. Each gets its own §6 review.
   `.jsonl` changes, or when a `.state.json` changes without a higher schema
   version; a script re-records the manifest and refuses to do so without a
   version bump.
-- [ ] **QF.5 Engine purity lint has no bypasses.** `export function f(clock =
+- [x] **QF.5 Engine purity lint has no bypasses.** `export function f(clock =
   Date)`, `rng = Math` default parameters, `{ clock: Date }` and `() => Date`
   pass the engine lint (`eslint.config.js` ~52-59). *Accept:* each of these is
   rejected; `scripts/lint-rules.test.ts` asserts the rule id
   (`no-restricted-syntax`), not just "some message".
-- [ ] **QF.6 Desktop smoke specs run in CI.** `apps/desktop/test/*.spec.ts`
+- [x] **QF.6 Desktop smoke specs run in CI.** `apps/desktop/test/*.spec.ts`
   (GM window connects with the injected key, key leaves the address bar,
   busy-port fallback) run in no workflow. *Accept:* a CI job (public repo, so
   free minutes) installs the Electron binary and runs `npm run desktop:smoke`
   under xvfb on pushes to main; a test asserts the desktop app never prints
   its GM key.
-- [ ] **QF.7 Store failure paths are tested.** The rollback after a failed
+- [x] **QF.7 Store failure paths are tested.** The rollback after a failed
   write and the stop-writing latch after a failed fsync
   (`apps/server/src/store.ts` ~403-420) have no tests. *Accept:* fault-
   injection tests: a failed write leaves the log at its last good length; a
   failed fsync refuses every later append and the error says why.
-- [ ] **QF.8 Latency checks that don't flake.** e2e specs bound
+- [x] **QF.8 Latency checks that don't flake.** e2e specs bound
   click-to-render wall time (`e2e/MS.A.spec.ts` ~80-86 and ~157,
   `e2e/MS.2.spec.ts` ~81-87, `e2e/MS.3.spec.ts` ~118-126,
   `apps/server/test/sessionLog.test.ts` ~448) with `retries: 0` under fully
@@ -299,7 +365,7 @@ the rest follow in file order. Each gets its own §6 review.
   the client's render); no retries added; the full suite passes 10 times in a
   row with `--repeat-each` on the latency specs.
 
-- [ ] **QF.9 Trade proposals reveal nothing the proposer cannot see.**
+- [x] **QF.9 Trade proposals reveal nothing the proposer cannot see.**
   `trade.propose` refuses a `get` bundle the counterparty does not hold
   (`events/commands.ts` ~1250, QF.2), so a player can probe another
   character's exact item counts (accepted for 1–3, refused at 4), and the
@@ -319,7 +385,7 @@ the rest follow in file order. Each gets its own §6 review.
   MQ.14 and MQ.6 specs, each green alone). *Accept:* every spec imports `test`
   from `e2e/helpers/test.ts`, whose automatic fixture closes the contexts a
   test opened; the full suite passes on one worker; no retries added.
-- [ ] **QF.11 (High) A partial download cannot hang.** Luke's first real
+- [x] **QF.11 (High) A partial download cannot hang.** Luke's first real
   download (2026-10-22) stopped at 52 MB of 107 MB; double-clicking the
   portable `.exe` started it anyway and it hung, holding the file so Windows
   would not delete it ("file is open in The System"). electron-builder's
@@ -332,13 +398,30 @@ the rest follow in file order. Each gets its own §6 review.
   installer first and list each file's exact size and SHA-256; a CI test
   truncates the built `.exe` and checks the integrity flag or the refusal.
 
+- [x] **QF.12 A golden log runs under today's default rules.** All golden
+  logs were recorded with stored-style rules (`libraryByRarity`,
+  `clampedPoolsNotFull`, `itemsFlatOnly` all off), so library text sync, the
+  no-heal pool mark and flat-only items have no replay pin for new campaigns,
+  and MR.1/MR.4 will change that code. Sweep C, Rules. *Accept:* a new golden
+  recorded with `DEFAULT_RULES` covering a hand-edited skill copy, a library
+  edit, an upgrade, a clamped pool and a capped item, pinned through
+  `npm run golden:record`.
+- [x] **QF.13 The change log stays cheap in a long campaign.** M4.A review
+  (fable), Medium 3: `GET /api/gm/changelog` replays every event on the
+  server's event loop and the GM console refetches and renders every row after
+  each state change (188 ms and 538 KB at 3,196 events; a 40-session campaign
+  would stall DINGs). *Accept:* the route returns a bounded page (newest N
+  plus a "load older" cursor) without a full replay per request, the console
+  renders that page, and a unit or e2e test pins the bound on a 10k-event log.
+  Needed before M4.A is checked.
+
 ## MR — Luke's answers, batch 2 (2026-10-22)
 
 Answers to Q43–Q52 (DESIGN §2, §6, §7 updated; L14–L18). They change finished
 engine and player items, so they come before M4.5. Defaults Luke kept need no
 work: Q44–Q48 and Q52.
 
-- [ ] **MR.1 Evolutions re-rate skills.** An evolution release carries a new
+- [x] **MR.1 Evolutions re-rate skills.** An evolution release carries a new
   rarity for every skill the character keeps: by default one step down
   (never below Inferior), set per skill by the GM (raise within the new
   grade's ceiling, keep, or lower). The copy's text and effects stay as they
@@ -352,7 +435,7 @@ work: Q44–Q48 and Q52.
   text unchanged for library-linked and hand-written copies, an upgrade
   right after the evolution at the lower rarity's cost; golden logs still
   replay; e2e on the evolution screen.
-- [ ] **MR.2 Every upgrade starts at 0 marks.** Replaces MQ.4's carry-over
+- [x] **MR.2 Every upgrade starts at 0 marks.** Replaces MQ.4's carry-over
   (D113) and D114's spend-and-carry: an upgrade by marks leaves the skill at
   0 (extra marks are not kept), and so does any evolution transform; only a
   downgrade at evolution (MR.1) keeps marks. New campaigns get the new rule;
@@ -361,20 +444,20 @@ work: Q44–Q48 and Q52.
   upgrade to a Common skill with 0; a transform (raising or same rarity)
   leaves 0; a downgrade keeps all; tests through `evolution.choose`; e2e
   text on both screens.
-- [ ] **MR.3 XP overflow for every campaign.** Replaces D124: campaigns
+- [x] **MR.3 XP overflow for every campaign.** Replaces D124: campaigns
   created before MQ.11 switch to overflow automatically when loaded (a rules
   migration, logged). How XP already banked is handled is the run's call
   (no real campaigns exist yet), logged as a D-entry. *Accept:* a stored
   campaign with banked XP loads with overflow on; the GM award preview warns
   about lost XP for it; golden logs re-recorded under a schema bump.
-- [ ] **MR.4 Hand-written skill text survives upgrades; Use library text.**
+- [x] **MR.4 Hand-written skill text survives upgrades; Use library text.**
   Replaces D133 (keeps D125): a hand-written copy keeps its text when the
   skill upgrades, and a downgrade (MR.1) never changes text. The GM's Skill
   text form gets **Use library text**, which reconnects the copy to the
   library entry for its current name and rarity (disabled when there is
   none). *Accept:* engine tests for an upgrade with and without hand-written
   text and for reconnecting; e2e on the form.
-- [ ] **MR.A Batch acceptance and review.** The batch's e2e specs and the full
+- [x] **MR.A Batch acceptance and review.** The batch's e2e specs and the full
   suite green; `fable` review; then "Preview ready" (LOOP §8.2).
 
 ## M1 (continued) — Rules engine
@@ -479,117 +562,117 @@ work: Q44–Q48 and Q52.
   the server opened the campaign".
 - [x] **M4.4 Character creation.** Name, starting class, portrait; Identify
   added automatically.
-- [ ] **M4.5 Party dashboard.** Card per character with flags (pending
+- [x] **M4.5 Party dashboard.** Card per character with flags (pending
   selection/evolution/marks/merges); full sheet edit as audited events.
-- [ ] **M4.6 XP award dialog.** Amount, class or profession, participant
+- [x] **M4.6 XP award dialog.** Amount, class or profession, participant
   checkboxes, even integer split by default with auto-balanced last share,
   editable shares, above-level bonus toggle, target grade (⅓ / no XP for
   lower grades, MQ.10: `enemyGrade`), level-up preview with overflow and
   "XP lost" warnings (`previewXpAward`, MQ.11), "typical
   session ≈ 6 levels" helper (`typicalSessionXp`), confirm.
-- [ ] **M4.7 System broadcast.** System-style message to one or all; now or
+- [x] **M4.7 System broadcast.** System-style message to one or all; now or
   scheduled.
-- [ ] **M4.8 Change log and undo.** Filterable event list; undo with M1.3
+- [x] **M4.8 Change log and undo.** Filterable event list; undo with M1.3
   rules.
-- [ ] **M4.9 Rules settings.** Edit every config value as events, with
+- [x] **M4.9 Rules settings.** Edit every config value as events, with
   validation and reset to defaults. Turning on `xp.overflow` (D124) for a
   campaign that banked XP moves each capped track's bank per the overflow
   rule, and says what was lost.
-- [ ] **M4.A Milestone acceptance and review.** GM creates 3 characters,
+- [x] **M4.A Milestone acceptance and review.** GM creates 3 characters,
   awards XP with a custom split; each player screen shows the DING within
   1 s; undo reverts it everywhere.
 
 ## M5 — Skills and practice tools (GM)
 
-- [ ] **M5.1 Offer builder.** Per-character menu builder beside the practice
+- [x] **M5.1 Offer builder.** Per-character menu builder beside the practice
   log; capstone check; profession options; send. Lists the character's
   passed-over options with a Withdraw button (`selection.withdrawOption`,
   MQ.3, D112). Show due selections
   (`dueSelections`) next to the M1.8 selection alert, which does not know
   whether a selection was taken.
-- [ ] **M5.2 Evolution builder.** Options, warnings, one-time stat bonus per
+- [x] **M5.2 Evolution builder.** Options, warnings, one-time stat bonus per
   option, optional transforms with merge prompts, spread reshape, tailored
   profession offers (E evolution, or later after "none for now"; withdrawing an
   untaken offer, MQ.6 review); per-skill re-rating at release (default one
   rarity down, raise/keep/lower; MR.1); release. Warn when a selection (esp. the capstone) is still
   pending (Q21).
-- [ ] **M5.3 Marks review.** End-of-session queue; upgrade prompts.
-- [ ] **M5.4 Merges.** Alert, build, send.
-- [ ] **M5.5 Practice capture.** Quick-add with shortcut; end-of-scene
+- [x] **M5.3 Marks review.** End-of-session queue; upgrade prompts.
+- [x] **M5.4 Merges.** Alert, build, send.
+- [x] **M5.5 Practice capture.** Quick-add with shortcut; end-of-scene
   prompt; review of player submissions. Needs new events to edit/remove an
   entry and to mark entries reviewed (M1.8 review, Lows 5).
-- [ ] **M5.A Milestone acceptance and review.** Full selection, evolution,
+- [x] **M5.A Milestone acceptance and review.** Full selection, evolution,
   mark-upgrade and merge loops between GM and player.
 
 ## M6 — Items, titles, economy (GM)
 
-- [ ] **M6.1 Item library.** Create/edit, rarity change, give/take.
-- [ ] **M6.2 Loot tables.** Define and roll.
-- [ ] **M6.3 Currency.** Grants, fines, ledger.
-- [ ] **M6.4 Titles.** Library; award with System text.
-- [ ] **M6.A Milestone acceptance and review.** Give, trade, loot roll, title
+- [x] **M6.1 Item library.** Create/edit, rarity change, give/take.
+- [x] **M6.2 Loot tables.** Define and roll.
+- [x] **M6.3 Currency.** Grants, fines, ledger.
+- [x] **M6.4 Titles.** Library; award with System text.
+- [x] **M6.A Milestone acceptance and review.** Give, trade, loot roll, title
   award end to end.
 
 ## M7 — Quests, encounters, bestiary
 
-- [ ] **M7.1 Quest manager.** Text, timers, stability rules, nudges,
+- [x] **M7.1 Quest manager.** Text, timers, stability rules, nudges,
   visibility, and for hidden quests who gets the notice (`noticeTo`, D122).
   Offer to apply a quest's stability rule when a practice entry
   carries one of its action tags (D67).
-- [ ] **M7.2 Bestiary and NPCs.** Grade, level, stats, Identify tiers, notes.
+- [x] **M7.2 Bestiary and NPCs.** Grade, level, stats, Identify tiers, notes.
   Sets an entity's grade and level for the Identify range (D123); warn when a
   label names what an out-of-range target is.
-- [ ] **M7.3 Encounter panel.** Ratio-odds roller (stats + mode), pool
+- [x] **M7.3 Encounter panel.** Ratio-odds roller (stats + mode), pool
   damage/heal, progress clocks, montage trigger. Rolls the GM shares become
   events, and the players involved get a contest result pop-up (from M3.13,
   D88).
   Store the race level used for the above-level XP bonus in `xp.awarded`
   so a non-latest undo cannot re-price a later award (D71).
-- [ ] **M7.4 Trackers.** Hunger (fades at E-grade by default), regions,
+- [x] **M7.4 Trackers.** Hunger (fades at E-grade by default), regions,
   survivor factions. Players see their hunger tracker when the campaign
   enables it (from M3.13, D88).
-- [ ] **M7.A Milestone acceptance and review.** Sample encounter end to end;
+- [x] **M7.A Milestone acceptance and review.** Sample encounter end to end;
   stability visible to players only when toggled on.
 
 ## M8 — Look and feel
 
-- [ ] **M8.1 Metallic grade themes.** Tokens for aluminum (dull), bronze
+- [x] **M8.1 Metallic grade themes.** Tokens for aluminum (dull), bronze
   (dull), copper, silver, gold, platinum (cool blue-white, heavier brushed
   texture), prismatic diamond (animated; respects reduced motion).
   System-window styling per DESIGN §9.
-- [ ] **M8.2 Evolution transition.** Animated re-theme on evolution.
-- [ ] **M8.3 Accessibility.** Text contrast ≥ 4.5:1 in all 7 themes
+- [x] **M8.2 Evolution transition.** Animated re-theme on evolution.
+- [x] **M8.3 Accessibility.** Text contrast ≥ 4.5:1 in all 7 themes
   (automated); silver vs platinum ΔE ≥ 10 (automated); keyboard navigation;
   reduced motion.
-- [ ] **M8.4 Sound.** Original sounds generated in code (DING, selection,
+- [x] **M8.4 Sound.** Original sounds generated in code (DING, selection,
   evolution); volume and mute.
-- [ ] **M8.A Milestone acceptance and review.** Screenshots of every theme in
+- [x] **M8.A Milestone acceptance and review.** Screenshots of every theme in
   `docs/screens/themes/`, viewed by the reviewer.
 
 ## M9 — Claude bridge and content packs
 
-- [ ] **M9.1 Session report.** Full markdown + JSON report at session end
+- [x] **M9.1 Session report.** Full markdown + JSON report at session end
   (builds on M2.4); "Copy for Claude" button.
-- [ ] **M9.2 Content format.** JSON schemas for skill offers, skills, items,
+- [x] **M9.2 Content format.** JSON schemas for skill offers, skills, items,
   titles, evolution options, bestiary entries; `docs/CONTENT-FORMAT.md` with
   examples.
-- [ ] **M9.3 Import with approval.** Invalid files show errors and change
+- [x] **M9.3 Import with approval.** Invalid files show errors and change
   nothing; GM approves what applies.
 - [ ] **M9.4 Optional GitHub sync (deferred: Luke chose folder export for now; skip and leave unchecked until he asks).** Token stored in OS app data only, never
   exported. Session end pushes the report to `campaign/sessions/`; pulls
   `campaign/inbox/*.json` into the import queue. Off by default. Tested
   against a mocked API.
-- [ ] **M9.5 Tutorial content pack.** DESIGN §8 as an importable pack.
-- [ ] **M9.A Milestone acceptance and review.**
+- [x] **M9.5 Tutorial content pack.** DESIGN §8 as an importable pack.
+- [x] **M9.A Milestone acceptance and review.**
 
 ## M10 — Desktop app (double-click)
 
-- [ ] **M10.1 Electron wrapper (final).** Builds on MS.5. Double-click starts the server and opens
+- [x] **M10.1 Electron wrapper (final).** Builds on MS.5. Double-click starts the server and opens
   the GM console with the GM key injected; shows join URL + QR; data in the
   OS app-data folder; single instance; backup on quit; Windows firewall help.
   *Accept:* launches under `xvfb-run` in the workspace; `/health` responds;
   GM window connects with the key; a plain browser client cannot act as GM.
-- [ ] **M10.2 Packaging and releases (final).** Builds on MS.6. electron-builder: Windows NSIS + portable,
+- [x] **M10.2 Packaging and releases (final).** Builds on MS.6. electron-builder: Windows NSIS installer (no portable build, D140),
   macOS dmg (unsigned), Linux AppImage. A release workflow runs on push to
   the `release` branch (tags cannot be pushed from build sessions) and
   creates the GitHub Release itself. *Accept:* AppImage builds and launches

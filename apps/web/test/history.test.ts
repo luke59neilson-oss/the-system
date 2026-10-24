@@ -4,6 +4,7 @@ import {
   SOUND_KEY,
   arrivals,
   filterHistory,
+  isDing,
   nextArrival,
   notificationKey,
   readSound,
@@ -117,5 +118,41 @@ describe('notification history (M3.3)', () => {
     // An earlier unseen arrival removed: the next one is still found.
     expect(nextArrival([...items, b, c], 9, new Set([notificationKey(b)])).current?.seq).toBe(12);
     expect(nextArrival([...items, a, b, c], 9, new Set()).waiting).toBe(2);
+  });
+
+  it('every DING kind counts as a DING; nothing else does (QF.17)', () => {
+    const c = 'j';
+    const dings = [
+      level(1, 'class', 'Archer', 1).notification,
+      { kind: 'profession', characterId: c, name: 'Cook', level: 14 },
+      {
+        kind: 'skillUpgrade',
+        characterId: c,
+        skill: 'Basic Archery',
+        from: 'Inferior',
+        to: 'Common',
+      },
+      { kind: 'skillMerge', characterId: c, skills: ['A', 'B'], name: 'AB', rarity: 'Rare' },
+    ] as const;
+    const others = [
+      { kind: 'freePoints', characterId: c, unassigned: 2 },
+      { kind: 'broadcast', characterId: c, text: 'Hi' },
+      { kind: 'hiddenQuest', characterId: c },
+      { kind: 'trade', characterId: c, action: 'proposed', other: null },
+    ] as const;
+    for (const n of dings) expect(isDing(n), n.kind).toBe(true);
+    for (const n of others) expect(isDing(n), n.kind).toBe(false);
+    // The history's DING filter is the same set.
+    const seqd = [...dings, ...others].map((notification, i) => ({
+      seq: i,
+      at,
+      day: 1,
+      notification,
+    }));
+    expect(
+      filterHistory(seqd, 'dings', '')
+        .map((n) => n.notification.kind)
+        .reverse(),
+    ).toEqual(dings.map((n) => n.kind));
   });
 });

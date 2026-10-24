@@ -1,11 +1,13 @@
 import {
   appendFileSync,
+  writeSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
   writeFileSync,
+  fsyncSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -330,6 +332,115 @@ describe('CampaignStore', () => {
     for (const bad of ['', '../x', 'A', 'a/b', '.hidden', 'x'.repeat(65), 'con', 'nul', 'com1']) {
       expect(() => checkCampaignId(bad)).toThrow(StoreError);
     }
+  });
+});
+
+describe('disk faults (QF.7)', () => {
+  const diskFull = () =>
+    Object.assign(new Error('ENOSPC: no space left on device'), { code: 'ENOSPC' });
+  const rename = (name: string): Command => ({
+    type: 'character.rename',
+    characterId: 'jake',
+    name,
+  });
+
+  /** One command's events, built against the store's current campaign. */
+  function eventsFor(store: CampaignStore, command: Command, ctx: CommandContext) {
+    const result = execute(store.campaign, command, ctx);
+    if (!result.ok) throw new Error(result.error);
+    return result.events;
+  }
+
+  it('cuts a failed write back to the last good length and keeps writing', () => {
+    let failNext = false;
+    const store = CampaignStore.open('main', {
+      ...options,
+      logIo: {
+        // Writes half the bytes, then the disk fills up.
+        write: (fd, data, offset, length) => {
+          if (!failNext) return writeSync(fd, data, offset, length);
+          failNext = false;
+          writeSync(fd, data, offset, Math.max(1, Math.floor(length / 2)));
+          throw diskFull();
+        },
+      },
+    });
+    const before = play(store, script);
+    const good = readFileSync(logFile());
+    const ctx = context('f');
+    failNext = true;
+    expect(() => store.appendAll(eventsFor(store, rename('Lost'), ctx))).toThrow(/ENOSPC/);
+    expect(readFileSync(logFile())).toEqual(good);
+    expect(store.campaign).toEqual(before);
+    // The store is not latched: the next command writes and replays cleanly.
+    const after = play(store, [rename('Kept')], ctx);
+    expect(after.state?.characters.jake?.name).toBe('Kept');
+    store.close();
+    const reopened = CampaignStore.open('main', options);
+    expect(reopened.campaign).toEqual(after);
+    expect(reopened.campaign.events.some((e) => JSON.stringify(e).includes('Lost'))).toBe(false);
+    reopened.close();
+  });
+
+  it('refuses every later write when a failed write cannot be undone', () => {
+    let fail = false;
+    const store = CampaignStore.open('main', {
+      ...options,
+      logIo: {
+        write: (fd, data, offset, length) => {
+          if (!fail) return writeSync(fd, data, offset, length);
+          writeSync(fd, data, offset, 1);
+          throw diskFull();
+        },
+        ftruncate: () => {
+          if (fail) throw new Error('EIO: i/o error');
+        },
+      },
+    });
+    play(store, script);
+    const ctx = context('u');
+    fail = true;
+    expect(() => store.appendAll(eventsFor(store, rename('A'), ctx))).toThrow(/ENOSPC/);
+    fail = false;
+    expect(() => store.appendAll(eventsFor(store, rename('B'), ctx))).toThrow(StoreError);
+    expect(() => store.appendAll(eventsFor(store, rename('B'), ctx))).toThrow(
+      /a failed write could not be undone \(Error: EIO: i\/o error\)/,
+    );
+    store.close();
+  });
+
+  it('refuses every later write after a failed fsync, and says why', () => {
+    let failSync = false;
+    const store = CampaignStore.open('main', {
+      ...options,
+      logIo: {
+        fsync: (fd) => {
+          if (failSync) throw Object.assign(new Error('EIO: i/o error, fsync'), { code: 'EIO' });
+          fsyncSync(fd);
+        },
+      },
+    });
+    const before = play(store, script);
+    const ctx = context('s');
+    failSync = true;
+    expect(() => store.appendAll(eventsFor(store, rename('Maybe'), ctx))).toThrow(/EIO/);
+    // The write's durable state is unknown, so memory keeps the last known state.
+    expect(store.campaign).toEqual(before);
+    failSync = false; // even once the disk recovers, the latch holds
+    for (const name of ['Again', 'Still']) {
+      let thrown: unknown;
+      try {
+        store.appendAll(eventsFor(store, rename(name), ctx));
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).toBeInstanceOf(StoreError);
+      expect(String((thrown as Error).message)).toBe(
+        'Campaign "main": the event log could not be synced to disk (Error: EIO: i/o error, fsync)',
+      );
+    }
+    expect(readFileSync(logFile(), 'utf8')).not.toMatch(/Again|Still/);
+    store.close();
   });
 });
 

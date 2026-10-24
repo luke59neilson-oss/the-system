@@ -64,7 +64,16 @@ export interface SkillTransform {
   readonly name: string;
   /** New rarity: not below the old one, not above the new grade's ceiling. */
   readonly rarity: string;
+  /**
+   * A second skill this transform merges in (M5.2, DESIGN §6 "the evolution
+   * builder prompts the GM to offer that merge"): consumed on choosing, with
+   * the usual merge rules. Absent on plain transforms and older releases.
+   */
+  readonly merge?: string | undefined;
 }
+
+/** Times two skills were logged together (the merge alert's count). */
+export type JointUses = (a: string, b: string) => number;
 
 export interface EvolutionOption {
   readonly id: string;
@@ -78,6 +87,15 @@ export interface EvolutionOption {
   readonly statBonus: Readonly<Record<string, number>>;
 }
 
+/**
+ * A kept skill's rarity after the evolution (MR.1, DESIGN §6 "Evolutions
+ * re-rate skills"): one step down by default, set per skill by the GM.
+ */
+export interface SkillRerate {
+  readonly skill: string;
+  readonly rarity: string;
+}
+
 /** An evolution the GM has released and the player has not chosen yet. */
 export interface PendingEvolution {
   /** Grade the character evolves into. */
@@ -87,6 +105,11 @@ export interface PendingEvolution {
   readonly options: readonly EvolutionOption[];
   /** Professions offered at the unlock grade (empty otherwise, or when none is offered). */
   readonly professions: readonly string[];
+  /**
+   * New rarity of each skill the chosen option does not transform (MR.1).
+   * Absent on releases stored before MR.1, which re-rate nothing.
+   */
+  readonly rerate?: readonly SkillRerate[];
 }
 
 /** A class level that grants a selection (DESIGN §3). */
@@ -386,6 +409,53 @@ export function evolutionTarget(rules: RulesConfig, character: Character): Grade
   return gateLevel(rules, character) >= trackCap(rules, grade.id) ? next : null;
 }
 
+/**
+ * The default re-rating (MR.1, DESIGN §6): every skill drops one rarity, never
+ * below the lowest; `overrides` (skill name → rarity) replaces the default for
+ * the skills it names. Validation happens on release.
+ */
+export function defaultRerate(
+  rules: RulesConfig,
+  character: Character,
+  overrides: Readonly<Record<string, string>> = {},
+): SkillRerate[] {
+  const ids = rules.skills.rarities.map((r) => r.id);
+  return character.skills.map((s) => {
+    const own = Object.prototype.hasOwnProperty.call(overrides, s.name)
+      ? overrides[s.name]
+      : undefined;
+    if (own !== undefined) return { skill: s.name, rarity: own };
+    const index = ids.indexOf(s.rarity);
+    return { skill: s.name, rarity: index <= 0 ? s.rarity : (ids[index - 1] as string) };
+  });
+}
+
+/**
+ * Throws unless every re-rating names a current skill once, at a known rarity
+ * no higher than the new grade's ceiling (a skill may keep a rarity above it).
+ */
+function checkRerate(
+  rules: RulesConfig,
+  character: Character,
+  toGrade: GradeRules,
+  rerate: readonly SkillRerate[],
+): void {
+  const ceiling = rarityIndex(rules, toGrade.rarityCeiling);
+  const seen = new Set<string>();
+  for (const r of rerate) {
+    const skill = character.skills.find((s) => s.name === r.skill);
+    if (!skill) throw new CharacterRuleError(`${character.name} has no skill "${r.skill}"`);
+    if (seen.has(r.skill)) throw new CharacterRuleError(`[${r.skill}] is re-rated twice`);
+    seen.add(r.skill);
+    const rank = rarityIndex(rules, r.rarity);
+    if (rank > ceiling && rank > rarityIndex(rules, skill.rarity)) {
+      throw new CharacterRuleError(
+        `[${r.skill}] cannot be raised above the ${toGrade.id}-grade ceiling (${toGrade.rarityCeiling})`,
+      );
+    }
+  }
+}
+
 /** Throws unless the option can apply to the character evolving into `toGrade`. */
 function checkOption(
   rules: RulesConfig,
@@ -393,6 +463,7 @@ function checkOption(
   toGrade: GradeRules,
   option: EvolutionOption,
   retired: ReadonlySet<string>,
+  joint: JointUses,
 ): void {
   if (option.className.trim() === '') throw new CharacterRuleError('An option needs a class name');
   const { min, max } = rules.skills.evolutionTransforms;
@@ -405,6 +476,8 @@ function checkOption(
   const ceiling = rarityIndex(rules, toGrade.rarityCeiling);
   const from = new Set<string>();
   const to = new Set<string>();
+  const merges = option.transforms.filter((t) => t.merge !== undefined).length;
+  if (merges > 0) checkMergeAllowance(rules, character, merges);
   for (const t of option.transforms) {
     const skill = character.skills.find((s) => s.name === t.skill);
     if (!skill) throw new CharacterRuleError(`${character.name} has no skill "${t.skill}"`);
@@ -412,6 +485,13 @@ function checkOption(
     from.add(t.skill);
     const name = t.name.trim();
     if (name === '') throw new CharacterRuleError(`[${t.skill}] needs a new name`);
+    const partner = t.merge === undefined ? null : checkMergePartner(rules, character, t, joint);
+    if (partner !== null) {
+      if (from.has(partner.name)) {
+        throw new CharacterRuleError(`[${partner.name}] is transformed twice`);
+      }
+      from.add(partner.name);
+    }
     if (to.has(lower(name))) throw new CharacterRuleError(`Two transforms are named "${name}"`);
     to.add(lower(name));
     // Renaming onto another transformed skill's old name is refused too (simpler to read).
@@ -424,7 +504,24 @@ function checkOption(
       }
     }
     const rank = rarityIndex(rules, t.rarity);
-    if (rank < rarityIndex(rules, skill.rarity)) {
+    if (partner !== null) {
+      // DESIGN §6: the merged skill is `rarityStepsAboveHigher` above the higher.
+      const want =
+        Math.max(rarityIndex(rules, skill.rarity), rarityIndex(rules, partner.rarity)) +
+        rules.skills.merge.rarityStepsAboveHigher;
+      if (rank === want && rules.skills.rarities[want]?.reserved) {
+        throw new CharacterRuleError(`[${name}] would be a reserved rarity (${t.rarity})`);
+      }
+      if (rank !== want) {
+        const at = rules.skills.rarities[want];
+        if (at?.reserved) {
+          throw new CharacterRuleError(`[${name}] would be a reserved rarity (${at.id})`);
+        }
+        throw new CharacterRuleError(
+          `[${name}] must be ${at ? at.id : 'one rarity above the higher of the two'} (one above the higher merged skill)`,
+        );
+      }
+    } else if (rank < rarityIndex(rules, skill.rarity)) {
       throw new CharacterRuleError(`[${t.skill}] cannot drop to a lower rarity`);
     }
     if (rank > ceiling) {
@@ -434,6 +531,49 @@ function checkOption(
     }
   }
   if (option.classWeights !== null) reshapeClassWeights(rules, character, option.classWeights);
+}
+
+/** Merges at the current grade so far, plus these, stay within the per-grade limit. */
+function checkMergeAllowance(rules: RulesConfig, character: Character, adding: number): void {
+  const done = Object.prototype.hasOwnProperty.call(character.merges, character.grade)
+    ? (character.merges[character.grade] ?? 0)
+    : 0;
+  if (done + adding > rules.skills.merge.maxPerCharacterPerGrade) {
+    throw new CharacterRuleError(
+      `${character.name} can merge ${rules.skills.merge.maxPerCharacterPerGrade} time(s) per grade (${done} done at ${character.grade}-grade)`,
+    );
+  }
+}
+
+/** The skill a merge transform consumes, checked against the merge rules (DESIGN §6). */
+function checkMergePartner(
+  rules: RulesConfig,
+  character: Character,
+  t: SkillTransform,
+  joint: JointUses,
+): CharacterSkill {
+  const other = character.skills.find((s) => s.name === t.merge);
+  if (!other) throw new CharacterRuleError(`${character.name} has no skill "${t.merge}"`);
+  if (other.name === t.skill) throw new CharacterRuleError('Merge two different skills');
+  const first = character.skills.find((s) => s.name === t.skill) as CharacterSkill;
+  const { merge } = rules.skills;
+  for (const s of [first, other]) {
+    if (rarityIndex(rules, s.rarity) < rarityIndex(rules, merge.minRarity)) {
+      throw new CharacterRuleError(`[${s.name}] must be at least ${merge.minRarity} to merge`);
+    }
+  }
+  const uses = joint(t.skill, other.name);
+  if (uses < merge.requiredJointUses) {
+    throw new CharacterRuleError(
+      `[${t.skill}] and [${other.name}] were logged together ${uses} times (need ${merge.requiredJointUses})`,
+    );
+  }
+  // Practice-log pair counts are keyed by name, so a merged skill takes a new one.
+  const name = lower(t.name);
+  if (name === lower(t.skill) || name === lower(other.name)) {
+    throw new CharacterRuleError(`The merged skill needs a new name, not [${t.name.trim()}]`);
+  }
+  return other;
 }
 
 /**
@@ -450,6 +590,10 @@ export function releaseEvolution(
   retired: ReadonlySet<string> = new Set(),
   releaseId = 'release',
   legacy = false,
+  /** Per-skill rarities after the evolution (MR.1); null on older releases. */
+  rerate: readonly SkillRerate[] | null = null,
+  /** Joint uses for merge transforms (M5.2); none counted by default. */
+  joint: JointUses = () => 0,
 ): Character {
   if (!legacy) checkNoPendingSelection(rules, character, 'released');
   const target = evolutionTarget(rules, character);
@@ -466,9 +610,10 @@ export function releaseEvolution(
   const ids = new Set(options.map((o) => o.id));
   if (ids.size !== options.length) throw new CharacterRuleError('Two options share an id');
   for (const option of options) {
-    checkOption(rules, character, target, option, retired);
+    checkOption(rules, character, target, option, retired, joint);
     checkStatBonus(rules, option);
   }
+  if (rerate !== null) checkRerate(rules, character, target, rerate);
   // From the unlock grade on, a character without a profession can be offered
   // some (MQ.6): at the unlock evolution, or at a later one after "none for now".
   const unlock =
@@ -495,6 +640,7 @@ export function releaseEvolution(
         statBonus: o.statBonus ?? {},
       })),
       professions: trimmed,
+      ...(rerate === null ? {} : { rerate: rerate.map((r) => ({ ...r })) }),
     },
   };
 }
@@ -520,6 +666,7 @@ export function chooseEvolution(
   retired: ReadonlySet<string> = new Set(),
   releaseId: string | null = null,
   legacy = false,
+  joint: JointUses = () => 0,
 ): EvolutionResult {
   const pending = character.evolution;
   if (!pending) throw new CharacterRuleError(`No evolution is released for ${character.name}`);
@@ -535,7 +682,7 @@ export function chooseEvolution(
       `${character.name} can no longer evolve to ${pending.toGrade}-grade`,
     );
   }
-  checkOption(rules, character, target, option, retired);
+  checkOption(rules, character, target, option, retired, joint);
   // "None for now" (null) is always allowed; the offers stay on the character
   // and can be taken later from the Professions tab (MQ.6, DESIGN §2).
   if (pending.professions.length > 0) {
@@ -555,10 +702,27 @@ export function chooseEvolution(
   }
 
   const byName = new Map(option.transforms.map((t) => [t.skill, t]));
+  // A skill gained after the release (a grant, a merge) takes the default
+  // drop; releases stored before MR.1 re-rate nothing (MR.1 review).
+  const rerated =
+    pending.rerate === undefined
+      ? new Map<string, string>()
+      : new Map(
+          defaultRerate(
+            rules,
+            character,
+            Object.fromEntries(pending.rerate.map((r) => [r.skill, r.rarity])),
+          ).map((r) => [r.skill, r.rarity]),
+        );
   const marking = markRules(rules);
-  const skills: CharacterSkill[] = character.skills.map((s) => {
-    const t = byName.get(s.name);
-    if (!t) return s;
+  // Skills a merge transform consumes (M5.2): the originals are gone.
+  const consumed = new Set(
+    option.transforms.flatMap((t) => (t.merge === undefined ? [] : [t.merge])),
+  );
+  const transformSkill = (s: CharacterSkill, t: SkillTransform): CharacterSkill => {
+    // A merge is a new skill, as `skill.merge` makes it: no nickname, Unique
+    // tag, marks or mark sessions carry over (DESIGN §6, D168).
+    if (t.merge !== undefined) return newSkill(t.name.trim(), t.rarity, s.kind);
     // A rarity gain spends the banked marks as that many upgrades would, and
     // the rest carry on (MQ.4, D114); a transform that keeps the rarity keeps
     // them (DESIGN §6: they bank until the evolution).
@@ -567,14 +731,34 @@ export function chooseEvolution(
     // describe the wrong thing, so it clears until the GM writes new text (M3.5).
     const name = t.name.trim();
     // Its hand-written mark goes too, so library text can reach it (MQ.12).
-    const kept: CharacterSkill = { ...s, name, rarity: t.rarity, marks };
+    // A transform takes its new rarity's library text (MQ.A), not a re-rated one.
+    const { textRarity, ...plain } = s;
+    void textRarity;
+    const kept: CharacterSkill = { ...plain, name, rarity: t.rarity, marks };
     if (name === s.name) return kept;
     const { textEdited, ...fresh } = kept;
     void textEdited;
     return { ...fresh, description: null, flavor: null };
+  };
+  const skills: CharacterSkill[] = character.skills.flatMap((s) => {
+    if (consumed.has(s.name)) return [];
+    const t = byName.get(s.name);
+    if (!t) return [rerateSkill(s, rerated.get(s.name))];
+    return [transformSkill(s, t)];
   });
   let next: Character = {
     ...character,
+    ...(consumed.size === 0
+      ? {}
+      : {
+          merges: {
+            ...character.merges,
+            [character.grade]:
+              (Object.prototype.hasOwnProperty.call(character.merges, character.grade)
+                ? (character.merges[character.grade] ?? 0)
+                : 0) + consumed.size,
+          },
+        }),
     grade: target.id,
     className: option.className,
     skills,
@@ -603,6 +787,37 @@ export function chooseEvolution(
     .filter((t) => t.name.trim() !== t.skill)
     .map((t) => [t.skill, t.name.trim()] as const);
   return { character: next, renames, levelUps };
+}
+
+/**
+ * A kept skill takes its re-rated label (MR.1): marks, text and effects stay,
+ * so its text keeps following the entry of the rarity it had (`textRarity`).
+ */
+function rerateSkill(skill: CharacterSkill, rarity: string | undefined): CharacterSkill {
+  if (rarity === undefined || rarity === skill.rarity) return skill;
+  const textRarity = skill.textRarity ?? skill.rarity;
+  const { textRarity: _old, ...rest } = skill;
+  void _old;
+  return rarity === textRarity ? { ...rest, rarity } : { ...rest, rarity, textRarity };
+}
+
+/**
+ * MR.A: a release stores each skill's new rarity, worked out from the rarity
+ * it had then. When an event changes a listed skill's rarity while the
+ * evolution is pending (an upgrade by marks, say), that entry no longer
+ * describes the skill, so it leaves the list and the skill takes the default
+ * one-step drop from its new rarity at choose. Returns `after` itself when
+ * nothing changes.
+ */
+export function dropStaleRerates(before: Character | undefined, after: Character): Character {
+  const rerate = after.evolution?.rerate;
+  if (!before || !after.evolution || rerate === undefined) return after;
+  const was = new Map(before.skills.map((s) => [s.name, s.rarity]));
+  const now = new Map(after.skills.map((s) => [s.name, s.rarity]));
+  const kept = rerate.filter((r) => !was.has(r.skill) || was.get(r.skill) === now.get(r.skill));
+  return kept.length === rerate.length
+    ? after
+    : { ...after, evolution: { ...after.evolution, rerate: kept } };
 }
 
 /** Earlier offers first, then new names not already offered (ignoring case). */

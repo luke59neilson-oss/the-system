@@ -118,7 +118,7 @@ test('upgrades take the next rarity’s text; edits propagate; effects stay with
         { name: 'Archer’s Eye', rarity: 'common' },
       ],
     });
-    await expect(gm.getByRole('cell', { name, exact: true })).toBeVisible();
+    await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
   }
 
   // Jake on a laptop and a phone; Kim on a laptop, watching every frame.
@@ -153,7 +153,9 @@ test('upgrades take the next rarity’s text; edits propagate; effects stay with
     'Uncommon: learn a nature.',
   );
   await expect(detail.getByTestId('skill-detail-effects')).toHaveText(CANARY);
-  await expect(jake.getByRole('button', { name: /\[Identify \(Uncommon\)\]/ })).toBeVisible();
+  await expect(
+    jake.getByTestId('skills-race').getByRole('button', { name: /\[Identify \(Uncommon\)\]/ }),
+  ).toBeVisible();
   await noSidewaysScroll(jake);
   await jake.screenshot({ path: path.join(shots, 'player-upgraded-1366x768.png') });
 
@@ -179,7 +181,10 @@ test('upgrades take the next rarity’s text; edits propagate; effects stay with
   const phoneErrors = watchErrors(phone);
   await phone.goto(server.url);
   await phone.getByRole('link', { name: /Jake/ }).click();
-  await phone.getByRole('button', { name: /\[Identify \(Uncommon\)\]/ }).click();
+  await phone
+    .getByTestId('skills-race')
+    .getByRole('button', { name: /\[Identify \(Uncommon\)\]/ })
+    .click();
   await expect(phone.getByTestId('skill-detail-effects')).toHaveText(CANARY);
   await noSidewaysScroll(phone);
   await phone.screenshot({ path: path.join(shots, 'player-upgraded-390x844.png') });

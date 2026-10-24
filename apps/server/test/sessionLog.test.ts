@@ -124,6 +124,20 @@ describe('SessionLogWriter', () => {
     const report = readFileSync(file, 'utf8');
     expect(report).toMatch(/^# Session 1 report: Whale$/m);
     expect(report).toContain('- In-game days: 1–3');
+    // M9.1: the same report as JSON beside the markdown.
+    const json = JSON.parse(readFileSync(file.replace(/\.md$/, '.json'), 'utf8')) as {
+      format: string;
+      version: number;
+      report: boolean;
+      session: { number: number; endDay: number };
+      entries: { text: string }[];
+    };
+    expect(json.format).toBe('the-system/session-report');
+    expect(json.version).toBe(1);
+    expect(json.report).toBe(true);
+    expect(json.session.number).toBe(1);
+    expect(json.session.endDay).toBe(3);
+    expect(JSON.stringify(json.entries)).toContain('Pale hunters');
     // Between sessions the report stays as it was.
     apply(store, { type: 'title.award', characterId: 'jake', title: 'Early Bird' }, gm);
     expect(writer.flush()).toBe(false);
@@ -135,9 +149,16 @@ describe('SessionLogWriter', () => {
     expect(cancelled).toBe(true);
     const two = readFileSync(path.join(dataDir, 'exports', 'main', 'session-02.md'), 'utf8');
     expect(two).toContain('Jake earned the title Late Bird');
-    expect(two).not.toContain('Early Bird');
+    expect(two).not.toContain('earned the title Early Bird');
+    // The party sheet stands as at the end of the log, with both titles.
+    expect(two).toContain('- Titles: [Early Bird], [Late Bird]');
     // No temp files left behind.
-    expect(readdirSync(path.dirname(file)).sort()).toEqual(['session-01.md', 'session-02.md']);
+    expect(readdirSync(path.dirname(file)).sort()).toEqual([
+      'session-01.json',
+      'session-01.md',
+      'session-02.json',
+      'session-02.md',
+    ]);
     store.close();
   });
 
@@ -448,14 +469,17 @@ describe('session log during a scripted session (M2.4 acceptance)', () => {
     const started = Date.now();
     try {
       await app.close();
-      expect(Date.now() - started).toBeLessThan(2000);
+      // What this guards is ws's 30 s close-handshake wait (QF.8): without the
+      // terminate in preClose, close takes 30 s. 10 s leaves room for a loaded
+      // machine and still tells the two apart.
+      expect(Date.now() - started).toBeLessThan(10_000);
       const dir = path.join(app.exportsDir, 'main');
       expect(readdirSync(dir).filter((f) => f.endsWith('.md'))).toHaveLength(1);
       expect(existsSync(path.join(dataDir, 'campaigns', 'main', 'LOCK'))).toBe(false);
     } finally {
       zombie.destroy();
     }
-  });
+  }, 20_000);
 
   it('keeps a log per hub-driven campaign without touching the event log', () => {
     // The writer reads the store; the hub writes it. Both share one store.

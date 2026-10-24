@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 21,
+  "schemaVersion": 32,
   "name": "Tutorial: The Whale",
   "rules": {
     "configVersion": 1,
@@ -245,7 +245,9 @@
       },
       "maxMarksPerSkillPerSession": 1,
       "marksCarryOver": false,
+      "marksResetOnUpgrade": false,
       "libraryByRarity": false,
+      "handTextSurvivesUpgrade": false,
       "merge": {
         "requiredJointUses": 3,
         "minRarity": "uncommon",
@@ -439,7 +441,7 @@
           "flavor": null
         },
         {
-          "name": "Archer\u2019s Eye",
+          "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -545,7 +547,7 @@
           "flavor": null
         },
         {
-          "name": "Archer\u2019s Eye",
+          "name": "Archer’s Eye",
           "rarity": "common",
           "kind": "class",
           "nickname": null,
@@ -575,6 +577,7 @@
   },
   "characterOrder": ["jake", "casper"],
   "broadcasts": [],
+  "scheduledBroadcasts": [],
   "items": {
     "hasteRing": {
       "id": "hasteRing",
@@ -600,7 +603,7 @@
     },
     "bow": {
       "id": "bow",
-      "name": "Hunter\u2019s Bow",
+      "name": "Hunter’s Bow",
       "rarity": "rare",
       "description": "",
       "slot": "mainHand",
@@ -613,6 +616,73 @@
     }
   },
   "itemOrder": ["hasteRing", "potion", "bow"],
+  "lootTables": {},
+  "lootTableOrder": [],
+  "lootLog": [],
+  "ledger": [
+    {
+      "id": "y8",
+      "at": "2026-10-28T18:00:07.000Z",
+      "characterId": "jake",
+      "delta": 120,
+      "balance": 120,
+      "kind": "grant",
+      "other": null,
+      "reason": "Starter loot"
+    },
+    {
+      "id": "y9",
+      "at": "2026-10-28T18:00:08.000Z",
+      "characterId": "casper",
+      "delta": 40,
+      "balance": 40,
+      "kind": "grant",
+      "other": null,
+      "reason": "Found in a chest"
+    },
+    {
+      "id": "y11",
+      "at": "2026-10-28T18:00:10.000Z",
+      "characterId": "jake",
+      "delta": -20,
+      "balance": 100,
+      "kind": "gift",
+      "other": "casper",
+      "reason": ""
+    },
+    {
+      "id": "y11",
+      "at": "2026-10-28T18:00:10.000Z",
+      "characterId": "casper",
+      "delta": 20,
+      "balance": 60,
+      "kind": "gift",
+      "other": "jake",
+      "reason": ""
+    },
+    {
+      "id": "y13",
+      "at": "2026-10-28T18:00:12.000Z",
+      "characterId": "jake",
+      "delta": -50,
+      "balance": 50,
+      "kind": "trade",
+      "other": "casper",
+      "reason": ""
+    },
+    {
+      "id": "y13",
+      "at": "2026-10-28T18:00:12.000Z",
+      "characterId": "casper",
+      "delta": 50,
+      "balance": 110,
+      "kind": "trade",
+      "other": "jake",
+      "reason": ""
+    }
+  ],
+  "titleLibrary": {},
+  "titleLibraryOrder": [],
   "skillLibrary": {},
   "skillLibraryOrder": [],
   "classLibrary": {},
@@ -708,6 +778,18 @@
   "entityOrder": [],
   "montages": {},
   "montageOrder": [],
+  "contests": {},
+  "contestOrder": [],
+  "hunger": {
+    "enabled": false,
+    "steps": ["Fed", "Peckish", "Hungry", "Famished", "Starving"],
+    "levels": {}
+  },
+  "regions": {},
+  "regionOrder": [],
+  "currentRegion": null,
+  "factions": {},
+  "factionOrder": [],
   "day": 1,
   "sessions": [],
   "currentSession": null

@@ -23,6 +23,7 @@ import {
   kit,
   randomCommand,
   randomLibraryCommand,
+  randomBroadcastCommand,
   rawRules,
   run,
   seededRandom,
@@ -773,7 +774,9 @@ describe('property: replay equals incremental state', () => {
   // reach every command path. One walk alone reaches some rare paths only a
   // handful of times, so any rule change that reshuffles it (QF.2) could drop
   // a path to zero without a bug; two walks keep coverage from hinging on luck.
-  const SEEDS = [20261021, 20261022] as const;
+  // Second seed moved 20261022 → 20261023 at M5.5: the new practice commands shift the
+  // stream, and 20261022 then never reached an accepted skill.useLibraryText.
+  const SEEDS = [20261021, 20261023] as const;
   const SEED = SEEDS.join('+');
   const STEPS = 2000;
 
@@ -792,9 +795,15 @@ describe('property: replay equals incremental state', () => {
       const ctx = testContext('p');
       let c = run([created]);
       const libraryRand = seededRandom(seed + 1);
+      // M4.7: scheduled broadcasts on their own stream, so the main walk keeps its draws.
+      const broadcastRand = seededRandom(seed + 2);
       for (let step = 0; step < STEPS; step++) {
         const command =
-          step % 20 === 7 ? randomLibraryCommand(libraryRand, c) : randomCommand(rand, c);
+          step % 20 === 7
+            ? randomLibraryCommand(libraryRand, c)
+            : step % 40 === 13
+              ? randomBroadcastCommand(broadcastRand, c)
+              : randomCommand(rand, c);
         const asPlayer =
           (command.type === 'event.undo' ||
             (PLAYER_COMMANDS.has(command.type) &&
@@ -871,6 +880,7 @@ describe('property: replay equals incremental state', () => {
       'skill.nickname',
       'skill.setUnique',
       'skill.describe',
+      'skill.useLibraryText',
       'skill.awardMark',
       'skill.upgrade',
       'clock.create',
@@ -891,6 +901,8 @@ describe('property: replay equals incremental state', () => {
       'montage.close',
       'skillDef.define',
       'skillDef.edit',
+      'broadcast.schedule',
+      'broadcast.unschedule',
     ]) {
       expect(acceptedByType[type] ?? 0, `seed ${SEED}: accepted ${type}`).toBeGreaterThan(0);
     }
@@ -903,6 +915,7 @@ describe('property: replay equals incremental state', () => {
     const unreachable = new Set([
       'character.professionGranted',
       'profession.chosen',
+      'profession.offerWithdrawn',
       'skill.merged',
       'selection.offered',
       'selection.chosen',
@@ -924,6 +937,33 @@ describe('property: replay equals incremental state', () => {
       'session.ended',
       // M4.4 portraits have their own tests (portraits.test.ts) and golden log.
       'character.portraitSet',
+      // MR.3: random play starts on overflow rules, which have nothing to
+      // migrate; rulesMigration.test.ts and its golden log cover it.
+      'rules.migrated',
+      // M4.9: rules edits have their own tests (rulesEdit.test.ts) and golden
+      // log; editing rules here would change what every later command means.
+      'rules.edited',
+      // M6.2: loot tables have their own tests (loot.test.ts) and golden log;
+      // a roll needs a random source the property stream does not inject.
+      'lootTable.defined',
+      'lootTable.edited',
+      'loot.rolled',
+      // M6.4: the title library has its own tests (titleLibrary.test.ts) and
+      // golden log (title-library.jsonl).
+      'titleDef.defined',
+      'titleDef.edited',
+      // M7.3: shared contests have their own tests (contests.test.ts) and
+      // golden log; adding them here would reshuffle the seeded walk (D118).
+      'contest.shared',
+      // M7.4: trackers have their own tests (trackers.test.ts) and golden log
+      // (trackers.jsonl); adding them here would reshuffle the seeded walk (D118).
+      'hunger.configured',
+      'hunger.levelsSet',
+      'region.defined',
+      'region.edited',
+      'region.currentSet',
+      'faction.defined',
+      'faction.edited',
     ]);
     expect(
       EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),

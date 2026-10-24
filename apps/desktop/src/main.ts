@@ -21,6 +21,8 @@ import {
  * data lives in the OS app-data folder; one instance at a time.
  * MS.7: a splash appears at once, a second launch focuses the first, and a
  * taken port moves to the next free one.
+ * M10.1: quitting backs the campaign up first; the join panel carries
+ * firewall help for this computer's OS.
  */
 
 // Tests only: a separate profile so test instances never meet a real one (the
@@ -64,11 +66,20 @@ function showSplash(): void {
     }
   });
   void win.loadURL(splashUrl());
-  // For the desktop test: how long after the process started the splash came up.
-  (globalThis as { theSystemSplashShownAfterMs?: number }).theSystemSplashShownAfterMs = Math.round(
-    process.uptime() * 1000,
-  );
+  // For the desktop test: how long after app-ready (our start-up code, QF.8)
+  // and after the process started (includes Electron's own start-up) the
+  // splash window was created and its page requested (not when it painted).
+  const g = globalThis as {
+    theSystemSplashShownAfterMs?: number;
+    theSystemSplashShownAfterReadyMs?: number;
+  };
+  const now = process.uptime() * 1000;
+  g.theSystemSplashShownAfterMs = Math.round(now);
+  g.theSystemSplashShownAfterReadyMs = Math.round(now - readyAtMs);
 }
+
+/** Process uptime (ms) when Electron reported ready. */
+let readyAtMs = 0;
 
 let running: RunningApp | null = null;
 let gmWindow: BrowserWindow | null = null;
@@ -76,6 +87,8 @@ let gmWindow: BrowserWindow | null = null;
 let splash: BrowserWindow | null = null;
 /** Set once quitting starts, so closing the window no longer asks. */
 let quitting = false;
+/** Windows log-off or shutdown: close without asking (the quit itself still backs up). */
+let sessionEnding = false;
 /** True while the server is starting: a quit then waits for start() to finish and close it. */
 let starting = false;
 /** A stuck close (e.g. a client that never finishes the WebSocket close) must not hang Quit. */
@@ -103,15 +116,22 @@ function openGmWindow(server: RunningApp, notice: string | null = null): void {
   // The dialog is async: the server shares this process and must keep serving
   // players while the question is open.
   // Windows log-off or shutdown: never hold it up with a question.
+  // It only skips the question: before-quit still closes the server, so the
+  // campaign is closed and backed up (M10.1 review).
   win.on('session-end', () => {
-    quitting = true;
+    sessionEnding = true;
   });
   let asking = false;
   win.on('close', (event) => {
-    if (quitting) return;
+    if (quitting || sessionEnding) return;
     event.preventDefault();
     if (asking) return;
     asking = true;
+    // An installer upgrading the app sends this polite close and then force-
+    // kills the app a second later, before anyone answers: take the quit
+    // backup now (quitting after this makes no second copy unless something
+    // changed in between; M10.A review).
+    server.backup();
     void dialog
       .showMessageBox(win, {
         type: 'question',
@@ -185,6 +205,10 @@ async function start(): Promise<void> {
         dataDir: process.env['THE_SYSTEM_DATA_DIR'] ?? dataDirFor(app.getPath('userData')),
         gmKey,
         machineId: machineIdFor(app.getPath('userData')),
+        // M10.1: every quit leaves a copy of the campaign in its backups folder.
+        backupOnClose: 'quit',
+        // Tests only: show another OS's firewall help in the join panel.
+        platform: (!app.isPackaged && process.env['THE_SYSTEM_TEST_PLATFORM']) || process.platform,
       }),
     );
     // Tests only: a slow start (server and campaign already open), so the
@@ -192,6 +216,17 @@ async function start(): Promise<void> {
     const hold = Number(process.env['THE_SYSTEM_TEST_START_DELAY_MS'] ?? 0);
     if (!app.isPackaged && hold > 0) {
       await new Promise((r) => setTimeout(r, Math.min(hold, 30_000)));
+    }
+    // Tests only: hold the hand-over until the test releases it (or 30 s
+    // pass), so a test can check the splash without racing it (QF.14).
+    if (!app.isPackaged && process.env['THE_SYSTEM_TEST_HOLD_START'] === '1') {
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, 30_000);
+        (globalThis as { theSystemReleaseStart?: () => void }).theSystemReleaseStart = () => {
+          clearTimeout(timer);
+          resolve();
+        };
+      });
     }
     running = started.value;
     if (started.fellBack) notice = portFallbackMessage(port, started.port);
@@ -256,6 +291,7 @@ if (!app.requestSingleInstanceLock()) {
     void running.close().finally(() => app.quit());
   });
   void app.whenReady().then(() => {
+    readyAtMs = process.uptime() * 1000;
     if (app.isPackaged) {
       // No View menu (DevTools/reload) in release builds; macOS keeps the app
       // and Edit menus so Cmd+C/V/Q still work.

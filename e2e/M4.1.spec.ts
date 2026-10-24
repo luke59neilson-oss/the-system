@@ -135,7 +135,7 @@ test('the GM builds the skill library; granted skills take its text', async ({ b
   // New character: Identify arrives with the library's text.
   await gm.getByLabel('Name', { exact: true }).fill('Jake');
   await gm.getByRole('button', { name: 'Create character' }).click();
-  await expect(gm.getByRole('cell', { name: 'Jake', exact: true })).toBeVisible();
+  await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
 
   for (const viewport of [
     { width: 1366, height: 768 },

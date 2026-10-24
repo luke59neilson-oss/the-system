@@ -22,9 +22,16 @@ export interface CharacterSkill {
   readonly flavor: string | null;
   /**
    * The GM wrote this copy's text by hand (MQ.12): library edits no longer
-   * reach it. Absent = false, so stored states keep their shape.
+   * reach it, nor (MR.4) upgrades, until the GM uses `skill.useLibraryText`.
+   * Absent = false, so stored states keep their shape.
    */
   readonly textEdited?: true;
+  /**
+   * The rarity whose library entry this copy's text and effects follow, when
+   * an evolution re-rated the skill (MR.1, DESIGN §6: same power, new label).
+   * Absent = its own rarity; an upgrade or transform clears it.
+   */
+  readonly textRarity?: string;
 }
 
 /** One level-up's free points (DESIGN §4): assigned once, then locked (M1.5). */
@@ -356,4 +363,30 @@ export function takeOfferedProfession(
     throw new CharacterRuleError(`"${profession}" is not one of your offered professions`);
   }
   return grantProfession(rules, character, profession);
+}
+
+/**
+ * The GM withdraws an untaken profession offer (M5.2, MQ.6 review): from the
+ * Professions tab and from a pending evolution release. Refused once the
+ * character has a profession (the list is locked) or when it was not offered.
+ */
+export function withdrawProfessionOffer(character: Character, profession: string): Character {
+  if (character.profession !== null) {
+    throw new CharacterRuleError(
+      `${character.name} already has the profession [${character.profession}]; the offers are locked`,
+    );
+  }
+  const pending = character.evolution;
+  const inRelease = pending?.professions.includes(profession) ?? false;
+  if (!character.professionOffers.includes(profession) && !inRelease) {
+    throw new CharacterRuleError(`"${profession}" is not offered to ${character.name}`);
+  }
+  return {
+    ...character,
+    professionOffers: character.professionOffers.filter((p) => p !== profession),
+    evolution:
+      pending && inRelease
+        ? { ...pending, professions: pending.professions.filter((p) => p !== profession) }
+        : pending,
+  };
 }

@@ -1,0 +1,215 @@
+/*
+ * Grade metal themes (M8.1, DESIGN §3, D13). Each theme sets:
+ *   --metal      the frame and heading colour
+ *   --metal-hi   the highlight edge of the frame
+ *   --metal-lo   the shadow edge
+ *   --sheen      the frame's surface (dull metals flat, shiny ones bright,
+ *                platinum brushed, diamond prismatic and animated)
+ *   --glow-strength how far the frame glows (dull metals barely)
+ *   --metal-text the metal as a text colour (headings, names): the metal
+ *                itself where it reads at 4.5:1 on a window, lightened where
+ *                it does not (bronze). Every theme sets it, so a nested theme
+ *                never inherits another's (M8.3).
+ * Platinum is a cool blue-white with a heavier brushed texture so it reads
+ * differently from silver (DESIGN §3; ΔE checked in M8.3).
+ */
+:root {
+  --metal: #8a96a8;
+  --metal-text: #8a96a8;
+  --metal-hi: #b8c2d0;
+  --metal-lo: #4d5868;
+  --sheen: linear-gradient(135deg, var(--metal-hi), var(--metal) 45%, var(--metal-lo));
+  --glow-strength: 25%;
+}
+.theme-aluminum {
+  --metal: #a7adb4;
+  --metal-text: #a7adb4;
+  --metal-hi: #c3c8ce;
+  --metal-lo: #6e747b;
+  --sheen: linear-gradient(160deg, #b4b9bf, #9ba1a8 60%, #868c93);
+  --glow-strength: 12%;
+}
+.theme-bronze {
+  --metal: #a5733f;
+  --metal-text: #bc8854;
+  --metal-hi: #bf8d58;
+  --metal-lo: #6b4824;
+  --sheen: linear-gradient(160deg, #b07e4b, #96683a 60%, #7d5530);
+  --glow-strength: 14%;
+}
+.theme-copper {
+  --metal: #d9804f;
+  --metal-text: #d9804f;
+  --metal-hi: #ffb38a;
+  --metal-lo: #8f4a26;
+  --sheen: linear-gradient(135deg, #ffb38a, #d9804f 40%, #a85a32 70%, #f0a070);
+  --glow-strength: 35%;
+}
+.theme-silver {
+  --metal: #d4d8de;
+  --metal-text: #d4d8de;
+  --metal-hi: #ffffff;
+  --metal-lo: #8d939b;
+  --sheen: linear-gradient(135deg, #ffffff, #d4d8de 35%, #9ea4ac 65%, #eef0f3);
+  --glow-strength: 35%;
+}
+.theme-gold {
+  --metal: #e7c25a;
+  --metal-text: #e7c25a;
+  --metal-hi: #fff0b0;
+  --metal-lo: #a07c22;
+  --sheen: linear-gradient(135deg, #fff0b0, #e7c25a 40%, #b8902e 70%, #f7da85);
+  --glow-strength: 40%;
+}
+.theme-platinum {
+  --metal: #b2d5f5;
+  --metal-text: #b2d5f5;
+  --metal-hi: #f2f9ff;
+  --metal-lo: #8fb4d2;
+  /* Heavier brushed texture: bright vertical streaks with pale blue grain over
+     a cool, light gradient, so the frame reads as brushed blue-white even at
+     ring width (silver is smooth and neutral). */
+  --sheen:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.7) 0 1px,
+      rgba(120, 170, 220, 0.45) 1px 2px,
+      rgba(255, 255, 255, 0.2) 2px 4px
+    ),
+    linear-gradient(135deg, #f2f9ff, #cfe6fa 40%, #a9cdee 70%, #e6f3ff);
+  --glow-strength: 45%;
+}
+.theme-diamond {
+  --metal: #c9f3ff;
+  --metal-text: #c9f3ff;
+  --metal-hi: #ffffff;
+  --metal-lo: #7fb6d6;
+  --sheen: linear-gradient(
+    120deg,
+    #ffd6f5,
+    #c9f3ff 20%,
+    #d8ffd6 40%,
+    #fff7c2 60%,
+    #e0d4ff 80%,
+    #ffd6f5
+  );
+  --glow-strength: 50%;
+}
+
+/*
+ * System windows on the player screen (DESIGN §9): the grade metal is the
+ * frame and the accent. Every window gets a thin metal border and glow and a
+ * metal heading; the status window wears the full sheen ring.
+ */
+.player-grid .window:not(.skill-detail) {
+  border-color: color-mix(in srgb, var(--metal) 55%, var(--metal-lo));
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--metal) calc(var(--glow-strength) * 0.7), transparent),
+    inset 0 0 18px rgba(90, 127, 184, 0.1);
+}
+/* Zero-specificity scope: beats the base h2/h3 accent (this file loads
+   later) but never a class such as a skill's rarity colour. */
+:where(.player-grid .window, .status-window) :is(h2, h3) {
+  color: var(--metal-text);
+}
+
+/* The status window's frame is the metal itself: a sheen ring drawn over the border. */
+.status-window.window {
+  position: relative;
+  border-color: var(--metal-lo);
+  box-shadow:
+    0 0 14px color-mix(in srgb, var(--metal) var(--glow-strength), transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--metal) 20%, transparent);
+}
+.status-window.window::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  padding: 4px;
+  border-radius: inherit;
+  background: var(--sheen);
+  background-size: 300% 300%;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+.theme-platinum .status-window.window::before,
+.status-window.window.theme-platinum::before {
+  background-size:
+    auto,
+    300% 300%;
+}
+.theme-diamond .status-window.window::before,
+.status-window.window.theme-diamond::before {
+  animation: prism 8s linear infinite;
+}
+@keyframes prism {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 300% 50%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-diamond .status-window.window::before,
+  .status-window.window.theme-diamond::before {
+    animation: none;
+  }
+}
+
+/*
+ * Evolution transition (M8.2). The new metal fades in over the old one, then
+ * a bright pulse runs round every frame and the status ring sweeps once.
+ * Reduced motion: the new theme applies at once, nothing moves.
+ */
+/* Only while evolving: the theme class and .evolving arrive together, so the
+   new colours ease in; a theme change at any other time is instant. */
+.player-grid.evolving .window,
+.player-grid.evolving :is(h2, h3) {
+  transition:
+    border-color 0.9s ease,
+    box-shadow 0.9s ease,
+    color 0.9s ease;
+}
+.player-grid.evolving .window:not(.skill-detail) {
+  animation: evolve-frame 2.4s ease-out;
+}
+.player-grid.evolving .status-window.window::before {
+  animation: evolve-ring 2.4s ease-in-out;
+}
+@keyframes evolve-frame {
+  0% {
+    box-shadow: 0 0 0 color-mix(in srgb, var(--metal-hi) 0%, transparent);
+  }
+  35% {
+    box-shadow:
+      0 0 28px color-mix(in srgb, var(--metal-hi) 85%, transparent),
+      inset 0 0 22px color-mix(in srgb, var(--metal) 35%, transparent);
+  }
+}
+@keyframes evolve-ring {
+  from {
+    background-position: 0% 50%;
+    filter: brightness(1.8);
+  }
+  to {
+    background-position: 300% 50%;
+    filter: brightness(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .player-grid.evolving .window,
+  .player-grid.evolving :is(h2, h3) {
+    transition: none;
+  }
+  .player-grid.evolving .window:not(.skill-detail),
+  .player-grid.evolving .status-window.window::before {
+    animation: none;
+  }
+}

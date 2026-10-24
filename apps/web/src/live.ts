@@ -20,6 +20,14 @@ export type LiveNotification =
   | { kind: 'freePoints'; characterId: string; unassigned: number }
   | { kind: 'broadcast'; characterId: string; text: string }
   | { kind: 'hiddenQuest'; characterId: string }
+  | { kind: 'skillUpgrade'; characterId: string; skill: string; from: string; to: string }
+  | {
+      kind: 'skillMerge';
+      characterId: string;
+      skills: readonly [string, string];
+      name: string;
+      rarity: string;
+    }
   | {
       kind: 'gift';
       characterId: string;
@@ -27,6 +35,21 @@ export type LiveNotification =
       currency: number;
       currencyName: string;
       items: { name: string; count: number }[];
+      reason?: string;
+    }
+  | { kind: 'title'; characterId: string; title: string; text: string }
+  | {
+      kind: 'itemsTaken';
+      characterId: string;
+      items: { name: string; count: number }[];
+      reason: string;
+    }
+  | {
+      kind: 'currency';
+      characterId: string;
+      amount: number;
+      currencyName: string;
+      reason: string;
     }
   | {
       kind: 'trade';

@@ -163,7 +163,10 @@ test('a player chooses a released evolution with a profession', async ({ browser
   await dialog.getByRole('button', { name: 'Choose Storm Ranger' }).click();
   const warnings = dialog.getByTestId('evolution-warnings');
   await expect(warnings).toContainText(
-    new RegExp(`\\[${skill}\\] becomes \\[Storm Shot\\]: its \\d+ mastery marks? resets? to 0\\.`),
+    // MR.2: every transform starts the skill at 0 marks.
+    new RegExp(
+      `\\[${skill}\\] becomes \\[Storm Shot\\]: a transformed skill starts at 0 marks, so its \\d+ mastery marks? resets?\\.`,
+    ),
   );
   await expect(warnings).toContainText('Your class stat spread changes');
   await expect(warnings).toContainText('The choice is final');

@@ -2,8 +2,11 @@ node_modules
 dist
 coverage
 test-results
+test-results-latency
 playwright-report
+playwright-report-latency
 package-lock.json
 docs
 *.md
 apps/desktop/release/
+.claude/worktrees/
