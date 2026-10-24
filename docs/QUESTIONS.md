@@ -496,3 +496,15 @@ DESIGN/ROADMAP; do not re-apply them.
     if it persists at the next check; and restore D183. Default: no change
     (D183 stays reverted).
     Answer:
+
+72. **Tutorial pack numbers (M9.5).** The tutorial pack (`docs/content-packs/tutorial.json`)
+    needed numbers DESIGN §8 does not give. Defaults used: World Stability
+    starts at 100 and players see it; cleansing a curse zone −5, killing a
+    pale hunter −2, killing a System-placed beast +1, killing a Beast Lord
+    +5. Beast Lords: Gale Warden F-grade lvl 14, Clotmother E lvl 22,
+    Ossuary King E lvl 28. [Rapid Spread] gives +5% Agility and +5%
+    Endurance; a second title [Lordbreaker] gives +3% Strength and +2
+    Strength. The hidden quest "The Host's Response" is there for the reveal.
+    Every value is an ordinary library entry: change it in the app, or tell
+    me and the pack changes (D197).
+    Answer:

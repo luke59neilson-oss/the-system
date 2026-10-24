@@ -90,5 +90,20 @@ export function contentToCommands(
       },
     });
   });
+  (content.regions ?? []).forEach((r, i) =>
+    commands.push({ path: `regions[${i}]`, command: { type: 'region.define', ...r } }),
+  );
+  (content.quests ?? []).forEach((q, i) =>
+    commands.push({ path: `quests[${i}]`, command: { type: 'quest.create', ...q } }),
+  );
+  (content.gmNotes ?? []).forEach((n, i) =>
+    commands.push({
+      path: `gmNotes[${i}]`,
+      command: { type: 'note.create', characterId: null, kind: 'gm', ...n },
+    }),
+  );
+  if (content.hunger) {
+    commands.push({ path: 'hunger', command: { type: 'hunger.configure', ...content.hunger } });
+  }
   return { commands, errors };
 }

@@ -19,9 +19,9 @@ export interface ContentPreviewEntry {
   /** Null when the entry would apply; otherwise why not. */
   readonly error: string | null;
   /**
-   * A heads-up that does not block: an item whose name the item library
-   * already has (items may share names, so importing a file twice would add
-   * a second copy).
+   * A heads-up that does not block: an item or bestiary entry whose name
+   * the campaign already has (both may share names, so importing a file
+   * twice would add a second copy).
    */
   readonly note: string | null;
 }
@@ -65,12 +65,16 @@ export function previewContent(
 }
 
 function duplicateItemNote(campaign: Campaign, command: ContentCommand['command']): string | null {
-  if (command.type !== 'item.define' || !campaign.state) return null;
+  const state = campaign.state;
+  if (!state || (command.type !== 'item.define' && command.type !== 'entity.define')) return null;
   const key = command.name.trim().toLowerCase();
-  const clash = Object.values(campaign.state.items).some(
-    (item) => item.name.trim().toLowerCase() === key,
-  );
-  return clash
-    ? `The item library already has an item named [${command.name}]: this adds another`
+  const same = (n: { name: string }) => n.name.trim().toLowerCase() === key;
+  if (command.type === 'item.define') {
+    return Object.values(state.items).some(same)
+      ? `The item library already has an item named [${command.name}]: this adds another`
+      : null;
+  }
+  return Object.values(state.entities).some(same)
+    ? `The bestiary already has an entry named [${command.name}]: this adds another`
     : null;
 }

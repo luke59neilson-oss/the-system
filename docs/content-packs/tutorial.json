@@ -1,0 +1,289 @@
+{
+  "format": "the-system/content",
+  "version": 1,
+  "title": "Tutorial: The Host",
+  "notes": "The first content pack (DESIGN §8): five sessions, levels 0 to 30, thirty in-game days on a colossal cosmic humpback whale with its own star and moons. The players are cell-sized and believe they are purging a curse; they are the infection, and the curse is the whale's immune response. Import it into a new campaign before session 1. Untick anything you want to run differently. Factions are left to play: survivors gather around the players' choices and become the Earth-arc cast.",
+  "quests": [
+    {
+      "title": "The World Is Dying",
+      "text": "The world is dying. Find what is killing it. Delve to the heart of the world and purge the infection.",
+      "days": 30,
+      "stability": {
+        "initial": 100,
+        "visible": true,
+        "rules": {
+          "cleanse-curse-zone": -5,
+          "kill-pale-hunter": -2,
+          "kill-system-beast": 1,
+          "kill-beast-lord": 5
+        }
+      }
+    },
+    {
+      "title": "The Host's Response",
+      "text": "The curse is not a curse. It is the world defending itself, and you are what it is defending against. Decide what you are.",
+      "visible": false
+    }
+  ],
+  "regions": [
+    {
+      "name": "The Crown",
+      "notes": "Spawn. Rolling knolls on the whale's snout, warm under the near star. Session 1, levels 0 to 4 (G-grade). Weak System-placed beasts to learn the ropes; the first patch of Malignant Miasma sits at the edge of the knolls. The System's tutorial notices arrive here."
+    },
+    {
+      "name": "Rake Canyons",
+      "notes": "Old scar canyons from something that once raked the whale's hide. Session 1 to 2, levels 4 to 10. First pale hunters, which gather where the land is wounded. Survivors from other spawn points shelter on the canyon rims."
+    },
+    {
+      "name": "Twin Spouts",
+      "notes": "The blowholes. The way down is to ride the inhale: a timed descent (use a progress clock). Miss it and wait for the next breath while the pale hunters close in. Session 2, levels 8 to 12."
+    },
+    {
+      "name": "Stormlung",
+      "notes": "Airway caves of roaring wind and pressure storms. Beast Lord 1, the Gale Warden, holds the deep chamber. Session 2 to 3, levels 10 to 15; the E-grade evolution lands at the end of this stretch for most characters."
+    },
+    {
+      "name": "Red Rivers",
+      "notes": "Vessels: torrents of red current to ride or fight against. Beast Lord 2, the Clotmother, waits where the rivers meet. The reveal belongs here: a high-rarity Identify on the miasma, a dying pale hunter that does not attack, or a survivor who has worked it out. Session 3 to 4, levels 15 to 22."
+    },
+    {
+      "name": "Marrow Halls",
+      "notes": "Bone galleries lit by marrow glow. Beast Lord 3, the Ossuary King. The party should know the truth by now; the halls are where they decide what to do with it. Session 4 to 5, levels 22 to 27."
+    },
+    {
+      "name": "The Drum",
+      "notes": "The heart. Every beat shakes the chamber; World Stability tells the party how close the Host is to failing. The finale is the party's choice: purge the heart as the quest demands, or find another way. Session 5, levels 27 to 30."
+    }
+  ],
+  "bestiary": [
+    {
+      "name": "The Host (the whale)",
+      "label": "The World",
+      "tiers": [
+        { "minRarity": "common", "text": "[The World]" },
+        { "minRarity": "rare", "text": "[The Host] Something vast is alive beneath you." }
+      ],
+      "notes": "Never Identify past Rare in the tutorial."
+    },
+    {
+      "name": "Curse energy",
+      "label": "Malignant Miasma",
+      "tiers": [
+        { "minRarity": "common", "text": "[Malignant Miasma]" },
+        { "minRarity": "uncommon", "text": "[Fever]" },
+        { "minRarity": "rare", "text": "[The Host's Response]" }
+      ],
+      "notes": "Cleansing a zone: stability action cleanse-curse-zone."
+    },
+    {
+      "name": "Knoll grazer (System beast)",
+      "label": "Knoll Grazer",
+      "grade": "G",
+      "level": 2,
+      "tiers": [
+        { "minRarity": "common", "text": "[Knoll Grazer – lvl 2]" },
+        { "minRarity": "uncommon", "text": "[Knoll Grazer – lvl 2] A placid beast that does not belong to this land." }
+      ],
+      "stats": { "strength": 14, "toughness": 14, "vitality": 16 },
+      "notes": "Placed by the System. Killing one: kill-system-beast."
+    },
+    {
+      "name": "Canyon stalker (System beast)",
+      "label": "Canyon Stalker",
+      "grade": "F",
+      "level": 7,
+      "tiers": [
+        { "minRarity": "common", "text": "[Canyon Stalker – lvl 7]" },
+        { "minRarity": "uncommon", "text": "[Canyon Stalker – lvl 7] A lean hunter of the scar canyons. It has no tracks older than a month." }
+      ],
+      "stats": { "strength": 28, "agility": 34, "perception": 26 },
+      "notes": "Placed by the System. Killing one: kill-system-beast."
+    },
+    {
+      "name": "Young pale hunter (immune cell)",
+      "label": "Pale Hunter",
+      "grade": "G",
+      "level": 4,
+      "tiers": [
+        { "minRarity": "common", "text": "[Pale Hunter – lvl 4]" },
+        { "minRarity": "uncommon", "text": "[Pale Hunter – lvl 4] It gathers where the land is wounded." },
+        { "minRarity": "rare", "text": "[Pale Hunter – lvl 4] The Host's own defender. It hunts infection." }
+      ],
+      "stats": { "strength": 18, "agility": 22, "toughness": 16 },
+      "notes": "Killing one: kill-pale-hunter. It goes for whoever cleansed miasma most recently."
+    },
+    {
+      "name": "Pale hunter (immune cell)",
+      "label": "Pale Hunter",
+      "grade": "F",
+      "level": 9,
+      "tiers": [
+        { "minRarity": "common", "text": "[Pale Hunter – lvl 9]" },
+        { "minRarity": "uncommon", "text": "[Pale Hunter – lvl 9] It gathers where the land is wounded." },
+        { "minRarity": "rare", "text": "[Pale Hunter – lvl 9] The Host's own defender. It hunts infection." }
+      ],
+      "stats": { "strength": 32, "agility": 42, "toughness": 30 },
+      "notes": "Killing one: kill-pale-hunter."
+    },
+    {
+      "name": "Pale warden (immune cell)",
+      "label": "Pale Warden",
+      "grade": "E",
+      "level": 20,
+      "tiers": [
+        { "minRarity": "common", "text": "[Pale Warden – lvl 20]" },
+        { "minRarity": "uncommon", "text": "[Pale Warden – lvl 20] A larger pale shape that moves against the current to reach you." },
+        { "minRarity": "rare", "text": "[Pale Warden – lvl 20] The Host's answer to a spreading wound. It will not stop." }
+      ],
+      "stats": { "strength": 90, "agility": 80, "toughness": 85, "vitality": 80 },
+      "notes": "Red Rivers onward. Killing one: kill-pale-hunter."
+    },
+    {
+      "name": "Beast Lord 1: Gale Warden",
+      "label": "Gale Warden",
+      "grade": "F",
+      "level": 14,
+      "tiers": [
+        { "minRarity": "common", "text": "[Gale Warden – lvl 14]" },
+        { "minRarity": "uncommon", "text": "[Gale Warden – lvl 14] Beast Lord of Stormlung. The wind obeys it." },
+        { "minRarity": "rare", "text": "[Gale Warden – lvl 14] Placed here by the System to be overcome. It was never part of this world." }
+      ],
+      "stats": { "strength": 60, "agility": 70, "endurance": 60, "toughness": 55, "vitality": 70 },
+      "notes": "Fight it as a clock (DESIGN §7). Killing it: kill-beast-lord."
+    },
+    {
+      "name": "Beast Lord 2: Clotmother",
+      "label": "Clotmother",
+      "grade": "E",
+      "level": 22,
+      "tiers": [
+        { "minRarity": "common", "text": "[Clotmother – lvl 22]" },
+        { "minRarity": "uncommon", "text": "[Clotmother – lvl 22] Beast Lord of the Red Rivers. The current slows around her." },
+        { "minRarity": "rare", "text": "[Clotmother – lvl 22] A System-placed lord nesting in the Host's veins. The pale wardens avoid her." }
+      ],
+      "stats": { "strength": 120, "toughness": 140, "vitality": 150, "willpower": 90 },
+      "notes": "The reveal fits around this fight. Killing her: kill-beast-lord."
+    },
+    {
+      "name": "Beast Lord 3: Ossuary King",
+      "label": "Ossuary King",
+      "grade": "E",
+      "level": 28,
+      "tiers": [
+        { "minRarity": "common", "text": "[Ossuary King – lvl 28]" },
+        { "minRarity": "uncommon", "text": "[Ossuary King – lvl 28] Beast Lord of the Marrow Halls, crowned in bone." },
+        { "minRarity": "rare", "text": "[Ossuary King – lvl 28] The last lord the System placed between you and the heart." }
+      ],
+      "stats": { "strength": 170, "agility": 120, "toughness": 170, "vitality": 180, "intelligence": 110 },
+      "notes": "Killing it: kill-beast-lord."
+    }
+  ],
+  "items": [
+    {
+      "name": "Grazer Hide Vest",
+      "rarity": "common",
+      "slot": "chest",
+      "description": "Stiff hide, stitched in a hurry. Better than nothing.",
+      "bonuses": [{ "stat": "toughness", "flat": 1 }]
+    },
+    {
+      "name": "Stalker Fang Knife",
+      "rarity": "common",
+      "slot": "mainHand",
+      "description": "A canyon stalker's fang lashed to a bone grip.",
+      "bonuses": [{ "stat": "agility", "flat": 1 }]
+    },
+    {
+      "name": "Spout-Glass Charm",
+      "rarity": "uncommon",
+      "slot": "necklace",
+      "description": "A bead of glass formed where the blowholes breathe. It hums on the inhale.",
+      "bonuses": [{ "stat": "perception", "flat": 2 }]
+    },
+    {
+      "name": "Gale Warden's Mantle",
+      "rarity": "rare",
+      "slot": "cloak",
+      "description": "Woven from the Beast Lord's feathered crest. The wind seems to step around you.",
+      "bonuses": [
+        { "stat": "agility", "flat": 3 },
+        { "stat": "endurance", "flat": 2 }
+      ]
+    },
+    {
+      "name": "Marrow-Lit Ring",
+      "rarity": "rare",
+      "slot": "ring",
+      "description": "Bone, still faintly glowing. It is warm.",
+      "bonuses": [
+        { "stat": "vitality", "flat": 3 },
+        { "stat": "willpower", "flat": 2 }
+      ]
+    },
+    {
+      "name": "Red Current Pearl",
+      "rarity": "uncommon",
+      "slot": null,
+      "description": "A smooth red pearl from the river beds. Survivors trade them like coin."
+    }
+  ],
+  "titles": [
+    {
+      "name": "Rapid Spread",
+      "text": "You have propagated through the Host faster than any before you.",
+      "bonuses": [
+        { "stat": "agility", "percent": 5 },
+        { "stat": "endurance", "percent": 5 }
+      ]
+    },
+    {
+      "name": "Lordbreaker",
+      "text": "You have brought down a Beast Lord of the tutorial.",
+      "bonuses": [{ "stat": "strength", "percent": 3, "flat": 2 }]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Inhale Rider",
+      "rarity": "uncommon",
+      "tags": ["movement", "tutorial"],
+      "description": "You read the pull of great breaths and currents, and move with them instead of against them.",
+      "flavor": "Ride the breath down.",
+      "effects": "+1 step on checks to move with wind or current; halve fall damage while a draft pulls you."
+    },
+    {
+      "name": "Miasma Sense",
+      "rarity": "common",
+      "tags": ["perception", "tutorial"],
+      "description": "You feel Malignant Miasma nearby as a prickle under the skin.",
+      "flavor": "It feels like a fever. Whose?",
+      "effects": "Know the direction of the nearest curse zone within a region."
+    },
+    {
+      "name": "Heartbeat Hearing",
+      "rarity": "rare",
+      "tags": ["perception", "tutorial"],
+      "description": "You hear the great pulse beneath everything, and what moves in time with it.",
+      "flavor": "Everything here keeps one rhythm. Except you.",
+      "effects": "Pale hunters and wardens cannot surprise you; +1 step to read the Drum's beat in the finale."
+    }
+  ],
+  "gmNotes": [
+    {
+      "title": "Tutorial overview",
+      "body": "Five sessions, levels 0 to 30 (about 6 race levels a session), 30 in-game days. Route: The Crown → Rake Canyons → Twin Spouts → Stormlung (Beast Lord 1) → Red Rivers (Beast Lord 2, the reveal) → Marrow Halls (Beast Lord 3) → The Drum (finale). The hunger tracker is on for the tutorial and fades at E-grade.",
+      "tags": ["tutorial"]
+    },
+    {
+      "title": "World Stability",
+      "body": "The main quest's World Stability starts at 100 and players can see it. Apply these actions in the Quests window: cleanse-curse-zone (−5), kill-pale-hunter (−2), kill-system-beast (+1), kill-beast-lord (+5). The players think falling stability is the curse winning; it is the Host losing the fight against them.",
+      "tags": ["tutorial", "stability"]
+    },
+    {
+      "title": "The reveal",
+      "body": "The curse is the whale's immune response and the players are the infection. Seed it early (pale hunters only attack where the players have been; the miasma reads [Fever] at Uncommon) and land it in the Red Rivers. When it lands, reveal the hidden quest The Host's Response. A Rare Identify on the miasma gives it away: [The Host's Response].",
+      "tags": ["tutorial", "secret"]
+    }
+  ],
+  "hunger": { "enabled": true }
+}
