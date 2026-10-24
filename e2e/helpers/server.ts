@@ -6,6 +6,8 @@ import path from 'node:path';
 export interface RunningServer {
   url: string;
   stop: () => Promise<void>;
+  /** Power loss: SIGKILL, so nothing shuts down cleanly (no snapshot, no session log, a stale LOCK). */
+  kill: () => Promise<void>;
 }
 
 const repoRoot = path.resolve(import.meta.dirname, '../..');
@@ -51,17 +53,15 @@ export async function startBuiltServer(
     });
   });
 
-  return {
-    url,
-    stop: () =>
-      new Promise<void>((resolve) => {
-        const done = () => {
-          if (ownsDir) rmSync(dataDir, { recursive: true, force: true });
-          resolve();
-        };
-        if (child.exitCode !== null) return done();
-        child.once('exit', done);
-        child.kill('SIGTERM');
-      }),
-  };
+  const end = (signal: NodeJS.Signals) =>
+    new Promise<void>((resolve) => {
+      const done = () => {
+        if (ownsDir) rmSync(dataDir, { recursive: true, force: true });
+        resolve();
+      };
+      if (child.exitCode !== null || child.signalCode !== null) return done();
+      child.once('exit', done);
+      child.kill(signal);
+    });
+  return { url, stop: () => end('SIGTERM'), kill: () => end('SIGKILL') };
 }
