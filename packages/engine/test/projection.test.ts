@@ -185,6 +185,7 @@ describe('player projection', () => {
         'raceLevel',
         'effectiveStats',
         'itemCappedStats',
+        'itemStats',
         'selectionsDue',
         'titleDetails',
       ].sort(),

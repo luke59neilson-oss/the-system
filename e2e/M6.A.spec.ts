@@ -34,6 +34,30 @@ function watchErrors(page: Page) {
   return errors;
 }
 
+/** Runs one GM command over the GM page's own origin (for setups the UI cannot make). */
+async function gmCommand(gm: Page, command: Record<string, unknown>): Promise<void> {
+  const result = await gm.evaluate(
+    ({ key, command }) =>
+      new Promise<string>((resolve) => {
+        const ws = new WebSocket(
+          `ws://${(globalThis as unknown as { location: { host: string } }).location.host}/ws`,
+        );
+        ws.onmessage = (e) => {
+          const m = JSON.parse(String(e.data)) as { type: string; ok?: boolean; error?: string };
+          if (m.type === 'hello') ws.send(JSON.stringify({ type: 'join', role: 'gm', gmKey: key }));
+          if (m.type === 'joined')
+            ws.send(JSON.stringify({ type: 'command', requestId: 'x', command }));
+          if (m.type === 'result') {
+            ws.close();
+            resolve(m.ok ? 'ok' : (m.error ?? 'failed'));
+          }
+        };
+      }),
+    { key: GM_KEY, command },
+  );
+  expect(result).toBe('ok');
+}
+
 test('give, trade, loot roll and title award end to end', async ({ browser }) => {
   test.setTimeout(120_000);
   const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
@@ -119,6 +143,10 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
   await giveFang.getByRole('button', { name: 'Give' }).click();
   await expect(items.getByRole('status')).toHaveText('Gave 2 × [Hunter Fang] to Jake');
   await expect(jake.inv).toContainText('[Hunter Fang (Inferior)] ×2');
+  // The holder hears about it, like loot (review M2).
+  await expect(jake.page.getByTestId('ding-toast')).toContainText(
+    'You received [Hunter Fang] ×2 from the GM',
+  );
 
   // Give: Jake gifts Kim one fang.
   await jake.inv.getByRole('button', { name: 'Give Hunter Fang' }).click();
@@ -130,6 +158,13 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
     'You received [Hunter Fang] from Jake',
   );
   await expect(kim.inv).toContainText('Hunter Fang');
+
+  // The GM takes Jake's last fang back; he is told what left.
+  await giveFang.getByLabel('Count').fill('1');
+  await giveFang.getByRole('button', { name: 'Take' }).click();
+  await expect(items.getByRole('status')).toHaveText('Took 1 × [Hunter Fang] from Jake');
+  await expect(jake.page.getByTestId('ding-toast')).toContainText('The GM took [Hunter Fang]');
+  await expect(jake.inv.getByRole('button', { name: 'Give Hunter Fang' })).toHaveCount(0);
 
   // Trade: Jake offers Kim the charm for 10 Credits; she accepts.
   await jake.inv.getByRole('button', { name: 'Propose a trade' }).click();
@@ -175,12 +210,54 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
   );
   await expect(kim.page.getByTestId('title-text')).toHaveText(TITLE_TEXT);
   await expect(kim.page.getByTestId('pool-hp')).toContainText('130/130');
+  // The sheet says what items and what titles add (review M1): 1.0 + 0.2 + 0.1.
+  await expect(kim.page.getByTestId('bonus-vitality')).toHaveText(
+    ' (items +0.2, capped; titles +0.1)',
+  );
+  await expect(kim.page.getByTestId('stat-vitality')).toContainText('1.3');
   await kim.page.getByTestId('titles').scrollIntoViewIfNeeded();
   await kim.page.screenshot({ path: path.join(shots, 'player-kim-390x844.png') });
 
+  // Jake already holds "Forerunner" as plain text (say, from an import). Adding
+  // it to the library warns the GM and DINGs Jake, whose Agility rises (review M3).
+  const list = (await (await fetch(`${server.url}/api/characters`)).json()) as {
+    id: string;
+    name: string;
+  }[];
+  const jakeId = list.find((c) => c.name === 'Jake')?.id ?? 'missing';
+  await gmCommand(gm, { type: 'title.award', characterId: jakeId, title: 'Forerunner' });
+  await titles.getByRole('button', { name: 'New title' }).click();
+  await titleForm.getByLabel('Title name').fill('forerunner');
+  await titleForm.getByLabel('System text (the holder sees this)').fill('First to set foot.');
+  await titleForm.getByLabel('Agility percent').fill('50');
+  await expect(titleForm.getByTestId('title-new-holders')).toHaveText(
+    'Jake already holds [forerunner]: saving gives them its bonuses and tells them.',
+  );
+  await titleForm.getByTestId('title-new-holders').scrollIntoViewIfNeeded();
+  await gm.screenshot({ path: path.join(shots, 'gm-title-holders-1366x768.png') });
+  await titleForm.getByRole('button', { name: 'Add title' }).click();
+  await expect(titles.getByRole('status')).toHaveText(
+    '[forerunner] added to the library · Jake now gets its bonuses',
+  );
+  await expect(jake.page.getByTestId('ding-toast')).toContainText(
+    `*'DING!' Title earned: [forerunner] - First to set foot.*`,
+  );
+  await expect(jake.page.getByTestId('bonus-agility')).toHaveText(' (titles +0.5)');
+
   // The GM ledger records the grant and the trade.
+  // Newest first: the trade (one row per side, with balances), then the grants.
   const rows = credits.getByTestId('ledger-row');
-  await expect(rows.first()).toContainText('Trade');
+  await expect(rows).toHaveCount(4);
+  const trade = rows.filter({ hasText: 'Trade' });
+  await expect(trade).toHaveCount(2);
+  await expect(rows.nth(0)).toContainText('Trade');
+  await expect(rows.nth(1)).toContainText('Trade');
+  const side = (name: string) => trade.filter({ has: gm.getByRole('cell', { name, exact: true }) });
+  await expect(side('Jake')).toContainText('+10');
+  await expect(side('Jake').getByRole('cell').last()).toHaveText('60');
+  await expect(side('Kim')).toContainText('10');
+  await expect(side('Kim').getByRole('cell').last()).toHaveText('40');
+  await expect(rows.filter({ hasText: 'Bounty on the pale hunter' })).toHaveCount(2);
   await credits.evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-economy-1366x768.png') });
   await jake.page.screenshot({ path: path.join(shots, 'player-jake-1366x768.png') });

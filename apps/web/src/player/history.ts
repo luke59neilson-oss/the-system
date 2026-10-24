@@ -48,7 +48,9 @@ export function matchesFilter(n: LiveNotification, filter: HistoryFilter): boole
     case 'broadcast':
       return n.kind === 'broadcast' || n.kind === 'hiddenQuest';
     case 'items':
-      return n.kind === 'gift' || n.kind === 'trade' || n.kind === 'currency';
+      return (
+        n.kind === 'gift' || n.kind === 'itemsTaken' || n.kind === 'trade' || n.kind === 'currency'
+      );
   }
 }
 

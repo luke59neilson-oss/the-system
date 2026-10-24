@@ -38,6 +38,12 @@ export type LiveNotification =
     }
   | { kind: 'title'; characterId: string; title: string; text: string }
   | {
+      kind: 'itemsTaken';
+      characterId: string;
+      items: { name: string; count: number }[];
+      reason: string;
+    }
+  | {
       kind: 'currency';
       characterId: string;
       amount: number;

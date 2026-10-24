@@ -44,6 +44,13 @@ export function TitleLibrary({ client, state }: { client: LiveClient; state: Cam
   const command = titleSaveCommand(draft, base ? (loaded ?? base) : null, stats);
   const stale = base !== null && loaded !== null && titleChangedSince(loaded, base);
   const holders = base ? holdersOf(state, base.name) : [];
+  // M6.A: a new name that characters already hold as free text links them to
+  // this entry, so they get its bonuses (and a DING). Warn before saving.
+  const draftName = draft.name.trim().replace(/\s+/gu, ' ');
+  const newHolders =
+    draftName !== '' && (!base || titleKey(draftName) !== titleKey(base.name))
+      ? holdersOf(state, draftName)
+      : [];
   const target = state.characters[characterId];
   const alreadyHeld =
     base !== null &&
@@ -64,11 +71,17 @@ export function TitleLibrary({ client, state }: { client: LiveClient; state: Cam
     e.preventDefault();
     if (!command || busy) return;
     setBusy(true);
+    const linked = newHolders;
     const r = await client.command(command);
     setBusy(false);
-    const name = draft.name.trim().replace(/\s+/gu, ' ');
+    const name = draftName;
     if (!r.ok) return setOutcome({ ok: false, text: friendlyError(r.error) });
-    setOutcome({ ok: true, text: base ? `[${name}] saved` : `[${name}] added to the library` });
+    const done = base ? `[${name}] saved` : `[${name}] added to the library`;
+    const also =
+      linked.length > 0
+        ? ` · ${linked.join(', ')} now ${linked.length > 1 ? 'get' : 'gets'} its bonuses`
+        : '';
+    setOutcome({ ok: true, text: done + also });
     if (base) setLoaded(savedTitle(loaded ?? base, command));
     else setDraft(emptyTitleDraft());
   };
@@ -197,6 +210,13 @@ export function TitleLibrary({ client, state }: { client: LiveClient; state: Cam
         {base && holders.length > 0 && (
           <p className="muted" data-testid="title-holders">
             Held by {holders.join(', ')}. Edits reach every holder.
+          </p>
+        )}
+        {newHolders.length > 0 && (
+          <p className="warn" role="note" data-testid="title-new-holders">
+            {newHolders.length > 1
+              ? `${newHolders.join(', ')} already hold [${draftName}]: saving gives them its bonuses and tells them.`
+              : `${newHolders[0] ?? ''} already holds [${draftName}]: saving gives them its bonuses and tells them.`}
           </p>
         )}
         <button type="submit" disabled={busy || command === null}>
