@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M5, MS, MQ and MR done; QF.1–QF.17 done; M6.1–M6.4 done; Preview ready: Actions → Release → Run workflow (M5)
-**Next item:** M6.A milestone review fixes (resume `wip/M6.A`)
+**Status:** in progress: M0–M6, MS, MQ and MR done; QF.1–QF.17 done; Preview ready: Actions → Release → Run workflow (M6)
+**Next item:** M7.1 Quest manager (resume `wip/M7.1`)
 **Blockers:** none
 
 ## Run log
@@ -876,3 +876,13 @@ next item, blockers. -->
 - Next item: M6.A review fixes.
 - Blockers: none.
 
+
+### Run 27864315 · 2026-10-24 01:07–01:50 UTC (end minute 43: closed out early after handing M7.1 to wip; no §5.5 reason, a protocol slip)
+- Preflight: `add_repo` not offered; repo already cloned and current. Lock pushed cleanly. `npm view vitest version` → 5.0.5. Fable reviewer works (worktree; the Agent call blocks, ~20 min). CI on main green (74bff4c) at start. No new answers.
+- M6.A **checked** (D179): round 1 fixes M1 (sheet shows "(items +0.2, capped; titles +0.1)" from owner-view `itemStats`), M2 (GM give → gift notice from the GM; take → new `itemsTaken` notice), M3 (defining/renaming a library title onto a held name DINGs that holder; GM form warns first); ledger assertion strengthened. Fable round 2: 0 H / 1 M / 9 L; fixed the M (item library reason field) and four Lows (name-clash warning, history label, mirror leak check, D179). Merged to main (8cb1188); main CI running at close-out.
+- Tests: unit 1,062 (+ new quest model tests on wip), full e2e 67/67 green; latency MS.3 failed once at 1,457 ms while the reviewer ran in parallel on this 2-CPU box, passed 6/6 alone (local contention, not a CI flake; not logged in QUALITY).
+- Preview ready for M6: Actions → Release → Run workflow (Luke's click, D93).
+- M7.1 started: **wip/M7.1** (base 8cb1188, head 06e63fd): `apps/web/src/gm/questManagerModel.ts` (create command with stability rules "tag: delta", timer, visibility, hidden-quest `noticeTo`; nudge command) + unit tests. Next: GM QuestManager window (list, create/edit, status, nudges, apply action, noticeTo picker), the practice-tag stability offer (D67), e2e `e2e/M7.1.spec.ts` + screenshots, sonnet review.
+- Open `wip/*` branches: wip/M7.1 (resume). wip/M6.A merged; leave.
+- Next item: M7.1 Quest manager.
+- Blockers: none.
