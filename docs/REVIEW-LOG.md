@@ -763,3 +763,6 @@
 
 - 0 H / 0 M / 6 L. check green (1,077), M7.2 e2e green; golden diff confirmed additive (v30, `stats: null`, `notes: ""`); no GM-only field in the player projection. Lows: stale "work in progress" comment; grade-hint regex matched "Wolf(s)"; substring name match is noisy for short names; a stat dropped from the rules is discarded on the next stats edit; warning screenshot shows the warning but not the fields above it; tier order compare could send a no-op edit.
 - Fixed: comment removed; the grade hint now needs a capital grade letter (unit test for "Pale stalker(s)"). Others accepted as Lows (the warning is advisory, D181).
+
+## 2026-10-24 · QF.19, QF.20, QF.21 (sweep C fixes) · reviewer: sonnet
+- Round 1: 0 High / 0 Medium / 6 Low. Fixed: engine test that a blank reason adds no `reason` key; unit test for a mixed in-range/out-of-range reveal line. Kept: a give with both currency and items repeats the reason on both notices (each notice stands alone); the reveal list always comes from state; the QF.21 test checks variety, not uniformity (enough for a constant-source mutation, which fails it at 0, 0.5 and 0.999999).

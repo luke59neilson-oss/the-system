@@ -121,6 +121,14 @@ describe('M6.A review fixes', () => {
     expect(why.notices).toEqual([
       expect.objectContaining({ kind: 'gift', reason: 'Reward for the bridge' }),
     ]);
+    // A blank reason adds no `reason` key.
+    const blank = step(c, {
+      type: 'holdings.adjust',
+      characterId: 'jake',
+      items: { fang: 1 },
+      reason: '   ',
+    });
+    expect(blank.notices[0]).not.toHaveProperty('reason');
     // A currency-only grant still sends just the currency notice.
     const paid = step(c, { type: 'holdings.adjust', characterId: 'kim', currency: 5 });
     expect(paid.notices.map((n) => n.kind)).toEqual(['currency']);

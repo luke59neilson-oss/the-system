@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** d6fedf8 (2026-10-23, B) · **Next rotation:** C
+**Last sweep:** 3902046 (2026-10-24, C) · **Next rotation:** D
 
 ## Lenses and rotation
 
@@ -105,6 +105,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-23 21:15 | B, 41be1ee..d6fedf8 | Boundaries · haiku | 0 | 0 | 1 | L to Backlog | 0 | ~133k |
 | 2026-10-23 21:15 | B, 41be1ee..d6fedf8 | Tests · fable | 0 | 2 | 8 | 2 M confirmed by reading the tests (QF.16); 8 L to Backlog (16 mutations, 3 caught) | 0 | ~189k |
 | 2026-10-23 21:15 | B, 41be1ee..d6fedf8 | UX · sonnet | 0 | 1 | 5 | 1 M confirmed in code (QF.17); 5 L to Backlog | 0 | ~121k |
+| 2026-10-24 03:08 | C, d6fedf8..3902046 | Rules · haiku | 0 | 0 | 3 | 3 L to Backlog (one rated "High by definition", Low by trigger: whitespace-only title duplicates in a pre-D177 log) | 0 | ~207k |
+| 2026-10-24 03:08 | C, d6fedf8..3902046 | Tests · sonnet | 0 | 1 | 6 | 1 M confirmed by mutation (QF.21, fixed this run); 6 L to Backlog | 0 | ~137k |
+| 2026-10-24 03:08 | C, d6fedf8..3902046 | UX · fable | 0 | 2 | 7 | 2 M confirmed in code (QF.19, QF.20, fixed this run); 7 L to Backlog | 0 | ~193k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -245,3 +248,8 @@ reviewers ran 15–20 minutes each in the background.
 - (M5.A review) The default re-rating at evolution also drops Identify (race skill), lowering the Identify tier; the builder gives no hint. Per DESIGN §6, but worth a note in the re-rating row. (Q64)
 - (M5.A review) Practice "Remove" has no confirmation (`PracticeCapture.tsx` ~293) while Withdraw does; "Mark all reviewed" repeats the 500 batch limit from `envelope.ts`.
 - (M5.A round 2) `MergeBuilder.tsx` ~18 uses an unpinned default character (`ids[0]`), like the evolution builder before its fix; a character created ahead of the current one mid-build would carry the typed name to the wrong character. Also "1 of these 1 uses" grammar when requiredJointUses is 1.
+- Rules (sweep C): `title.awarded` now refuses a whitespace-only duplicate (`titleKey` collapses inner spaces, reducer ~848), so a pre-D177 log with "Dragon  Slayer" and "Dragon Slayer" no longer replays; D177 should name the refusal (none is known to exist).
+- Rules (sweep C): a loot table may define per-pick ranges whose worst-case total exceeds the `loot.rolled` bundle caps (1e9 currency, 1e6 per item), so such a roll is refused with a raw schema message; validate at define/edit.
+- Rules (sweep C): the `CAMPAIGN_STATE_SCHEMA_VERSION` comment skips v28 (ledger) and v29 (title library) (`reducer.ts` ~73).
+- Tests (sweep C): an empty loot roll (all "nothing") sending no gift notice is untested (`history/index.ts` ~193 `!isEmptyBundle`); `isDing` `title` kind is unpinned in `history.test.ts`; `stabilityOffers` exact-tag match is unpinned (substring mutation survives); `parseStabilityRules('__proto__: +5')` silently drops the rule; the title DING wording has no unit test; boundary mutations survive in `currencyModel.ts` (MAX_AMOUNT, reason 200), `titleLibraryModel.ts` (`parsePercent`, `parseFlat` bounds) and `loot.ts` ~72 (item min 0).
+- UX (sweep C): Title and Item library disable Save with no message for an unparseable bonus ("10%", "0.5"); the Item library reason stays after a Give/Take and rides the next one; Take is enabled for a count above what the character holds; practice stability offers' "Not now" dismisses every offer, not one; Loot tables with an empty item library say only "choose an item"; Credits/Title library leave the right third blank at 1366 while Item library/Loot inputs stretch ~1300 px, and ledger cells wrap; the phone Titles row is crammed into the narrow value column.

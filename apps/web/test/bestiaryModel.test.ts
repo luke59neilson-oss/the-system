@@ -141,6 +141,18 @@ describe('revealOutcome (QF.20)', () => {
     expect(revealOutcome(state, far, ['jake', 'kim'])).toBe(
       'Jake, Kim now know of Pale stalker but are out of Identify range (sees [??? – lvl ???])',
     );
+    const mixed = { grade: 'G', level: 0, label: 'Rat' };
+    expect(revealOutcome(state, { ...mixed, grade: 'F', level: 0 }, ['jake'])).toContain(
+      'out of Identify range',
+    );
+    expect(revealOutcome(state, mixed, ['kim', 'jake'])).toBe('Kim, Jake can now Identify Rat');
+    // An F-grade Kim reads any G-grade target; level-0 Jake cannot read a G lvl 12.
+    const kim = state.characters['kim'];
+    if (kim === undefined) throw new Error('no kim');
+    const split = { ...state, characters: { ...state.characters, kim: { ...kim, grade: 'F' } } };
+    expect(revealOutcome(split, { grade: 'G', level: 12, label: 'Boar' }, ['jake', 'kim'])).toBe(
+      'Kim can now Identify Boar; Jake now knows of Boar but is out of Identify range (sees [??? – lvl ???])',
+    );
     const place = { grade: null, level: null, label: 'Rake Canyons' };
     expect(revealOutcome(state, place, ['kim'])).toBe('Kim can now Identify Rake Canyons');
   });
