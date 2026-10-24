@@ -59,7 +59,6 @@ import {
 import {
   montageAvailable,
   newClock,
-  settleContest,
   tickClock,
   type Clock,
   type Montage,
@@ -1774,7 +1773,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       return { ...state, clocks: { ...state.clocks, [clockId]: ticked } };
     }
     case 'contest.shared': {
-      const { contestId, a, b, mode, roll } = event.payload;
+      const { contestId, a, b, mode, roll, yours, theirs, chance, walled, success } = event.payload;
       if (hasOwn(state.contests, contestId)) fail(event, `contest "${contestId}" already exists`);
       const grades = state.rules.grades.map((g) => g.id);
       const statIds = state.rules.stats.list.map((s) => s.id);
@@ -1788,7 +1787,17 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
           seen.add(id);
         }
       }
-      const result = rule(event, () => settleContest(state.rules, a, b, mode, roll));
+      // The stored outcome stands (settled under the rules when shared); only
+      // its own consistency is checked, so a later rules change cannot flip it.
+      if (walled !== (roll === null)) {
+        fail(event, walled ? 'a walled contest has no roll' : 'this contest needs a roll');
+      }
+      if (roll !== null && success !== roll < chance) {
+        fail(event, 'the outcome does not match the roll');
+      }
+      if (walled && chance !== (success ? 1 : 0))
+        fail(event, 'the outcome does not match the wall');
+      const result = { yours, theirs, chance, roll, walled, success };
       const contest: SharedContest = {
         id: contestId,
         a: { ...a, characterIds: [...a.characterIds] },

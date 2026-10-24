@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { execute, projectForPlayer, type Command } from '../src';
+import { appendEvent, execute, projectForPlayer, type Command, type DomainEvent } from '../src';
 import { kit, rawRules, run, testContext } from './helpers/events';
 
 // M7.3: contest rolls the GM shares become events; participants see them from their side.
@@ -86,7 +86,7 @@ describe('contest.shared (M7.3)', () => {
     });
     expect(execute(base, share({ b: side('X', 10, 'Z') }), ctx)).toMatchObject({
       ok: false,
-      error: expect.stringContaining('unknown grade'),
+      error: expect.stringMatching(/unknown grade/i),
     });
     const dup = run([share()], testContext('y'), base);
     expect(execute(dup, share(), ctx)).toMatchObject({
@@ -137,6 +137,52 @@ describe('contest.shared (M7.3)', () => {
     expect(projectForPlayer(npc.state ?? state, 'jake').contests[1]).not.toHaveProperty(
       'theirs.value',
     );
+  });
+
+  it('rounds a player’s chance to a whole percent, so an NPC value cannot be solved back', () => {
+    const c = run([...setup(), share({ b: side('Beast', 31337, 'G'), mode: 'none', roll: 0.5 })]);
+    const state = c.state;
+    if (!state) throw new Error('no state');
+    expect(state.contests['k1']?.chance).toBeCloseTo(30 / 31367);
+    // Below 1% shows as 1%, never the exact ratio.
+    expect(projectForPlayer(state, 'jake').contests[0]?.chance).toBe(0.01);
+    expect(JSON.stringify(projectForPlayer(state, 'jake'))).not.toContain('31337');
+  });
+
+  it('keeps the outcome stored when shared; a replay checks it only for consistency', () => {
+    const c = run(setup());
+    const event = (payload: object): DomainEvent =>
+      ({
+        id: 'raw1',
+        type: 'contest.shared',
+        timestamp: '2026-10-24T12:00:00.000Z',
+        actor: { role: 'gm' },
+        sessionId: null,
+        schemaVersion: 1,
+        payload: {
+          contestId: 'k9',
+          a: side('A', 10, 'G'),
+          b: side('B', 10, 'G'),
+          mode: 'none',
+          roll: 0.8,
+          yours: 10,
+          theirs: 10,
+          chance: 0.9,
+          walled: false,
+          success: true,
+          ...payload,
+        },
+      }) as DomainEvent;
+    // Settled under other rules at the time (90%): the stored outcome stands.
+    expect(appendEvent(c, event({})).state?.contests['k9']).toMatchObject({
+      chance: 0.9,
+      success: true,
+    });
+    expect(() => appendEvent(c, event({ success: false }))).toThrow(/does not match the roll/);
+    expect(() => appendEvent(c, event({ walled: true }))).toThrow(/has no roll/);
+    expect(() =>
+      appendEvent(c, event({ walled: true, roll: null, chance: 0.5, success: false })),
+    ).toThrow(/does not match the wall/);
   });
 
   it('keeps only the latest ten contests in a player view, oldest first', () => {

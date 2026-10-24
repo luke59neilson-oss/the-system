@@ -576,6 +576,15 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     b: contestSide,
     mode: z.enum(['none', 'multiplier', 'lowerGradeFraction', 'gradeWalls']),
     roll: z.number().min(0).lt(1).nullable(),
+    /**
+     * The outcome as the table saw it, settled under the rules when shared, so
+     * a later rules change or undo cannot flip a result players already saw.
+     */
+    yours: z.number().nonnegative(),
+    theirs: z.number().nonnegative(),
+    chance: z.number().min(0).max(1),
+    walled: z.boolean(),
+    success: z.boolean(),
   }),
   /** GM creates a quest (M1.12, DESIGN §7), optionally with a day timer and World Stability. */
   'quest.created': z.strictObject({

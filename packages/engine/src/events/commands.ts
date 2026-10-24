@@ -8,7 +8,7 @@ import {
   type EventType,
 } from './envelope';
 import { CharacterRuleError, raceLevel } from '../character';
-import type { ContestSideRecord, GradeGapMode } from '../resolution';
+import { settleContest, type ContestSideRecord, type GradeGapMode } from '../resolution';
 import { titleDefByName } from '../titles';
 import { defaultRerate } from '../evolution';
 import { normalizeTags } from '../skills/library';
@@ -1235,17 +1235,34 @@ function toEvent(
       return { type: 'montage.closed', payload: { montageId: command.montageId } };
     case 'clock.remove':
       return { type: 'clock.removed', payload: { clockId: command.clockId } };
-    case 'contest.share':
+    case 'contest.share': {
+      const rules = campaign.state?.rules;
+      if (!rules) throw new EventRejectedError('No campaign yet');
+      const mode = command.mode ?? rules.resolution.gradeGapMode;
+      let result;
+      try {
+        result = settleContest(rules, command.a, command.b, mode, command.roll);
+      } catch (error) {
+        if (error instanceof CharacterRuleError) throw new EventRejectedError(error.message);
+        throw error;
+      }
+      const { yours, theirs, chance, walled, success } = result;
       return {
         type: 'contest.shared',
         payload: {
           contestId: command.contestId ?? ctx.newId(),
           a: command.a,
           b: command.b,
-          mode: command.mode ?? campaign.state?.rules.resolution.gradeGapMode ?? 'gradeWalls',
+          mode,
           roll: command.roll,
+          yours,
+          theirs,
+          chance,
+          walled,
+          success,
         },
       };
+    }
     case 'quest.create': {
       const st = command.stability;
       return {

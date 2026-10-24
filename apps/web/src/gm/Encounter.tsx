@@ -155,9 +155,13 @@ function ContestRoller({ state, busy, send }: ToolProps) {
           <ul className="contest-recent" aria-labelledby="contest-recent">
             {recent.map((c) => (
               <li key={c.id}>
-                {c.success ? c.a.label : c.b.label} beat {c.success ? c.b.label : c.a.label}{' '}
+                {c.success ? c.a.label : c.b.label} won against {c.success ? c.b.label : c.a.label}{' '}
                 <span className="muted">
-                  ({c.walled ? 'grade wall' : `${percent(c.chance)} for ${c.a.label}`})
+                  (
+                  {c.walled
+                    ? 'grade wall'
+                    : `${percent(c.chance)} for ${c.a.label}, rolled ${Math.round((c.roll ?? 0) * 100)}`}
+                  )
                 </span>
               </li>
             ))}
@@ -305,7 +309,7 @@ function PoolTool({ state, busy, send }: ToolProps) {
           </select>
         </label>
         <label>
-          Amount
+          Points
           <input
             inputMode="numeric"
             value={input.amount}
@@ -336,7 +340,7 @@ function PoolTool({ state, busy, send }: ToolProps) {
               input.kind === 'damage' ? ` · ${factorText(change.factor)}` : ''
             }`}
       </p>
-      <button type="submit" disabled={busy || typeof change === 'string'}>
+      <button type="submit" disabled={busy || typeof change === 'string' || change.applied === 0}>
         Apply
       </button>
     </form>

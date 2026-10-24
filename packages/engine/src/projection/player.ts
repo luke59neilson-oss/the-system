@@ -151,7 +151,8 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   montageOrder: 'gm',
   // M7.3: each player gets the shared contests they took part in, from their
   // side: their side's label and stat value, the other side's label only (an
-  // NPC's stats stay GM-only), their chance and whether they won.
+  // NPC's stats stay GM-only), their chance rounded to a whole percent (so the
+  // other side's value cannot be solved from it exactly) and whether they won.
   contests: 'owner',
   contestOrder: 'gm',
   day: 'party',
@@ -308,7 +309,7 @@ export interface PlayerContest {
   readonly yours: { readonly label: string; readonly stat: string | null; readonly value: number };
   /** The other side's label only. */
   readonly theirs: string;
-  /** The viewer's side's chance to win, 0..1. */
+  /** The viewer's side's chance to win, 0..1, rounded to a whole percent (1..99 unless certain). */
   readonly chance: number;
   /** True when a grade wall settled it with no roll. */
   readonly walled: boolean;
@@ -900,6 +901,15 @@ function playerInventory(state: CampaignState, viewerId: string): PlayerInventor
   return { currency: h.currency, items, equipped, trades, itemDefs };
 }
 
+/**
+ * A chance rounded to a whole percent (kept off 0 and 100 unless certain), so
+ * the exact ratio cannot be solved back to an NPC's GM-only stat (M7.3).
+ */
+function wholePercent(chance: number): number {
+  if (chance <= 0 || chance >= 1) return chance <= 0 ? 0 : 1;
+  return Math.min(99, Math.max(1, Math.round(chance * 100))) / 100;
+}
+
 /** The latest shared contests `viewerId` took part in, from their side (M7.3). */
 function playerContests(state: CampaignState, viewerId: string): PlayerContest[] {
   const out: PlayerContest[] = [];
@@ -915,7 +925,7 @@ function playerContests(state: CampaignState, viewerId: string): PlayerContest[]
       at: c.sharedAt,
       yours: { label: mine.label, stat: mine.stat, value: mine.value },
       theirs: (onA ? c.b : c.a).label,
-      chance: onA ? c.chance : 1 - c.chance,
+      chance: wholePercent(onA ? c.chance : 1 - c.chance),
       walled: c.walled,
       won: onA ? c.success : !c.success,
     });
