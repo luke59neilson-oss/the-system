@@ -143,8 +143,11 @@ test('a sample encounter end to end; stability reaches players only when shown',
   await expect(clock).not.toContainText('waiting on Jake');
   await clocks.scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-encounter-1366x768.png') });
+  await roller.scrollIntoViewIfNeeded();
+  await gm.screenshot({ path: path.join(shots, 'gm-encounter-roller-1366x768.png') });
 
-  // The kill was a System-placed beast: World Stability rises for the player.
+  // The fight crossed a curse zone (cleanse, -5), then the kill was a
+  // System-placed beast (+2): the player's gauge follows both.
   const stab = qm.getByRole('group', { name: 'World Stability of [The world is dying]' });
   await list.getByRole('button', { name: /The world is dying/ }).click();
   await stab.getByRole('combobox', { name: /^Action/ }).selectOption('cleanse');
@@ -155,15 +158,18 @@ test('a sample encounter end to end; stability reaches players only when shown',
   await stab.getByRole('button', { name: 'Apply action' }).click();
   await expect(quest.getByTestId('stability-value')).toHaveText('97%');
 
-  // XP for the fight: 400 split evenly, the foe two levels above (+20%).
+  // XP for the fight: 340 split evenly (170 each), the foe two levels above:
+  // +20% makes 204, level 2 (without the bonus 170 would stop at level 1).
   const award = gm.getByRole('form', { name: 'Award class XP' });
-  await award.getByLabel('Amount').fill('400');
+  await award.getByLabel('Amount').fill('340');
   await award.getByLabel('Target’s grade').selectOption('G');
   await award.getByRole('checkbox', { name: 'Above-level bonus' }).check();
   await award.getByLabel('Target’s level').fill('2');
   await award.getByLabel('Reason (GM only)').fill('SECRET reason: the pale hunter');
   await award.getByRole('button', { name: 'Award XP' }).click();
   await expect(page.getByTestId('class')).toHaveText(/lvl 2\]/);
+  // The roller follows Jake's new Agility from the level-ups (no stale odds).
+  await expect(sideA.getByRole('textbox', { name: 'Value', exact: true })).not.toHaveValue('10');
   await page.getByTestId('quest').scrollIntoViewIfNeeded();
   await page.screenshot({ path: path.join(shots, 'player-after-fight-390x844.png') });
 
@@ -179,6 +185,11 @@ test('a sample encounter end to end; stability reaches players only when shown',
   await stab.getByRole('button', { name: 'Nudge' }).click();
   await expect(stab.getByTestId('quest-stability-value')).toHaveText('83%');
   await expect(quest.getByTestId('stability-value')).toHaveCount(0);
+  // A visible edit after the nudge: once it arrives, any nudge frame has too.
+  await list.getByRole('button', { name: /The world is dying/ }).click();
+  await form.getByLabel('Quest text (players see this)').fill('Find what is killing it. Hurry.');
+  await form.getByRole('button', { name: 'Save quest' }).click();
+  await expect(quest).toContainText('Hurry.');
   expect(frames.slice(afterHide).some((f) => f.includes('"stability":83'))).toBe(false);
 
   for (const secret of [GM_KEY, 'system beast', 'SECRET', '"cleanse"']) {

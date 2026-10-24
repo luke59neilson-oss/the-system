@@ -1789,7 +1789,20 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       if (event.type === 'clock.removed') {
         const clocks: Record<string, Clock> = { ...state.clocks };
         delete clocks[clockId];
-        return { ...state, clocks, clockOrder: state.clockOrder.filter((id) => id !== clockId) };
+        // Its open montages close with it: nothing on the GM panel could close them later (M7.A).
+        let montages = state.montages;
+        for (const id of state.montageOrder) {
+          const m = montages[id];
+          if (m && m.clockId === clockId && m.status === 'open') {
+            montages = { ...montages, [id]: { ...m, status: 'closed' } };
+          }
+        }
+        return {
+          ...state,
+          clocks,
+          clockOrder: state.clockOrder.filter((id) => id !== clockId),
+          montages,
+        };
       }
       const ticked = rule(event, () =>
         tickClock(clock, event.payload.result, event.payload.amount),
