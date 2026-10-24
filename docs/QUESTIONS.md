@@ -511,3 +511,11 @@ DESIGN/ROADMAP; do not re-apply them.
     Every value is an ordinary library entry: change it in the app, or tell
     me and the pack changes (D197).
     Answer:
+
+73. **macOS build (M10.2).** M10.2's text asks for a macOS dmg, but D97
+    (your Q1 answer: you use Windows) dropped macOS from the release, and the
+    workflow builds Windows and Linux only. Default: keep it that way and read
+    M10.2's "all three artifacts" as the two D97 keeps. Since the repo went
+    public (L10) macOS runners cost nothing, so say "add macOS" if any player
+    or co-GM uses a Mac and it goes back in (unsigned dmg).
+    Answer:

@@ -840,3 +840,6 @@
 
 ## 2026-10-24 · QF.22 Pin drafted re-ratings and closed menus · sonnet
 - Round 1 at adb3d33: 0 High, 0 Medium, 3 Low (screenshot churn from the concurrent full e2e run, expected; mixed apostrophes match their fixtures; box unchecked in the work commit by design). Both sweep mutations now fail the new tests (confirmed by me and the reviewer). Box checked.
+
+## 2026-10-24 · M10.2 Packaging and releases (final) · sonnet
+- Round 1 at f30120d (docs: D200 reads "all three artifacts" per D97, Q73): 0 High, 0 Medium, 4 Low. Evidence: local `--linux` package built the AppImage, packaged smoke passed, the AppImage answered /health under xvfb; Release run 40092258606 green with the installer and the AppImage. Low 4 (packaged smoke did not prove the quit backup) fixed: the packaged smoke now creates a campaign, quits and finds the `-quit` backup (passed locally on linux-unpacked). Low 1 (D200 understated re-adding macOS) fixed in the D-entry. Lows 2 (latest green run was a dispatch, not a `release` push) and 3 (pkill in the AppImage smoke) to the backlog. Box checked.
