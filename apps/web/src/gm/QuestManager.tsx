@@ -58,6 +58,7 @@ export function QuestManager({ client, state }: { client: LiveClient; state: Cam
   // rather than offering to re-create it from the old draft.
   const vanished = questId !== null && current === null;
   if (vanished) {
+    setOutcome(null);
     setQuestId(null);
     setLoaded(null);
     setDraft(emptyQuestDraft(state.rules.stability.visibleToPlayersByDefault));
