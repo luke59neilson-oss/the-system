@@ -485,3 +485,14 @@ DESIGN/ROADMAP; do not re-apply them.
     share, like the party's pool bars (sweep D, Low). Option: show players
     only the chance in words when both sides are characters (D186).
     Answer:
+
+71. **Efficiency trials: should unrelated guards be judged against a noise band? (Tier 2, LOOP §9.4)**
+    The D183 trial (blocking agents launched together) lifted sweep-run end
+    minutes 42 → 52, but the round-2 share went 5/10 → 7/10 and main CI
+    red/day 1 → 2, so §9.2 reverted it (D194). The auditor traced both guard
+    moves to causes D183 cannot touch. Proposal: when a trial starts, list
+    the guards it could move; judge those strictly and the rest against a
+    band (round-2 ±2 of 10, red/day ±1), reverting on an out-of-band move only
+    if it persists at the next check; and restore D183. Default: no change
+    (D183 stays reverted).
+    Answer:

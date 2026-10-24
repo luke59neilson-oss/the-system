@@ -108,7 +108,9 @@ them whole costs about 30k tokens per run for history you do not need):
    main earlier only for a red-CI fix. `git fetch && git rebase origin/main`
    before pushing main (never rebase `wip/*` branches). Never force-push.
 5. **Timebox: fixed clock, no forecasting.** All times are minutes after you
-   took the lock. Runs have been ending around minute 39 because they guessed
+   took the lock; `npm run clock` prints the minute, the phase and the next
+   deadline. Run it after every review returns and before §8.0; if it says
+   build, open `wip/<next item>` before anything else. Runs have been ending around minute 39 because they guessed
    the next item would not fit; that guess is never a reason to stop.
    - **0–44: build.** When an item passes its checks, launch its reviewer in
      the background (§6.3) and start the next item in the same minute, however
@@ -165,9 +167,8 @@ them whole costs about 30k tokens per run for history you do not need):
    working tree), then start the next item while it works. When it reports,
    fix the findings on the reviewed item before continuing. Do not push the
    item to main to get it reviewed. If the Agent tool has no background
-   option (each call blocks until it reports), put every agent you need now
-   (reviewer, auditor, sweep lenses) in **one message** so they run at once,
-   and tell a worktree reviewer the exact SHA to `git checkout --detach`.
+   option (each call blocks until it reports), tell a worktree reviewer the
+   exact SHA to `git checkout --detach`.
 4. Fix every High and Medium, re-run checks. A **second review round only
    if round 1 found a High or two or more Mediums**; otherwise verify your
    fixes yourself and log them. **At most 2 review rounds per
@@ -248,8 +249,7 @@ Lens briefs, the model rotation and the sweep log are in `docs/QUALITY.md`.
    after Orient, then build as usual. Scope: `<Last sweep SHA>..HEAD` on main
    (from QUALITY.md), plus each lens's whole area.
 2. Launch the 3 reviewers that QUALITY.md's rotation names for this sweep,
-   each with `run_in_background: true` and `isolation: "worktree"` (all three
-   in one message when Agent calls block, §6.3), never on
+   each with `run_in_background: true` and `isolation: "worktree"`, never on
    your own model. Each prompt is the common rules plus that lens's brief from
    QUALITY.md, and the scope.
 3. **Verify before fixing.** Confirm every High and Medium yourself (write the
