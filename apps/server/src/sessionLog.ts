@@ -190,6 +190,22 @@ export class SessionLogWriter {
     });
     mkdirSync(path.dirname(plan.file), { recursive: true });
     writeAtomic(plan.file, text);
+    // M9.1: the same log as JSON beside it, for Claude or other tools.
+    writeAtomic(
+      plan.file.replace(/\.md$/, '.json'),
+      `${JSON.stringify(
+        {
+          format: 'the-system/session-report',
+          version: 1,
+          writtenAt: this.options.now(),
+          session: plan.session,
+          report: plan.session.endedAt !== null,
+          ...log,
+        },
+        null,
+        2,
+      )}\n`,
+    );
     this.writtenKey = plan.key;
     this.lastWritten = { id: plan.session.id, number: plan.session.number, file: plan.file };
     return true;
