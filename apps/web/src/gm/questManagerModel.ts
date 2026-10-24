@@ -56,3 +56,16 @@ export function questCreateCommand(draft: QuestDraft): Command | string {
     stability: Object.keys(rules).length === 0 ? null : { rules },
   };
 }
+
+/** A manual stability nudge (signed whole number, not 0), or an error. */
+export function nudgeCommand(questId: string, delta: string, reason: string): Command | string {
+  const d = delta.trim();
+  if (!/^[+-]?\d+$/u.test(d) || Number(d) === 0) return 'Nudge by a whole number other than 0';
+  const why = reason.trim().replace(/\s+/gu, ' ');
+  return {
+    type: 'stability.nudge',
+    questId,
+    delta: Number(d),
+    ...(why === '' ? {} : { reason: why }),
+  };
+}
