@@ -1,0 +1,82 @@
+/*
+ * Grade metal themes (M8.1, DESIGN §3, D13). Each theme sets:
+ *   --metal      the frame and heading colour
+ *   --metal-hi   the highlight edge of the frame
+ *   --metal-lo   the shadow edge
+ *   --sheen      the frame's surface (dull metals flat, shiny ones bright,
+ *                platinum brushed, diamond prismatic and animated)
+ *   --glow-strength how far the frame glows (dull metals barely)
+ * Platinum is a cool blue-white with a heavier brushed texture so it reads
+ * differently from silver (DESIGN §3; ΔE checked in M8.3).
+ */
+:root {
+  --metal: #8a96a8;
+  --metal-hi: #b8c2d0;
+  --metal-lo: #4d5868;
+  --sheen: linear-gradient(135deg, var(--metal-hi), var(--metal) 45%, var(--metal-lo));
+  --glow-strength: 25%;
+}
+.theme-aluminum {
+  --metal: #a7adb4;
+  --metal-hi: #c3c8ce;
+  --metal-lo: #6e747b;
+  --sheen: linear-gradient(160deg, #b4b9bf, #9ba1a8 60%, #868c93);
+  --glow-strength: 12%;
+}
+.theme-bronze {
+  --metal: #a5733f;
+  --metal-hi: #bf8d58;
+  --metal-lo: #6b4824;
+  --sheen: linear-gradient(160deg, #b07e4b, #96683a 60%, #7d5530);
+  --glow-strength: 14%;
+}
+.theme-copper {
+  --metal: #d9804f;
+  --metal-hi: #ffb38a;
+  --metal-lo: #8f4a26;
+  --sheen: linear-gradient(135deg, #ffb38a, #d9804f 40%, #a85a32 70%, #f0a070);
+  --glow-strength: 35%;
+}
+.theme-silver {
+  --metal: #d4d8de;
+  --metal-hi: #ffffff;
+  --metal-lo: #8d939b;
+  --sheen: linear-gradient(135deg, #ffffff, #d4d8de 35%, #9ea4ac 65%, #eef0f3);
+  --glow-strength: 35%;
+}
+.theme-gold {
+  --metal: #e7c25a;
+  --metal-hi: #fff0b0;
+  --metal-lo: #a07c22;
+  --sheen: linear-gradient(135deg, #fff0b0, #e7c25a 40%, #b8902e 70%, #f7da85);
+  --glow-strength: 40%;
+}
+.theme-platinum {
+  --metal: #b9d8f0;
+  --metal-hi: #eaf6ff;
+  --metal-lo: #6f93b0;
+  /* Heavier brushed texture: fine horizontal streaks over a cool gradient. */
+  --sheen:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.18) 0 1px,
+      rgba(0, 20, 40, 0.12) 1px 3px
+    ),
+    linear-gradient(135deg, #eaf6ff, #b9d8f0 40%, #7fa3c0 70%, #d6ecfb);
+  --glow-strength: 40%;
+}
+.theme-diamond {
+  --metal: #c9f3ff;
+  --metal-hi: #ffffff;
+  --metal-lo: #7fb6d6;
+  --sheen: linear-gradient(
+    120deg,
+    #ffd6f5,
+    #c9f3ff 20%,
+    #d8ffd6 40%,
+    #fff7c2 60%,
+    #e0d4ff 80%,
+    #ffd6f5
+  );
+  --glow-strength: 50%;
+}
