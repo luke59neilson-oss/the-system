@@ -109,6 +109,24 @@ export function sideDraftFor(state: CampaignState, source: SideSource, stat: str
 
 export const emptySide = (state: CampaignState): SideDraft => sideDraftFor(state, 'custom', '');
 
+/**
+ * A side kept current as the campaign changes (M7.A): a character's stat can
+ * move mid-fight (level, item, title), so a side still showing what was
+ * derived from `prev` takes the value derived from `next`. Fields the GM
+ * typed by hand stay as typed; a custom side never changes.
+ */
+export function refreshSide(prev: CampaignState, next: CampaignState, draft: SideDraft): SideDraft {
+  if (draft.source === 'custom') return draft;
+  const was = sideDraftFor(prev, draft.source, draft.stat);
+  const now = sideDraftFor(next, draft.source, draft.stat);
+  if (now.source !== draft.source) return draft;
+  const value = draft.value === was.value ? now.value : draft.value;
+  const grade = draft.grade === was.grade ? now.grade : draft.grade;
+  const label = draft.label === was.label ? now.label : draft.label;
+  if (value === draft.value && grade === draft.grade && label === draft.label) return draft;
+  return { ...draft, value, grade, label };
+}
+
 /** The side as the engine takes it, or a problem to show. */
 export function sideRecord(
   state: CampaignState,

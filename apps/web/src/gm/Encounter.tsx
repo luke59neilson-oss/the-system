@@ -15,6 +15,7 @@ import {
   recentContests,
   rollPlan,
   shareCommand,
+  refreshSide,
   sideDraftFor,
   sideOptions,
   type PoolChangeInput,
@@ -85,6 +86,18 @@ function ContestRoller({ state, busy, send }: ToolProps) {
   const [b, setB] = useState<SideDraft>(() => emptySide(state));
   const [mode, setMode] = useState<GradeGapMode>(state.rules.resolution.gradeGapMode);
   const [rolled, setRolled] = useState<RolledContest | null>(null);
+  // Keep derived side values current when a stat changes mid-fight (M7.A).
+  const [seen, setSeen] = useState(state);
+  if (seen !== state) {
+    setSeen(state);
+    const nextA = refreshSide(seen, state, a);
+    const nextB = refreshSide(seen, state, b);
+    if (nextA !== a || nextB !== b) {
+      setA(nextA);
+      setB(nextB);
+      setRolled(null);
+    }
+  }
   const plan = contestPlan(state, a, b, mode);
   const change = (side: 'a' | 'b', draft: SideDraft) => {
     (side === 'a' ? setA : setB)(draft);

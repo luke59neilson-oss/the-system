@@ -18,6 +18,7 @@ import {
   poolChange,
   poolCommand,
   recentContests,
+  refreshSide,
   rollPlan,
   shareCommand,
   sideDraftFor,
@@ -164,6 +165,30 @@ describe('encounter model: contests (M7.3)', () => {
     expect(percent(0.996)).toBe('>99%');
     expect(percent(0)).toBe('0%');
     expect(percent(1)).toBe('100%');
+  });
+});
+
+describe('encounter model: sides follow the campaign (M7.A)', () => {
+  const before = campaign();
+  const after = apply(before, [
+    { type: 'character.setStats', characterId: 'jake', stats: { strength: 17 } },
+  ]);
+  const prev = stateOf(before);
+  const next = stateOf(after);
+
+  it('takes a character’s new stat when the side still shows the old one', () => {
+    const side = sideDraftFor(prev, 'c:jake', 'strength');
+    expect(side.value).toBe('10');
+    expect(refreshSide(prev, next, side)).toEqual({ ...side, value: '17' });
+  });
+
+  it('keeps what the GM typed, a custom side, and an unchanged side as they are', () => {
+    const typed = { ...sideDraftFor(prev, 'c:jake', 'strength'), value: '25' };
+    expect(refreshSide(prev, next, typed)).toBe(typed);
+    const kim = sideDraftFor(prev, 'c:kim', 'strength');
+    expect(refreshSide(prev, next, kim)).toBe(kim);
+    const custom: SideDraft = { source: 'custom', stat: '', label: 'Rock', value: '5', grade: 'G' };
+    expect(refreshSide(prev, next, custom)).toBe(custom);
   });
 });
 

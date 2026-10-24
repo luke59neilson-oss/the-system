@@ -523,4 +523,15 @@ describe('montages (M3.11)', () => {
     expect(reject(reopened, focus('jake'), player('jake'))).toContain('closed');
     expect(reject(ok(clocked(2), offer), focus('jake', 'x', ['Nope']))).toContain('no skill');
   });
+
+  it('closes a clock’s open montage when the clock is removed (M7.A)', () => {
+    let c = ok(clocked(2), offer);
+    c = ok(c, { type: 'clock.remove', clockId: 'k' });
+    expect(c.state?.montages['m']?.status).toBe('closed');
+    expect(reject(c, focus('jake'), player('jake'))).toContain('closed');
+    // A montage that was already closed stays closed and the removal still works.
+    let d = ok(ok(clocked(2), offer), { type: 'montage.close', montageId: 'm' });
+    d = ok(d, { type: 'clock.remove', clockId: 'k' });
+    expect(d.state?.montages['m']?.status).toBe('closed');
+  });
 });
