@@ -2520,3 +2520,20 @@ ol.change-log li.undone .change-text {
 .stability-offers li + li {
   margin-top: 6px;
 }
+
+/* GM bestiary (M7.2) */
+.bestiary-rank {
+  display: flex;
+  gap: 10px;
+}
+.bestiary-rank label {
+  flex: 1 1 0;
+}
+.bestiary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0 10px;
+}
+.bestiary-stats input {
+  width: 100%;
+}
