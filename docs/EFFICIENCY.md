@@ -20,10 +20,11 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
-| Close-out gate: under minute 44 with an unblocked item, start it (LOOP §5.5, §8.0; D170) | 2026-10-23 18:40 | End minute (mean) up to ≈ 49; items/run ≈ 1.5 | 43.7 end minute, 1.3 items/run | Highs (4/10), round-2 share (5/10), main CI red/day (8) | 2026-10-24 ~00:00 (6 runs) |
 
 ## Kept
 
+- D170 close-out gate (2026-10-24 00:08, D178): end minute 43.7 → 46.2,
+  items/run 1.3 → 1.5, guards flat (Highs 4/10, round-2 share 5/10, red/day 8).
 - D162 one push to main per item (2026-10-23 18:08, D170): main CI runs/day
   66 → 48 and red/day 12 → 8 (both ≈ −30%), guards flat (Highs 4/10,
   round-2 share 5/10, items/run 1.3).
@@ -76,3 +77,4 @@ table last in the file.
 | 2026-10-23 06:10 | 6 | 42.7 | 2.0 | 5/10 | 4 | 73 | 10 | 7.2 | 9320 |
 | 2026-10-23 12:18 | 6 | 45.5 | 1.3 | 5/10 | 4 | 66 | 12 | 8.0 | 8839 |
 | 2026-10-23 18:08 | 6 | 43.7 | 1.3 | 5/10 | 4 | 48 | 8 | 6.6 | 8510 |
+| 2026-10-24 00:08 | 6 | 46.2 | 1.5 | 5/10 | 4 | 47 | 8 | 6.7 | 8491 |

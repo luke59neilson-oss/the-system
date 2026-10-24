@@ -2418,3 +2418,57 @@ ol.change-log li.undone .change-text {
 .ledger-out {
   color: var(--err);
 }
+
+/* M6.4 title library (GM) and the player's Titles row. */
+.title-fields {
+  display: grid;
+  gap: 8px;
+}
+.title-bonuses table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.title-bonuses th,
+.title-bonuses td {
+  padding: 2px 6px 2px 0;
+  text-align: left;
+  vertical-align: top;
+}
+.title-bonuses th[scope='row'] {
+  font-weight: normal;
+}
+.title-bonuses input {
+  width: 6em;
+}
+.title-bonuses .bonus-preview {
+  display: inline;
+  margin-left: 6px;
+}
+.title-award {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.title-award > span {
+  align-self: center;
+}
+.title-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.title-list li + li {
+  margin-top: 4px;
+}
+.title-bonus {
+  color: var(--accent);
+}
+.title-text {
+  display: block;
+  font-size: 0.9em;
+  font-style: italic;
+}

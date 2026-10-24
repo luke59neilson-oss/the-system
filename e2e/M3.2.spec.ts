@@ -65,7 +65,7 @@ test('status screens follow DESIGN §9 and update live', async ({ browser }) => 
   await expect(laptop.getByTestId('race')).toHaveText('[Human (D) – lvl 51]');
   await expect(laptop.getByTestId('class')).toHaveText('[Tempest Warden – lvl 52]');
   await expect(laptop.getByTestId('profession')).toHaveText('[Alchemist – lvl 50]');
-  await expect(laptop.getByTestId('titles')).toHaveText('[Forerunner], [Rapid Spread]');
+  await expect(laptop.getByTestId('title')).toHaveText(['[Forerunner]', '[Rapid Spread]']);
   await expect(laptop.getByTestId(/^stat-/)).toHaveCount(9);
   // The grade metal frames the window.
   await expect(status).toHaveClass(/theme-silver/);
