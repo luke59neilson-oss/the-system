@@ -85,9 +85,19 @@ test('the GM imports the tutorial pack and the player sees the quest', async ({ 
   await expect(quest.getByTestId('stability-value')).toHaveText('100%');
   await quest.scrollIntoViewIfNeeded();
   await phone.screenshot({ path: path.join(shots, 'player-tutorial-quest-390x844.png') });
-  // The reveal and the GM's notes stay with the GM.
+  // The reveal and the GM's notes stay with the GM (the engine test checks
+  // the player projection itself; this checks the rendered page).
   const html = await phone.content();
-  for (const secret of ['you are what it is defending against', 'immune response', 'Clotmother']) {
+  for (const secret of [
+    'you are what it is defending against',
+    'Decide what you are',
+    'immune response',
+    'Clotmother',
+    'Ossuary King',
+    'Marrow Halls',
+    'kill-pale-hunter',
+    'Tutorial overview',
+  ]) {
     expect(html).not.toContain(secret);
   }
   await phone.close();

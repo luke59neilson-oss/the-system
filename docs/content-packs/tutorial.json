@@ -40,7 +40,7 @@
     },
     {
       "name": "Stormlung",
-      "notes": "Airway caves of roaring wind and pressure storms. Beast Lord 1, the Gale Warden, holds the deep chamber. Session 2 to 3, levels 10 to 15; the E-grade evolution lands at the end of this stretch for most characters."
+      "notes": "Airway caves of roaring wind and pressure storms. Beast Lord 1, the Gale Warden, holds the deep chamber. Session 2 to 3, levels 10 to 15. Fight the Gale Warden before anyone evolves: once a character reaches E-grade, an F-grade lord deals them a third of its damage and gives a third of the XP. The E-grade evolution follows the fight."
     },
     {
       "name": "Red Rivers",
@@ -63,7 +63,7 @@
         { "minRarity": "common", "text": "[The World]" },
         { "minRarity": "rare", "text": "[The Host] Something vast is alive beneath you." }
       ],
-      "notes": "Never Identify past Rare in the tutorial."
+      "notes": "Its tiers stop at Rare on purpose: the tutorial never says more."
     },
     {
       "name": "Curse energy",

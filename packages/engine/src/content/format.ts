@@ -253,7 +253,12 @@ export const contentQuestSchema = z
         visible: z.boolean().optional().describe("Shown to players; default the rules' setting."),
         rules: z
           .record(
-            z.string().trim().min(1).max(CONTENT_LIMITS.tag),
+            z
+              .string()
+              .trim()
+              .min(1)
+              .max(CONTENT_LIMITS.tag)
+              .refine((t) => t === t.toLowerCase(), { message: 'Action tags are lower case' }),
             z.number().refine((n) => n !== 0, { message: 'A delta is never 0' }),
           )
           .optional()

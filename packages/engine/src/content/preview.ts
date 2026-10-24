@@ -19,9 +19,9 @@ export interface ContentPreviewEntry {
   /** Null when the entry would apply; otherwise why not. */
   readonly error: string | null;
   /**
-   * A heads-up that does not block: an item or bestiary entry whose name
-   * the campaign already has (both may share names, so importing a file
-   * twice would add a second copy).
+   * A heads-up that does not block: an item, bestiary entry, quest or GM
+   * note whose name the campaign already has (these may share names, so
+   * importing a file twice would add a second copy).
    */
   readonly note: string | null;
 }
@@ -66,15 +66,29 @@ export function previewContent(
 
 function duplicateItemNote(campaign: Campaign, command: ContentCommand['command']): string | null {
   const state = campaign.state;
-  if (!state || (command.type !== 'item.define' && command.type !== 'entity.define')) return null;
-  const key = command.name.trim().toLowerCase();
-  const same = (n: { name: string }) => n.name.trim().toLowerCase() === key;
-  if (command.type === 'item.define') {
-    return Object.values(state.items).some(same)
-      ? `The item library already has an item named [${command.name}]: this adds another`
-      : null;
+  if (!state) return null;
+  const same = (wanted: string) => (n: { name?: string; title?: string }) =>
+    (n.name ?? n.title ?? '').trim().toLowerCase() === wanted.trim().toLowerCase();
+  switch (command.type) {
+    case 'item.define':
+      return Object.values(state.items).some(same(command.name))
+        ? `The item library already has an item named [${command.name}]: this adds another`
+        : null;
+    case 'entity.define':
+      return Object.values(state.entities).some(same(command.name))
+        ? `The bestiary already has an entry named [${command.name}]: this adds another`
+        : null;
+    case 'quest.create':
+      return Object.values(state.quests).some(same(command.title))
+        ? `The campaign already has a quest named "${command.title}": this adds another`
+        : null;
+    case 'note.create':
+      return Object.values(state.notes).some(
+        (n) => n.kind === command.kind && same(command.title ?? '')(n),
+      )
+        ? `There is already a GM note named "${command.title ?? ''}": this adds another`
+        : null;
+    default:
+      return null;
   }
-  return Object.values(state.entities).some(same)
-    ? `The bestiary already has an entry named [${command.name}]: this adds another`
-    : null;
 }

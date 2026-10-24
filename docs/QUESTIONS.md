@@ -504,7 +504,10 @@ DESIGN/ROADMAP; do not re-apply them.
     +5. Beast Lords: Gale Warden F-grade lvl 14, Clotmother E lvl 22,
     Ossuary King E lvl 28. [Rapid Spread] gives +5% Agility and +5%
     Endurance; a second title [Lordbreaker] gives +3% Strength and +2
-    Strength. The hidden quest "The Host's Response" is there for the reveal.
+    Strength. The hidden quest "The Host's Response" is there for the reveal;
+    players see "a hidden quest exists" from day 1 (DESIGN §7), so untick it
+    at import and add it later if that gives the twist away. Stability starts
+    at its maximum, so the + actions only matter once something has lowered it.
     Every value is an ordinary library entry: change it in the app, or tell
     me and the pack changes (D197).
     Answer:

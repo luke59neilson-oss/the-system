@@ -201,8 +201,8 @@ Importing a setting the campaign already has is refused as "nothing to change".
 The preview catches what would double up. Skills, titles and regions the
 campaign already has, and a hunger setting it already uses, show an error and
 cannot be ticked. Items and bestiary entries may share names, so a second
-copy only gets a note. Quests and GM notes have no names to clash on: untick
-them when importing a file again.
+copy only gets a note. Quests and GM notes can repeat: untick
+them when importing a file again (the preview notes a quest or GM note whose title the campaign already has).
 
 ## Versions
 

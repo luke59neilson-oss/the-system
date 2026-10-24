@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { execute, previewContent, type Campaign } from '../../src';
+import { execute, previewContent, projectForPlayer, type Campaign } from '../../src';
 import { kit, rawRules, run, testContext } from '../helpers/events';
 
 const pack = readFileSync(
@@ -91,5 +91,39 @@ describe('tutorial content pack (M9.5)', () => {
     // Items and bestiary entries may share names: those are notes, not errors.
     expect(p.entries.find((e) => e.path === 'items[0]')?.note).toContain('[Grazer Hide Vest]');
     expect(p.entries.find((e) => e.path === 'bestiary[1]')?.note).toContain('[Curse energy]');
+    // Quests and GM notes have no ids to clash on: the same title gets a note.
+    expect(p.entries.find((e) => e.path === 'quests[0]')?.note).toContain('The World Is Dying');
+    expect(p.entries.find((e) => e.path === 'gmNotes[2]')?.note).toContain('The reveal');
+  });
+
+  it("keeps the GM's side of the pack out of the player's view", () => {
+    let c = importAll(fresh());
+    // Even with every bestiary entry revealed to the player.
+    const state = c.state;
+    if (!state) throw new Error('no state');
+    for (const id of Object.keys(state.entities)) {
+      const r = execute(c, { type: 'entity.reveal', entityId: id, characterIds: null }, ctx);
+      if (r.ok) c = r.campaign;
+    }
+    const view = JSON.stringify(projectForPlayer(c.state ?? state, 'jake'));
+    expect(view).toContain('The World Is Dying');
+    const json = JSON.parse(pack) as {
+      regions: { name: string; notes: string }[];
+      gmNotes: { title: string; body: string }[];
+      quests: { title: string; text?: string; stability?: { rules: Record<string, number> } }[];
+      bestiary: { name: string; label?: string; notes?: string }[];
+    };
+    const secrets = [
+      ...json.regions.flatMap((r) => [r.name, r.notes]),
+      ...json.gmNotes.flatMap((n) => [n.title, n.body]),
+      json.quests[1]?.title ?? 'missing',
+      json.quests[1]?.text ?? 'missing',
+      ...Object.keys(json.quests[0]?.stability?.rules ?? { missing: 1 }),
+      ...json.bestiary.flatMap((b) => [b.notes ?? 'missing']),
+      ...json.bestiary.filter((b) => b.label && b.label !== b.name).map((b) => b.name),
+      // Rare-tier text needs Rare Identify; Jake has Common.
+      '[Fever]',
+    ];
+    for (const secret of secrets) expect(view, secret).not.toContain(secret);
   });
 });
