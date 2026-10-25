@@ -5,6 +5,7 @@ import type { LiveClient } from '../live';
 import {
   bonusText,
   bundleText,
+  creditText,
   equipTarget,
   itemLabel,
   openTrades,
@@ -87,6 +88,17 @@ export function Inventory({ view, client }: { view: PlayerView; client: LiveClie
         <dt>{rules.currencyName}</dt>
         <dd data-testid="currency">{inv.currency}</dd>
       </dl>
+      {inv.credits.length > 0 && (
+        // MT.4 (Q65): the viewer's own Credits history, newest first.
+        <details className="locked-points" data-testid="credits-history">
+          <summary>{rules.currencyName} history</summary>
+          <ul aria-label={`${rules.currencyName} history`}>
+            {[...inv.credits].reverse().map((e, i) => (
+              <li key={`${e.id}:${String(i)}`}>{creditText(view, e, rules.currencyName)}</li>
+            ))}
+          </ul>
+        </details>
+      )}
       <h3 id="equipment-heading">Equipment</h3>
       {worn.length === 0 ? (
         <p className="muted">Nothing equipped.</p>

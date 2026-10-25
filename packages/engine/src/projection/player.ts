@@ -15,6 +15,7 @@ import {
   type Bundle,
   type Holdings,
   type ItemDef,
+  type LedgerKind,
   type Trade,
   type TradeStatus,
 } from '../economy';
@@ -125,9 +126,9 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   lootTables: 'gm',
   lootTableOrder: 'gm',
   lootLog: 'gm',
-  // M6.3: the ledger names reasons and every character's balance; a player
-  // learns of their own grants and fines through a notification.
-  ledger: 'gm',
+  // M6.3: the ledger names reasons and every character's balance. MT.4 (Q65):
+  // each player gets their own entries only, as `inventory.credits`.
+  ledger: 'owner',
   // M6.4: the title library is the GM's; each holder gets their own titles'
   // entries (text and bonuses) in `me.titleDetails`.
   titleLibrary: 'gm',
@@ -480,6 +481,24 @@ export interface PlayerInventory {
   readonly trades: readonly PlayerTrade[];
   /** Definitions of the items the viewer has seen: held, equipped, offered by or to them (QF.9). */
   readonly itemDefs: Readonly<Record<string, PlayerItem>>;
+  /** The viewer's own currency history, oldest first (MT.4, Q65); nobody else's. */
+  readonly credits: readonly PlayerCreditEntry[];
+}
+
+/** One change to the viewer's own balance (MT.4): from the GM's ledger, own entries only. */
+export interface PlayerCreditEntry {
+  /** Id of the event that moved the currency. */
+  readonly id: string;
+  readonly at: string;
+  readonly kind: LedgerKind;
+  /** Signed change to the viewer's balance. */
+  readonly delta: number;
+  /** The viewer's balance after it. */
+  readonly balance: number;
+  /** The other character in a gift or trade (an id; party names are public), or null for the GM. */
+  readonly other: string | null;
+  /** The GM's reason for a grant or fine (written for the player); '' otherwise. */
+  readonly reason: string;
 }
 
 /** A visible quest as players see it (DESIGN §7; M3.8 draws it). */
@@ -964,7 +983,18 @@ function playerInventory(state: CampaignState, viewerId: string): PlayerInventor
     const def = hasOwnKey(state.items, id) ? state.items[id] : undefined;
     if (def) itemDefs[id] = copyItem(def, state.rules.bonuses.itemsFlatOnly);
   }
-  return { currency: h.currency, items, equipped, trades, itemDefs };
+  const credits: PlayerCreditEntry[] = state.ledger
+    .filter((e) => e.characterId === viewerId)
+    .map((e) => ({
+      id: e.id,
+      at: e.at,
+      kind: e.kind,
+      delta: e.delta,
+      balance: e.balance,
+      other: e.other,
+      reason: e.reason,
+    }));
+  return { currency: h.currency, items, equipped, trades, itemDefs, credits };
 }
 
 /**

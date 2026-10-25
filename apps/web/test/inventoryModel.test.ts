@@ -43,6 +43,7 @@ const inv = (over: Partial<PlayerInventory> = {}): PlayerInventory => ({
   equipped: {},
   trades: [],
   itemDefs: { ring, potion },
+  credits: [],
   ...over,
 });
 const view = {
