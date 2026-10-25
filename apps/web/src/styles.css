@@ -830,6 +830,26 @@ button.secondary:hover {
   color: var(--accent);
   border-color: var(--accent);
 }
+/* MT.6 broadcast banners. */
+.banner-stack {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.system-banner {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--accent, #7fb2ff);
+  border-radius: 6px;
+  background: rgba(127, 178, 255, 0.1);
+  box-shadow: 0 0 10px rgba(127, 178, 255, 0.25);
+  font-family: var(--mono, ui-monospace, monospace);
+  overflow-wrap: anywhere;
+}
+.system-banner-mark {
+  color: var(--accent, #7fb2ff);
+  font-weight: 700;
+}
 .ding-layer {
   position: fixed;
   bottom: 16px;

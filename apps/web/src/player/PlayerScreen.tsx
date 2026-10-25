@@ -11,6 +11,7 @@ import {
 import { flushSync } from 'react-dom';
 import { titleKey, type OwnSheet, type PlayerView } from '@the-system/engine';
 import { friendlyError, notificationText } from '../format';
+import { BroadcastBanners } from './BroadcastBanners';
 import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
 import { playSound, unlockSound } from './sounds';
@@ -177,6 +178,7 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
           Demo campaign: for trying the app out
         </p>
       )}
+      {view && <BroadcastBanners messages={view.messages} />}
       {pane && <PaneLatest live={live} view={view} />}
       {(live.status === 'refused' || live.error) && (
         <p className="err" role="alert">
