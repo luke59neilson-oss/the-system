@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-25): M0–M11, MS, MQ, MR and QF done; new milestones MT (Luke's answers, batch 3) and MC (co-DM, DESIGN §11) added; `docs/DONE.md` removed.
-**Next item:** resume `wip/MT.7` (overrides for merges, evolution release, early profession and montage; GM controls and e2e), then MT.8
+**Next item:** MT.8 (faction reveal toggle), then MT.9
 **Blockers:** none
 
 ## Run log
@@ -1099,5 +1099,13 @@ next item, blockers. -->
 - MT.7 started on `wip/MT.7` (base cd724194, head 27695b6f): `docs/GM-OVERRIDES.md` lists all 283 engine refusals by category (Rule / State / Data / Permission) with the GM's way through; `scripts/gm-refusals.mjs` + `scripts/gm-overrides.test.ts` keep it complete (D215). New engine overrides with tests and goldens: `skill.setRarity`, `skill.grant`, `skill.awardMark` `override: true`. **Next step:** `override: true` on `skill.merge` (store it on the MergeOffer so the accept honours it), `evolution.release` (pending selection), `character.grantProfession` (before E-grade), `montage.offer`; then GM sheet controls for each with warnings, `e2e/MT.7.spec.ts` + screenshots, update the "Planned" rows in GM-OVERRIDES.md, then the sonnet review.
 - Tests: unit 1,245 on main (1,257 on wip/MT.7); full e2e `--project=e2e --workers=1` 100/100 green on the QF.25 head before push.
 - Open `wip/*`: wip/MT.7 (resume).
+- Blockers: none.
+
+### Run f31211eb · 2026-10-25 23:08–23:50 UTC (end minute ~44: MT.7 needed both review rounds and its close-out; MT.8 not started, so the next run starts it fresh rather than from a one-commit wip)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` again had an unrelated history; reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. CI on main at start (cd724194) green. No new answers. Hour 23: no efficiency check, no sweep.
+- MT.7 **checked** (merged to main): `override: true` on `skill.merge` (kept on the offer; the player's accept honours it; passes the ceiling too), `evolution.release` (kept on the release; the owner's screen and the choice honour it; selections stay due), `character.grantProfession` (before E-grade, or replacing one), `montage.offer`; GM controls with warnings: Edit sheet → "Skill and profession overrides" (Set rarity, Give a skill, Grant/Replace profession), Marks review "Extra mark (override)", Merges "GM override: merge any two skills", Encounter "Early montage (override)", evolution builder "GM override: release now anyway". Change-log rows end "(GM override)". `docs/GM-OVERRIDES.md` lists 310+ refusals, nothing planned; scanner reads literal, ternary, `…Problem`/limit returns and error results (D216–D218). `e2e/MT.7.spec.ts` + screenshots; M5.3 spec updated for the extra-mark button.
+- Review: sonnet 2 rounds (R1 1H/3M/3L, R2 0H/3M/1L), all H/M fixed; see REVIEW-LOG.
+- Tests: unit 1,267; e2e MT.7, M7.3, MT.2, M5.4, M5.3, MT.1, M5.A green locally (full suite left to CI on this push). Engine coverage not re-measured this run.
+- Open `wip/*`: none new (wip/MT.7 merged).
 - Blockers: none.
 
