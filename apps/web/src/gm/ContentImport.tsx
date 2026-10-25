@@ -21,6 +21,8 @@ type Preview =
       title: string | null;
       entries: PreviewEntry[];
       errors: { path: string; message: string }[];
+      /** Sections read but no longer used (MT.3: `hunger`). */
+      ignored: { path: string; message: string }[];
     };
 
 /** Error replies (no campaign, a stale key, a file over 2 MB) have no preview shape. */
@@ -196,6 +198,15 @@ export function ContentImport({ client, gmKey }: { client: LiveClient; gmKey: st
               ))}
             </ul>
           )}
+          {preview.ignored.length > 0 && (
+            <ul className="muted" aria-label="Ignored sections">
+              {preview.ignored.map((e) => (
+                <li key={e.path}>
+                  <code>{e.path}</code>: {e.message}
+                </li>
+              ))}
+            </ul>
+          )}
           <ul className="import-entries">
             {preview.entries.map((e) => (
               <li key={e.path}>
@@ -245,7 +256,6 @@ const KINDS: Record<string, string> = {
   'quest.create': 'Quest',
   'region.define': 'Region',
   'note.create': 'GM note',
-  'hunger.configure': 'Hunger tracker',
 };
 
 /** "Item: Pale Hide Bracers", "Skill menu: level 10". */

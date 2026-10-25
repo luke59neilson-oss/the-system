@@ -10,7 +10,6 @@ import {
 import { CharacterRuleError, raceLevel } from '../character';
 import { settleContest, type ContestSideRecord, type GradeGapMode } from '../resolution';
 import { titleDefByName } from '../titles';
-import { hungerLevel } from '../trackers';
 import { keptRerate } from '../evolution';
 import { normalizeTags } from '../skills/library';
 import { missingDefaultEntries } from '../content/defaults';
@@ -522,22 +521,6 @@ export type Command =
       /** Omitted or null = every character who does not know it yet. */
       characterIds?: readonly string[] | null | undefined;
     }
-  /** M7.4: turn the hunger tracker on or off, or rename its steps. Omitted fields stay. */
-  | {
-      type: 'hunger.configure';
-      enabled?: boolean | undefined;
-      steps?: readonly string[] | undefined;
-    }
-  | {
-      /**
-       * M7.4: set these characters' hunger to `level`, or move it by `delta`
-       * (clamped to the steps). Give exactly one.
-       */
-      type: 'hunger.set';
-      characterIds: readonly string[];
-      level?: number | undefined;
-      delta?: number | undefined;
-    }
   | {
       type: 'region.define';
       regionId?: string | undefined;
@@ -709,8 +692,6 @@ const commandSchema = z.discriminatedUnion('type', [
     type: z.literal('entity.reveal'),
     characterIds: z.array(z.string()).nullable().optional(),
   }),
-  z.object({ type: z.literal('hunger.configure'), steps: z.array(z.string()).optional() }),
-  z.object({ type: z.literal('hunger.set'), characterIds: z.array(z.string()) }),
   z.object({ type: z.literal('region.define') }),
   z.object({ type: z.literal('region.edit') }),
   z.object({ type: z.literal('region.setCurrent') }),
@@ -1553,31 +1534,6 @@ function toEvent(
         type: 'stability.nudged',
         payload: { questId: command.questId, delta: command.delta, reason: command.reason ?? '' },
       };
-    case 'hunger.configure': {
-      const state = campaign.state;
-      if (!state) throw new EventRejectedError('Create a campaign first');
-      return {
-        type: 'hunger.configured',
-        payload: {
-          enabled: command.enabled ?? state.hunger.enabled,
-          steps: (command.steps ?? state.hunger.steps).map((s) => s.trim()),
-        },
-      };
-    }
-    case 'hunger.set': {
-      const state = campaign.state;
-      if (!state) throw new EventRejectedError('Create a campaign first');
-      if ((command.level === undefined) === (command.delta === undefined)) {
-        throw new EventRejectedError('Give a hunger level or a change, not both');
-      }
-      const top = state.hunger.steps.length - 1;
-      const levels: Record<string, number> = {};
-      for (const id of command.characterIds) {
-        const next = command.level ?? hungerLevel(state.hunger, id) + (command.delta ?? 0);
-        levels[id] = Math.min(Math.max(Math.trunc(next), 0), top);
-      }
-      return { type: 'hunger.levelsSet', payload: { levels } };
-    }
     case 'region.define':
       return {
         type: 'region.defined',

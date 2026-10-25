@@ -389,8 +389,9 @@ describe('migration hook', () => {
   });
 
   it('validates migrated configs end to end', () => {
-    // Pretend the current schema is v2 and v1 files named the currency field differently.
+    // Pretend v1 files named the currency field differently (a test-only migration).
     const v1 = rawDefaults();
+    v1.configVersion = 1;
     v1.economy.currency = v1.economy.currencyName;
     delete v1.economy.currencyName;
     const migrations: Record<number, RulesMigration> = {
@@ -400,12 +401,11 @@ describe('migration hook', () => {
         return { ...raw, economy: { ...rest, currencyName: currency } };
       },
     };
-    // v2 result is then validated against the (v1) schema's literal, so stamp back for the check.
     const migrated = migrateRulesConfig(v1, migrations, 2);
     expect(migrated.ok).toBe(true);
     if (migrated.ok) {
       expect((migrated.raw['economy'] as Record<string, unknown>)['currencyName']).toBe('Credits');
-      expect(parseRulesConfig({ ...migrated.raw, configVersion: 1 }).ok).toBe(true);
+      expect(parseRulesConfig(migrated.raw).ok).toBe(true);
     }
     expect(parseRulesConfig(v1).ok).toBe(false); // unmigrated: unknown key + missing value
   });

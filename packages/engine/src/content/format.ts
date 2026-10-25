@@ -290,15 +290,16 @@ export const contentGmNoteSchema = z
 
 export const contentHungerSchema = z
   .strictObject({
-    enabled: z.boolean().optional().describe('Turn the hunger tracker on or off.'),
+    enabled: z.boolean().optional(),
     steps: z
       .array(z.string().trim().min(1).max(CONTENT_LIMITS.name))
       .min(2)
       .max(CONTENT_LIMITS.options)
-      .optional()
-      .describe('Hunger levels from fed to starving.'),
+      .optional(),
   })
-  .describe('Hunger tracker settings for the campaign (DESIGN §7).');
+  .describe(
+    'Retired (MT.3): the app no longer tracks hunger (DESIGN §7). Still read so older files import; the import preview lists it as ignored.',
+  );
 
 const list = <T extends z.ZodType>(schema: T) =>
   z.array(schema).max(CONTENT_LIMITS.entries).optional();

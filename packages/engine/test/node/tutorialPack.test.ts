@@ -77,7 +77,7 @@ describe('tutorial content pack (M9.5)', () => {
     ]);
     const rapid = Object.values(state.titleLibrary).find((t) => t.name === 'Rapid Spread');
     expect(rapid?.text).toBe('You have propagated through the Host faster than any before you.');
-    expect(state.hunger.enabled).toBe(true);
+    expect('hunger' in state).toBe(false);
     expect(Object.values(state.notes).every((n) => n.kind === 'gm')).toBe(true);
   });
 
@@ -85,7 +85,7 @@ describe('tutorial content pack (M9.5)', () => {
     const p = previewContent(importAll(fresh()), pack, ctx);
     if (!p.ok) throw new Error('expected a preview');
     const blocked = new Set(p.entries.filter((e) => e.error !== null).map((e) => e.path));
-    for (const path of ['regions[0]', 'titles[0]', 'skills[0]', 'hunger']) {
+    for (const path of ['regions[0]', 'titles[0]', 'skills[0]']) {
       expect(blocked, path).toContain(path);
     }
     // Items and bestiary entries may share names: those are notes, not errors.

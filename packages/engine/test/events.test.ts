@@ -4,6 +4,7 @@ import {
   EVENT_TYPES,
   EventRejectedError,
   PLAYER_COMMANDS,
+  RULES_CONFIG_VERSION,
   appendEvent,
   authorize,
   applyEvent,
@@ -162,7 +163,7 @@ describe('commands and the reducer', () => {
   it('creates a campaign with parsed rules and a character with Identify', () => {
     const state = base().state;
     expect(state?.name).toBe('Whale');
-    expect(state?.rules.configVersion).toBe(1);
+    expect(state?.rules.configVersion).toBe(RULES_CONFIG_VERSION);
     expect(state?.characters['jake']?.skills.map((s) => s.name)).toContain('Identify');
   });
 
@@ -979,6 +980,7 @@ describe('property: replay equals incremental state', () => {
       'contest.shared',
       // M7.4: trackers have their own tests (trackers.test.ts) and golden log
       // (trackers.jsonl); adding them here would reshuffle the seeded walk (D118).
+      // The hunger events are retired (MT.3, noHunger.test.ts): no command records them.
       'hunger.configured',
       'hunger.levelsSet',
       'region.defined',

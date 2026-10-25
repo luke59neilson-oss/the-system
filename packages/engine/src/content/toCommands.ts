@@ -105,8 +105,6 @@ export function contentToCommands(
       command: { type: 'note.create', characterId: null, kind: 'gm', ...n },
     }),
   );
-  if (content.hunger) {
-    commands.push({ path: 'hunger', command: { type: 'hunger.configure', ...content.hunger } });
-  }
+  // `hunger` (M9.5) still reads, but stands for nothing (MT.3: no hunger tracker).
   return { commands, errors };
 }

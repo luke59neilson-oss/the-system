@@ -66,7 +66,7 @@ test('the GM imports the tutorial pack and the player sees the quest', async ({ 
   await expect(panel).toContainText('Tutorial: The Host');
   await expect(panel.getByText('Quest: The World Is Dying')).toBeVisible();
   await expect(panel.getByText('Region: Red Rivers')).toBeVisible();
-  await expect(panel.getByText('Hunger tracker')).toBeVisible();
+  await expect(panel.getByRole('list', { name: 'Ignored sections' })).toHaveCount(0);
   const boxes = panel.getByRole('checkbox');
   const count = await boxes.count();
   expect(count).toBeGreaterThan(30);

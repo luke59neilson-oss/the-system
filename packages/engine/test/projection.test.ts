@@ -146,7 +146,6 @@ describe('player projection', () => {
       'contests',
       'day',
       'hiddenQuests',
-      'hunger',
       'identify',
       'inventory',
       'me',

@@ -53,8 +53,7 @@ content.
   "evolutions": [],
   "quests": [],
   "regions": [],
-  "gmNotes": [],
-  "hunger": { "enabled": true }
+  "gmNotes": []
 }
 ```
 
@@ -204,20 +203,16 @@ Each option:
 
 Players never see GM notes.
 
-### `hunger`: the hunger tracker (one object, not a list)
+### `hunger` (retired)
 
-| Key | Required | Meaning |
-| --- | --- | --- |
-| `enabled` | no | Turn the tracker on (`true`) or off. |
-| `steps` | no | 2–10 hunger levels from fed to starving. |
-
-Importing a setting the campaign already has is refused as "nothing to change".
+The app no longer tracks hunger (DESIGN §7: narrate it instead). Older files
+with a `hunger` object still import; the preview lists it under "Ignored
+sections" and nothing applies for it. Leave it out of new files.
 
 ## Importing twice
 
 The preview catches what would double up. Skills, titles and regions the
-campaign already has, and a hunger setting it already uses, show an error and
-cannot be ticked. Items and bestiary entries may share names, so a second
+campaign already has show an error and cannot be ticked. Items and bestiary entries may share names, so a second
 copy only gets a note. Quests and GM notes can repeat: untick
 them when importing a file again (the preview notes a quest or GM note whose title the campaign already has).
 

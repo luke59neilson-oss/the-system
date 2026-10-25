@@ -657,11 +657,9 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "description": "Turn the hunger tracker on or off.",
           "type": "boolean"
         },
         "steps": {
-          "description": "Hunger levels from fed to starving.",
           "minItems": 2,
           "maxItems": 10,
           "type": "array",
@@ -673,7 +671,7 @@
         }
       },
       "additionalProperties": false,
-      "description": "Hunger tracker settings for the campaign (DESIGN §7)."
+      "description": "Retired (MT.3): the app no longer tracks hunger (DESIGN §7). Still read so older files import; the import preview lists it as ignored."
     }
   },
   "required": [

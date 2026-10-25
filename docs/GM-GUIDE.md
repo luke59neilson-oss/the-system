@@ -86,7 +86,7 @@ send it to a player.
      rarity; **Reveal** adds one to players' Identify lists.
    - **Item library** (**Give** / **Take**), **Loot tables** (**Roll**),
      **Ledger** (**Grant** / **Fine** currency), **Title library**
-     (**Award title**), **Trackers** (hunger, regions, survivor factions).
+     (**Award title**), **Trackers** (regions, survivor factions; hunger is narrated, not tracked).
 3. **View as**: the header switches between **GM**, any character (exactly
    what that player sees) and **Table view** (every player's screen side by
    side). Your half-filled GM forms survive the switch.

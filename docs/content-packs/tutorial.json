@@ -271,7 +271,7 @@
   "gmNotes": [
     {
       "title": "Tutorial overview",
-      "body": "Five sessions, levels 0 to 30 (about 6 race levels a session), 30 in-game days. Route: The Crown → Rake Canyons → Twin Spouts → Stormlung (Beast Lord 1) → Red Rivers (Beast Lord 2, the reveal) → Marrow Halls (Beast Lord 3) → The Drum (finale). The hunger tracker is on for the tutorial and fades at E-grade.",
+      "body": "Five sessions, levels 0 to 30 (about 6 race levels a session), 30 in-game days. Route: The Crown → Rake Canyons → Twin Spouts → Stormlung (Beast Lord 1) → Red Rivers (Beast Lord 2, the reveal) → Marrow Halls (Beast Lord 3) → The Drum (finale). Hunger is narrated now and then to ground the players, never tracked.",
       "tags": ["tutorial"]
     },
     {
@@ -284,6 +284,5 @@
       "body": "The curse is the whale's immune response and the players are the infection. Seed it early (pale hunters only attack where the players have been; the miasma reads [Fever] at Uncommon) and land it in the Red Rivers. When it lands, reveal the hidden quest The Host's Response. A Rare Identify on the miasma gives it away: [The Host's Response].",
       "tags": ["tutorial", "secret"]
     }
-  ],
-  "hunger": { "enabled": true }
+  ]
 }

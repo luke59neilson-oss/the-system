@@ -176,7 +176,6 @@ export const DEFAULT_RULES: RulesConfigInput = {
   identify: { sameGradeLevelRatio: 1.5 }, // §7 Identify range, MQ.8
   montage: { minClockFill: 0.5, requireNoFailures: true }, // §7
   stability: { min: 0, max: 100, initial: 100, visibleToPlayersByDefault: false },
-  hunger: { enabledByDefault: false, fadesAtGrade: 'E' }, // §7
   economy: {
     currencyName: 'Credits', // D7, QUESTIONS 2
     // §7: Zogarth's 10 armor/jewelry slots plus main and off hand.

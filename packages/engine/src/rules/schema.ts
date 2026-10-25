@@ -5,7 +5,8 @@ import { z } from 'zod';
  * rules from here, never from literals. The GM edits it in the app (M4.9).
  */
 
-export const RULES_CONFIG_VERSION = 1;
+/** v2 (MT.3): `hunger` removed (DESIGN §7: no hunger tracker). */
+export const RULES_CONFIG_VERSION = 2;
 
 const id = z
   .string()
@@ -221,10 +222,6 @@ export const rulesConfigSchema = z
       initial: z.number(),
       visibleToPlayersByDefault: z.boolean(),
     }),
-    hunger: z.strictObject({
-      enabledByDefault: z.boolean(),
-      fadesAtGrade: z.string(),
-    }),
     economy: z.strictObject({
       currencyName: z.string().min(1),
       equipmentSlots: z.array(equipmentSlotSchema).min(1),
@@ -339,7 +336,6 @@ export const rulesConfigSchema = z
     }
     for (const [path, value] of [
       [['tracks', 'professionUnlockGrade'], config.tracks.professionUnlockGrade],
-      [['hunger', 'fadesAtGrade'], config.hunger.fadesAtGrade],
     ] as const) {
       if (!gradeIds.includes(value)) {
         issue([...path], `unknown grade "${value}" (known: ${gradeIds.join(', ')})`);

@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 32,
+  "schemaVersion": 33,
   "name": "XP golden",
   "rules": {
-    "configVersion": 1,
+    "configVersion": 2,
     "campaign": {
       "levelCap": 240,
       "typicalLevelsPerSession": 6,
@@ -274,10 +274,6 @@
       "max": 100,
       "initial": 100,
       "visibleToPlayersByDefault": false
-    },
-    "hunger": {
-      "enabledByDefault": false,
-      "fadesAtGrade": "E"
     },
     "economy": {
       "currencyName": "Credits",
@@ -785,11 +781,6 @@
   "montageOrder": [],
   "contests": {},
   "contestOrder": [],
-  "hunger": {
-    "enabled": false,
-    "steps": ["Fed", "Peckish", "Hungry", "Famished", "Starving"],
-    "levels": {}
-  },
   "regions": {},
   "regionOrder": [],
   "currentRegion": null,
