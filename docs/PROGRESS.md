@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M9 done (M9.4 deferred), M10 done, MS, MQ and MR done; QF.1–QF.22 done; M11.1–M11.3 done; Preview ready: Actions → Release → Run workflow (M10)
-**Next item:** M11.4 Guides (resume wip/M11.4)
+**Status:** build complete (`docs/DONE.md`): every item checked except M9.4 (deferred by Luke); M11.4 and M11.5 done 2026-10-25. Preview ready: Actions → Release → Run workflow (M11)
+**Next item:** none (delete `docs/DONE.md` to resume; see Q74)
 **Blockers:** none
 
 ## Run log
@@ -1035,3 +1035,14 @@ next item, blockers. -->
 - Open `wip/*` branches: wip/M11.4 (base main 6bc2748, head 8c3821b). Where I stopped: `docs/TROUBLESHOOTING.md` has ports (30333, the desktop's 20-port fallback and its error text), addresses (`lan.ts`), and unsigned-app warnings (Windows SmartScreen, macOS Gatekeeper); still TODO there: firewall prompts (Windows Defender, macOS firewall) and same-wifi/guest-network/client-isolation. Not started: `docs/GM-GUIDE.md`, `docs/PLAYER-QUICKSTART.md` (one page; verify every UI label against `apps/web/src`). M11.4 needs a spec only if it ships UI; docs-only items still get a §6 review.
 - Next item: M11.4 Guides (resume wip/M11.4).
 - Blockers: none.
+
+### Run 7a8361b5 · 2026-10-25 01:07–01:46 UTC (end minute 39: `docs/DONE.md` written, §5.5)
+- Preflight: `add_repo` not offered; repo already cloned (detached HEAD; reset main to origin/main fed5b6e). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewers: sonnet and fable worked (worktree; Agent calls block, so reviews ran two at a time in one message). No new answers. Hour 01: no efficiency check, no sweep.
+- CI on main at start: latest completed (6bc2748) green; later commits docs only.
+- M11.4 Guides **checked**: finished `docs/TROUBLESHOOTING.md` (firewall per OS, same wifi / guest / client isolation, reconnecting, GM key, data folders, lost-writes recovery, one window), wrote `docs/GM-GUIDE.md` and the one-page `docs/PLAYER-QUICKSTART.md`, README links. `scripts/guides.test.ts` checks every bold label against its surface's source (comments stripped), the port messages and the firewall menu paths. Sonnet round 1: 0 H / 4 M (docs not shipped with the app, players pointed at a repo file, weak label test, no macOS note) fixed; round 2: 0 H / 0 M, Lows fixed. Merged a5a24207.
+- M11.5 Final review **checked**: fable whole-repo review at 480d613a, 0 H / 0 M / 7 L. Fixed: the hub logs an engine error inside a command. Lows and the QUALITY Backlog kept as Known gaps in `docs/DONE.md` (D207, D208). `docs/DONE.md` written; Q74 asks Luke whether runs stay stopped.
+- Tests: unit 1,202; e2e 92 + 8 latency (full run 8.8 min, green); desktop smoke not run (no desktop change). Engine coverage not re-measured (last 97.53%).
+- Open `wip/*` branches: none in progress (wip/M11.4 and wip/M11.5 merged).
+- Next item: none; build complete.
+- Blockers: none.
+
