@@ -32,5 +32,12 @@ completes each section against the desktop app and server code. -->
 
 ## "Unknown developer" or "unrecognized app" warnings
 
-- TODO: Windows SmartScreen ("More info" → "Run anyway"); macOS Gatekeeper
-  (right-click → Open, or System Settings → Privacy & Security).
+The app is not code-signed (no paid services; ROADMAP MS.6, M10), so both systems warn
+the first time it runs.
+
+- **Windows** ("Windows protected your PC", SmartScreen): choose **More
+  info**, then **Run anyway**. Windows remembers the choice.
+- **macOS** ("cannot be opened because the developer cannot be verified"):
+  Control-click (right-click) the app, choose **Open**, then **Open** again.
+  On newer macOS versions, open **System Settings → Privacy & Security**,
+  scroll to the message about The System and choose **Open Anyway**.
