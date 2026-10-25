@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-25): M0–M11, MS, MQ, MR and QF done; new milestones MT (Luke's answers, batch 3) and MC (co-DM, DESIGN §11) added; `docs/DONE.md` removed.
-**Next item:** resume `wip/MT.6` (fix round-2 Medium: banner arrival after reconnect), then verify sweep B Mediums (see run ab633184), then MT.7
+**Next item:** resume `wip/MT.7` (overrides for merges, evolution release, early profession and montage; GM controls and e2e), then MT.8
 **Blockers:** none
 
 ## Run log
@@ -1091,3 +1091,13 @@ next item, blockers. -->
 - Tests: unit 1,239 green (`npm run check` on wip/MT.6); full e2e `--project=e2e --workers=1` 98/98 green on d2a09b57.
 - Open `wip/*`: wip/MT.6 (resume).
 - Blockers: none.
+
+### Run 1ea01aa0 · 2026-10-25 22:09–22:49 UTC (end minute 40: protocol miss, released before minute 48 with no §5.5 reason; MT.7 work was pushed to wip at each step, so nothing is lost)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` again had an unrelated history; reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. CI on main at start (ddf36547) green. No new answers. Hour 22: no efficiency check, no sweep.
+- MT.6 **checked**: round-2 M1 fixed (`bannerStart`: a live arrival more than 2 min after its send time times from send + 2 min, so a banner seen after a reconnect does not outlive the GM's list); Lows: skew limit documented, scheduled messages say they are list-only, unit tests for `activeBanners`/`bannerStart`. Max rounds reached; verified by unit + e2e.
+- Sweep B recorded in QUALITY.md (rotation → C). All 3 Mediums confirmed (mutation / code reading) and fixed: QF.23 (Identify-as-source merge refusal tested; mutation now fails), QF.24 (a merge offer notifies its owner: toast + System messages; e2e with a second player), QF.25 (GM override keeps keyboard focus; keyboard e2e). Reviewed together by sonnet: 0 H / 0 M / 4 L (backlog). **Checked.**
+- MT.7 started on `wip/MT.7` (base cd724194, head 27695b6f): `docs/GM-OVERRIDES.md` lists all 283 engine refusals by category (Rule / State / Data / Permission) with the GM's way through; `scripts/gm-refusals.mjs` + `scripts/gm-overrides.test.ts` keep it complete (D215). New engine overrides with tests and goldens: `skill.setRarity`, `skill.grant`, `skill.awardMark` `override: true`. **Next step:** `override: true` on `skill.merge` (store it on the MergeOffer so the accept honours it), `evolution.release` (pending selection), `character.grantProfession` (before E-grade), `montage.offer`; then GM sheet controls for each with warnings, `e2e/MT.7.spec.ts` + screenshots, update the "Planned" rows in GM-OVERRIDES.md, then the sonnet review.
+- Tests: unit 1,245 on main (1,257 on wip/MT.7); full e2e `--project=e2e --workers=1` 100/100 green on the QF.25 head before push.
+- Open `wip/*`: wip/MT.7 (resume).
+- Blockers: none.
+
