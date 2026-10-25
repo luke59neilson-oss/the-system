@@ -183,6 +183,21 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   /** GM override of base stats (audited sheet edit, M4.5); pools re-clamp. */
   'character.statsSet': z.strictObject({ characterId: recordId, stats: statValues }),
   /**
+   * MT.5 (Q59, DESIGN §7 GM authority): the GM sets a character's levels, XP
+   * and grade directly. Whatever the change skips (class spread, free points,
+   * evolutions) is not granted; reached selections become due as usual.
+   */
+  'character.progressionSet': z.strictObject({
+    characterId: recordId,
+    grade: recordId,
+    classLevel: z.number().int().min(0).max(10_000),
+    professionLevel: z.number().int().min(0).max(10_000),
+    xp: z.strictObject({
+      class: z.number().int().min(0).max(100_000_000),
+      profession: z.number().int().min(0).max(100_000_000),
+    }),
+  }),
+  /**
    * GM XP award (DESIGN §5). `shares` are the parts of `amount` per
    * participant and must sum to it; each one's above-level bonus is derived
    * from `enemyLevel` on apply, and level-ups follow from the rules.
@@ -793,6 +808,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'titleDef.edited': 1,
   'character.poolsSet': 1,
   'character.statsSet': 1,
+  'character.progressionSet': 1,
   'xp.awarded': 1,
   'freePoints.assigned': 1,
   'freePoints.overridden': 1,

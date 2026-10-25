@@ -344,6 +344,9 @@ export function gainXp(
     });
     for (let r = race + 1; r <= newRace; r++) {
       levelUps.push({ track: 'race', level: r });
+      // A GM override (MT.5) can lower race level; levels earned again do not
+      // grant a second batch (batches are keyed by race level, D38).
+      if (batches.some((b) => b.raceLevel === r)) continue;
       batches.push({
         raceLevel: r,
         points: grade.freePointsPerRaceLevel,
