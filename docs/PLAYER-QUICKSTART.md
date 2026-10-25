@@ -1,6 +1,6 @@
 # Player quickstart
 
-One page for the table. You need a phone or laptop on the **same wifi** as the
+One page for the table. You need a phone or laptop on the *same wifi* as the
 GM's laptop; nothing to install.
 
 ## Join
@@ -13,8 +13,8 @@ GM's laptop; nothing to install.
    it catches up on its own. Can't connect at all? Tell the GM (see
    `docs/TROUBLESHOOTING.md`).
 
-**Switch character** (top bar) goes back to the list. **Sound: off/on** turns
-the "DING!" chime on or off, with a volume slider.
+**Switch character** (top bar) goes back to the list. **Sound: off** turns the "DING!" chime on
+(and back off), with a volume slider.
 
 ## Your status screen
 
@@ -29,7 +29,7 @@ the "DING!" chime on or off, with a volume slider.
   **Confirm** (or **Back**). It can wait for a break in play.
 - **[Evolve]**: appears when the GM releases your evolution. Look at each
   path and its stat bonus, **Choose** one, then **Evolve**.
-- Tap any **[Skill (Rarity)]** to read its description, effects and mastery
+- Tap any skill (shown as `[Name (Rarity)]`) to read its description, effects and mastery
   marks, and to give it a **Nickname**.
 - **Professions**: from E-grade the GM offers professions that fit what you
   have done. Pick one or wait; once you choose, the list locks.

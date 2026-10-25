@@ -38,7 +38,7 @@ The campaign is saved on every change. Quitting the app backs it up first.
 
 The **Players join** panel shows the join address and a QR code. Players on
 the same wifi scan it or type the address and pick their character; no
-passwords. If a player can't connect, open **Players can't connect?** in the
+passwords. If a player can't connect, open **Players can’t connect?** in the
 same panel. **Open the GM console in another browser on this computer** gives
 a link for Chrome or Safari next to the app: it unlocks the console, so never
 send it to a player.
@@ -56,7 +56,7 @@ send it to a player.
      shares it (even by default; **Set shares by hand** to change). Fill in
      the target's grade and level for the grade rules and the above-level
      bonus. The preview shows each character's levels, overflow to the other
-     track and any XP that would be **lost** before you press **Award XP**.
+     track and any XP that would be *lost* before you press **Award XP**.
      The "Typical session" line suggests an award for ≈ 6 levels per grade.
    - **Encounter**: **Contest roll** (pick each side's stat; the grade-wall
      rules apply; **Share with the table** shows the result to players),

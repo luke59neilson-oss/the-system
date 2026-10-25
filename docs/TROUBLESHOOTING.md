@@ -7,13 +7,13 @@ operating system.
 
 ## Players cannot open the join address
 
-- The server listens on port **30333** on every network interface
+- The server listens on port *30333* on every network interface
   (`apps/server/src/config.ts`: `DEFAULT_PORT`, `DEFAULT_HOST 0.0.0.0`).
 - Check the address first: type it exactly as the **Players join** panel
   shows it, with `http://` and the port (for example
   `http://192.168.1.20:30333`), or scan the QR code. If the panel lists
   **Other addresses**, try those too.
-- Open the address in a browser **on the GM laptop**. If it works there but
+- Open the address in a browser *on the GM laptop*. If it works there but
   not on a player's device, the network or the firewall is blocking it (below).
 
 ### Windows Firewall
@@ -42,12 +42,12 @@ the port the panel shows).
 
 ### Same wifi, guest networks and client isolation
 
-- Every device must be on the **same wifi** as the GM laptop. Phones on mobile
+- Every device must be on the *same wifi* as the GM laptop. Phones on mobile
   data cannot reach it; turn mobile data off or wifi on.
-- **Guest networks** usually stop devices from seeing each other. Put
+- *Guest networks* usually stop devices from seeing each other. Put
   everyone on the main network instead.
-- Some routers (and most hotel, café and campus wifi) turn on **client
-  isolation** (also called AP isolation or "privacy separator"), which blocks
+- Some routers (and most hotel, café and campus wifi) turn on *client
+  isolation* (also called AP isolation or "privacy separator"), which blocks
   device-to-device traffic even on the same network. Turn it off in the
   router settings if you can; otherwise use a phone hotspot from the GM's
   phone and connect the GM laptop and every player to it.
@@ -79,9 +79,9 @@ the port the panel shows).
 The app is not code-signed (no paid services; ROADMAP MS.6, M10), so both systems warn
 the first time it runs.
 
-- **Windows** ("Windows protected your PC", SmartScreen): choose **More
+- *Windows* ("Windows protected your PC", SmartScreen): choose **More
   info**, then **Run anyway**. Windows remembers the choice.
-- **macOS** ("cannot be opened because the developer cannot be verified"):
+- *macOS* ("cannot be opened because the developer cannot be verified"):
   Control-click (right-click) the app, choose **Open**, then **Open** again.
   On newer macOS versions, open **System Settings → Privacy & Security**,
   scroll to the message about The System and choose **Open Anyway**.

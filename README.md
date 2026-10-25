@@ -6,6 +6,9 @@ on the same wifi open the join address in a browser and pick their character.
 
 Status: in development. See `docs/PROGRESS.md`.
 
+- Running a game: `docs/GM-GUIDE.md`
+- For players: `docs/PLAYER-QUICKSTART.md` (one page)
+- When players can't connect: `docs/TROUBLESHOOTING.md`
 - Rules: `docs/DESIGN.md`
 - Plan: `docs/ROADMAP.md`
 - How the build runs: `docs/LOOP.md`
