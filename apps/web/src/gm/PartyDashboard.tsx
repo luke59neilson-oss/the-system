@@ -3,7 +3,9 @@ import {
   characterEffectiveStats,
   characterFlags,
   formatStat,
+  applyProgressionOverride,
   poolMax,
+  progressionOverrideSummary,
   raceLevel,
   xpPerLevel,
   type CampaignState,
@@ -359,9 +361,9 @@ function SheetEditor({
         </fieldset>
       )}
       <FreePointBatches client={client} state={state} character={c} />
+      <ProgressionOverride client={client} state={state} character={c} />
       <p className="muted small">
-        Levels, XP and grade change only through XP awards and evolutions; undo a mistaken award in
-        the change log. Each saved change is its own event and can be undone.
+        Each saved change is its own event and can be undone in the change log.
       </p>
       {!plan.ok && (
         <p className="err" role="alert">
@@ -439,6 +441,196 @@ function FreePointBatches({
       {error && (
         <p className="err" role="alert">
           {error}
+        </p>
+      )}
+    </fieldset>
+  );
+}
+
+/**
+ * MT.5 (Q59, DESIGN §7 GM authority): set levels, XP and grade directly. The
+ * GM reviews a warning listing what the change skips, then applies it as one
+ * logged, undoable event, sent at once (not with "Save sheet").
+ */
+function ProgressionOverride({
+  client,
+  state,
+  character: c,
+}: {
+  client: LiveClient;
+  state: CampaignState;
+  character: Character;
+}) {
+  const { rules } = state;
+  const opened = () => ({
+    grade: c.grade,
+    classLevel: String(c.classLevel),
+    professionLevel: String(c.professionLevel),
+    classXp: String(c.xp.class),
+    professionXp: String(c.xp.profession),
+  });
+  const [draft, setDraft] = useState(opened);
+  const [reviewing, setReviewing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  // When the live values change (an award, an undo, another GM window), the
+  // fields reload and any open warning closes, so a stale draft is never
+  // applied over newer values.
+  const live = JSON.stringify([c.grade, c.classLevel, c.professionLevel, c.xp, c.profession]);
+  const [seen, setSeen] = useState(live);
+  if (seen !== live) {
+    setSeen(live);
+    setDraft(opened());
+    setReviewing(false);
+  }
+  const hasProfession = c.profession !== null;
+  const numbers = {
+    classLevel: draft.classLevel.trim(),
+    professionLevel: hasProfession ? draft.professionLevel.trim() : '0',
+    classXp: draft.classXp.trim(),
+    professionXp: hasProfession ? draft.professionXp.trim() : '0',
+  };
+  const bad = Object.values(numbers).some((v) => !/^\d{1,9}$/.test(v) || Number(v) > 100_000_000);
+  const target = {
+    grade: draft.grade,
+    classLevel: Number(numbers.classLevel),
+    professionLevel: Number(numbers.professionLevel),
+    xp: { class: Number(numbers.classXp), profession: Number(numbers.professionXp) },
+  };
+  const summary = bad ? null : progressionOverrideSummary(rules, c, target);
+  // The engine's own check, so a refusal shows in the warning before Apply.
+  let refusal: string | null = null;
+  if (!bad) {
+    try {
+      applyProgressionOverride(rules, c, target);
+    } catch (error) {
+      refusal = error instanceof Error ? error.message : String(error);
+    }
+  }
+  const unchanged = summary !== null && summary.changes.length === 0;
+  const edit = (key: keyof ReturnType<typeof opened>, value: string) => {
+    setReviewing(false);
+    setMessage(null);
+    setDraft((d) => ({ ...d, [key]: value }));
+  };
+  const apply = async () => {
+    setBusy(true);
+    setMessage(null);
+    const r = await client.command({
+      type: 'character.setProgression',
+      characterId: c.id,
+      ...target,
+    });
+    setBusy(false);
+    setReviewing(false);
+    setMessage(
+      r.ok
+        ? { ok: true, text: 'Level, XP and grade set. Undo it in the change log if needed.' }
+        : { ok: false, text: friendlyError(r.error) },
+    );
+  };
+  const numberField = (
+    key: 'classLevel' | 'professionLevel' | 'classXp' | 'professionXp',
+    label: string,
+    disabled = false,
+  ) => (
+    <label>
+      {label}
+      <input
+        type="number"
+        min={0}
+        step={1}
+        inputMode="numeric"
+        disabled={disabled}
+        value={disabled ? '0' : draft[key]}
+        onChange={(e) => edit(key, e.target.value)}
+      />
+    </label>
+  );
+  return (
+    <fieldset className="sheet-progression" aria-label="Level, XP and grade override">
+      <legend>Level, XP and grade (GM override)</legend>
+      <p className="muted small">
+        Normally these change through XP awards and evolutions. Setting them here skips what those
+        would grant; you will see what before it applies.
+      </p>
+      <label className="override-grade">
+        Grade
+        <select value={draft.grade} onChange={(e) => edit('grade', e.target.value)}>
+          {rules.grades.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.id}-grade (levels to {g.topLevel})
+            </option>
+          ))}
+        </select>
+      </label>
+      {numberField('classLevel', 'Class level')}
+      {numberField('classXp', 'Class XP')}
+      {numberField('professionLevel', 'Profession level', !hasProfession)}
+      {numberField('professionXp', 'Profession XP', !hasProfession)}
+      {!hasProfession && <p className="muted small">No profession yet: those stay 0.</p>}
+      {bad && (
+        <p className="err" role="alert">
+          Levels and XP must be whole numbers from 0 to 100,000,000.
+        </p>
+      )}
+      {!reviewing ? (
+        <button
+          type="button"
+          className="secondary"
+          disabled={bad || unchanged || busy}
+          onClick={() => {
+            setMessage(null);
+            setReviewing(true);
+          }}
+        >
+          Review override
+        </button>
+      ) : (
+        summary && (
+          <div className="override-warning" role="alertdialog" aria-label="Override warning">
+            <p>
+              <strong>This changes:</strong>
+            </p>
+            <ul data-testid="override-changes">
+              {summary.changes.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+            {summary.skips.length > 0 && (
+              <>
+                <p>
+                  <strong>It skips:</strong>
+                </p>
+                <ul data-testid="override-skips">
+                  {summary.skips.map((t) => (
+                    <li key={t}>{t}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {refusal && (
+              <p className="err" role="alert">
+                Can’t apply: {refusal}
+              </p>
+            )}
+            <button type="button" disabled={busy || refusal !== null} onClick={() => void apply()}>
+              {busy ? 'Applying…' : 'Apply override'}
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              style={{ marginLeft: 8 }}
+              onClick={() => setReviewing(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        )
+      )}
+      {message && (
+        <p className={message.ok ? 'ok' : 'err'} role={message.ok ? 'status' : 'alert'}>
+          {message.text}
         </p>
       )}
     </fieldset>

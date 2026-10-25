@@ -208,6 +208,14 @@
       "sha256": "309f6977100b8962228a925420468da5d9b2e654e2401e6a42f7a57863c7ee0f",
       "schemaVersion": 33
     },
+    "progression-override.jsonl": {
+      "sha256": "501627e923beb754a9f99517abe1dab679868b4cead5919b5954770274562289",
+      "schemaVersion": 33
+    },
+    "progression-override.state.json": {
+      "sha256": "5597dc41169d65e02dad0918602c8d0d125291fd2fcf754b00e5c82970c12bc7",
+      "schemaVersion": 33
+    },
     "quests.jsonl": {
       "sha256": "24bb9e35fe3c3779a2bfb186cc5a6381e97028c739e46d081ce8f296f2c97180",
       "schemaVersion": 21

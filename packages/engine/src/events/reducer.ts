@@ -48,7 +48,7 @@ import {
   validateSkillDef,
   type SkillDef,
 } from '../skills';
-import { awardXp, shareXp } from '../progression';
+import { applyProgressionOverride, awardXp, shareXp } from '../progression';
 import {
   chooseEvolution,
   chooseSelection,
@@ -975,6 +975,17 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const merged = { ...character.stats, ...stats };
       // Pools are clamped to the new effective maxima after the event (D81).
       return withCharacter(state, { ...character, stats: merged });
+    }
+    case 'character.progressionSet': {
+      const character = characterOf(state, event, event.payload.characterId);
+      const { grade, classLevel, professionLevel, xp } = event.payload;
+      const target = { grade, classLevel, professionLevel, xp };
+      // Pools follow the clamp after the event like any stat change (D81); the
+      // override changes no stats, so they stay.
+      return withCharacter(
+        state,
+        rule(event, () => applyProgressionOverride(state.rules, character, target)),
+      );
     }
     case 'xp.awarded': {
       const { track, amount, shares, enemyLevel, enemyGrade } = event.payload;

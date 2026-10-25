@@ -76,6 +76,7 @@ export const CHANGE_LOG_PHRASES: Readonly<Record<string, string>> = {
   'campaign.created': 'Campaign created',
   'character.poolsSet': 'HP, MP or Stamina set by the GM',
   'character.statsSet': 'stats set by the GM',
+  'character.progressionSet': 'level, XP or grade set by the GM',
   'character.professionGranted': 'profession offered',
   'profession.chosen': 'profession chosen',
   'profession.offerWithdrawn': 'profession offer withdrawn',

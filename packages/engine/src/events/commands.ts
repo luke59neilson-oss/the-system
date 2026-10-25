@@ -75,6 +75,15 @@ export type Command =
     }
   | { type: 'character.setPools'; characterId: string; pools: Readonly<Record<string, number>> }
   | { type: 'character.setStats'; characterId: string; stats: Readonly<Record<string, number>> }
+  /** GM only (MT.5): set levels, XP and grade directly; see `progressionOverride`. */
+  | {
+      type: 'character.setProgression';
+      characterId: string;
+      grade: string;
+      classLevel: number;
+      professionLevel: number;
+      xp: { class: number; profession: number };
+    }
   | {
       type: 'xp.award';
       track: 'class' | 'profession';
@@ -600,6 +609,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('titleDef.edit') }),
   z.object({ type: z.literal('character.setPools'), pools: anyRecord }),
   z.object({ type: z.literal('character.setStats'), stats: anyRecord }),
+  z.object({ type: z.literal('character.setProgression'), xp: anyRecord }),
   z.object({
     type: z.literal('xp.award'),
     amount: z.number(),
@@ -914,6 +924,17 @@ function toEvent(
       return {
         type: 'character.statsSet',
         payload: { characterId: command.characterId, stats: command.stats },
+      };
+    case 'character.setProgression':
+      return {
+        type: 'character.progressionSet',
+        payload: {
+          characterId: command.characterId,
+          grade: command.grade,
+          classLevel: command.classLevel,
+          professionLevel: command.professionLevel,
+          xp: command.xp,
+        },
       };
     case 'xp.award': {
       const payload = awardPayload(command);

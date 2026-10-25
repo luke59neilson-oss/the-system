@@ -887,3 +887,7 @@
 
 - Round 1: 0 High / 0 Medium / 6 Low. No leaks (own rows only, `characterId` never copied; frame scans clean).
 - Lows not fixed this run, added to the QUALITY backlog: shared 300-entry ledger can evict a quiet player's oldest rows with no hint; rows show no date; raw-id fallback for a missing counterparty; test gaps for trade/loot rows in the projection test. No round 2.
+
+## 2026-10-25 · MT.5 GM override for level, XP and grade · reviewer: sonnet (2 rounds)
+- Round 1 (0f0df467): 0 H / 2 M / 5 L. M1 lowering levels at the same grade left a released evolution that could no longer be chosen → withdrawn when the grade changes or the new levels leave the gate (`keepsEvolution`), warning names it and lost profession offers; test added. M2 the override form kept a stale draft after an undo or award (two clicks re-applied an undone override) → the form reloads on live grade/level/XP changes and closes the warning; e2e asserts it. Lows fixed: engine refusal shown in the warning with Apply disabled; XP input capped at the schema's 100,000,000; warning says re-earned levels grant spread again. Lows kept: grade below its level floor allowed (GM authority); test gaps for overflow-off and dependent-undo.
+- Round 2 (5b597710): 0 H / 0 M / 5 L (render-time preflight is cheap; no-op for logs; cosmetic reload note) → QUALITY backlog, no change.

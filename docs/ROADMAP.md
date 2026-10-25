@@ -721,7 +721,7 @@ behaviour until an answer lands.
   entries (grants, fines, gifts, trades, loot) with the balance after, and
   nobody else's (Q65). *Accept:* projection test (own entries only, canary
   still passes); e2e.
-- [ ] **MT.5 GM override for level, XP and grade.** The GM sheet can set
+- [x] **MT.5 GM override for level, XP and grade.** The GM sheet can set
   class level, profession level, XP and grade directly, after a warning that
   lists what the change skips (spread points, free points, selections,
   evolutions); a logged, undoable event (Q59). *Accept:* engine tests,

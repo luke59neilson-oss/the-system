@@ -327,7 +327,10 @@ export function notificationsBetween(
       out.push({ kind: 'skillMerge', characterId, skills: [skills[0], skills[1]], name, rarity });
     }
   }
-  for (const id of after.characterOrder) {
+  // MT.5: a GM override sets levels without earning them (no spread, no free
+  // points), so it sends no 'DING!' that would say otherwise.
+  const overridden = event?.type === 'character.progressionSet';
+  for (const id of overridden ? [] : after.characterOrder) {
     const now = after.characters[id];
     const was = before?.characters[id];
     if (!now || !was) continue;

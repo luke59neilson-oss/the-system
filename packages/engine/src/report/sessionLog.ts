@@ -1,6 +1,7 @@
 import { raceLevel, type Character, type CharacterSkill } from '../character';
 import type { SelectionRecord } from '../evolution/model';
 import type { DomainEvent } from '../events/envelope';
+import { progressionOverrideSummary } from '../progression/override';
 import type { Campaign } from '../events/log';
 import { applyEvent, type CampaignState } from '../events/reducer';
 import { repeatedEntryIds, type Note } from '../practice';
@@ -223,6 +224,19 @@ export function describeEvent(
           : `${who(event.payload.characterId)} has a new portrait`,
       );
       break;
+    case 'character.progressionSet': {
+      // MT.5: say it was the GM's override, so the level lines that follow
+      // are not read as earned level-ups.
+      const was = before?.characters[event.payload.characterId];
+      const changes = was
+        ? progressionOverrideSummary(before.rules, was, event.payload).changes
+        : [];
+      add(
+        'character',
+        `The GM set ${who(event.payload.characterId)}'s level, XP or grade${changes.length ? `: ${changes.join(', ')}` : ''}`,
+      );
+      break;
+    }
     case 'xp.awarded': {
       const p = event.payload;
       const shares = p.shares.map((s) => `${who(s.characterId)} ${s.share}`).join(', ');
