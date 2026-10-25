@@ -87,6 +87,7 @@ export const CHANGE_LOG_PHRASES: Readonly<Record<string, string>> = {
   'skill.nicknamed': 'skill nicknamed',
   'skill.uniqueSet': 'skill Unique tag changed',
   'skill.raritySet': 'skill rarity set by the GM',
+  'skill.granted': 'skill given by the GM',
   'practice.logged': 'practice logged',
   'item.defined': 'item added to the library',
   'item.edited': 'item edited',

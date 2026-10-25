@@ -521,6 +521,12 @@ function randomSkillCommand(
       const rarity = pick(['inferior', 'common', 'rare', 'legendary', 'divine']);
       return { type: 'skill.setRarity', characterId, skill: someSkill(), rarity };
     }
+    if (rand() < 0.3) {
+      // MT.7: the GM gives a skill outside selections (a taken name is refused).
+      const name = pick(['Star Shot', 'Tough Hide', 'Fireball']);
+      const kind = pick(['class', 'race', 'profession'] as const);
+      return { type: 'skill.grant', characterId, name, rarity: 'rare', kind };
+    }
     return { type: 'skill.setUnique', characterId, skill: someSkill(), unique: rand() < 0.5 };
   }
   if (roll < 0.25) {

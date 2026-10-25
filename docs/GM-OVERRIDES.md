@@ -44,11 +44,11 @@ refusal is raised.
 | `assign exactly … points (got …)` | packages/engine/src/events/reducer.ts:1038 | Free-point override (`freePoints.override`) rewrites or clears any batch |
 | `… would drop below 0` | packages/engine/src/events/reducer.ts:1044 | Set stats directly (`character.setStats`) |
 | `"…" does not qualify for a montage yet` | packages/engine/src/events/reducer.ts:1509 | Planned (MT.7): `montage.offer` with `override: true` skips the half-filled, no-failure check |
-| `Class level … grants no skill selection` | packages/engine/src/evolution/model.ts:224 | Planned (MT.7): `skill.grant` gives a skill outside the selection schedule |
-| `… has not reached class level … (is …)` | packages/engine/src/evolution/model.ts:226 | Planned (MT.7): `skill.grant` gives a skill outside the selection schedule |
+| `Class level … grants no skill selection` | packages/engine/src/evolution/model.ts:224 | `skill.grant` (engine done; GM sheet control planned, MT.7) gives a skill outside the selection schedule |
+| `… has not reached class level … (is …)` | packages/engine/src/evolution/model.ts:226 | `skill.grant` (engine done; GM sheet control planned, MT.7) gives a skill outside the selection schedule |
 | `[…] is above the …-grade ceiling (…)` | packages/engine/src/evolution/model.ts:258 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) sets any rarity after the fact; or raise the ceiling in Rules |
-| `Level … is the …-grade capstone: offer at least one … option` | packages/engine/src/evolution/model.ts:268 | Planned (MT.7): `skill.grant` gives any skill without a capstone menu; the menu rule itself stays (DESIGN §6) |
-| `No selection is offered at level …` | packages/engine/src/evolution/model.ts:366 | Planned (MT.7): `skill.grant` gives a skill outside the selection schedule |
+| `Level … is the …-grade capstone: offer at least one … option` | packages/engine/src/evolution/model.ts:268 | `skill.grant` (engine done; GM sheet control planned, MT.7) gives any skill without a capstone menu; the menu rule itself stays (DESIGN §6) |
+| `No selection is offered at level …` | packages/engine/src/evolution/model.ts:366 | `skill.grant` (engine done; GM sheet control planned, MT.7) gives a skill outside the selection schedule |
 | `[…] is a race skill and never drops a rarity` | packages/engine/src/evolution/model.ts:477 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) (and `skill.grant`) change race skills too, with a warning that Identify never drops by default |
 | `[…] cannot be raised above the …-grade ceiling (…)` | packages/engine/src/evolution/model.ts:480 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) sets any rarity after the fact; or raise the ceiling in Rules |
 | `[…] is a race skill and cannot be merged away at evolution` | packages/engine/src/evolution/model.ts:498 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) (and `skill.grant`) change race skills too, with a warning that Identify never drops by default |
@@ -135,6 +135,7 @@ refusal is raised.
 
 | Refusal | Where | GM way through |
 | --- | --- | --- |
+| `The skill needs a name` | packages/engine/src/evolution/model.ts:215 | Fix the input or define the thing first |
 | `… is required` | packages/engine/src/character/model.ts:172 | Fix the input or define the thing first |
 | `Unknown grade "…"` | packages/engine/src/character/model.ts:179 | Fix the input or define the thing first |
 | `A starting class grants exactly … skills (got …)` | packages/engine/src/character/model.ts:190 | Fix the input or define the thing first |

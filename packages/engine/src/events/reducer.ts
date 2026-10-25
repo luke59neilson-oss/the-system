@@ -58,6 +58,7 @@ import {
   offerSelection,
   releaseEvolution,
   retiredSkillNames,
+  grantSkill,
 } from '../evolution';
 import {
   montageAvailable,
@@ -1673,6 +1674,14 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       return withCharacter(
         state,
         rule(event, () => useLibraryText(state.rules, character, skill, state.skillLibrary)),
+      );
+    }
+    case 'skill.granted': {
+      const { characterId, ...skill } = event.payload;
+      const character = characterOf(state, event, characterId);
+      return withCharacter(
+        state,
+        rule(event, () => grantSkill(state.rules, character, skill, retiredFor(state, character))),
       );
     }
     case 'skill.raritySet': {
