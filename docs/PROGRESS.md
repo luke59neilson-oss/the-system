@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-25): M0–M11, MS, MQ, MR and QF done; new milestones MT (Luke's answers, batch 3) and MC (co-DM, DESIGN §11) added; `docs/DONE.md` removed.
-**Next item:** MT.1 Evolution re-rating is approved, not automatic
+**Next item:** MT.2 Players accept or decline merges (resume `wip/MT.2`)
 **Blockers:** none
 
 ## Run log
@@ -1044,5 +1044,14 @@ next item, blockers. -->
 - Tests: unit 1,202; e2e 92 + 8 latency (full run 8.8 min, green); desktop smoke not run (no desktop change). Engine coverage not re-measured (last 97.53%).
 - Open `wip/*` branches: none in progress (wip/M11.4 and wip/M11.5 merged).
 - Next item: none; build complete.
+- Blockers: none.
+
+### Run 60adeaa2 · 2026-10-25 17:07–17:49 UTC (end minute 42: MT.2 handed to `wip/MT.2` at the build cut-off with no smaller unblocked step left that fits; close-out done early)
+- Preflight: `add_repo` not offered; repo already cloned (detached HEAD; local main reset to origin/main cd75c898). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer: sonnet worked (worktree; Agent calls block, so each review ran beside the full e2e or alongside work). No new answers in ANSWERS.md. Hour 17: no efficiency check, no sweep.
+- CI on main at start: latest completed (cd75c898) green.
+- MT.1 Evolution re-rating is approved, not automatic **checked**: `evolution.release` needs `rerateApproved: true`; the list starts every skill at its own rarity; an approved release never lowers, merges away or renames a race skill (Identify); unnamed skills keep their rarity at choose; releases stored without the mark replay as MR.1 did (no schema bump, goldens untouched). Builder: "Approve this re-rating" box gating Release, cleared by any later change; race rows say "never drops". Content imports count as approved, and the preview lists the re-rating (D209). Sonnet round 1: 0 H / 3 M fixed; round 2: 0 H / 1 M (rename) fixed and verified by me.
+- Tests: unit 1,213; e2e 93 (full `--project=e2e` run green before round 2; MT.1, M5.2, M5.A, MR.1 re-run after the fixes). Latency project and desktop smoke not run (no server or desktop change). Engine coverage not re-measured (last 97.53%).
+- Open `wip/*` branches: `wip/MT.2` (base 3ecef770, head 7dfc2ba9). Where I stopped: `Character.mergeOffer` (optional, so no state schema bump needed if it stays absent until set) and `offerMerge`/`answerMerge` in `skills/model.ts`; `projection.test.ts` field list fails until the projection field is added. Next steps are in the header comment of `packages/engine/test/mergeOffer.test.ts` (events, commands, reducer, history, projection, UI, e2e; the M5.A and MR.2 specs need the player to accept).
+- Next item: MT.2 (resume `wip/MT.2`).
 - Blockers: none.
 
