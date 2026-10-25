@@ -701,7 +701,7 @@ need no work: Q53, Q54, Q55, Q61, Q66, Q73. Q67/Q70 (what a shared contest
 shows players, and who rolls) are still being discussed: keep the current
 behaviour until an answer lands.
 
-- [ ] **MT.1 Evolution re-rating is approved, not automatic.** Replaces MR.1's
+- [x] **MT.1 Evolution re-rating is approved, not automatic.** Replaces MR.1's
   default one-step drop (L14 as revised): the evolution builder lists each
   kept skill at the rarity it had going in; the GM sets each and approves
   the list; the release is refused until that approval exists; Identify

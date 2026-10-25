@@ -281,7 +281,8 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
     const optionCount = int(1, rules.skills.menuSize.max);
     const options = Array.from({ length: optionCount }, (_, i) => {
       const count = int(rules.skills.evolutionTransforms.min, rules.skills.evolutionTransforms.max);
-      const skills = shuffle(before.skills).slice(0, count);
+      // Race skills keep their name and rarity (MT.1): never transformed here.
+      const skills = shuffle(before.skills.filter((s) => s.kind !== 'race')).slice(0, count);
       return {
         className: `${NAMES[id]}'s ${target.id}${i} class #${++uniq}#`,
         description: 'Evolve.',

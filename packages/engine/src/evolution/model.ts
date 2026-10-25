@@ -486,7 +486,7 @@ function checkRerate(
 
 /**
  * MT.1 review: Identify never drops (DESIGN §6), so under an approved release
- * no option may merge a race skill away.
+ * no option may merge a race skill away or rename it.
  */
 function checkRaceSkillsKept(character: Character, option: EvolutionOption): void {
   // A transform to a lower rarity is already refused for every skill (checkOption).
@@ -498,6 +498,16 @@ function checkRaceSkillsKept(character: Character, option: EvolutionOption): voi
       throw new CharacterRuleError(
         `[${gone}] is a race skill and cannot be merged away at evolution`,
       );
+    }
+  }
+}
+
+/** Renaming a race skill loses it too: Identify is found by name (MT.1 round 2). */
+function checkRaceSkillsNamed(character: Character, option: EvolutionOption): void {
+  for (const t of option.transforms) {
+    const skill = character.skills.find((s) => s.name === t.skill);
+    if (t.merge === undefined && skill?.kind === 'race' && t.name.trim() !== t.skill) {
+      throw new CharacterRuleError(`[${t.skill}] is a race skill and keeps its name at evolution`);
     }
   }
 }
@@ -661,6 +671,7 @@ export function releaseEvolution(
     if (rerateApproved) checkRaceSkillsKept(character, option);
     checkOption(rules, character, target, option, retired, joint);
     checkStatBonus(rules, option);
+    if (rerateApproved) checkRaceSkillsNamed(character, option);
   }
   if (rerate !== null) checkRerate(rules, character, target, rerate, rerateApproved);
   // From the unlock grade on, a character without a profession can be offered

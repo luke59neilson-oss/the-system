@@ -178,6 +178,9 @@ describe('evolution re-rating is approved, not automatic (MT.1)', () => {
         withTransform([{ skill: eye, merge: 'Identify', name: 'Seeing Eye', rarity: 'rare' }]),
       ),
     ).toMatch(/race skill and cannot be merged away/);
+    expect(
+      reject(c, withTransform([{ skill: 'Identify', name: 'Dim Sight', rarity: 'common' }])),
+    ).toMatch(/\[Identify\] is a race skill and keeps its name/);
     const kept = ok(
       c,
       withTransform([{ skill: 'Identify', name: 'Identify', rarity: 'uncommon' }]),
