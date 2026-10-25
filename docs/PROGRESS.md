@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-25): M0–M11, MS, MQ, MR and QF done; new milestones MT (Luke's answers, batch 3) and MC (co-DM, DESIGN §11) added; `docs/DONE.md` removed.
-**Next item:** MT.5 GM override for level, XP and grade
+**Next item:** resume `wip/MT.6` (fix review Medium 3, then round-2 review), then MT.7
 **Blockers:** none
 
 ## Run log
@@ -1071,5 +1071,14 @@ next item, blockers. -->
 - Tests: unit 1,223; e2e 96 (full `--project=e2e` green on wip/MT.4 55a3b5ec, which contains MT.3). Latency project and desktop smoke not run (no server change beyond the preview field). Engine coverage not re-measured.
 - Open `wip/*` branches: none new to resume (wip/MT.3 and wip/MT.4 are merged). MT.5 not started: MT.4's review and full e2e finished at minute 47, after the hand-off point.
 - Next item: MT.5 GM override for level, XP and grade.
+- Blockers: none.
+
+### Run edb20617 · 2026-10-25 20:08–20:56 UTC (end minute ~48)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` again had an unrelated older history; reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer: sonnet worked (worktree; Agent calls block, so reviews ran beside other work). CI on main at start: latest completed (fc0bb9ed) green. No new answers in ANSWERS.md. Not an efficiency or sweep hour.
+- MT.5 GM override for level, XP and grade **checked** (D214, Q76): `character.setProgression` → `character.progressionSet`; Edit sheet → "Level, XP and grade (GM override)" → Review override shows what changes and what it skips (spread, free points, evolutions; selections become due) → Apply. Engine refusals show before Apply; the form reloads on live changes; no DING for set levels; session-log line; a released evolution the new values no longer reach is withdrawn; a re-earned race level grants no second free-point batch. Golden `progression-override`. Sonnet round 1: 0 H / 2 M / 5 L (both M fixed); round 2: 0 H / 0 M / 5 L. Merged (ddf36547).
+- MT.6 Broadcasts last a set time or stay pinned: **built, not checked** (D215). Branch `wip/MT.6` at 6d9e9348 (base main ddf36547). `system.broadcast` gains optional `display` (timed 5 s–24 h or pinned), `broadcast.removed`; player banners (sticky, top of screen), GM "Banners on players' screens" list with Remove; golden `broadcast-banners`; `broadcastBanners.test.ts`; `e2e/MT.6.spec.ts` and screenshots. Sonnet round 1: 0 H / 3 M / 6 L. Fixed: M1 sticky banners, M2 arrival stamped with the wall clock, L4 Show resets after sending. **Next step:** M3 (a GM indicator of banners up, e.g. near the top of the console, plus "Remove all"; consider capping stacked banners on 390×844), add `display` to the `system.broadcast` command zod shape, re-shoot screenshots, `npm run check` + MT.6 e2e, then the round-2 review (required: 3 Mediums) before checking the box.
+- Tests: unit 1,239 on wip/MT.6; e2e 98 (full `--project=e2e` green on wip/MT.6 fdb64713, which contains MT.5). Latency project and desktop smoke not run. Engine coverage not re-measured.
+- Open `wip/*` branches: wip/MT.6 (resume). wip/MT.5 is merged.
+- Next item: resume wip/MT.6, then MT.7.
 - Blockers: none.
 
