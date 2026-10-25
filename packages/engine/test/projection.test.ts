@@ -165,7 +165,7 @@ describe('player projection', () => {
   it('classifies every character and campaign field', () => {
     const state = party();
     // Optional fields appear only when set (MQ.15's clamped-pool marks).
-    const optional = ['clampedPools', 'mergeOffer'];
+    const optional = ['clampedPools', 'mergeOffer', 'lastMergeAnswer'];
     expect(Object.keys(CHARACTER_FIELD_VISIBILITY).sort()).toEqual(
       [...Object.keys(state.characters.jake ?? {}), ...optional].sort(),
     );

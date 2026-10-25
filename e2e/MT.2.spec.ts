@@ -106,7 +106,8 @@ test('a merge offer: the player declines, then accepts a second offer', async ({
   await expect(skills).toContainText('Quick Cut');
   await builder.evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-offer-waiting-1366x768.png') });
-  await card.scrollIntoViewIfNeeded();
+  // On a phone the open offer leads the single column (no scrolling needed).
+  await expect(card).toBeInViewport();
   await player.screenshot({ path: path.join(shots, 'player-offer-390x844.png') });
 
   // 2. Jake declines: both skills stay, and the GM sees the answer.
@@ -118,6 +119,11 @@ test('a merge offer: the player declines, then accepts a second offer', async ({
   await expect(skills).toContainText('Quick Cut');
   await expect(skills).toContainText('Side Step');
   await gm.screenshot({ path: path.join(shots, 'gm-offer-declined-1366x768.png') });
+  // The answer is campaign state, so it survives a GM reload.
+  await gm.reload();
+  await expect(builder.getByTestId('merge-answer')).toHaveText(
+    'Jake declined [Quick Cut] + [Side Step] → [Stepping Cut]; both skills stay.',
+  );
 
   // 3. The GM offers again under another name; Jake accepts on a laptop view.
   await player.setViewportSize({ width: 1366, height: 768 });

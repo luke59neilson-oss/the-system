@@ -27,26 +27,9 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
   const [flavor, setFlavor] = useState('');
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Outcome>(null);
-  // The last offer sent from here, to say how the player answered it.
-  const [sent, setSent] = useState<{
-    characterId: string;
-    name: string;
-    skills: readonly [string, string];
-    /** Set once the offer has reached the state, so a slow update never reads as a decline. */
-    seen: boolean;
-  } | null>(null);
   const pending = character?.mergeOffer ?? null;
-  // Adjusting state while rendering (not in an effect): mark the offer seen.
-  if (sent && !sent.seen && pending?.name === sent.name) setSent({ ...sent, seen: true });
-  const answered =
-    sent !== null &&
-    sent.seen &&
-    sent.characterId === characterId &&
-    (pending === null || pending.name !== sent.name)
-      ? (character?.skills.some((s) => s.name === sent.name) ?? false)
-        ? 'accepted'
-        : 'declined'
-      : null;
+  // The player's last answer, from the campaign state (survives reloads).
+  const answer = character?.lastMergeAnswer ?? null;
   const merged = name.trim();
   // The engine refuses a name the character already uses; say so before Send.
   const clash =
@@ -73,7 +56,6 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
       setOutcome({ ok: false, text: friendlyError(r.error) });
       return;
     }
-    setSent({ characterId, name: merged, skills: chosen.skills, seen: false });
     setOutcome(null);
     setName('');
     setDescription('');
@@ -95,7 +77,6 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
                 setPicked(e.target.value);
                 setPairKey('');
                 setOutcome(null);
-                setSent(null);
                 // A name typed for one character must not carry over to another.
                 setName('');
                 setDescription('');
@@ -120,14 +101,10 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
               {pending.name}]. Sending another merge replaces this offer.
             </p>
           )}
-          {!pending && answered && sent && (
-            <p
-              className={answered === 'accepted' ? 'ok' : 'warn'}
-              role="status"
-              data-testid="merge-answer"
-            >
-              {character?.name} {answered} [{sent.skills[0]}] + [{sent.skills[1]}] → [{sent.name}]
-              {answered === 'declined' ? '; both skills stay.' : '.'}
+          {!pending && answer && (
+            <p className={answer.accept ? 'ok' : 'warn'} role="status" data-testid="merge-answer">
+              {character?.name} {answer.accept ? 'accepted' : 'declined'} [{answer.skills[0]}] + [
+              {answer.skills[1]}] → [{answer.name}]{answer.accept ? '.' : '; both skills stay.'}
             </p>
           )}
           {candidates.length === 0 ? (

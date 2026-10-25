@@ -335,7 +335,11 @@ export function answerMerge(
   if (offer === null || offer.offerId !== offerId) {
     throw new CharacterRuleError('That merge offer is no longer open');
   }
-  const cleared: Character = { ...character, mergeOffer: null };
+  const cleared: Character = {
+    ...character,
+    mergeOffer: null,
+    lastMergeAnswer: { offerId, skills: offer.skills, name: offer.name, accept },
+  };
   if (!accept) return cleared;
   const [first, second] = offer.skills;
   const rarityOf = (n: string) => character.skills.find((s) => s.name === n)?.rarity;

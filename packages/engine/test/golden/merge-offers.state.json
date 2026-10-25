@@ -458,7 +458,13 @@
       "selections": [],
       "evolution": null,
       "portrait": null,
-      "mergeOffer": null
+      "mergeOffer": null,
+      "lastMergeAnswer": {
+        "offerId": "offer2",
+        "skills": ["Cut", "Step"],
+        "name": "Cutstep",
+        "accept": true
+      }
     }
   },
   "characterOrder": ["jake"],

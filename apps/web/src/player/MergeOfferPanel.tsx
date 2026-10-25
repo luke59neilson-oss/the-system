@@ -55,12 +55,21 @@ export function MergeOfferPanel({ view, client }: { view: PlayerView; client: Li
       </p>
       {offer.description && <p className="skill-text">{offer.description}</p>}
       {offer.flavor && <p className="skill-flavor muted">{offer.flavor}</p>}
+      {offer.rarity === null && (
+        <p className="warn" role="status" data-testid="merge-offer-stale">
+          This offer no longer fits your skills. Decline it, or ask the GM to send it again.
+        </p>
+      )}
       <p className="muted">
         Accepting consumes both skills; the new skill starts at 0 marks. Declining keeps both.
       </p>
       {client && (
         <p className="merge-offer-actions">
-          <button type="button" disabled={busy} onClick={() => void answer(true)}>
+          <button
+            type="button"
+            disabled={busy || offer.rarity === null}
+            onClick={() => void answer(true)}
+          >
             Accept merge
           </button>{' '}
           <button

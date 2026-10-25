@@ -150,6 +150,14 @@ describe('players accept or decline merges (MT.2)', () => {
       type: 'skill.mergeAnswered',
       payload: { accept: false },
     });
+    // The GM's builder reads the answer from state; players never get it.
+    expect(done.state!.characters[ID]!.lastMergeAnswer).toEqual({
+      offerId: 'o1',
+      skills: ['Cut', 'Step'],
+      name: 'Cutstep',
+      accept: false,
+    });
+    expect(JSON.stringify(projectForPlayer(done.state!, ID))).not.toContain('lastMergeAnswer');
     expect(describeEvent(offered.state, done.state!, done.events.at(-1)!)).toEqual([
       { kind: 'skill', text: 'Jake declined merging Cut and Step' },
     ]);
@@ -186,10 +194,25 @@ describe('players accept or decline merges (MT.2)', () => {
       testContext('g'),
       run([...start(), offer()]),
     );
+    expect(projectForPlayer(changed.state!, ID).me.mergeOffer?.rarity).toBeNull();
     const stale = execute(changed, answer(true), player(ID));
     expect(stale).toMatchObject({ ok: false, error: expect.stringContaining('out of date') });
     // Declining a stale offer still clears it.
     expect(run([answer(false)], player(ID), changed).state!.characters[ID]!.mergeOffer).toBeNull();
+  });
+
+  it('an offer that no longer applies shows no rarity and cannot be accepted', () => {
+    const offered = run([...start(), offer()]);
+    const removed = run(
+      [{ type: 'practice.remove', entryId: offered.state!.practice[0]!.id }],
+      testContext('r'),
+      offered,
+    );
+    expect(projectForPlayer(removed.state!, ID).me.mergeOffer).toMatchObject({ rarity: null });
+    expect(execute(removed, answer(true), player(ID))).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('logged together 2 times'),
+    });
   });
 
   it('stored skill.merged events replay unchanged', () => {

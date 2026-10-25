@@ -69,6 +69,8 @@ export const CHARACTER_FIELD_VISIBILITY: Readonly<Record<keyof Character, Visibi
   professionOffers: 'owner',
   // MT.2: a merge the GM sent waits on its owner's answer; nobody else sees it.
   mergeOffer: 'owner',
+  // MT.2: the GM's record of the answer; the player already knows it.
+  lastMergeAnswer: 'gm',
   classLevel: 'party',
   professionLevel: 'party',
   grade: 'party',
@@ -583,7 +585,11 @@ function ownMergeOffer(state: CampaignState, c: Character): OwnSheet['mergeOffer
     skillPairCounts(state.practice, c.id).find((p) => p.skills[0] === a && p.skills[1] === b)
       ?.count ?? 0;
   let rarity: string | null;
+  const rarityOf = (n: string) => c.skills.find((s) => s.name === n)?.rarity;
+  // The accept is refused when a skill changed since the offer (MT.2 stale check).
+  const changed = rarityOf(first) !== offer.rarities[0] || rarityOf(second) !== offer.rarities[1];
   try {
+    if (changed) throw new Error('stale');
     const merged = mergeSkills(state.rules, c, first, second, offer.name, joint);
     rarity = merged.skills.find((s) => s.name === offer.name)?.rarity ?? null;
   } catch {

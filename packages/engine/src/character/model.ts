@@ -74,6 +74,13 @@ export interface Character {
    * optional so states stored before MT.2 read as none.
    */
   readonly mergeOffer?: MergeOffer | null;
+  /** How the player answered the last merge offer, for the GM's builder (MT.2). */
+  readonly lastMergeAnswer?: {
+    readonly offerId: string;
+    readonly skills: readonly [string, string];
+    readonly name: string;
+    readonly accept: boolean;
+  };
   readonly classLevel: number;
   readonly professionLevel: number;
   /** Id of the highest grade evolved into (ids survive grade inserts; DESIGN §3). */
