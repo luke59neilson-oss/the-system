@@ -130,6 +130,27 @@ describe('previewContent: drafted menus and evolutions say where they go (M9.A)'
     );
   });
 
+  it('lists a drafted re-rating, and flags a lowered Identify before Apply (MT.1)', () => {
+    const p = previewContent(
+      atTop(),
+      {
+        format: 'the-system/content',
+        version: 1,
+        evolutions: [
+          { ...evolution('Skirmisher'), rerate: { 'Archer’s Eye': 'inferior' } },
+          { ...evolution('Marksman'), rerate: { Identify: 'inferior' } },
+        ],
+      },
+      ctx,
+    );
+    if (!p.ok) throw new Error('expected a preview');
+    expect(p.entries[0]?.error).toBeNull();
+    expect(p.entries[0]?.note).toContain(
+      'Re-rating: [Archer’s Eye] Common → Inferior; the rest keep their rarity',
+    );
+    expect(p.entries[1]?.error).toMatch(/\[Identify\] is a race skill and never drops/);
+  });
+
   it('names a menu’s options with their rarities, and the open menu it replaces', () => {
     const evolved = atTop([
       {

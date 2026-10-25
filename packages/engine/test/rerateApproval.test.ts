@@ -159,4 +159,59 @@ describe('evolution re-rating is approved, not automatic (MT.1)', () => {
       ['Identify', 'inferior'],
     ]);
   });
+
+  it('no option may merge Identify away or transform it lower (review M1)', () => {
+    const c = atGTop();
+    const withTransform = (transforms: unknown[]): Command =>
+      ({
+        type: 'evolution.release',
+        characterId: 'jake',
+        rerateApproved: true,
+        options: [{ className: 'Hunter', transforms }],
+      }) as Command;
+    expect(
+      reject(c, withTransform([{ skill: 'Identify', name: 'Dim Sight', rarity: 'inferior' }])),
+    ).toMatch(/\[Identify\] cannot drop to a lower rarity/);
+    expect(
+      reject(
+        c,
+        withTransform([{ skill: eye, merge: 'Identify', name: 'Seeing Eye', rarity: 'rare' }]),
+      ),
+    ).toMatch(/race skill and cannot be merged away/);
+    const kept = ok(
+      c,
+      withTransform([{ skill: 'Identify', name: 'Identify', rarity: 'uncommon' }]),
+    );
+    expect(kept.state?.characters.jake?.evolution).not.toBeNull();
+  });
+
+  it('a full MR.1-style stored list (Identify lowered, no approval) replays unchanged (review M2)', () => {
+    const c = ok(ok(atGTop(), release()), choose, player('jake'));
+    const stored = c.events.map((e) => {
+      if (e.type !== 'evolution.released') return e;
+      const { rerateApproved: _gone, ...payload } = e.payload;
+      void _gone;
+      return {
+        ...e,
+        payload: {
+          ...payload,
+          rerate: [
+            { skill: archery, rarity: 'inferior' },
+            { skill: 'Basic Stealth', rarity: 'inferior' },
+            { skill: eye, rarity: 'common' },
+            { skill: 'Identify', rarity: 'inferior' },
+          ],
+        },
+      };
+    });
+    const json = JSON.parse(JSON.stringify(stored)) as unknown[];
+    const old = replay(json);
+    expect(rarities(old)).toEqual([
+      [archery, 'inferior'],
+      ['Basic Stealth', 'inferior'],
+      [eye, 'common'],
+      ['Identify', 'inferior'],
+    ]);
+    expect(replay(json).state).toEqual(old.state);
+  });
 });

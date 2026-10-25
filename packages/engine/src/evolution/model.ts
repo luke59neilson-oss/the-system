@@ -484,6 +484,24 @@ function checkRerate(
   }
 }
 
+/**
+ * MT.1 review: Identify never drops (DESIGN §6), so under an approved release
+ * no option may merge a race skill away.
+ */
+function checkRaceSkillsKept(character: Character, option: EvolutionOption): void {
+  // A transform to a lower rarity is already refused for every skill (checkOption).
+  const race = new Set(character.skills.filter((s) => s.kind === 'race').map((s) => s.name));
+  for (const t of option.transforms) {
+    if (t.merge === undefined) continue;
+    const gone = race.has(t.merge) ? t.merge : race.has(t.skill) ? t.skill : null;
+    if (gone !== null) {
+      throw new CharacterRuleError(
+        `[${gone}] is a race skill and cannot be merged away at evolution`,
+      );
+    }
+  }
+}
+
 /** Throws unless the option can apply to the character evolving into `toGrade`. */
 function checkOption(
   rules: RulesConfig,
@@ -640,6 +658,7 @@ export function releaseEvolution(
   const ids = new Set(options.map((o) => o.id));
   if (ids.size !== options.length) throw new CharacterRuleError('Two options share an id');
   for (const option of options) {
+    if (rerateApproved) checkRaceSkillsKept(character, option);
     checkOption(rules, character, target, option, retired, joint);
     checkStatBonus(rules, option);
   }

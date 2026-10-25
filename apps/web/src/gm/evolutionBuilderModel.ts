@@ -22,6 +22,8 @@ export interface RerateRow {
    * current rarity, if above it); a race skill never below its own (MT.1).
    */
   readonly choices: readonly string[];
+  /** A race skill (Identify): never lowered (MT.1). */
+  readonly race: boolean;
 }
 
 export interface MergePrompt {
@@ -88,6 +90,7 @@ export function evolutionPlan(state: CampaignState, characterId: string): Evolut
         from: s.rarity,
         byDefault: s.rarity,
         choices: s.kind === 'race' && own >= 0 ? upTo.slice(own) : upTo,
+        race: s.kind === 'race',
       };
     }),
     // Pairs the evolution can merge (DESIGN §6), judged at the new grade's

@@ -153,9 +153,15 @@ function ReleaseForm({
   const rarityName = (id: string) => rules.skills.rarities.find((r) => r.id === id)?.name ?? id;
   const [options, setOptions] = useState<OptionDraft[]>([blankOption(character?.className ?? '')]);
   const [professions, setProfessions] = useState('');
-  const [rerate, setRerate] = useState<Record<string, string>>(() =>
-    Object.fromEntries(plan.rerate.map((r) => [r.skill, r.byDefault])),
-  );
+  // The GM's picks, with the rarity each skill had when picked: a pick made
+  // before the skill's rarity changed no longer applies (MT.1 review).
+  const [rerate, setRerate] = useState<Record<string, { from: string; rarity: string }>>({});
+  const picked = (r: { skill: string; from: string; byDefault: string }) => {
+    const pick = Object.prototype.hasOwnProperty.call(rerate, r.skill)
+      ? rerate[r.skill]
+      : undefined;
+    return pick !== undefined && pick.from === r.from ? pick.rarity : r.byDefault;
+  };
   // The list the GM approved (MT.1); any later change to it needs approving again.
   const [approvedList, setApprovedList] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -187,7 +193,7 @@ function ReleaseForm({
   // From the live plan, so a skill gained or lost while the GM builds is not stale.
   const rerateList = plan.rerate.map((r) => ({
     skill: r.skill,
-    rarity: rerate[r.skill] ?? r.byDefault,
+    rarity: picked(r),
   }));
   const merged = new Set(
     options.flatMap((o) => o.transforms.flatMap((t) => (t.merge ? [t.skill, t.merge] : []))),
@@ -363,10 +369,13 @@ function ReleaseForm({
               </span>
             )}
             <label>
-              [{r.skill}] {rarityName(r.from)} →{' '}
+              [{r.skill}] {rarityName(r.from)}
+              {r.race && <span className="muted"> (race skill: never drops)</span>} →{' '}
               <select
-                value={rerate[r.skill] ?? r.byDefault}
-                onChange={(e) => setRerate({ ...rerate, [r.skill]: e.target.value })}
+                value={picked(r)}
+                onChange={(e) =>
+                  setRerate({ ...rerate, [r.skill]: { from: r.from, rarity: e.target.value } })
+                }
               >
                 {r.choices.map((x) => (
                   <option key={x} value={x}>
