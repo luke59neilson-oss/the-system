@@ -88,6 +88,14 @@ describe('players accept or decline merges (MT.2)', () => {
     expect(amy).not.toContain('o1');
   });
 
+  it('the offer notifies its owner only (QF.24)', () => {
+    const before = run(start());
+    const c = run([offer()], testContext('g'), before);
+    expect(notificationsBetween(before.state, c.state, c.events.at(-1))).toEqual([
+      { kind: 'mergeOffer', characterId: ID, skills: ['Cut', 'Step'], name: 'Cutstep' },
+    ]);
+  });
+
   it("the offer carries the merged skill's text, given to it on accept", () => {
     const c = run([
       ...start(),

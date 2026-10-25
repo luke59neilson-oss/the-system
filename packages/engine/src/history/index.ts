@@ -110,6 +110,16 @@ export type SystemNotification =
       readonly to: string;
     }
   | {
+      /**
+       * The GM sent a merge for the player to accept or decline (QF.24, MT.2);
+       * only its owner is told.
+       */
+      readonly kind: 'mergeOffer';
+      readonly characterId: string;
+      readonly skills: readonly [string, string];
+      readonly name: string;
+    }
+  | {
       /** Two skills merged into one (M5.4); only their owner is told. */
       readonly kind: 'skillMerge';
       readonly characterId: string;
@@ -300,6 +310,21 @@ export function notificationsBetween(
     if (from && to && from !== to) {
       const name = (id: string) => after.rules.skills.rarities.find((r) => r.id === id)?.name ?? id;
       out.push({ kind: 'skillUpgrade', characterId, skill, from: name(from), to: name(to) });
+    }
+  }
+  // QF.24: a merge offer announces itself to its owner, so it is not missed.
+  if (event?.type === 'skill.mergeOffered') {
+    const { characterId, offerId } = event.payload;
+    const offer =
+      (has(after.characters, characterId) ? after.characters[characterId] : undefined)
+        ?.mergeOffer ?? null;
+    if (offer !== null && offer.offerId === offerId) {
+      out.push({
+        kind: 'mergeOffer',
+        characterId,
+        skills: [offer.skills[0], offer.skills[1]],
+        name: offer.name,
+      });
     }
   }
   // MT.2: an accepted offer is the merge; the offer itself names the skills.

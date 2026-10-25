@@ -35,9 +35,12 @@ describe('mergeCandidates (M5.4)', () => {
       { skills: ['Cut', 'Step'], count: 3, rarity: 'rare', problem: null, unreviewed: 0 },
     ]);
     const merged = run(mergeAccepted(ID, ['Cut', 'Step'], 'Cutstep'), testContext('m'), c);
-    // MT.2: the DING comes with the player's acceptance.
+    // MT.2: the DING comes with the player's acceptance; the offer itself
+    // only tells its owner an offer is waiting (QF.24).
     const offered = run([mergeAccepted(ID, ['Cut', 'Step'], 'Cutstep')[0]!], testContext('o'), c);
-    expect(notificationsBetween(c.state, offered.state, offered.events.at(-1))).toEqual([]);
+    expect(notificationsBetween(c.state, offered.state, offered.events.at(-1))).toEqual([
+      { kind: 'mergeOffer', characterId: ID, skills: ['Cut', 'Step'], name: 'Cutstep' },
+    ]);
     expect(notificationsBetween(offered.state, merged.state, merged.events.at(-1))).toEqual([
       {
         kind: 'skillMerge',
