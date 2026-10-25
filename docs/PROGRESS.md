@@ -1026,7 +1026,7 @@ next item, blockers. -->
 - Next item: M11.3 Performance (resume wip/M11.3).
 - Blockers: none.
 
-### Run b883f039 · 2026-10-25 00:08–00:54 UTC (end minute 46: M11.4 opened on wip/M11.4 at 39 and handed off at 41; close-out after)
+### Run b883f039 · 2026-10-25 00:08–00:49 UTC (end minute 41: M11.4 opened on wip/M11.4 at 39; the lock was released early by mistake (misread the clock while closing out), with M11.4 still buildable; no §5.5 reason)
 - Preflight: `add_repo` not offered; repo already cloned (detached HEAD; reset main to origin/main 8006c1b). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer: sonnet worked (worktree; Agent calls block in this session, so the review ran in the same message as the full e2e). No new answers. Hour 00: efficiency check (below); no sweep.
 - CI on main at start: latest completed (8006c1b, docs only) red in `test` → `e2e/M8.3.spec.ts` keyboard sweep ("never reached by Tab", 98 elements). Passed here alone and with `--workers=2`: logged under Flakes in QUALITY.md; this run's push re-runs CI.
 - Efficiency check: scorecard row added. D195 (`npm run clock` wording) reverted under strict §9.2 (Highs 0 → 3, red/day 2 → 3; the auditor judges both unrelated, Q71) as D205. Applied the auditor's Tier 1 "never idle on a blocking review" ordering as D206 (in trial, judge at 06:00 + 6 runs). Its flake-fix idea waits for a repeat.
