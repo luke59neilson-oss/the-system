@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** ee1a405 (2026-10-24, A) · **Next rotation:** B
+**Last sweep:** ff8a1be1 (2026-10-25, B) · **Next rotation:** C
 
 ## Lenses and rotation
 
@@ -114,6 +114,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-24 21:10 | A, 45da2c5..ee1a405 | Rules · fable | 0 | 0 | 2 | 2 L to Backlog | 0 | ~195k |
 | 2026-10-24 21:10 | A, 45da2c5..ee1a405 | Boundaries · sonnet | 0 | 0 | 0 | none | 0 | ~75k |
 | 2026-10-24 21:10 | A, 45da2c5..ee1a405 | Tests · haiku | 0 | 3 | 7 | 2 M confirmed by mutation and fixed this run (QF.22); 1 M not a defect (withdrawn options exist only on chosen menus, so the filter is dead for open menus; Low); 7 L to Backlog | 1 M | ~188k |
+| 2026-10-25 21:10 | B, ee1a405..ff8a1be1 | Boundaries · haiku | 0 | 0 | 2 | 2 L to Backlog | 0 | n/a |
+| 2026-10-25 21:10 | B, ee1a405..ff8a1be1 | Tests · fable | 0 | 1 | 5 | 1 M confirmed by reading the tests (QF.23); 5 L not recorded in detail (the run overran and logged only the counts) | 0 | n/a (46 min) |
+| 2026-10-25 21:10 | B, ee1a405..ff8a1be1 | UX · sonnet | 0 | 2 | 6 | 2 M confirmed in code (QF.24, QF.25); 6 L not recorded in detail | 0 | n/a |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -160,6 +163,8 @@ reviewers ran 15–20 minutes each in the background.
   (10:31 UTC): now QF.14.
 
 ## Backlog (Lows; M11.5 goes through these)
+- Boundaries (sweep B 2026-10-25): the GM change log shows unshared private-journal rows as "note written" (no text, but the GM learns a note exists); consider dropping them from the GM view.
+- Boundaries (sweep B 2026-10-25): the desktop build sets no Electron fuses (`electronFuses`: RunAsNode off, cookie encryption, ASAR integrity).
 - UX (M11.3 review r2): the player Notifications rows are keyed `${seq}-${rows.length - i}` (`PlayerScreen.tsx` Feed), so every new ding remounts every row and focus on an entry revealed by "Show older" falls to the body; key by `seq` if unique. Revealed entries keep `tabindex="-1"` (harmless).
 - Perf (M11.3 review): the engine's id index (`events/log.ts` ID_INDEX) is shared per lineage and never pruned; dropped branches leave stale entries (a mismatched hit scans). Fine at table scale.
 
