@@ -419,6 +419,9 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     offerId: recordId,
     skills: z.tuple([nonBlank, nonBlank]),
     name: nonBlank,
+    /** The merged skill's System text, applied on accept; optional, additive. */
+    description: skillDescription.nullable().optional(),
+    flavor: skillFlavor.nullable().optional(),
   }),
   /** The player accepts (the merge applies) or declines (both originals stay) (MT.2). */
   'skill.mergeAnswered': z.strictObject({

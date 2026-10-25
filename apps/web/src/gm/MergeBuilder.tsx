@@ -9,7 +9,9 @@ type Outcome = { ok: boolean; text: string } | null;
  * GM merge builder (ROADMAP M5.4, DESIGN §6): a character's merge alerts
  * (pairs logged together often enough), each with the merged rarity or why
  * the engine would refuse it, and a form to name and describe the merged
- * skill and send it. The player gets the System's merge DING.
+ * skill and send it. MT.2 (Q62): the merge goes to the player as an offer;
+ * the builder shows it waiting, then whether the player accepted or declined.
+ * The player gets the System's merge DING on accepting.
  */
 export function MergeBuilder({ client, state }: { client: LiveClient; state: CampaignState }) {
   const { rules } = state;
@@ -25,6 +27,26 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
   const [flavor, setFlavor] = useState('');
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Outcome>(null);
+  // The last offer sent from here, to say how the player answered it.
+  const [sent, setSent] = useState<{
+    characterId: string;
+    name: string;
+    skills: readonly [string, string];
+    /** Set once the offer has reached the state, so a slow update never reads as a decline. */
+    seen: boolean;
+  } | null>(null);
+  const pending = character?.mergeOffer ?? null;
+  // Adjusting state while rendering (not in an effect): mark the offer seen.
+  if (sent && !sent.seen && pending?.name === sent.name) setSent({ ...sent, seen: true });
+  const answered =
+    sent !== null &&
+    sent.seen &&
+    sent.characterId === characterId &&
+    (pending === null || pending.name !== sent.name)
+      ? (character?.skills.some((s) => s.name === sent.name) ?? false)
+        ? 'accepted'
+        : 'declined'
+      : null;
   const merged = name.trim();
   // The engine refuses a name the character already uses; say so before Send.
   const clash =
@@ -43,25 +65,16 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
       characterId,
       skills: chosen.skills,
       name: merged,
+      description: description.trim() || null,
+      flavor: flavor.trim() || null,
     });
+    setBusy(false);
     if (!r.ok) {
-      setBusy(false);
       setOutcome({ ok: false, text: friendlyError(r.error) });
       return;
     }
-    let text = `${character.name}: [${chosen.skills[0]}] + [${chosen.skills[1]}] → [${merged}] sent`;
-    if (description.trim() !== '' || flavor.trim() !== '') {
-      const d = await client.command({
-        type: 'skill.describe',
-        characterId,
-        skill: merged,
-        description: description.trim() || null,
-        flavor: flavor.trim() || null,
-      });
-      if (!d.ok) text += `; its text was not saved: ${friendlyError(d.error)}`;
-    }
-    setBusy(false);
-    setOutcome({ ok: true, text });
+    setSent({ characterId, name: merged, skills: chosen.skills, seen: false });
+    setOutcome(null);
     setName('');
     setDescription('');
     setFlavor('');
@@ -82,6 +95,7 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
                 setPicked(e.target.value);
                 setPairKey('');
                 setOutcome(null);
+                setSent(null);
                 // A name typed for one character must not carry over to another.
                 setName('');
                 setDescription('');
@@ -98,6 +112,22 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
           {outcome && (
             <p className={outcome.ok ? 'ok' : 'err'} role={outcome.ok ? 'status' : 'alert'}>
               {outcome.text}
+            </p>
+          )}
+          {pending && (
+            <p className="warn" role="status" data-testid="merge-pending">
+              Waiting on {character?.name}: [{pending.skills[0]}] + [{pending.skills[1]}] → [
+              {pending.name}]. Sending another merge replaces this offer.
+            </p>
+          )}
+          {!pending && answered && sent && (
+            <p
+              className={answered === 'accepted' ? 'ok' : 'warn'}
+              role="status"
+              data-testid="merge-answer"
+            >
+              {character?.name} {answered} [{sent.skills[0]}] + [{sent.skills[1]}] → [{sent.name}]
+              {answered === 'declined' ? '; both skills stay.' : '.'}
             </p>
           )}
           {candidates.length === 0 ? (
@@ -150,14 +180,15 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
                 <textarea value={flavor} onChange={(e) => setFlavor(e.target.value)} />
               </label>
               <p className="muted">
-                Both skills are consumed; the merged skill starts at 0 marks. At most {perGrade}{' '}
+                {character?.name ?? 'The player'} accepts or declines on their screen. If accepted,
+                both skills are consumed; the merged skill starts at 0 marks. At most {perGrade}{' '}
                 {perGrade === 1 ? 'merge' : 'merges'} per character per grade.
               </p>
               <button
                 type="submit"
                 disabled={busy || !chosen || chosen.problem !== null || merged === '' || clash}
               >
-                Send merge
+                Send merge offer
               </button>
             </form>
           )}

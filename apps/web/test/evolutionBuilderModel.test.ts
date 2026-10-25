@@ -156,7 +156,10 @@ describe('evolution builder model (M5.2)', () => {
           characterId: 'jake',
           skills: ['Basic Archery', 'Basic Stealth'],
           name: 'Twin',
+          offerId: 'twin',
         },
+        // MT.2: the merge applies once the player accepts it.
+        { type: 'skill.answerMerge', characterId: 'jake', offerId: 'twin', accept: true },
       ],
       'uncommon',
     );

@@ -268,6 +268,9 @@ export type Command =
       name: string;
       /** Id for the offer the player answers (MT.2); generated when absent. */
       offerId?: string | undefined;
+      /** The merged skill's System text, given to it when accepted. */
+      description?: string | null | undefined;
+      flavor?: string | null | undefined;
     }
   | { type: 'skill.answerMerge'; characterId: string; offerId: string; accept: boolean }
   | {
@@ -1206,6 +1209,8 @@ function toEvent(
           offerId: command.offerId ?? ctx.newId(),
           skills: command.skills,
           name: command.name,
+          ...(command.description?.trim() ? { description: command.description } : {}),
+          ...(command.flavor?.trim() ? { flavor: command.flavor } : {}),
         },
       };
     case 'skill.answerMerge':

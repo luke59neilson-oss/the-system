@@ -56,9 +56,9 @@ const offer = (offerId = 'o1', name = 'Cutstep'): Command => ({
   name,
   offerId,
 });
-const answer = (accept: boolean, offerId = 'o1'): Command => ({
+const answer = (accept: boolean, offerId = 'o1', characterId = ID): Command => ({
   type: 'skill.answerMerge',
-  characterId: ID,
+  characterId,
   offerId,
   accept,
 });
@@ -79,11 +79,29 @@ describe('players accept or decline merges (MT.2)', () => {
       skills: ['Cut', 'Step'],
       name: 'Cutstep',
       rarity: 'rare',
+      description: null,
+      flavor: null,
     });
     // Nobody else sees it: Amy's view names neither the offer nor its skills.
     const amy = JSON.stringify(projectForPlayer(c.state!, 'amy'));
     expect(amy).not.toContain('Cutstep');
     expect(amy).not.toContain('o1');
+  });
+
+  it("the offer carries the merged skill's text, given to it on accept", () => {
+    const c = run([
+      ...start(),
+      { ...offer(), description: 'Cut while stepping.', flavor: 'Never still.' } as Command,
+    ]);
+    expect(projectForPlayer(c.state!, ID).me.mergeOffer).toMatchObject({
+      description: 'Cut while stepping.',
+      flavor: 'Never still.',
+    });
+    const done = run([answer(true)], player(ID), c);
+    expect(done.state!.characters[ID]!.skills.find((s) => s.name === 'Cutstep')).toMatchObject({
+      description: 'Cut while stepping.',
+      flavor: 'Never still.',
+    });
   });
 
   it('a bad offer is refused when sent', () => {
@@ -141,7 +159,7 @@ describe('players accept or decline merges (MT.2)', () => {
 
   it('only the owner answers, and only the open offer', () => {
     const offered = run([...start(), offer()]);
-    expect(execute(offered, { ...answer(true), characterId: 'amy' }, player('amy')).ok).toBe(false);
+    expect(execute(offered, answer(true, 'o1', 'amy'), player('amy')).ok).toBe(false);
     expect(execute(offered, answer(true), player('amy')).ok).toBe(false);
     expect(execute(offered, answer(true, 'nope'), player(ID)).ok).toBe(false);
     const done = run([answer(false)], player(ID), offered);

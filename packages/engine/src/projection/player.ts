@@ -241,6 +241,8 @@ export interface OwnSheet {
     readonly skills: readonly [string, string];
     readonly name: string;
     readonly rarity: string | null;
+    readonly description: string | null;
+    readonly flavor: string | null;
   } | null;
   readonly classLevel: number;
   readonly professionLevel: number;
@@ -580,14 +582,21 @@ function ownMergeOffer(state: CampaignState, c: Character): OwnSheet['mergeOffer
   const joint =
     skillPairCounts(state.practice, c.id).find((p) => p.skills[0] === a && p.skills[1] === b)
       ?.count ?? 0;
-  let rarity: string | null = null;
+  let rarity: string | null;
   try {
     const merged = mergeSkills(state.rules, c, first, second, offer.name, joint);
     rarity = merged.skills.find((s) => s.name === offer.name)?.rarity ?? null;
   } catch {
     rarity = null;
   }
-  return { offerId: offer.offerId, skills: [first, second], name: offer.name, rarity };
+  return {
+    offerId: offer.offerId,
+    skills: [first, second],
+    name: offer.name,
+    rarity,
+    description: offer.description ?? null,
+    flavor: offer.flavor ?? null,
+  };
 }
 
 /** Effective stats (base + equipped items) of a character, for pool maxima. */

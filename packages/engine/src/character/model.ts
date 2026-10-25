@@ -50,6 +50,9 @@ export interface MergeOffer {
   /** The two skills' rarities when offered; a change makes the offer stale. */
   readonly rarities: readonly [string, string];
   readonly name: string;
+  /** The merged skill's text, given to it on accept (absent when none). */
+  readonly description?: string;
+  readonly flavor?: string;
 }
 
 /** Plain, serializable, immutable character state. */

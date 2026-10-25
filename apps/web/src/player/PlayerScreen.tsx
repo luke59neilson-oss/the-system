@@ -43,6 +43,7 @@ import { EvolutionChoice } from './EvolutionChoice';
 import { useEvolutionFlash } from './evolutionFlash';
 import { describeTitleBonuses } from './titles';
 import { ProfessionsPanel } from './ProfessionsPanel';
+import { MergeOfferPanel } from './MergeOfferPanel';
 import { closedReason, pendingSelections, pendingText, settleNotice } from './selection';
 import {
   cssToken,
@@ -189,6 +190,8 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
           data-testid="player-grid"
         >
           <div className="player-col">
+            {/* MT.2: an open merge offer waits on an answer, so it sits on top. */}
+            <MergeOfferPanel view={view} client={pane ? null : client} />
             <Status view={view} client={pane ? null : client} />
             <ProfessionsPanel view={view} client={pane ? null : client} />
             <PartyPanel view={view} />
