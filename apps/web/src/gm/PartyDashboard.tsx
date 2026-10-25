@@ -485,7 +485,7 @@ function ProgressionOverride({
     if (target === null) return;
     target.focus();
     setFocusNext(null);
-  });
+  }, [focusNext]);
   // When the live values change (an award, an undo, another GM window), the
   // fields reload and any open warning closes, so a stale draft is never
   // applied over newer values.
