@@ -289,3 +289,66 @@ export function mergeSkills(
   const skills = character.skills.flatMap((s, i) => (i === ia ? [merged] : i === ib ? [] : [s]));
   return { ...character, skills, merges: { ...character.merges, [character.grade]: done + 1 } };
 }
+
+/**
+ * MT.2 (DESIGN §6, Q62): the GM sends a merge as an offer. It is checked as if
+ * applied now, then waits on the player; a new offer replaces an older one.
+ */
+export function offerMerge(
+  rules: RulesConfig,
+  character: Character,
+  first: string,
+  second: string,
+  name: string,
+  jointUses: number,
+  offerId: string,
+  text: { description?: string | null | undefined; flavor?: string | null | undefined } = {},
+): Character {
+  mergeSkills(rules, character, first, second, name, jointUses);
+  const rarityOf = (n: string) => character.skills.find((s) => s.name === n)?.rarity ?? '';
+  return {
+    ...character,
+    mergeOffer: {
+      offerId,
+      skills: [first, second],
+      rarities: [rarityOf(first), rarityOf(second)],
+      name: name.trim(),
+      ...(text.description?.trim() ? { description: text.description.trim() } : {}),
+      ...(text.flavor?.trim() ? { flavor: text.flavor.trim() } : {}),
+    },
+  };
+}
+
+/**
+ * The player answers the pending merge offer: accepting applies it (checked
+ * again, so a skill that changed since makes it stale), declining keeps both
+ * originals. Either way the offer is gone.
+ */
+export function answerMerge(
+  rules: RulesConfig,
+  character: Character,
+  offerId: string,
+  accept: boolean,
+  jointUses: number,
+): Character {
+  const offer = character.mergeOffer ?? null;
+  if (offer === null || offer.offerId !== offerId) {
+    throw new CharacterRuleError('That merge offer is no longer open');
+  }
+  const cleared: Character = {
+    ...character,
+    mergeOffer: null,
+    lastMergeAnswer: { offerId, skills: offer.skills, name: offer.name, accept },
+  };
+  if (!accept) return cleared;
+  const [first, second] = offer.skills;
+  const rarityOf = (n: string) => character.skills.find((s) => s.name === n)?.rarity;
+  if (rarityOf(first) !== offer.rarities[0] || rarityOf(second) !== offer.rarities[1]) {
+    throw new CharacterRuleError(
+      'That merge offer is out of date: one of its skills has changed. Ask the GM to send it again',
+    );
+  }
+  const merged = mergeSkills(rules, cleared, first, second, offer.name, jointUses);
+  if (offer.description === undefined && offer.flavor === undefined) return merged;
+  return describeSkill(merged, offer.name, offer.description ?? null, offer.flavor ?? null);
+}

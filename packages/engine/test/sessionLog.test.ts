@@ -13,7 +13,7 @@ import {
   type Command,
   type CommandContext,
 } from '../src';
-import { kit, rawRules, run, testContext } from './helpers/events';
+import { kit, rawRules, mergeAccepted, run, testContext } from './helpers/events';
 
 const ctx = testContext('l');
 const player = (characterId: string): CommandContext => ({
@@ -295,12 +295,7 @@ describe('session log (M2.4)', () => {
         { ...ctx, sessionId: `p${i}` },
       );
     }
-    c = ok(c, {
-      type: 'skill.merge',
-      characterId: 'jake',
-      skills: [archery, stealth],
-      name: 'Shadow Shot',
-    });
+    for (const m of mergeAccepted('jake', [archery, stealth], 'Shadow Shot')) c = ok(c, m);
     c = ok(c, { type: 'character.rename', characterId: 'kim', name: 'Kimberly' });
     c = ok(
       c,

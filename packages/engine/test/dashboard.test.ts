@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { characterFlags, unassignedFreePoints, type Campaign, type Command } from '../src';
-import { kit, rawRules, run, testContext } from './helpers/events';
+import { kit, rawRules, mergeAccepted, run, testContext } from './helpers/events';
 
 // M4.5: the party dashboard's flags (DESIGN §2-§6) on default rules.
 
@@ -170,14 +170,7 @@ describe('characterFlags (M4.5)', () => {
     ]);
     // One merge per grade: after merging, a second pair does not flag.
     const merged = run(
-      [
-        {
-          type: 'skill.merge',
-          characterId: ID,
-          skills: ['Basic Archery', 'Archer’s Eye'],
-          name: 'Hawk Volley',
-        },
-      ],
+      mergeAccepted(ID, ['Basic Archery', 'Archer’s Eye'], 'Hawk Volley'),
       testContext('g'),
       raised,
     );

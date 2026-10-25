@@ -361,6 +361,10 @@ a {
   .feeds > * {
     order: 10;
   }
+  /* MT.2: an open merge offer waits on an answer, so it leads. */
+  .player-grid .merge-offer-window {
+    order: 0;
+  }
   .player-grid .status-window {
     order: 1;
   }

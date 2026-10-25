@@ -136,6 +136,14 @@
       "sha256": "24b818eacf1ae4025fe81aca0f5c8df7e4cac09c58e6889fb33889d1bd418c73",
       "schemaVersion": 32
     },
+    "merge-offers.jsonl": {
+      "sha256": "5e6de6bc8035a803d24d38faead86a0b819cb3250513dde3e514e5f57d20adb7",
+      "schemaVersion": 32
+    },
+    "merge-offers.state.json": {
+      "sha256": "e0a69e52a58fad4abec22ab6a0ff9f87dbad172a349bd832c08bb771ae4dc5e8",
+      "schemaVersion": 32
+    },
     "montage.jsonl": {
       "sha256": "337a1399a34d9801f95dd75879f59ffcab8a3adcf4359fba1d098976b51c5462",
       "schemaVersion": 21

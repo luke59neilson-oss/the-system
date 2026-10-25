@@ -261,7 +261,18 @@ export type Command =
       session?: string | undefined;
     }
   | { type: 'skill.upgrade'; characterId: string; skill: string }
-  | { type: 'skill.merge'; characterId: string; skills: readonly [string, string]; name: string }
+  | {
+      type: 'skill.merge';
+      characterId: string;
+      skills: readonly [string, string];
+      name: string;
+      /** Id for the offer the player answers (MT.2); generated when absent. */
+      offerId?: string | undefined;
+      /** The merged skill's System text, given to it when accepted. */
+      description?: string | null | undefined;
+      flavor?: string | null | undefined;
+    }
+  | { type: 'skill.answerMerge'; characterId: string; offerId: string; accept: boolean }
   | {
       type: 'selection.offer';
       characterId: string;
@@ -652,6 +663,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('skill.awardMark') }),
   z.object({ type: z.literal('skill.upgrade') }),
   z.object({ type: z.literal('skill.merge'), skills: z.array(z.unknown()) }),
+  z.object({ type: z.literal('skill.answerMerge') }),
   z.object({ type: z.literal('selection.offer'), options: z.array(z.unknown()) }),
   z.object({ type: z.literal('selection.choose') }),
   z.object({ type: z.literal('selection.withdrawOption') }),
@@ -735,6 +747,7 @@ export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>([
   'note.edit',
   'note.delete',
   'skill.nickname',
+  'skill.answerMerge',
   'selection.choose',
   'evolution.choose',
   'profession.choose',
@@ -1188,9 +1201,26 @@ function toEvent(
         payload: { characterId: command.characterId, skill: command.skill },
       };
     case 'skill.merge':
+      // MT.2 (Q62): the GM sends the merge as an offer; the player answers it.
       return {
-        type: 'skill.merged',
-        payload: { characterId: command.characterId, skills: command.skills, name: command.name },
+        type: 'skill.mergeOffered',
+        payload: {
+          characterId: command.characterId,
+          offerId: command.offerId ?? ctx.newId(),
+          skills: command.skills,
+          name: command.name,
+          ...(command.description?.trim() ? { description: command.description } : {}),
+          ...(command.flavor?.trim() ? { flavor: command.flavor } : {}),
+        },
+      };
+    case 'skill.answerMerge':
+      return {
+        type: 'skill.mergeAnswered',
+        payload: {
+          characterId: command.characterId,
+          offerId: command.offerId,
+          accept: command.accept,
+        },
       };
     case 'selection.offer':
       return {

@@ -20,7 +20,7 @@ import {
   type CommandContext,
   retiredSkillNames,
 } from '../src';
-import { kit, rawRules, run, testContext } from './helpers/events';
+import { kit, rawRules, mergeAccepted, run, testContext } from './helpers/events';
 
 /**
  * These evolution tests stage levels by banking XP at the cap, so they run on
@@ -397,12 +397,9 @@ describe('selections', () => {
       }
       c = ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: name });
     }
-    c = ok(c, {
-      type: 'skill.merge',
-      characterId: 'jake',
-      skills: ['Hunter’s Archery', stealth],
-      name: 'Ghost Shot',
-    });
+    for (const m of mergeAccepted('jake', ['Hunter’s Archery', stealth], 'Ghost Shot')) {
+      c = ok(c, m);
+    }
     expect(
       reject(c, {
         type: 'selection.offer',
@@ -1854,12 +1851,7 @@ describe('merge transforms (M5.2, DESIGN §6 "offer that merge as part of the ev
 
   it('counts against the one merge per grade', () => {
     let c = mergeReady();
-    c = ok(c, {
-      type: 'skill.merge',
-      characterId: 'jake',
-      skills: [archery, stealth],
-      name: 'Twin Shot',
-    });
+    for (const m of mergeAccepted('jake', [archery, stealth], 'Twin Shot')) c = ok(c, m);
     expect(char(c).merges['G']).toBe(1);
     // Nothing left to merge with, but the allowance is checked first.
     expect(reject(c, mergeRelease())).toMatch(

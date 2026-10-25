@@ -709,7 +709,7 @@ behaviour until an answer lands.
   unchanged. *Accept:* engine tests (release refused without approval,
   Identify lower refused, raise within the ceiling, keep, lower with marks
   kept); e2e on the builder.
-- [ ] **MT.2 Players accept or decline merges.** A merge the GM sends arrives
+- [x] **MT.2 Players accept or decline merges.** A merge the GM sends arrives
   on the player's screen as an offer; accepting applies it, declining keeps
   both originals; the GM sees the answer (Q62). *Accept:* engine tests for
   both answers and a stale offer; e2e from GM send to player answer.

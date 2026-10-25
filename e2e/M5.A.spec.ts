@@ -236,9 +236,11 @@ test('selection, evolution, mark upgrade and merge between the GM and the player
   await merge.getByLabel('Description (optional)').fill('Read the air and move with it.');
   await merge.evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-merge-1366x768.png') });
-  await merge.getByRole('button', { name: 'Send merge' }).click();
-  await expect(merge.getByRole('status')).toHaveText(
-    'Jake: [Archer’s Eye] + [Gale Step] → [Windreader’s Step] sent',
+  await merge.getByRole('button', { name: 'Send merge offer' }).click();
+  // MT.2: the player accepts the offer on their screen.
+  await player.getByTestId('merge-offer').getByRole('button', { name: 'Accept merge' }).click();
+  await expect(merge.getByTestId('merge-answer')).toHaveText(
+    'Jake accepted [Archer’s Eye] + [Gale Step] → [Windreader’s Step].',
   );
   await expect(dings).toContainText(
     "*'DING!' Skills merged: [Archer’s Eye] + [Gale Step] → [Windreader’s Step (Rare)]*",

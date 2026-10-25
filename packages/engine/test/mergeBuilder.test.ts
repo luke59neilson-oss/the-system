@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mergeCandidates, notificationsBetween, type Command } from '../src';
-import { rawRules, run, testContext } from './helpers/events';
+import { rawRules, mergeAccepted, run, testContext } from './helpers/events';
 
 // M5.4: merge builder candidates (DESIGN §6) and the merge DING.
 
@@ -34,12 +34,11 @@ describe('mergeCandidates (M5.4)', () => {
     expect(mergeCandidates(c.state!, ID)).toEqual([
       { skills: ['Cut', 'Step'], count: 3, rarity: 'rare', problem: null, unreviewed: 0 },
     ]);
-    const merged = run(
-      [{ type: 'skill.merge', characterId: ID, skills: ['Cut', 'Step'], name: 'Cutstep' }],
-      testContext('m'),
-      c,
-    );
-    expect(notificationsBetween(c.state, merged.state, merged.events.at(-1))).toEqual([
+    const merged = run(mergeAccepted(ID, ['Cut', 'Step'], 'Cutstep'), testContext('m'), c);
+    // MT.2: the DING comes with the player's acceptance.
+    const offered = run([mergeAccepted(ID, ['Cut', 'Step'], 'Cutstep')[0]!], testContext('o'), c);
+    expect(notificationsBetween(c.state, offered.state, offered.events.at(-1))).toEqual([]);
+    expect(notificationsBetween(offered.state, merged.state, merged.events.at(-1))).toEqual([
       {
         kind: 'skillMerge',
         characterId: ID,
@@ -114,10 +113,7 @@ describe('mergeCandidates (M5.4)', () => {
     expect(look).toMatchObject({ rarity: null });
     expect(look!.problem).toBe('The merged skill would be above the G-grade ceiling');
     const merged = run(
-      [
-        { type: 'skill.merge', characterId: ID, skills: ['Cut', 'Step'], name: 'Cutstep' },
-        ...log(['Cutstep', 'Look']),
-      ],
+      [...mergeAccepted(ID, ['Cut', 'Step'], 'Cutstep'), ...log(['Cutstep', 'Look'])],
       testContext('m'),
       c,
     );

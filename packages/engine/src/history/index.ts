@@ -302,8 +302,22 @@ export function notificationsBetween(
       out.push({ kind: 'skillUpgrade', characterId, skill, from: name(from), to: name(to) });
     }
   }
-  if (event?.type === 'skill.merged') {
-    const { characterId, skills, name } = event.payload;
+  // MT.2: an accepted offer is the merge; the offer itself names the skills.
+  const accepted =
+    event?.type === 'skill.mergeAnswered' && event.payload.accept && before
+      ? ((has(before.characters, event.payload.characterId)
+          ? before.characters[event.payload.characterId]
+          : undefined
+        )?.mergeOffer ?? null)
+      : null;
+  const mergedNow =
+    event?.type === 'skill.merged'
+      ? event.payload
+      : accepted && event?.type === 'skill.mergeAnswered'
+        ? { characterId: event.payload.characterId, skills: accepted.skills, name: accepted.name }
+        : null;
+  if (mergedNow) {
+    const { characterId, skills, name } = mergedNow;
     const merged = (
       has(after.characters, characterId) ? after.characters[characterId] : undefined
     )?.skills.find((s) => s.name === name);

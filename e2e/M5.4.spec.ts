@@ -86,7 +86,7 @@ test('the GM builds and sends a merge; the player gets the DING and the new skil
   }
   const alerts = builder.getByRole('list', { name: 'Merge alerts' });
   await expect(alerts).toHaveText('[Quick Cut] + [Side Step] · together 3× → Rare');
-  const send = builder.getByRole('button', { name: 'Send merge' });
+  const send = builder.getByRole('button', { name: 'Send merge offer' });
   await expect(send).toBeDisabled();
   // A name the character already uses is refused before Send.
   await builder.getByLabel('Merged skill name').fill('side step');
@@ -124,8 +124,13 @@ test('the GM builds and sends a merge; the player gets the DING and the new skil
   await expect(player.getByTestId('connection')).toHaveText('Connected');
 
   await send.click();
-  await expect(builder.getByRole('status')).toHaveText(
-    'Jake: [Quick Cut] + [Side Step] → [Dancing Blade] sent',
+  // MT.2: the merge waits on the player's answer.
+  await expect(builder.getByTestId('merge-pending')).toContainText(
+    'Waiting on Jake: [Quick Cut] + [Side Step] → [Dancing Blade]',
+  );
+  await player.getByTestId('merge-offer').getByRole('button', { name: 'Accept merge' }).click();
+  await expect(builder.getByTestId('merge-answer')).toHaveText(
+    'Jake accepted [Quick Cut] + [Side Step] → [Dancing Blade].',
   );
   await expect(builder).toContainText('No merge alerts');
   await expect(player.getByTestId('ding-toast')).toContainText(
