@@ -178,6 +178,13 @@ describe('evolution re-rating is approved, not automatic (MT.1)', () => {
         withTransform([{ skill: eye, merge: 'Identify', name: 'Seeing Eye', rarity: 'rare' }]),
       ),
     ).toMatch(/race skill and cannot be merged away/);
+    // QF.23: Identify as the transform's own skill, merging another skill in.
+    expect(
+      reject(
+        c,
+        withTransform([{ skill: 'Identify', merge: eye, name: 'Seeing Eye', rarity: 'rare' }]),
+      ),
+    ).toMatch(/\[Identify\] is a race skill and cannot be merged away/);
     expect(
       reject(c, withTransform([{ skill: 'Identify', name: 'Dim Sight', rarity: 'common' }])),
     ).toMatch(/\[Identify\] is a race skill and keeps its name/);
