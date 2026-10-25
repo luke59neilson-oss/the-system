@@ -44,6 +44,7 @@ import {
   answerMerge,
   setNickname,
   setUnique,
+  setSkillRarity,
   upgradeSkill,
   validateSkillDef,
   type SkillDef,
@@ -1672,6 +1673,14 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       return withCharacter(
         state,
         rule(event, () => useLibraryText(state.rules, character, skill, state.skillLibrary)),
+      );
+    }
+    case 'skill.raritySet': {
+      const { characterId, skill, rarity } = event.payload;
+      const character = characterOf(state, event, characterId);
+      return withCharacter(
+        state,
+        rule(event, () => setSkillRarity(state.rules, character, skill, rarity)),
       );
     }
     case 'skill.uniqueSet': {

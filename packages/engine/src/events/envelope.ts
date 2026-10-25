@@ -417,6 +417,12 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     characterId: recordId,
     skill: nonBlank,
   }),
+  /** GM override (MT.7): a skill's rarity set directly, past every rule. */
+  'skill.raritySet': z.strictObject({
+    characterId: recordId,
+    skill: nonBlank,
+    rarity: recordId,
+  }),
   /** GM sets or clears a skill's Unique tag. */
   'skill.uniqueSet': z.strictObject({
     characterId: recordId,
@@ -851,6 +857,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'skill.nicknamed': 1,
   'skill.described': 1,
   'skill.uniqueSet': 1,
+  'skill.raritySet': 1,
   'skill.libraryTextUsed': 1,
   'skill.markAwarded': 1,
   'skill.upgraded': 1,

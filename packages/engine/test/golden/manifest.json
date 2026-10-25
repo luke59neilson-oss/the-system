@@ -272,6 +272,14 @@
       "sha256": "323233f6414e23b9b60053bb0260cda0ea20b3f76cb1f8b04509fbfa00cf12c7",
       "schemaVersion": 33
     },
+    "skill-rarity.jsonl": {
+      "sha256": "2ffcf54ce706d69e0423a6c6d1eb73d0a14a588ebcb2ec65f8a09355303bb1b7",
+      "schemaVersion": 33
+    },
+    "skill-rarity.state.json": {
+      "sha256": "bd58b1c448db44551fda8ed36d812e891655114d2d9700248e3174a1b8964636",
+      "schemaVersion": 33
+    },
     "skilllibrary.jsonl": {
       "sha256": "ffcacef30fa6373d00d463910f09b4f33cdcb2ea951f25d5275c1f670abda5a8",
       "schemaVersion": 21

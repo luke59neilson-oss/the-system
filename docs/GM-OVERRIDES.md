@@ -34,7 +34,7 @@ refusal is raised.
 
 | Refusal | Where | GM way through |
 | --- | --- | --- |
-| `…: rarity "…" is not allowed at …-grade (ceiling …)` | packages/engine/src/character/model.ts:204 | Planned (MT.7): `skill.setRarity` sets any skill above the ceiling after creation; or raise the ceiling in Rules |
+| `…: rarity "…" is not allowed at …-grade (ceiling …)` | packages/engine/src/character/model.ts:204 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) sets any skill above the ceiling after creation; or raise the ceiling in Rules |
 | `Professions unlock at …-grade` | packages/engine/src/character/model.ts:360 | Planned (MT.7): `character.grantProfession` with `override: true` grants one before E-grade |
 | `Not enough … (has …)` | packages/engine/src/economy/model.ts:140 | Edit holdings (`holdings.adjust`) sets currency and items directly |
 | `Not enough […] (has …, needs …)` | packages/engine/src/economy/model.ts:149 | Edit holdings (`holdings.adjust`) sets currency and items directly |
@@ -46,28 +46,28 @@ refusal is raised.
 | `"…" does not qualify for a montage yet` | packages/engine/src/events/reducer.ts:1509 | Planned (MT.7): `montage.offer` with `override: true` skips the half-filled, no-failure check |
 | `Class level … grants no skill selection` | packages/engine/src/evolution/model.ts:224 | Planned (MT.7): `skill.grant` gives a skill outside the selection schedule |
 | `… has not reached class level … (is …)` | packages/engine/src/evolution/model.ts:226 | Planned (MT.7): `skill.grant` gives a skill outside the selection schedule |
-| `[…] is above the …-grade ceiling (…)` | packages/engine/src/evolution/model.ts:258 | Planned (MT.7): `skill.setRarity` sets any rarity after the fact; or raise the ceiling in Rules |
+| `[…] is above the …-grade ceiling (…)` | packages/engine/src/evolution/model.ts:258 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) sets any rarity after the fact; or raise the ceiling in Rules |
 | `Level … is the …-grade capstone: offer at least one … option` | packages/engine/src/evolution/model.ts:268 | Planned (MT.7): `skill.grant` gives any skill without a capstone menu; the menu rule itself stays (DESIGN §6) |
 | `No selection is offered at level …` | packages/engine/src/evolution/model.ts:366 | Planned (MT.7): `skill.grant` gives a skill outside the selection schedule |
-| `[…] is a race skill and never drops a rarity` | packages/engine/src/evolution/model.ts:477 | Planned (MT.7): `skill.setRarity` (and `skill.grant`) change race skills too, with a warning that Identify never drops by default |
-| `[…] cannot be raised above the …-grade ceiling (…)` | packages/engine/src/evolution/model.ts:480 | Planned (MT.7): `skill.setRarity` sets any rarity after the fact; or raise the ceiling in Rules |
-| `[…] is a race skill and cannot be merged away at evolution` | packages/engine/src/evolution/model.ts:498 | Planned (MT.7): `skill.setRarity` (and `skill.grant`) change race skills too, with a warning that Identify never drops by default |
-| `[…] is a race skill and keeps its name at evolution` | packages/engine/src/evolution/model.ts:510 | Planned (MT.7): `skill.setRarity` (and `skill.grant`) change race skills too, with a warning that Identify never drops by default |
-| `[…] must be … (one above the higher merged skill)` | packages/engine/src/evolution/model.ts:576 | Planned (MT.7): `skill.setRarity` after the evolution sets the final rarity |
-| `[…] cannot drop to a lower rarity` | packages/engine/src/evolution/model.ts:581 | Planned (MT.7): `skill.setRarity` after the evolution sets the final rarity |
+| `[…] is a race skill and never drops a rarity` | packages/engine/src/evolution/model.ts:477 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) (and `skill.grant`) change race skills too, with a warning that Identify never drops by default |
+| `[…] cannot be raised above the …-grade ceiling (…)` | packages/engine/src/evolution/model.ts:480 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) sets any rarity after the fact; or raise the ceiling in Rules |
+| `[…] is a race skill and cannot be merged away at evolution` | packages/engine/src/evolution/model.ts:498 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) (and `skill.grant`) change race skills too, with a warning that Identify never drops by default |
+| `[…] is a race skill and keeps its name at evolution` | packages/engine/src/evolution/model.ts:510 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) (and `skill.grant`) change race skills too, with a warning that Identify never drops by default |
+| `[…] must be … (one above the higher merged skill)` | packages/engine/src/evolution/model.ts:576 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) after the evolution sets the final rarity |
+| `[…] cannot drop to a lower rarity` | packages/engine/src/evolution/model.ts:581 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) after the evolution sets the final rarity |
 | `… can merge … time(s) per grade (… done at …-grade)` | packages/engine/src/evolution/model.ts:598 | Planned (MT.7): `skill.merge` with `override: true` skips the joint-use count, minimum rarity and once-per-grade checks |
 | `[…] must be at least … to merge` | packages/engine/src/evolution/model.ts:618 | Planned (MT.7): `skill.merge` with `override: true` skips the joint-use count, minimum rarity and once-per-grade checks |
 | `[…] and […] were logged together … times (need …)` | packages/engine/src/evolution/model.ts:623 | Planned (MT.7): `skill.merge` with `override: true` skips the joint-use count, minimum rarity and once-per-grade checks |
 | `… cannot evolve yet (… level … of …)` | packages/engine/src/evolution/model.ts:660 | Set levels with the level/XP/grade override (`character.setProgression`) to reach the gate |
 | `Professions are offered from the …-grade evolution on, to a character without one` | packages/engine/src/evolution/model.ts:683 | Planned (MT.7): `character.grantProfession` with `override: true` |
 | `… has a skill selection to choose first (class level …); an evolution cannot be … until then` | packages/engine/src/evolution/model.ts:903 | Planned (MT.7): `evolution.release` with `override: true` releases with a selection pending |
-| `[…] is …, which has no mark upgrade` | packages/engine/src/skills/model.ts:176 | Planned (MT.7): `skill.setRarity` upgrades any skill directly |
+| `[…] is …, which has no mark upgrade` | packages/engine/src/skills/model.ts:176 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) upgrades any skill directly |
 | `[…] already earned its mark this session` | packages/engine/src/skills/model.ts:182 | Planned (MT.7): `skill.awardMark` with `override: true` gives a second mark in a session |
-| `[…] cannot be upgraded past …` | packages/engine/src/skills/model.ts:211 | Planned (MT.7): `skill.setRarity` upgrades any skill directly |
-| `[…] needs … marks (has …)` | packages/engine/src/skills/model.ts:216 | Planned (MT.7): `skill.setRarity` upgrades any skill directly |
-| `[…] is at the …-grade ceiling; its marks bank until the next evolution` | packages/engine/src/skills/model.ts:219 | Planned (MT.7): `skill.setRarity` upgrades any skill directly |
+| `[…] cannot be upgraded past …` | packages/engine/src/skills/model.ts:211 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) upgrades any skill directly |
+| `[…] needs … marks (has …)` | packages/engine/src/skills/model.ts:216 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) upgrades any skill directly |
+| `[…] is at the …-grade ceiling; its marks bank until the next evolution` | packages/engine/src/skills/model.ts:219 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) upgrades any skill directly |
 | `Already merged at …-grade` | packages/engine/src/skills/model.ts:269 | Planned (MT.7): `skill.merge` with `override: true` skips the joint-use count, minimum rarity and once-per-grade checks |
-| `The merged skill would be above the …-grade ceiling` | packages/engine/src/skills/model.ts:277 | Planned (MT.7): `skill.setRarity` sets any rarity after the fact; or raise the ceiling in Rules |
+| `The merged skill would be above the …-grade ceiling` | packages/engine/src/skills/model.ts:277 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) sets any rarity after the fact; or raise the ceiling in Rules |
 
 ## State
 
@@ -127,6 +127,7 @@ refusal is raised.
 | `[…] is already complete` | packages/engine/src/resolution/model.ts:252 | Remove or recreate the clock |
 | `[…] has only … segment… left` | packages/engine/src/resolution/model.ts:265 | Remove or recreate the clock |
 | `[…] is already …Unique` | packages/engine/src/skills/model.ts:89 | Already set |
+| `[…] is already …` | packages/engine/src/skills/model.ts:105 | Already that rarity |
 | `That merge offer is no longer open` | packages/engine/src/skills/model.ts:336 | Send the merge again |
 | `That merge offer is out of date: one of its skills has changed. Ask the GM to send it again` | packages/engine/src/skills/model.ts:347 | Send the merge again |
 

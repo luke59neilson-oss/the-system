@@ -263,6 +263,7 @@ export type Command =
       flavor: string | null;
     }
   | { type: 'skill.setUnique'; characterId: string; skill: string; unique: boolean }
+  | { type: 'skill.setRarity'; characterId: string; skill: string; rarity: string }
   /** GM hands a hand-written skill copy back to the library (MR.4). */
   | { type: 'skill.useLibraryText'; characterId: string; skill: string }
   | {
@@ -663,6 +664,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('skill.nickname') }),
   z.object({ type: z.literal('skill.describe') }),
   z.object({ type: z.literal('skill.setUnique') }),
+  z.object({ type: z.literal('skill.setRarity') }),
   z.object({ type: z.literal('skill.useLibraryText') }),
   z.object({ type: z.literal('skill.awardMark') }),
   z.object({ type: z.literal('skill.upgrade') }),
@@ -1200,6 +1202,11 @@ function toEvent(
       return {
         type: 'skill.libraryTextUsed',
         payload: { characterId: command.characterId, skill: command.skill },
+      };
+    case 'skill.setRarity':
+      return {
+        type: 'skill.raritySet',
+        payload: { characterId: command.characterId, skill: command.skill, rarity: command.rarity },
       };
     case 'skill.setUnique':
       return {

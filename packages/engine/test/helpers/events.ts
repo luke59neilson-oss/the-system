@@ -516,6 +516,11 @@ function randomSkillCommand(
     };
   }
   if (roll < 0.2) {
+    if (rand() < 0.5) {
+      // MT.7: the GM sets a rarity directly (any rarity; reserved ones refused).
+      const rarity = pick(['inferior', 'common', 'rare', 'legendary', 'divine']);
+      return { type: 'skill.setRarity', characterId, skill: someSkill(), rarity };
+    }
     return { type: 'skill.setUnique', characterId, skill: someSkill(), unique: rand() < 0.5 };
   }
   if (roll < 0.25) {
