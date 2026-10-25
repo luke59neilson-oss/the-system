@@ -14,6 +14,15 @@ import { describe, it } from 'vitest';
  *   replay as before (GM-applied merges).
  * - Projection: the owner sees the pending offer; nobody else does; the GM
  *   sees accepted/declined in the change log and on the merge builder.
+ * Touch list: Character gains `mergeOffer: {offerId, skills, name} | null`
+ * (character model + upcaster default null → state schema v33, goldens
+ * re-recorded); envelope.ts (two events + EVENT_SCHEMA_VERSIONS); commands.ts
+ * (`skill.merge` → offered; new player command in PLAYER_COMMANDS, owner only);
+ * reducer.ts; history/index.ts and report/sessionLog.ts (notable: merge
+ * accepted/declined); projection/player.ts (owner-only field, canary);
+ * test/helpers/events.ts random commands; web: player offer card with
+ * Accept/Decline (DING on accept), GM MergeBuilder shows "waiting / declined";
+ * e2e/MT.2.spec.ts; M5.A and MR.2 specs now need the player to accept.
  */
 describe('players accept or decline merges (MT.2)', () => {
   it.todo('the GM sends a merge: it is pending on the owner, not applied');
