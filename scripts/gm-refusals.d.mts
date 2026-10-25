@@ -1,0 +1,8 @@
+export interface Refusal {
+  readonly file: string;
+  readonly line: number;
+  readonly key: string;
+}
+export declare const ROOT: string;
+export declare function refusalKey(message: string): string;
+export declare function listRefusals(): Refusal[];
