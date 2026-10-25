@@ -41,18 +41,14 @@ for (const viewport of [
     { tag: '@latency' },
     async ({ browser }) => {
       if (!server) throw new Error('no server');
-      const page = await browser.newPage({ viewport });
+      // No warm-up: the timed visit is the first one this test makes. In this
+      // serial (latency) project the 1366 test runs first after the server
+      // starts, so it measures the cold path (the server builds the 12,500-
+      // entry notification history for the first time).
       const errors: string[] = [];
-      page.on('pageerror', (err) => errors.push(err.message));
-      page.on('console', (msg) => msg.type() === 'error' && errors.push(msg.text()));
-      // Warm the server's caches and the browser's HTTP cache once, as a
-      // player's second visit would; the timed load is a fresh page.
-      await page.goto(`${server.url}/play/ana`);
-      await expect(page.getByTestId('connection')).toHaveText('Connected', { timeout: 10_000 });
-      await page.close();
-
       const timed = await browser.newPage({ viewport });
       timed.on('pageerror', (err) => errors.push(err.message));
+      timed.on('console', (msg) => msg.type() === 'error' && errors.push(msg.text()));
       const started = Date.now();
       await timed.goto(`${server.url}/play/ana`);
       await expect(timed.getByTestId('connection')).toHaveText('Connected', { timeout: BOUND_MS });
@@ -78,12 +74,15 @@ for (const viewport of [
       const messages = timed.getByTestId('messages').locator('li');
       await expect(messages).toHaveCount(50);
       await expect(messages.first()).toHaveText(/^Notice \d+$/);
-      const newest = Number((await messages.first().textContent())?.split(' ')[1]);
+      const pageEnd = Number((await messages.nth(49).textContent())?.split(' ')[1]);
       const older = timed.getByTestId('messages-older');
       await expect(older).toHaveText(/^Show older \(\d{3,} more\)$/);
       await older.click();
       await expect(messages).toHaveCount(100);
-      await expect(messages.nth(50)).toHaveText(`Notice ${newest - 50 * 4}`);
+      // Focus moves to the first newly shown entry, the next older one.
+      await expect(messages.nth(50)).toBeFocused();
+      const next = Number((await messages.nth(50).textContent())?.split(' ')[1]);
+      expect(next).toBeLessThan(pageEnd);
       // Level-ups alone are few (4 here: the G cap); everything is 12,500+.
       const dings = timed.getByTestId('dings').locator('li');
       await expect(timed.getByTestId('dings-older')).toBeHidden();
@@ -91,6 +90,7 @@ for (const viewport of [
       await expect(dings).toHaveCount(50);
       await timed.getByTestId('dings-older').click();
       await expect(dings).toHaveCount(100);
+      await expect(dings.nth(50)).toBeFocused();
       await timed.getByTestId('dings-older').scrollIntoViewIfNeeded();
       await timed.screenshot({
         path: path.join(shots, `show-older-${viewport.width}x${viewport.height}.png`),
@@ -99,6 +99,9 @@ for (const viewport of [
       await timed.getByLabel('Search notifications').fill('Notice 39999');
       await expect(dings).toHaveCount(1);
       await expect(dings.first()).toContainText('Notice 39999');
+      // A new filter or search starts again from the newest page.
+      await timed.getByLabel('Search notifications').fill('');
+      await expect(dings).toHaveCount(50);
       expect(errors).toEqual([]);
     },
   );

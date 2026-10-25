@@ -6,7 +6,9 @@ import {
   useSyncExternalStore,
   Fragment,
   type ReactNode,
+  type RefObject,
 } from 'react';
+import { flushSync } from 'react-dom';
 import { titleKey, type OwnSheet, type PlayerView } from '@the-system/engine';
 import { friendlyError, notificationText } from '../format';
 import { isPaneMode } from '../gm/perspective';
@@ -961,16 +963,30 @@ const HISTORY_PAGE = 50;
 
 function ShowOlder({
   hidden,
+  shown,
+  list,
   onMore,
   testId,
 }: {
   hidden: number;
+  shown: number;
+  list: RefObject<HTMLOListElement | null>;
   onMore: () => void;
   testId: string;
 }) {
   if (hidden <= 0) return null;
+  const more = () => {
+    // Render the next page now, then move focus to its first entry: the
+    // button may be gone (last page), and focus must not fall to the page.
+    flushSync(onMore);
+    const first = list.current?.children[shown];
+    if (first instanceof HTMLElement) {
+      first.setAttribute('tabindex', '-1');
+      first.focus();
+    }
+  };
   return (
-    <button type="button" className="secondary show-older" onClick={onMore} data-testid={testId}>
+    <button type="button" className="secondary show-older" onClick={more} data-testid={testId}>
       Show older ({hidden} more)
     </button>
   );
@@ -989,8 +1005,10 @@ function Feed({
   const [query, setQuery] = useState('');
   const [dingLimit, setDingLimit] = useState(HISTORY_PAGE);
   const [messageLimit, setMessageLimit] = useState(HISTORY_PAGE);
+  const dingList = useRef<HTMLOListElement>(null);
+  const messageList = useRef<HTMLOListElement>(null);
   const rows = filterHistory(live.notifications, filter, query);
-  const messages = [...view.messages].reverse();
+  const messages = view.messages.slice(-messageLimit).reverse();
   return (
     <div className="feeds">
       <QuestLog view={view} />
@@ -1005,7 +1023,10 @@ function Feed({
             <select
               aria-label="Show"
               value={filter}
-              onChange={(e) => setFilter(e.target.value as HistoryFilter)}
+              onChange={(e) => {
+                setFilter(e.target.value as HistoryFilter);
+                setDingLimit(HISTORY_PAGE);
+              }}
             >
               {HISTORY_FILTERS.map((f) => (
                 <option key={f.id} value={f.id}>
@@ -1019,7 +1040,10 @@ function Feed({
             aria-label="Search notifications"
             placeholder="Search…"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setDingLimit(HISTORY_PAGE);
+            }}
           />
         </div>
         {live.notifications.length === 0 ? (
@@ -1029,7 +1053,7 @@ function Feed({
             No notifications match.
           </p>
         ) : (
-          <ol data-testid="dings" className="history">
+          <ol data-testid="dings" className="history" ref={dingList}>
             {rows.slice(0, dingLimit).map((n, i) => (
               <li
                 key={`${n.seq}-${rows.length - i}`}
@@ -1043,6 +1067,8 @@ function Feed({
         )}
         <ShowOlder
           hidden={rows.length - dingLimit}
+          shown={dingLimit}
+          list={dingList}
           onMore={() => setDingLimit((n) => n + HISTORY_PAGE)}
           testId="dings-older"
         />
@@ -1052,14 +1078,16 @@ function Feed({
         {messages.length === 0 ? (
           <p className="muted">Nothing from the System yet.</p>
         ) : (
-          <ol data-testid="messages">
-            {messages.slice(0, messageLimit).map((m) => (
+          <ol data-testid="messages" ref={messageList}>
+            {messages.map((m) => (
               <li key={m.id}>{m.text}</li>
             ))}
           </ol>
         )}
         <ShowOlder
-          hidden={messages.length - messageLimit}
+          hidden={view.messages.length - messages.length}
+          shown={messages.length}
+          list={messageList}
           onMore={() => setMessageLimit((n) => n + HISTORY_PAGE)}
           testId="messages-older"
         />
