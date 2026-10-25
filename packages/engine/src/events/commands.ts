@@ -625,6 +625,12 @@ const commandSchema = z.discriminatedUnion('type', [
     type: z.literal('system.broadcast'),
     text: z.string(),
     characterIds: z.array(z.string()).nullable().optional(),
+    display: z
+      .discriminatedUnion('mode', [
+        z.object({ mode: z.literal('pinned') }),
+        z.object({ mode: z.literal('timed'), seconds: z.number() }),
+      ])
+      .optional(),
   }),
   z.object({
     type: z.literal('broadcast.schedule'),

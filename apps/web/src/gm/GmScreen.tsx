@@ -140,6 +140,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               : 'Connecting…'}
         </span>
         {state && <SessionChip state={state} />}
+        {state && <BannersChip client={client} state={state} />}
         {state && <PerspectiveBar party={party} current={view} onChange={setWanted} />}
       </header>
       {live.status === 'joined' && <CampaignSwitch gmKey={gmKey} stateName={state?.name ?? null} />}
@@ -210,6 +211,49 @@ function SessionChip({ state }: { state: CampaignState }) {
       title={running ? undefined : 'Start a session in the Session window'}
     >
       {running ? `Session ${running.number}` : 'No session'} · Day {state.day}
+    </span>
+  );
+}
+
+/**
+ * MT.6: how many banners are up on players' screens, beside the session chip,
+ * with Remove all, so the GM never forgets a pinned banner below the fold.
+ */
+function BannersChip({ client, state }: { client: LiveClient; state: CampaignState }) {
+  const timed = state.broadcasts.some((b) => b.display?.mode === 'timed' && !b.removed);
+  const now = useTick(timed);
+  const up = activeBanners(state.broadcasts, now, (b) => Date.parse(b.at));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (up.length === 0) return null;
+  const removeAll = async () => {
+    setBusy(true);
+    setError(null);
+    for (const b of up) {
+      const r = await client.command({ type: 'broadcast.remove', id: b.id });
+      if (!r.ok) {
+        setError(friendlyError(r.error));
+        break;
+      }
+    }
+    setBusy(false);
+  };
+  return (
+    <span className="banners-chip" data-testid="banners-chip">
+      <a href="#broadcast">{up.length === 1 ? '1 banner up' : `${up.length} banners up`}</a>
+      <button
+        type="button"
+        className="secondary small"
+        disabled={busy}
+        onClick={() => void removeAll()}
+      >
+        Remove all
+      </button>
+      {error && (
+        <span className="err" role="alert">
+          {error}
+        </span>
+      )}
     </span>
   );
 }

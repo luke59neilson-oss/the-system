@@ -71,13 +71,31 @@ test('timed and pinned banners reach players; the GM removes a pinned one', asyn
   await expect(jake.getByTestId('connection')).toHaveText('Connected');
   await expect(banners).toHaveText(['[System] [The System is constructing the area…]']);
   await jake.screenshot({ path: path.join(shots, 'player-pinned-banner-390x844.png') });
+  // The header says a banner is up, wherever the GM has scrolled.
+  const chip = gm.getByTestId('banners-chip');
+  await expect(chip.getByRole('link')).toHaveText('1 banner up');
+  await gm.getByRole('heading', { name: 'The System · GM' }).scrollIntoViewIfNeeded();
+  await gm.screenshot({ path: path.join(shots, 'gm-banners-chip-1366x768.png') });
   const live = gm.locator('section[aria-labelledby="live-banners"]');
   await live.scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-live-banners-1366x768.png') });
   await live.getByRole('button', { name: /Remove the banner/ }).click();
   await expect(banners).toHaveCount(0);
   await expect(live).toHaveCount(0);
+  await expect(chip).toHaveCount(0);
   await expect(jake.getByTestId('messages')).toContainText('constructing the area');
+
+  // Remove all, from the header, takes every banner down at once.
+  for (const text of ['A storm gathers.', 'The tide turns.']) {
+    await form.getByLabel('Message').fill(text);
+    await form.getByLabel('Show').selectOption('pinned');
+    await form.getByRole('button', { name: 'Send broadcast' }).click();
+    await expect(banners.filter({ hasText: text })).toHaveCount(1);
+  }
+  await expect(chip.getByRole('link')).toHaveText('2 banners up');
+  await chip.getByRole('button', { name: 'Remove all' }).click();
+  await expect(banners).toHaveCount(0);
+  await expect(chip).toHaveCount(0);
 
   expect(errors).toEqual([]);
   expect(jakeErrors).toEqual([]);
