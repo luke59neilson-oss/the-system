@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, rmSync } from 'node:fs';
 import { createServer, type Server } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -69,26 +69,25 @@ test('a splash says "Starting The System…" at once, then hands over to the GM 
           .map((w) => w.getTitle()),
       ),
     ).toEqual(['Starting The System…']);
-    // Captured by Electron itself, polling until the splash has painted: CDP's
-    // Page.captureScreenshot sometimes fails on this JavaScript-free window
-    // under xvfb ("Unable to capture screenshot", CI 2026-10-25).
-    let png = '';
+    // The screenshot (for reviewers, not a behaviour check) is retried until it
+    // succeeds: capturing this JavaScript-free window under xvfb sometimes
+    // fails before it has painted ("Unable to capture screenshot" via CDP, and
+    // Electron's capturePage threw UnknownVizError on CI, 2026-10-25). The
+    // assertions above already pinned what the splash shows.
+    mkdirSync(shots, { recursive: true });
     await expect
       .poll(
         async () => {
-          png = await app.evaluate(async ({ BrowserWindow }, title) => {
-            const w = BrowserWindow.getAllWindows().find((x) => x.getTitle() === title);
-            if (!w) return '';
-            const image = await w.webContents.capturePage();
-            return image.isEmpty() ? '' : image.toPNG().toString('base64');
-          }, 'Starting The System…');
-          return png.length > 0;
+          try {
+            await splash.screenshot({ path: path.join(shots, 'splash.png') });
+            return true;
+          } catch {
+            return false;
+          }
         },
-        { message: 'the splash painted a frame to capture', timeout: 10_000 },
+        { message: 'the splash could be captured', timeout: 15_000 },
       )
       .toBe(true);
-    mkdirSync(shots, { recursive: true });
-    writeFileSync(path.join(shots, 'splash.png'), Buffer.from(png, 'base64'));
     // Release the hand-over once the server holds it; before that the hook
     // does not exist yet.
     await expect
