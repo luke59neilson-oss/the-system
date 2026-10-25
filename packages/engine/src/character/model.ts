@@ -361,8 +361,12 @@ export function grantProfession(
   if (!override && character.profession !== null) {
     throw new CharacterRuleError('Character already has a profession');
   }
-  if (character.profession !== null && character.profession === profession.trim()) {
-    throw new CharacterRuleError(`${character.name} already has the profession [${profession}]`);
+  // Without the override a held profession refuses above; with it, the same
+  // name again resets its level to the class level (MT.7 review round 2).
+  if (character.profession !== null && character.profession === profession.trim() && !override) {
+    throw new CharacterRuleError(
+      `${character.name} already has the profession [${profession.trim()}]`,
+    );
   }
   const unlock = gradeIndexOf(rules, rules.tracks.professionUnlockGrade);
   if (!override && gradeIndexOf(rules, character.grade) < unlock) {
