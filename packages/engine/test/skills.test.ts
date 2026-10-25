@@ -282,11 +282,19 @@ describe('merges', () => {
     characterId: 'jake',
     skills: [archery, stealth],
     name: 'Shadow Shot',
+    offerId: 'm1',
+  };
+  // MT.2: the merge applies when the offer is accepted.
+  const accept: Command = {
+    type: 'skill.answerMerge',
+    characterId: 'jake',
+    offerId: 'm1',
+    accept: true,
   };
   const ready = () => run(together(3), ctx, upgrade(upgrade(base(), archery, 2), stealth, 2));
 
   it('two Uncommon skills logged together 3 times merge one rarity above the higher', () => {
-    const c = ok(ready(), merge);
+    const c = ok(ok(ready(), merge), accept);
     const names = c.state?.characters['jake']?.skills.map((s) => s.name);
     expect(names).toEqual(['Shadow Shot', eye, 'Identify']);
     expect(skill(c, 'Shadow Shot')).toEqual({
@@ -314,7 +322,7 @@ describe('merges', () => {
   });
 
   it('rejects: a second merge in the same grade', () => {
-    let c = ok(ready(), merge);
+    let c = ok(ok(ready(), merge), accept);
     c = upgrade(c, eye, 1); // Common → Uncommon
     c = upgrade(c, 'Identify', 1);
     c = run(
@@ -348,7 +356,7 @@ describe('merges', () => {
   });
 
   it('originals are consumed: their marks do not carry over and their names cannot be reused', () => {
-    const c = ok(ready(), merge);
+    const c = ok(ok(ready(), merge), accept);
     expect(reject(c, mark(archery, 'zz'))).toContain('no skill');
     expect(skill(c, 'Shadow Shot')?.marks).toBe(0);
     // Reusing an original's name would inherit its practice-log pair counts.

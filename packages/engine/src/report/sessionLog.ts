@@ -316,6 +316,29 @@ export function describeEvent(
       );
       break;
     }
+    case 'skill.mergeOffered': {
+      const [a, b] = event.payload.skills;
+      add(
+        'skill',
+        `The GM offered ${who(event.payload.characterId)} a merge of ${line(a)} and ${line(b)} into ${line(event.payload.name)}`,
+      );
+      break;
+    }
+    case 'skill.mergeAnswered': {
+      // MT.2: the offer is gone after the answer, so read it from before.
+      const id = event.payload.characterId;
+      const offer = before?.characters[id]?.mergeOffer ?? null;
+      if (!offer) break;
+      const [a, b] = offer.skills;
+      if (event.payload.accept) {
+        const rarity = skillRarity(after.characters[id], offer.name);
+        const r = rarity ? ` (${rarityName(after, rarity)})` : '';
+        add('skill', `${who(id)} merged ${line(a)} and ${line(b)} into ${line(offer.name)}${r}`);
+      } else {
+        add('skill', `${who(id)} declined merging ${line(a)} and ${line(b)}`);
+      }
+      break;
+    }
     case 'gift.given':
       add(
         'item',

@@ -6,7 +6,7 @@ import {
   type Campaign,
   type Command,
 } from '../src';
-import { kit, rawRules, run, testContext } from './helpers/events';
+import { kit, rawRules, mergeAccepted, run, testContext } from './helpers/events';
 
 // M5.3: the end-of-session marks review (DESIGN §6–7) on default rules.
 
@@ -209,11 +209,7 @@ describe('marksReview (M5.3)', () => {
     expect(jakeOf(c0, 'p1').pairs).toEqual([
       { skills: ['Cut', 'Step'], session: 3, total: 3, needed: 3, rarityOk: true },
     ]);
-    const c = run(
-      [{ type: 'skill.merge', characterId: ID, skills: ['Cut', 'Step'], name: 'Cutstep' }],
-      testContext('m'),
-      c0,
-    );
+    const c = run(mergeAccepted(ID, ['Cut', 'Step'], 'Cutstep'), testContext('m'), c0);
     const jake = jakeOf(c, 'p1');
     expect(jake.lost).toEqual(['Cut', 'Step']);
     expect(jake.used).toEqual([]);

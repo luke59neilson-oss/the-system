@@ -37,6 +37,22 @@ export const LEGACY_BONUSES = {
 } as const;
 export const legacyBonusRules = () => ({ ...DEFAULT_RULES, bonuses: LEGACY_BONUSES }) as unknown;
 
+/**
+ * MT.2: the GM's merge offer and the owner's acceptance, for tests that need
+ * the merge applied (the GM may answer for the player, Q60).
+ */
+export function mergeAccepted(
+  characterId: string,
+  skills: readonly [string, string],
+  name: string,
+  offerId = `offer-${name.replace(/[^A-Za-z0-9]/g, '')}`,
+): Command[] {
+  return [
+    { type: 'skill.merge', characterId, skills, name, offerId },
+    { type: 'skill.answerMerge', characterId, offerId, accept: true },
+  ];
+}
+
 /** Runs commands, failing loudly on any rejection. */
 export function run(
   commands: Command[],

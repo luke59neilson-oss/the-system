@@ -26,13 +26,20 @@ import {
   type SelectionRecord,
   type SkillOption,
 } from '../evolution';
-import { canReadNote } from '../practice';
+import { canReadNote, skillPairCounts } from '../practice';
 import { identifyInRange } from '../entities';
 import { hungerFaded, hungerLevel } from '../trackers';
 import { daysLeft, hiddenQuestNoticed, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
 import { identifyRarity, resolveIdentify } from './identify';
-import { atCeiling, entryForSkill, markRules, marksToUpgrade, type MarkRules } from '../skills';
+import {
+  atCeiling,
+  entryForSkill,
+  markRules,
+  marksToUpgrade,
+  mergeSkills,
+  type MarkRules,
+} from '../skills';
 
 /**
  * Player projection (ROADMAP M1.13): what one player's browser may receive.
@@ -60,7 +67,8 @@ export const CHARACTER_FIELD_VISIBILITY: Readonly<Record<keyof Character, Visibi
   profession: 'party',
   // MQ.6: the professions offered to this character are theirs alone.
   professionOffers: 'owner',
-  mergeOffer: 'owner', // MT.2: the owner answers it; projection still to add (wip)
+  // MT.2: a merge the GM sent waits on its owner's answer; nobody else sees it.
+  mergeOffer: 'owner',
   classLevel: 'party',
   professionLevel: 'party',
   grade: 'party',
@@ -224,6 +232,16 @@ export interface OwnSheet {
   readonly profession: string | null;
   /** Professions the GM offered (MQ.6); locked once `profession` is set. */
   readonly professionOffers: readonly string[];
+  /**
+   * A merge the GM sent, waiting on this player's answer (MT.2, Q62), with
+   * the rarity it would have now (null when it can no longer apply).
+   */
+  readonly mergeOffer: {
+    readonly offerId: string;
+    readonly skills: readonly [string, string];
+    readonly name: string;
+    readonly rarity: string | null;
+  } | null;
   readonly classLevel: number;
   readonly professionLevel: number;
   readonly raceLevel: number;
@@ -553,6 +571,25 @@ export function poolPercent(current: number, max: number): number {
   return Math.min(99, Math.max(1, Math.round((current / max) * 100)));
 }
 
+/** The pending merge offer as its owner sees it (MT.2). */
+function ownMergeOffer(state: CampaignState, c: Character): OwnSheet['mergeOffer'] {
+  const offer = c.mergeOffer ?? null;
+  if (offer === null) return null;
+  const [first, second] = offer.skills;
+  const [a, b] = first < second ? [first, second] : [second, first];
+  const joint =
+    skillPairCounts(state.practice, c.id).find((p) => p.skills[0] === a && p.skills[1] === b)
+      ?.count ?? 0;
+  let rarity: string | null = null;
+  try {
+    const merged = mergeSkills(state.rules, c, first, second, offer.name, joint);
+    rarity = merged.skills.find((s) => s.name === offer.name)?.rarity ?? null;
+  } catch {
+    rarity = null;
+  }
+  return { offerId: offer.offerId, skills: [first, second], name: offer.name, rarity };
+}
+
 /** Effective stats (base + equipped items) of a character, for pool maxima. */
 function effectiveFor(state: CampaignState, c: Character): Record<string, number> {
   const h = hasOwnKey(state.holdings, c.id)
@@ -582,6 +619,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
     className: c.className,
     profession: c.profession,
     professionOffers: [...c.professionOffers],
+    mergeOffer: ownMergeOffer(state, c),
     classLevel: c.classLevel,
     professionLevel: c.professionLevel,
     raceLevel: raceLevel(rules, c),

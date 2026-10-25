@@ -9,7 +9,7 @@ import {
   type Command,
   type CommandContext,
 } from '../src';
-import { kit, rawRules, run, testContext } from './helpers/events';
+import { kit, rawRules, mergeAccepted, run, testContext } from './helpers/events';
 
 /**
  * MR.1 (DESIGN §6, L14): an evolution re-rates every skill it does not
@@ -266,12 +266,7 @@ describe('evolutions re-rate skills (MR.1)', () => {
       );
     }
     c = released(c, { [eye]: 'common' });
-    c = ok(c, {
-      type: 'skill.merge',
-      characterId: 'jake',
-      skills: [archery, 'Basic Stealth'],
-      name: 'Shadow Shot',
-    });
+    for (const m of mergeAccepted('jake', [archery, 'Basic Stealth'], 'Shadow Shot')) c = ok(c, m);
     expect(skillOf(c, 'Shadow Shot')?.rarity).toBe('rare');
     c = ok(c, choose, player('jake'));
     expect(skillOf(c, 'Shadow Shot')?.rarity).toBe('uncommon');

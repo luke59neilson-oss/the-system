@@ -250,6 +250,7 @@ describe('free points', () => {
       'note.edit': 'note.edited',
       'note.delete': 'note.deleted',
       'skill.nickname': 'skill.nicknamed',
+      'skill.answerMerge': 'skill.mergeAnswered',
       'selection.choose': 'selection.chosen',
       'evolution.choose': 'evolution.chosen',
       'profession.choose': 'profession.chosen',

@@ -410,6 +410,22 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     skills: z.tuple([nonBlank, nonBlank]),
     name: nonBlank,
   }),
+  /**
+   * GM sends a merge as an offer (MT.2, Q62); it waits on the player's answer.
+   * A newer offer replaces an older one.
+   */
+  'skill.mergeOffered': z.strictObject({
+    characterId: recordId,
+    offerId: recordId,
+    skills: z.tuple([nonBlank, nonBlank]),
+    name: nonBlank,
+  }),
+  /** The player accepts (the merge applies) or declines (both originals stay) (MT.2). */
+  'skill.mergeAnswered': z.strictObject({
+    characterId: recordId,
+    offerId: recordId,
+    accept: z.boolean(),
+  }),
   /** GM adds a skill to the campaign's skill library (M4.1; GM-only, D90). */
   'skillDef.defined': z.strictObject({ id: recordId, ...skillDefFields }),
   /** GM edits a library skill; omitted fields stay. Characters' granted skills keep their text. */
@@ -807,6 +823,8 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'skill.markAwarded': 1,
   'skill.upgraded': 1,
   'skill.merged': 1,
+  'skill.mergeOffered': 1,
+  'skill.mergeAnswered': 1,
   'skillDef.defined': 1,
   'skillDef.edited': 1,
   'classDef.defined': 1,
@@ -940,6 +958,7 @@ export const PLAYER_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   'note.edited',
   'note.deleted',
   'skill.nicknamed',
+  'skill.mergeAnswered',
   'selection.chosen',
   'evolution.chosen',
   'profession.chosen',

@@ -42,15 +42,17 @@ export interface FreePointBatch {
   readonly locked: boolean;
 }
 
-/** Plain, serializable, immutable character state. */
 /** A merge waiting on the player's answer (MT.2). */
 export interface MergeOffer {
   /** Id of the offer event; the answer names it. */
   readonly offerId: string;
   readonly skills: readonly [string, string];
+  /** The two skills' rarities when offered; a change makes the offer stale. */
+  readonly rarities: readonly [string, string];
   readonly name: string;
 }
 
+/** Plain, serializable, immutable character state. */
 export interface Character {
   readonly schemaVersion: number;
   readonly id: string;

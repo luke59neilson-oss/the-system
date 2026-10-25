@@ -40,6 +40,8 @@ import {
   syncCharacterSkills,
   useLibraryText,
   mergeSkills,
+  offerMerge,
+  answerMerge,
   setNickname,
   setUnique,
   upgradeSkill,
@@ -235,6 +237,20 @@ function characterOf(state: CampaignState, event: DomainEvent, id: string): Char
     ? state.characters[id]
     : undefined;
   return found ?? fail(event, `unknown character "${id}"`);
+}
+
+/** Times two skills were logged working together (the merge alert's count). */
+function jointUses(
+  state: CampaignState,
+  characterId: string,
+  first: string,
+  second: string,
+): number {
+  const [a, b] = first < second ? [first, second] : [second, first];
+  return (
+    skillPairCounts(state.practice, characterId).find((p) => p.skills[0] === a && p.skills[1] === b)
+      ?.count ?? 0
+  );
 }
 
 function withCharacter(state: CampaignState, character: Character): CampaignState {
@@ -1665,17 +1681,35 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       );
     }
     case 'skill.merged': {
+      // Stored GM-applied merges (before MT.2) replay unchanged.
       const { characterId, skills, name } = event.payload;
       const [first, second] = skills;
       const character = characterOf(state, event, characterId);
-      const [a, b] = first < second ? [first, second] : [second, first];
-      const joint =
-        skillPairCounts(state.practice, characterId).find(
-          (p) => p.skills[0] === a && p.skills[1] === b,
-        )?.count ?? 0;
+      const joint = jointUses(state, characterId, first, second);
       return withCharacter(
         state,
         rule(event, () => mergeSkills(state.rules, character, first, second, name, joint)),
+      );
+    }
+    case 'skill.mergeOffered': {
+      const { characterId, offerId, skills, name } = event.payload;
+      const [first, second] = skills;
+      const character = characterOf(state, event, characterId);
+      const joint = jointUses(state, characterId, first, second);
+      return withCharacter(
+        state,
+        rule(event, () => offerMerge(state.rules, character, first, second, name, joint, offerId)),
+      );
+    }
+    case 'skill.mergeAnswered': {
+      const { characterId, offerId, accept } = event.payload;
+      const character = characterOf(state, event, characterId);
+      const offer = character.mergeOffer ?? null;
+      const joint =
+        offer === null ? 0 : jointUses(state, characterId, offer.skills[0], offer.skills[1]);
+      return withCharacter(
+        state,
+        rule(event, () => answerMerge(state.rules, character, offerId, accept, joint)),
       );
     }
     case 'selection.optionWithdrawn': {

@@ -937,6 +937,8 @@ describe('property: replay equals incremental state', () => {
       'profession.chosen',
       'profession.offerWithdrawn',
       'skill.merged',
+      'skill.mergeOffered',
+      'skill.mergeAnswered',
       'selection.offered',
       'selection.chosen',
       'selection.optionWithdrawn',

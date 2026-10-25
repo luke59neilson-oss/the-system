@@ -527,12 +527,16 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
           const top = Math.max(rarityIdx(a.rarity), rarityIdx(b.rarity));
           if (rarityIdx(a.rarity) < min || rarityIdx(b.rarity) < min) continue;
           if (top + rules.skills.merge.rarityStepsAboveHigher > ceiling) continue;
+          const offerId = `fusion-${++uniq}`;
           exec({
             type: 'skill.merge',
             characterId: id,
             skills: [a.name, b.name],
-            name: `Fusion ${++uniq}`,
+            name: `Fusion ${uniq}`,
+            offerId,
           });
+          // MT.2: the player answers; a decline keeps both (and the merge unused).
+          exec({ type: 'skill.answerMerge', characterId: id, offerId, accept: true }, id);
           tally.merges++;
           break;
         }
@@ -910,6 +914,7 @@ describe('campaign simulation (ROADMAP M1.14)', () => {
       'skill.awardMark',
       'skill.upgrade',
       'skill.merge',
+      'skill.answerMerge',
       'gift.give',
       'stability.applyAction',
       'clock.tick',

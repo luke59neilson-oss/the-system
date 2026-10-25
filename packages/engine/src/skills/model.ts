@@ -304,7 +304,16 @@ export function offerMerge(
   offerId: string,
 ): Character {
   mergeSkills(rules, character, first, second, name, jointUses);
-  return { ...character, mergeOffer: { offerId, skills: [first, second], name: name.trim() } };
+  const rarityOf = (n: string) => character.skills.find((s) => s.name === n)?.rarity ?? '';
+  return {
+    ...character,
+    mergeOffer: {
+      offerId,
+      skills: [first, second],
+      rarities: [rarityOf(first), rarityOf(second)],
+      name: name.trim(),
+    },
+  };
 }
 
 /**
@@ -326,5 +335,11 @@ export function answerMerge(
   const cleared: Character = { ...character, mergeOffer: null };
   if (!accept) return cleared;
   const [first, second] = offer.skills;
+  const rarityOf = (n: string) => character.skills.find((s) => s.name === n)?.rarity;
+  if (rarityOf(first) !== offer.rarities[0] || rarityOf(second) !== offer.rarities[1]) {
+    throw new CharacterRuleError(
+      'That merge offer is out of date: one of its skills has changed. Ask the GM to send it again',
+    );
+  }
   return mergeSkills(rules, cleared, first, second, offer.name, jointUses);
 }
