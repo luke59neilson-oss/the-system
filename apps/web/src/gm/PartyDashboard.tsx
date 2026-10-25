@@ -3,6 +3,7 @@ import {
   characterEffectiveStats,
   characterFlags,
   formatStat,
+  applyProgressionOverride,
   poolMax,
   progressionOverrideSummary,
   raceLevel,
@@ -472,6 +473,16 @@ function ProgressionOverride({
   const [reviewing, setReviewing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  // When the live values change (an award, an undo, another GM window), the
+  // fields reload and any open warning closes, so a stale draft is never
+  // applied over newer values.
+  const live = JSON.stringify([c.grade, c.classLevel, c.professionLevel, c.xp, c.profession]);
+  const [seen, setSeen] = useState(live);
+  if (seen !== live) {
+    setSeen(live);
+    setDraft(opened());
+    setReviewing(false);
+  }
   const hasProfession = c.profession !== null;
   const numbers = {
     classLevel: draft.classLevel.trim(),
@@ -479,7 +490,7 @@ function ProgressionOverride({
     classXp: draft.classXp.trim(),
     professionXp: hasProfession ? draft.professionXp.trim() : '0',
   };
-  const bad = Object.values(numbers).some((v) => !/^\d{1,9}$/.test(v));
+  const bad = Object.values(numbers).some((v) => !/^\d{1,9}$/.test(v) || Number(v) > 100_000_000);
   const target = {
     grade: draft.grade,
     classLevel: Number(numbers.classLevel),
@@ -487,6 +498,15 @@ function ProgressionOverride({
     xp: { class: Number(numbers.classXp), profession: Number(numbers.professionXp) },
   };
   const summary = bad ? null : progressionOverrideSummary(rules, c, target);
+  // The engine's own check, so a refusal shows in the warning before Apply.
+  let refusal: string | null = null;
+  if (!bad) {
+    try {
+      applyProgressionOverride(rules, c, target);
+    } catch (error) {
+      refusal = error instanceof Error ? error.message : String(error);
+    }
+  }
   const unchanged = summary !== null && summary.changes.length === 0;
   const edit = (key: keyof ReturnType<typeof opened>, value: string) => {
     setReviewing(false);
@@ -551,7 +571,7 @@ function ProgressionOverride({
       {!hasProfession && <p className="muted small">No profession yet: those stay 0.</p>}
       {bad && (
         <p className="err" role="alert">
-          Levels and XP must be whole numbers of 0 or more.
+          Levels and XP must be whole numbers from 0 to 100,000,000.
         </p>
       )}
       {!reviewing ? (
@@ -589,7 +609,12 @@ function ProgressionOverride({
                 </ul>
               </>
             )}
-            <button type="button" disabled={busy} onClick={() => void apply()}>
+            {refusal && (
+              <p className="err" role="alert">
+                Can’t apply: {refusal}
+              </p>
+            )}
+            <button type="button" disabled={busy || refusal !== null} onClick={() => void apply()}>
               {busy ? 'Applying…' : 'Apply override'}
             </button>
             <button

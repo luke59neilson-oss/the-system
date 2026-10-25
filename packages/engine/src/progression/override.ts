@@ -6,7 +6,7 @@ import {
   trackCap,
   type Character,
 } from '../character';
-import { selectionSlots } from '../evolution/model';
+import { evolutionTarget, selectionSlots } from '../evolution/model';
 import type { GradeRules, RulesConfig } from '../rules';
 
 /**
@@ -104,15 +104,24 @@ export function applyProgressionOverride(
     target.xp.class === character.xp.class &&
     target.xp.profession === character.xp.profession;
   if (same) throw new CharacterRuleError('Nothing to change: the values are the current ones');
-  return {
+  const next: Character = {
     ...character,
     grade: target.grade,
     classLevel: target.classLevel,
     professionLevel: target.professionLevel,
     xp: { class: target.xp.class, profession: target.xp.profession },
-    // A released evolution aims at the next grade from the old one.
-    evolution: target.grade === character.grade ? character.evolution : null,
   };
+  return keepsEvolution(rules, character, next) ? next : { ...next, evolution: null };
+}
+
+/**
+ * A released evolution stays only while it still applies: same grade, and the
+ * character still at the gate for the grade it aims at.
+ */
+function keepsEvolution(rules: RulesConfig, was: Character, next: Character): boolean {
+  if (was.evolution === null) return true;
+  if (next.grade !== was.grade) return false;
+  return evolutionTarget(rules, next)?.id === was.evolution.toGrade;
 }
 
 /**
@@ -142,11 +151,6 @@ export function progressionOverrideSummary(
         `Going down a grade takes nothing back: evolution bonuses, re-rated skills and skills above the ${target.grade}-grade ceiling stay`,
       );
     }
-    if (character.evolution !== null) {
-      skips.push(
-        `The released evolution to ${character.evolution.toGrade}-grade is withdrawn; release it again if it still applies`,
-      );
-    }
   }
 
   const fromClass = character.classLevel;
@@ -169,7 +173,7 @@ export function progressionOverrideSummary(
       }
     } else {
       skips.push(
-        'Lowering a level takes nothing back: stats, free points and skills from those levels stay',
+        'Lowering a level takes nothing back: stats, free points and skills from those levels stay, and earning those levels again grants their class spread again',
       );
     }
   }
@@ -194,6 +198,20 @@ export function progressionOverrideSummary(
     }
   }
 
+  if (character.evolution !== null && known) {
+    const next = {
+      ...character,
+      grade: target.grade,
+      classLevel: toClass,
+      professionLevel: Math.max(0, Math.trunc(target.professionLevel) || 0),
+    };
+    if (!keepsEvolution(rules, character, next)) {
+      const offers = character.evolution.professions.length;
+      skips.push(
+        `The released evolution to ${character.evolution.toGrade}-grade is withdrawn${offers > 0 ? ', with its profession offers' : ''}; release it again if it still applies`,
+      );
+    }
+  }
   if (target.xp.class !== character.xp.class) {
     changes.push(`Class XP ${character.xp.class} → ${target.xp.class}`);
   }

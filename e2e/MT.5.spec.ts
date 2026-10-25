@@ -85,8 +85,8 @@ test('the GM sets level, XP and grade after a warning, and can undo it', async (
   // A value the rules refuse comes back as a readable error.
   await box.getByLabel('Class level').fill('15');
   await review.click();
-  await warning.getByRole('button', { name: 'Apply override' }).click();
-  await expect(box.getByRole('alert')).toContainText('above the F-grade top of 14');
+  await expect(warning.getByRole('alert')).toContainText('above the F-grade top of 14');
+  await expect(warning.getByRole('button', { name: 'Apply override' })).toBeDisabled();
 
   await box.getByLabel('Class level').fill('12');
   await review.click();
@@ -110,6 +110,11 @@ test('the GM sets level, XP and grade after a warning, and can undo it', async (
   await expect(row).toContainText('(undone)');
   await expect(card.getByTestId(`class-level-${jakeId}`)).toHaveText('0');
   await expect(player.getByTestId('race')).toHaveText('[Human (G) – lvl 0]');
+  // The open editor reloads the live values, so the undone override is not
+  // one click from coming back.
+  await expect(box.getByLabel('Grade')).toHaveValue('G');
+  await expect(box.getByLabel('Class level')).toHaveValue('0');
+  await expect(review).toBeDisabled();
 
   expect(errors).toEqual([]);
   expect(playerErrors).toEqual([]);

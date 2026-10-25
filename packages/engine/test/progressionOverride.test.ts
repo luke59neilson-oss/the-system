@@ -153,6 +153,33 @@ describe('GM override for level, XP and grade (MT.5)', () => {
     expect(jake(c).grade).toBe('F');
   });
 
+  it('withdraws a released evolution when lowered levels leave the gate', () => {
+    let c = ok(base(), {
+      type: 'xp.award',
+      track: 'class',
+      amount: 400,
+      participants: [{ characterId: 'jake' }],
+    });
+    c = ok(c, {
+      type: 'evolution.release',
+      characterId: 'jake',
+      options: [{ className: 'Hunter' }],
+      rerate: {},
+      rerateApproved: true,
+    });
+    const target = {
+      grade: 'G',
+      classLevel: 2,
+      professionLevel: 0,
+      xp: { class: 0, profession: 0 },
+    };
+    expect(progressionOverrideSummary(c.state!.rules, jake(c), target).skips.join('\n')).toMatch(
+      /released evolution to F-grade is withdrawn/,
+    );
+    c = ok(c, set({ grade: 'G', classLevel: 2 }));
+    expect(jake(c).evolution).toBeNull();
+  });
+
   it('a level lowered and earned again does not grant a second free-point batch', () => {
     let c = ok(base(), {
       type: 'xp.award',
@@ -204,7 +231,7 @@ describe('GM override for level, XP and grade (MT.5)', () => {
       },
     );
     expect(down.skips).toEqual([
-      'Lowering a level takes nothing back: stats, free points and skills from those levels stay',
+      'Lowering a level takes nothing back: stats, free points and skills from those levels stay, and earning those levels again grants their class spread again',
     ]);
   });
 
