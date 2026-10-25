@@ -549,3 +549,11 @@ DESIGN/ROADMAP; do not re-apply them.
     `docs/DONE.md` on GitHub; the next hourly run picks up from there.
     Answer (Luke, 2026-10-25, in chat): new work added (MT, MC); DONE.md
     removed so the runs resume. (applied, L19, L20)
+
+75. **Narrower round-2 reviews? (efficiency, Tier 2; 2026-10-25 auditor).**
+    A round-2 reviewer would get the round-1 findings and the fix diff, and
+    re-run `npm run check` plus the specs for the touched files instead of
+    the whole suite (est. 2–4 minutes and 30–40% of reviewer tokens per
+    round 2; risk: a regression outside the fixed files waits for CI).
+    Default: no change (round 2 reviews as before).
+    Answer:

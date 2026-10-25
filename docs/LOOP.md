@@ -126,7 +126,10 @@ them whole costs about 30k tokens per run for history you do not need):
      hour makes the next run exit and wastes a whole hour.
    - Ending before minute 48 needs one of these reasons, written in the
      PROGRESS entry: `docs/DONE.md` written, a Blocker, or every remaining
-     item is blocked or deferred.
+     item is blocked or deferred. "Nothing small fits" is not a reason (D211,
+     in trial): continuing the `wip/<item>` you are on until 44 is always
+     allowed; commit the next failing test and keep going, and update the
+     hand-off note at 44.
    - **Gate (D170):** finishing an item, its review or the full e2e run is
      never the end of the build phase. If the clock is under 44 and an
      unblocked item remains, start it now (its first commit goes to

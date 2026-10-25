@@ -20,6 +20,7 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
+| D211 "nothing small fits" is not a reason to stop: keep building the current `wip/<item>` until 44 (§5.5 wording) | 2026-10-25 18:48 | end minute ↑ (42.8 → 47), items/run ↑ | 42.8, 1.7 | Highs 3/10, round-2 share 7/10, red/day 4 | 2026-10-26 00:00 + 6 runs |
 | D206 blocking reviews never idle: commit, open `wip/<next>`, send the review call together with independent work (full e2e, next item's tests); no blocking review that cannot return by 50 | 2026-10-25 00:52 | items/run ↑, end minute ↑ | 1.8, 44.2 | Highs 3/10, round-2 share 7/10, red/day 3 | 2026-10-25 06:00 + 6 runs |
 
 ## Kept
@@ -54,6 +55,14 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   and D132's CI red/day guard too (7 → 10), so §9.2 reverts both.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-10-25 18:08 auditor (sonnet): Tier 1 applied: §5.5 "nothing small
+  fits" is not a reason to stop (D211). Tier 2 (Q75): give a round-2
+  reviewer the round-1 findings and the fix diff, and have it re-run
+  `check` plus the touched specs only, not the whole suite (est. 2–4 min and
+  30–40% of reviewer tokens per round 2). Default: no change. D206 not
+  judged (2 runs since it started; needs 6). The auditor flags that D206's
+  full e2e beside a reviewer on 2 CPUs may raise red/day; watch at its judgement.
 
 - 2026-10-25 00:08 auditor (sonnet): no Tier 2 proposals. Applied its
   Tier 1 "never idle on a blocking review" ordering (D206). Its other Tier 1

@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-25): M0–M11, MS, MQ, MR and QF done; new milestones MT (Luke's answers, batch 3) and MC (co-DM, DESIGN §11) added; `docs/DONE.md` removed.
-**Next item:** MT.2 Players accept or decline merges (resume `wip/MT.2`)
+**Next item:** MT.3 No hunger tracker (resume `wip/MT.3`)
 **Blockers:** none
 
 ## Run log
@@ -1055,3 +1055,11 @@ next item, blockers. -->
 - Next item: MT.2 (resume `wip/MT.2`).
 - Blockers: none.
 
+### Run 35fed412 · 2026-10-25 18:08–18:48 UTC (end minute ~41: MT.3 opened on `wip/MT.3` at 39 with its acceptance plan; the efficiency close-out took the minutes to 41; the rest of MT.3 (schema bump, goldens, UI removal across engine, content and web) does not split into a safe slice under 3 minutes, so the hand-off is early; no other §5.5 reason)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` had an unrelated older history; reset to origin/main, old tip kept on local branch `old-local-main`, also contained in `wip/M6.A`). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer: sonnet worked (worktree; Agent calls block, so each review ran beside the full e2e or alongside work). CI on main at start: latest completed (3ecef770) green. No new answers in ANSWERS.md.
+- Efficiency check (hour 18): scorecard row appended (end minute 42.8, items/run 1.7, round-2 7/10, Highs 3, CI 16/day, red 4). D206 not judged (2 runs old). Auditor (sonnet): Tier 1 applied, LOOP §5.5 "nothing small fits" is not a reason to stop (D211, in trial). Tier 2 narrower round-2 reviews → Q75 (default no change).
+- MT.2 Players accept or decline merges **checked** (D210): `skill.merge` records an offer (`skill.mergeOffered`, optional text given on accept); the owner answers with `skill.answerMerge`; an accept is re-checked and refused if a skill changed since the offer; the GM may answer for the player. Player "Skill Merge" card (top of the column, Accept disabled when stale); GM builder shows "Waiting on …" and the answer from state (`lastMergeAnswer`, GM-only). Old `skill.merged` logs replay unchanged; no state schema bump; new golden `merge-offers`. Sonnet round 1: 0 H / 3 M / 4 L → fixed; round 2: 0 H / 0 M / 4 L. Pushed to main (ee78a366).
+- Tests: unit 1,223; e2e 94 (full `--project=e2e` green on 13d242ac; MT.2, M5.4, M5.A re-run after the round-1 fixes). Latency project and desktop smoke not run (no server change). Engine coverage not re-measured (last 97.53%).
+- Open `wip/*` branches: `wip/MT.3` (base ee78a366, head 067a8ee3). Where I stopped: only `packages/engine/test/noHunger.test.ts`, whose header lists the plan and touch list (state v33 without `hunger`, hunger events reduce as no-ops, commands `hunger.configure`/`hunger.set` removed, rules upcaster strips `rules.hunger`, content `hunger` ignored with a warning, projection and web UI removed, all golden states re-recorded under the bump, M7.4 spec trimmed).
+- Next item: MT.3 (resume `wip/MT.3`).
+- Blockers: none.
