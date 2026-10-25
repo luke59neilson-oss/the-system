@@ -688,7 +688,7 @@ work: Q44–Q48 and Q52.
   simulated power loss on the event log.
 - [x] **M11.3 Performance.** Player sheet interactive < 2 s on localhost
   (Playwright timing); 50,000-event log loads < 3 s.
-- [ ] **M11.4 Guides.** `docs/GM-GUIDE.md`, `docs/PLAYER-QUICKSTART.md` (one
+- [x] **M11.4 Guides.** `docs/GM-GUIDE.md`, `docs/PLAYER-QUICKSTART.md` (one
   page), `docs/TROUBLESHOOTING.md` (firewall, IP, ports, unsigned-app
   warnings on Windows and macOS).
 - [ ] **M11.5 Final review.** Whole-repo review by a different model; every

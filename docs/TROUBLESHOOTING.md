@@ -7,8 +7,7 @@ operating system.
 
 ## Players cannot open the join address
 
-- The server listens on port *30333* on every network interface
-  (`apps/server/src/config.ts`: `DEFAULT_PORT`, `DEFAULT_HOST 0.0.0.0`).
+- The server listens on port *30333* on every network interface.
 - Check the address first: type it exactly as the **Players join** panel
   shows it, with `http://` and the port (for example
   `http://192.168.1.20:30333`), or scan the QR code. If the panel lists
@@ -59,7 +58,7 @@ the port the panel shows).
 ## The address shows the wrong IP
 
 - The join screen lists every IPv4 address of the GM laptop that is not
-  internal, in adapter order (`apps/server/src/lan.ts`). With a VPN,
+  internal, in adapter order. With a VPN,
   Ethernet and wifi all on, several addresses appear; players need the one
   on the wifi they share (usually `192.168.x.x` or `10.x.x.x`). Turning the
   VPN off removes its address.
@@ -70,7 +69,7 @@ the port the panel shows).
 
 - The desktop app tries port 30333 and, if another program holds it (or
   Windows reserved it, e.g. Hyper-V port exclusions), the next 19 ports in
-  turn (`apps/desktop/src/launch.ts`, MS.7) and says so in a message: "Port
+  turn and says so in a message: "Port
   30333 is used by another program, so The System is using port … this
   time." The join screen always shows
   the port it got, so use the address it shows rather than a saved one.
@@ -80,7 +79,7 @@ the port the panel shows).
 
 ## "Unknown developer" or "unrecognized app" warnings
 
-The app is not code-signed (no paid services; ROADMAP MS.6, M10), so both systems warn
+The app is not code-signed, so both systems warn
 the first time it runs.
 
 - *Windows* ("Windows protected your PC", SmartScreen): choose **More

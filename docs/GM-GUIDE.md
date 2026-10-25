@@ -6,10 +6,10 @@ project on GitHub, https://github.com/luke59neilson-oss/the-system (folder `docs
 use its **Download raw file** button to save it.
 
 The rules themselves are in
-[`DESIGN.md`](DESIGN.md); every number there is a default you can change in
-**Rules settings**. Print [`PLAYER-QUICKSTART.md`](PLAYER-QUICKSTART.md) (one page) for each
+[`DESIGN.md`](https://github.com/luke59neilson-oss/the-system/blob/main/docs/DESIGN.md); every number there is a default you can change in
+**Rules settings**. Print [`PLAYER-QUICKSTART.md`](https://github.com/luke59neilson-oss/the-system/blob/main/docs/PLAYER-QUICKSTART.md) (one page) for each
 player;
-when something will not connect, see [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md).
+when something will not connect, see [`TROUBLESHOOTING.md`](https://github.com/luke59neilson-oss/the-system/blob/main/docs/TROUBLESHOOTING.md).
 
 ## Install and start
 
@@ -126,7 +126,7 @@ first.
 2. **Copy for Claude** (or **Copy log for Claude** mid-session) copies the
    report. Paste it into Claude and ask for skill menus, evolutions, items,
    titles or bestiary entries in The System's content format
-   ([`CONTENT-FORMAT.md`](CONTENT-FORMAT.md) on GitHub; give Claude the link
+   ([`CONTENT-FORMAT.md`](https://github.com/luke59neilson-oss/the-system/blob/main/docs/CONTENT-FORMAT.md) on GitHub; give Claude the link
    or paste the file).
 3. Save Claude's reply as a `.json` file and open it in **Import content**.
    The preview lists each entry; tick what to apply. A menu or evolution for
