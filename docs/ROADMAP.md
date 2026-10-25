@@ -746,7 +746,7 @@ behaviour until an answer lands.
   banner on players' screens until the GM removes it; in-game-day scheduling
   stays optional (Q60). *Accept:* engine and projection tests; e2e for both
   modes and removal.
-- [ ] **MT.7 The GM can override any rule.** List every refusal the app
+- [x] **MT.7 The GM can override any rule.** List every refusal the app
   applies to a GM action in `docs/GM-OVERRIDES.md`; for each, the GM already
   has a way through, or add one (a logged, undoable event), except the two
   guarantees (no GM-only data to players; the log is never rewritten), each
