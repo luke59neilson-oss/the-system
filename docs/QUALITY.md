@@ -290,5 +290,9 @@ Whole-repo review by a model other than the builder's, at the head of
 `wip/M11.5` (main plus M11.4). Lenses: all four above at once, plus the
 install and first-session path a GM follows from `docs/GM-GUIDE.md`.
 Findings already in the Backlog are not repeated; M11.5 triages the Backlog
-itself: each Low is fixed, or kept with a one-line reason in `docs/DONE.md`
-under "Known gaps".
+itself: each Low is fixed, or kept and summarised by area in `docs/DONE.md`
+under "Known gaps" (the Backlog lines stay as the detail).
+
+2026-10-25 · fable at 480d613a: 0 High, 0 Medium, 7 Low (5 Low, 2 guesses).
+Fixed: the hub logs an engine error inside a command. Kept, in `DONE.md`:
+the rest. The Backlog was kept whole (no Low affects play at the table).

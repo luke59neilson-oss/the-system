@@ -237,7 +237,9 @@ export class LiveHub {
         newId: this.options.newId,
         random: this.options.random ?? cryptoRandom,
       });
-    } catch {
+    } catch (error) {
+      // An engine bug, not a refusal (M11.5): leave a trace for the GM's log.
+      console.error(`The System: ${command.type} failed:`, error);
       return fail('The command could not be run');
     }
     if (!result.ok) return fail(result.error);

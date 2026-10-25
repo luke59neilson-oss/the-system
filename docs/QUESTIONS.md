@@ -519,3 +519,10 @@ DESIGN/ROADMAP; do not re-apply them.
     public (L10) macOS runners cost nothing, so say "add macOS" if any player
     or co-GM uses a Mac and it goes back in (unsigned dmg).
     Answer:
+
+74. **Build complete (M11.5).** The final review came back clean, so
+    `docs/DONE.md` is written and the hourly build runs now stop at once.
+    Default: they stay stopped. To start them again (to apply answers in
+    ANSWERS.md, add M9.4 GitHub sync, or new roadmap items), delete
+    `docs/DONE.md` on GitHub; the next hourly run picks up from there.
+    Answer:
