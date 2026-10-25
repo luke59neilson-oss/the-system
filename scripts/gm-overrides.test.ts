@@ -1,0 +1,35 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { ROOT, listRefusals, refusalKey } from './gm-refusals.mjs';
+
+// MT.7 (DESIGN §7, Q60): docs/GM-OVERRIDES.md lists every refusal the engine
+// can give, with the GM's way through. A new refusal needs a line there.
+
+const doc = readFileSync(path.join(ROOT, 'docs/GM-OVERRIDES.md'), 'utf8');
+const cell = (key: string) => '`' + key.replace(/\|/g, '\\|').replace(/`/g, "'") + '`';
+
+describe('GM overrides list (MT.7)', () => {
+  it('finds the engine refusals', () => {
+    const all = listRefusals();
+    expect(all.length).toBeGreaterThan(250);
+    expect(all.map((r) => r.key)).toContain('Professions unlock at …-grade');
+  });
+
+  it('keys hide interpolated values', () => {
+    expect(refusalKey('[${a.b}] needs ${n} marks\n   (has ${f({ x: 1 })})')).toBe(
+      '[…] needs … marks (has …)',
+    );
+  });
+
+  it('lists every refusal with a category and a way through', () => {
+    const missing = [...new Set(listRefusals().map((r) => r.key))].filter(
+      (key) => !doc.includes(`| ${cell(key)} |`),
+    );
+    expect(missing).toEqual([]);
+    expect(doc).not.toContain('UNCLASSIFIED');
+    for (const line of doc.split('\n').filter((l) => l.startsWith('| `'))) {
+      expect(line.split(' | ').at(-1)?.replace(/\|$/, '').trim(), line).not.toBe('');
+    }
+  });
+});
