@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-25): M0–M11, MS, MQ, MR and QF done; new milestones MT (Luke's answers, batch 3) and MC (co-DM, DESIGN §11) added; `docs/DONE.md` removed.
-**Next item:** resume `wip/MT.6` (fix review Medium 3, then round-2 review), then MT.7
+**Next item:** resume `wip/MT.6` (fix round-2 Medium: banner arrival after reconnect), then verify sweep B Mediums (see run ab633184), then MT.7
 **Blockers:** none
 
 ## Run log
@@ -1082,3 +1082,12 @@ next item, blockers. -->
 - Next item: resume wip/MT.6, then MT.7.
 - Blockers: none.
 
+
+### Run ab633184 · 2026-10-25 21:08–22:05 UTC (end minute ~57, over the 52 hard stop)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` again had an unrelated history; reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. CI on main at start (ddf36547) green. No new answers. Sweep hour (21): sweep B launched.
+- **Overran the hard stop:** Agent calls block in this environment, and the fable Tests sweep reviewer took 46 min, holding the turn until 22:03. Next sweeps: give the Tests lens a narrower scope or launch it only with work that can absorb a 45-minute wait; never launch a sweep later than minute ~5.
+- MT.6: round-1 M3 fixed on `wip/MT.6` d2a09b57 (header "N banners up" chip with Remove all; banner stack scrolls past 40vh on phones; `display` in the command zod shape; e2e + `gm-banners-chip-1366x768.png`). Round 2 (sonnet): 0 H / 1 M / 4 L. **Not checked.** Next step: fix M1 — `BroadcastBanners.tsx` stamps any message first seen after mount with `Date.now()`, so a timed banner seen after a reconnect/sleep shows its full time from reconnect while the GM list has already expired it; bound the start by the send time when the gap is large (and the Lows: clock-skew comment, GM-on-other-device clock, scheduled broadcasts never banners hint, unit test for `activeBanners`). Max 2 rounds reached: verify the fix yourself, log it, check the box.
+- Sweep B (scope ee1a405..ff8a1be1), findings **not yet verified** (next run verifies before any QF item): Tests·fable 1 M (`checkRaceSkillsKept` evolution/model.ts:496: a transform with `skill: 'Identify'` is untested; mutation survives) + 5 L; UX·sonnet 2 M (merge offer arrives with no player notification/DING, MergeOfferPanel.tsx:25; ProgressionOverride Review/Apply drop keyboard focus, PartyDashboard.tsx:586-631) + 6 L; Boundaries·haiku 0 M, 2 L (change log shows unshared journal note rows "note written"; no electronFuses). Sweep log row and Backlog not yet written: next run records them in QUALITY.md and advances the rotation to C.
+- Tests: unit 1,239 green (`npm run check` on wip/MT.6); full e2e `--project=e2e --workers=1` 98/98 green on d2a09b57.
+- Open `wip/*`: wip/MT.6 (resume).
+- Blockers: none.
