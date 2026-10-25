@@ -166,8 +166,9 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
                   <legend>Any two skills (GM override)</legend>
                   <p className="warn" role="note" data-testid="merge-override-skips">
                     Skips the merge rules: both at least {rarityName(rules.skills.merge.minRarity)},
-                    logged together {rules.skills.merge.requiredJointUses} times, and {perGrade} per
-                    character per grade. Logged; undo it in the change log.
+                    logged together {rules.skills.merge.requiredJointUses} times, {perGrade} per
+                    character per grade, and the grade&rsquo;s rarity ceiling. Logged; undo it in
+                    the change log.
                   </p>
                   {[0, 1].map((i) => (
                     <label key={i}>
