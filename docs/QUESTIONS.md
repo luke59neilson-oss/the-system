@@ -221,7 +221,9 @@ DESIGN/ROADMAP; do not re-apply them.
     can still load it).
     Default: as described (D95). Alternatives: a portrait at the top of the
     status window; bundle the portraits folder into backups and exports.
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): bundle portraits into backups and
+    exports, and show the character's portrait at the top of the status
+    window. (applied, L19; MT.10)
 
 41. **Pools after a maximum falls and rises again.** DESIGN §2 read
     literally: a falling maximum clamps the pool, and a pool at its maximum
@@ -347,7 +349,8 @@ DESIGN/ROADMAP; do not re-apply them.
     open at once; a player-logged practice entry is at most 500 characters
     and 5,000 per character. The GM has no limits. Default: these numbers (they live in
     the rules config). Alternative: tell me other numbers.
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): not asked; the default numbers stand.
+    (L19)
 
 54. **No portable Windows build.** Your first download stopped halfway and the
     portable `.exe` started anyway and hung (QF.11). The installer checks
@@ -355,7 +358,8 @@ DESIGN/ROADMAP; do not re-apply them.
     gets only the installer; the release notes list each file's size and
     SHA-256 so a short download is easy to spot. Alternative: bring back a
     portable build with its own integrity check (more to build and test).
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): not asked; installer only stands (Luke
+    uses Windows only). (L19)
 
 55. **What a player can ask for in a trade.** So that a proposal never reveals
     what another player holds (QF.9), a player may ask only for items they have
@@ -365,7 +369,8 @@ DESIGN/ROADMAP; do not re-apply them.
     only for currency ("ask in person and let them offer"). Default (D143):
     this rule. Alternative: let players ask for any item in the library by
     name, which would tell them which items exist.
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): items the asker has seen (default
+    kept). (applied, L19)
 
 56. **Does Identify drop at evolution too?** MR.1 re-rates every skill one
     rarity down by default, and that includes the race skill Identify, so a
@@ -374,7 +379,7 @@ DESIGN/ROADMAP; do not re-apply them.
     can keep it in the release. Default (D149): Identify drops like any other
     skill. Alternative: race skills (or Identify alone) keep their rarity by
     default.
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): see Q64. (applied, L19; MT.1)
 
 57. **Faster reviews (efficiency check, Tier 2).** (a) The builder pastes its
     own `npm run check` and e2e results with the commit SHA into the review
@@ -382,13 +387,13 @@ DESIGN/ROADMAP; do not re-apply them.
     independent items (no engine, save format or golden changes, no `Mx.A`)
     share one reviewer. Each saves a few minutes of a blocking review per run.
     Default: no change (reviewers re-run everything, one item each).
-    Answer:
+    Not put to Luke (the build was complete); default kept: no change. (L19)
 
 58. **Efficiency guard on Highs.** Trials are reverted when the number of
     High review findings rises, but recent Highs all came from sweep-found
     QF items, so two harmless changes (D119, D132) were reverted on noise
     (D150). Count only non-QF items for that guard? Default: no change.
-    Answer:
+    Not put to Luke (the build was complete); default kept: no change. (L19)
 
 59. **GM sheet edits: levels, XP and grade.** The M4.5 sheet editor edits
     name, base stats, current pools, skill nicknames and the Unique tag, and
@@ -397,7 +402,7 @@ DESIGN/ROADMAP; do not re-apply them.
     spread, free points, selections and evolutions, so they change only
     through XP awards and evolutions (and undo). Should the GM have a raw
     "set level" override anyway? Default: no (D157).
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): add the override. (applied, L19; MT.5)
 
 60. **When a scheduled System broadcast goes out.** M4.7 schedules a
     broadcast for a later **in-game day**: it is sent the moment the GM
@@ -405,7 +410,10 @@ DESIGN/ROADMAP; do not re-apply them.
     restarts and undo, and needs no clock. It does not schedule by real
     time ("in 20 minutes") or for "the start of the next session". Want
     either of those too? Default: in-game day only (D159).
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): the GM can add, change, send, override
+    and overrule anything, whenever; broadcasts go out when the GM sends them,
+    and can show for a set time or stay as a banner until removed. (applied,
+    L19; MT.6, MT.7)
 
 61. **A merge offered at an evolution.** M5.2 lets the GM offer a ready
     merge as part of an evolution option: the two skills become one new
@@ -415,7 +423,8 @@ DESIGN/ROADMAP; do not re-apply them.
     re-rated with the rest at the *next* evolution, not this one. Should an
     evolution merge count against the new grade instead? Default: the grade
     being left (D168).
-    Answer:
+    Not put to Luke; default kept: an evolution merge counts against the grade
+    being left. (L19)
 
 62. **Who accepts a merge?** M5.4 lets the GM build a merge from a merge
     alert (two skills logged together 3 times, both at least Uncommon) and
@@ -423,13 +432,15 @@ DESIGN/ROADMAP; do not re-apply them.
     Should the player be able to accept or decline a merge first (keeping
     both originals), like a selection menu? Default: the GM's send applies
     it; the GM asks at the table first (D171).
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): the player accepts or declines.
+    (applied, L19; MT.2)
 
 63. **End-of-scene prompt for players?** M5.5's "End scene" walks the GM's
     console through the party one character at a time. Should it also ask
     each player, on their own screen, to log what they practised? Default:
     no; players keep their own practice panel (D172).
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): prompt the players too. (applied, L19;
+    MT.9)
 
 64. **Should evolutions re-rate race skills like Identify?** DESIGN §6 drops
     every kept skill one rarity at evolution by default, so Identify (Common)
@@ -438,21 +449,26 @@ DESIGN/ROADMAP; do not re-apply them.
     Identify) keep their rarity by default? Default: the rule as written; the
     GM can keep Identify in the evolution builder's re-rating list (M5.A
     review).
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): no automatic drop: the GM sets every
+    skill's new rarity, each shown at its rarity going into the evolution, and
+    must approve the list before the evolution can be released; Identify never
+    drops. (applied, L19; MT.1)
 
 65. **Should players see their own currency ledger?** M6.3 keeps the ledger
     (every grant, fine, gift, trade and loot with the balance after) on the
     GM's console; a player sees their balance and a notice for each grant or
     fine, with the GM's reason. Should players also get a "Credits history"
     of their own entries? Default: no; the notices are in their history (D176).
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): yes, show players their Credits
+    history. (applied, L19; MT.4)
 
 66. **Do a title's flat stats get multiplied by title percentages?** The
     engine computes (base + capped items + title flats) × (1 + Σ title %), so
     a title's +10 flat also grows with a +50% title. DESIGN §4 only names base
     and items inside the brackets. Default: keep flats inside (as built);
     the other reading adds them after the multiplier (M6 milestone review).
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): inside: title percentages grow title
+    flats (default kept). (applied, L19)
 
 67. **How much of a contest's odds should players see?** When the GM shares a
     contest roll (M7.3), each player on it gets a pop-up with their own value,
@@ -461,6 +477,7 @@ DESIGN/ROADMAP; do not re-apply them.
     show the whole-percent chance (DESIGN §7 shows ratio odds; the GM chooses
     what to share). Other options: coarse words ("likely", "even",
     "unlikely"), or no odds against NPCs (D182).
+    In discussion with Luke (2026-10-25); current behaviour stays until he answers.
     Answer:
 
 68. **Should hunger do anything on its own?** The hunger tracker (M7.4) is
@@ -469,14 +486,16 @@ DESIGN/ROADMAP; do not re-apply them.
     when the day advances and no penalty from hunger; the GM narrates it.
     Options: every new day moves everyone one step hungrier; a step adds a
     penalty (for example to Stamina) (D184).
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): no hunger tracker at all; like ammo,
+    hunger is narrated now and then, not a mechanic. (applied, L19; MT.3)
 
 69. **Should players see the survivor factions?** Factions (M7.4) are GM-only
     (name, region, head count, standing toward the party, notes); players see
     only the current region's name. Default: GM-only, shared through notes or
     broadcasts. Option: a "known to players" toggle that shows a faction's name
     and standing (D184).
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): add a reveal toggle. (applied, L19;
+    MT.8)
 
 70. **Should a contest between two player characters hide each side's stat?**
     When the GM shares a contest between two characters, each player sees
@@ -484,6 +503,7 @@ DESIGN/ROADMAP; do not re-apply them.
     other player's stat (roughly). Default: keep it as is; the GM chooses to
     share, like the party's pool bars (sweep D, Low). Option: show players
     only the chance in words when both sides are characters (D186).
+    In discussion with Luke (2026-10-25); current behaviour stays until he answers.
     Answer:
 
 71. **Efficiency trials: should unrelated guards be judged against a noise band? (Tier 2, LOOP §9.4)**
@@ -495,7 +515,7 @@ DESIGN/ROADMAP; do not re-apply them.
     band (round-2 ±2 of 10, red/day ±1), reverting on an out-of-band move only
     if it persists at the next check; and restore D183. Default: no change
     (D183 stays reverted).
-    Answer:
+    Not put to Luke (the build was complete); default kept: no change. (L19)
 
 72. **Tutorial pack numbers (M9.5).** The tutorial pack (`docs/content-packs/tutorial.json`)
     needed numbers DESIGN §8 does not give. Defaults used: World Stability
@@ -510,7 +530,8 @@ DESIGN/ROADMAP; do not re-apply them.
     at its maximum, so the + actions only matter once something has lowered it.
     Every value is an ordinary library entry: change it in the app, or tell
     me and the pack changes (D197).
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): import the hidden quest switched off.
+    (applied, L19; MT.11)
 
 73. **macOS build (M10.2).** M10.2's text asks for a macOS dmg, but D97
     (your Q1 answer: you use Windows) dropped macOS from the release, and the
@@ -518,11 +539,13 @@ DESIGN/ROADMAP; do not re-apply them.
     M10.2's "all three artifacts" as the two D97 keeps. Since the repo went
     public (L10) macOS runners cost nothing, so say "add macOS" if any player
     or co-GM uses a Mac and it goes back in (unsigned dmg).
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): Windows only; there is no co-GM.
+    Default kept. (applied, L19)
 
 74. **Build complete (M11.5).** The final review came back clean, so
     `docs/DONE.md` is written and the hourly build runs now stop at once.
     Default: they stay stopped. To start them again (to apply answers in
     ANSWERS.md, add M9.4 GitHub sync, or new roadmap items), delete
     `docs/DONE.md` on GitHub; the next hourly run picks up from there.
-    Answer:
+    Answer (Luke, 2026-10-25, in chat): new work added (MT, MC); DONE.md
+    removed so the runs resume. (applied, L19, L20)

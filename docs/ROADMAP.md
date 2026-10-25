@@ -693,3 +693,132 @@ work: Q44–Q48 and Q52.
   warnings on Windows and macOS).
 - [x] **M11.5 Final review.** Whole-repo review by a different model; every
   High/Medium fixed; no `[~]` boxes remain; `docs/DONE.md` written.
+
+## MT — Luke's answers, batch 3 (2026-10-25)
+
+Answers to Q40 and Q53–Q73 (DESIGN §6, §7, §8, §9; L19). Defaults Luke kept
+need no work: Q53, Q54, Q55, Q61, Q66, Q73. Q67/Q70 (what a shared contest
+shows players, and who rolls) are still being discussed: keep the current
+behaviour until an answer lands.
+
+- [ ] **MT.1 Evolution re-rating is approved, not automatic.** Replaces MR.1's
+  default one-step drop (L14 as revised): the evolution builder lists each
+  kept skill at the rarity it had going in; the GM sets each and approves
+  the list; the release is refused until that approval exists; Identify
+  (race skills) can never be lowered. Stored evolution events replay
+  unchanged. *Accept:* engine tests (release refused without approval,
+  Identify lower refused, raise within the ceiling, keep, lower with marks
+  kept); e2e on the builder.
+- [ ] **MT.2 Players accept or decline merges.** A merge the GM sends arrives
+  on the player's screen as an offer; accepting applies it, declining keeps
+  both originals; the GM sees the answer (Q62). *Accept:* engine tests for
+  both answers and a stale offer; e2e from GM send to player answer.
+- [ ] **MT.3 No hunger tracker.** Remove the tracker from the GM console,
+  player screens, rules and the tutorial pack (Q68); stored hunger events
+  replay as no-ops through an upcaster; goldens re-recorded under a schema
+  bump. *Accept:* no hunger UI anywhere; old logs replay; full e2e green.
+- [ ] **MT.4 Credits history for players.** Each player sees their own ledger
+  entries (grants, fines, gifts, trades, loot) with the balance after, and
+  nobody else's (Q65). *Accept:* projection test (own entries only, canary
+  still passes); e2e.
+- [ ] **MT.5 GM override for level, XP and grade.** The GM sheet can set
+  class level, profession level, XP and grade directly, after a warning that
+  lists what the change skips (spread points, free points, selections,
+  evolutions); a logged, undoable event (Q59). *Accept:* engine tests,
+  including undo; e2e with the warning.
+- [ ] **MT.6 Broadcasts last a set time or stay pinned.** Sending stays
+  immediate; each broadcast can show for N seconds or minutes, or stay as a
+  banner on players' screens until the GM removes it; in-game-day scheduling
+  stays optional (Q60). *Accept:* engine and projection tests; e2e for both
+  modes and removal.
+- [ ] **MT.7 The GM can override any rule.** List every refusal the app
+  applies to a GM action in `docs/GM-OVERRIDES.md`; for each, the GM already
+  has a way through, or add one (a logged, undoable event), except the two
+  guarantees (no GM-only data to players; the log is never rewritten), each
+  with its reason (Q60). *Accept:* the list is complete (grep of GM-actor
+  refusals in `events/commands.ts` and the reducer); one test per new
+  override.
+- [ ] **MT.8 Faction reveal toggle.** Per faction, "revealed to players"
+  shows its name and standing on players' screens (Q69). *Accept:*
+  projection test (unrevealed factions never reach players); e2e.
+- [ ] **MT.9 End-of-scene prompt on players' screens.** "End scene" also asks
+  each player what they practised; their entries go to the GM's review
+  (Q63). *Accept:* e2e from End scene to the GM's review queue.
+- [ ] **MT.10 Portraits in backups, exports and the status window.** Backups
+  and exports include the portraits folder and restore it; the status window
+  shows the character's portrait at the top (Q40). *Accept:* backup/restore
+  test with portraits; e2e screenshot of the status window at 390×844.
+- [ ] **MT.11 Tutorial hidden quest imports switched off.** "The Host's
+  Response" imports inactive; no notice until the GM turns it on (Q72).
+  *Accept:* import test.
+- [ ] **MT.A Batch acceptance and review.** Full suite green; `fable` review;
+  "Preview ready" (LOOP §8.2).
+
+## MC — Co-DM: live listening and generation (DESIGN §11; L20)
+
+Runs never call the paid API (LOOP Hard rules): every AI and speech call sits
+behind an interface with a recorded-fixture fake, and the live path is
+checked by Luke with his key. Work in file order; generation comes first so
+it is usable early (Luke can run a preview build at any point).
+
+- [ ] **MC.1 AI connection.** GM settings: API key entry (stored encrypted on
+  the laptop with Electron `safeStorage`, never logged, never in a player
+  frame or HTTP body), a "Test connection" button, model choices (fast and
+  strong), a per-session spend counter from the API's token usage. A server
+  AI client interface with a fixture-backed fake. *Accept:* canary test that
+  the key never reaches players or logs; unit tests on the fake; e2e for the
+  settings screen without a real key.
+- [ ] **MC.2 Generate on demand.** A Co-DM panel on the GM console: a kind
+  picker (shop, NPC, place, encounter, item, quest hook) and a free-text box;
+  the request goes to the strong model with the campaign context and asks
+  for content in the existing format (structured output against
+  `docs/content-format.schema.json`); the result opens in the existing
+  import preview to approve, edit or regenerate. *Accept:* fake-backed tests
+  for each kind, including a reply that breaks the rules (rejected by
+  validation with a clear message); e2e from request to approved content.
+- [ ] **MC.3 Shops.** A shop kind in the content format and library: name,
+  place, keeper NPC, wares (items with prices in the campaign currency), an
+  optional hook. GM-side only; "Sell" on a ware fills in a GM trade to the
+  chosen character. *Accept:* engine and import tests; e2e selling a ware.
+- [ ] **MC.4 Loading screen.** A System-styled loading broadcast built on
+  MT.6's pinned banner; optional "clear when the pending generation is
+  approved". *Accept:* e2e: send, players see it, approve clears it.
+- [ ] **MC.5 Listening and transcript.** A mic toggle in the GM window
+  (Electron media permission for that window only), on-laptop speech-to-text
+  (evaluate whisper.cpp and sherpa-onnx: offline, Windows x64, model
+  downloaded on first use to the user folder, not in the installer), voice
+  activity chunking, a live GM-only transcript panel, per-session transcript
+  files, and a "the System is listening" mark on players' screens while on.
+  No audio is written to disk. *Accept:* transcribes a recorded speech
+  fixture (licence-clean or synthesized); test that no audio file is kept;
+  CPU time per minute of audio measured in CI and the laptop needs written
+  in `docs/GM-GUIDE.md`.
+- [ ] **MC.6 Speaker labels.** Enrol a short voice sample per player (on the
+  GM laptop's mic), label transcript lines when the match is confident,
+  delete an enrolment. *Accept:* labelling test on a two-voice fixture;
+  e2e for enrolment and deletion.
+- [ ] **MC.7 Practice drafts.** The fast model drafts practice entries from
+  the transcript (character, skill, what happened, quote, time, confidence)
+  into the end-of-session review; contest rolls done in the app log practice
+  directly; nothing counts until the GM confirms. *Accept:* fake-backed tests
+  (a use, talk about a skill that is not a use, GM narration), attribution
+  order (app action > GM naming > voice); e2e into the review queue.
+- [ ] **MC.8 Suggestions panel.** Every minute or two (settable), the fast
+  model reads the recent transcript and campaign context and returns a few
+  chips (Generate, Complication, Callback) with the quote behind each; a
+  click starts MC.2 with the chip filled in; dismissed chips do not return;
+  calls are rate-limited and counted in the spend counter. *Accept:*
+  fake-backed tests; e2e from a fixture transcript to a generated shop.
+- [ ] **MC.9 Session notes and summary.** Running notes from the transcript in
+  the session log; at session end a summary (what happened, who did what,
+  open threads, NPCs met) in the session log and export. *Accept:*
+  fake-backed tests; the export contains the summary.
+- [ ] **MC.10 Prepare ahead.** Optional: when the table heads somewhere, the
+  co-DM drafts likely content in the background for approval; off by
+  default; counted in the spend counter. *Accept:* fake-backed test; e2e of
+  approving a prepared draft.
+- [ ] **MC.A Co-DM acceptance and review.** A recorded mock session (fixture
+  audio plus the fake AI) runs end to end: transcript, a chip, a generated
+  shop approved behind a loading screen, a practice draft confirmed, the
+  summary. `fable` review. `docs/GM-GUIDE.md` gains a co-DM chapter and a
+  short live checklist for Luke's key. "Preview ready" (LOOP §8.2).

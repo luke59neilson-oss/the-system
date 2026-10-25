@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** build complete (`docs/DONE.md`): every item checked except M9.4 (deferred by Luke); M11.4 and M11.5 done 2026-10-25. Preview ready: Actions → Release → Run workflow (M11)
-**Next item:** none (delete `docs/DONE.md` to resume; see Q74)
+**Status:** in progress again (2026-10-25): M0–M11, MS, MQ, MR and QF done; new milestones MT (Luke's answers, batch 3) and MC (co-DM, DESIGN §11) added; `docs/DONE.md` removed.
+**Next item:** MT.1 Evolution re-rating is approved, not automatic
 **Blockers:** none
 
 ## Run log

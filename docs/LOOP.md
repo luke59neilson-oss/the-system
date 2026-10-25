@@ -277,7 +277,10 @@ Lens briefs, the model rotation and the sweep log are in `docs/QUALITY.md`.
 
 - No secrets, tokens, or personal data in the repo. **The repo is public**
   (L10): write nothing you would not post publicly.
-- Touch no other repositories. Use no paid services.
+- Touch no other repositories. Use no paid services: runs never call the
+  Anthropic API or any paid API and never hold Luke's API key; the app's
+  co-DM (DESIGN §11) calls it at the table with the GM's own key, and tests
+  use recorded fixtures.
 - Never delete campaign data or Luke's files.
 - Players' browsers must never receive GM-only data.
 - If something blocks you completely, log it under Blockers in PROGRESS.md,

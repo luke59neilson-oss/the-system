@@ -20,4 +20,10 @@ Q43–Q52 answered in chat and applied by the chat session on 2026-10-22
 (DESIGN §2, §6, §7; ROADMAP milestone MR; DECISIONS L14–L18). Nothing here
 to re-apply.
 
+## Batch 3 (2026-10-25, in chat)
+
+Q40 and Q53–Q74 answered in chat and applied by the chat session on
+2026-10-25 (DESIGN §6–§9 and §11; ROADMAP milestones MT and MC; DECISIONS
+L19–L20). Q67 and Q70 are still open. Nothing here to re-apply.
+
 ## New answers

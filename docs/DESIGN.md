@@ -162,13 +162,16 @@ blue-white tint and a heavier brushed texture so the change is visible.
   minimum 0). When two compatible skills have been used together often enough
   (the merge alert), the evolution builder prompts the GM to offer that merge
   as part of the evolution.
-- **Evolutions re-rate skills (Luke, Q43).** What was Rare at D-grade is not
-  Rare at C-grade, so at each evolution every skill drops one rarity by
-  default (never below Inferior), and the GM raises, keeps or lowers each one
-  in the evolution builder before releasing it (a raise stays within the new
-  grade's ceiling). The skill's text and effects do not change (same power,
-  lower label), and it keeps all its marks, so a well-practised skill may
-  climb straight back with its next upgrade (after which it starts at 0).
+- **Evolutions re-rate skills (Luke, Q43; Q56/Q64).** What was Rare at
+  D-grade is not Rare at C-grade, so every evolution includes a re-rating of
+  every skill the character keeps. Nothing drops on its own: the evolution
+  builder lists each skill at the rarity it had going into the evolution, the
+  GM sets each one's new rarity (raise within the new grade's ceiling, keep,
+  or lower, never below Inferior) and approves the list, and the evolution
+  cannot be released until that approval is given. **Identify never drops.**
+  The skill's text and effects do not change (same power, new label), and a
+  lowered skill keeps all its marks, so a well-practised skill may climb
+  straight back with its next upgrade (after which it starts at 0).
 - **Skill names:** the System gives the official name; the player may add a
   nickname ("Jake Juice"). Show both.
 - **Skill library (Luke, Q37):** one entry per skill name **and rarity**, so an
@@ -209,6 +212,8 @@ turning point). GM confirms marks in the end-of-session review.
 - Both skills must be at least Uncommon. Max one merge per character per grade.
 - Result: one skill, one rarity above the higher of the two, doing both jobs.
   Originals are consumed; marks start at 0.
+- The GM sends a merge as an offer: the player accepts or declines it on
+  their screen, and declining keeps both originals (Q62).
 
 ## 7. Play tools
 
@@ -235,7 +240,8 @@ turning point). GM confirms marks in the end-of-session review.
   half filled with no failures; player gives a one-line focus (saved to the
   practice log); GM narrates the rest and adds one cost.
 - **Practice log:** quick-add (character, action, skill/stat), end-of-scene
-  prompt, end-of-session review (repeats flagged, skill pairs counted, marks
+  prompt (the GM's console walks the party, and each player's screen asks
+  what they practised, for the GM to review; Q63), end-of-session review (repeats flagged, skill pairs counted, marks
   confirmed), selection alert (within 5 levels), merge alert.
 - **Titles:** percentage stat bonuses (optionally flat stats too), awarded by
   the GM, shown to the player with System-style text. Rules in §4.
@@ -256,15 +262,20 @@ turning point). GM confirms marks in the end-of-session review.
   triggered, with no details: the whole party, unless the GM names
   characters; the notice appears again if the quest is hidden again or
   reopened (Q47).
-- **Hunger tracker** (tutorial): optional per campaign; fades at E-grade.
+- **No hunger tracker** (Luke, Q68): like ammo, hunger is narrated now and
+  then to ground the players, never tracked by the app.
 - **Items:** rarity, description, effects (flat stat bonuses only, capped per
   §4); equipment slots (Zogarth's 10):
   2 rings, necklace, chest, legs, boots, bracers, mask, cloak, gloves; plus
   weapon slots (main hand, off hand). Inventory, a configurable currency, and
   giving/trading between players and the GM. A player's trade with the GM
   asks only for currency (the GM offers items from the GM side); between
-  players a proposal may ask for any item and reveals nothing about what the
-  other player holds (Q44, Q45).
+  players a proposal may ask only for items the asker has seen (held, worn,
+  or offered in a trade), so it reveals nothing about the item library or
+  what the other player holds (Q44, Q45, Q55). Players see their own Credits
+  history (Q65).
+- **Factions** are GM-only until the GM reveals one; a revealed faction
+  shows players its name and standing (Q69).
 - **Notes:** player private journal, party shared notes, GM private notes;
   tags linking notes to characters, NPCs, regions, quests; search. The GM
   cannot read a private journal entry unless the player marks it shareable.
@@ -274,6 +285,17 @@ turning point). GM confirms marks in the end-of-session review.
   report at session end. "Notable events" = level-ups, selections,
   evolutions, titles, mark upgrades, merges, item transfers, GM broadcasts,
   stability changes.
+- **GM authority (Luke, Q60):** the GM can add, change, send, override and
+  overrule anything, whenever. Where the app enforces a rule, the GM has an
+  override (a new, logged, undoable event), including setting a character's
+  level, XP and grade directly with a warning that lists what the change
+  skips (Q59). Two guarantees stay absolute: players never receive GM-only
+  data, and the event log is never rewritten.
+- **Broadcasts** go out when the GM sends them (scheduling by in-game day
+  stays optional). Each can show for a set time or stay as a banner until the
+  GM removes it (Q60).
+- **Backups and exports** carry the event log and the portraits folder
+  (Q40).
 - **GM security:** GM actions always require a GM key that the desktop app
   injects into its own window. The key never appears in the join URL or QR.
   The server checks Origin on WebSocket upgrade and denies GM HTTP routes by
@@ -281,7 +303,8 @@ turning point). GM confirms marks in the end-of-session review.
 
 ## 9. Status screen (player sheet layout)
 
-Follows the books' status window, in this order; values update live.
+Follows the books' status window, in this order; values update live. The
+character's portrait, if any, sits at the top (Q40).
 
 ```
 Status
@@ -352,3 +375,64 @@ and the curse is the whale's immune response.
 - Title hint: "[Rapid Spread] — You have propagated through the Host faster
   than any before you."
 - NPC survivors form factions; survivors become the Earth-arc cast.
+- The tutorial pack's hidden quest "The Host's Response" imports switched
+  off, so players get no "a hidden quest exists" notice until the GM turns
+  it on (Q72).
+
+## 11. Co-DM: live listening and generation (Luke, 2026-10-25)
+
+Goal: "no loading screens". Claude listens along, keeps the session log,
+and offers the GM things to generate or throw in; the GM picks, generation
+runs while the GM narrates, and nothing reaches players until the GM
+approves it. Example: the party says they want an herbalist; the GM clicks
+"Generate herbalist shop", walks them across town, and approves a shop with
+a name, a keeper NPC, wares and a hook.
+
+- **Setup:** Luke's own Anthropic API account and key (pay-as-you-go,
+  separate from the Claude subscription). The key is entered in the GM app's
+  settings, stored encrypted on the GM laptop, never in the repo, never sent
+  to players. A spend counter shows the session's API cost. Without a key,
+  the rest of the app works and the co-DM panel says what it needs.
+- **Models:** a fast, cheap model for listening and suggestions (Claude
+  Haiku) and a stronger one for generation (Claude Sonnet); both settable.
+- **Listening:** a mic toggle on the GM console with a clear indicator, and a
+  "the System is listening" mark on players' screens while it is on (the
+  players have agreed). Speech is transcribed on the laptop (the Claude API
+  does not take audio); audio is never saved, only text. The transcript is
+  GM-only, kept per session in the campaign folder.
+- **Who said what:** each player can enrol a short voice sample, and
+  transcript lines get a speaker when the match is confident. Attribution in
+  order of trust: things done in the app (a contest roll for a character),
+  the GM naming the character, the voice match.
+- **Practice drafts:** the co-DM drafts practice entries from the transcript
+  (character, skill, what happened, quote, time, confidence) into the
+  end-of-session review. Nothing counts until the GM confirms; marks stay
+  one per skill per session. Things done in the app log practice directly.
+- **Suggestions:** every minute or two the co-DM reads the recent transcript
+  plus the campaign context (party, region, NPCs, shops, quests) and offers
+  a few chips with the quote that prompted them: **Generate** (a shop, NPC,
+  place, encounter, item or quest hook the table just mentioned),
+  **Complication** (chaos to throw in), **Callback** (bring back an earlier
+  NPC or thread). A text box lets the GM ask for anything directly.
+- **Generation** writes content in the existing format
+  (`docs/CONTENT-FORMAT.md`) and goes through the existing preview and
+  approve import, so the rules' checks apply (flat item bonuses, the 20% cap,
+  rarity ceilings, grades). Kinds: shops (name, keeper NPC, wares with
+  prices, an optional quest or complication), NPCs, places, encounters
+  (bestiary entries at sensible grades), items, quest hooks.
+- **Shops** are GM-side: the GM narrates, and a purchase is a GM trade that
+  the shop's price list fills in.
+- **Loading screen:** a System-styled broadcast ("[The System is
+  constructing the area…]") the GM sends while something generates; it
+  stays until the GM removes it, or until the generated content is approved
+  if the GM chose that.
+- **Prepare ahead** (optional): when the table heads somewhere, the co-DM
+  drafts likely content in the background, ready to approve.
+- **Memory:** approved content is ordinary campaign data, so later sessions
+  can call back to it; at session end the co-DM writes a summary (what
+  happened, who did what, open threads, NPCs met) into the session log.
+- **Limits:** the co-DM never changes the campaign on its own; every change
+  is the GM's approval, and GM-only rules cover all of it. Build runs never
+  call the paid API: AI and speech sit behind interfaces with recorded
+  fixtures for tests, and Luke checks the live path with his key.
+
