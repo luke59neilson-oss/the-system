@@ -92,6 +92,11 @@ export interface BroadcastRecord {
   readonly text: string;
   /** Recipients; null = every character. */
   readonly characterIds: readonly string[] | null;
+  /** MT.6: shown as a banner for a set time or pinned; absent = list only. */
+  readonly display?:
+    { readonly mode: 'pinned' } | { readonly mode: 'timed'; readonly seconds: number };
+  /** MT.6: the GM took the banner down. Absent = not removed. */
+  readonly removed?: true;
 }
 
 /** A broadcast the GM scheduled for a later in-game day (M4.7); GM-only until sent. */
@@ -1067,9 +1072,21 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
             at: event.timestamp,
             text: event.payload.text,
             characterIds: ids === null ? null : [...ids],
+            ...(event.payload.display ? { display: event.payload.display } : {}),
           },
         ],
       };
+    }
+    case 'broadcast.removed': {
+      const { id } = event.payload;
+      const index = state.broadcasts.findIndex((b) => b.id === id);
+      const record = state.broadcasts[index];
+      if (!record) return fail(event, `no broadcast ${id}`);
+      if (!record.display) fail(event, 'that broadcast has no banner to remove');
+      if (record.removed) fail(event, 'that banner was already removed');
+      const broadcasts = [...state.broadcasts];
+      broadcasts[index] = { ...record, removed: true };
+      return { ...state, broadcasts };
     }
     case 'broadcast.scheduled': {
       const { id, text, characterIds, day } = event.payload;

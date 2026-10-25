@@ -121,7 +121,11 @@ export type Command =
       text: string;
       /** Recipients; omitted or null = every character. */
       characterIds?: readonly string[] | null | undefined;
+      /** MT.6: a banner for `seconds`, or pinned until removed; omitted = list only. */
+      display?: { mode: 'pinned' } | { mode: 'timed'; seconds: number } | undefined;
     }
+  /** MT.6: take a broadcast's banner down. */
+  | { type: 'broadcast.remove'; id: string }
   | {
       /** M4.7: send on a later in-game day instead of now. */
       type: 'broadcast.schedule';
@@ -629,6 +633,7 @@ const commandSchema = z.discriminatedUnion('type', [
     day: z.number(),
   }),
   z.object({ type: z.literal('broadcast.unschedule'), id: z.string() }),
+  z.object({ type: z.literal('broadcast.remove'), id: z.string() }),
   z.object({ type: z.literal('item.define') }),
   z.object({ type: z.literal('item.edit') }),
   z.object({ type: z.literal('lootTable.define'), entries: z.array(z.unknown()) }),
@@ -973,7 +978,11 @@ function toEvent(
     case 'system.broadcast':
       return {
         type: 'system.broadcast',
-        payload: { text: command.text, characterIds: command.characterIds ?? null },
+        payload: {
+          text: command.text,
+          characterIds: command.characterIds ?? null,
+          ...(command.display === undefined ? {} : { display: command.display }),
+        },
       };
     case 'broadcast.schedule':
       return {
@@ -985,6 +994,8 @@ function toEvent(
           day: command.day,
         },
       };
+    case 'broadcast.remove':
+      return { type: 'broadcast.removed', payload: { id: command.id } };
     case 'broadcast.unschedule':
       return { type: 'broadcast.unscheduled', payload: { id: command.id } };
     case 'titleDef.define':

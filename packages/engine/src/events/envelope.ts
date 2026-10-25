@@ -20,6 +20,11 @@ const skillDescription = z.string().max(2000);
 const skillFlavor = z.string().max(1000);
 /** A portrait file name the server stored (M4.4); the bytes never enter the log. */
 const portraitRef = z.string().regex(PORTRAIT_REF, 'must be a stored portrait file name');
+/** MT.6: how a broadcast shows as a banner (seconds: 5 s to 24 h). */
+const broadcastDisplay = z.discriminatedUnion('mode', [
+  z.strictObject({ mode: z.literal('pinned') }),
+  z.strictObject({ mode: z.literal('timed'), seconds: z.number().int().min(5).max(86_400) }),
+]);
 const statValues = z.record(z.string().min(1), z.number().int().nonnegative());
 /** One side of a shared contest (M7.3). */
 const contestSide = z.strictObject({
@@ -250,7 +255,14 @@ export const EVENT_PAYLOAD_SCHEMAS = {
       .min(1, 'must not be blank')
       .refine((t) => t.length <= 2000, 'must be at most 2000 characters'),
     characterIds: z.array(recordId).min(1).nullable(),
+    /**
+     * MT.6 (Q60): also show it as a banner on players' screens, for a set
+     * time or pinned until the GM removes it. Absent = the message list only.
+     */
+    display: broadcastDisplay.optional(),
   }),
+  /** MT.6: the GM takes a broadcast's banner down (the message stays in the list). */
+  'broadcast.removed': z.strictObject({ id: recordId }),
   /**
    * GM schedules a System broadcast for a later in-game day (M4.7, D159): it
    * is sent when the day counter reaches `day`. GM-only until then.
@@ -815,6 +827,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'system.broadcast': 1,
   'broadcast.scheduled': 1,
   'broadcast.unscheduled': 1,
+  'broadcast.removed': 1,
   'item.defined': 1,
   'item.edited': 1,
   'holdings.adjusted': 1,

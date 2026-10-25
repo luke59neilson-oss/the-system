@@ -117,7 +117,18 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
       type: 'system.broadcast',
       text: pick(['The world is dying.', ' ', 'Day 3 begins.']),
       characterIds: rand() < 0.4 ? null : [someId(), ...(rand() < 0.1 ? [someId()] : [])],
+      // MT.6: some show as banners.
+      ...(rand() < 0.3
+        ? {
+            display:
+              rand() < 0.5 ? { mode: 'pinned' as const } : { mode: 'timed' as const, seconds: 30 },
+          }
+        : {}),
     };
+  }
+  if (roll >= 0.3 && roll < 0.31 && (c.state?.broadcasts.length ?? 0) > 0) {
+    const list = c.state?.broadcasts ?? [];
+    return { type: 'broadcast.remove', id: pick(list).id };
   }
   if (roll < 0.3)
     return { type: 'character.rename', characterId: someId(), name: pick(['A', 'B', '']) };
