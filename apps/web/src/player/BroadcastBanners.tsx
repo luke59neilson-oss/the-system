@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { PlayerMessage } from '@the-system/engine';
 import { activeBanners, useTick } from '../banners';
 
@@ -15,10 +15,19 @@ export function BroadcastBanners({ messages }: { messages: readonly PlayerMessag
   // Ticks every second, so `now` is at most a second old when a banner lands.
   const now = useTick(true);
   const fresh = messages.filter((m) => !initial.has(m.id) && !arrivals.has(m.id));
-  if (fresh.length > 0) {
-    // Recorded during render (React's "adjust state on prop change"), once per id.
-    setArrivals(new Map([...arrivals, ...fresh.map((m) => [m.id, now] as const)]));
-  }
+  const freshKey = fresh.map((m) => m.id).join(',');
+  useEffect(() => {
+    if (freshKey === '') return;
+    // Stamped with the wall clock, not the tick (a throttled background tab
+    // can leave the tick minutes old); deferred so the effect stays pure.
+    const timer = setTimeout(() => {
+      const at = Date.now();
+      setArrivals(
+        (prev) => new Map([...prev, ...freshKey.split(',').map((id) => [id, at] as const)]),
+      );
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [freshKey]);
   const up = activeBanners(messages, now, (m) => {
     const arrived = arrivals.get(m.id);
     if (arrived !== undefined) return arrived;

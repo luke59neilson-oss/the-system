@@ -610,6 +610,7 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
     if (r.ok) {
       setOkText(when === 'now' ? 'Broadcast sent' : `Scheduled for day ${dayValue}`);
       setText('');
+      setShow('list');
     }
   };
   const pending = state.scheduledBroadcasts;
