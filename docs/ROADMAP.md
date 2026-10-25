@@ -691,5 +691,5 @@ work: Q44–Q48 and Q52.
 - [x] **M11.4 Guides.** `docs/GM-GUIDE.md`, `docs/PLAYER-QUICKSTART.md` (one
   page), `docs/TROUBLESHOOTING.md` (firewall, IP, ports, unsigned-app
   warnings on Windows and macOS).
-- [ ] **M11.5 Final review.** Whole-repo review by a different model; every
+- [x] **M11.5 Final review.** Whole-repo review by a different model; every
   High/Medium fixed; no `[~]` boxes remain; `docs/DONE.md` written.
