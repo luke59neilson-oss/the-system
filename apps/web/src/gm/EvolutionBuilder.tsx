@@ -156,6 +156,8 @@ function ReleaseForm({
   const [rerate, setRerate] = useState<Record<string, string>>(() =>
     Object.fromEntries(plan.rerate.map((r) => [r.skill, r.byDefault])),
   );
+  // The list the GM approved (MT.1); any later change to it needs approving again.
+  const [approvedList, setApprovedList] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -191,7 +193,11 @@ function ReleaseForm({
     options.flatMap((o) => o.transforms.flatMap((t) => (t.merge ? [t.skill, t.merge] : []))),
   );
   const rerateSent = Object.fromEntries(rerateList.map((r) => [r.skill, r.rarity]));
-  const problem = releaseProblem(state, characterId, engineOptions, offered, rerateList);
+  const listKey = JSON.stringify(rerateList);
+  const approved = approvedList === listKey;
+  const problem =
+    releaseProblem(state, characterId, engineOptions, offered, rerateList) ??
+    (approved ? null : 'Approve the skill re-rating before releasing.');
 
   const release = async (e: FormEvent) => {
     e.preventDefault();
@@ -209,6 +215,7 @@ function ReleaseForm({
       })),
       ...(offered.length > 0 ? { professions: offered } : {}),
       rerate: rerateSent,
+      rerateApproved: true,
     });
     setBusy(false);
     setResult(
@@ -371,6 +378,14 @@ function ReleaseForm({
           </li>
         ))}
       </ul>
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={approved}
+          onChange={(e) => setApprovedList(e.target.checked ? listKey : null)}
+        />
+        Approve this re-rating (each skill keeps its rarity unless you change it)
+      </label>
       {plan.mergePrompts.length > 0 && (
         <p className="muted" data-testid="merge-prompts">
           Merge ready:{' '}

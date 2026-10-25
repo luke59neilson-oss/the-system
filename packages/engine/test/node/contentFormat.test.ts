@@ -311,6 +311,7 @@ describe('content files as commands (M9.2)', () => {
     expect(evo.errors).toEqual([]);
     expect(evo.commands[0]?.command).toMatchObject({
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'jake',
       professions: ['Fletcher', 'Trail Cook'],
       rerate: { "Hunter's Mark": 'rare' },
@@ -329,6 +330,7 @@ describe('content files as commands (M9.2)', () => {
     );
     expect(rerated.commands[0]?.command).toMatchObject({
       type: 'evolution.release',
+      rerateApproved: true,
       rerate: { 'Archer’s Eye': 'common' },
     });
   });

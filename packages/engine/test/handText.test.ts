@@ -129,18 +129,21 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
     for (const id of ['jake', 'kim']) {
       c = ok(c, {
         type: 'evolution.release',
+        rerateApproved: true,
         characterId: id,
         options: [{ className: 'Hunter' }],
+        // Identify is a race skill and never drops (MT.1), so the GM raises it.
+        rerate: { Identify: 'uncommon' },
       });
       c = ok(c, { type: 'evolution.choose', characterId: id, optionId: 'o1' }, player(id));
     }
     expect(skillOf(c, 'jake')).toMatchObject({
-      rarity: 'inferior',
+      rarity: 'uncommon',
       description: 'Jake’s own words.',
       textEdited: true,
     });
     expect(skillOf(c, 'kim')).toMatchObject({
-      rarity: 'inferior',
+      rarity: 'uncommon',
       description: 'Common description.',
     });
   });
@@ -186,51 +189,61 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
   });
 
   it('after a re-rating, reconnecting follows the new rarity, not the old text rarity', () => {
-    let c = ok(base(), define('idi', 'inferior', 'Inferior'));
-    c = ok(c, handWrite('Jake’s own words.'));
+    let c = ok(base(), handWrite('Jake’s own words.'));
     c = ok(c, {
       type: 'xp.award',
       track: 'class',
       amount: 400,
       participants: [{ characterId: 'jake' }],
     });
-    c = ok(c, { type: 'evolution.release', characterId: 'jake', options: [{ className: 'H' }] });
+    c = ok(c, {
+      type: 'evolution.release',
+      rerateApproved: true,
+      characterId: 'jake',
+      options: [{ className: 'H' }],
+      rerate: { Identify: 'uncommon' },
+    });
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' }, player('jake'));
-    expect(skillOf(c)).toMatchObject({ rarity: 'inferior', textRarity: 'common' });
+    expect(skillOf(c)).toMatchObject({ rarity: 'uncommon', textRarity: 'common' });
     c = ok(c, useLibrary());
     expect(skillOf(c)).toMatchObject({
-      rarity: 'inferior',
-      description: 'Inferior description.',
+      rarity: 'uncommon',
+      description: 'Uncommon description.',
     });
     expect(skillOf(c)?.textRarity).toBeUndefined();
-    // From now on it follows the Inferior entry.
-    c = ok(c, { type: 'skillDef.edit', skillDefId: 'idi', description: 'Inferior edited.' });
-    expect(skillOf(c)?.description).toBe('Inferior edited.');
+    // From now on it follows the Uncommon entry.
+    c = ok(c, { type: 'skillDef.edit', skillDefId: 'idu', description: 'Uncommon edited.' });
+    expect(skillOf(c)?.description).toBe('Uncommon edited.');
     c = ok(c, { type: 'skillDef.edit', skillDefId: 'idc', description: 'Common edited.' });
-    expect(skillOf(c)?.description).toBe('Inferior edited.');
+    expect(skillOf(c)?.description).toBe('Uncommon edited.');
   });
 
   it('moves a re-rated, library-linked copy to its current rarity’s entry (MR.A)', () => {
-    let c = ok(base(), define('idi', 'inferior', 'Inferior'));
-    c = ok(c, {
+    let c = ok(base(), {
       type: 'xp.award',
       track: 'class',
       amount: 400,
       participants: [{ characterId: 'kim' }],
     });
-    c = ok(c, { type: 'evolution.release', characterId: 'kim', options: [{ className: 'H' }] });
+    c = ok(c, {
+      type: 'evolution.release',
+      rerateApproved: true,
+      characterId: 'kim',
+      options: [{ className: 'H' }],
+      rerate: { Identify: 'uncommon' },
+    });
     c = ok(c, { type: 'evolution.choose', characterId: 'kim', optionId: 'o1' }, player('kim'));
     expect(skillOf(c, 'kim')).toMatchObject({
-      rarity: 'inferior',
+      rarity: 'uncommon',
       textRarity: 'common',
       description: 'Common description.',
     });
     expect(skillOf(c, 'kim')?.textEdited).toBeUndefined();
     c = ok(c, useLibrary('kim'));
-    expect(skillOf(c, 'kim')).toMatchObject({ description: 'Inferior description.' });
+    expect(skillOf(c, 'kim')).toMatchObject({ description: 'Uncommon description.' });
     expect(skillOf(c, 'kim')?.textRarity).toBeUndefined();
-    c = ok(c, { type: 'skillDef.edit', skillDefId: 'idi', description: 'Inferior edited.' });
-    expect(skillOf(c, 'kim')?.description).toBe('Inferior edited.');
+    c = ok(c, { type: 'skillDef.edit', skillDefId: 'idu', description: 'Uncommon edited.' });
+    expect(skillOf(c, 'kim')?.description).toBe('Uncommon edited.');
     // Now it follows the library at its own rarity, so a second press is refused.
     expect(reject(c, useLibrary('kim'))).toMatch(/already uses the library text/);
     expect(replay(c.events).state).toEqual(c.state);
@@ -272,6 +285,7 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
     });
     c = ok(c, {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'jake',
       options: [
         {

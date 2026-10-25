@@ -106,7 +106,19 @@ function entryNote(campaign: Campaign, command: ContentCommand['command']): stri
       if (!who) return null;
       const options = command.options.map((o) => `[${o.className}]`).join(', ');
       const replaces = who.evolution ? `; replaces the evolution ${who.name} was offered` : '';
-      return `Goes to ${who.name}'s screen on Apply: ${options}${replaces}`;
+      // The re-rating the import approves (MT.1): each changed skill, or none.
+      const set = command.rerate ?? {};
+      const changes = who.skills.flatMap((s) => {
+        const to = Object.prototype.hasOwnProperty.call(set, s.name) ? set[s.name] : undefined;
+        return to === undefined || to === s.rarity
+          ? []
+          : [`[${s.name}] ${rarityName(state, s.rarity)} → ${rarityName(state, to)}`];
+      });
+      const rerate =
+        changes.length === 0
+          ? '. Re-rating: every skill keeps its rarity'
+          : `. Re-rating: ${changes.join(', ')}; the rest keep their rarity`;
+      return `Goes to ${who.name}'s screen on Apply: ${options}${replaces}${rerate}`;
     }
     default:
       return null;

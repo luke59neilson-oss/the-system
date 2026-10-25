@@ -88,8 +88,8 @@ export interface EvolutionOption {
 }
 
 /**
- * A kept skill's rarity after the evolution (MR.1, DESIGN §6 "Evolutions
- * re-rate skills"): one step down by default, set per skill by the GM.
+ * A kept skill's rarity after the evolution (MR.1, MT.1; DESIGN §6
+ * "Evolutions re-rate skills"): set per skill by the GM, who approves the list.
  */
 export interface SkillRerate {
   readonly skill: string;
@@ -110,6 +110,12 @@ export interface PendingEvolution {
    * Absent on releases stored before MR.1, which re-rate nothing.
    */
   readonly rerate?: readonly SkillRerate[];
+  /**
+   * The GM approved the re-rating (MT.1, L19): a skill the list does not name
+   * keeps its rarity. Absent on releases stored before MT.1, whose unnamed
+   * skills take MR.1's one-step drop, so older logs replay unchanged.
+   */
+  readonly rerateApproved?: true;
 }
 
 /** A class level that grants a selection (DESIGN §3). */
@@ -431,14 +437,33 @@ export function defaultRerate(
 }
 
 /**
+ * The approved re-rating (MT.1, DESIGN §6): every skill at the rarity it has
+ * going in, with `overrides` (skill name → rarity) for the ones the GM sets.
+ */
+export function keptRerate(
+  character: Character,
+  overrides: Readonly<Record<string, string>> = {},
+): SkillRerate[] {
+  return character.skills.map((s) => {
+    const own = Object.prototype.hasOwnProperty.call(overrides, s.name)
+      ? overrides[s.name]
+      : undefined;
+    return { skill: s.name, rarity: own ?? s.rarity };
+  });
+}
+
+/**
  * Throws unless every re-rating names a current skill once, at a known rarity
  * no higher than the new grade's ceiling (a skill may keep a rarity above it).
+ * Under an approved re-rating (MT.1) a race skill such as Identify is never
+ * lowered (DESIGN §6 "Identify never drops").
  */
 function checkRerate(
   rules: RulesConfig,
   character: Character,
   toGrade: GradeRules,
   rerate: readonly SkillRerate[],
+  approved: boolean,
 ): void {
   const ceiling = rarityIndex(rules, toGrade.rarityCeiling);
   const seen = new Set<string>();
@@ -448,6 +473,9 @@ function checkRerate(
     if (seen.has(r.skill)) throw new CharacterRuleError(`[${r.skill}] is re-rated twice`);
     seen.add(r.skill);
     const rank = rarityIndex(rules, r.rarity);
+    if (approved && skill.kind === 'race' && rank < rarityIndex(rules, skill.rarity)) {
+      throw new CharacterRuleError(`[${r.skill}] is a race skill and never drops a rarity`);
+    }
     if (rank > ceiling && rank > rarityIndex(rules, skill.rarity)) {
       throw new CharacterRuleError(
         `[${r.skill}] cannot be raised above the ${toGrade.id}-grade ceiling (${toGrade.rarityCeiling})`,
@@ -594,6 +622,8 @@ export function releaseEvolution(
   rerate: readonly SkillRerate[] | null = null,
   /** Joint uses for merge transforms (M5.2); none counted by default. */
   joint: JointUses = () => 0,
+  /** The GM approved the re-rating (MT.1); unnamed skills keep their rarity. */
+  rerateApproved = false,
 ): Character {
   if (!legacy) checkNoPendingSelection(rules, character, 'released');
   const target = evolutionTarget(rules, character);
@@ -613,7 +643,7 @@ export function releaseEvolution(
     checkOption(rules, character, target, option, retired, joint);
     checkStatBonus(rules, option);
   }
-  if (rerate !== null) checkRerate(rules, character, target, rerate);
+  if (rerate !== null) checkRerate(rules, character, target, rerate, rerateApproved);
   // From the unlock grade on, a character without a profession can be offered
   // some (MQ.6): at the unlock evolution, or at a later one after "none for now".
   const unlock =
@@ -641,6 +671,7 @@ export function releaseEvolution(
       })),
       professions: trimmed,
       ...(rerate === null ? {} : { rerate: rerate.map((r) => ({ ...r })) }),
+      ...(rerateApproved ? { rerateApproved: true as const } : {}),
     },
   };
 }
@@ -702,18 +733,21 @@ export function chooseEvolution(
   }
 
   const byName = new Map(option.transforms.map((t) => [t.skill, t]));
-  // A skill gained after the release (a grant, a merge) takes the default
-  // drop; releases stored before MR.1 re-rate nothing (MR.1 review).
+  // A skill gained after the release (a grant, a merge) keeps its rarity
+  // under an approved re-rating (MT.1) and takes MR.1's default drop under an
+  // older release; releases stored before MR.1 re-rate nothing (MR.1 review).
   const rerated =
     pending.rerate === undefined
       ? new Map<string, string>()
-      : new Map(
-          defaultRerate(
-            rules,
-            character,
-            Object.fromEntries(pending.rerate.map((r) => [r.skill, r.rarity])),
-          ).map((r) => [r.skill, r.rarity]),
-        );
+      : pending.rerateApproved === true
+        ? new Map(pending.rerate.map((r) => [r.skill, r.rarity]))
+        : new Map(
+            defaultRerate(
+              rules,
+              character,
+              Object.fromEntries(pending.rerate.map((r) => [r.skill, r.rarity])),
+            ).map((r) => [r.skill, r.rarity]),
+          );
   const marking = markRules(rules);
   // Skills a merge transform consumes (M5.2): the originals are gone.
   const consumed = new Set(

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  defaultRerate,
   execute,
   projectForPlayer,
   replay,
@@ -14,7 +15,10 @@ import { kit, rawRules, run, testContext } from './helpers/events';
  * MR.1 (DESIGN §6, L14): an evolution re-rates every skill it does not
  * transform: one rarity down by default (never below Inferior), set per skill
  * by the GM within the new grade's ceiling. Marks, text and effects stay.
- * Everything goes through `execute`, on the default rules of a new campaign.
+ * MT.1 (L19) replaced the default drop with an approved list, so these tests
+ * pin how a release stored under MR.1 still replays: `released` writes the
+ * MR.1 list (default drop plus overrides) and drops MT.1's approval mark
+ * from the log. MT.1's own rules are in `rerateApproval.test.ts`.
  */
 const ctx = testContext('r');
 const player = (characterId: string): CommandContext => ({
@@ -70,13 +74,39 @@ const atGTop = (): Campaign =>
   });
 const release = (rerate?: Record<string, string>): Command => ({
   type: 'evolution.release',
+  rerateApproved: true,
   characterId: 'jake',
   options: [{ className: 'Hunter' }],
   ...(rerate ? { rerate } : {}),
 });
+/**
+ * The log as MR.1 stored it: releases carry no approval mark, and `list` (if
+ * given) replaces the last release's re-rating.
+ */
+const asStoredMR1 = (
+  c: Campaign,
+  list?: readonly { skill: string; rarity: string }[],
+): Campaign => {
+  const last = c.events.map((e) => e.type).lastIndexOf('evolution.released');
+  return replay(
+    JSON.parse(
+      JSON.stringify(
+        c.events.map((e, i) => {
+          if (e.type !== 'evolution.released') return e;
+          const { rerateApproved: _gone, ...payload } = e.payload;
+          void _gone;
+          return { ...e, payload: i === last && list ? { ...payload, rerate: list } : payload };
+        }),
+      ),
+    ) as unknown[],
+  );
+};
+/** A release as MR.1 stored it: every skill's default drop plus the GM's overrides. */
+const released = (c: Campaign, rerate: Record<string, string> = {}): Campaign =>
+  asStoredMR1(ok(c, release(rerate)), defaultRerate(c.state!.rules, char(c), rerate));
 const choose: Command = { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' };
 const evolve = (c: Campaign, rerate?: Record<string, string>): Campaign =>
-  ok(ok(c, release(rerate)), choose, player('jake'));
+  ok(released(c, rerate), choose, player('jake'));
 
 describe('evolutions re-rate skills (MR.1)', () => {
   it('drops every kept skill one rarity by default, never below Inferior', () => {
@@ -91,7 +121,7 @@ describe('evolutions re-rate skills (MR.1)', () => {
   });
 
   it('the release carries every skill’s new rarity', () => {
-    const c = ok(atGTop(), release({ [eye]: 'common' }));
+    const c = released(atGTop(), { [eye]: 'common' });
     expect(char(c).evolution?.rerate).toEqual([
       { skill: archery, rarity: 'inferior' },
       { skill: 'Basic Stealth', rarity: 'inferior' },
@@ -204,6 +234,7 @@ describe('evolutions re-rate skills (MR.1)', () => {
     let c = atGTop();
     c = ok(c, {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'jake',
       options: [
         { className: 'Hunter', transforms: [{ skill: eye, name: 'Hawk Eye', rarity: 'rare' }] },
@@ -234,7 +265,7 @@ describe('evolutions re-rate skills (MR.1)', () => {
         { ...ctx, sessionId: `p${i}` },
       );
     }
-    c = ok(c, release({ [eye]: 'common' }));
+    c = released(c, { [eye]: 'common' });
     c = ok(c, {
       type: 'skill.merge',
       characterId: 'jake',
@@ -250,7 +281,7 @@ describe('evolutions re-rate skills (MR.1)', () => {
   it('a skill whose rarity changes after the release takes the default drop from its new rarity (MR.A)', () => {
     let c = mark(atGTop(), eye, 4);
     // The release lists Archer's Eye Common → Inferior (default) and keeps Identify.
-    c = ok(c, release({ Identify: 'common' }));
+    c = released(c, { Identify: 'common' });
     // The GM upgrades it while the evolution is pending: Common → Uncommon.
     c = ok(c, { type: 'skill.upgrade', characterId: 'jake', skill: eye });
     expect(char(c).evolution?.rerate?.map((r) => r.skill)).not.toContain(eye);
@@ -265,7 +296,7 @@ describe('evolutions re-rate skills (MR.1)', () => {
   });
 
   it('the owner sees the re-rating; another player does not', () => {
-    const c = ok(atGTop(), release());
+    const c = released(atGTop());
     const own = projectForPlayer(c.state!, 'jake');
     expect(own.me?.evolution?.rerate).toContainEqual({ skill: eye, rarity: 'inferior' });
     const other = JSON.stringify(projectForPlayer(c.state!, 'kim'));

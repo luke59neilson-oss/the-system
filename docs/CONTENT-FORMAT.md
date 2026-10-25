@@ -164,7 +164,7 @@ to, lists its options and says what it replaces.
 | `character` | yes | Name or id. |
 | `options` | yes | Options, below; the default rules want **3–4**. |
 | `professions` | no | Professions offered (at the profession unlock grade, E). |
-| `rerate` | no | Skill name → rarity after the evolution. Skills not named drop one rarity (never below Inferior). |
+| `rerate` | no | Skill name → rarity after the evolution. Skills not named keep their rarity; a race skill (Identify) is never lowered. The import preview lists the re-rating, and approving the import approves it. |
 
 Each option:
 

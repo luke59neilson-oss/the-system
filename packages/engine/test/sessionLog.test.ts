@@ -408,6 +408,7 @@ describe('session log party sheets (M9.A)', () => {
         { type: 'title.award', characterId: 'jake', title: 'Forerunner' },
         {
           type: 'evolution.release',
+          rerateApproved: true,
           characterId: 'jake',
           options: [{ className: 'Skirmisher' }, { className: 'Marksman' }],
         },

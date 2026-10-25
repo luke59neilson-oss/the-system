@@ -87,6 +87,9 @@ export function contentToCommands(
         options: e.options,
         ...(e.professions ? { professions: e.professions } : {}),
         ...(e.rerate ? { rerate: e.rerate } : {}),
+        // The import preview lists the re-rating; approving the import
+        // approves it (MT.1, D209).
+        rerateApproved: true,
       },
     });
   });

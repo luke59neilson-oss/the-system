@@ -118,6 +118,7 @@ for (const viewport of [
     await expect(page.getByTestId('race')).toContainText('lvl 4');
     await gmCommand(gm, {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId,
       options: [
         {

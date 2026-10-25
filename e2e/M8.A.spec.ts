@@ -208,6 +208,7 @@ test('an Archer climbs G to A: each evolution re-themes the real screen in its m
     const className = `Archer of ${next.grade}`;
     await gmCommand(gm, {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'wren',
       options: [{ className }],
     });

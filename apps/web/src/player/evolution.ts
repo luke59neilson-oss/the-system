@@ -122,7 +122,7 @@ export function evolutionWarnings(
 export function rerateLines(
   rules: PlayerRules,
   me: Pick<OwnSheet, 'skills'>,
-  evolution: Pick<PendingEvolution, 'rerate'>,
+  evolution: Pick<PendingEvolution, 'rerate' | 'rerateApproved'>,
 ): string[] {
   const rerate = evolution.rerate;
   if (!rerate) return [];
@@ -130,9 +130,12 @@ export function rerateLines(
   const ids = rules.rarities.map((r) => r.id);
   return me.skills.map((s) => {
     // A skill the list does not name (gained, or its rarity changed, after the
-    // release) takes the default one-step drop at choose, as the engine does.
+    // release) keeps its rarity under an approved re-rating (MT.1) and takes
+    // MR.1's one-step drop under an older release, as the engine does.
     const index = ids.indexOf(s.rarity);
-    const rarity = to.get(s.name) ?? (index <= 0 ? s.rarity : (ids[index - 1] as string));
+    const rarity =
+      to.get(s.name) ??
+      (evolution.rerateApproved === true || index <= 0 ? s.rarity : (ids[index - 1] as string));
     const from = rarityName(rules, s.rarity);
     return rarity === s.rarity
       ? `[${s.name}] stays ${from}`

@@ -42,6 +42,7 @@ const evolve = (c: Campaign, transforms: { skill: string; name: string; rarity: 
   ok(
     ok(c, {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'jake',
       options: [{ className: 'Hunter', transforms }],
       rerate: { [eye]: 'inferior' },

@@ -213,6 +213,7 @@ test('a player reads a skill and nicknames it; the official name stays', async (
   await award(gm, 400);
   await gmCommand(gm, {
     type: 'evolution.release',
+    rerateApproved: true,
     characterId,
     options: [
       {

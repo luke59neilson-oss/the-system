@@ -203,4 +203,12 @@ describe('rerateLines (MR.1)', () => {
       rerateLines(rules, mine, { rerate: [{ skill: 'Archer’s Eye', rarity: 'rare' }] }),
     ).toEqual(['[Archer’s Eye] stays Rare', '[Identify] stays Common']);
   });
+  it('an approved re-rating keeps every skill the list does not name (MT.1)', () => {
+    const rare = { ...skill('Archer’s Eye', 0), rarity: 'rare' } as OwnSheet['skills'][number];
+    const mine = { skills: [rare, skill('Identify', 2)] };
+    expect(rerateLines(rules, mine, { rerate: [], rerateApproved: true })).toEqual([
+      '[Archer’s Eye] stays Rare',
+      '[Identify] stays Common',
+    ]);
+  });
 });

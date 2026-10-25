@@ -82,12 +82,14 @@ for (const viewport of [
     });
     await expect(page.getByTestId('race')).toContainText('(G)');
     await expect(page.getByTestId('skills-race')).toContainText('[Identify (Common)]');
-    // The GM keeps Identify at Common; every other skill takes the default drop.
+    // The GM keeps Identify at Common and lowers Archer's Eye (MT.1: nothing
+    // drops unless the GM sets it).
     await gmCommand(gm, {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'demo-sultan',
       options: [{ className: 'Longbow Adept', description: 'Distance is a weapon.' }],
-      rerate: { Identify: 'common' },
+      rerate: { Identify: 'common', 'Archer’s Eye': 'inferior' },
     });
     await page.getByTestId('evolution-pending').getByRole('button', { name: '[Evolve]' }).click();
     const dialog = page.getByTestId('evolution');

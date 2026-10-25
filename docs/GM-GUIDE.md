@@ -106,8 +106,9 @@ send it to a player.
   selection is chosen. Write the paths, each with a stat bonus (**Bonus per
   stat** or +N to all), optionally **Reshape the class spread** and add
   transforms; set each skill's re-rating under **Skills after the
-  evolution** (one rarity down by default). At E-grade add profession offers.
-  Then **Release evolution**; the player picks the path.
+  evolution** (each skill starts at the rarity it has now; Identify never
+  drops) and tick **Approve this re-rating**. At E-grade add profession
+  offers. Then **Release evolution**; the player picks the path.
 - **Skill library** and **Skill text**: library text is per name and rarity
   and updates every copy you have not hand-edited; **Use library text**
   hands an edited copy back to the library.

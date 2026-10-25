@@ -101,6 +101,7 @@ async function casperOfferedAtE(gm: Page, serverUrl: string): Promise<void> {
   });
   await gmCommand(gm, {
     type: 'evolution.release',
+    rerateApproved: true,
     characterId: 'demo-casper',
     options: [{ className: 'Pathfinder', description: 'Walks where others cannot.' }],
     professions: ['Trapper', 'Beast Tamer'],

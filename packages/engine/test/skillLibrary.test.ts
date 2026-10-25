@@ -165,6 +165,7 @@ describe('skill library (M4.1)', () => {
     );
     c = ok(c, {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'jake',
       options: [
         {

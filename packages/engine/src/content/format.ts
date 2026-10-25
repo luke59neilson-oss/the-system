@@ -223,7 +223,9 @@ export const contentEvolutionSchema = z
     rerate: z
       .record(name, id)
       .optional()
-      .describe('Skill name → rarity after the evolution; others drop one rarity (DESIGN §6).'),
+      .describe(
+        'Skill name → rarity after the evolution; others keep their rarity. The import preview lists the re-rating, and approving the import approves it (DESIGN §6).',
+      ),
   })
   .describe('Drafted evolution options for one character (DESIGN §2).');
 

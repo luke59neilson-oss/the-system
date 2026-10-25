@@ -123,16 +123,21 @@ describe('previewContent: drafted menus and evolutions say where they go (M9.A)'
     if (!p.ok) throw new Error('expected a preview');
     expect(p.entries.map((e) => e.error)).toEqual([null, null]);
     expect(p.entries[0]?.note).toBe(
-      "Goes to Jake's screen on Apply: [Skirmisher], [Skirmisher II]",
+      "Goes to Jake's screen on Apply: [Skirmisher], [Skirmisher II]. Re-rating: every skill keeps its rarity",
     );
     expect(p.entries[1]?.note).toBe(
-      "Goes to Jake's screen on Apply: [Marksman], [Marksman II]; replaces the evolution Jake was offered",
+      "Goes to Jake's screen on Apply: [Marksman], [Marksman II]; replaces the evolution Jake was offered. Re-rating: every skill keeps its rarity",
     );
   });
 
   it('names a menu’s options with their rarities, and the open menu it replaces', () => {
     const evolved = atTop([
-      { type: 'evolution.release', characterId: 'jake', options: [{ className: 'Hunter' }] },
+      {
+        type: 'evolution.release',
+        rerateApproved: true,
+        characterId: 'jake',
+        options: [{ className: 'Hunter' }],
+      },
       { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' },
       {
         type: 'xp.award',

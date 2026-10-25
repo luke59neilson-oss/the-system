@@ -120,6 +120,7 @@ test('selection, evolution, mark upgrade and merge between the GM and the player
   const rerate = release.getByRole('list', { name: 'Re-rating' });
   await expect(rerate).toContainText('[Archer’s Eye] Common →');
   await rerate.getByLabel(/Archer.s Eye/).selectOption({ label: 'Common' });
+  await release.getByLabel(/Approve this re-rating/).check();
   await expect(release.getByTestId('release-problem')).toHaveCount(0);
   await evolution.evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-evolution-1366x768.png') });

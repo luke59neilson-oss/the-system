@@ -117,6 +117,7 @@ test('a player chooses a released evolution with a profession', async ({ browser
   });
   await gmCommand(gm, {
     type: 'evolution.release',
+    rerateApproved: true,
     characterId: 'demo-casper',
     options: [
       {
@@ -205,6 +206,7 @@ test('a player chooses a released evolution with a profession', async ({ browser
       .getAttribute('data-skill')) ?? '';
   await gmCommand(gm, {
     type: 'evolution.release',
+    rerateApproved: true,
     characterId: 'demo-sultan',
     options: [
       {
@@ -230,6 +232,7 @@ test('a player chooses a released evolution with a profession', async ({ browser
   // The GM re-releases while the dialog is open: it closes with a notice.
   await gmCommand(gm, {
     type: 'evolution.release',
+    rerateApproved: true,
     characterId: 'demo-sultan',
     options: [
       {

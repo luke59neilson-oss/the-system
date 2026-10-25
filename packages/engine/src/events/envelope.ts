@@ -525,6 +525,11 @@ export const EVENT_PAYLOAD_SCHEMAS = {
       .array(z.strictObject({ skill: nonBlank, rarity: recordId }))
       .max(200)
       .optional(),
+    /**
+     * The GM approved the re-rating (MT.1): skills the list does not name keep
+     * their rarity, and a race skill is never lowered. Absent before MT.1.
+     */
+    rerateApproved: z.literal(true).optional(),
     /** Upcast from v1: released under the old rules (no pending-selection gate). */
     legacy: z.literal(true).optional(),
   }),

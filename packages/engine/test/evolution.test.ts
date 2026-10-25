@@ -86,6 +86,7 @@ const menu = (level: number, ceiling: string, extra: Partial<Record<string, stri
 ];
 const release = (skill: string, name: string, rarity: string, extra: object = {}): Command => ({
   type: 'evolution.release',
+  rerateApproved: true,
   characterId: 'jake',
   options: [{ className: 'Hunter', transforms: [{ skill, name, rarity }] }],
   ...extra,
@@ -432,6 +433,7 @@ describe('evolution', () => {
     expect(reject(c, release(archery, 'X', 'common'), player('jake'))).toMatch(/only the GM/);
     c = ok(c, {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'jake',
       options: [
         {
@@ -484,9 +486,9 @@ describe('evolution', () => {
     expect(j.skills.map((s) => [s.name, s.rarity])).toEqual([
       ['Twin Shot', 'rare'],
       [stealth, 'common'],
-      // Kept skills drop one rarity by default (MR.1).
-      ['Archer’s Eye', 'inferior'],
-      ['Identify', 'inferior'],
+      // Kept skills keep their rarity unless the GM sets one (MT.1).
+      ['Archer’s Eye', 'common'],
+      ['Identify', 'common'],
     ]);
     // Spread reshaped: new weights govern, totals restart from the evolution.
     expect(j.classWeights).toMatchObject({ agility: 2, perception: 1, strength: 0 });
@@ -545,6 +547,7 @@ describe('evolution', () => {
     }
     c = ok(c, {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'jake',
       options: [
         {
@@ -570,6 +573,7 @@ describe('evolution', () => {
     ) =>
       reject(c, {
         type: 'evolution.release',
+        rerateApproved: true,
         characterId: 'jake',
         options,
         ...(professions ? { professions } : {}),
@@ -730,6 +734,7 @@ describe('evolution', () => {
     expect(
       reject(c, {
         type: 'evolution.release',
+        rerateApproved: true,
         characterId: 'jake',
         options: [{ className: 'X', transforms: [] }],
         professions: ['Smith'],
@@ -778,6 +783,7 @@ describe('projection', () => {
     let c = ok(atGTop(), award(XP_F));
     c = ok(c, {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'jake',
       options: [
         {
@@ -1013,6 +1019,7 @@ describe('evolution rules from Luke (MQ.1: D98, D99, D102, D103)', () => {
   it('the chosen option adds its one-time stat bonus to base stats; the others do not count', () => {
     let c = ok(atGTop(), {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'jake',
       options: [
         {
@@ -1039,6 +1046,7 @@ describe('evolution rules from Luke (MQ.1: D98, D99, D102, D103)', () => {
     const all = Object.fromEntries(rules.stats.list.map((s) => [s.id, 2]));
     let c = ok(atGTop(), {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'jake',
       options: [
         {
@@ -1057,6 +1065,7 @@ describe('evolution rules from Luke (MQ.1: D98, D99, D102, D103)', () => {
     const bad = (statBonus: Record<string, number>) =>
       reject(atGTop(), {
         type: 'evolution.release',
+        rerateApproved: true,
         characterId: 'jake',
         options: [
           {
@@ -1078,6 +1087,7 @@ describe('evolution rules from Luke (MQ.1: D98, D99, D102, D103)', () => {
     expect(Object.values(pools(c)).every((v) => v === 1)).toBe(true);
     c = ok(c, {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'jake',
       options: [
         {
@@ -1111,6 +1121,7 @@ describe('evolution rules from Luke (MQ.1: D98, D99, D102, D103)', () => {
     let c = atGTop();
     c = ok(c, {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'jake',
       options: [{ className: 'Hunter', transforms: [], statBonus: { strength: 1 } }],
     });
@@ -1465,6 +1476,7 @@ describe('marks carry over through evolutions (MQ.4, D113, D114)', () => {
       if (target) {
         c = ok(c, {
           type: 'evolution.release',
+          rerateApproved: true,
           characterId: 'jake',
           options: [{ className: 'Hunter', transforms: [] }],
           rerate: { [archery]: 'rare' },
@@ -1607,6 +1619,7 @@ describe('tailored professions (MQ.6, DESIGN §2)', () => {
     expect(evolutionTarget(rules, char(c))?.id).toBe('D');
     c = ok(c, {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'jake',
       options: [{ className: 'Hunter III', transforms: [] }],
       professions: ['cook', 'Warden'],
@@ -1625,6 +1638,7 @@ describe('tailored professions (MQ.6, DESIGN §2)', () => {
     let c = pickAll(ok(declined(), award(40 * XP_E)));
     c = ok(c, {
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: 'jake',
       options: [{ className: 'Hunter III', transforms: [] }],
       professions: ['Warden'],
@@ -1736,6 +1750,7 @@ describe('merge transforms (M5.2, DESIGN §6 "offer that merge as part of the ev
   };
   const mergeRelease = (name = 'Ghost Shot', rarity = 'rare', merge = stealth): Command => ({
     type: 'evolution.release',
+    rerateApproved: true,
     characterId: 'jake',
     options: [{ className: 'Hunter', transforms: [{ skill: archery, merge, name, rarity }] }],
   });
@@ -1811,6 +1826,7 @@ describe('merge transforms (M5.2, DESIGN §6 "offer that merge as part of the ev
     expect(
       reject(mergeReady(), {
         type: 'evolution.release',
+        rerateApproved: true,
         characterId: 'jake',
         options: [
           {

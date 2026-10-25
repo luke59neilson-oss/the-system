@@ -496,7 +496,7 @@
             }
           },
           "rerate": {
-            "description": "Skill name → rarity after the evolution; others drop one rarity (DESIGN §6).",
+            "description": "Skill name → rarity after the evolution; others keep their rarity. The import preview lists the re-rating, and approving the import approves it (DESIGN §6).",
             "type": "object",
             "propertyNames": {
               "type": "string",

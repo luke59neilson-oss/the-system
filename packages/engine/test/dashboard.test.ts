@@ -24,7 +24,12 @@ const marks = (skill: string, n: number, tag: string): Command[] =>
   }));
 const evolveToF: Command[] = [
   award(400),
-  { type: 'evolution.release', characterId: ID, options: [{ className: 'Archer' }] },
+  {
+    type: 'evolution.release',
+    rerateApproved: true,
+    characterId: ID,
+    options: [{ className: 'Archer' }],
+  },
   { type: 'evolution.choose', characterId: ID, optionId: 'o1' },
 ];
 const flags = (c: Campaign) => characterFlags(c.state!, ID);

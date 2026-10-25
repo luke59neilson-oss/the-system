@@ -298,6 +298,7 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
     });
     exec({
       type: 'evolution.release',
+      rerateApproved: true,
       characterId: id,
       options,
       ...(unlock ? { professions: ['Smith', 'Cook', 'Alchemist'] } : {}),

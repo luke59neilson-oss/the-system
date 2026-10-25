@@ -1,5 +1,4 @@
 import {
-  defaultRerate,
   dueSelections,
   evolutionTarget,
   releaseEvolution,
@@ -16,9 +15,12 @@ import {
 export interface RerateRow {
   readonly skill: string;
   readonly from: string;
-  /** The default after the evolution: one rarity down, floor at the lowest. */
+  /** The default after the evolution: the rarity it has going in (MT.1). */
   readonly byDefault: string;
-  /** Rarities the GM may pick: anything up to the new grade's ceiling. */
+  /**
+   * Rarities the GM may pick: anything up to the new grade's ceiling (and the
+   * current rarity, if above it); a race skill never below its own (MT.1).
+   */
   readonly choices: readonly string[];
 }
 
@@ -67,7 +69,6 @@ export function evolutionPlan(state: CampaignState, characterId: string): Evolut
   const ids = rules.skills.rarities.filter((r) => !r.reserved).map((r) => r.id);
   const ceiling = ids.indexOf(target.rarityCeiling);
   const choices = ceiling < 0 ? ids : ids.slice(0, ceiling + 1);
-  const defaults = new Map(defaultRerate(rules, c).map((r) => [r.skill, r.rarity]));
   const gi = (g: string) => rules.grades.findIndex((x) => x.id === g);
   const { merge } = rules.skills;
   const mergesLeft =
@@ -79,12 +80,16 @@ export function evolutionPlan(state: CampaignState, characterId: string): Evolut
       level: s.level,
       capstone: s.capstone,
     })),
-    rerate: c.skills.map((s) => ({
-      skill: s.name,
-      from: s.rarity,
-      byDefault: defaults.get(s.name) ?? s.rarity,
-      choices,
-    })),
+    rerate: c.skills.map((s) => {
+      const own = ids.indexOf(s.rarity);
+      const upTo = own > ceiling ? ids.slice(0, own + 1) : choices;
+      return {
+        skill: s.name,
+        from: s.rarity,
+        byDefault: s.rarity,
+        choices: s.kind === 'race' && own >= 0 ? upTo.slice(own) : upTo,
+      };
+    }),
     // Pairs the evolution can merge (DESIGN §6), judged at the new grade's
     // ceiling, so a pair whose result only fits after evolving is prompted too.
     mergePrompts:
@@ -138,6 +143,7 @@ export function releaseProblem(
       ignoreSelections,
       rerate,
       jointUses(state, characterId),
+      true,
     );
     return null;
   } catch (error) {

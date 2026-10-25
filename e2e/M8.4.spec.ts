@@ -74,6 +74,7 @@ async function release(gm: Page, player: Page) {
   expect(skill).not.toBe('');
   await gmCommand(gm, {
     type: 'evolution.release',
+    rerateApproved: true,
     characterId: 'demo-sultan',
     options: [
       {

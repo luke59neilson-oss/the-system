@@ -663,6 +663,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
             ...(c.evolution.rerate === undefined
               ? {}
               : { rerate: c.evolution.rerate.map((r) => ({ skill: r.skill, rarity: r.rarity })) }),
+            ...(c.evolution.rerateApproved === true ? { rerateApproved: true as const } : {}),
           },
     portrait: portraitUrl(c.portrait),
   };

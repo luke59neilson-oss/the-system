@@ -92,6 +92,15 @@ test('the GM builds and releases an evolution with re-rating', async ({ browser 
   await expect(builder.getByLabel('Character').locator('option')).toHaveCount(2);
   await expect(builder.getByLabel('Character')).toHaveValue('demo-sultan');
   await expect(option.getByLabel('Class name')).toHaveValue('Storm Hunter');
+  // MT.1: every skill starts at its own rarity; the GM lowers one and approves.
+  await expect(form.getByTestId('release-problem')).toHaveText(
+    'Approve the skill re-rating before releasing.',
+  );
+  await form
+    .getByRole('list', { name: 'Re-rating' })
+    .getByLabel(/Archer.s Eye/)
+    .selectOption({ label: 'Inferior' });
+  await form.getByLabel(/Approve this re-rating/).check();
   await expect(form.getByTestId('release-problem')).toHaveCount(0);
   await expect(
     form.getByRole('list', { name: 'Re-rating' }).getByRole('listitem').first(),
@@ -180,6 +189,7 @@ test('the release waits on a selection; transforms, profession offers and withdr
   await row.getByLabel('New name').fill('Pathfinder’s Eye');
   await row.getByLabel('Rarity').selectOption('rare');
   await form.getByLabel(/Professions to offer/).fill('Cook\nAlchemist');
+  await form.getByLabel(/Approve this re-rating/).check();
   await expect(form.getByTestId('release-problem')).toHaveCount(0);
   await builder.evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-evolution-transform-1366x768.png') });

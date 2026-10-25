@@ -11,7 +11,7 @@ import { CharacterRuleError, raceLevel } from '../character';
 import { settleContest, type ContestSideRecord, type GradeGapMode } from '../resolution';
 import { titleDefByName } from '../titles';
 import { hungerLevel } from '../trackers';
-import { defaultRerate } from '../evolution';
+import { keptRerate } from '../evolution';
 import { normalizeTags } from '../skills/library';
 import { missingDefaultEntries } from '../content/defaults';
 import { largestRemainderSplit } from '../progression';
@@ -305,10 +305,15 @@ export type Command =
       /** Offered at the profession unlock grade; default none. */
       professions?: readonly string[] | undefined;
       /**
-       * GM override of the re-rating (MR.1): skill name → rarity after the
-       * evolution. Skills not named drop one rarity (never below the lowest).
+       * The GM's re-rating (MR.1, MT.1): skill name → rarity after the
+       * evolution. Skills not named keep the rarity they have going in.
        */
       rerate?: Readonly<Record<string, string>> | undefined;
+      /**
+       * The GM approved the re-rating list (MT.1, DESIGN §6): the release is
+       * refused without it.
+       */
+      rerateApproved?: boolean | undefined;
     }
   | {
       type: 'evolution.choose';
@@ -654,6 +659,7 @@ const commandSchema = z.discriminatedUnion('type', [
     type: z.literal('evolution.release'),
     options: z.array(z.record(z.string(), z.unknown())),
     rerate: z.record(z.string(), z.string()).optional(),
+    rerateApproved: z.boolean().optional(),
   }),
   z.object({ type: z.literal('evolution.choose') }),
   z.object({ type: z.literal('clock.create') }),
@@ -789,7 +795,7 @@ function awardPayload(command: Extract<Command, { type: 'xp.award' }>) {
 }
 
 /** The character a choice is made for, if it exists (choices default to what is pending). */
-/** The release's full re-rating: the default drop plus the GM's overrides (MR.1). */
+/** The release's full re-rating: every skill as it goes in, plus the GM's settings (MT.1). */
 function rerateFor(
   campaign: Campaign,
   characterId: string,
@@ -803,7 +809,7 @@ function rerateFor(
   const extra = Object.entries(overrides)
     .filter(([name]) => !known.has(name))
     .map(([skill, rarity]) => ({ skill, rarity }));
-  return [...defaultRerate(rules, character, overrides), ...extra];
+  return [...keptRerate(character, overrides), ...extra];
 }
 
 function pendingOf(campaign: Campaign, characterId: string) {
@@ -1220,6 +1226,11 @@ function toEvent(
         payload: { characterId: command.characterId, skill: command.skill },
       };
     case 'evolution.release':
+      if (command.rerateApproved !== true) {
+        throw new EventRejectedError(
+          "Approve the skill re-rating first: the GM sets each kept skill's rarity and approves the list (DESIGN §6)",
+        );
+      }
       return {
         type: 'evolution.released',
         payload: {
@@ -1234,6 +1245,7 @@ function toEvent(
           })),
           professions: command.professions ?? [],
           rerate: rerateFor(campaign, command.characterId, command.rerate ?? {}),
+          rerateApproved: true,
         },
       };
     case 'evolution.choose':

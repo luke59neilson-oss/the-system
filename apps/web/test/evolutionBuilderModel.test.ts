@@ -63,7 +63,7 @@ describe('evolution builder model (M5.2)', () => {
     expect(evolutionPlan(campaign(100).state!, 'ghost')).toBeNull();
   });
 
-  it('plans the F evolution with the default re-rating', () => {
+  it('plans the F evolution with every skill kept by default (MT.1)', () => {
     const plan = evolutionPlan(campaign(400).state!, 'jake')!;
     expect(plan.toGrade).toBe('F');
     expect(plan.pendingSelections).toEqual([]);
@@ -72,8 +72,11 @@ describe('evolution builder model (M5.2)', () => {
     const archery = plan.rerate.find((r) => r.skill === 'Basic Archery')!;
     expect([archery.from, archery.byDefault]).toEqual(['inferior', 'inferior']);
     const eye = plan.rerate.find((r) => r.skill === 'Archer’s Eye')!;
-    expect([eye.from, eye.byDefault]).toEqual(['common', 'inferior']);
-    expect(eye.choices.at(-1)).toBe('rare');
+    expect([eye.from, eye.byDefault]).toEqual(['common', 'common']);
+    expect(eye.choices).toEqual(['inferior', 'common', 'uncommon', 'rare']);
+    // Identify is a race skill: never offered below its rarity.
+    const identify = plan.rerate.find((r) => r.skill === 'Identify')!;
+    expect(identify.choices).toEqual(['common', 'uncommon', 'rare']);
   });
 
   it('reports what the engine would refuse', () => {
@@ -137,6 +140,7 @@ describe('evolution builder model (M5.2)', () => {
         ...log,
         {
           type: 'evolution.release',
+          rerateApproved: true,
           characterId: 'jake',
           options: [
             {
