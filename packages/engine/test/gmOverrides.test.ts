@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { execute, projectForPlayer, replay, type Campaign, type Command } from '../src';
+import { changeLog, execute, projectForPlayer, replay, type Campaign, type Command } from '../src';
 import { rawRules, run, testContext } from './helpers/events';
 
 // MT.7 (DESIGN §7 GM authority, Q60): where the engine enforces a rule on a
@@ -58,6 +58,8 @@ describe('GM overrides the merge rules (MT.7)', () => {
     expect(c.state!.characters[ID]!.mergeOffer?.override).toBe(true);
     // The player never sees that the GM overrode a rule.
     expect(JSON.stringify(projectForPlayer(c.state!, ID).me.mergeOffer)).not.toContain('override');
+    // The owner sees the merged rarity (not a stale offer) under the override.
+    expect(projectForPlayer(c.state!, ID).me.mergeOffer?.rarity).toBe('uncommon');
     c = run([accept('o-Cutstep')], player, c);
     expect(names(c)).toEqual(expect.arrayContaining(['Cutstep', 'Look']));
     expect(names(c)).not.toContain('Cut');
@@ -122,5 +124,8 @@ describe('GM offers a montage early (MT.7)', () => {
     expect(JSON.stringify(projectForPlayer(offered.state!, ID))).not.toContain('override');
     expect(replay(offered.events).state).toEqual(offered.state);
     expect(undo(offered).state!.montages.m1).toBeUndefined();
+    // The change log names the override on its row.
+    expect(changeLog(offered).at(-1)?.lines[0]).toMatch(/\(GM override\)$/);
+    expect(changeLog(c).at(-1)?.lines[0]).not.toMatch(/override/);
   });
 });

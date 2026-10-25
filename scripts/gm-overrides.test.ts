@@ -28,6 +28,8 @@ describe('GM overrides list (MT.7)', () => {
     );
     expect(missing).toEqual([]);
     expect(doc).not.toContain('UNCLASSIFIED');
+    // Every rule's way through is built: nothing is left planned.
+    expect(doc).not.toMatch(/planned/i);
     for (const line of doc.split('\n').filter((l) => l.startsWith('| `'))) {
       expect(line.split(' | ').at(-1)?.replace(/\|$/, '').trim(), line).not.toBe('');
     }

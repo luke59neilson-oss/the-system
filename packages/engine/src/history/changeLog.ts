@@ -246,6 +246,11 @@ function describeFrom(
     } catch {
       // An undone event may no longer apply where it stood; the summary still names it.
     }
+    if (lines.length === 0) lines = [fallbackLine(state, event)];
+    // MT.7: a rule the GM overrode is named on its row.
+    if ((event.payload as { override?: unknown }).override === true) {
+      lines = [`${lines[0] ?? ''} (GM override)`, ...lines.slice(1)];
+    }
     rows.push({
       seq,
       id: event.id,
@@ -253,7 +258,7 @@ function describeFrom(
       category: changeLogCategory(event.type),
       at: event.timestamp,
       actor: event.actor.role,
-      lines: lines.length ? lines : [fallbackLine(state, event)],
+      lines,
       undoneBy: undone ? (campaign.undone[event.id] as string) : null,
     });
   }
