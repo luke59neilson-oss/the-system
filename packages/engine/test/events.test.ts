@@ -900,6 +900,7 @@ describe('property: replay equals incremental state', () => {
       'note.delete',
       'skill.nickname',
       'skill.setUnique',
+      'skill.setRarity',
       'skill.describe',
       'skill.useLibraryText',
       'skill.awardMark',

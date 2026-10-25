@@ -91,6 +91,37 @@ export function setUnique(character: Character, name: string, unique: boolean): 
   return withSkill(character, index, { ...skill, unique });
 }
 
+/**
+ * GM override (MT.7, DESIGN §7): sets any owned skill, race skills included,
+ * to any non-reserved rarity, past the grade ceiling and without marks. Raising
+ * is an upgrade (DESIGN §6): it starts at 0 marks and takes the new rarity's
+ * library text. Lowering is a re-rating: marks, text and effects stay.
+ */
+export function setSkillRarity(
+  rules: RulesConfig,
+  character: Character,
+  name: string,
+  rarity: string,
+): Character {
+  const index = skillIndex(character, name);
+  const skill = character.skills[index] as CharacterSkill;
+  const to = rarityIndex(rules, rarity);
+  if (rules.skills.rarities[to]?.reserved) {
+    throw new CharacterRuleError(`Rarity "${rarity}" is reserved`);
+  }
+  const from = rarityIndex(rules, skill.rarity);
+  if (to === from)
+    throw new CharacterRuleError(`[${name}] is already ${rarityName(rules, rarity)}`);
+  const { textRarity, ...rest } = skill;
+  if (to > from) return withSkill(character, index, { ...rest, rarity, marks: 0 });
+  const text = textRarity ?? skill.rarity;
+  return withSkill(
+    character,
+    index,
+    rarity === text ? { ...rest, rarity } : { ...rest, rarity, textRarity: text },
+  );
+}
+
 /** Marks needed to upgrade from the skill's rarity, or null when there is no next step. */
 export function marksToUpgrade(rules: RulesConfig, skill: CharacterSkill): number | null {
   const needed = rules.skills.markUpgrades[skill.rarity];
