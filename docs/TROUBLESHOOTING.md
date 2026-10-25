@@ -29,6 +29,8 @@ Public, players are blocked.
 
 ### macOS firewall
 
+Only for a Mac build made from the source code (there is no macOS download).
+
 1. If macOS asked whether The System may accept incoming connections, choose
    **Allow**.
 2. Otherwise open **System Settings → Network → Firewall → Options** and set
@@ -68,7 +70,9 @@ the port the panel shows).
 
 - The desktop app tries port 30333 and, if another program holds it (or
   Windows reserved it, e.g. Hyper-V port exclusions), the next 19 ports in
-  turn (`apps/desktop/src/launch.ts`, MS.7). The join screen always shows
+  turn (`apps/desktop/src/launch.ts`, MS.7) and says so in a message: "Port
+  30333 is used by another program, so The System is using port … this
+  time." The join screen always shows
   the port it got, so use the address it shows rather than a saved one.
 - If all 20 are taken it says "Ports 30333–30352 are all in use or blocked":
   close the program using them, or another copy of The System running in a
@@ -81,7 +85,8 @@ the first time it runs.
 
 - *Windows* ("Windows protected your PC", SmartScreen): choose **More
   info**, then **Run anyway**. Windows remembers the choice.
-- *macOS* ("cannot be opened because the developer cannot be verified"):
+- *macOS* (only for a Mac build made from the source code; there is no
+  macOS download) ("cannot be opened because the developer cannot be verified"):
   Control-click (right-click) the app, choose **Open**, then **Open** again.
   On newer macOS versions, open **System Settings → Privacy & Security**,
   scroll to the message about The System and choose **Open Anyway**.

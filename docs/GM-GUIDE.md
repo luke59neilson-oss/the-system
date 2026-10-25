@@ -1,18 +1,28 @@
 # GM guide
 
-How to run a session of The System. The rules themselves are in
+How to run a session of The System. These guides, the rules and the
+tutorial content pack are not installed with the app: they live in the
+project on GitHub, https://github.com/luke59neilson-oss/the-system (folder `docs`). Open a file there to read it, or
+use its **Download raw file** button to save it.
+
+The rules themselves are in
 [`DESIGN.md`](DESIGN.md); every number there is a default you can change in
-**Rules settings**. Players get [`PLAYER-QUICKSTART.md`](PLAYER-QUICKSTART.md);
+**Rules settings**. Print [`PLAYER-QUICKSTART.md`](PLAYER-QUICKSTART.md) (one page) for each
+player;
 when something will not connect, see [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md).
 
 ## Install and start
 
 1. Download the newest preview from the repo's **Releases** page: the
    Windows installer (`TheSystem-…-win-x64-setup.exe`) or the Linux
-   `AppImage`. Release builds do not include macOS (D97).
+   `AppImage`. There is no macOS download (D97): a Mac needs a build made
+   from the source code.
 2. Run it. The app is not code-signed, so Windows shows "Windows protected
    your PC" the first time: **More info → Run anyway** (TROUBLESHOOTING has
-   the details). Allow it through the firewall on **Private** networks.
+   the details). The installer asks where to install; the defaults are
+   fine. Allow the app through the firewall on **Private** networks. On
+   Linux, make the AppImage executable first (right-click → Properties →
+   allow executing, or `chmod +x TheSystem-*.AppImage`).
 3. Double-click **The System**. A "Starting The System…" splash appears,
    then the GM console opens. The console only works in this window (or
    through the GM link below); players can never open it.
@@ -23,11 +33,12 @@ The campaign is saved on every change. Quitting the app backs it up first.
 
 - **New campaign**: give it a name and leave **Start with the default
   classes, Human race and their skills** ticked (the six starting classes,
-  Human, Identify). The new campaign opens at once.
+  Human, Identify), then press **Create campaign**. It opens at once.
 - To try things out first, **Load demo campaign** at the top switches to a
   sample party; **Back to my campaign** returns. Nothing in the demo touches
   your campaign.
-- **Import content** → pick `docs/content-packs/tutorial.json` to load the
+- **Import content** → pick `tutorial.json` (download it from
+  `docs/content-packs/` on GitHub, see the top of this guide) to load the
   tutorial on the Host (quests, regions, bestiary, Identify text). Tick what
   to apply; nothing changes until you approve it.
 - **New character**: one per player, with a name, **Starting class** and an
@@ -115,7 +126,8 @@ first.
 2. **Copy for Claude** (or **Copy log for Claude** mid-session) copies the
    report. Paste it into Claude and ask for skill menus, evolutions, items,
    titles or bestiary entries in The System's content format
-   ([`CONTENT-FORMAT.md`](CONTENT-FORMAT.md)).
+   ([`CONTENT-FORMAT.md`](CONTENT-FORMAT.md) on GitHub; give Claude the link
+   or paste the file).
 3. Save Claude's reply as a `.json` file and open it in **Import content**.
    The preview lists each entry; tick what to apply. A menu or evolution for
    a level not yet reached cannot be ticked: keep the file for later.

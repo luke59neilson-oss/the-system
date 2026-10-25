@@ -10,10 +10,10 @@ GM's laptop; nothing to install.
 2. Under **Choose your character**, tap your character. Next time the page
    offers **Welcome back · Continue as …**.
 3. The badge at the top says **Connected**. If it says **Reconnecting…**, wait:
-   it catches up on its own. Can't connect at all? Tell the GM (see
-   `docs/TROUBLESHOOTING.md`).
+   it catches up on its own. Can't connect at all? Tell the GM: the
+   **Players join** panel on the GM's laptop has the fixes.
 
-**Switch character** (top bar) goes back to the list. **Sound: off** turns the "DING!" chime on
+**Switch character** (top bar) goes back to the list. **Sound:** off/on turns the "DING!" chime on
 (and back off), with a volume slider.
 
 ## Your status screen
