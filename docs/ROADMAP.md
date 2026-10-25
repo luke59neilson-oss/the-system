@@ -414,17 +414,17 @@ the rest follow in file order. Each gets its own §6 review.
   plus a "load older" cursor) without a full replay per request, the console
   renders that page, and a unit or e2e test pins the bound on a 10k-event log.
   Needed before M4.A is checked.
-- [ ] **QF.23 Test the Identify-as-source merge refusal.** Sweep B (Tests,
+- [x] **QF.23 Test the Identify-as-source merge refusal.** Sweep B (Tests,
   fable), Medium: `checkRaceSkillsKept` (`evolution/model.ts`) refuses a
   transform that merges a race skill away, but only the `merge: 'Identify'`
   side is tested; the `skill: 'Identify'` side can be deleted with every test
   green. *Accept:* a test that fails if that branch is removed.
-- [ ] **QF.24 A merge offer announces itself.** Sweep B (UX, sonnet), Medium:
+- [x] **QF.24 A merge offer announces itself.** Sweep B (UX, sonnet), Medium:
   a merge the GM sends appears as a panel with no 'DING' or notification
   (`MergeOfferPanel.tsx`), so a player can miss it. *Accept:* the offer
   adds a System notification for its owner only (canary still passes);
   engine test and e2e.
-- [ ] **QF.25 The GM override keeps keyboard focus.** Sweep B (UX, sonnet),
+- [x] **QF.25 The GM override keeps keyboard focus.** Sweep B (UX, sonnet),
   Medium: Review override, Cancel and Apply unmount the focused button
   (`PartyDashboard.tsx` ProgressionOverride), dropping focus to the page.
   *Accept:* focus moves to the warning on Review and back to Review override

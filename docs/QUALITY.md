@@ -163,6 +163,8 @@ reviewers ran 15–20 minutes each in the background.
   (10:31 UTC): now QF.14.
 
 ## Backlog (Lows; M11.5 goes through these)
+- UX (QF.25 review): the GM override warning loses focus to the page when a live change (award, undo, other GM window) closes it; Escape does not close it.
+- Tests (QF.24 review): no engine/server test that a second character's history lacks another's `mergeOffer` notice (the hub's generic `characterId` filter covers it).
 - Boundaries (sweep B 2026-10-25): the GM change log shows unshared private-journal rows as "note written" (no text, but the GM learns a note exists); consider dropping them from the GM view.
 - Boundaries (sweep B 2026-10-25): the desktop build sets no Electron fuses (`electronFuses`: RunAsNode off, cookie encryption, ASAR integrity).
 - UX (M11.3 review r2): the player Notifications rows are keyed `${seq}-${rows.length - i}` (`PlayerScreen.tsx` Feed), so every new ding remounts every row and focus on an entry revealed by "Show older" falls to the body; key by `seq` if unique. Revealed entries keep `tabindex="-1"` (harmless).
