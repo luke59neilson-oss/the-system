@@ -72,3 +72,44 @@ describe('GM sets a skill rarity (MT.7)', () => {
     expect(replay(c.events).state).toEqual(c.state);
   });
 });
+
+describe('GM gives a skill outside selections (MT.7)', () => {
+  const grant = (over: Partial<Extract<Command, { type: 'skill.grant' }>> = {}): Command => ({
+    type: 'skill.grant',
+    characterId: ID,
+    name: 'Star Shot',
+    rarity: 'mythical',
+    kind: 'class',
+    description: 'A shot that never misses.',
+    ...over,
+  });
+
+  it('gives any skill at any rarity, with no selection due and past the ceiling', () => {
+    const c = run([...start(), grant()]);
+    expect(c.events.at(-1)?.type).toBe('skill.granted');
+    expect(skill(c, 'Star Shot')).toMatchObject({
+      rarity: 'mythical',
+      kind: 'class',
+      marks: 0,
+      description: 'A shot that never misses.',
+      flavor: null,
+    });
+    const undone = run(
+      [{ type: 'event.undo', eventId: c.events.at(-1)!.id } as Command],
+      testContext('u'),
+      c,
+    );
+    expect(undone.state!.characters[ID]!.skills.map((s) => s.name)).not.toContain('Star Shot');
+  });
+
+  it('refuses a taken name, a profession skill without a profession, and a reserved rarity', () => {
+    const c = run(start());
+    const refused = (command: Command) => {
+      const r = execute(c, command, testContext('r'));
+      return r.ok ? 'ok' : r.error;
+    };
+    expect(refused(grant({ name: 'Cut' }))).toMatch(/already has a skill "Cut"/);
+    expect(refused(grant({ kind: 'profession' }))).toMatch(/has no profession/);
+    expect(refused(grant({ rarity: 'divine' }))).toMatch(/reserved/);
+  });
+});

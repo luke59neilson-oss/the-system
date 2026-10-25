@@ -417,6 +417,15 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     characterId: recordId,
     skill: nonBlank,
   }),
+  /** GM override (MT.7): a skill given outside the selection schedule. */
+  'skill.granted': z.strictObject({
+    characterId: recordId,
+    name: nonBlank,
+    rarity: recordId,
+    kind: z.enum(['class', 'profession', 'race']),
+    description: z.string().max(4000).nullable(),
+    flavor: z.string().max(4000).nullable(),
+  }),
   /** GM override (MT.7): a skill's rarity set directly, past every rule. */
   'skill.raritySet': z.strictObject({
     characterId: recordId,
@@ -858,6 +867,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'skill.described': 1,
   'skill.uniqueSet': 1,
   'skill.raritySet': 1,
+  'skill.granted': 1,
   'skill.libraryTextUsed': 1,
   'skill.markAwarded': 1,
   'skill.upgraded': 1,

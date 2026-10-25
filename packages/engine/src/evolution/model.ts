@@ -195,6 +195,45 @@ function checkFreeName(
   }
 }
 
+/**
+ * GM override (MT.7, DESIGN §7): gives a skill outside the selection schedule,
+ * at any non-reserved rarity, past the grade ceiling and without a capstone
+ * menu. The name must still be free (pair counts are keyed by name, D63), and
+ * a profession skill needs a profession.
+ */
+export function grantSkill(
+  rules: RulesConfig,
+  character: Character,
+  skill: {
+    readonly name: string;
+    readonly rarity: string;
+    readonly kind: CharacterSkill['kind'];
+    readonly description?: string | null | undefined;
+    readonly flavor?: string | null | undefined;
+  },
+  history: ReadonlySet<string>,
+): Character {
+  const name = skill.name.trim();
+  if (name === '') throw new CharacterRuleError('The skill needs a name');
+  const rarity = rules.skills.rarities.find((r) => r.id === skill.rarity);
+  if (!rarity) throw new CharacterRuleError(`Unknown rarity "${skill.rarity}"`);
+  if (rarity.reserved) throw new CharacterRuleError(`Rarity "${skill.rarity}" is reserved`);
+  if (skill.kind === 'profession' && character.profession === null) {
+    throw new CharacterRuleError(`${character.name} has no profession for [${name}]`);
+  }
+  checkFreeName(character, name, history);
+  return {
+    ...character,
+    skills: [
+      ...character.skills,
+      newSkill(name, skill.rarity, skill.kind, {
+        description: skill.description,
+        flavor: skill.flavor,
+      }),
+    ],
+  };
+}
+
 /** Lower-cased skill names in practice entries that are no longer current skills. */
 export function retiredSkillNames(
   character: Character,
