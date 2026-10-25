@@ -882,3 +882,8 @@
 - Round 1: 0 High / 0 Medium / 6 Low. No bugs, no leaks; old logs and v1 rules load; goldens legitimately re-recorded.
 - Fixed Lows: stale QUALITY.md canary note; M7.4 roadmap line marked retired; import note no longer repeats "Ignored". Kept: tutorial GM note mentions narrated hunger (matches DESIGN §7); engine-level undo of a no-op hunger event is harmless (no UI button); retired `hunger` content section documented on purpose.
 - No round 2 (no High, under two Mediums).
+
+## 2026-10-25 · MT.4 Credits history for players · reviewer: sonnet (worktree, 55a3b5ec)
+
+- Round 1: 0 High / 0 Medium / 6 Low. No leaks (own rows only, `characterId` never copied; frame scans clean).
+- Lows not fixed this run, added to the QUALITY backlog: shared 300-entry ledger can evict a quiet player's oldest rows with no hint; rows show no date; raw-id fallback for a missing counterparty; test gaps for trade/loot rows in the projection test. No round 2.
