@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress: M0–M9 done (M9.4 deferred), M10 done, MS, MQ and MR done; QF.1–QF.22 done; M11.1–M11.2 done; Preview ready: Actions → Release → Run workflow (M10)
-**Next item:** M11.3 Performance (resume wip/M11.3)
+**Status:** in progress: M0–M9 done (M9.4 deferred), M10 done, MS, MQ and MR done; QF.1–QF.22 done; M11.1–M11.3 done; Preview ready: Actions → Release → Run workflow (M10)
+**Next item:** M11.4 Guides (resume wip/M11.4)
 **Blockers:** none
 
 ## Run log
@@ -1024,4 +1024,14 @@ next item, blockers. -->
 - Tests: unit 1,195 (+ perf test on wip); e2e 92 + 6 latency (full e2e 92/92 locally, 7.6 min under reviewer load); desktop smoke not run (no desktop change). Engine coverage not re-measured (last 97.53%).
 - Open `wip/*` branches: wip/M11.3 (base wip/M11.2 991b1ec, head 6370677). Where I stopped: `apps/server/test/perf.test.ts` builds a 50,000-event log and times `CampaignStore.open` with full replay: 1.1–1.4 s (< 3 s ✓). But building that log through `execute` is quadratic (0.09 ms per command at 0 events, 0.8 ms at 40k; the build takes 30 s): profile `execute` (suspects: `overLimit`/`itemOutOfReach` or a validation that scans `campaign.events`) and fix it, then shorten the test's build. Still to do: player sheet interactive < 2 s on localhost (Playwright timing, e2e/M11.3.spec.ts, ideally against a large campaign) and screenshots.
 - Next item: M11.3 Performance (resume wip/M11.3).
+- Blockers: none.
+
+### Run b883f039 · 2026-10-25 00:08–00:49 UTC (end minute 41: M11.4 opened on wip/M11.4 at 39; the lock was released early by mistake (misread the clock while closing out), with M11.4 still buildable; no §5.5 reason)
+- Preflight: `add_repo` not offered; repo already cloned (detached HEAD; reset main to origin/main 8006c1b). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer: sonnet worked (worktree; Agent calls block in this session, so the review ran in the same message as the full e2e). No new answers. Hour 00: efficiency check (below); no sweep.
+- CI on main at start: latest completed (8006c1b, docs only) red in `test` → `e2e/M8.3.spec.ts` keyboard sweep ("never reached by Tab", 98 elements). Passed here alone and with `--workers=2`: logged under Flakes in QUALITY.md; this run's push re-runs CI.
+- Efficiency check: scorecard row added. D195 (`npm run clock` wording) reverted under strict §9.2 (Highs 0 → 3, red/day 2 → 3; the auditor judges both unrelated, Q71) as D205. Applied the auditor's Tier 1 "never idle on a blocking review" ordering as D206 (in trial, judge at 06:00 + 6 runs). Its flake-fix idea waits for a repeat.
+- M11.3 Performance **checked**: profiling showed `appendEvent`'s duplicate-id check scanned the whole log per command; now an id → position index shared per lineage (branch-safe, tested), so building 50k events takes 7 s instead of 30 s. 50k-event full-replay load 0.75 s (< 3 s). Player sheet on a 50k-event campaign rendered 12,000+ history items (1.2–2.0 s); Notifications and System messages now render the newest 50 with "Show older (N more)" (focus moves to the first new entry; filter/search reset the page; search covers everything). Cold first visit 1.0 s, warm 0.4–0.5 s (< 2 s), 1366×768 and 390×844 (D204). Sonnet round 1: 0 H / 4 M (cold path untimed, synthetic campaign accepted, page not reset, focus lost) fixed; round 2: 0 H / 0 M, 2 Lows to the backlog. Merged 6bc2748.
+- Tests: unit 1,196; e2e 92 + 8 latency (full e2e 92/92 locally in 6.9 min, alongside the reviewer); desktop smoke not run (no desktop change). Engine coverage not re-measured (last 97.53%).
+- Open `wip/*` branches: wip/M11.4 (base main 6bc2748, head 8c3821b). Where I stopped: `docs/TROUBLESHOOTING.md` has ports (30333, the desktop's 20-port fallback and its error text), addresses (`lan.ts`), and unsigned-app warnings (Windows SmartScreen, macOS Gatekeeper); still TODO there: firewall prompts (Windows Defender, macOS firewall) and same-wifi/guest-network/client-isolation. Not started: `docs/GM-GUIDE.md`, `docs/PLAYER-QUICKSTART.md` (one page; verify every UI label against `apps/web/src`). M11.4 needs a spec only if it ships UI; docs-only items still get a §6 review.
+- Next item: M11.4 Guides (resume wip/M11.4).
 - Blockers: none.

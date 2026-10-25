@@ -20,7 +20,7 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
-| D195 `npm run clock` + §5.5 wording: run it after each review and before §8.0; under 44 opens `wip/<next>` | 2026-10-24 18:07 | end minute ↑ (non-sweep runs), items/run ↑ | 44.0, 1.6 | Highs 0/10, round-2 share 7/10, red/day 2 | 2026-10-25 00:00 + 6 runs |
+| D206 blocking reviews never idle: commit, open `wip/<next>`, send the review call together with independent work (full e2e, next item's tests); no blocking review that cannot return by 50 | 2026-10-25 00:52 | items/run ↑, end minute ↑ | 1.8, 44.2 | Highs 3/10, round-2 share 7/10, red/day 3 | 2026-10-25 06:00 + 6 runs |
 
 ## Kept
 
@@ -33,6 +33,13 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   Chromium cache (2026-10-23 00:08, D131).
 
 ## Reverted
+
+- D195 `npm run clock` + §5.5 wording (2026-10-24 18:07, D205): target
+  barely moved (end minute 44.0 → 44.2, items/run 1.6 → 1.8) and two guards
+  rose (Highs 0 → 3, red/day 2 → 3), so §9.2 reverts the protocol wording.
+  The auditor judged both guard moves unrelated (M11.2's typecheck High,
+  sweep QF items; two one-off CI flakes), another case for Q71. The
+  read-only `scripts/clock.mjs` stays as a helper; LOOP no longer requires it.
 
 - D183 blocking Agent calls in one message (2026-10-24 18:07, D194): target
   improved (sweep-run end minute 42 → 52) but guards worsened (round-2 share
@@ -47,6 +54,12 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   and D132's CI red/day guard too (7 → 10), so §9.2 reverts both.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-10-25 00:08 auditor (sonnet): no Tier 2 proposals. Applied its
+  Tier 1 "never idle on a blocking review" ordering (D206). Its other Tier 1
+  idea, making the M8.3 Tab sweep wait for focus to settle after each press,
+  is a test change: it becomes a QF item if that flake repeats (QUALITY.md
+  Flakes). It again supports Q71 (judge guards against a noise band).
 
 - 2026-10-24 18:07 auditor (sonnet): Tier 1 applied: `npm run clock` and
   the §5.5 wording (D195). Waits for a later check (Tier 1): `npm run
@@ -102,4 +115,4 @@ table last in the file.
 | 2026-10-24 00:08 | 6 | 46.2 | 1.5 | 5/10 | 4 | 47 | 8 | 6.7 | 8491 |
 | 2026-10-24 12:08 | 6 | 44.8 | 1.7 | 5/10 | 4 | 20 | 1 | 6.6 | 10248 |
 | 2026-10-24 18:07 | 6 | 44.0 | 1.6 | 7/10 | 0 | 24 | 2 | 5.9 | 8240 |
-| 2026-10-25 00:08 | 6 | 44.2 | 1.8 | 7/10 | 3 | 25 | 3 | 6.3 | 8130 |
+| 2026-10-25 00:48 | 6 | 44.2 | 1.8 | 7/10 | 3 | 24 | 3 | 6.4 | 8172 |
