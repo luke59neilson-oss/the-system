@@ -200,6 +200,8 @@ export function awardMark(
   character: Character,
   name: string,
   session: string,
+  /** MT.7 GM override: a further mark in the same session. */
+  override = false,
 ): Character {
   const index = skillIndex(character, name);
   const skill = character.skills[index] as CharacterSkill;
@@ -209,7 +211,7 @@ export function awardMark(
     );
   }
   const already = skill.markSessions.filter((s) => s === session).length;
-  if (already >= rules.skills.maxMarksPerSkillPerSession) {
+  if (!override && already >= rules.skills.maxMarksPerSkillPerSession) {
     throw new CharacterRuleError(`[${name}] already earned its mark this session`);
   }
   return withSkill(character, index, {

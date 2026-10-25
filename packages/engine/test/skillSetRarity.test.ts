@@ -113,3 +113,20 @@ describe('GM gives a skill outside selections (MT.7)', () => {
     expect(refused(grant({ rarity: 'divine' }))).toMatch(/reserved/);
   });
 });
+
+describe('GM gives a second mark in a session (MT.7)', () => {
+  it('refuses a second mark without the override and gives it with one', () => {
+    const c = run([
+      ...start(),
+      { type: 'session.start', sessionId: 'p1' },
+      { type: 'skill.awardMark', characterId: ID, skill: 'Cut' },
+    ]);
+    const again: Command = { type: 'skill.awardMark', characterId: ID, skill: 'Cut' };
+    const r = execute(c, again, testContext('r'));
+    expect(r.ok ? 'ok' : r.error).toMatch(/already earned its mark this session/);
+    const forced = run([{ ...again, override: true } as Command], testContext('f'), c);
+    expect(skill(forced, 'Cut').marks).toBe(2);
+    expect(forced.events.at(-1)?.payload).toMatchObject({ override: true });
+    expect(replay(forced.events).state).toEqual(forced.state);
+  });
+});

@@ -1701,11 +1701,11 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       );
     }
     case 'skill.markAwarded': {
-      const { characterId, skill, session } = event.payload;
+      const { characterId, skill, session, override } = event.payload;
       const character = characterOf(state, event, characterId);
       return withCharacter(
         state,
-        rule(event, () => awardMark(state.rules, character, skill, session)),
+        rule(event, () => awardMark(state.rules, character, skill, session, override === true)),
       );
     }
     case 'skill.upgraded': {
