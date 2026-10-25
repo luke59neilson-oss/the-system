@@ -29,6 +29,29 @@ export function activeBanners<T extends BannerSource>(
   });
 }
 
+/**
+ * How far a live arrival may trail its send time before the screen counts it
+ * as late (a reconnect, a sleeping laptop) rather than clock skew.
+ */
+export const LATE_ARRIVAL_GRACE_MS = 120_000;
+
+/**
+ * When a timed banner starts on a player's screen (MT.6). `sent` is the
+ * server's send time; `arrived` is when this screen first saw it, on this
+ * device's clock; both are ms. A live arrival times from `arrived`, so a phone
+ * whose clock runs behind (or up to the grace ahead of) the GM laptop still
+ * shows a fresh banner for its full time. An arrival more than the grace after
+ * the send time is late (it came in after a reconnect or wake), so it times
+ * from the send time plus the grace: a 5-minute banner first seen 10 minutes
+ * after it was sent stays down, as it already is on the GM's list, instead of
+ * running a fresh 5 minutes. Known limit: a device clock more than the grace
+ * ahead of the server shortens timed banners by the excess.
+ */
+export function bannerStart(sent: number, arrived: number): number {
+  if (!Number.isFinite(sent)) return arrived;
+  return Math.min(arrived, sent + LATE_ARRIVAL_GRACE_MS);
+}
+
 /** Re-renders every second while `on`, so timed banners come down on time. */
 export function useTick(on: boolean): number {
   const [now, setNow] = useState(() => Date.now());

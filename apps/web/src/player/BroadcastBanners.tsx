@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { PlayerMessage } from '@the-system/engine';
-import { activeBanners, useTick } from '../banners';
+import { activeBanners, bannerStart, useTick } from '../banners';
 
 /**
  * MT.6 (DESIGN §7 Broadcasts): System broadcasts the GM sent as banners, at
@@ -29,11 +29,11 @@ export function BroadcastBanners({ messages }: { messages: readonly PlayerMessag
     return () => clearTimeout(timer);
   }, [freshKey]);
   const up = activeBanners(messages, now, (m) => {
-    const arrived = arrivals.get(m.id);
-    if (arrived !== undefined) return arrived;
-    if (!initial.has(m.id)) return now;
     const sent = Date.parse(m.at);
-    return Number.isFinite(sent) ? Math.min(sent, mounted) : mounted;
+    if (initial.has(m.id)) return Number.isFinite(sent) ? Math.min(sent, mounted) : mounted;
+    // A live arrival, bounded by its send time when it arrived late (after a
+    // reconnect or wake), so it does not outlive the GM's list (bannerStart).
+    return bannerStart(sent, arrivals.get(m.id) ?? now);
   });
   if (up.length === 0) return null;
   return (

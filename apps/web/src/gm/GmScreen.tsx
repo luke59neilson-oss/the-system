@@ -774,7 +774,8 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
       {when === 'day' && (
         <p className="muted small">
           Today is day {state.day}. It is sent when the in-game day reaches the day you pick
-          (Session panel: advance the day).
+          (Session panel: advance the day). Scheduled messages go to the message list only, not as
+          banners.
           {day.trim() !== '' && !dayOk && (
             <span className="err" role="alert">
               {' '}
