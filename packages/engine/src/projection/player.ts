@@ -60,6 +60,7 @@ export const CHARACTER_FIELD_VISIBILITY: Readonly<Record<keyof Character, Visibi
   profession: 'party',
   // MQ.6: the professions offered to this character are theirs alone.
   professionOffers: 'owner',
+  mergeOffer: 'owner', // MT.2: the owner answers it; projection still to add (wip)
   classLevel: 'party',
   professionLevel: 'party',
   grade: 'party',

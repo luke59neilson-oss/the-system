@@ -43,6 +43,14 @@ export interface FreePointBatch {
 }
 
 /** Plain, serializable, immutable character state. */
+/** A merge waiting on the player's answer (MT.2). */
+export interface MergeOffer {
+  /** Id of the offer event; the answer names it. */
+  readonly offerId: string;
+  readonly skills: readonly [string, string];
+  readonly name: string;
+}
+
 export interface Character {
   readonly schemaVersion: number;
   readonly id: string;
@@ -56,6 +64,11 @@ export interface Character {
    * order. They stay listed after one is taken; the list then locks.
    */
   readonly professionOffers: readonly string[];
+  /**
+   * A merge the GM has sent and the player has not answered (MT.2, Q62);
+   * optional so states stored before MT.2 read as none.
+   */
+  readonly mergeOffer?: MergeOffer | null;
   readonly classLevel: number;
   readonly professionLevel: number;
   /** Id of the highest grade evolved into (ids survive grade inserts; DESIGN §3). */

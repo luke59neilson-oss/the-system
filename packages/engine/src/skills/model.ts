@@ -289,3 +289,42 @@ export function mergeSkills(
   const skills = character.skills.flatMap((s, i) => (i === ia ? [merged] : i === ib ? [] : [s]));
   return { ...character, skills, merges: { ...character.merges, [character.grade]: done + 1 } };
 }
+
+/**
+ * MT.2 (DESIGN §6, Q62): the GM sends a merge as an offer. It is checked as if
+ * applied now, then waits on the player; a new offer replaces an older one.
+ */
+export function offerMerge(
+  rules: RulesConfig,
+  character: Character,
+  first: string,
+  second: string,
+  name: string,
+  jointUses: number,
+  offerId: string,
+): Character {
+  mergeSkills(rules, character, first, second, name, jointUses);
+  return { ...character, mergeOffer: { offerId, skills: [first, second], name: name.trim() } };
+}
+
+/**
+ * The player answers the pending merge offer: accepting applies it (checked
+ * again, so a skill that changed since makes it stale), declining keeps both
+ * originals. Either way the offer is gone.
+ */
+export function answerMerge(
+  rules: RulesConfig,
+  character: Character,
+  offerId: string,
+  accept: boolean,
+  jointUses: number,
+): Character {
+  const offer = character.mergeOffer ?? null;
+  if (offer === null || offer.offerId !== offerId) {
+    throw new CharacterRuleError('That merge offer is no longer open');
+  }
+  const cleared: Character = { ...character, mergeOffer: null };
+  if (!accept) return cleared;
+  const [first, second] = offer.skills;
+  return mergeSkills(rules, cleared, first, second, offer.name, jointUses);
+}
