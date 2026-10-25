@@ -283,3 +283,12 @@ reviewers ran 15–20 minutes each in the background.
 - (Sweep A 2026-10-24, Rules · fable) The session report's Party section prints rarity names ("Common") while content files take rarity ids, so a re-rate Claude copies from the report is refused as an unknown rarity; the tutorial pack's Rare Identify tier is out of reach in five sessions, and the F→E re-rate drops Identify below every tier unless the GM keeps it.
 - (Sweep A 2026-10-24, Tests · haiku) Untested: the 2 MB preview body limit (only a mocked 413), `report: false` for a running session's JSON, case-insensitive duplicate notes beyond items; content boundary tests derive from CONTENT_LIMITS itself; M9.5 checks secrets in page text only, not frames; M4.7/M8.4 use fixed waits before negative frame checks; M3.3 timed out once at 4 workers (load).
 - (M10.A review · fable) Windows log-off backup is best-effort (Windows may end the process once WM_ENDSESSION returns; untestable here); the Windows firewall step assumes the app is already in "Allowed apps" (no "Allow another app… → TheSystem.exe" path); `JoinPanel` reads `/api/join` once per mount, so new interfaces show only after a console reload; AppImage launches in tests and release.yml pass `--no-sandbox`, a plain double-click on Ubuntu 24.04 (AppArmor userns) may hit the SUID-sandbox error; the 3 s close-grace comment and path (already noted above) stays.
+
+## Final review (M11.5)
+
+Whole-repo review by a model other than the builder's, at the head of
+`wip/M11.5` (main plus M11.4). Lenses: all four above at once, plus the
+install and first-session path a GM follows from `docs/GM-GUIDE.md`.
+Findings already in the Backlog are not repeated; M11.5 triages the Backlog
+itself: each Low is fixed, or kept with a one-line reason in `docs/DONE.md`
+under "Known gaps".
