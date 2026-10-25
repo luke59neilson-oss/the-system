@@ -356,8 +356,13 @@ export function grantProfession(
   /** MT.7 GM override: grant one before the unlock grade. */
   override = false,
 ): Character {
-  if (character.profession !== null) {
+  // MT.7 review: the override also replaces a profession the character has
+  // (the new one starts at the class level; profession skills stay).
+  if (!override && character.profession !== null) {
     throw new CharacterRuleError('Character already has a profession');
+  }
+  if (character.profession !== null && character.profession === profession.trim()) {
+    throw new CharacterRuleError(`${character.name} already has the profession [${profession}]`);
   }
   const unlock = gradeIndexOf(rules, rules.tracks.professionUnlockGrade);
   if (!override && gradeIndexOf(rules, character.grade) < unlock) {

@@ -39,7 +39,7 @@ refusal is raised.
 | `Not enough … (has …)` | packages/engine/src/economy/model.ts:140 | Edit holdings (`holdings.adjust`) sets currency and items directly |
 | `Not enough […] (has …, needs …)` | packages/engine/src/economy/model.ts:149 | Edit holdings (`holdings.adjust`) sets currency and items directly |
 | `Approve the skill re-rating first: the GM sets each kept skill's rarity and approves the list (DESIGN §6)` | packages/engine/src/events/commands.ts:1332 | One click: the GM sets and approves the re-rating in the evolution builder (the approval is the GM's own act) |
-| `… must be between 0 and …` | packages/engine/src/events/reducer.ts:973 | Pools stay within their maximum; raise the maximum through stats (`character.setStats`) |
+| `… must be between 0 and …` | packages/engine/src/events/reducer.ts:973 | Not a rule to overrule: a pool is a value within its maximum. Raise the maximum through stats (`character.setStats`), then set the pool |
 | `the race level … points are already assigned and locked` | packages/engine/src/events/reducer.ts:1036 | Free-point override (`freePoints.override`) rewrites or clears any batch |
 | `assign exactly … points (got …)` | packages/engine/src/events/reducer.ts:1047 | Free-point override (`freePoints.override`) rewrites or clears any batch |
 | `… would drop below 0` | packages/engine/src/events/reducer.ts:1053 | Set stats directly (`character.setStats`) |
@@ -51,13 +51,13 @@ refusal is raised.
 | `No selection is offered at level …` | packages/engine/src/evolution/model.ts:410 | `skill.grant` (Edit sheet → "Give a skill") gives a skill outside the selection schedule |
 | `[…] is a race skill and never drops a rarity` | packages/engine/src/evolution/model.ts:521 | `skill.setRarity` (Edit sheet → "Set rarity") (and `skill.grant`) change race skills too, with a warning that Identify never drops by default |
 | `[…] cannot be raised above the …-grade ceiling (…)` | packages/engine/src/evolution/model.ts:524 | `skill.setRarity` (Edit sheet → "Set rarity") sets any rarity after the fact; or raise the ceiling in Rules |
-| `[…] is a race skill and cannot be merged away at evolution` | packages/engine/src/evolution/model.ts:542 | `skill.setRarity` (Edit sheet → "Set rarity") (and `skill.grant`) change race skills too, with a warning that Identify never drops by default |
-| `[…] is a race skill and keeps its name at evolution` | packages/engine/src/evolution/model.ts:554 | `skill.setRarity` (Edit sheet → "Set rarity") (and `skill.grant`) change race skills too, with a warning that Identify never drops by default |
+| `[…] is a race skill and cannot be merged away at evolution` | packages/engine/src/evolution/model.ts:542 | Leave the race skill out of the transform; after the evolution, `skill.grant` gives the new race skill and `skill.setRarity` changes the old one. Identify is never consumed by an evolution itself (DESIGN §6) |
+| `[…] is a race skill and keeps its name at evolution` | packages/engine/src/evolution/model.ts:554 | Leave the race skill out of the transform; after the evolution, `skill.grant` gives the new race skill and `skill.setRarity` changes the old one. Identify is never consumed by an evolution itself (DESIGN §6) |
 | `[…] must be … (one above the higher merged skill)` | packages/engine/src/evolution/model.ts:620 | `skill.setRarity` (Edit sheet → "Set rarity") after the evolution sets the final rarity |
 | `[…] cannot drop to a lower rarity` | packages/engine/src/evolution/model.ts:625 | `skill.setRarity` (Edit sheet → "Set rarity") after the evolution sets the final rarity |
-| `… can merge … time(s) per grade (… done at …-grade)` | packages/engine/src/evolution/model.ts:642 | `skill.merge` with `override: true` (Merges window → "GM override: merge any two skills"; the player still accepts or declines) skips the joint-use count, minimum rarity and once-per-grade checks |
-| `[…] must be at least … to merge` | packages/engine/src/evolution/model.ts:662 | `skill.merge` with `override: true` (Merges window → "GM override: merge any two skills"; the player still accepts or declines) skips the joint-use count, minimum rarity and once-per-grade checks |
-| `[…] and […] were logged together … times (need …)` | packages/engine/src/evolution/model.ts:667 | `skill.merge` with `override: true` (Merges window → "GM override: merge any two skills"; the player still accepts or declines) skips the joint-use count, minimum rarity and once-per-grade checks |
+| `… can merge … time(s) per grade (… done at …-grade)` | packages/engine/src/evolution/model.ts:642 | Release the evolution without that merge transform, then `skill.merge` with `override: true` after it (Merges window), which skips this check |
+| `[…] must be at least … to merge` | packages/engine/src/evolution/model.ts:662 | Release the evolution without that merge transform, then `skill.merge` with `override: true` after it (Merges window), which skips this check |
+| `[…] and […] were logged together … times (need …)` | packages/engine/src/evolution/model.ts:667 | Release the evolution without that merge transform, then `skill.merge` with `override: true` after it (Merges window), which skips this check |
 | `… cannot evolve yet (… level … of …)` | packages/engine/src/evolution/model.ts:706 | Set levels with the level/XP/grade override (`character.setProgression`) to reach the gate |
 | `Professions are offered from the …-grade evolution on, to a character without one` | packages/engine/src/evolution/model.ts:729 | `character.grantProfession` with `override: true` (Edit sheet → "Grant a profession now") |
 | `… has a skill selection to choose first (class level …); an evolution cannot be … until then` | packages/engine/src/evolution/model.ts:950 | `evolution.release` with `override: true` (evolution builder → "GM override: release now anyway"); the player then evolves without choosing first, and the selections stay due |
@@ -67,14 +67,18 @@ refusal is raised.
 | `[…] needs … marks (has …)` | packages/engine/src/skills/model.ts:249 | `skill.setRarity` (Edit sheet → "Set rarity") upgrades any skill directly |
 | `[…] is at the …-grade ceiling; its marks bank until the next evolution` | packages/engine/src/skills/model.ts:252 | `skill.setRarity` (Edit sheet → "Set rarity") upgrades any skill directly |
 | `Already merged at …-grade` | packages/engine/src/skills/model.ts:304 | `skill.merge` with `override: true` (Merges window → "GM override: merge any two skills"; the player still accepts or declines) skips the joint-use count, minimum rarity and once-per-grade checks |
-| `The merged skill would be above the …-grade ceiling` | packages/engine/src/skills/model.ts:312 | `skill.setRarity` (Edit sheet → "Set rarity") sets any rarity after the fact; or raise the ceiling in Rules |
+| `The merged skill would be above the …-grade ceiling` | packages/engine/src/skills/model.ts:312 | `skill.merge` with `override: true` (Merges window) merges past the ceiling too |
+| `the … list (ids and order) cannot change in a running campaign` | packages/engine/src/events/reducer.ts:731 | No override, by guarantee 2: stored events name grades, stats, pools, rarities and slots by id and position, so changing the list would change what the log means. Rename entries and change their numbers freely; a new list needs a new campaign |
+| `XP overflow always stays on` | packages/engine/src/events/reducer.ts:735 | No rules switch (Luke, Q49/L16: overflow applies to every campaign); the GM sets XP and levels directly with the level/XP/grade override (`character.setProgression`) |
+| `XP overflow is turned on by the rules migration when the campaign opens, which moves banked XP first` | packages/engine/src/events/reducer.ts:735 | Reopen the campaign so the migration runs; then the level/XP/grade override sets anything directly |
+| `these rules do not fit the campaign as it is: ……` | packages/engine/src/events/reducer.ts:792 | Bring the named characters inside the new rules first (level/XP/grade override, "Set rarity", Edit holdings), then save the rules |
 
 ## State
 
 | Refusal | Where | GM way through |
 | --- | --- | --- |
-| `Character already has a profession` | packages/engine/src/character/model.ts:360 | The character has one: a profession is chosen once (DESIGN §2); to change it, undo the choice in the change log |
-| `… already has the profession […]` | packages/engine/src/character/model.ts:387 | The character has one: a profession is chosen once (DESIGN §2); to change it, undo the choice in the change log |
+| `Character already has a profession` | packages/engine/src/character/model.ts:360 | `character.grantProfession` with `override: true` (Edit sheet → "Replace profession") replaces it; the new one starts at the class level |
+| `… already has the profession […]` | packages/engine/src/character/model.ts:387 | `character.grantProfession` with `override: true` (Edit sheet → "Replace profession") replaces it; the new one starts at the class level (a player taking an offer cannot) |
 | `"…" is not one of your offered professions` | packages/engine/src/character/model.ts:392 | Offer it first (Professions offers / evolution builder) |
 | `… already has the profession […]; the offers are locked` | packages/engine/src/character/model.ts:404 | The character has one: a profession is chosen once (DESIGN §2); to change it, undo the choice in the change log |
 | `"…" is not offered to …` | packages/engine/src/character/model.ts:411 | Offer it first (Professions offers / evolution builder) |
@@ -130,6 +134,10 @@ refusal is raised.
 | `[…] is already …` | packages/engine/src/skills/model.ts:114 | Already that rarity |
 | `That merge offer is no longer open` | packages/engine/src/skills/model.ts:374 | Send the merge again |
 | `That merge offer is out of date: one of its skills has changed. Ask the GM to send it again` | packages/engine/src/skills/model.ts:385 | Send the merge again |
+| `… has no portrait` | packages/engine/src/events/reducer.ts:868 | Nothing to remove |
+| `… already has that portrait` | packages/engine/src/events/reducer.ts:868 | Nothing to change |
+| `a walled contest has no roll` | packages/engine/src/events/reducer.ts:1923 | A malformed stored contest; share it again from the roller |
+| `this contest needs a roll` | packages/engine/src/events/reducer.ts:1923 | A malformed stored contest; share it again from the roller |
 
 ## Data
 
@@ -317,6 +325,10 @@ refusal is raised.
 | `[…] already has that text` | packages/engine/src/skills/model.ts:75 | Fix the input or define the thing first |
 | `The merged skill needs a name` | packages/engine/src/skills/model.ts:317 | Fix the input or define the thing first |
 | `The library already has […]` | packages/engine/src/titles/index.ts:49 | Fix the input or define the thing first |
+| `unknown rarity "…"` | packages/engine/src/entities/model.ts:40 | Fix the input or define the thing first |
+| `two tiers for rarity "…"` | packages/engine/src/entities/model.ts:41 | Fix the input: one Identify tier per rarity |
+| `give both a grade and a level, or neither` | packages/engine/src/entities/model.ts:73 | Fix the input |
+| `level must be at most …` | packages/engine/src/entities/model.ts:77 | Raise the campaign level cap in Rules, or fix the input |
 
 ## Permission
 
@@ -333,3 +345,5 @@ refusal is raised.
 | `… notes are … shared` | packages/engine/src/events/reducer.ts:1605 | Applies to players (or the System), not the GM |
 | `only the author can change this note` | packages/engine/src/events/reducer.ts:1636 | Applies to players (or the System), not the GM |
 | `only journal entries can change who reads them` | packages/engine/src/events/reducer.ts:1647 | Applies to players (or the System), not the GM |
+| `only … can cancel this trade` | packages/engine/src/events/reducer.ts:1394 | Limits players only; the GM cancels any trade |
+| `only … can answer this trade` | packages/engine/src/events/reducer.ts:1394 | Limits players only; the GM answers for anyone |

@@ -76,6 +76,7 @@ export function SkillOverrides({
   const unlock = rules.tracks.professionUnlockGrade;
   const gradeIndex = (id: string) => rules.grades.findIndex((g) => g.id === id);
   const early = gradeIndex(c.grade) < gradeIndex(unlock);
+  const replacing = c.profession !== null;
 
   return (
     <fieldset className="sheet-overrides" aria-label="Skill and profession overrides">
@@ -197,44 +198,45 @@ export function SkillOverrides({
           Give skill
         </button>
       </div>
-      {c.profession === null && (
-        <div className="override-row" role="group" aria-label="Grant a profession">
-          <label>
-            Grant a profession now
-            <input
-              value={profession}
-              maxLength={100}
-              onChange={(e) => setProfession(e.target.value)}
-            />
-          </label>
-          {early && (
-            <p className="warn small" data-testid="profession-override-notes">
-              Override: professions unlock at {unlock}-grade; {c.name} is {c.grade}-grade. It starts
-              at class level {c.classLevel}.
-            </p>
-          )}
-          <button
-            type="button"
-            className="secondary"
-            disabled={busy || profession.trim() === ''}
-            onClick={() =>
-              void send(
-                {
-                  type: 'character.grantProfession',
-                  characterId: c.id,
-                  profession: profession.trim(),
-                  ...(early ? { override: true } : {}),
-                },
-                `${c.name} is now a [${profession.trim()}]`,
-              ).then((ok) => {
-                if (ok) setProfession('');
-              })
-            }
-          >
-            Grant profession
-          </button>
-        </div>
-      )}
+      <div className="override-row" role="group" aria-label="Grant a profession">
+        <label>
+          {replacing ? 'Replace the profession' : 'Grant a profession now'}
+          <input
+            value={profession}
+            maxLength={100}
+            onChange={(e) => setProfession(e.target.value)}
+          />
+        </label>
+        {(early || replacing) && (
+          <p className="warn small" data-testid="profession-override-notes">
+            Override:{' '}
+            {replacing
+              ? `replaces [${c.profession}] (lvl ${c.professionLevel}); profession skills stay.`
+              : `professions unlock at ${unlock}-grade; ${c.name} is ${c.grade}-grade.`}{' '}
+            The new profession starts at class level {c.classLevel}.
+          </p>
+        )}
+        <button
+          type="button"
+          className="secondary"
+          disabled={busy || profession.trim() === '' || profession.trim() === c.profession}
+          onClick={() =>
+            void send(
+              {
+                type: 'character.grantProfession',
+                characterId: c.id,
+                profession: profession.trim(),
+                ...(early || replacing ? { override: true } : {}),
+              },
+              `${c.name} is now a [${profession.trim()}]`,
+            ).then((ok) => {
+              if (ok) setProfession('');
+            })
+          }
+        >
+          {replacing ? 'Replace profession' : 'Grant profession'}
+        </button>
+      </div>
       {outcome && (
         <p className={outcome.ok ? 'ok' : 'err'} role={outcome.ok ? 'status' : 'alert'}>
           {outcome.text}

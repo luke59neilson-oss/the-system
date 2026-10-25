@@ -75,6 +75,23 @@ describe('GM overrides the merge rules (MT.7)', () => {
     expect(replay(c.events).state).toEqual(c.state);
   });
 
+  it('with it: two Rare skills merge past the G-grade ceiling (MT.7 review)', () => {
+    const rare = (skill: string): Command => ({
+      type: 'skill.setRarity',
+      characterId: ID,
+      skill,
+      rarity: 'rare',
+    });
+    const c = run([...start(), rare('Cut'), rare('Step')]);
+    expect(refusal(c, merge('Cutstep', ['Cut', 'Step'], false))).toMatch(/logged together/);
+    const merged = run([merge('Cutstep', ['Cut', 'Step'])], testContext('m'), c);
+    expect(projectForPlayer(merged.state!, ID).me.mergeOffer?.rarity).toBe('epic');
+    const done = run([accept('o-Cutstep')], player, merged);
+    expect(done.state!.characters[ID]!.skills.find((s) => s.name === 'Cutstep')?.rarity).toBe(
+      'epic',
+    );
+  });
+
   it('players cannot send an override merge', () => {
     const r = execute(run(start()), merge('Cutstep', ['Cut', 'Step']), player);
     expect(r.ok ? 'ok' : r.error).toMatch(/Not allowed/);
@@ -101,6 +118,20 @@ describe('GM grants a profession before E-grade (MT.7)', () => {
     });
     expect(replay(granted.events).state).toEqual(granted.state);
     expect(undo(granted).state!.characters[ID]!.profession).toBeNull();
+  });
+
+  it('replaces a profession the character has, only with the override (MT.7 review)', () => {
+    const c = run([...start(), grant(true)]);
+    const swap: Command = {
+      type: 'character.grantProfession',
+      characterId: ID,
+      profession: 'Smith',
+    };
+    expect(refusal(c, swap)).toMatch(/already has a profession/);
+    expect(refusal(c, { ...grant(true) })).toMatch(/already has the profession \[Alchemist\]/);
+    const swapped = run([{ ...swap, override: true } as Command], testContext('s'), c);
+    expect(swapped.state!.characters[ID]!.profession).toBe('Smith');
+    expect(undo(swapped).state!.characters[ID]!.profession).toBe('Alchemist');
   });
 });
 
