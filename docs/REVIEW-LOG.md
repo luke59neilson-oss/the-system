@@ -876,3 +876,9 @@
 ## 2026-10-25 · MT.2 Players accept or decline merges · reviewer: sonnet (worktree)
 - Round 1 (13d242ac): 0 H / 3 M / 4 L. M1 the offer card sat below Notes on phones (CSS order) → `.merge-offer-window` leads the ≤700px column; e2e asserts it is in the viewport. M2 a stale offer kept an enabled Accept → the projection sends rarity null when the merge no longer applies or a skill's rarity changed, and the card disables Accept with a note. M3 the GM's accepted/declined line was React state → `lastMergeAnswer` on the character (GM-only), read by the builder; e2e reloads the GM page. Lows: L4 false "declined" (fixed by M3); L5 offers not auto-cleared (kept: decline clears it); L6 more stale tests (added a practice-removal case); L7 offer text not in the session log (kept).
 - Round 2 (aace462f): 0 H / 0 M / 4 L (the answer line persists until the next answer; no UI test of the disabled Accept; the answer stays on the character; no order assertion). Kept as Lows.
+
+## 2026-10-25 · MT.3 No hunger tracker · reviewer: sonnet (worktree, 33df7f78)
+
+- Round 1: 0 High / 0 Medium / 6 Low. No bugs, no leaks; old logs and v1 rules load; goldens legitimately re-recorded.
+- Fixed Lows: stale QUALITY.md canary note; M7.4 roadmap line marked retired; import note no longer repeats "Ignored". Kept: tutorial GM note mentions narrated hunger (matches DESIGN §7); engine-level undo of a no-op hunger event is harmless (no UI button); retired `hunger` content section documented on purpose.
+- No round 2 (no High, under two Mediums).

@@ -69,7 +69,12 @@ export function previewContent(
     return { path, command, error: r.ok ? null : r.error, note: r.ok ? note : null };
   });
   const ignored: ContentError[] = parsed.content.hunger
-    ? [{ path: 'hunger', message: 'Ignored: the app does not track hunger (narrate it instead)' }]
+    ? [
+        {
+          path: 'hunger',
+          message: 'the app does not track hunger (narrate it instead); nothing applies',
+        },
+      ]
     : [];
   return { ok: true, title: parsed.content.title ?? null, entries, errors, ignored };
 }
