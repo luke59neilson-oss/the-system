@@ -557,3 +557,11 @@ DESIGN/ROADMAP; do not re-apply them.
     round 2; risk: a regression outside the fixed files waits for CI).
     Default: no change (round 2 reviews as before).
     Answer:
+
+76. **GM override and skipped selections (MT.5).** When you set a character's
+    class level directly (say 0 → 12), the selections at levels 5 and 10
+    become due as usual, so you still build their menus and the player picks;
+    nothing else on the way is granted (no stat spread, free points or
+    evolution bonus). Default: selections stay due. Option: the override
+    skips them too (the character never gets those picks). (D214)
+    Answer:

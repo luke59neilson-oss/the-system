@@ -128,6 +128,17 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
       pools: { [pick(['hp', 'mp', 'stamina', 'luck'])]: Math.floor(rand() * 600) - 50 },
     };
   }
+  if (roll < 0.6 && rand() < 0.2) {
+    // MT.5: the GM's level, XP and grade override, often refused.
+    return {
+      type: 'character.setProgression',
+      characterId: someId(),
+      grade: pick(['G', 'F', 'E', 'Z']),
+      classLevel: Math.floor(rand() * 30),
+      professionLevel: rand() < 0.8 ? 0 : Math.floor(rand() * 20),
+      xp: { class: Math.floor(rand() * 400), profession: 0 },
+    };
+  }
   if (roll < 0.6) {
     return {
       type: 'character.setStats',

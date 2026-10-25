@@ -3,6 +3,7 @@ import {
   characterFlags,
   describeEvent,
   execute,
+  notificationsBetween,
   projectForPlayer,
   progressionOverrideSummary,
   raceLevel,
@@ -192,12 +193,16 @@ describe('GM override for level, XP and grade (MT.5)', () => {
       'No skills are granted: the selections at class level 5, 10, 15 and 20 become due, for you to offer as usual',
       `${4 * 2 + 10 * 3 + 6 * 4} free points (no new batches to assign)`,
     ]);
-    const down = progressionOverrideSummary(c.state!.rules, { ...jake(c), classLevel: 3 }, {
-      grade: 'G',
-      classLevel: 1,
-      professionLevel: 0,
-      xp: { class: 0, profession: 0 },
-    });
+    const down = progressionOverrideSummary(
+      c.state!.rules,
+      { ...jake(c), classLevel: 3 },
+      {
+        grade: 'G',
+        classLevel: 1,
+        professionLevel: 0,
+        xp: { class: 0, profession: 0 },
+      },
+    );
     expect(down.skips).toEqual([
       'Lowering a level takes nothing back: stats, free points and skills from those levels stay',
     ]);
@@ -209,6 +214,8 @@ describe('GM override for level, XP and grade (MT.5)', () => {
     const view = projectForPlayer(c.state!, 'jake');
     expect(JSON.stringify(view)).toContain('"classLevel":6');
     const last = c.events[c.events.length - 1]!;
+    // No 'DING!': the levels were set, not earned.
+    expect(notificationsBetween(c0.state, c.state, last)).toEqual([]);
     expect(describeEvent(c0.state, c.state!, last)[0]).toEqual({
       kind: 'character',
       text: "The GM set Jake's level, XP or grade: Grade G → F, Class level 0 → 6, Race level 0 → 6",
