@@ -116,6 +116,11 @@ export interface PendingEvolution {
    * skills take MR.1's one-step drop, so older logs replay unchanged.
    */
   readonly rerateApproved?: true;
+  /**
+   * MT.7 GM override: released with a skill selection pending, so the choice
+   * skips that check too. Absent = false.
+   */
+  readonly override?: true;
 }
 
 /** A class level that grants a selection (DESIGN §3). */
@@ -691,8 +696,10 @@ export function releaseEvolution(
   joint: JointUses = () => 0,
   /** The GM approved the re-rating (MT.1); unnamed skills keep their rarity. */
   rerateApproved = false,
+  /** MT.7 GM override: release with a skill selection pending. */
+  override = false,
 ): Character {
-  if (!legacy) checkNoPendingSelection(rules, character, 'released');
+  if (!legacy && !override) checkNoPendingSelection(rules, character, 'released');
   const target = evolutionTarget(rules, character);
   if (!target) {
     const top = trackCap(rules, character.grade);
@@ -741,6 +748,7 @@ export function releaseEvolution(
       professions: trimmed,
       ...(rerate === null ? {} : { rerate: rerate.map((r) => ({ ...r })) }),
       ...(rerateApproved ? { rerateApproved: true as const } : {}),
+      ...(override ? { override: true as const } : {}),
     },
   };
 }
@@ -770,7 +778,7 @@ export function chooseEvolution(
 ): EvolutionResult {
   const pending = character.evolution;
   if (!pending) throw new CharacterRuleError(`No evolution is released for ${character.name}`);
-  if (!legacy) checkNoPendingSelection(rules, character, 'chosen');
+  if (!legacy && pending.override !== true) checkNoPendingSelection(rules, character, 'chosen');
   if (releaseId !== null && releaseId !== pending.releaseId) {
     throw new CharacterRuleError('The evolution was released again; choose from the new options');
   }

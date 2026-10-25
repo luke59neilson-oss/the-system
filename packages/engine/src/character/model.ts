@@ -53,6 +53,8 @@ export interface MergeOffer {
   /** The merged skill's text, given to it on accept (absent when none). */
   readonly description?: string;
   readonly flavor?: string;
+  /** MT.7: the GM overrode the merge rules; the accept skips them too (absent = false). */
+  readonly override?: true;
 }
 
 /** Plain, serializable, immutable character state. */
@@ -351,12 +353,14 @@ export function grantProfession(
   rules: RulesConfig,
   character: Character,
   profession: string,
+  /** MT.7 GM override: grant one before the unlock grade. */
+  override = false,
 ): Character {
   if (character.profession !== null) {
     throw new CharacterRuleError('Character already has a profession');
   }
   const unlock = gradeIndexOf(rules, rules.tracks.professionUnlockGrade);
-  if (gradeIndexOf(rules, character.grade) < unlock) {
+  if (!override && gradeIndexOf(rules, character.grade) < unlock) {
     throw new CharacterRuleError(
       `Professions unlock at ${rules.tracks.professionUnlockGrade}-grade`,
     );
