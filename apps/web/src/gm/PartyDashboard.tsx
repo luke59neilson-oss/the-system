@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   characterEffectiveStats,
   characterFlags,
@@ -473,6 +473,19 @@ function ProgressionOverride({
   const [reviewing, setReviewing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  // QF.25: Review, Cancel and Apply unmount the focused button, so focus moves
+  // on purpose: to the warning, back to Review override, or to the outcome.
+  const reviewButton = useRef<HTMLButtonElement | null>(null);
+  const warning = useRef<HTMLDivElement | null>(null);
+  const outcome = useRef<HTMLParagraphElement | null>(null);
+  const [focusNext, setFocusNext] = useState<'warning' | 'review' | 'outcome' | null>(null);
+  useEffect(() => {
+    if (focusNext === null) return;
+    const target = { warning, review: reviewButton, outcome }[focusNext].current;
+    if (target === null) return;
+    target.focus();
+    setFocusNext(null);
+  });
   // When the live values change (an award, an undo, another GM window), the
   // fields reload and any open warning closes, so a stale draft is never
   // applied over newer values.
@@ -523,6 +536,7 @@ function ProgressionOverride({
     });
     setBusy(false);
     setReviewing(false);
+    setFocusNext('outcome');
     setMessage(
       r.ok
         ? { ok: true, text: 'Level, XP and grade set. Undo it in the change log if needed.' }
@@ -578,17 +592,25 @@ function ProgressionOverride({
         <button
           type="button"
           className="secondary"
+          ref={reviewButton}
           disabled={bad || unchanged || busy}
           onClick={() => {
             setMessage(null);
             setReviewing(true);
+            setFocusNext('warning');
           }}
         >
           Review override
         </button>
       ) : (
         summary && (
-          <div className="override-warning" role="alertdialog" aria-label="Override warning">
+          <div
+            className="override-warning"
+            role="alertdialog"
+            aria-label="Override warning"
+            tabIndex={-1}
+            ref={warning}
+          >
             <p>
               <strong>This changes:</strong>
             </p>
@@ -621,7 +643,10 @@ function ProgressionOverride({
               type="button"
               className="secondary"
               style={{ marginLeft: 8 }}
-              onClick={() => setReviewing(false)}
+              onClick={() => {
+                setReviewing(false);
+                setFocusNext('review');
+              }}
             >
               Cancel
             </button>
@@ -629,7 +654,12 @@ function ProgressionOverride({
         )
       )}
       {message && (
-        <p className={message.ok ? 'ok' : 'err'} role={message.ok ? 'status' : 'alert'}>
+        <p
+          className={message.ok ? 'ok' : 'err'}
+          role={message.ok ? 'status' : 'alert'}
+          tabIndex={-1}
+          ref={outcome}
+        >
           {message.text}
         </p>
       )}
