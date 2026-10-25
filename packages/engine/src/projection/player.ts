@@ -6,7 +6,7 @@ import {
   type CharacterSkill,
   type FreePointBatch,
 } from '../character';
-import type { CampaignState } from '../events';
+import type { BroadcastRecord, CampaignState } from '../events';
 import {
   EMPTY_HOLDINGS,
   itemCappedStats,
@@ -520,6 +520,10 @@ export interface PlayerMessage {
   readonly id: string;
   readonly at: string;
   readonly text: string;
+  /** MT.6: also a banner, for a set time or pinned; absent = list only. */
+  readonly display?: BroadcastRecord['display'];
+  /** MT.6: the GM took the banner down. */
+  readonly removed?: true;
 }
 
 export class ProjectionError extends Error {}
@@ -805,7 +809,13 @@ export function projectForPlayer(
     party,
     messages: state.broadcasts
       .filter((b) => b.characterIds === null || b.characterIds.includes(viewer.id))
-      .map((b) => ({ id: b.id, at: b.at, text: b.text })),
+      .map((b) => ({
+        id: b.id,
+        at: b.at,
+        text: b.text,
+        ...(b.display ? { display: b.display } : {}),
+        ...(b.removed ? { removed: true as const } : {}),
+      })),
     day: state.day,
     inventory: playerInventory(state, viewer.id),
     identify: playerIdentify(state, viewer),

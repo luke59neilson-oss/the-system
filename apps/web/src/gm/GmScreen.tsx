@@ -6,6 +6,7 @@ import {
   librarySkill,
   type CampaignState,
 } from '@the-system/engine';
+import { activeBanners, useTick } from '../banners';
 import { friendlyError } from '../format';
 import { forgetGmKey, takeGmKey } from '../gmKey';
 import { LiveClient, type CommandResult, type LiveSnapshot } from '../live';
@@ -139,6 +140,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               : 'Connecting…'}
         </span>
         {state && <SessionChip state={state} />}
+        {state && <BannersChip client={client} state={state} />}
         {state && <PerspectiveBar party={party} current={view} onChange={setWanted} />}
       </header>
       {live.status === 'joined' && <CampaignSwitch gmKey={gmKey} stateName={state?.name ?? null} />}
@@ -209,6 +211,49 @@ function SessionChip({ state }: { state: CampaignState }) {
       title={running ? undefined : 'Start a session in the Session window'}
     >
       {running ? `Session ${running.number}` : 'No session'} · Day {state.day}
+    </span>
+  );
+}
+
+/**
+ * MT.6: how many banners are up on players' screens, beside the session chip,
+ * with Remove all, so the GM never forgets a pinned banner below the fold.
+ */
+function BannersChip({ client, state }: { client: LiveClient; state: CampaignState }) {
+  const timed = state.broadcasts.some((b) => b.display?.mode === 'timed' && !b.removed);
+  const now = useTick(timed);
+  const up = activeBanners(state.broadcasts, now, (b) => Date.parse(b.at));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (up.length === 0) return null;
+  const removeAll = async () => {
+    setBusy(true);
+    setError(null);
+    for (const b of up) {
+      const r = await client.command({ type: 'broadcast.remove', id: b.id });
+      if (!r.ok) {
+        setError(friendlyError(r.error));
+        break;
+      }
+    }
+    setBusy(false);
+  };
+  return (
+    <span className="banners-chip" data-testid="banners-chip">
+      <a href="#broadcast">{up.length === 1 ? '1 banner up' : `${up.length} banners up`}</a>
+      <button
+        type="button"
+        className="secondary small"
+        disabled={busy}
+        onClick={() => void removeAll()}
+      >
+        Remove all
+      </button>
+      {error && (
+        <span className="err" role="alert">
+          {error}
+        </span>
+      )}
     </span>
   );
 }
@@ -569,8 +614,25 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
   const [several, setSeveral] = useState<ReadonlySet<string>>(new Set());
   const [when, setWhen] = useState<'now' | 'day'>('now');
   const [day, setDay] = useState('');
+  const [show, setShow] = useState<'list' | 'timed' | 'pinned'>('list');
+  const [amount, setAmount] = useState('30');
+  const [unit, setUnit] = useState<'seconds' | 'minutes'>('seconds');
   const { busy, result, run } = useCommand(client);
   const cancel = useCommand(client);
+  const remove = useCommand(client);
+  // MT.6: a timed banner lasts 5 s to 24 h.
+  const amountValue = /^\d+$/.test(amount.trim()) ? Number(amount.trim()) : NaN;
+  const seconds = unit === 'minutes' ? amountValue * 60 : amountValue;
+  const timeOk =
+    when === 'day' ||
+    show !== 'timed' ||
+    (Number.isSafeInteger(seconds) && seconds >= 5 && seconds <= 86_400);
+  const display =
+    when === 'day' || show === 'list'
+      ? undefined
+      : show === 'pinned'
+        ? ({ mode: 'pinned' } as const)
+        : ({ mode: 'timed', seconds } as const);
   const [okText, setOkText] = useState('Broadcast sent');
   const name = (id: string) => state.characters[id]?.name ?? id;
   const recipients: string[] | null =
@@ -586,12 +648,13 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
     e.preventDefault();
     const r = await run(
       when === 'now'
-        ? { type: 'system.broadcast', text, characterIds: recipients }
+        ? { type: 'system.broadcast', text, characterIds: recipients, display }
         : { type: 'broadcast.schedule', text, characterIds: recipients, day: dayValue },
     );
     if (r.ok) {
       setOkText(when === 'now' ? 'Broadcast sent' : `Scheduled for day ${dayValue}`);
       setText('');
+      setShow('list');
     }
   };
   const pending = state.scheduledBroadcasts;
@@ -632,6 +695,47 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
             <option value="day">On a later in-game day</option>
           </select>
         </label>
+        {when === 'now' && (
+          <label>
+            Show
+            <select
+              aria-label="Show"
+              value={show}
+              onChange={(e) => setShow(e.target.value as 'list' | 'timed' | 'pinned')}
+            >
+              <option value="list">In the message list</option>
+              <option value="timed">Also as a banner for…</option>
+              <option value="pinned">Also as a banner until I remove it</option>
+            </select>
+          </label>
+        )}
+        {when === 'now' && show === 'timed' && (
+          <>
+            <label>
+              For
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                step={1}
+                aria-label="Banner time"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </label>
+            <label>
+              Unit
+              <select
+                aria-label="Banner time unit"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value as 'seconds' | 'minutes')}
+              >
+                <option value="seconds">seconds</option>
+                <option value="minutes">minutes</option>
+              </select>
+            </label>
+          </>
+        )}
         {when === 'day' && (
           <label>
             Send on day
@@ -670,7 +774,8 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
       {when === 'day' && (
         <p className="muted small">
           Today is day {state.day}. It is sent when the in-game day reaches the day you pick
-          (Session panel: advance the day).
+          (Session panel: advance the day). Scheduled messages go to the message list only, not as
+          banners.
           {day.trim() !== '' && !dayOk && (
             <span className="err" role="alert">
               {' '}
@@ -679,11 +784,23 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
           )}
         </p>
       )}
-      <button type="submit" disabled={busy || !dayOk || noOne || text.trim() === ''}>
+      {!timeOk && (
+        <p className="err" role="alert">
+          A banner shows for 5 seconds to 24 hours.
+        </p>
+      )}
+      <button type="submit" disabled={busy || !dayOk || !timeOk || noOne || text.trim() === ''}>
         {when === 'now' ? 'Send broadcast' : 'Schedule broadcast'}
       </button>
       {noOne && <p className="muted small">Tick at least one recipient.</p>}
       <Outcome result={result} okText={okText} />
+      <LiveBanners
+        state={state}
+        name={name}
+        busy={remove.busy}
+        onRemove={(id) => void remove.run({ type: 'broadcast.remove', id })}
+      />
+      <Outcome result={remove.result} okText="Banner taken down" />
       {pending.length > 0 && (
         <section aria-labelledby="scheduled-broadcasts">
           <h3 id="scheduled-broadcasts">Scheduled (GM only until sent)</h3>
@@ -712,6 +829,52 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
         </section>
       )}
     </form>
+  );
+}
+
+/** MT.6: banners up on players' screens now, each with Remove. */
+function LiveBanners({
+  state,
+  name,
+  busy,
+  onRemove,
+}: {
+  state: CampaignState;
+  name: (id: string) => string;
+  busy: boolean;
+  onRemove: (id: string) => void;
+}) {
+  const timed = state.broadcasts.some((b) => b.display?.mode === 'timed' && !b.removed);
+  const now = useTick(timed);
+  // The server runs on this laptop, so its send times match this clock.
+  const up = activeBanners(state.broadcasts, now, (b) => Date.parse(b.at));
+  if (up.length === 0) return null;
+  return (
+    <section aria-labelledby="live-banners">
+      <h3 id="live-banners">Banners on players’ screens</h3>
+      <ul className="scheduled">
+        {up.map((b) => (
+          <li key={b.id} data-testid={`banner-${b.id}`}>
+            <strong>
+              {b.display?.mode === 'timed'
+                ? `${Math.max(0, Math.ceil((Date.parse(b.at) + b.display.seconds * 1000 - now) / 1000))} s left`
+                : 'Pinned'}
+            </strong>{' '}
+            · to {b.characterIds === null ? 'everyone' : b.characterIds.map(name).join(', ')}:{' '}
+            <span className="scheduled-text">{b.text}</span>{' '}
+            <button
+              type="button"
+              className="secondary small"
+              disabled={busy}
+              aria-label={`Remove the banner: ${b.text}`}
+              onClick={() => onRemove(b.id)}
+            >
+              Remove
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

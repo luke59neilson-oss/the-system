@@ -8,6 +8,14 @@
       "sha256": "1177593bfec11859e03aa5e8a25a9a6eeda9187166dfe2a48254855644e45d66",
       "schemaVersion": 33
     },
+    "broadcast-banners.jsonl": {
+      "sha256": "22554e812f30c5eec83d731ae4b4dce1dbeaadd3cb5fc56eeae74890baf26290",
+      "schemaVersion": 33
+    },
+    "broadcast-banners.state.json": {
+      "sha256": "343aa23bce85946bb35d4fbcb507dc327362f86c50a5c7e6e4bd8a341780cbb5",
+      "schemaVersion": 33
+    },
     "broadcast.jsonl": {
       "sha256": "c835a801fa04add391930a22558f082d8f635ea33a5ad27bb973a65d7faa5986",
       "schemaVersion": 21

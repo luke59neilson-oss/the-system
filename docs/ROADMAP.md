@@ -726,7 +726,7 @@ behaviour until an answer lands.
   lists what the change skips (spread points, free points, selections,
   evolutions); a logged, undoable event (Q59). *Accept:* engine tests,
   including undo; e2e with the warning.
-- [ ] **MT.6 Broadcasts last a set time or stay pinned.** Sending stays
+- [x] **MT.6 Broadcasts last a set time or stay pinned.** Sending stays
   immediate; each broadcast can show for N seconds or minutes, or stay as a
   banner on players' screens until the GM removes it; in-game-day scheduling
   stays optional (Q60). *Accept:* engine and projection tests; e2e for both

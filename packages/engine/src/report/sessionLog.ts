@@ -389,7 +389,18 @@ export function describeEvent(
     case 'system.broadcast': {
       const to = event.payload.characterIds;
       const audience = to === null ? 'everyone' : to.map((id) => who(id)).join(', ');
-      add('broadcast', `System message to ${audience}: ${line(event.payload.text)}`);
+      const shown = event.payload.display;
+      const banner = !shown
+        ? ''
+        : shown.mode === 'pinned'
+          ? ' (pinned banner)'
+          : ` (banner for ${shown.seconds} s)`;
+      add('broadcast', `System message to ${audience}${banner}: ${line(event.payload.text)}`);
+      break;
+    }
+    case 'broadcast.removed': {
+      const b = after.broadcasts.find((x) => x.id === event.payload.id);
+      add('broadcast', `Banner taken down: ${line(b?.text ?? event.payload.id)}`);
       break;
     }
     case 'broadcast.scheduled': {
