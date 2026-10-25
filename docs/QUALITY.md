@@ -159,6 +159,8 @@ reviewers ran 15–20 minutes each in the background.
   (10:31 UTC): now QF.14.
 
 ## Backlog (Lows; M11.5 goes through these)
+- UX (M11.3 review r2): the player Notifications rows are keyed `${seq}-${rows.length - i}` (`PlayerScreen.tsx` Feed), so every new ding remounts every row and focus on an entry revealed by "Show older" falls to the body; key by `seq` if unique. Revealed entries keep `tabindex="-1"` (harmless).
+- Perf (M11.3 review): the engine's id index (`events/log.ts` ID_INDEX) is shared per lineage and never pruned; dropped branches leave stale entries (a mismatched hit scans). Fine at table scale.
 
 - M11.2 review round 2 (sonnet): `lostWrites` in `apps/server/src/store.ts` compares the snapshot's post-upcast `eventCount` with raw log lines; harmless while `RAW_EVENT_UPCASTERS` is empty, but a future splitting raw upcaster must compare upcast events instead.
 - M11.2 review (sonnet): the outage shows only a small muted "Reconnecting…" beside the title; the sheet, party panel and toasts look live (no dim, no banner). No client heartbeat in `apps/web/src/live.ts`: if the server machine itself loses power, phones see no close event and show "Connected" until TCP times out. Two recoveries in the same millisecond would give the same `events.jsonl.torn-<stamp>` name. Untested shapes: a NUL-filled tail containing a newline (refuses, per D42), a torn or empty `snapshot.json` (recovers; probed by hand).

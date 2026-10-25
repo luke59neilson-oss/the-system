@@ -686,7 +686,7 @@ work: Q44–Q48 and Q52.
   commands (fixed seed): no desync, no crash, heap growth < 20% after warm-up.
 - [x] **M11.2 Recovery.** Server restart mid-session; client reconnect;
   simulated power loss on the event log.
-- [ ] **M11.3 Performance.** Player sheet interactive < 2 s on localhost
+- [x] **M11.3 Performance.** Player sheet interactive < 2 s on localhost
   (Playwright timing); 50,000-event log loads < 3 s.
 - [ ] **M11.4 Guides.** `docs/GM-GUIDE.md`, `docs/PLAYER-QUICKSTART.md` (one
   page), `docs/TROUBLESHOOTING.md` (firewall, IP, ports, unsigned-app
