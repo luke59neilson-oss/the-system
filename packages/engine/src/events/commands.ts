@@ -281,6 +281,8 @@ export type Command =
       skill: string;
       /** Session the mark was earned in; defaults to the current session. */
       session?: string | undefined;
+      /** MT.7 GM override: a further mark in the same session. */
+      override?: boolean | undefined;
     }
   | { type: 'skill.upgrade'; characterId: string; skill: string }
   | {
@@ -1240,7 +1242,12 @@ function toEvent(
       if (session === null) throw new EventRejectedError('A mark needs a play session');
       return {
         type: 'skill.markAwarded',
-        payload: { characterId: command.characterId, skill: command.skill, session },
+        payload: {
+          characterId: command.characterId,
+          skill: command.skill,
+          session,
+          ...(command.override === true ? { override: true as const } : {}),
+        },
       };
     }
     case 'skill.upgrade':

@@ -62,7 +62,7 @@ refusal is raised.
 | `Professions are offered from the …-grade evolution on, to a character without one` | packages/engine/src/evolution/model.ts:683 | Planned (MT.7): `character.grantProfession` with `override: true` |
 | `… has a skill selection to choose first (class level …); an evolution cannot be … until then` | packages/engine/src/evolution/model.ts:903 | Planned (MT.7): `evolution.release` with `override: true` releases with a selection pending |
 | `[…] is …, which has no mark upgrade` | packages/engine/src/skills/model.ts:176 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) upgrades any skill directly |
-| `[…] already earned its mark this session` | packages/engine/src/skills/model.ts:182 | Planned (MT.7): `skill.awardMark` with `override: true` gives a second mark in a session |
+| `[…] already earned its mark this session` | packages/engine/src/skills/model.ts:182 | `skill.awardMark` with `override: true` gives a second mark in a session (engine done; review-screen control planned, MT.7) |
 | `[…] cannot be upgraded past …` | packages/engine/src/skills/model.ts:211 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) upgrades any skill directly |
 | `[…] needs … marks (has …)` | packages/engine/src/skills/model.ts:216 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) upgrades any skill directly |
 | `[…] is at the …-grade ceiling; its marks bank until the next evolution` | packages/engine/src/skills/model.ts:219 | `skill.setRarity` (engine done; GM sheet control planned, MT.7) upgrades any skill directly |

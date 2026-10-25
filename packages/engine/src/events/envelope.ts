@@ -443,6 +443,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     characterId: recordId,
     skill: nonBlank,
     session: recordId,
+    /** MT.7 GM override: past the one-mark-per-session rule (absent = false). */
+    override: z.literal(true).optional(),
   }),
   /** GM applies a mark upgrade: one rarity up, marks reset. */
   'skill.upgraded': z.strictObject({ characterId: recordId, skill: nonBlank }),
