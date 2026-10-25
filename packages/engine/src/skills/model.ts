@@ -275,6 +275,8 @@ export function mergeSkills(
   second: string,
   name: string,
   jointUses: number,
+  /** MT.7 GM override: skips the minimum rarity, joint-use count and once-per-grade checks. */
+  override = false,
 ): Character {
   const merge = rules.skills.merge;
   if (first === second) throw new CharacterRuleError('Merge two different skills');
@@ -284,13 +286,13 @@ export function mergeSkills(
   const b = character.skills[ib] as CharacterSkill;
   const min = rarityIndex(rules, merge.minRarity);
   for (const s of [a, b]) {
-    if (rarityIndex(rules, s.rarity) < min) {
+    if (!override && rarityIndex(rules, s.rarity) < min) {
       throw new CharacterRuleError(
         `[${s.name}] must be at least ${rarityName(rules, merge.minRarity)} to merge`,
       );
     }
   }
-  if (jointUses < merge.requiredJointUses) {
+  if (!override && jointUses < merge.requiredJointUses) {
     throw new CharacterRuleError(
       `[${first}] and [${second}] were logged together ${jointUses} times (need ${merge.requiredJointUses})`,
     );
@@ -298,7 +300,7 @@ export function mergeSkills(
   const done = Object.prototype.hasOwnProperty.call(character.merges, character.grade)
     ? (character.merges[character.grade] ?? 0)
     : 0;
-  if (done >= merge.maxPerCharacterPerGrade) {
+  if (!override && done >= merge.maxPerCharacterPerGrade) {
     throw new CharacterRuleError(`Already merged at ${character.grade}-grade`);
   }
   const target =
@@ -336,8 +338,10 @@ export function offerMerge(
   jointUses: number,
   offerId: string,
   text: { description?: string | null | undefined; flavor?: string | null | undefined } = {},
+  /** MT.7 GM override, stored on the offer so the player's accept honours it. */
+  override = false,
 ): Character {
-  mergeSkills(rules, character, first, second, name, jointUses);
+  mergeSkills(rules, character, first, second, name, jointUses, override);
   const rarityOf = (n: string) => character.skills.find((s) => s.name === n)?.rarity ?? '';
   return {
     ...character,
@@ -348,6 +352,7 @@ export function offerMerge(
       name: name.trim(),
       ...(text.description?.trim() ? { description: text.description.trim() } : {}),
       ...(text.flavor?.trim() ? { flavor: text.flavor.trim() } : {}),
+      ...(override ? { override: true as const } : {}),
     },
   };
 }
@@ -381,7 +386,15 @@ export function answerMerge(
       'That merge offer is out of date: one of its skills has changed. Ask the GM to send it again',
     );
   }
-  const merged = mergeSkills(rules, cleared, first, second, offer.name, jointUses);
+  const merged = mergeSkills(
+    rules,
+    cleared,
+    first,
+    second,
+    offer.name,
+    jointUses,
+    offer.override === true,
+  );
   if (offer.description === undefined && offer.flavor === undefined) return merged;
   return describeSkill(merged, offer.name, offer.description ?? null, offer.flavor ?? null);
 }

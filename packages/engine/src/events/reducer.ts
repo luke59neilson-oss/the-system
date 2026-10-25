@@ -878,7 +878,14 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const character = characterOf(state, event, event.payload.characterId);
       return withCharacter(
         state,
-        rule(event, () => grantProfession(state.rules, character, event.payload.profession)),
+        rule(event, () =>
+          grantProfession(
+            state.rules,
+            character,
+            event.payload.profession,
+            event.payload.override === true,
+          ),
+        ),
       );
     }
     case 'profession.chosen': {
@@ -1503,11 +1510,11 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       };
     }
     case 'montage.offered': {
-      const { montageId, clockId, label, characterIds } = event.payload;
+      const { montageId, clockId, label, characterIds, override } = event.payload;
       if (hasOwn(state.montages, montageId)) fail(event, `montage "${montageId}" already exists`);
       const clock = hasOwn(state.clocks, clockId) ? state.clocks[clockId] : undefined;
       if (!clock) return fail(event, `unknown clock "${clockId}"`);
-      if (!montageAvailable(state.rules, clock)) {
+      if (override !== true && !montageAvailable(state.rules, clock)) {
         fail(event, `"${clock.name}" does not qualify for a montage yet`);
       }
       if (new Set(characterIds).size !== characterIds.length) {
@@ -1728,17 +1735,24 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       );
     }
     case 'skill.mergeOffered': {
-      const { characterId, offerId, skills, name, description, flavor } = event.payload;
+      const { characterId, offerId, skills, name, description, flavor, override } = event.payload;
       const [first, second] = skills;
       const character = characterOf(state, event, characterId);
       const joint = jointUses(state, characterId, first, second);
       return withCharacter(
         state,
         rule(event, () =>
-          offerMerge(state.rules, character, first, second, name, joint, offerId, {
-            description,
-            flavor,
-          }),
+          offerMerge(
+            state.rules,
+            character,
+            first,
+            second,
+            name,
+            joint,
+            offerId,
+            { description, flavor },
+            override === true,
+          ),
         ),
       );
     }
@@ -1789,7 +1803,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       );
     }
     case 'evolution.released': {
-      const { characterId, options, professions, legacy, rerate, rerateApproved } = event.payload;
+      const { characterId, options, professions, legacy, rerate, rerateApproved, override } =
+        event.payload;
       const character = characterOf(state, event, characterId);
       return withCharacter(
         state,
@@ -1805,6 +1820,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
             rerate ?? null,
             jointUsesOf(state, characterId),
             rerateApproved === true,
+            override === true,
           ),
         ),
       );

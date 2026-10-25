@@ -164,7 +164,12 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     characterId: recordId,
     portrait: portraitRef.nullable(),
   }),
-  'character.professionGranted': z.strictObject({ characterId: recordId, profession: nonBlank }),
+  'character.professionGranted': z.strictObject({
+    characterId: recordId,
+    profession: nonBlank,
+    /** MT.7 GM override: granted before the unlock grade (absent = false). */
+    override: z.literal(true).optional(),
+  }),
   /** The player takes one of their offered professions later (MQ.6; the Professions tab). */
   'profession.chosen': z.strictObject({ characterId: recordId, profession: nonBlank }),
   /** GM withdraws an untaken profession offer (M5.2, MQ.6 review). */
@@ -466,6 +471,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     /** The merged skill's System text, applied on accept; optional, additive. */
     description: skillDescription.nullable().optional(),
     flavor: skillFlavor.nullable().optional(),
+    /** MT.7 GM override: the merge rules are skipped, on offer and accept (absent = false). */
+    override: z.literal(true).optional(),
   }),
   /** The player accepts (the merge applies) or declines (both originals stay) (MT.2). */
   'skill.mergeAnswered': z.strictObject({
@@ -593,6 +600,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
      * their rarity, and a race skill is never lowered. Absent before MT.1.
      */
     rerateApproved: z.literal(true).optional(),
+    /** MT.7 GM override: released (and chosen) with a skill selection pending (absent = false). */
+    override: z.literal(true).optional(),
     /** Upcast from v1: released under the old rules (no pending-selection gate). */
     legacy: z.literal(true).optional(),
   }),
@@ -628,6 +637,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     clockId: recordId,
     label: nonBlank,
     characterIds: z.array(recordId).min(1).max(200),
+    /** MT.7 GM override: offered before the clock qualifies (absent = false). */
+    override: z.literal(true).optional(),
   }),
   /** A player's one-line montage focus; also a practice entry (source "montage"). */
   'montage.focused': z.strictObject({

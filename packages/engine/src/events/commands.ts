@@ -52,7 +52,13 @@ export type Command =
     }
   | { type: 'character.rename'; characterId: string; name: string }
   | { type: 'character.setPortrait'; characterId: string; portrait: string | null }
-  | { type: 'character.grantProfession'; characterId: string; profession: string }
+  | {
+      type: 'character.grantProfession';
+      characterId: string;
+      profession: string;
+      /** MT.7 GM override: grant one before the unlock grade. */
+      override?: boolean | undefined;
+    }
   /** Player: take one of the professions the GM offered (MQ.6). */
   | { type: 'profession.choose'; characterId: string; profession: string }
   /** GM only: withdraw an untaken profession offer (M5.2). */
@@ -295,6 +301,8 @@ export type Command =
       /** The merged skill's System text, given to it when accepted. */
       description?: string | null | undefined;
       flavor?: string | null | undefined;
+      /** MT.7 GM override: skips the minimum rarity, joint-use and once-per-grade checks. */
+      override?: boolean | undefined;
     }
   | { type: 'skill.answerMerge'; characterId: string; offerId: string; accept: boolean }
   | {
@@ -349,6 +357,8 @@ export type Command =
        * refused without it.
        */
       rerateApproved?: boolean | undefined;
+      /** MT.7 GM override: release (and let the player choose) with a skill selection pending. */
+      override?: boolean | undefined;
     }
   | {
       type: 'evolution.choose';
@@ -392,6 +402,8 @@ export type Command =
       /** What players see; default "Montage" (the clock's name stays GM-only). */
       label?: string | undefined;
       characterIds: readonly string[];
+      /** MT.7 GM override: offer before the clock is half filled with no failures. */
+      override?: boolean | undefined;
     }
   | {
       type: 'montage.focus';
@@ -911,7 +923,11 @@ function toEvent(
     case 'character.grantProfession':
       return {
         type: 'character.professionGranted',
-        payload: { characterId: command.characterId, profession: command.profession },
+        payload: {
+          characterId: command.characterId,
+          profession: command.profession,
+          ...(command.override === true ? { override: true as const } : {}),
+        },
       };
     case 'profession.withdrawOffer':
       return {
@@ -1266,6 +1282,7 @@ function toEvent(
           name: command.name,
           ...(command.description?.trim() ? { description: command.description } : {}),
           ...(command.flavor?.trim() ? { flavor: command.flavor } : {}),
+          ...(command.override === true ? { override: true as const } : {}),
         },
       };
     case 'skill.answerMerge':
@@ -1331,6 +1348,7 @@ function toEvent(
           professions: command.professions ?? [],
           rerate: rerateFor(campaign, command.characterId, command.rerate ?? {}),
           rerateApproved: true,
+          ...(command.override === true ? { override: true as const } : {}),
         },
       };
     case 'evolution.choose':
@@ -1366,6 +1384,7 @@ function toEvent(
           clockId: command.clockId,
           label: command.label ?? 'Montage',
           characterIds: [...command.characterIds],
+          ...(command.override === true ? { override: true as const } : {}),
         },
       };
     case 'montage.focus':

@@ -945,6 +945,25 @@ describe('review fixes (M1.10 round 1)', () => {
     expect(char(c).grade).toBe('E');
   });
 
+  it('the GM overrides the wait: release and choose with selections pending (MT.7)', () => {
+    let c = ok(toF(), award(10 * XP_F));
+    c = ok(c, release('Volley', 'Volley II', 'uncommon', { override: true }));
+    expect(c.events.at(-1)?.payload).toMatchObject({ override: true });
+    expect(char(c).evolution?.override).toBe(true);
+    // The player's choice honours the GM's override too.
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' }, player('jake'));
+    expect(char(c).grade).toBe('E');
+    // The earned selections stay due: the override skips the wait, not the picks.
+    expect(dueSelections(rules, char(c)).map((s) => s.level)).toEqual([5, 10]);
+    expect(replay(c.events).state).toEqual(c.state);
+    // The override is GM-only data: the owner's pending view never carries it.
+    const released = ok(
+      ok(toF(), award(10 * XP_F)),
+      release('Volley', 'Volley II', 'uncommon', { override: true }),
+    );
+    expect(JSON.stringify(projectForPlayer(released.state!, 'jake'))).not.toContain('override');
+  });
+
   it('the owner sees how many earned selections wait, offered or not (MQ.1 review)', () => {
     const due = (c: Campaign): number => {
       if (!c.state) throw new Error('no state');

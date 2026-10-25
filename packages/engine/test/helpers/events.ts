@@ -571,11 +571,14 @@ function randomSkillCommand(
     };
   }
   if (roll < 0.95) return { type: 'skill.upgrade', characterId, skill: someSkill() };
+  const name = pick(['Merged', 'Shadow Shot']);
+  // MT.7: "Shadow Shot" merges are GM overrides (no extra draw).
   return {
     type: 'skill.merge',
     characterId,
     skills: [someSkill(), someSkill()],
-    name: pick(['Merged', 'Shadow Shot']),
+    name,
+    override: name === 'Shadow Shot',
   };
 }
 
