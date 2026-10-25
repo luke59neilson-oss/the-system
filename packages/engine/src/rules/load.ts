@@ -9,7 +9,14 @@ export type RulesMigration = (raw: Record<string, unknown>) => Record<string, un
  * Migrations keyed by the version they upgrade FROM. Add one whenever
  * RULES_CONFIG_VERSION is bumped; never edit a released migration.
  */
-export const RULES_MIGRATIONS: Readonly<Record<number, RulesMigration>> = {};
+export const RULES_MIGRATIONS: Readonly<Record<number, RulesMigration>> = {
+  /** 1 → 2 (MT.3, DESIGN §7): the hunger tracker is gone, so its settings are dropped. */
+  1: (raw) => {
+    const next = { ...raw };
+    delete next['hunger'];
+    return next;
+  },
+};
 
 export type RulesResult = { ok: true; config: RulesConfig } | { ok: false; errors: string[] };
 

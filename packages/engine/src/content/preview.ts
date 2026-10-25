@@ -36,6 +36,11 @@ export type ContentPreview =
       readonly entries: readonly ContentPreviewEntry[];
       /** Entries that cannot apply (characters not found). */
       readonly errors: readonly ContentError[];
+      /**
+       * Sections the file has that this app reads but no longer uses (MT.3:
+       * `hunger`, since the app tracks no hunger). Nothing applies for them.
+       */
+      readonly ignored: readonly ContentError[];
     };
 
 /**
@@ -63,7 +68,15 @@ export function previewContent(
     if (r.ok) scratch = r.campaign;
     return { path, command, error: r.ok ? null : r.error, note: r.ok ? note : null };
   });
-  return { ok: true, title: parsed.content.title ?? null, entries, errors };
+  const ignored: ContentError[] = parsed.content.hunger
+    ? [
+        {
+          path: 'hunger',
+          message: 'the app does not track hunger (narrate it instead); nothing applies',
+        },
+      ]
+    : [];
+  return { ok: true, title: parsed.content.title ?? null, entries, errors, ignored };
 }
 
 function entryNote(campaign: Campaign, command: ContentCommand['command']): string | null {

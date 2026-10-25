@@ -69,14 +69,7 @@ import {
 import { applyAction, checkStabilityRules, nudge, type Quest } from '../quests';
 import { parseRulesConfig, type RulesConfig } from '../rules';
 import { rankProblem, tierProblem, type Entity } from '../entities';
-import {
-  hungerFaded,
-  hungerStepsProblem,
-  newHungerTracker,
-  type Faction,
-  type HungerTracker,
-  type Region,
-} from '../trackers';
+import { type Faction, type Region } from '../trackers';
 import {
   validateClassDef,
   validateProfessionDef,
@@ -87,8 +80,8 @@ import {
 } from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). v30: entity `stats`/`notes` (bestiary; M7.2). v31: shared contests (M7.3). v32: hunger, regions, factions (M7.4). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 32;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). v30: entity `stats`/`notes` (bestiary; M7.2). v31: shared contests (M7.3). v32: hunger, regions, factions (M7.4). v33: no hunger tracker (MT.3; hunger events replay as no-ops). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 33;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -186,8 +179,6 @@ export interface CampaignState {
   readonly montages: Readonly<Record<string, Montage>>;
   /** Montage ids in offer order. */
   readonly montageOrder: readonly string[];
-  /** Hunger tracker (M7.4). Each player sees only their own step, and only while it is on. */
-  readonly hunger: HungerTracker;
   /** Regions by id (M7.4). Players see only the current region's name. */
   readonly regions: Readonly<Record<string, Region>>;
   readonly regionOrder: readonly string[];
@@ -839,7 +830,6 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       montageOrder: [],
       contests: {},
       contestOrder: [],
-      hunger: newHungerTracker(parsed.config),
       regions: {},
       regionOrder: [],
       currentRegion: null,
@@ -1990,38 +1980,11 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       }
       return state;
     }
-    case 'hunger.configured': {
-      const { enabled, steps } = event.payload;
-      const problem = hungerStepsProblem(steps);
-      if (problem) fail(event, problem);
-      if (enabled === state.hunger.enabled && steps.join('\n') === state.hunger.steps.join('\n')) {
-        fail(event, 'nothing to change');
-      }
-      const top = steps.length - 1;
-      const levels: Record<string, number> = {};
-      for (const [id, level] of Object.entries(state.hunger.levels)) {
-        levels[id] = Math.min(level, top);
-      }
-      return { ...state, hunger: { enabled, steps: [...steps], levels } };
-    }
-    case 'hunger.levelsSet': {
-      const entries = Object.entries(event.payload.levels);
-      if (entries.length === 0) fail(event, 'choose at least one character');
-      if (!state.hunger.enabled) fail(event, 'the hunger tracker is off for this campaign');
-      const levels: Record<string, number> = { ...state.hunger.levels };
-      for (const [id, level] of entries) {
-        const character = characterOf(state, event, id);
-        if (hungerFaded(state.rules, character)) {
-          fail(
-            event,
-            `${character.name} has outgrown hunger (${state.rules.hunger.fadesAtGrade}-grade)`,
-          );
-        }
-        if (level > state.hunger.steps.length - 1) fail(event, `no hunger step ${level}`);
-        levels[id] = level;
-      }
-      return { ...state, hunger: { ...state.hunger, levels } };
-    }
+    // MT.3 (DESIGN §7, Q68): hunger is narrated, never tracked. Stored M7.4
+    // hunger events still parse and replay, but change nothing.
+    case 'hunger.configured':
+    case 'hunger.levelsSet':
+      return state;
     case 'region.defined': {
       const { regionId, name, notes } = event.payload;
       if (hasOwn(state.regions, regionId)) fail(event, `region "${regionId}" already exists`);

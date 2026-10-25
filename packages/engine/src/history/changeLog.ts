@@ -120,8 +120,9 @@ export const CHANGE_LOG_PHRASES: Readonly<Record<string, string>> = {
   'montage.focused': 'montage focus given',
   'montage.closed': 'montage closed',
   'contest.shared': 'contest roll shared',
-  'hunger.configured': 'hunger tracker changed',
-  'hunger.levelsSet': 'hunger changed',
+  // Retired by MT.3; old logs still show these entries.
+  'hunger.configured': 'hunger tracker changed (no longer used)',
+  'hunger.levelsSet': 'hunger changed (no longer used)',
   'region.defined': 'region added',
   'region.edited': 'region edited',
   'region.currentSet': 'party moved region',

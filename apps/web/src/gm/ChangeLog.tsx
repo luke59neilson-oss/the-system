@@ -33,8 +33,17 @@ export function undoError(error: string): string {
   return friendlyError(error);
 }
 
-/** Changes the engine never undoes (M1.3), so they get no Undo button. */
-const NO_UNDO = new Set(['campaign.created', 'rules.migrated']);
+/**
+ * Changes the engine never undoes (M1.3), so they get no Undo button; and the
+ * retired hunger events (MT.3), which replay as no-ops, so undoing one would
+ * change nothing.
+ */
+const NO_UNDO = new Set([
+  'campaign.created',
+  'rules.migrated',
+  'hunger.configured',
+  'hunger.levelsSet',
+]);
 
 /** Waits this long after the last state change before refetching the log. */
 const REFETCH_MS = 250;

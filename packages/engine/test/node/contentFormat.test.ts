@@ -42,7 +42,8 @@ describe('content files (M9.2)', () => {
       files.flatMap((f) => Object.keys(JSON.parse(readFileSync(f, 'utf8')) as object)),
     );
     for (const s of Object.keys(contentFileSchema.shape).filter(
-      (k) => !['format', 'version', 'title', 'notes'].includes(k),
+      // `hunger` is retired (MT.3): still read, never used, so no example carries it.
+      (k) => !['format', 'version', 'title', 'notes', 'hunger'].includes(k),
     )) {
       expect(sections, s).toContain(s);
     }

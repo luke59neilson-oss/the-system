@@ -6,9 +6,6 @@ import {
   emptyFactionDraft,
   factionCommand,
   factionDraftOf,
-  hungerRows,
-  hungryIds,
-  stepsCommand,
   type FactionDraft,
 } from './trackersModel';
 
@@ -18,10 +15,9 @@ const own = <T,>(record: Readonly<Record<string, T>>, id: string | null): T | nu
   id !== null && Object.prototype.hasOwnProperty.call(record, id) ? (record[id] ?? null) : null;
 
 /**
- * GM trackers (ROADMAP M7.4, DESIGN §7–§8, D184): the campaign's optional
- * hunger tracker (fades at the configured grade), the regions the party moves
- * through, and the survivor factions. Players see only their own hunger step
- * (while the tracker is on) and the current region's name.
+ * GM trackers (ROADMAP M7.4, DESIGN §7–§8, D184): the regions the party moves
+ * through and the survivor factions. Players see only the current region's
+ * name. There is no hunger tracker (MT.3, DESIGN §7: hunger is narrated).
  */
 export function Trackers({ client, state }: { client: LiveClient; state: CampaignState }) {
   const [busy, setBusy] = useState(false);
@@ -36,7 +32,6 @@ export function Trackers({ client, state }: { client: LiveClient; state: Campaig
   return (
     <section className="window trackers" aria-labelledby="trackers">
       <h2 id="trackers">Trackers</h2>
-      <HungerSection state={state} busy={busy} run={run} />
       <RegionSection state={state} busy={busy} run={run} />
       <FactionSection state={state} busy={busy} run={run} />
       {outcome && (
@@ -52,127 +47,6 @@ interface SectionProps {
   state: CampaignState;
   busy: boolean;
   run: (c: Command, done: string) => Promise<boolean>;
-}
-
-function HungerSection({ state, busy, run }: SectionProps) {
-  const { hunger, rules } = state;
-  const rows = hungerRows(state);
-  const hungry = hungryIds(state);
-  // The draft remembers the steps it was typed over, so a change from
-  // elsewhere (another tab, an undo) replaces a stale draft instead of being
-  // overwritten by it.
-  const saved = hunger.steps.join('\n');
-  const [draft, setDraft] = useState<{ text: string; base: string } | null>(null);
-  const text = draft !== null && draft.base === saved ? draft.text : saved;
-  const steps = stepsCommand(state, text);
-  const set = (ids: string[], change: { level: number } | { delta: number }, done: string) =>
-    void run({ type: 'hunger.set', characterIds: ids, ...change }, done);
-  return (
-    <div role="group" aria-labelledby="trackers-hunger">
-      <h3 id="trackers-hunger">Hunger</h3>
-      <label className="check">
-        <input
-          type="checkbox"
-          checked={hunger.enabled}
-          disabled={busy}
-          onChange={(e) =>
-            void run(
-              { type: 'hunger.configure', enabled: e.target.checked },
-              e.target.checked
-                ? 'Hunger tracker on: players see their own hunger'
-                : 'Hunger tracker off: players no longer see it',
-            )
-          }
-        />
-        Use the hunger tracker in this campaign
-      </label>
-      <p className="muted">
-        Fades at {rules.hunger.fadesAtGrade}-grade: a character who reaches it no longer tracks
-        hunger.
-      </p>
-      {hunger.enabled && (
-        <>
-          {rows.length === 0 ? (
-            <p className="muted">No characters yet.</p>
-          ) : (
-            <ul className="tracker-list" aria-label="Hunger by character">
-              {rows.map((r) => (
-                <li key={r.id} data-testid={`hunger-${r.id}`}>
-                  <span className="skill-name">{r.name}</span>{' '}
-                  {r.faded ? (
-                    <span className="muted">outgrown ({rules.hunger.fadesAtGrade}-grade)</span>
-                  ) : (
-                    <>
-                      <label>
-                        <span className="sr-only">Hunger of {r.name}</span>
-                        <select
-                          value={r.level}
-                          disabled={busy}
-                          onChange={(e) => {
-                            const level = Number(e.target.value);
-                            set([r.id], { level }, `${r.name} is ${hunger.steps[level] ?? ''}`);
-                          }}
-                        >
-                          {hunger.steps.map((s, i) => (
-                            <option key={s} value={i}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
-                      </label>{' '}
-                      <span className="muted">
-                        {r.level + 1}/{hunger.steps.length}
-                      </span>
-                    </>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-          {hungry.length > 0 && (
-            <div className="library-tools">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => set(hungry, { delta: 1 }, 'Everyone is one step hungrier')}
-              >
-                Everyone one step hungrier
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => set(hungry, { level: 0 }, `Everyone is ${hunger.steps[0] ?? ''}`)}
-              >
-                Everyone ate
-              </button>
-            </div>
-          )}
-          <label>
-            Steps, least hungry first (one per line)
-            <textarea
-              value={text}
-              rows={Math.min(Math.max(hunger.steps.length, 3), 8)}
-              disabled={busy}
-              onChange={(e) => setDraft({ text: e.target.value, base: saved })}
-            />
-          </label>
-          {typeof steps === 'string' && <p className="err">{steps}</p>}
-          <button
-            type="button"
-            disabled={busy || steps === null || typeof steps === 'string'}
-            onClick={() => {
-              if (steps === null || typeof steps === 'string') return;
-              void run(steps, 'Hunger steps saved').then((ok) => {
-                if (ok) setDraft(null);
-              });
-            }}
-          >
-            Save steps
-          </button>
-        </>
-      )}
-    </div>
-  );
 }
 
 function RegionSection({ state, busy, run }: SectionProps) {

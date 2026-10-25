@@ -628,7 +628,7 @@ work: Q44–Q48 and Q52.
   D88).
   Store the race level used for the above-level XP bonus in `xp.awarded`
   so a non-latest undo cannot re-price a later award (D71).
-- [x] **M7.4 Trackers.** Hunger (fades at E-grade by default), regions,
+- [x] **M7.4 Trackers.** (Hunger retired by MT.3.) Hunger (fades at E-grade by default), regions,
   survivor factions. Players see their hunger tracker when the campaign
   enables it (from M3.13, D88).
 - [x] **M7.A Milestone acceptance and review.** Sample encounter end to end;
@@ -713,7 +713,7 @@ behaviour until an answer lands.
   on the player's screen as an offer; accepting applies it, declining keeps
   both originals; the GM sees the answer (Q62). *Accept:* engine tests for
   both answers and a stale offer; e2e from GM send to player answer.
-- [ ] **MT.3 No hunger tracker.** Remove the tracker from the GM console,
+- [x] **MT.3 No hunger tracker.** Remove the tracker from the GM console,
   player screens, rules and the tutorial pack (Q68); stored hunger events
   replay as no-ops through an upcaster; goldens re-recorded under a schema
   bump. *Accept:* no hunger UI anywhere; old logs replay; full e2e green.

@@ -423,16 +423,6 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
             </Live>
           </div>
         ))}
-        {view.hunger && (
-          // M7.4: the campaign's hunger tracker, while it is on and not outgrown.
-          <>
-            <dt>Hunger</dt>
-            <Live
-              testId="hunger"
-              value={`${view.hunger.step} (${view.hunger.level + 1}/${view.hunger.steps})`}
-            />
-          </>
-        )}
       </dl>
       <h3>Stats</h3>
       <ul className="stats">

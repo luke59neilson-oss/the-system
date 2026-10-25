@@ -701,14 +701,14 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     characterIds: z.array(recordId).min(1).max(200),
   }),
   /**
-   * M7.4 hunger tracker (DESIGN §7): the GM turns it on or off for the
-   * campaign and may rename its steps (lowest first).
+   * M7.4 hunger tracker, retired by MT.3 (DESIGN §7: no hunger tracker). Kept
+   * so stored logs still parse; no command records it and it replays as a no-op.
    */
   'hunger.configured': z.strictObject({
     enabled: z.boolean(),
     steps: z.array(z.string().trim().min(1).max(40)).max(12),
   }),
-  /** M7.4: these characters' hunger steps are now these (absolute, so a replay agrees). */
+  /** M7.4, retired by MT.3: kept so stored logs parse; replays as a no-op. */
   'hunger.levelsSet': z.strictObject({
     levels: z.record(recordId, z.number().int().min(0).max(11)),
   }),

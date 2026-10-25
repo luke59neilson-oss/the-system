@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 32,
+  "schemaVersion": 33,
   "name": "Golden: trackers",
   "rules": {
-    "configVersion": 1,
+    "configVersion": 2,
     "campaign": {
       "levelCap": 240,
       "typicalLevelsPerSession": 6,
@@ -274,10 +274,6 @@
       "max": 100,
       "initial": 100,
       "visibleToPlayersByDefault": false
-    },
-    "hunger": {
-      "enabledByDefault": false,
-      "fadesAtGrade": "E"
     },
     "economy": {
       "currencyName": "Credits",
@@ -610,14 +606,6 @@
   "montageOrder": [],
   "contests": {},
   "contestOrder": [],
-  "hunger": {
-    "enabled": true,
-    "steps": ["Full", "Peckish", "Starving"],
-    "levels": {
-      "jake": 2,
-      "mira": 1
-    }
-  },
   "regions": {
     "crown": {
       "id": "crown",
