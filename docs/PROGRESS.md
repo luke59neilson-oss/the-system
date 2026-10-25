@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-25): M0–M11, MS, MQ, MR and QF done; new milestones MT (Luke's answers, batch 3) and MC (co-DM, DESIGN §11) added; `docs/DONE.md` removed.
-**Next item:** MT.3 No hunger tracker (resume `wip/MT.3`)
+**Next item:** MT.5 GM override for level, XP and grade
 **Blockers:** none
 
 ## Run log
@@ -1063,3 +1063,13 @@ next item, blockers. -->
 - Open `wip/*` branches: `wip/MT.3` (base ee78a366, head 067a8ee3). Where I stopped: only `packages/engine/test/noHunger.test.ts`, whose header lists the plan and touch list (state v33 without `hunger`, hunger events reduce as no-ops, commands `hunger.configure`/`hunger.set` removed, rules upcaster strips `rules.hunger`, content `hunger` ignored with a warning, projection and web UI removed, all golden states re-recorded under the bump, M7.4 spec trimmed).
 - Next item: MT.3 (resume `wip/MT.3`).
 - Blockers: none.
+
+### Run 5964a90a · 2026-10-25 19:08–19:57 UTC (end minute ~49)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` again had an unrelated older history; reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Reviewer: sonnet worked (worktree; Agent calls block, so each review ran beside the full e2e). CI on main at start: latest completed (ee78a366) green. No new answers in ANSWERS.md. Not an efficiency or sweep hour.
+- MT.3 No hunger tracker **checked** (D212): state v33 without `hunger`; M7.4 hunger events still parse and replay as no-ops (no command, no Undo button, change log says "(no longer used)"); rules config v2 with the first rules migration (1 → 2 drops `hunger`); content `hunger` read but ignored, listed under "Ignored sections" in the import preview; tutorial pack, GM guide and content format cleaned; all golden states re-recorded at v33 (logs unchanged). New `noHunger.test.ts`, `e2e/MT.3.spec.ts` (opens the old `trackers` golden log on the real server). Sonnet: 0 H / 0 M / 6 L; 3 Lows fixed. Merged (336aadbd).
+- MT.4 Credits history for players **checked** (D213): the ledger is projected to its owner as `inventory.credits`; the player's Inventory shows a collapsed "Credits history", newest first, with the balance after each change. `creditsHistory.test.ts`, `creditText.test.ts`, `e2e/MT.4.spec.ts`. Sonnet: 0 H / 0 M / 6 L → QUALITY backlog. Merged (fc0bb9ed).
+- Tests: unit 1,223; e2e 96 (full `--project=e2e` green on wip/MT.4 55a3b5ec, which contains MT.3). Latency project and desktop smoke not run (no server change beyond the preview field). Engine coverage not re-measured.
+- Open `wip/*` branches: none new to resume (wip/MT.3 and wip/MT.4 are merged). MT.5 not started: MT.4's review and full e2e finished at minute 47, after the hand-off point.
+- Next item: MT.5 GM override for level, XP and grade.
+- Blockers: none.
+
