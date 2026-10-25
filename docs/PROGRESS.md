@@ -1092,7 +1092,7 @@ next item, blockers. -->
 - Open `wip/*`: wip/MT.6 (resume).
 - Blockers: none.
 
-### Run 1ea01aa0 · 2026-10-25 22:09–22:51 UTC (end minute ~42: handed off at the build cut-off with no reviewer outstanding; nothing else to close)
+### Run 1ea01aa0 · 2026-10-25 22:09–22:49 UTC (end minute 40: protocol miss, released before minute 48 with no §5.5 reason; MT.7 work was pushed to wip at each step, so nothing is lost)
 - Preflight: `add_repo` not offered; repo already cloned (local `main` again had an unrelated history; reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. CI on main at start (ddf36547) green. No new answers. Hour 22: no efficiency check, no sweep.
 - MT.6 **checked**: round-2 M1 fixed (`bannerStart`: a live arrival more than 2 min after its send time times from send + 2 min, so a banner seen after a reconnect does not outlive the GM's list); Lows: skew limit documented, scheduled messages say they are list-only, unit tests for `activeBanners`/`bannerStart`. Max rounds reached; verified by unit + e2e.
 - Sweep B recorded in QUALITY.md (rotation → C). All 3 Mediums confirmed (mutation / code reading) and fixed: QF.23 (Identify-as-source merge refusal tested; mutation now fails), QF.24 (a merge offer notifies its owner: toast + System messages; e2e with a second player), QF.25 (GM override keeps keyboard focus; keyboard e2e). Reviewed together by sonnet: 0 H / 0 M / 4 L (backlog). **Checked.**
