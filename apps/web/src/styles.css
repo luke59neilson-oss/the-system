@@ -788,6 +788,9 @@ button.secondary:hover {
   flex: 1 1 10em;
   min-width: 0;
 }
+.feed .show-older {
+  margin-top: 8px;
+}
 .feed ol.history {
   max-height: 60vh;
   overflow-y: auto;

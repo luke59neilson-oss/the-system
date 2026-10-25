@@ -952,6 +952,30 @@ function Track({ testId, name, level }: { testId: string; name: string; level: n
   );
 }
 
+/**
+ * M11.3: long histories render the newest page only, so a long campaign's
+ * sheet stays fast to open (12,500 messages were 12,000+ list items); older
+ * entries are one press away.
+ */
+const HISTORY_PAGE = 50;
+
+function ShowOlder({
+  hidden,
+  onMore,
+  testId,
+}: {
+  hidden: number;
+  onMore: () => void;
+  testId: string;
+}) {
+  if (hidden <= 0) return null;
+  return (
+    <button type="button" className="secondary show-older" onClick={onMore} data-testid={testId}>
+      Show older ({hidden} more)
+    </button>
+  );
+}
+
 function Feed({
   live,
   view,
@@ -963,6 +987,8 @@ function Feed({
 }) {
   const [filter, setFilter] = useState<HistoryFilter>('dings');
   const [query, setQuery] = useState('');
+  const [dingLimit, setDingLimit] = useState(HISTORY_PAGE);
+  const [messageLimit, setMessageLimit] = useState(HISTORY_PAGE);
   const rows = filterHistory(live.notifications, filter, query);
   const messages = [...view.messages].reverse();
   return (
@@ -1004,7 +1030,7 @@ function Feed({
           </p>
         ) : (
           <ol data-testid="dings" className="history">
-            {rows.map((n, i) => (
+            {rows.slice(0, dingLimit).map((n, i) => (
               <li
                 key={`${n.seq}-${rows.length - i}`}
                 className={i === 0 && filter === 'dings' && query === '' ? 'fresh' : undefined}
@@ -1015,6 +1041,11 @@ function Feed({
             ))}
           </ol>
         )}
+        <ShowOlder
+          hidden={rows.length - dingLimit}
+          onMore={() => setDingLimit((n) => n + HISTORY_PAGE)}
+          testId="dings-older"
+        />
       </section>
       <section className="window feed" aria-labelledby="messages">
         <h2 id="messages">System messages</h2>
@@ -1022,11 +1053,16 @@ function Feed({
           <p className="muted">Nothing from the System yet.</p>
         ) : (
           <ol data-testid="messages">
-            {messages.map((m) => (
+            {messages.slice(0, messageLimit).map((m) => (
               <li key={m.id}>{m.text}</li>
             ))}
           </ol>
         )}
+        <ShowOlder
+          hidden={messages.length - messageLimit}
+          onMore={() => setMessageLimit((n) => n + HISTORY_PAGE)}
+          testId="messages-older"
+        />
       </section>
     </div>
   );
