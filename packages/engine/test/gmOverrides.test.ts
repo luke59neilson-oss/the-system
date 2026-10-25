@@ -92,6 +92,19 @@ describe('GM overrides the merge rules (MT.7)', () => {
     );
   });
 
+  it('a merge into a reserved rarity stays refused, override or not (MT.7 review)', () => {
+    const top = (skill: string): Command => ({
+      type: 'skill.setRarity',
+      characterId: ID,
+      skill,
+      rarity: 'mythical',
+    });
+    const c = run([...start(), top('Cut'), top('Step')]);
+    expect(refusal(c, merge('Cutstep', ['Cut', 'Step']))).toMatch(
+      /highest rarity a skill can have/,
+    );
+  });
+
   it('players cannot send an override merge', () => {
     const r = execute(run(start()), merge('Cutstep', ['Cut', 'Step']), player);
     expect(r.ok ? 'ok' : r.error).toMatch(/Not allowed/);
@@ -128,7 +141,27 @@ describe('GM grants a profession before E-grade (MT.7)', () => {
       profession: 'Smith',
     };
     expect(refusal(c, swap)).toMatch(/already has a profession/);
-    expect(refusal(c, { ...grant(true) })).toMatch(/already has the profession \[Alchemist\]/);
+    expect(refusal(c, grant())).toMatch(/already has a profession/);
+    // The same name again with the override resets it to the class level.
+    const leveled = run(
+      [
+        {
+          type: 'character.setProgression',
+          characterId: ID,
+          grade: 'G',
+          classLevel: 3,
+          professionLevel: 1,
+          xp: { class: 0, profession: 0 },
+        } as Command,
+        grant(true),
+      ],
+      testContext('l'),
+      c,
+    );
+    expect(leveled.state!.characters[ID]).toMatchObject({
+      profession: 'Alchemist',
+      professionLevel: 3,
+    });
     const swapped = run([{ ...swap, override: true } as Command], testContext('s'), c);
     expect(swapped.state!.characters[ID]!.profession).toBe('Smith');
     expect(undo(swapped).state!.characters[ID]!.profession).toBe('Alchemist');

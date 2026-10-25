@@ -308,8 +308,15 @@ export function mergeSkills(
     merge.rarityStepsAboveHigher;
   const result = rules.skills.rarities[target];
   const ceiling = rarityIndex(rules, currentGrade(rules, character).rarityCeiling);
-  // MT.7 review: the GM's override may also merge past the grade ceiling.
-  if (!result || result.reserved || (!override && target > ceiling)) {
+  if (!result || result.reserved) {
+    // No rarity to give (past the ladder, or a reserved one such as Divine):
+    // even the GM's override cannot merge into it (MT.7 review round 2).
+    throw new CharacterRuleError(
+      'The merged skill would be above the highest rarity a skill can have',
+    );
+  }
+  // MT.7 review: the GM's override may merge past the grade ceiling.
+  if (!override && target > ceiling) {
     throw new CharacterRuleError(
       `The merged skill would be above the ${character.grade}-grade ceiling`,
     );

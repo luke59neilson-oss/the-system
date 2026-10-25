@@ -35,7 +35,7 @@ refusal is raised.
 | Refusal | Where | GM way through |
 | --- | --- | --- |
 | `…: rarity "…" is not allowed at …-grade (ceiling …)` | packages/engine/src/character/model.ts:206 | `skill.setRarity` (Edit sheet → "Set rarity") sets any skill above the ceiling after creation; or raise the ceiling in Rules |
-| `Professions unlock at …-grade` | packages/engine/src/character/model.ts:364 | `character.grantProfession` with `override: true` (Edit sheet → "Grant a profession now") grants one before E-grade, at the class level |
+| `Professions unlock at …-grade` | packages/engine/src/character/model.ts:373 | `character.grantProfession` with `override: true` (Edit sheet → "Grant a profession now") grants one before E-grade, at the class level |
 | `Not enough … (has …)` | packages/engine/src/economy/model.ts:140 | Edit holdings (`holdings.adjust`) sets currency and items directly |
 | `Not enough […] (has …, needs …)` | packages/engine/src/economy/model.ts:149 | Edit holdings (`holdings.adjust`) sets currency and items directly |
 | `Approve the skill re-rating first: the GM sets each kept skill's rarity and approves the list (DESIGN §6)` | packages/engine/src/events/commands.ts:1332 | One click: the GM sets and approves the re-rating in the evolution builder (the approval is the GM's own act) |
@@ -67,21 +67,24 @@ refusal is raised.
 | `[…] needs … marks (has …)` | packages/engine/src/skills/model.ts:249 | `skill.setRarity` (Edit sheet → "Set rarity") upgrades any skill directly |
 | `[…] is at the …-grade ceiling; its marks bank until the next evolution` | packages/engine/src/skills/model.ts:252 | `skill.setRarity` (Edit sheet → "Set rarity") upgrades any skill directly |
 | `Already merged at …-grade` | packages/engine/src/skills/model.ts:304 | `skill.merge` with `override: true` (Merges window → "GM override: merge any two skills"; the player still accepts or declines) skips the joint-use count, minimum rarity and once-per-grade checks |
-| `The merged skill would be above the …-grade ceiling` | packages/engine/src/skills/model.ts:312 | `skill.merge` with `override: true` (Merges window) merges past the ceiling too |
+| `The merged skill would be above the …-grade ceiling` | packages/engine/src/skills/model.ts:320 | `skill.merge` with `override: true` (Merges window) merges past the grade ceiling |
 | `the … list (ids and order) cannot change in a running campaign` | packages/engine/src/events/reducer.ts:731 | No override, by guarantee 2: stored events name grades, stats, pools, rarities and slots by id and position, so changing the list would change what the log means. Rename entries and change their numbers freely; a new list needs a new campaign |
 | `XP overflow always stays on` | packages/engine/src/events/reducer.ts:735 | No rules switch (Luke, Q49/L16: overflow applies to every campaign); the GM sets XP and levels directly with the level/XP/grade override (`character.setProgression`) |
 | `XP overflow is turned on by the rules migration when the campaign opens, which moves banked XP first` | packages/engine/src/events/reducer.ts:735 | Reopen the campaign so the migration runs; then the level/XP/grade override sets anything directly |
 | `these rules do not fit the campaign as it is: ……` | packages/engine/src/events/reducer.ts:792 | Bring the named characters inside the new rules first (level/XP/grade override, "Set rarity", Edit holdings), then save the rules |
+| `The merged skill would be above the highest rarity a skill can have` | packages/engine/src/skills/model.ts:314 | No rarity exists to give (past Mythical, or the reserved Divine; DESIGN §6). Give the merged skill with `skill.grant` at Mythical and remove the originals by re-rating, or make the rarity unreserved in Rules |
+| `[…] cannot be equipped` | packages/engine/src/economy/model.ts:174 | Edit the item in the item library to give it a slot |
+| `[…] goes in a … slot, not …` | packages/engine/src/economy/model.ts:174 | Edit the item in the item library to change its slot |
 
 ## State
 
 | Refusal | Where | GM way through |
 | --- | --- | --- |
-| `Character already has a profession` | packages/engine/src/character/model.ts:360 | `character.grantProfession` with `override: true` (Edit sheet → "Replace profession") replaces it; the new one starts at the class level |
-| `… already has the profession […]` | packages/engine/src/character/model.ts:387 | `character.grantProfession` with `override: true` (Edit sheet → "Replace profession") replaces it; the new one starts at the class level (a player taking an offer cannot) |
-| `"…" is not one of your offered professions` | packages/engine/src/character/model.ts:392 | Offer it first (Professions offers / evolution builder) |
-| `… already has the profession […]; the offers are locked` | packages/engine/src/character/model.ts:404 | The character has one: a profession is chosen once (DESIGN §2); to change it, undo the choice in the change log |
-| `"…" is not offered to …` | packages/engine/src/character/model.ts:411 | Offer it first (Professions offers / evolution builder) |
+| `Character already has a profession` | packages/engine/src/character/model.ts:362 | `character.grantProfession` with `override: true` (Edit sheet → "Replace profession") replaces it; the new one starts at the class level |
+| `… already has the profession […]` | packages/engine/src/character/model.ts:367 | `character.grantProfession` with `override: true` (Edit sheet → "Replace profession") replaces it; the new one starts at the class level (a player taking an offer cannot) |
+| `"…" is not one of your offered professions` | packages/engine/src/character/model.ts:401 | Offer it first (Professions offers / evolution builder) |
+| `… already has the profession […]; the offers are locked` | packages/engine/src/character/model.ts:413 | `character.grantProfession` with `override: true` (Edit sheet → "Replace profession") sets any profession |
+| `"…" is not offered to …` | packages/engine/src/character/model.ts:420 | Offer it first (Professions offers / evolution builder) |
 | `… slot … does not exist` | packages/engine/src/economy/model.ts:171 | Equip/unequip from the right slot; holdings can be edited directly |
 | `[…] is already equipped there` | packages/engine/src/economy/model.ts:182 | Equip/unequip from the right slot; holdings can be edited directly |
 | `No […] in the inventory` | packages/engine/src/economy/model.ts:184 | Equip/unequip from the right slot; holdings can be edited directly |
@@ -122,7 +125,7 @@ refusal is raised.
 | `… can no longer evolve to …-grade` | packages/engine/src/evolution/model.ts:789 | Release (or re-release) the evolution first |
 | `"…" is not an offered profession` | packages/engine/src/evolution/model.ts:798 | Offer it first (Professions offers / evolution builder) |
 | `No profession is offered with this evolution` | packages/engine/src/evolution/model.ts:801 | Offer it first (Professions offers / evolution builder) |
-| `… already has the profession […]; evolve with none` | packages/engine/src/evolution/model.ts:807 | The character has one: a profession is chosen once (DESIGN §2); to change it, undo the choice in the change log |
+| `… already has the profession […]; evolve with none` | packages/engine/src/evolution/model.ts:807 | `character.grantProfession` with `override: true` (Edit sheet → "Replace profession") sets any profession |
 | `… has no profession, so profession level and XP stay 0` | packages/engine/src/progression/override.ts:82 | Profession skills and XP need a profession first |
 | `… has no profession` | packages/engine/src/progression/xp.ts:306 | Profession skills and XP need a profession first |
 | `[…] has no World Stability` | packages/engine/src/quests/model.ts:87 | Edit the quest to add World Stability or the rule, or nudge it |
@@ -132,12 +135,16 @@ refusal is raised.
 | `[…] has only … segment… left` | packages/engine/src/resolution/model.ts:265 | Remove or recreate the clock |
 | `[…] is already …Unique` | packages/engine/src/skills/model.ts:89 | Already set |
 | `[…] is already …` | packages/engine/src/skills/model.ts:114 | Already that rarity |
-| `That merge offer is no longer open` | packages/engine/src/skills/model.ts:374 | Send the merge again |
-| `That merge offer is out of date: one of its skills has changed. Ask the GM to send it again` | packages/engine/src/skills/model.ts:385 | Send the merge again |
+| `That merge offer is no longer open` | packages/engine/src/skills/model.ts:382 | Send the merge again |
+| `That merge offer is out of date: one of its skills has changed. Ask the GM to send it again` | packages/engine/src/skills/model.ts:393 | Send the merge again |
 | `… has no portrait` | packages/engine/src/events/reducer.ts:868 | Nothing to remove |
 | `… already has that portrait` | packages/engine/src/events/reducer.ts:868 | Nothing to change |
 | `a walled contest has no roll` | packages/engine/src/events/reducer.ts:1923 | A malformed stored contest; share it again from the roller |
 | `this contest needs a roll` | packages/engine/src/events/reducer.ts:1923 | A malformed stored contest; share it again from the roller |
+| `That item is not available` | packages/engine/src/events/commands.ts:1765 | Players see one message that names nothing (QF.9); the GM gives items with Edit holdings (`holdings.adjust`) |
+| `That trade can no longer go through` | packages/engine/src/events/commands.ts:1793 | A side no longer holds its part; the GM moves items and currency with Edit holdings |
+| `A grade wall settles this contest; it has no roll` | packages/engine/src/resolution/model.ts:328 | Fix the input (the roller fills it in) |
+| `This contest needs a roll` | packages/engine/src/resolution/model.ts:328 | Fix the input (the roller fills it in) |
 
 ## Data
 
@@ -213,7 +220,7 @@ refusal is raised.
 | `character "…" already exists` | packages/engine/src/events/reducer.ts:856 | Fix the input or define the thing first |
 | `title "…" already exists` | packages/engine/src/events/reducer.ts:915 | Fix the input or define the thing first |
 | `unknown library title "…"` | packages/engine/src/events/reducer.ts:931 | Fix the input or define the thing first |
-| `unknown grade "…"` | packages/engine/src/events/reducer.ts:1007 | Fix the input or define the thing first |
+| `unknown grade "…"` | packages/engine/src/entities/model.ts:75 | Fix the input or define the thing first |
 | `a participant is listed twice` | packages/engine/src/events/reducer.ts:1010 | Fix the input or define the thing first |
 | `shares sum to …, not the award of …` | packages/engine/src/events/reducer.ts:1012 | Fix the input or define the thing first |
 | `a recipient is listed twice` | packages/engine/src/events/reducer.ts:1070 | Fix the input or define the thing first |
@@ -323,12 +330,19 @@ refusal is raised.
 | `A nickname is at most … characters` | packages/engine/src/skills/model.ts:51 | Fix the input or define the thing first |
 | `The nickname is unchanged` | packages/engine/src/skills/model.ts:55 | Fix the input or define the thing first |
 | `[…] already has that text` | packages/engine/src/skills/model.ts:75 | Fix the input or define the thing first |
-| `The merged skill needs a name` | packages/engine/src/skills/model.ts:317 | Fix the input or define the thing first |
+| `The merged skill needs a name` | packages/engine/src/skills/model.ts:325 | Fix the input or define the thing first |
 | `The library already has […]` | packages/engine/src/titles/index.ts:49 | Fix the input or define the thing first |
 | `unknown rarity "…"` | packages/engine/src/entities/model.ts:40 | Fix the input or define the thing first |
 | `two tiers for rarity "…"` | packages/engine/src/entities/model.ts:41 | Fix the input: one Identify tier per rarity |
 | `give both a grade and a level, or neither` | packages/engine/src/entities/model.ts:73 | Fix the input |
 | `level must be at most …` | packages/engine/src/entities/model.ts:77 | Raise the campaign level cap in Rules, or fix the input |
+| `Unknown stat "…" on …` | packages/engine/src/bonuses/effective.ts:85 | Fix the item or title: name a stat in the rules |
+| `Bonus on … for … has neither flat nor percent` | packages/engine/src/bonuses/effective.ts:87 | Fix the item or title: give the bonus a value |
+| `Flat bonus on … for … must be a whole number` | packages/engine/src/bonuses/effective.ts:90 | Fix the input |
+| `Percent bonus on … for … must be above -100%` | packages/engine/src/bonuses/effective.ts:93 | Fix the input |
+| `Bonus source "…" given twice` | packages/engine/src/bonuses/effective.ts:106 | Fix the input |
+| `Stat "…" is missing or not a whole number` | packages/engine/src/bonuses/effective.ts:115 | Set stats directly (`character.setStats`) |
+| `Bad command…` | packages/engine/src/events/commands.ts:1887 | A malformed command (the app never sends one); fix the input |
 
 ## Permission
 
@@ -347,3 +361,10 @@ refusal is raised.
 | `only journal entries can change who reads them` | packages/engine/src/events/reducer.ts:1647 | Applies to players (or the System), not the GM |
 | `only … can cancel this trade` | packages/engine/src/events/reducer.ts:1394 | Limits players only; the GM cancels any trade |
 | `only … can answer this trade` | packages/engine/src/events/reducer.ts:1394 | Limits players only; the GM answers for anyone |
+| `Not allowed: …` | packages/engine/src/events/commands.ts:1890 | Limits players (and the System) only; the GM may send every command |
+| `A trade with the GM can ask only for currency; the GM offers items` | packages/engine/src/events/commands.ts:1767 | Limits players only (Q44); the GM offers items from the GM side |
+| `A practice entry can be at most … characters` | packages/engine/src/events/commands.ts:1827 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |
+| `Practice log is full (… entries); ask the GM` | packages/engine/src/events/commands.ts:1831 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |
+| `Note limit reached (… notes); delete one to add another` | packages/engine/src/events/commands.ts:1842 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |
+| `Notes are full (… characters in all); shorten or delete a note first` | packages/engine/src/events/commands.ts:1863 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |
+| `Too many open trades (…); cancel one first` | packages/engine/src/events/commands.ts:1873 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |
