@@ -375,9 +375,16 @@ function Clocks({ state, busy, send }: ToolProps) {
       setName('');
     }
   };
-  const offer = async (clockId: string) => {
+  const offer = async (clockId: string, override: boolean) => {
     const ok = await send(
-      { type: 'montage.offer', clockId, label, characterIds: [...who] },
+      {
+        type: 'montage.offer',
+        clockId,
+        label,
+        characterIds: [...who],
+        // MT.7 (Q60): the GM may offer one before the clock qualifies.
+        ...(override ? { override: true } : {}),
+      },
       `Montage offered to ${who.map((id) => state.characters[id]?.name ?? id).join(', ')}`,
     );
     if (ok) setOffering(null);
@@ -434,15 +441,16 @@ function Clocks({ state, busy, send }: ToolProps) {
               >
                 Failure
               </button>
-              {montageReady && (
+              {!complete && montages.length === 0 && (
                 <button
                   type="button"
+                  className={montageReady ? undefined : 'secondary'}
                   onClick={() => {
                     setOffering(clock.id);
                     setWho(ids);
                   }}
                 >
-                  Offer montage
+                  {montageReady ? 'Offer montage' : 'Early montage (override)'}
                 </button>
               )}
               <button
@@ -459,6 +467,12 @@ function Clocks({ state, busy, send }: ToolProps) {
             {offering === clock.id && (
               <fieldset className="montage-offer">
                 <legend>Offer a montage on [{clock.name}]</legend>
+                {!montageReady && (
+                  <p className="warn" role="note" data-testid="montage-override">
+                    GM override: a montage normally needs the clock half filled with no failures.
+                    Offering it now skips that check; it is logged and can be undone.
+                  </p>
+                )}
                 <label>
                   Players see
                   <input value={label} maxLength={200} onChange={(e) => setLabel(e.target.value)} />
@@ -479,9 +493,9 @@ function Clocks({ state, busy, send }: ToolProps) {
                   <button
                     type="button"
                     disabled={busy || who.length === 0 || label.trim() === ''}
-                    onClick={() => void offer(clock.id)}
+                    onClick={() => void offer(clock.id, !montageReady)}
                   >
-                    Offer
+                    {montageReady ? 'Offer' : 'Offer anyway'}
                   </button>
                   <button type="button" className="secondary" onClick={() => setOffering(null)}>
                     Cancel

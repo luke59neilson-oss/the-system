@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { mergeCandidates, type CampaignState } from '@the-system/engine';
+import { mergeCandidates, mergeSkills, type CampaignState } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 
@@ -27,6 +27,9 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
   const [flavor, setFlavor] = useState('');
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Outcome>(null);
+  // MT.7 (Q60): the GM may merge any two skills, past the merge rules.
+  const [overriding, setOverriding] = useState(false);
+  const [anyPair, setAnyPair] = useState<[string, string]>(['', '']);
   const pending = character?.mergeOffer ?? null;
   // The player's last answer, from the campaign state (survives reloads).
   const answer = character?.lastMergeAnswer ?? null;
@@ -38,18 +41,48 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
   const pairId = (skills: readonly [string, string]) => skills.join('\u0000');
   const perGrade = rules.skills.merge.maxPerCharacterPerGrade;
   const rarityName = (id: string) => rules.skills.rarities.find((r) => r.id === id)?.name ?? id;
+  const skillNames = character?.skills.map((s) => s.name) ?? [];
+  const overridePair: [string, string] = [
+    skillNames.includes(anyPair[0]) ? anyPair[0] : (skillNames[0] ?? ''),
+    skillNames.includes(anyPair[1]) ? anyPair[1] : (skillNames[1] ?? ''),
+  ];
+  // What the override still cannot do (the same skill twice, past the
+  // ceiling), from the engine's own check; the result rarity when it can.
+  let overrideProblem: string | null = null;
+  let overrideRarity: string | null = null;
+  if (character && overriding) {
+    try {
+      const after = mergeSkills(
+        rules,
+        character,
+        overridePair[0],
+        overridePair[1],
+        merged === '' ? '\u0000draft' : merged,
+        0,
+        true,
+      );
+      overrideRarity =
+        after.skills.find((s) => !character.skills.some((o) => o.name === s.name))?.rarity ?? null;
+    } catch (error) {
+      overrideProblem = error instanceof Error ? error.message : String(error);
+    }
+  }
 
   const send = async (e: FormEvent) => {
     e.preventDefault();
-    if (!character || !chosen || chosen.problem !== null || clash) return;
+    if (!character || clash) return;
+    if (overriding ? overrideProblem !== null : !chosen || chosen.problem !== null) return;
+    const skills = overriding ? overridePair : chosen?.skills;
+    if (!skills) return;
     setBusy(true);
     const r = await client.command({
       type: 'skill.merge',
       characterId,
-      skills: chosen.skills,
+      skills,
       name: merged,
       description: description.trim() || null,
       flavor: flavor.trim() || null,
+      ...(overriding ? { override: true } : {}),
     });
     setBusy(false);
     if (!r.ok) {
@@ -60,6 +93,7 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
     setName('');
     setDescription('');
     setFlavor('');
+    setOverriding(false);
   };
 
   return (
@@ -81,6 +115,8 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
                 setName('');
                 setDescription('');
                 setFlavor('');
+                setOverriding(false);
+                setAnyPair(['', '']);
               }}
             >
               {ids.map((id) => (
@@ -107,38 +143,89 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
               {answer.skills[1]}] → [{answer.name}]{answer.accept ? '.' : '; both skills stay.'}
             </p>
           )}
-          {candidates.length === 0 ? (
+          {candidates.length === 0 && !overriding && (
             <p className="muted">
               No merge alerts: a merge unlocks when two skills are logged working together{' '}
               {rules.skills.merge.requiredJointUses} times.
             </p>
-          ) : (
+          )}
+          {skillNames.length >= 2 && (
+            <label className="check override-toggle">
+              <input
+                type="checkbox"
+                checked={overriding}
+                onChange={(e) => setOverriding(e.target.checked)}
+              />
+              GM override: merge any two skills
+            </label>
+          )}
+          {(candidates.length > 0 || overriding) && (
             <form onSubmit={(e) => void send(e)} aria-label="Build a merge">
-              <ul className="merge-candidates" aria-label="Merge alerts">
-                {candidates.map((c) => {
-                  const key = pairId(c.skills);
-                  return (
-                    <li key={key}>
-                      <label className="check">
-                        <input
-                          type="radio"
-                          name="merge-pair"
-                          checked={chosen === c}
-                          onChange={() => setPairKey(key)}
-                        />
-                        [{c.skills[0]}] + [{c.skills[1]}] · together {c.count}×
-                        {c.rarity !== null ? ` → ${rarityName(c.rarity)}` : ''}
-                      </label>
-                      {c.unreviewed > 0 && (
-                        <p className="warn" data-testid="merge-unreviewed">
-                          {c.unreviewed} of these {c.count} uses not reviewed yet (Practice window).
-                        </p>
-                      )}
-                      {c.problem !== null && <p className="warn">{c.problem}</p>}
-                    </li>
-                  );
-                })}
-              </ul>
+              {overriding ? (
+                <fieldset className="merge-override" aria-label="Override merge">
+                  <legend>Any two skills (GM override)</legend>
+                  <p className="warn" role="note" data-testid="merge-override-skips">
+                    Skips the merge rules: both at least {rarityName(rules.skills.merge.minRarity)},
+                    logged together {rules.skills.merge.requiredJointUses} times, and {perGrade} per
+                    character per grade. Logged; undo it in the change log.
+                  </p>
+                  {[0, 1].map((i) => (
+                    <label key={i}>
+                      {i === 0 ? 'First skill' : 'Second skill'}
+                      <select
+                        value={overridePair[i]}
+                        onChange={(e) => {
+                          const next: [string, string] = [...overridePair];
+                          next[i] = e.target.value;
+                          setAnyPair(next);
+                        }}
+                      >
+                        {skillNames.map((n) => (
+                          <option key={n} value={n}>
+                            [{n}]
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ))}
+                  {overrideProblem !== null ? (
+                    <p className="err" role="alert">
+                      Can’t merge: {friendlyError(overrideProblem)}
+                    </p>
+                  ) : (
+                    overrideRarity !== null && (
+                      <p className="muted">Merged skill: {rarityName(overrideRarity)}</p>
+                    )
+                  )}
+                </fieldset>
+              ) : (
+                <ul className="merge-candidates" aria-label="Merge alerts">
+                  {candidates.map((c) => {
+                    const key = pairId(c.skills);
+                    return (
+                      <li key={key}>
+                        <label className="check">
+                          <input
+                            type="radio"
+                            name="merge-pair"
+                            checked={chosen === c}
+                            onChange={() => setPairKey(key)}
+                          />
+                          [{c.skills[0]}] + [{c.skills[1]}] · together {c.count}×
+                          {c.rarity !== null ? ` → ${rarityName(c.rarity)}` : ''}
+                        </label>
+                        {c.unreviewed > 0 && (
+                          <p className="warn" data-testid="merge-unreviewed">
+                            {c.unreviewed} of these {c.count} uses not reviewed yet (Practice
+                            window).
+                          </p>
+                        )}
+                        {c.problem !== null && <p className="warn">{c.problem}</p>}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
               <label>
                 Merged skill name
                 <input value={name} onChange={(e) => setName(e.target.value)} />
@@ -163,7 +250,12 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
               </p>
               <button
                 type="submit"
-                disabled={busy || !chosen || chosen.problem !== null || merged === '' || clash}
+                disabled={
+                  busy ||
+                  merged === '' ||
+                  clash ||
+                  (overriding ? overrideProblem !== null : !chosen || chosen.problem !== null)
+                }
               >
                 Send merge offer
               </button>

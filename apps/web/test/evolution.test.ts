@@ -158,6 +158,19 @@ describe('evolution warnings when every upgrade starts at 0 marks (MR.2, L15)', 
 describe('evolution waits for selections (MQ.1, D103)', () => {
   it('blocks while any earned selection is unchosen, offered or not', () => {
     expect(evolutionBlocked({ selectionsDue: 0 })).toBeNull();
+    // MT.7: a release the GM sent ahead of the waiting selections is not blocked.
+    expect(
+      evolutionBlocked({
+        selectionsDue: 2,
+        evolution: {
+          toGrade: 'E',
+          releaseId: 'r',
+          options: [],
+          professions: [],
+          override: true,
+        },
+      }),
+    ).toBeNull();
     expect(evolutionBlocked({ selectionsDue: 1 })).toBe(
       'Choose your waiting skill selection first: you cannot evolve until it is picked.',
     );

@@ -166,6 +166,10 @@ function ReleaseForm({
   const [approvedList, setApprovedList] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  // MT.7 (Q60): the GM may release with selections still to choose.
+  const [skipWait, setSkipWait] = useState(false);
+  const waits = plan.pendingSelections.length > 0;
+  const override = waits && skipWait;
 
   const engineOptions: EvolutionOption[] = options.map((o, i) => ({
     id: `o${i + 1}`,
@@ -202,7 +206,7 @@ function ReleaseForm({
   const listKey = JSON.stringify(rerateList);
   const approved = approvedList === listKey;
   const problem =
-    releaseProblem(state, characterId, engineOptions, offered, rerateList) ??
+    releaseProblem(state, characterId, engineOptions, offered, rerateList, override) ??
     (approved ? null : 'Approve the skill re-rating before releasing.');
 
   const release = async (e: FormEvent) => {
@@ -222,6 +226,7 @@ function ReleaseForm({
       ...(offered.length > 0 ? { professions: offered } : {}),
       rerate: rerateSent,
       rerateApproved: true,
+      ...(override ? { override: true } : {}),
     });
     setBusy(false);
     setResult(
@@ -254,6 +259,17 @@ function ReleaseForm({
             .join(', ')}
           : the player must choose first.
         </p>
+      )}
+      {waits && (
+        <label className="check override-toggle">
+          <input
+            type="checkbox"
+            checked={skipWait}
+            onChange={(e) => setSkipWait(e.target.checked)}
+          />
+          GM override: release now anyway. The player can evolve before choosing; the selections
+          stay due afterwards. Logged, and undoable in the change log.
+        </label>
       )}
       {options.map((o, i) => (
         <fieldset key={i} className="offer-row">

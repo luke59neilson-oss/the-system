@@ -594,7 +594,15 @@ function ownMergeOffer(state: CampaignState, c: Character): OwnSheet['mergeOffer
   const changed = rarityOf(first) !== offer.rarities[0] || rarityOf(second) !== offer.rarities[1];
   try {
     if (changed) throw new Error('stale');
-    const merged = mergeSkills(state.rules, c, first, second, offer.name, joint);
+    const merged = mergeSkills(
+      state.rules,
+      c,
+      first,
+      second,
+      offer.name,
+      joint,
+      offer.override === true,
+    );
     rarity = merged.skills.find((s) => s.name === offer.name)?.rarity ?? null;
   } catch {
     rarity = null;
@@ -722,6 +730,9 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
               ? {}
               : { rerate: c.evolution.rerate.map((r) => ({ skill: r.skill, rarity: r.rarity })) }),
             ...(c.evolution.rerateApproved === true ? { rerateApproved: true as const } : {}),
+            // MT.7: the GM let this evolution go ahead of waiting selections,
+            // so the owner's screen must not block the choice.
+            ...(c.evolution.override === true ? { override: true as const } : {}),
           },
     portrait: portraitUrl(c.portrait),
   };

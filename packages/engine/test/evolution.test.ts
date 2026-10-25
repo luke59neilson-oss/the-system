@@ -956,12 +956,12 @@ describe('review fixes (M1.10 round 1)', () => {
     // The earned selections stay due: the override skips the wait, not the picks.
     expect(dueSelections(rules, char(c)).map((s) => s.level)).toEqual([5, 10]);
     expect(replay(c.events).state).toEqual(c.state);
-    // The override is GM-only data: the owner's pending view never carries it.
+    // The owner's screen learns the wait is lifted (it would block the choice otherwise).
     const released = ok(
       ok(toF(), award(10 * XP_F)),
       release('Volley', 'Volley II', 'uncommon', { override: true }),
     );
-    expect(JSON.stringify(projectForPlayer(released.state!, 'jake'))).not.toContain('override');
+    expect(projectForPlayer(released.state!, 'jake').me.evolution?.override).toBe(true);
   });
 
   it('the owner sees how many earned selections wait, offered or not (MQ.1 review)', () => {

@@ -127,7 +127,11 @@ test('the GM reviews a session, confirms marks and upgrades; the player gets the
   await expect(review.getByRole('status')).toHaveText('Jake: mark confirmed on [Basic Archery]');
   await expect(rows.nth(0)).toContainText('3/3 marks');
   await expect(rows.nth(0)).toContainText('Marked this session');
-  await expect(rows.nth(0).getByRole('button')).toHaveCount(0);
+  // Only the GM's override (MT.7) can give a second mark this session.
+  await expect(rows.nth(0).getByRole('button', { name: /^Confirm mark/ })).toHaveCount(0);
+  await expect(rows.nth(0).getByRole('button', { name: /^Extra mark \(override\)/ })).toHaveCount(
+    1,
+  );
   const prompt = jake.getByTestId('upgrade-prompt');
   await expect(prompt).toContainText(
     'Upgrade ready: [Basic Archery (Inferior)] → Common (3/3 marks; starts again at 0)',

@@ -59,8 +59,33 @@ export function MarksReview({ client, state }: { client: LiveClient; state: Camp
       >
         Confirm mark
       </button>
+    ) : c.status === 'marked' ? (
+      <span className="muted">
+        Marked this session{' '}
+        <button
+          type="button"
+          className="secondary"
+          disabled={busy}
+          aria-label={`Extra mark (override): ${name} ${c.skill}`}
+          title="GM override: one mark per skill per session is the rule; this gives another. Logged and undoable."
+          onClick={() =>
+            void run(
+              {
+                type: 'skill.awardMark',
+                characterId,
+                skill: c.skill,
+                session: sessionId ?? undefined,
+                override: true,
+              },
+              `${name}: extra mark on [${c.skill}] (GM override)`,
+            )
+          }
+        >
+          Extra mark (override)
+        </button>
+      </span>
     ) : (
-      <span className="muted">{c.status === 'marked' ? 'Marked this session' : 'No upgrade'}</span>
+      <span className="muted">No upgrade</span>
     );
   const progress = (c: MarkCandidate) =>
     c.needed === null ? '' : `${c.marks}/${c.needed} marks${c.banks ? ' · banks at ceiling' : ''}`;

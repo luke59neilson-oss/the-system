@@ -66,9 +66,12 @@ export function bonusText(
  * Why the player cannot evolve yet, or null: every earned skill selection,
  * offered or not, must be chosen first (MQ.1, D103).
  */
-export function evolutionBlocked(me: Pick<OwnSheet, 'selectionsDue'>): string | null {
+export function evolutionBlocked(
+  me: Pick<OwnSheet, 'selectionsDue'> & { evolution?: OwnSheet['evolution'] },
+): string | null {
   const due = me.selectionsDue;
-  if (due <= 0) return null;
+  // MT.7: the GM released this evolution ahead of the waiting selections.
+  if (due <= 0 || me.evolution?.override === true) return null;
   return due === 1
     ? 'Choose your waiting skill selection first: you cannot evolve until it is picked.'
     : `Choose your ${due} waiting skill selections first: you cannot evolve until they are picked.`;

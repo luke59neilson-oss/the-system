@@ -14,6 +14,7 @@ import {
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 import { PortraitCell } from './PortraitControls';
+import { SkillOverrides } from './SkillOverrides';
 import { draftOf, flagView, sheetPlan, type SheetDraft } from './partyDashboardModel';
 
 /**
@@ -362,6 +363,7 @@ function SheetEditor({
       )}
       <FreePointBatches client={client} state={state} character={c} />
       <ProgressionOverride client={client} state={state} character={c} />
+      <SkillOverrides client={client} state={state} character={c} />
       <p className="muted small">
         Each saved change is its own event and can be undone in the change log.
       </p>
