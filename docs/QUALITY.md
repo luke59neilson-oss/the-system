@@ -296,3 +296,4 @@ under "Known gaps" (the Backlog lines stay as the detail).
 2026-10-25 · fable at 480d613a: 0 High, 0 Medium, 7 Low (5 Low, 2 guesses).
 Fixed: the hub logs an engine error inside a command. Kept, in `DONE.md`:
 the rest. The Backlog was kept whole (no Low affects play at the table).
+- MT.4 (sonnet review, Low): players' Credits history follows the shared 300-entry ledger, so old rows can drop with no "older entries not shown" note; rows carry no date; a missing counterparty shows its raw id; projection tests lack trade/loot rows.

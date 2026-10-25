@@ -160,12 +160,15 @@ describe('currency ledger (M6.3)', () => {
     expect(ledgerFor(ledger(c), null).map((e) => e.delta)).toEqual([3, 2, 1]);
   });
 
-  it('never reaches a player view', () => {
-    const { state } = ok(base(), grant('jake', 50, 'GM-SECRET-REASON'));
+  it('reaches a player only as their own Credits history (MT.4, Q65)', () => {
+    const { state } = ok(base(), grant('jake', 50, 'JAKE-REASON'));
     if (!state) throw new Error('no state');
-    const view = JSON.stringify(projectForPlayer(state, 'jake'));
-    expect(view).not.toContain('ledger');
-    expect(view).not.toContain('GM-SECRET-REASON');
+    const own = JSON.stringify(projectForPlayer(state, 'jake'));
+    expect(own).not.toContain('ledger');
+    expect(own).toContain('JAKE-REASON');
+    const other = Object.keys(state.characters).find((id) => id !== 'jake') ?? '';
+    expect(other).not.toBe('');
+    expect(JSON.stringify(projectForPlayer(state, other))).not.toContain('JAKE-REASON');
   });
 
   it("tells only that character of a grant or fine, with the GM's reason", () => {

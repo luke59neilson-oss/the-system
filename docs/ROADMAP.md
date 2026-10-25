@@ -717,7 +717,7 @@ behaviour until an answer lands.
   player screens, rules and the tutorial pack (Q68); stored hunger events
   replay as no-ops through an upcaster; goldens re-recorded under a schema
   bump. *Accept:* no hunger UI anywhere; old logs replay; full e2e green.
-- [ ] **MT.4 Credits history for players.** Each player sees their own ledger
+- [x] **MT.4 Credits history for players.** Each player sees their own ledger
   entries (grants, fines, gifts, trades, loot) with the balance after, and
   nobody else's (Q65). *Accept:* projection test (own entries only, canary
   still passes); e2e.

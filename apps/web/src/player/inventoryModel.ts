@@ -1,4 +1,10 @@
-import type { PlayerInventory, PlayerItem, PlayerRules, PlayerView } from '@the-system/engine';
+import type {
+  PlayerCreditEntry,
+  PlayerInventory,
+  PlayerItem,
+  PlayerRules,
+  PlayerView,
+} from '@the-system/engine';
 import { formatStatValue, rarityName } from './sheet';
 
 /**
@@ -21,6 +27,39 @@ export function partyName(view: Pick<PlayerView, 'party' | 'viewerId'>, id: stri
   if (id === null) return 'the GM';
   if (id === view.viewerId) return 'you';
   return view.party.find((m) => m.id === id)?.name ?? id;
+}
+
+/**
+ * One line of the player's Credits history (MT.4, Q65): what changed, why and
+ * the balance after, e.g. "+50 Credits from the GM: Bounty · balance 50".
+ */
+export function creditText(
+  view: Pick<PlayerView, 'party' | 'viewerId'>,
+  entry: PlayerCreditEntry,
+  currencyName: string,
+): string {
+  const amount = `${entry.delta > 0 ? '+' : '−'}${Math.abs(entry.delta)} ${currencyName}`;
+  const who = partyName(view, entry.other);
+  const reason = entry.reason.trim() === '' ? '' : `: ${entry.reason.trim()}`;
+  let what: string;
+  switch (entry.kind) {
+    case 'grant':
+      what = `${amount} from the GM${reason}`;
+      break;
+    case 'fine':
+      what = `${amount}, fined by the GM${reason}`;
+      break;
+    case 'gift':
+      what = entry.delta > 0 ? `${amount}, a gift from ${who}` : `${amount}, given to ${who}`;
+      break;
+    case 'trade':
+      what = `${amount} in a trade with ${who}`;
+      break;
+    case 'loot':
+      what = `${amount} from loot`;
+      break;
+  }
+  return `${what} · balance ${entry.balance}`;
 }
 
 /** `[Name (Rarity)]` for an item the viewer may see, or a placeholder. */
