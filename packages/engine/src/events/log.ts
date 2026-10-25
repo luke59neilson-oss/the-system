@@ -45,6 +45,43 @@ function findEvent(events: readonly DomainEvent[], id: string): DomainEvent | un
   return undefined;
 }
 
+/**
+ * M11.3: an id → position index shared by an events array and every array
+ * appended from it, so the duplicate-id check is O(1) instead of a scan of
+ * the whole log on every command. Branches (an append whose result is
+ * dropped, then another from the same base) share the index, so a hit is
+ * only trusted when the array really holds that id at that position; a hit
+ * that does not match falls back to the scan. An id with no entry was never
+ * appended to this lineage, so it cannot be in the array.
+ */
+const ID_INDEX = new WeakMap<readonly DomainEvent[], Map<string, number>>();
+
+function idIndex(events: readonly DomainEvent[]): Map<string, number> {
+  let index = ID_INDEX.get(events);
+  if (!index) {
+    index = new Map();
+    events.forEach((e, i) => index?.set(e.id, i));
+    ID_INDEX.set(events, index);
+  }
+  return index;
+}
+
+function hasEventId(events: readonly DomainEvent[], id: string): boolean {
+  const at = idIndex(events).get(id);
+  if (at === undefined) return false;
+  if (at < events.length && events[at]?.id === id) return true;
+  return events.some((e) => e.id === id);
+}
+
+/** A new array with `event` appended; it inherits the id index. */
+function extend(events: readonly DomainEvent[], event: DomainEvent): readonly DomainEvent[] {
+  const index = idIndex(events);
+  const next = [...events, event];
+  index.set(event.id, events.length);
+  ID_INDEX.set(next, index);
+  return next;
+}
+
 /** Checks that an undo may target its event given the log so far (not the fold). */
 function checkUndoTarget(
   campaign: Campaign,
@@ -70,14 +107,14 @@ function checkUndoTarget(
  * event is rejected when any later event would no longer apply.
  */
 export function appendEvent(campaign: Campaign, event: DomainEvent): Campaign {
-  if (campaign.events.some((e) => e.id === event.id)) {
+  if (hasEventId(campaign.events, event.id)) {
     throw new EventRejectedError(`Event ${event.id}: duplicate event id`);
   }
   checkEventAuthority(event);
   if (event.type !== 'event.undone') {
     return {
       ...campaign,
-      events: [...campaign.events, event],
+      events: extend(campaign.events, event),
       state: applyEvent(campaign.state, event),
     };
   }
@@ -92,7 +129,7 @@ export function appendEvent(campaign: Campaign, event: DomainEvent): Campaign {
       `Event ${event.id} (event.undone): cannot undo ${target.id} (${target.type}) because a later event depends on it: ${error.message}`,
     );
   }
-  return { events: [...campaign.events, event], state, undone };
+  return { events: extend(campaign.events, event), state, undone };
 }
 
 /**

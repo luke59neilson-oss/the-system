@@ -266,6 +266,26 @@ describe('commands and the reducer', () => {
     expect(c.events).toHaveLength(2);
   });
 
+  // M11.3: the duplicate check uses an id index shared along a lineage of
+  // appends; dropped branches from the same base must not confuse it.
+  it('checks duplicate ids exactly across branches from the same base', () => {
+    const c = base();
+    const ev = (id: string) => parseEvent(rawEvent({ id }));
+    const a = appendEvent(appendEvent(c, ev('a1')), ev('x'));
+    const b = appendEvent(c, ev('x'));
+    // The base never held "x" or "a1"; each branch holds its own.
+    expect(appendEvent(c, ev('x')).events).toHaveLength(3);
+    expect(appendEvent(c, ev('a1')).events).toHaveLength(3);
+    expect(() => appendEvent(a, ev('x'))).toThrow('duplicate event id');
+    expect(() => appendEvent(b, ev('x'))).toThrow('duplicate event id');
+    expect(() => appendEvent(a, ev('a1'))).toThrow('duplicate event id');
+    expect(appendEvent(b, ev('a1')).events).toHaveLength(4);
+    // A log built by replay is indexed on first use.
+    const replayed = replay(JSON.parse(JSON.stringify(a.events)));
+    expect(() => appendEvent(replayed, ev('a1'))).toThrow('duplicate event id');
+    expect(appendEvent(replayed, ev('y')).events).toHaveLength(5);
+  });
+
   it('does not apply event.undone in the reducer', () => {
     const undo = parseEvent(rawEvent({ type: 'event.undone', payload: { eventId: 'e2' } }));
     expect(() => applyEvent(base().state, undo)).toThrow('applied by the event log');
