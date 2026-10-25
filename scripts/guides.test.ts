@@ -43,7 +43,11 @@ const walk = (entry: string): string[] => {
 
 const squash = (text: string) => text.replace(/\s+/g, ' ');
 
-/** Drops block and line comments (not `//` inside a string such as `http://`). */
+/**
+ * Drops block and line comments (not `//` inside a string such as `http://`).
+ * A regex literal ending in `\//` loses the rest of its line; no label sits on
+ * such a line today.
+ */
 export function stripComments(code: string): string {
   return code.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
 }
