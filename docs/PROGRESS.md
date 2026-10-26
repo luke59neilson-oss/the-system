@@ -1110,7 +1110,7 @@ next item, blockers. -->
 - Blockers: none.
 
 
-### Run 316478c4 · 2026-10-26 00:09–00:53 UTC (end minute ~44: hand-off at 44 with MT.9 on wip after its round-1 review; close-out to 50)
+### Run 316478c4 · 2026-10-26 00:09–00:52 UTC (end minute ~43: protocol miss, released before 48 with no §5.5 reason after handing MT.9 to wip; the next run resumes it)
 - Preflight: `add_repo` not offered; repo already cloned (local `main` had an unrelated history; reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. CI on main at start (a017f8ec) green. No new answers. Hour 00: efficiency check run (sonnet auditor); no sweep.
 - Efficiency: scorecard row appended (end minute 46.0, items/run 1.5, round-2 7/10, Highs 3, red/day 2). D206 reverted (half its target moved the wrong way; D220); D211 judged next check. Auditor's Tier 1 `npm run orient` waits for a later check; Tier 2 sweep budget → Q77.
 - MT.8 **checked** (pushed to main): `faction.reveal` toggle (Trackers → "Reveal to players"/"Hide from players", "Revealed" pill, live-edit note); players see revealed factions as `[Name] · standing` under the quest log, never head count, base, notes or unrevealed ones; golden `faction-reveal.jsonl`; GM-OVERRIDES locations refreshed (D219). Review sonnet 2 rounds (R1 0H/2M/6L, R2 clean).
