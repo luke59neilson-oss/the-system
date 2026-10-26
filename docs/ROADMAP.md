@@ -759,11 +759,11 @@ behaviour until an answer lands.
 - [x] **MT.9 End-of-scene prompt on players' screens.** "End scene" also asks
   each player what they practised; their entries go to the GM's review
   (Q63). *Accept:* e2e from End scene to the GM's review queue.
-- [ ] **MT.10 Portraits in backups, exports and the status window.** Backups
+- [x] **MT.10 Portraits in backups, exports and the status window.** Backups
   and exports include the portraits folder and restore it; the status window
   shows the character's portrait at the top (Q40). *Accept:* backup/restore
   test with portraits; e2e screenshot of the status window at 390×844.
-- [ ] **MT.11 Tutorial hidden quest imports switched off.** "The Host's
+- [x] **MT.11 Tutorial hidden quest imports switched off.** "The Host's
   Response" imports inactive; no notice until the GM turns it on (Q72).
   *Accept:* import test.
 - [ ] **MT.A Batch acceptance and review.** Full suite green; `fable` review;

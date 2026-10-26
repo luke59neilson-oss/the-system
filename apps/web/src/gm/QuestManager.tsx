@@ -177,6 +177,8 @@ export function QuestManager({ client, state }: { client: LiveClient; state: Cam
                     {[
                       q.status === 'active' ? null : q.status,
                       q.visible ? null : 'hidden',
+                      // MT.11 review: an imported-off hidden quest tells nobody yet.
+                      !q.visible && q.noticeTo?.length === 0 ? 'nobody told' : null,
                       q.status === 'active' ? timeText(q, state.day) : null,
                       q.stability
                         ? `Stability ${q.stability.value}%${q.stability.visible ? '' : ' (GM only)'}`
