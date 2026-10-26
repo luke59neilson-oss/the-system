@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import type { IncomingContent } from './ContentImport';
 import { LOADING_TEXT } from './loadingScreen';
+import { PrepareAhead } from './PrepareAhead';
 import { SessionNotes } from './SessionNotes';
 
 /** The kinds the server's generate route takes (MC.2, DESIGN §11). */
@@ -142,6 +143,10 @@ export function CoDmPanel({
           setPrompt(chip.request);
           setMessage(`Ready to generate: ${chip.title}. Press Generate.`);
         }}
+      />
+      <PrepareAhead
+        gmKey={gmKey}
+        onReview={(text, name) => onGenerated({ text, name, generated: true })}
       />
       <form onSubmit={(e) => void generate(e)}>
         <label>
