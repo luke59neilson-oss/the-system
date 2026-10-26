@@ -28,6 +28,7 @@ import { helloMessage } from './protocol';
 import { SessionLogWriter, sessionReport, type SessionLogOptions } from './sessionLog';
 import { authPath, gmKeyMatches, isAllowedHost, isAllowedOrigin } from './security';
 import type { CampaignStore } from './store';
+import { registerCoDmRoutes, type CoDm } from './ai/coDm';
 
 export interface CreateServerOptions {
   webRoot: string;
@@ -50,6 +51,8 @@ export interface CreateServerOptions {
    * the last write happens when the server closes. Off when omitted.
    */
   sessionLog?: Omit<SessionLogOptions, 'onError'>;
+  /** Co-DM settings and AI client (MC.1); its routes are GM-only. Off when omitted. */
+  coDm?: CoDm;
 }
 
 /** The demo campaign's id (D53): its own directory, never the real campaign's. */
@@ -175,6 +178,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   });
 
   app.get('/health', () => ({ status: 'ok' }));
+  if (options.coDm) registerCoDmRoutes(app, options.coDm);
 
   // Portrait uploads (M4.4) arrive as raw image bytes; the onRequest hook has
   // already refused anyone without the GM key before the body is read.
