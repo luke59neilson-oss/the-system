@@ -37,8 +37,16 @@ export function parseReviews(log) {
   let current = null;
   for (const line of log.split('\n')) {
     if (/^#{2,3} \d{4}-\d{2}-\d{2} · /.test(line)) {
-      current = { title: line.replace(/^#+ /, ''), rounds: 0, high: 0, medium: 0 };
-      items.push(current);
+      const title = line.replace(/^#+ /, '');
+      // D234: logs write each review round under its own heading
+      // ("MC.2 … round 1", then "MC.2 … round 2"): headings that start with
+      // the same item id are one item.
+      const key = /^\S+ · ([A-Z]+\d*\.(?:\d+|A))\b/.exec(title)?.[1] ?? title;
+      current = items.find((i) => i.key === key) ?? null;
+      if (current === null) {
+        current = { key, title, rounds: 0, high: 0, medium: 0 };
+        items.push(current);
+      }
       continue;
     }
     if (current === null) continue;
@@ -48,7 +56,7 @@ export function parseReviews(log) {
       current.medium += Number(m[2]);
     }
   }
-  return items.filter((i) => i.rounds > 0);
+  return items.filter((i) => i.rounds > 0).map(({ key: _key, ...item }) => item);
 }
 
 /** Boxes checked per run, from the checked-box count at each run start (oldest first). */

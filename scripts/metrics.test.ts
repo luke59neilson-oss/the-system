@@ -26,6 +26,20 @@ describe('parseRuns', () => {
 });
 
 describe('parseReviews', () => {
+  it('one item across headings written per round (D234)', () => {
+    const log = [
+      '## 2026-10-26 · MC.2 Generate on demand · sonnet (worktree, b4c69dbe; round 1, item not yet checked)',
+      '- Round 1 (487ae13e..b4c69dbe): 2 High, 5 Medium, 3 Low.',
+      '## 2026-10-26 · MC.1 AI connection · sonnet',
+      '- Round 1: 0 High, 1 Medium, 0 Low.',
+      '## 2026-10-26 · MC.2 Generate on demand · sonnet (worktree, 069b67d5; round 2)',
+      '- Round 2: 0 High, 2 Medium, 6 Low.',
+    ].join('\n');
+    expect(parseReviews(log).map((i) => [i.rounds, i.high, i.medium])).toEqual([
+      [2, 2, 7],
+      [1, 0, 1],
+    ]);
+  });
   it('counts rounds and High/Medium findings per reviewed item', () => {
     const log = [
       '# Review log',
