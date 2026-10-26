@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -134,6 +134,25 @@ describe('transcript (MC.5)', () => {
     await l.stop();
     expect(errors).toHaveLength(1);
     expect(l.lines.map((x) => x.text)).toEqual(['ok']);
+  });
+
+  it('a failed transcript write is reported and the queue carries on (review)', async () => {
+    dir = mkdtempSync(path.join(os.tmpdir(), 'transcript-'));
+    // A file where the transcripts folder should be: every write fails.
+    const blocked = path.join(dir, 'transcripts');
+    writeFileSync(blocked, 'not a folder');
+    const errors: unknown[] = [];
+    const l = new Listener({
+      dir: blocked,
+      session: 1,
+      now: () => 0,
+      onError: (e) => errors.push(e),
+      stt: new FixtureSpeechToText(['one', 'two']),
+    });
+    await l.push(join(tone(500), quiet(800), tone(500), quiet(800)));
+    await expect(l.stop()).resolves.toBeUndefined();
+    expect(errors).toHaveLength(2);
+    expect(l.lines.map((x) => x.text)).toEqual(['one', 'two']);
   });
 });
 

@@ -267,3 +267,68 @@ describe('listen routes with a downloadable model (MC.5, D236)', () => {
     await app.close();
   });
 });
+
+describe('speech model failure states (MC.5 review)', () => {
+  it('abandons a download that stalls, and a retry works', async () => {
+    const dir = tempDir();
+    const stalled = ((_url: string, init?: RequestInit) => {
+      const body = new ReadableStream<Uint8Array>({
+        start(c) {
+          c.enqueue(new Uint8Array(bytes.subarray(0, 10)));
+          init?.signal?.addEventListener('abort', () => c.error(new Error('aborted')));
+        },
+      });
+      return Promise.resolve(new Response(body));
+    }) as typeof fetch;
+    const rec = recorder();
+    const model = new SpeechModel({ dir, spec, fetch: stalled, load: rec.load, idleMs: 50 });
+    await model.download();
+    expect(model.status()).toMatchObject({
+      state: 'failed',
+      error: 'The download stalled; try again',
+    });
+    expect(readdirSync(dir)).toEqual([]);
+    const retry = new SpeechModel({ dir, spec, fetch: serve(bytes).fetchImpl, load: rec.load });
+    await retry.download();
+    expect(retry.status()).toEqual({ state: 'ready' });
+  });
+
+  it('refuses a download larger than the model', async () => {
+    const model = new SpeechModel({
+      dir: tempDir(),
+      spec,
+      fetch: serve(Buffer.concat([bytes, Buffer.alloc(10)])).fetchImpl,
+      load: recorder().load,
+    });
+    await model.download();
+    expect(model.status()).toMatchObject({
+      state: 'failed',
+      error: 'The download was larger than the model; try again',
+    });
+  });
+
+  it('a load failure says so, and trying again reloads without downloading', async () => {
+    const dir = tempDir();
+    await new SpeechModel({
+      dir,
+      spec,
+      fetch: serve(bytes).fetchImpl,
+      load: recorder().load,
+    }).download();
+    const { calls, fetchImpl } = serve(bytes);
+    let fail = true;
+    const rec = recorder();
+    const model = new SpeechModel({
+      dir,
+      spec,
+      fetch: fetchImpl,
+      load: (files) => (fail ? Promise.reject(new Error('no addon')) : rec.load(files)),
+    });
+    await model.init();
+    expect(model.status()).toMatchObject({ state: 'failed', error: 'no addon', loadFailed: true });
+    fail = false;
+    await model.download();
+    expect(model.status()).toEqual({ state: 'ready' });
+    expect(calls).toEqual([]);
+  });
+});

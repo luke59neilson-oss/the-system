@@ -46,7 +46,16 @@ export type SpeechModelStatus =
   | { readonly state: 'downloading'; readonly received: number; readonly bytes: number }
   | { readonly state: 'loading' }
   | { readonly state: 'ready' }
-  | { readonly state: 'failed'; readonly error: string; readonly bytes: number };
+  | {
+      readonly state: 'failed';
+      readonly error: string;
+      readonly bytes: number;
+      /** True when the files were on disk and only loading the engine failed. */
+      readonly loadFailed?: boolean;
+    };
+
+/** A download that receives nothing for this long is abandoned (MC.5 review). */
+export const DOWNLOAD_IDLE_MS = 60_000;
 
 export interface SpeechModelOptions {
   /** The models folder (the desktop app passes `<userData>/models`). */
@@ -54,6 +63,7 @@ export interface SpeechModelOptions {
   readonly spec?: SpeechModelSpec;
   readonly fetch?: typeof fetch;
   readonly load?: (files: WhisperModelFiles) => Promise<SpeechToText>;
+  readonly idleMs?: number;
 }
 
 const message = (err: unknown) => (err instanceof Error ? err.message : String(err));
@@ -109,6 +119,7 @@ export class SpeechModel {
   private current: SpeechModelStatus;
   private engine: SpeechToText | null = null;
   private busy: Promise<void> | null = null;
+  private loading = false;
 
   constructor(private readonly options: SpeechModelOptions) {
     this.spec = options.spec ?? WHISPER_TINY_EN;
@@ -144,9 +155,15 @@ export class SpeechModel {
   }
 
   private run(task: () => Promise<void>): Promise<void> {
+    this.loading = false;
     this.busy = task()
       .catch((err: unknown) => {
-        this.current = { state: 'failed', error: message(err), bytes: this.spec.bytes };
+        this.current = {
+          state: 'failed',
+          error: message(err),
+          bytes: this.spec.bytes,
+          ...(this.loading ? { loadFailed: true } : {}),
+        };
       })
       .finally(() => {
         this.busy = null;
@@ -156,7 +173,9 @@ export class SpeechModel {
 
   private async loadFiles(files: WhisperModelFiles): Promise<void> {
     this.current = { state: 'loading' };
+    this.loading = true;
     this.engine = await this.load(files);
+    this.loading = false;
     this.current = { state: 'ready' };
   }
 
@@ -170,25 +189,51 @@ export class SpeechModel {
     const staging = path.join(dir, `${spec.name}.staging`);
     try {
       this.current = { state: 'downloading', received: 0, bytes: spec.bytes };
-      const response = await this.fetchImpl(spec.url);
+      // A stalled connection is aborted, so the GM can try again.
+      const abort = new AbortController();
+      const idleMs = this.options.idleMs ?? DOWNLOAD_IDLE_MS;
+      let idle = setTimeout(() => abort.abort(), idleMs);
+      const touch = () => {
+        clearTimeout(idle);
+        idle = setTimeout(() => abort.abort(), idleMs);
+      };
+      const response = await this.fetchImpl(spec.url, { signal: abort.signal }).catch(
+        (err: unknown) => {
+          clearTimeout(idle);
+          throw abort.signal.aborted ? new Error('The download stalled; try again') : err;
+        },
+      );
       if (!response.ok || !response.body) {
+        clearTimeout(idle);
         throw new Error(`The download failed (HTTP ${response.status})`);
       }
       const hash = createHash('sha256');
       let received = 0;
       const count = new Transform({
         transform: (chunk: Buffer, _enc, done) => {
+          touch();
           received += chunk.length;
+          if (received > spec.bytes) {
+            done(new Error('The download was larger than the model; try again'));
+            return;
+          }
           hash.update(chunk);
           this.current = { state: 'downloading', received, bytes: spec.bytes };
           done(null, chunk);
         },
       });
-      await pipeline(
-        Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]),
-        count,
-        createWriteStream(part),
-      );
+      try {
+        await pipeline(
+          Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]),
+          count,
+          createWriteStream(part),
+          { signal: abort.signal },
+        );
+      } catch (err) {
+        throw abort.signal.aborted ? new Error('The download stalled; try again') : err;
+      } finally {
+        clearTimeout(idle);
+      }
       if (hash.digest('hex') !== spec.sha256) {
         throw new Error('The downloaded model did not match its checksum; try again');
       }

@@ -78,11 +78,17 @@ export class Listener {
         endMs: seg.endMs,
         text,
       };
-      mkdirSync(this.options.dir, { recursive: true });
-      appendFileSync(
-        transcriptFile(this.options.dir, this.options.session),
-        JSON.stringify(line) + '\n',
-      );
+      // The line still shows in the GM's panel when the disk write fails
+      // (disk full, folder locked); the queue carries on (MC.5 review).
+      try {
+        mkdirSync(this.options.dir, { recursive: true });
+        appendFileSync(
+          transcriptFile(this.options.dir, this.options.session),
+          JSON.stringify(line) + '\n',
+        );
+      } catch (err) {
+        this.options.onError?.(err);
+      }
       this.lines.push(line);
       this.options.onLine?.(line);
     });

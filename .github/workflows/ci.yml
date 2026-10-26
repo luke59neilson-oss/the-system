@@ -40,7 +40,7 @@ jobs:
       - name: Unit tests with engine coverage
         run: npm run test:coverage
       # MC.5 (D236): the real speech engine on the recorded fixture; the model
-      # (Whisper tiny.en, GitHub releases) is cached by its pinned checksum.
+      # (Whisper tiny.en, GitHub releases) is cached per version of model.ts, which pins it.
       - name: Cache the speech model
         uses: actions/cache@v4
         with:

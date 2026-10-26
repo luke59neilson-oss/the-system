@@ -18,7 +18,7 @@ type ModelStatus =
   | { state: 'downloading'; received: number; bytes: number }
   | { state: 'loading' }
   | { state: 'ready' }
-  | { state: 'failed'; error: string; bytes: number };
+  | { state: 'failed'; error: string; bytes: number; loadFailed?: boolean };
 
 const megabytes = (bytes: number) => Math.max(1, Math.round(bytes / 1_000_000));
 
@@ -40,6 +40,7 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
   const [model, setModel] = useState<ModelStatus | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const capture = useRef<Capture | null>(null);
+  const starting = useRef(false);
   const headers = { 'x-gm-key': gmKey };
 
   useEffect(() => {
@@ -58,7 +59,22 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
         setAvailable(data.available);
         setModel(data.model);
         setLines(data.lines);
-        if (!data.on && capture.current === null) setOn(false);
+        // The server is the truth: it stopped (campaign switched, restart),
+        // so stop sending; it still listens with no mic here (a reload), so
+        // turn it off rather than leave players' mark up (MC.5 review).
+        if (!data.on && capture.current !== null) {
+          capture.current.stop();
+          capture.current = null;
+          setMessage('Listening stopped on the laptop; press Start listening again');
+        }
+        if (!data.on) setOn(false);
+        if (data.on && capture.current === null && !starting.current) {
+          void fetch('/api/gm/listen', {
+            method: 'POST',
+            headers: { 'x-gm-key': gmKey, 'content-type': 'application/json' },
+            body: JSON.stringify({ on: false }),
+          }).catch(() => undefined);
+        }
       } catch {
         // Offline for a moment: the next poll tries again.
       }
@@ -70,7 +86,21 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
       clearInterval(timer);
     };
   }, [gmKey]);
-  useEffect(() => () => capture.current?.stop(), []);
+  useEffect(
+    () => () => {
+      if (!capture.current) return;
+      capture.current.stop();
+      capture.current = null;
+      // Leaving the panel turns listening off, so players' mark goes too.
+      void fetch('/api/gm/listen', {
+        method: 'POST',
+        headers: { 'x-gm-key': gmKey, 'content-type': 'application/json' },
+        body: JSON.stringify({ on: false }),
+        keepalive: true,
+      }).catch(() => undefined);
+    },
+    [gmKey],
+  );
 
   const setListening = (want: boolean) =>
     fetch('/api/gm/listen', {
@@ -80,6 +110,7 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
     });
 
   const start = async () => {
+    starting.current = true;
     setBusy(true);
     setMessage(null);
     try {
@@ -94,13 +125,19 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
           method: 'POST',
           headers: { ...headers, 'content-type': 'application/octet-stream' },
           body: samples.buffer as ArrayBuffer,
-        }).catch(() => undefined);
+        })
+          .then((res) => {
+            // 409: the laptop is no longer listening; the next poll stops the mic.
+            if (res.status === 409) setMessage('The laptop stopped listening');
+          })
+          .catch(() => undefined);
       });
       setOn(true);
     } catch {
       await setListening(false).catch(() => undefined);
       setMessage('No microphone: allow the mic for this window and try again');
     } finally {
+      starting.current = false;
       setBusy(false);
     }
   };
@@ -230,10 +267,18 @@ function SpeechModelRow({ model, onDownload }: { model: ModelStatus; onDownload:
         Listening needs a speech model on this laptop (English, downloaded once into your user
         folder; speech is transcribed here and never leaves the laptop).
       </p>
-      {model.state === 'failed' && <p role="alert">The download failed: {model.error}</p>}
+      {model.state === 'failed' && (
+        <p role="alert">
+          {model.loadFailed ? 'The speech engine could not start' : 'The download failed'}:{' '}
+          {model.error}
+        </p>
+      )}
       <button type="button" onClick={onDownload}>
-        {model.state === 'failed' ? 'Try the download again' : 'Download speech model'} (about{' '}
-        {megabytes(model.bytes)} MB)
+        {model.state !== 'failed'
+          ? `Download speech model (about ${megabytes(model.bytes)} MB)`
+          : model.loadFailed
+            ? 'Try loading it again'
+            : `Try the download again (about ${megabytes(model.bytes)} MB)`}
       </button>
     </div>
   );
