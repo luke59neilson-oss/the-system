@@ -69,25 +69,17 @@ test('a splash says "Starting The System…" at once, then hands over to the GM 
           .map((w) => w.getTitle()),
       ),
     ).toEqual(['Starting The System…']);
-    // The screenshot (for reviewers, not a behaviour check) is retried until it
-    // succeeds: capturing this JavaScript-free window under xvfb sometimes
-    // fails before it has painted ("Unable to capture screenshot" via CDP, and
-    // Electron's capturePage threw UnknownVizError on CI, 2026-10-25). The
-    // assertions above already pinned what the splash shows.
-    mkdirSync(shots, { recursive: true });
-    await expect
-      .poll(
-        async () => {
-          try {
-            await splash.screenshot({ path: path.join(shots, 'splash.png') });
-            return true;
-          } catch {
-            return false;
-          }
-        },
-        { message: 'the splash could be captured', timeout: 15_000 },
-      )
-      .toBe(true);
+    // The screenshot is a reviewer artifact, not a behaviour check: the
+    // assertions above pin what the splash shows. It is taken where the
+    // committed screenshots are made (build sessions, locally), not on CI:
+    // CI's runners could not capture this JavaScript-free window reliably
+    // under xvfb (CDP "Unable to capture screenshot", Electron capturePage
+    // UnknownVizError, and no capture within 15 s; 2026-10-25/26), and CI
+    // screenshots are never committed.
+    if (!process.env['CI']) {
+      mkdirSync(shots, { recursive: true });
+      await splash.screenshot({ path: path.join(shots, 'splash.png') });
+    }
     // Release the hand-over once the server holds it; before that the hook
     // does not exist yet.
     await expect
