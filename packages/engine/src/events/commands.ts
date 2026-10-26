@@ -597,6 +597,10 @@ export type Command =
   | { type: 'session.start'; sessionId?: string | undefined }
   /** Ends the running play session. */
   | { type: 'session.end' }
+  /** MT.9 (Q63): ask these characters' players what they practised this scene (default: all). */
+  | { type: 'scene.end'; sceneId?: string | undefined; characterIds?: string[] | undefined }
+  /** MT.9: the player (or the GM for them) has answered the end-of-scene prompt. */
+  | { type: 'scene.answer'; sceneId: string; characterId: string }
   | { type: 'event.undo'; eventId: string };
 
 export interface StatBonusInput {
@@ -753,6 +757,8 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('rules.reset') }),
   z.object({ type: z.literal('session.start'), sessionId: z.string().optional() }),
   z.object({ type: z.literal('session.end') }),
+  z.object({ type: z.literal('scene.end') }),
+  z.object({ type: z.literal('scene.answer') }),
   z.object({ type: z.literal('event.undo') }),
 ]);
 
@@ -773,6 +779,7 @@ export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>([
   'trade.decline',
   'trade.cancel',
   'practice.log',
+  'scene.answer',
   'montage.focus',
   'note.create',
   'note.edit',
@@ -1697,6 +1704,19 @@ function toEvent(
       if (running === null) throw new EventRejectedError('No session is running');
       return { type: 'session.ended', payload: { sessionId: running } };
     }
+    case 'scene.end':
+      return {
+        type: 'scene.ended',
+        payload: {
+          sceneId: command.sceneId ?? ctx.newId(),
+          characterIds: command.characterIds ?? [...(campaign.state?.characterOrder ?? [])],
+        },
+      };
+    case 'scene.answer':
+      return {
+        type: 'scene.answered',
+        payload: { sceneId: command.sceneId, characterId: command.characterId },
+      };
     case 'event.undo':
       return { type: 'event.undone', payload: { eventId: command.eventId } };
   }

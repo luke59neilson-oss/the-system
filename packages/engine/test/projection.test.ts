@@ -158,6 +158,7 @@ describe('player projection', () => {
       'quests',
       'region',
       'rules',
+      'scenePrompt',
       'viewerId',
     ]);
   });
@@ -169,7 +170,10 @@ describe('player projection', () => {
     expect(Object.keys(CHARACTER_FIELD_VISIBILITY).sort()).toEqual(
       [...Object.keys(state.characters.jake ?? {}), ...optional].sort(),
     );
-    expect(Object.keys(CAMPAIGN_FIELD_VISIBILITY).sort()).toEqual(Object.keys(state).sort());
+    // MT.9's scene prompt is absent until the GM first ends a scene.
+    expect(Object.keys(CAMPAIGN_FIELD_VISIBILITY).sort()).toEqual(
+      [...Object.keys(state), 'scenePrompt'].sort(),
+    );
     const view = projectForPlayer(state, 'jake');
     const partyFields = Object.entries(CHARACTER_FIELD_VISIBILITY)
       .filter(([, v]) => v === 'party')

@@ -827,6 +827,10 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   'session.started': z.strictObject({ sessionId: recordId }),
   /** GM ends the running play session (the server backs up and writes the report). */
   'session.ended': z.strictObject({ sessionId: recordId }),
+  /** MT.9 (Q63): the GM ends a scene; these players' screens ask what they practised. */
+  'scene.ended': z.strictObject({ sceneId: recordId, characterIds: z.array(recordId).max(64) }),
+  /** MT.9: a player answered the end-of-scene prompt (logged practice or nothing). */
+  'scene.answered': z.strictObject({ sceneId: recordId, characterId: recordId }),
   /** Compensating event: the target stops counting, as if it had never happened. */
   'event.undone': z.strictObject({ eventId: recordId }),
 } as const;
@@ -931,6 +935,8 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'rules.edited': 1,
   'session.started': 1,
   'session.ended': 1,
+  'scene.ended': 1,
+  'scene.answered': 1,
   'event.undone': 1,
 };
 
@@ -1018,6 +1024,7 @@ export const PLAYER_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   'trade.declined',
   'trade.cancelled',
   'practice.logged',
+  'scene.answered',
   'montage.focused',
   'note.created',
   'note.edited',

@@ -183,6 +183,9 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   // M4.3: session bookkeeping is the GM's.
   sessions: 'gm',
   currentSession: 'gm',
+  // MT.9: each player learns only whether their own answer is still due
+  // (not who else was asked or has answered).
+  scenePrompt: 'owner',
 };
 
 /** The rules subset a player screen needs to draw the sheet (no GM tuning, no stability). */
@@ -387,6 +390,11 @@ export interface PlayerView {
   readonly contests: readonly PlayerContest[];
   /** The name of the region the party is in (M7.4), or null. */
   readonly region: string | null;
+  /**
+   * MT.9 (Q63): the end-of-scene prompt waiting on this player's answer, or
+   * null. Never says who else was asked or has answered.
+   */
+  readonly scenePrompt: { readonly id: string } | null;
   /** Factions the GM has revealed (MT.8, Q69), in definition order. */
   readonly factions: readonly PlayerFaction[];
 }
@@ -865,6 +873,10 @@ export function projectForPlayer(
     contests: playerContests(state, viewer.id),
     region: currentRegionName(state),
     factions: revealedFactions(state),
+    scenePrompt:
+      state.scenePrompt != null && state.scenePrompt.pending.includes(viewer.id)
+        ? { id: state.scenePrompt.id }
+        : null,
     hiddenQuests: state.questOrder.filter((id) => {
       const q = hasOwnKey(state.quests, id) ? state.quests[id] : undefined;
       return q !== undefined && hiddenQuestNoticed(q, state.characterOrder).includes(viewer.id);

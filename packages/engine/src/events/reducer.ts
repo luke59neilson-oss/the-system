@@ -200,6 +200,20 @@ export interface CampaignState {
   readonly sessions: readonly SessionRecord[];
   /** Id of the running session; null between sessions. */
   readonly currentSession: string | null;
+  /**
+   * MT.9 (Q63): the open end-of-scene prompt, with the characters whose
+   * players have not answered yet. Absent until the GM first ends a scene
+   * (older states and snapshots read the same).
+   */
+  readonly scenePrompt?: ScenePrompt | null;
+}
+
+/** An end-of-scene prompt on players' screens (MT.9). */
+export interface ScenePrompt {
+  readonly id: string;
+  readonly at: string;
+  /** Characters still to answer, in party order. */
+  readonly pending: readonly string[];
 }
 
 /** One play session (M4.3): numbered from 1 in start order. */
@@ -2297,6 +2311,24 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         ),
         currentSession: null,
       };
+    }
+    case 'scene.ended': {
+      const { sceneId, characterIds } = event.payload;
+      if (characterIds.length === 0) fail(event, 'an end-of-scene prompt needs a character');
+      for (const id of characterIds) {
+        if (!hasOwn(state.characters, id)) fail(event, `unknown character "${id}"`);
+      }
+      const pending = state.characterOrder.filter((id) => characterIds.includes(id));
+      return { ...state, scenePrompt: { id: sceneId, at: event.timestamp, pending } };
+    }
+    case 'scene.answered': {
+      const { sceneId, characterId } = event.payload;
+      const prompt = state.scenePrompt ?? null;
+      if (prompt === null || prompt.id !== sceneId) fail(event, 'that scene prompt is closed');
+      if (!prompt!.pending.includes(characterId))
+        fail(event, `${characterId} has already answered`);
+      const pending = prompt!.pending.filter((id) => id !== characterId);
+      return { ...state, scenePrompt: pending.length === 0 ? null : { ...prompt!, pending } };
     }
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');
