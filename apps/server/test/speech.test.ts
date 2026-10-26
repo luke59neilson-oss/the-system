@@ -136,3 +136,40 @@ describe('transcript (MC.5)', () => {
     expect(l.lines.map((x) => x.text)).toEqual(['ok']);
   });
 });
+
+describe('sherpa adapter (MC.5, D235)', () => {
+  it('builds a Whisper recognizer from the model files and returns trimmed text', async () => {
+    const { sherpaSpeechToText, whisperModelFiles } = await import('../src/speech/sherpa');
+    const files = whisperModelFiles('/models', 'tiny.en');
+    expect(files.encoder).toBe(path.join('/models', 'tiny.en-encoder.int8.onnx'));
+    const configs: unknown[] = [];
+    const fed: number[] = [];
+    const stt = await sherpaSpeechToText(files, () =>
+      Promise.resolve({
+        OfflineRecognizer: {
+          createAsync: (config: unknown) => {
+            configs.push(config);
+            return Promise.resolve({
+              createStream: () => ({
+                acceptWaveform: (o: { samples: Float32Array }) => fed.push(o.samples.length),
+              }),
+              decodeAsync: () => Promise.resolve({ text: '  Hello there. ' }),
+            });
+          },
+        },
+      }),
+    );
+    expect(await stt.transcribe(new Float32Array(160), 16_000)).toBe('Hello there.');
+    expect(fed).toEqual([160]);
+    expect(JSON.stringify(configs[0])).toContain('tiny.en-decoder.int8.onnx');
+  });
+
+  it('rejects when the package is missing', async () => {
+    const { sherpaSpeechToText, whisperModelFiles } = await import('../src/speech/sherpa');
+    await expect(
+      sherpaSpeechToText(whisperModelFiles('/m', 'x'), () =>
+        Promise.reject(new Error('no module')),
+      ),
+    ).rejects.toThrow('no module');
+  });
+});
