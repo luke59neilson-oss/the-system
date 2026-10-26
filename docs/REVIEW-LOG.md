@@ -986,3 +986,10 @@
 - Fixes: a90022aa (QF.29, D237: a named ware resolves to the newest item of that name; the region half was not real, region names cannot repeat); 4eecff5f (QF.30: the panel checks `GET /api/gm/ai` on open and before every Generate; no key, no request and no loading screen; MC.4 e2e both ways).
 - Review: 0 High, 0 Medium, 4 Low; check 1,357, MC.2/MC.3/MC.4 e2e 5/5; replay unaffected (events store item ids). Lows to the QUALITY backlog (stale "no key" message until the next Generate after saving a key; the pre-check ignores Cancel until it returns; settings label wording unchecked; negative e2e checks right after the message). Boxes checked.
 
+## 2026-10-26 · QF.31 idle Listening panel stops polling (run dae5b6f4)
+- Round 1 (sonnet, d3c743c2): 0 H / 2 M / 4 L. M1 poll rule only partly in the pure model (untested at panel level) → whole rule in `listenPollNeeded({on, model, loaded, capturing})` with tests. M2 last line lost on Stop → one read 1.5 s after Stop. L2 (endless 2 s retry before a first read) → backoff 2 s ×3 then 10 s. L1, L3, L4 to the backlog. Fixes in cba56487.
+- Round 2 (sonnet, cba56487): 0 H / 0 M / 4 L (backlog). Box checked.
+
+## 2026-10-26 · MC.6 Speaker labels, round 1 (run dae5b6f4; box not checked)
+- Reviewer sonnet on 3cd5d281: 1 H / 4 M / 4 L. H: `npm run check` red (GM-GUIDE bolded placeholder labels) → fixed on wip/MC.6 at 5491d311. Open for next run: M2 single enrolment labels on threshold alone, no margin (prefer silence); M3 corrupt speakers.json read as empty, next enrol overwrites others; M4 enrol accepts silence/noise (no energy check); M5 enrol not blocked server-side while listening, and speaker options fixed at Listener start. Lows: stale name after rename, embedding-length mismatch silent, no Delete confirm, weak threshold assertion. Round 2 due after fixes.
+

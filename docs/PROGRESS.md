@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.5 done, MC.6 started on wip. Preview ready: Actions → Release → Run workflow (MT).
-**Next item:** MC.6 on `wip/MC.6` (head 0fdabb55, base 2da73cbf): pin a sherpa-onnx speaker-embedding model in `model.ts` (D238), wire the `speakers` option, Voices section in ListenPanel (record, Enrol, Delete, speaker on lines), `e2e/MC.6.spec.ts` with the fake embedder; optional two-voice Kokoro fixture
+**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.5 done, MC.6 built on wip and in review. Preview ready: Actions → Release → Run workflow (MT).
+**Next item:** MC.6 on `wip/MC.6` (head 5491d311, base 2da73cbf, main merged at ce085128): fix review round-1 Mediums M2–M5 (see REVIEW-LOG 2026-10-26 MC.6), merge main, then round-2 sonnet review, check box, merge to main. First check CI: desktop-smoke flake on d3c743c2 (QUALITY Flakes).
 **Blockers:** none
 
 ## Run log
@@ -1197,6 +1197,16 @@ next item, blockers. -->
 - MC.6 Speaker labels started on `wip/MC.6` (0fdabb55): `SpeakerEmbedder` interface + fake, cosine matcher (≥0.6 and 0.1 margin), per-campaign enrolment store (embeddings only), labels on transcript lines, GM-only enrol/list/delete routes, `sherpaSpeakerEmbedder`; D238; check 1,407 there.
 - Tests: unit 1,389 on main; e2e MC.3/MC.4/MC.5 6/6 at 910765fc (full suite not run: no shared server change; CI runs it).
 - Open `wip/*`: wip/MC.6 (0fdabb55).
+- Next: MC.6 (see Next item).
+- Blockers: none.
+
+### Run dae5b6f4 · 2026-10-26 10:09–10:57 UTC (end minute ~48)
+- Preflight: `add_repo` not offered (repo already cloned; stale local main had unrelated history, reset to origin/main); lock pushed cleanly; vitest 5.0.5; sonnet reviewer works (worktree; Agent calls block, so build/fix work ran in forks alongside each review). Not an efficiency or sweep hour. No new answers.
+- CI red on main at 910765fc (`test`, latency `e2e/M2.A.spec.ts` GM console 503). Passed here alone and with `--workers=2`; root cause: the MC.5 Listening panel polled every 2 s while idle. New **QF.31** (D239), pushed as red-CI fix d3c743c2: `test` job then green; `desktop-smoke` red on a cleanup ENOTEMPTY (new flake, logged in QUALITY).
+- QF.31 **checked**: sonnet round 1 0 H / 2 M / 4 L, fixed (cba56487: whole poll rule in the pure model, read after Stop, first-read backoff); round 2 0 H / 0 M / 4 L (backlog).
+- MC.6 Speaker labels built on `wip/MC.6` (fork): WeSpeaker CAM++ English model pinned (SHA-256) and downloaded after Whisper, Voices section (Enrol / Re-record / Delete, names on lines), `e2e/MC.6.spec.ts`, D240. Sonnet round 1: 1 H (guide labels, check red) fixed at 5491d311; 4 M open (see Next item). Box not checked.
+- Tests: unit 1,394 on main (1,418 on wip/MC.6); e2e MC.5 2/2, latency 8/8 (`--workers=2`), MC.6 1/1 on wip. Full suite not run locally (CI runs it).
+- Open `wip/*`: wip/MC.6 (5491d311).
 - Next: MC.6 (see Next item).
 - Blockers: none.
 
