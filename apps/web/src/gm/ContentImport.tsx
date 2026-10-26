@@ -50,6 +50,19 @@ export interface IncomingContent {
   readonly generated?: boolean;
 }
 
+/**
+ * Whether Import content takes a hand-over now (MC.2 review H1/H2): never
+ * while it is loading or applying (the hand-over waits), and each hand-over
+ * once.
+ */
+export function takesIncoming(
+  busy: boolean,
+  incoming: IncomingContent | null,
+  lastSeq: number | null,
+): boolean {
+  return !busy && incoming !== null && incoming.seq !== lastSeq;
+}
+
 export function ContentImport({
   client,
   gmKey,
@@ -119,13 +132,14 @@ export function ContentImport({
   // wipes, content the GM has not seen.
   const lastSeq = useRef<number | null>(null);
   useEffect(() => {
-    if (busy || !incoming || incoming.seq === lastSeq.current) return;
+    if (!takesIncoming(busy, incoming, lastSeq.current) || !incoming) return;
     lastSeq.current = incoming.seq;
     const { text, name } = incoming;
     const isGenerated = incoming.generated === true;
     const run = ++checkRun.current;
     setBusy(true);
-    setOutcome(null);
+    // An "Applied N" from the apply this hand-over waited for stays visible.
+    setOutcome((cur) => (cur?.startsWith('Applied ') ? cur : null));
     requestPreview(gmKey, text)
       .then((p) => {
         if (run !== checkRun.current) return;
@@ -143,6 +157,7 @@ export function ContentImport({
         if (run !== checkRun.current) return;
         setPreview(null);
         setChecks(new Map());
+        setChecking(false);
         setOutcome('Could not check the file: is the server running?');
       })
       .finally(() => setBusy(false));

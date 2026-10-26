@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { IncomingContent } from './ContentImport';
 
 /** The kinds the server's generate route takes (MC.2, DESIGN §11). */
@@ -35,6 +35,8 @@ export function CoDmPanel({
   // The generation as it came back, to tell whether the GM has edited it.
   const [original, setOriginal] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
+  // Leaving the console stops a generation in flight (and its API call).
+  useEffect(() => () => abort.current?.abort(), []);
 
   const label = KINDS.find(([k]) => k === kind)?.[1] ?? kind;
 

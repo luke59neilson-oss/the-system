@@ -1,6 +1,7 @@
 // MC.2 review M7: the co-DM panel says "ready" only for content that can apply.
 import { describe, expect, it } from 'vitest';
 import { readiness } from '../src/gm/CoDmPanel';
+import { takesIncoming } from '../src/gm/ContentImport';
 
 describe('co-DM readiness message', () => {
   it('is ready only when every entry can apply', () => {
@@ -22,5 +23,18 @@ describe('co-DM readiness message', () => {
   });
   it('an empty file says so', () => {
     expect(readiness('Place', { ok: true, errors: [], entries: [] })).toContain('came back empty');
+  });
+});
+
+describe('Import content takes a co-DM hand-over', () => {
+  const gen = { text: '{}', name: 'co-DM shop', seq: 2, generated: true };
+  it('waits while the window is loading or applying', () => {
+    expect(takesIncoming(true, gen, 1)).toBe(false);
+    expect(takesIncoming(false, gen, 1)).toBe(true);
+  });
+  it('takes each hand-over once', () => {
+    expect(takesIncoming(false, gen, 2)).toBe(false);
+    expect(takesIncoming(false, null, null)).toBe(false);
+    expect(takesIncoming(false, gen, null)).toBe(true);
   });
 });

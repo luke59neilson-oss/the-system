@@ -5,7 +5,8 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import http from 'node:http';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { DEFAULT_RULES, execute, itemCappedStats, itemEffectiveStats } from '@the-system/engine';
 import { CoDm } from '../src/ai/coDm';
@@ -277,6 +278,55 @@ describe('co-DM generate limits', () => {
       expect((await app.inject({ method: 'POST', url: '/api/gm/ai/generate' })).statusCode).toBe(
         403,
       );
+    } finally {
+      await app.close();
+      store.close();
+    }
+  });
+
+  it('the GM dropping the request aborts the API call and counts nothing', async () => {
+    const store = CampaignStore.open('drop', { dataDir: path.join(root, 'drop'), now });
+    let n = 0;
+    const ctx = { actor: { role: 'gm' as const }, sessionId: null, now, newId: () => `d${++n}` };
+    const r = execute(
+      store.campaign,
+      { type: 'campaign.create', name: 'Drop', rules: JSON.parse(JSON.stringify(DEFAULT_RULES)) },
+      ctx,
+    );
+    if (!r.ok) throw new Error(r.error);
+    store.appendAll(r.events);
+    const seen: AbortSignal[] = [];
+    const coDm = new CoDm({
+      dir: path.join(root, 'c'),
+      cipher,
+      makeClient: () => {
+        const fake = new FixtureAiClient(GENERATE_FIXTURES);
+        return {
+          complete: (request) => {
+            if (request.signal) seen.push(request.signal);
+            return fake.complete(request);
+          },
+        };
+      },
+    });
+    coDm.keys.save(API_KEY);
+    const app = await createServer({
+      webRoot: root,
+      live: { store, gmKey: GM, now, newId: ctx.newId },
+      coDm,
+    });
+    try {
+      const address = await app.listen({ port: 0, host: '127.0.0.1' });
+      const req = http.request(`${address}/api/gm/ai/generate`, {
+        method: 'POST',
+        headers: { 'x-gm-key': GM, 'content-type': 'application/json' },
+      });
+      req.on('error', () => undefined);
+      req.end(JSON.stringify({ kind: 'place', prompt: 'slow please' }));
+      await vi.waitFor(() => expect(seen.length).toBe(1), { timeout: 2_000 });
+      req.destroy();
+      await vi.waitFor(() => expect(seen[0]?.aborted).toBe(true), { timeout: 2_000 });
+      expect(coDm.status().spend.calls).toBe(0);
     } finally {
       await app.close();
       store.close();
