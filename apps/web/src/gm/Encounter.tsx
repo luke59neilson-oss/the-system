@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { contestPracticeCommands } from './practiceDraftsModel';
 import type { CampaignState, Command, GradeGapMode } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
@@ -107,6 +108,12 @@ function ContestRoller({ state, busy, send }: ToolProps) {
     e.preventDefault();
     if (typeof plan === 'string') return;
     setRolled(rollPlan(state, plan, cryptoRandom));
+    // MC.7: a contest done in the app logs practice for its characters directly.
+    void (async () => {
+      for (const command of contestPracticeCommands(state, a, b)) {
+        if (!(await send(command, 'Contest logged as practice'))) break;
+      }
+    })();
   };
   const share = async () => {
     if (!rolled) return;

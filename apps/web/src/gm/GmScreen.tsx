@@ -37,6 +37,7 @@ import { EvolutionBuilder } from './EvolutionBuilder';
 import { MarksReview } from './MarksReview';
 import { MergeBuilder } from './MergeBuilder';
 import { PracticeCapture } from './PracticeCapture';
+import { PracticeDrafts } from './PracticeDrafts';
 import { QuestManager } from './QuestManager';
 import { Bestiary } from './Bestiary';
 import { Trackers } from './Trackers';
@@ -231,6 +232,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <OfferBuilder client={client} state={state} target={offerTarget} />
               <EvolutionBuilder client={client} state={state} />
               <PracticeCapture client={client} state={state} />
+              <PracticeDrafts client={client} gmKey={gmKey} state={state} />
               <QuestManager client={client} state={state} />
               <Bestiary client={client} state={state} />
               <Trackers client={client} state={state} />
