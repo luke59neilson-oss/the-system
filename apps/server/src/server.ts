@@ -34,6 +34,7 @@ import { authPath, gmKeyMatches, isAllowedHost, isAllowedOrigin } from './securi
 import type { CampaignStore } from './store';
 import { registerCoDmRoutes, type CoDm } from './ai/coDm';
 import { registerPracticeDraftRoutes } from './ai/practiceRoutes';
+import { registerSuggestionRoutes } from './ai/suggestionRoutes';
 import { z } from 'zod';
 import { AiError } from './ai/client';
 import {
@@ -213,6 +214,12 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     registerCoDmRoutes(app, options.coDm);
     // MC.7: practice drafts from the transcript, for the GM's review.
     registerPracticeDraftRoutes(app, { active: () => active, client: options.coDm.client });
+    // MC.8: suggestion chips from the recent transcript (counted in the spend counter).
+    registerSuggestionRoutes(app, {
+      active: () => active,
+      client: options.coDm.client,
+      now: options.now ?? Date.now,
+    });
   }
   registerListenRoutes(app, {
     active: () => active,
