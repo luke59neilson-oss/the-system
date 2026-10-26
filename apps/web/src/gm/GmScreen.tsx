@@ -130,7 +130,13 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
     loadingRef.current = null;
     if (cur) setEnding((e) => [...e, { text: cur.text, since: cur.since }]);
   };
-  const sendLoading = (text: string, clearOnApprove: boolean) => {
+  const sendLoading = (text: string | null, clearOnApprove: boolean) => {
+    if (text === null) {
+      // This generation has no screen: an earlier one stays up until the GM
+      // removes it, rather than clearing when this content is approved.
+      if (loadingRef.current) loadingRef.current = { ...loadingRef.current, clearOnApprove: false };
+      return;
+    }
     const command = loadingCommand(text);
     if (!state || !command) return;
     endLoading();

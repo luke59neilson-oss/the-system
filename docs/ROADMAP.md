@@ -810,7 +810,7 @@ it is usable early (Luke can run a preview build at any point).
   place, keeper NPC, wares (items with prices in the campaign currency), an
   optional hook. GM-side only; "Sell" on a ware fills in a GM trade to the
   chosen character. *Accept:* engine and import tests; e2e selling a ware.
-- [ ] **MC.4 Loading screen.** A System-styled loading broadcast built on
+- [x] **MC.4 Loading screen.** A System-styled loading broadcast built on
   MT.6's pinned banner; optional "clear when the pending generation is
   approved". *Accept:* e2e: send, players see it, approve clears it.
 - [ ] **MC.5 Listening and transcript.** A mic toggle in the GM window

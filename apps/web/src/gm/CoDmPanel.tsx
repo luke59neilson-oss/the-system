@@ -32,7 +32,7 @@ export function CoDmPanel({
   gmKey: string;
   onGenerated: (content: Omit<IncomingContent, 'seq'>) => void;
   /** MC.4: send the loading screen (pinned broadcast) as a generation starts. */
-  onLoading?: (text: string, clearOnApprove: boolean) => void;
+  onLoading?: (text: string | null, clearOnApprove: boolean) => void;
   /** MC.4 review: the generation failed or was cancelled, so the loading screen comes down. */
   onLoadingFailed?: () => void;
 }) {
@@ -67,7 +67,9 @@ export function CoDmPanel({
     setBusy(true);
     setMessage(`[The System is constructing: ${label}…]`);
     const showing = loading && loadingText.trim() !== '' && onLoading !== undefined;
-    if (showing) onLoading(loadingText, clearOnApprove);
+    // A generation without a screen tells the console too, so approving it
+    // does not take down an earlier generation's screen (round 2, Low).
+    onLoading?.(showing ? loadingText : null, clearOnApprove);
     try {
       const res = await fetch('/api/gm/ai/generate', {
         method: 'POST',

@@ -151,6 +151,23 @@ test('a regeneration replaces the loading screen; a failure or cancel takes it d
   await expect(banners).toHaveCount(0);
   const live = gm.locator('section[aria-labelledby="live-banners"]');
   await expect(live.getByRole('button', { name: /Remove the banner/ })).toHaveCount(0);
+
+  // Round 2: approving a generation sent without a screen leaves an earlier
+  // generation's screen up for the GM to remove.
+  await codm.getByLabel('Loading text').fill('[The System is constructing the area…]');
+  await codm.getByLabel('Generate').selectOption('npc');
+  await codm.getByLabel('What the table needs').fill('A guide');
+  await codm.getByRole('button', { name: 'Generate', exact: true }).click();
+  await expect(message).toContainText('NPC ready');
+  await expect(banners).toHaveText([LOADING]);
+  await codm.getByLabel('Show players a loading screen while the co-DM works').uncheck();
+  await codm.getByLabel('Generate').selectOption('item');
+  await codm.getByLabel('What the table needs').fill('A charm');
+  await codm.getByRole('button', { name: 'Generate', exact: true }).click();
+  await expect(message).toContainText('Item ready');
+  await imp.getByRole('button', { name: /^Apply \d+$/ }).click();
+  await expect(imp.getByRole('status')).toContainText('Applied');
+  await expect(banners).toHaveText([LOADING]);
   await gm.close();
   await page.close();
 });
