@@ -41,11 +41,14 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
   const [message, setMessage] = useState<string | null>(null);
   const capture = useRef<Capture | null>(null);
   const starting = useRef(false);
+  // Bumped by every Start, so a poll read before it never stops the new mic.
+  const starts = useRef(0);
   const headers = { 'x-gm-key': gmKey };
 
   useEffect(() => {
     let live = true;
     const poll = async () => {
+      const startsAtRead = starts.current;
       try {
         const res = await fetch('/api/gm/listen', { headers: { 'x-gm-key': gmKey } });
         if (!res.ok || !live) return;
@@ -56,6 +59,7 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
           lines: Line[];
         };
         if (!live) return;
+        if (starts.current !== startsAtRead || starting.current) return;
         setAvailable(data.available);
         setModel(data.model);
         setLines(data.lines);
@@ -111,6 +115,7 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
 
   const start = async () => {
     starting.current = true;
+    starts.current += 1;
     setBusy(true);
     setMessage(null);
     try {
@@ -199,7 +204,10 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
         <ol className="transcript" data-testid="transcript">
           {lines.map((l, i) => (
             <li key={i}>
-              <time dateTime={l.at}>{l.at.slice(11, 19)}</time> {l.speaker ? `${l.speaker}: ` : ''}
+              <time dateTime={l.at}>
+                {new Date(l.at).toLocaleTimeString([], { hour12: false })}
+              </time>{' '}
+              {l.speaker ? `${l.speaker}: ` : ''}
               {l.text}
             </li>
           ))}
