@@ -14,3 +14,4 @@ data/
 .DS_Store
 apps/desktop/release/
 .claude/worktrees/
+.cache/

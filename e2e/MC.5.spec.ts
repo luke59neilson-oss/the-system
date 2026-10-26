@@ -18,17 +18,21 @@ test.use({
     args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
   },
 });
-let server: RunningServer;
+let server: RunningServer | null = null;
 let dataDir: string;
+const start = async (env: Record<string, string> = {}) => {
+  server = await startBuiltServer({ GM_KEY, THE_SYSTEM_E2E_FAKE_AI: '1', ...env }, { dataDir });
+  return server;
+};
 
-test.beforeEach(async () => {
+test.beforeEach(() => {
   mkdirSync(shots, { recursive: true });
   dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-e2e-mc5-'));
-  server = await startBuiltServer({ GM_KEY, THE_SYSTEM_E2E_FAKE_AI: '1' }, { dataDir });
 });
 
 test.afterEach(async () => {
-  await server.stop();
+  await server?.stop();
+  server = null;
   rmSync(dataDir, { recursive: true, force: true });
 });
 
@@ -36,6 +40,7 @@ test('the GM listens: a GM-only transcript, and players see the listening mark',
   browser,
 }) => {
   test.setTimeout(90_000);
+  const server = await start();
   const gmContext = await browser.newContext({ viewport: { width: 1366, height: 768 } });
   await gmContext.grantPermissions(['microphone']);
   const gm = await gmContext.newPage();
@@ -94,4 +99,45 @@ test('the GM listens: a GM-only transcript, and players see the listening mark',
   expect(files.filter((f) => /\.(wav|pcm|raw|webm|ogg|mp3|flac)$/i.test(f))).toEqual([]);
   await gmContext.close();
   await page.close();
+});
+
+test('first use: the GM downloads the speech model, then listens', async ({ browser }) => {
+  test.setTimeout(90_000);
+  // A tiny stand-in archive with the real layout; the server checks it and
+  // keeps only the model files in <data>/models (D236).
+  const archive = path.resolve(
+    import.meta.dirname,
+    '../apps/server/test/fixtures/speech/fake-model.tar.bz2',
+  );
+  const server = await start({ THE_SYSTEM_E2E_SPEECH_ARCHIVE: archive });
+  const gmContext = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+  await gmContext.grantPermissions(['microphone']);
+  const gm = await gmContext.newPage();
+  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
+  await gm.getByLabel('Campaign name').fill('Whale');
+  await gm.getByRole('button', { name: 'Create campaign' }).click();
+
+  const panel = gm.locator('section[aria-labelledby="listen-heading"]');
+  const offer = panel.getByTestId('speech-model');
+  await expect(offer).toContainText('Listening needs a speech model on this laptop');
+  await expect(panel.getByRole('button', { name: 'Start listening' })).toBeDisabled();
+  await panel.scrollIntoViewIfNeeded();
+  await gm.screenshot({ path: path.join(shots, 'gm-model-offer-1366x768.png') });
+
+  await offer.getByRole('button', { name: /Download speech model/ }).click();
+  await expect(panel.getByRole('button', { name: 'Start listening' })).toBeEnabled({
+    timeout: 15_000,
+  });
+  await expect(panel.getByTestId('speech-model')).toHaveCount(0);
+  expect(readdirSync(path.join(dataDir, 'models', 'whisper-tiny.en')).sort()).toEqual([
+    'tiny.en-decoder.int8.onnx',
+    'tiny.en-encoder.int8.onnx',
+    'tiny.en-tokens.txt',
+  ]);
+  await panel.getByRole('button', { name: 'Start listening' }).click();
+  await expect(panel.getByTestId('transcript')).toContainText('We should find an herbalist', {
+    timeout: 20_000,
+  });
+  await panel.getByRole('button', { name: 'Stop listening' }).click();
+  await gmContext.close();
 });

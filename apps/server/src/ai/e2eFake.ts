@@ -10,6 +10,10 @@ import { FixtureAiClient } from './fake';
 import { GENERATE_FIXTURES } from './fixtures/generate';
 import type { SecretCipher } from './keyStore';
 import type { SpeechToText } from '../speech/stt';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { SpeechModel, WHISPER_TINY_EN } from '../speech/model';
 
 export const E2E_FAKE_AI_ENV = 'THE_SYSTEM_E2E_FAKE_AI';
 export const E2E_KEY_PREFIX = 'sk-ant-e2e-';
@@ -67,6 +71,28 @@ export function e2eFakeSpeech(): SpeechToText {
   return {
     transcribe: () => Promise.resolve(E2E_SPEECH_LINES[n++ % E2E_SPEECH_LINES.length] ?? ''),
   };
+}
+
+/**
+ * MC.5 (D236), TEST ONLY: a speech model "downloaded" from a local archive
+ * (`THE_SYSTEM_E2E_SPEECH_ARCHIVE`) into `<dataDir>/models`, loading the
+ * fake recognizer, so the e2e suite can press Download with no network.
+ */
+export const E2E_SPEECH_ARCHIVE_ENV = 'THE_SYSTEM_E2E_SPEECH_ARCHIVE';
+
+export function e2eFakeSpeechModel(archive: string, dataDir: string): SpeechModel {
+  const bytes = readFileSync(archive);
+  return new SpeechModel({
+    dir: path.join(dataDir, 'models'),
+    spec: {
+      ...WHISPER_TINY_EN,
+      url: 'https://e2e.invalid/speech-model.tar.bz2',
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+      bytes: bytes.length,
+    },
+    fetch: (() => Promise.resolve(new Response(new Uint8Array(bytes)))) as typeof fetch,
+    load: () => Promise.resolve(e2eFakeSpeech()),
+  });
 }
 
 /** The fake pair when the env switch is exactly "1"; null otherwise. */

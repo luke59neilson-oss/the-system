@@ -9,6 +9,8 @@ await build({
   target: 'node22',
   format: 'esm',
   sourcemap: true,
+  // MC.5: the native speech engine loads at run time from node_modules.
+  external: ['sherpa-onnx-node'],
   logLevel: 'info',
   // Some bundled CommonJS dependencies call require(); give ESM output one.
   banner: {

@@ -39,6 +39,15 @@ jobs:
         run: npm run typecheck && npm run lint && npm run format:check && npm run banned
       - name: Unit tests with engine coverage
         run: npm run test:coverage
+      # MC.5 (D236): the real speech engine on the recorded fixture; the model
+      # (Whisper tiny.en, GitHub releases) is cached by its pinned checksum.
+      - name: Cache the speech model
+        uses: actions/cache@v4
+        with:
+          path: .cache/speech-models
+          key: speech-model-${{ hashFiles('apps/server/src/speech/model.ts') }}
+      - name: Speech-to-text on the fixture (CPU time per audio minute in the job summary)
+        run: npm run test:speech
       - name: Build
         run: npm run build
       - name: Bundle the desktop main process (no Electron binary needed)

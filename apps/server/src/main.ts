@@ -3,7 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { ENGINE_API_VERSION } from '@the-system/engine';
 import { startApp } from './app';
 import { ConfigError, resolveOptions } from './config';
-import { E2E_FAKE_AI_ENV, e2eFakeFromEnv } from './ai/e2eFake';
+import {
+  E2E_FAKE_AI_ENV,
+  E2E_SPEECH_ARCHIVE_ENV,
+  e2eFakeFromEnv,
+  e2eFakeSpeechModel,
+} from './ai/e2eFake';
 
 const SHUTDOWN_TIMEOUT_MS = 5_000;
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -21,7 +26,15 @@ async function main(): Promise<void> {
           ...options,
           aiCipher: fake.cipher,
           aiClient: fake.makeClient,
-          speech: () => fake.speech,
+          // MC.5: either a recognizer that is ready, or a model to download first.
+          ...(process.env[E2E_SPEECH_ARCHIVE_ENV]
+            ? {
+                speechModel: e2eFakeSpeechModel(
+                  process.env[E2E_SPEECH_ARCHIVE_ENV],
+                  options.dataDir,
+                ),
+              }
+            : { speech: () => fake.speech }),
         }
       : options,
   );

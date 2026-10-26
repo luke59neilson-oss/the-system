@@ -1,9 +1,11 @@
 import { app, BrowserWindow, dialog, Menu, safeStorage, shell } from 'electron';
+import path from 'node:path';
 import { startApp, type RunningApp } from '../../server/src/app';
 import { newGmKey } from '../../server/src/security';
 import {
   dataDirFor,
   machineIdFor,
+  packagedSpeechLoad,
   desktopPort,
   gmWindowUrl,
   allowsPermission,
@@ -230,6 +232,9 @@ async function start(): Promise<void> {
           encrypt: (plain) => safeStorage.encryptString(plain),
           decrypt: (data) => safeStorage.decryptString(data),
         },
+        // MC.5 (D236): the speech model downloads on first use into the user folder.
+        speechModelsDir: path.join(app.getPath('userData'), 'models'),
+        ...(app.isPackaged ? { speechLoad: packagedSpeechLoad(process.resourcesPath) } : {}),
         // Tests only: show another OS's firewall help in the join panel.
         platform: (!app.isPackaged && process.env['THE_SYSTEM_TEST_PLATFORM']) || process.platform,
       }),

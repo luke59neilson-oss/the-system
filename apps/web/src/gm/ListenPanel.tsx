@@ -12,6 +12,16 @@ interface Line {
   speaker?: string;
 }
 
+/** MC.5 (D236): the downloadable speech model, as the server reports it. */
+type ModelStatus =
+  | { state: 'missing'; bytes: number }
+  | { state: 'downloading'; received: number; bytes: number }
+  | { state: 'loading' }
+  | { state: 'ready' }
+  | { state: 'failed'; error: string; bytes: number };
+
+const megabytes = (bytes: number) => Math.max(1, Math.round(bytes / 1_000_000));
+
 interface Capture {
   stop: () => void;
 }
@@ -27,6 +37,7 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
   const [busy, setBusy] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
+  const [model, setModel] = useState<ModelStatus | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const capture = useRef<Capture | null>(null);
   const headers = { 'x-gm-key': gmKey };
@@ -37,9 +48,15 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
       try {
         const res = await fetch('/api/gm/listen', { headers: { 'x-gm-key': gmKey } });
         if (!res.ok || !live) return;
-        const data = (await res.json()) as { on: boolean; available: boolean; lines: Line[] };
+        const data = (await res.json()) as {
+          on: boolean;
+          available: boolean;
+          model: ModelStatus | null;
+          lines: Line[];
+        };
         if (!live) return;
         setAvailable(data.available);
+        setModel(data.model);
         setLines(data.lines);
         if (!data.on && capture.current === null) setOn(false);
       } catch {
@@ -88,6 +105,17 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
     }
   };
 
+  const download = async () => {
+    setMessage(null);
+    const res = await fetch('/api/gm/listen/model', { method: 'POST', headers }).catch(() => null);
+    if (!res?.ok) {
+      setMessage('Could not start the download');
+      return;
+    }
+    const data = (await res.json()) as { model: ModelStatus };
+    setModel(data.model);
+  };
+
   const stop = async () => {
     setBusy(true);
     capture.current?.stop();
@@ -106,10 +134,13 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
       >
         {on ? '● Mic on: the System is listening' : 'Mic off'}
       </p>
-      {available === false && (
+      {available === false && model === null && (
         <p className="muted">
           Speech-to-text is not installed on this laptop, so the mic stays off.
         </p>
+      )}
+      {available === false && model !== null && (
+        <SpeechModelRow model={model} onDownload={() => void download()} />
       )}
       <button
         type="button"
@@ -177,4 +208,33 @@ async function startCapture(send: (samples: Float32Array) => void): Promise<Capt
       void ctx.close();
     },
   };
+}
+
+/** The one-time speech model download (MC.5, D236): offer, progress, failure. */
+function SpeechModelRow({ model, onDownload }: { model: ModelStatus; onDownload: () => void }) {
+  if (model.state === 'downloading') {
+    const pct = Math.floor((model.received / Math.max(model.bytes, 1)) * 100);
+    return (
+      <p data-testid="speech-model">
+        Downloading the speech model… {megabytes(model.received)} of {megabytes(model.bytes)} MB (
+        {pct}%) <progress max={model.bytes} value={model.received} aria-label="Download" />
+      </p>
+    );
+  }
+  if (model.state === 'loading' || model.state === 'ready') {
+    return <p data-testid="speech-model">Loading the speech model…</p>;
+  }
+  return (
+    <div data-testid="speech-model">
+      <p className="muted">
+        Listening needs a speech model on this laptop (English, downloaded once into your user
+        folder; speech is transcribed here and never leaves the laptop).
+      </p>
+      {model.state === 'failed' && <p role="alert">The download failed: {model.error}</p>}
+      <button type="button" onClick={onDownload}>
+        {model.state === 'failed' ? 'Try the download again' : 'Download speech model'} (about{' '}
+        {megabytes(model.bytes)} MB)
+      </button>
+    </div>
+  );
 }

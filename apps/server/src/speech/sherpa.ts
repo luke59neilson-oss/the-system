@@ -1,9 +1,9 @@
 // MC.5 (D235): the live on-laptop recognizer, sherpa-onnx with a Whisper
 // model, loaded only when the desktop app finds the package and a downloaded
-// model. Nothing here runs in the build or the unit tests (they use
-// FixtureSpeechToText); the native package is loaded at run time so the
-// server bundle does not depend on it. WIP: model download on first use and
-// the fixture transcription test follow (see PROGRESS hand-off).
+// model (downloaded on first use, model.ts). The unit tests and e2e use
+// FixtureSpeechToText; `npm run test:speech` runs this on a real fixture. The
+// native package stays outside the bundles (esbuild external) and is loaded
+// at run time; the packaged desktop app loads its copy from resources.
 import path from 'node:path';
 import type { SpeechToText } from './stt';
 
@@ -38,7 +38,9 @@ export async function sherpaSpeechToText(
   files: WhisperModelFiles,
   load: () => Promise<unknown> = () => import('sherpa-onnx-node' as string),
 ): Promise<SpeechToText> {
-  const mod = (await load()) as SherpaModule;
+  const loaded = (await load()) as SherpaModule & { default?: SherpaModule };
+  // A CommonJS package imported from ESM arrives as its `default` export.
+  const mod = loaded.default?.OfflineRecognizer ? loaded.default : loaded;
   const recognizer = await mod.OfflineRecognizer.createAsync({
     featConfig: { sampleRate: 16_000, featureDim: 80 },
     modelConfig: {

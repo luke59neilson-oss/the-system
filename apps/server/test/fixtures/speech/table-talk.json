@@ -1,0 +1,11 @@
+{
+  "source": "Synthesized for this repo with Kokoro-82M (Apache-2.0) through sherpa-onnx (kokoro-int8-multi-lang-v1_0, speakers 11 and 2), resampled to 16 kHz mono 16-bit. The text is original. Silence: 0.6 s at each end, 1.2 s between lines.",
+  "lines": [
+    {
+      "speaker": "GM",
+      "text": "You reach the edge of the Rake Canyons. The walls are slick with something pale."
+    },
+    { "speaker": "Player", "text": "I want to find an herbalist before we go any deeper." },
+    { "speaker": "GM", "text": "There is a small shop wedged into the canyon wall." }
+  ]
+}

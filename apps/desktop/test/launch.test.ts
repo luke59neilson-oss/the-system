@@ -1,8 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  packagedSpeechLoad,
+  speechPackageDir,
   DEFAULT_DESKTOP_PORT,
   dataDirFor,
   desktopPort,
@@ -181,6 +183,24 @@ describe('permissions (MC.5)', () => {
     expect(allowsPermission(true, 'media', undefined, own, 4700)).toBe(false);
     for (const p of ['geolocation', 'notifications', 'clipboard-read', 'display-capture']) {
       expect(allowsPermission(true, p, ['audio'], own, 4700)).toBe(false);
+    }
+  });
+});
+
+describe('packaged speech engine (MC.5, D236)', () => {
+  it('loads sherpa-onnx-node from resources/speech, outside the asar', async () => {
+    const resources = mkdtempSync(path.join(tmpdir(), 'the-system-res-'));
+    try {
+      expect(speechPackageDir(resources)).toBe(path.join(resources, 'speech', 'node_modules'));
+      const pkg = path.join(speechPackageDir(resources), 'sherpa-onnx-node');
+      mkdirSync(pkg, { recursive: true });
+      writeFileSync(path.join(pkg, 'package.json'), '{"name":"sherpa-onnx-node","main":"x.js"}');
+      writeFileSync(path.join(pkg, 'x.js'), 'module.exports = { OfflineRecognizer: "stub" };');
+      await expect(packagedSpeechLoad(resources)()).resolves.toEqual({ OfflineRecognizer: 'stub' });
+      const empty = path.join(resources, 'elsewhere');
+      await expect(packagedSpeechLoad(empty)()).rejects.toThrow(/sherpa-onnx-node/);
+    } finally {
+      rmSync(resources, { recursive: true, force: true });
     }
   });
 });

@@ -11,6 +11,13 @@ import type { LiveHub } from '../hub';
 import type { SpeechToText } from './stt';
 import { Listener, type TranscriptLine } from './transcript';
 import { DEFAULT_VAD } from './vad';
+import type { SpeechModelStatus } from './model';
+
+/** MC.5 (D236): the speech model the GM downloads on first use. */
+export interface SpeechModelControl {
+  status(): SpeechModelStatus;
+  download(): Promise<void>;
+}
 
 /** At most 2 s of 16 kHz float audio per request. */
 export const AUDIO_BODY_LIMIT = DEFAULT_VAD.sampleRate * 4 * 2;
@@ -19,6 +26,8 @@ export interface ListenRouteOptions {
   readonly active: () => { store: CampaignStore; hub: LiveHub } | null;
   /** The recognizer; null when speech-to-text is not installed (the mic stays off). */
   readonly stt: () => SpeechToText | null;
+  /** Absent when this server has no downloadable model (tests, the terminal entry). */
+  readonly model?: SpeechModelControl;
   readonly now: () => number;
 }
 
@@ -55,6 +64,7 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
     return {
       on: current !== null && a !== null && current.store === a.store,
       available: options.stt() !== null,
+      model: options.model?.status() ?? null,
       lines: a ? (heard.get(a.store.id) ?? []) : [],
     };
   });
@@ -69,7 +79,11 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
     if (current) return { on: true };
     const stt = options.stt();
     if (!stt) {
-      return reply.code(503).send({ error: 'Speech-to-text is not installed on this laptop' });
+      return reply.code(503).send({
+        error: options.model
+          ? 'Download the speech model first'
+          : 'Speech-to-text is not installed on this laptop',
+      });
     }
     const lines = heard.get(a.store.id) ?? [];
     heard.set(a.store.id, lines);
@@ -84,6 +98,15 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
     current = { listener, store: a.store, hub: a.hub };
     a.hub.setListening(true);
     return { on: true };
+  });
+
+  // Starts the one-time model download; the GM panel polls the status above.
+  app.post('/api/gm/listen/model', (_request, reply) => {
+    if (!options.model) {
+      return reply.code(404).send({ error: 'This server cannot download a speech model' });
+    }
+    void options.model.download();
+    return { model: options.model.status() };
   });
 
   app.post('/api/gm/listen/audio', async (request, reply) => {

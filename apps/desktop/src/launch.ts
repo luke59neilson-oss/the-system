@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 
 /**
@@ -23,6 +24,22 @@ export function webRootFor(isPackaged: boolean, resourcesPath: string, bundleDir
   return isPackaged
     ? path.join(resourcesPath, 'web')
     : path.resolve(bundleDir, '..', '..', 'web', 'dist');
+}
+
+/**
+ * MC.5 (D236): the packaged app's speech engine. electron-builder copies
+ * sherpa-onnx-node and this platform's native package to
+ * `resources/speech/node_modules`, outside the asar, where Node can load the
+ * addon; the bundle keeps the package external.
+ */
+export function speechPackageDir(resourcesPath: string): string {
+  return path.join(resourcesPath, 'speech', 'node_modules');
+}
+
+export function packagedSpeechLoad(resourcesPath: string): () => Promise<unknown> {
+  const require = createRequire(path.join(speechPackageDir(resourcesPath), 'index.js'));
+  // async: a missing package rejects (the model reports it) rather than throwing.
+  return async () => require('sherpa-onnx-node') as unknown;
 }
 
 /** Campaign data in the OS app-data folder (e.g. %APPDATA%/The System/data). */

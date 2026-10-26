@@ -14,6 +14,18 @@ extraResources:
   - from: ../web/dist
     to: web
     filter: ['**/*']
+  # MC.5 (D236): the native speech engine, outside the asar so its addon
+  # loads. Only this platform's package is installed when CI packages, so only
+  # it ships. The speech model itself downloads on first use.
+  - from: ../../node_modules
+    to: speech/node_modules
+    filter:
+      [
+        'sherpa-onnx-node/**/*',
+        'sherpa-onnx-win-x64/**/*',
+        'sherpa-onnx-linux-x64/**/*',
+        'sherpa-onnx-darwin-*/**/*',
+      ]
 asar: true
 npmRebuild: false
 nodeGypRebuild: false

@@ -17,6 +17,7 @@ import {
 import { LiveHub, type HubOptions } from './hub';
 import { registerListenRoutes } from './speech/routes';
 import type { SpeechToText } from './speech/stt';
+import type { SpeechModelControl } from './speech/routes';
 import type { JoinInfo } from './join';
 import {
   PORTRAIT_MAX_BYTES,
@@ -72,6 +73,8 @@ export interface CreateServerOptions {
    * omitted) when none is installed: the listen routes say so.
    */
   speech?: () => SpeechToText | null;
+  /** MC.5: the downloadable speech model behind `speech` (D236). */
+  speechModel?: SpeechModelControl;
   /** Wall clock for transcript times (injectable for tests). */
   now?: () => number;
 }
@@ -206,6 +209,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   registerListenRoutes(app, {
     active: () => active,
     stt: options.speech ?? (() => null),
+    ...(options.speechModel ? { model: options.speechModel } : {}),
     now: options.now ?? Date.now,
   });
 
