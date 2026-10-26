@@ -1211,7 +1211,7 @@ next item, blockers. -->
 - Blockers: none.
 
 
-### Run 6c4032fc · 2026-10-26 11:09–11:52 UTC (end minute ~43, no §5.5 reason: build ran until the clock read 44 at the last commit; close-out followed)
+### Run 6c4032fc · 2026-10-26 11:09–11:49 UTC (end minute ~40, no §5.5 reason: I misjudged the clock and closed out early; MC.7 M1/M4/M5 could have been started)
 - Preflight: `add_repo` not offered (repo already cloned, reset to origin/main); lock pushed cleanly; vitest 5.0.5; sonnet reviewers work (worktree; Agent calls block, so build ran in forks beside each review). CI green on main (71e1a4dd). Hour 11: no efficiency check or sweep. No new answers.
 - MC.6 **checked**: round-1 Mediums fixed (bd48e6c7, D241); sonnet round 2 0 H / 2 M / 4 L; hum check added (level swing), single-voice bar kept with Q78. Merged to main at dae0cd16. MC.6 e2e mic now plays table-talk.wav.
 - MC.7 Practice drafts built on `wip/MC.7` (fork; D242, D243): drafting module and GM-only routes, Practice drafts window, contest rolls log practice, e2e. Sonnet round 1 0 H / 6 M; M2, M3, M6 fixed (43c71d25); M1, M4, M5 open.
