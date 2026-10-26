@@ -37,6 +37,7 @@ import { draftsDir, registerPracticeDraftRoutes } from './ai/practiceRoutes';
 import { registerNotesRoutes } from './ai/notesRoutes';
 import { NotesStore } from './ai/sessionNotes';
 import { registerSuggestionRoutes } from './ai/suggestionRoutes';
+import { registerPrepareRoutes } from './ai/prepareRoutes';
 import { z } from 'zod';
 import { AiError } from './ai/client';
 import {
@@ -230,6 +231,13 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       active: () => active,
       client: options.coDm.client,
       now: options.now ?? Date.now,
+    });
+    // MC.10: prepare ahead (off by default; both calls counted in the spend counter).
+    registerPrepareRoutes(app, {
+      active: () => active,
+      client: options.coDm.client,
+      now: options.now ?? Date.now,
+      ...(options.generateTimeoutMs !== undefined ? { timeoutMs: options.generateTimeoutMs } : {}),
     });
   }
   registerListenRoutes(app, {

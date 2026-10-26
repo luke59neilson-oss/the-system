@@ -63,6 +63,13 @@ export function e2eFakeClient(key: () => string | null, models: () => AiModelSet
           usage: { inputTokens: 400, outputTokens: 60 },
         });
       }
+      if (request.role === 'fast' && last.startsWith('Prepare ahead.')) {
+        return Promise.resolve({
+          text: e2ePrepareAhead(last),
+          model: models().fast,
+          usage: { inputTokens: 300, outputTokens: 40 },
+        });
+      }
       const fixtures = new FixtureAiClient(
         [
           { role: 'fast', match: 'Connection test', text: 'ready', usage: E2E_TEST_USAGE },
@@ -121,6 +128,26 @@ export function e2eSuggestions(prompt: string): string {
     }
   }
   return JSON.stringify({ chips });
+}
+
+/**
+ * MC.10, TEST ONLY: where the table is heading. A numbered line about an
+ * herbalist means the party is off to find one (a shop); otherwise nowhere.
+ */
+export function e2ePrepareAhead(prompt: string): string {
+  for (const m of prompt.matchAll(/^(\d+)\. (?:\[[^\]]*\] )?(.*)$/gmu)) {
+    if (/herbalist/iu.test(m[2] ?? '')) {
+      return JSON.stringify({
+        heading: {
+          line: Number(m[1]),
+          kind: 'shop',
+          place: 'Herbalist',
+          request: 'The herbalist the party is heading to, before the canyon',
+        },
+      });
+    }
+  }
+  return JSON.stringify({ heading: null });
 }
 
 /**
