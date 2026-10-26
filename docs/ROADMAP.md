@@ -806,7 +806,7 @@ it is usable early (Luke can run a preview build at any point).
   import preview to approve, edit or regenerate. *Accept:* fake-backed tests
   for each kind, including a reply that breaks the rules (rejected by
   validation with a clear message); e2e from request to approved content.
-- [ ] **MC.3 Shops.** A shop kind in the content format and library: name,
+- [x] **MC.3 Shops.** A shop kind in the content format and library: name,
   place, keeper NPC, wares (items with prices in the campaign currency), an
   optional hook. GM-side only; "Sell" on a ware fills in a GM trade to the
   chosen character. *Accept:* engine and import tests; e2e selling a ware.
