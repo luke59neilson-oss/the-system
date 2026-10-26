@@ -991,6 +991,9 @@ describe('property: replay equals incremental state', () => {
       'faction.defined',
       'faction.edited',
       'faction.revealSet',
+      // MT.9: scene prompts have their own tests (scenePrompt.test.ts) and golden log.
+      'scene.ended',
+      'scene.answered',
     ]);
     expect(
       EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),

@@ -259,6 +259,9 @@ refusal is raised.
 | `region "…" already exists` | packages/engine/src/events/reducer.ts:2052 | Fix the input or define the thing first |
 | `unknown region "…"` | packages/engine/src/events/reducer.ts:2070 | Fix the input or define the thing first |
 | `the party is already there` | packages/engine/src/events/reducer.ts:2078 | Fix the input or define the thing first |
+| `an end-of-scene prompt needs a character` | packages/engine/src/events/reducer.ts:2317 | Fix the input or define the thing first |
+| `that scene prompt is closed` | packages/engine/src/events/reducer.ts:2327 | Nothing to answer: end a new scene to ask again |
+| `… has already answered` | packages/engine/src/events/reducer.ts:2329 | Nothing to do: the answer is in; end a new scene to ask again |
 | `faction "…" already exists` | packages/engine/src/events/reducer.ts:2090 | Fix the input or define the thing first |
 | `unknown faction "…"` | packages/engine/src/events/reducer.ts:2112 | Fix the input or define the thing first |
 | `faction is already revealed` | packages/engine/src/events/reducer.ts:2134 | Nothing to do: players already see it (Trackers → "Hide from players" takes it back) |

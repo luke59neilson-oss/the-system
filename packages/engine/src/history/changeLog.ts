@@ -132,6 +132,8 @@ export const CHANGE_LOG_PHRASES: Readonly<Record<string, string>> = {
   'faction.defined': 'faction added',
   'faction.edited': 'faction edited',
   'faction.revealSet': 'faction shown or hidden',
+  'scene.ended': 'scene ended: practice asked',
+  'scene.answered': 'end-of-scene prompt answered',
   'entity.defined': 'Identify entry added',
   'entity.edited': 'Identify entry edited',
   'entity.revealed': 'Identify entry revealed',

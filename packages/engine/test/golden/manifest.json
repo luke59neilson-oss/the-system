@@ -264,6 +264,14 @@
       "sha256": "f9fefa50c53ea741880b4e53bbe4408c6371c118f6b54c04d99a00321f7588e2",
       "schemaVersion": 33
     },
+    "scene-prompt.jsonl": {
+      "sha256": "32e4ef9a68afe885d36c89591b30954a494cee43df91d25237104b26d1eda59f",
+      "schemaVersion": 33
+    },
+    "scene-prompt.state.json": {
+      "sha256": "ab36050297bee1cfc80a87a77337d5408b885579f2b535fd2d83dac91264b344",
+      "schemaVersion": 33
+    },
     "scheduled-broadcasts.jsonl": {
       "sha256": "6844590ff36351db6ddaa7e8e888f0c37db47231ccc9c6ebc58c142de73f1580",
       "schemaVersion": 25
