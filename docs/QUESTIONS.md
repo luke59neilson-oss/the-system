@@ -477,7 +477,9 @@ DESIGN/ROADMAP; do not re-apply them.
     show the whole-percent chance (DESIGN §7 shows ratio odds; the GM chooses
     what to share). Other options: coarse words ("likely", "even",
     "unlikely"), or no odds against NPCs (D182).
-    In discussion with Luke (2026-10-25); current behaviour stays until he answers.
+    Deferred (Luke, 2026-10-26): to be settled in a separate encounters-and-combat
+    discussion; the player rolls in some situations and the GM in others. Current
+    behaviour stays until then.
     Answer:
 
 68. **Should hunger do anything on its own?** The hunger tracker (M7.4) is
@@ -503,7 +505,9 @@ DESIGN/ROADMAP; do not re-apply them.
     other player's stat (roughly). Default: keep it as is; the GM chooses to
     share, like the party's pool bars (sweep D, Low). Option: show players
     only the chance in words when both sides are characters (D186).
-    In discussion with Luke (2026-10-25); current behaviour stays until he answers.
+    Deferred (Luke, 2026-10-26): to be settled in a separate encounters-and-combat
+    discussion; the player rolls in some situations and the GM in others. Current
+    behaviour stays until then.
     Answer:
 
 71. **Efficiency trials: should unrelated guards be judged against a noise band? (Tier 2, LOOP §9.4)**
@@ -556,7 +560,8 @@ DESIGN/ROADMAP; do not re-apply them.
     the whole suite (est. 2–4 minutes and 30–40% of reviewer tokens per
     round 2; risk: a regression outside the fixed files waits for CI).
     Default: no change (round 2 reviews as before).
-    Answer:
+    Answer (Luke, 2026-10-26, in chat): no change; round-2 reviews stay as
+    they are. (applied, L21)
 
 76. **GM override and skipped selections (MT.5).** When you set a character's
     class level directly (say 0 → 12), the selections at levels 5 and 10
@@ -564,10 +569,12 @@ DESIGN/ROADMAP; do not re-apply them.
     nothing else on the way is granted (no stat spread, free points or
     evolution bonus). Default: selections stay due. Option: the override
     skips them too (the character never gets those picks). (D214)
-    Answer:
+    Answer (Luke, 2026-10-26, in chat): selections stay due (default kept).
+    (applied, L21)
 
 77. **Bound sweep reviewers (efficiency check 2026-10-26).** A quality-sweep
     reviewer once took 46 minutes and pushed a run past the 52-minute stop.
     Option: give sweep reviewers a scope or time budget (about 15 minutes) and
     launch sweeps only in a run's first 5 minutes. Default: no change. (D220)
-    Answer:
+    Answer (Luke, 2026-10-26, in chat): no change; sweep reviewers stay
+    unbounded. (applied, L21)

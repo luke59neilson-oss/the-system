@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-26): MT done (MT.A checked); MC (co-DM) under way. Preview ready: Actions → Release → Run workflow (MT).
-**Next item:** MC.1 on `wip/MC.1` (head e4784cf4): round-2 M2 (e2e for the key-saved path with a test-only fake cipher), then merge and check (no third round); then QF.27, QF.28, MC.2
+**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1 done, MC.2 on wip. Preview ready: Actions → Release → Run workflow (MT).
+**Next item:** MC.2 on `wip/MC.2` (head b4c69dbe): fix round-1 H1, H2 and M3–M7 (REVIEW-LOG), then review round 2 (sonnet); then MC.3
 **Blockers:** none
 
 ## Run log
@@ -1143,3 +1143,13 @@ next item, blockers. -->
 - Tests: unit 1,284 on main (1,309 on wip/MC.1); e2e MC.1, MT.6 green this run; full e2e 103/106 at 4 workers by the Tests sweeper (the 3 failures pass alone: load).
 - Open `wip/*`: wip/MC.1 (head e4784cf4).
 - Blockers: none.
+
+### Run 56591c49 · 2026-10-26 04:08–04:53 UTC (end minute ~50: handed off at 45)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` reset to origin/main, unrelated shallow history). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Sonnet reviewers work (worktree; Agent calls block, run alongside the full e2e). CI on main green (fc05d08a). No new answers. Not a sweep or efficiency hour.
+- MC.1 **checked**: round-2 M2 fixed (62d32407: test-only fake cipher and AI client behind `THE_SYSTEM_E2E_FAKE_AI=1`, refuses non-test keys; e2e of save/test/spend/reload/remove; D228). Merged to main.
+- QF.27 **checked** ([Answer] lands below the sticky banners; e2e fails without the fix at −197 px) and QF.28 **checked** (empty/oversize portraits get their own messages; both mutations caught). Sonnet reviews clean (0 H/0 M).
+- MC.2 (wip/MC.2, head b4c69dbe): generate route, recorded fixtures per kind, Co-DM panel feeding Import content (approve/edit/regenerate), unit tests and e2e, D229. Round-1 sonnet review: 2 H / 5 M / 3 L, open (REVIEW-LOG); next run fixes them and runs round 2.
+- Tests: unit 1,314 on main (1,327 on wip/MC.2); full e2e 109/109 on main+QF.27/28 and 110/110 on wip/MC.2 (1 worker).
+- Open `wip/*`: wip/MC.2 (b4c69dbe).
+- Blockers: none.
+
