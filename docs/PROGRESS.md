@@ -1186,4 +1186,5 @@ next item, blockers. -->
 - Tests: unit 1,386 on wip/MC.5; full e2e 115/115 at 244665e6; MC.5 e2e 2/2 at 2b525d3a; `npm run test:speech` pass.
 - Open `wip/*`: wip/MC.5 (2b525d3a).
 - Next: packaging check for the native addon (review M6), sonnet round 2, merge MC.5; then MC.6.
+- Mistake: the close-out commit (c25f6a06) swept the local speech-model cache (`.cache/`, ~103 MB, ignored only on wip/MC.5) into main; removed and ignored in the next commit, but the blobs stay in history (no history rewrites allowed). Clone size grows by ~100 MB; Luke may purge it with git-filter-repo if it matters.
 - Blockers: none.
