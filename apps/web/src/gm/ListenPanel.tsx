@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { listenPollNeeded, type ModelStatus } from './listenModel';
+import {
+  READ_AFTER_STOP_MS,
+  firstReadDue,
+  listenPollNeeded,
+  type ModelStatus,
+} from './listenModel';
 
 /** MC.5: the server's VAD and recognizer take mono 16 kHz float PCM. */
 const RATE = 16_000;
@@ -37,19 +42,24 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
   // Bumped by every Start, so a poll read before it never stops the new mic.
   const starts = useRef(0);
   const headers = { 'x-gm-key': gmKey };
-  // QF.31: the interval ticks always, but asks the laptop only while needed.
-  // Until a first read lands (offline when the panel opened), it keeps asking.
-  const pollNeeded = useRef(false);
+  // QF.31 (D239): the interval ticks always, but asks the laptop only while
+  // `listenPollNeeded` says so; `capturing` is read from the ref at the tick.
+  const pollState = useRef({ on: false, model: null as ModelStatus | null, loaded: false });
   useEffect(() => {
-    pollNeeded.current = available === null || listenPollNeeded(on, model);
+    pollState.current = { on, model, loaded: available !== null };
   }, [available, on, model]);
+  // The current poll, for the one read after Stop (null once unmounted).
+  const pollNow = useRef<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
     let live = true;
+    let misses = 0;
+    let tick = 0;
     const poll = async () => {
       const startsAtRead = starts.current;
       try {
         const res = await fetch('/api/gm/listen', { headers: { 'x-gm-key': gmKey } });
+        if (!res.ok) misses += 1;
         if (!res.ok || !live) return;
         const data = (await res.json()) as {
           on: boolean;
@@ -80,14 +90,21 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
         }
       } catch {
         // Offline for a moment: the next poll tries again.
+        misses += 1;
       }
     };
+    pollNow.current = poll;
     void poll();
     const timer = setInterval(() => {
-      if (pollNeeded.current || capture.current !== null) void poll();
+      tick += 1;
+      const state = { ...pollState.current, capturing: capture.current !== null };
+      if (!listenPollNeeded(state)) return;
+      if (!state.loaded && !firstReadDue(misses, tick)) return;
+      void poll();
     }, POLL_MS);
     return () => {
       live = false;
+      pollNow.current = null;
       clearInterval(timer);
     };
   }, [gmKey]);
@@ -166,6 +183,9 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
     setOn(false);
     await setListening(false).catch(() => undefined);
     setBusy(false);
+    // QF.31: polling ends with the mic, so read once more after the laptop
+    // has transcribed the last thing said before Stop.
+    setTimeout(() => void pollNow.current?.(), READ_AFTER_STOP_MS);
   };
 
   return (
