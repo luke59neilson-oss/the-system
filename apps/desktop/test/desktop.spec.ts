@@ -14,6 +14,10 @@ import { gmWindow } from './windows';
 // This package is CommonJS (Electron main), so Playwright loads the spec as CJS.
 const root = path.resolve(__dirname, '..');
 const localChromium = '/opt/pw-browsers/chromium';
+// After a forced kill, Electron's helper processes can still be writing to
+// the profile for a moment, so removing it may hit ENOTEMPTY (CI, 0d6d996e).
+// Cleanup retries; no test assertion is retried.
+const CLEANUP = { recursive: true, force: true, maxRetries: 10, retryDelay: 200 } as const;
 
 test('double-click start: server up, GM window connected with the key', async () => {
   const dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-desktop-'));
@@ -88,8 +92,8 @@ test('double-click start: server up, GM window connected with the key', async ()
     );
   } finally {
     await app.close();
-    rmSync(dataDir, { recursive: true, force: true });
-    rmSync(userData, { recursive: true, force: true });
+    rmSync(dataDir, CLEANUP);
+    rmSync(userData, CLEANUP);
   }
 });
 
@@ -143,7 +147,7 @@ test('a polite close then a forced kill (an installer upgrading) still leaves th
     expect(copy).toContain('Upgrade smoke');
   } finally {
     if (proc.exitCode === null && proc.signalCode === null) await app.close();
-    rmSync(dataDir, { recursive: true, force: true });
-    rmSync(userData, { recursive: true, force: true });
+    rmSync(dataDir, CLEANUP);
+    rmSync(userData, CLEANUP);
   }
 });
