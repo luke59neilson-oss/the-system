@@ -592,6 +592,14 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
             className="assign-btn"
             onClick={() => {
               const el = document.querySelector<HTMLElement>('[data-testid="player-scene-prompt"]');
+              // QF.27: land below the sticky banner stack, not under it.
+              const stack = document.querySelector<HTMLElement>(
+                '[data-testid="broadcast-banners"]',
+              );
+              if (el) {
+                const h = stack ? stack.getBoundingClientRect().height : 0;
+                el.style.scrollMarginTop = `${Math.ceil(h) + 8}px`;
+              }
               el?.scrollIntoView({ block: 'start' });
               el?.querySelector<HTMLElement>('input, textarea')?.focus({ preventScroll: true });
             }}
