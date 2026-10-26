@@ -36,6 +36,7 @@ import { registerCoDmRoutes, type CoDm } from './ai/coDm';
 import { draftsDir, registerPracticeDraftRoutes } from './ai/practiceRoutes';
 import { registerNotesRoutes } from './ai/notesRoutes';
 import { NotesStore } from './ai/sessionNotes';
+import { registerSuggestionRoutes } from './ai/suggestionRoutes';
 import { z } from 'zod';
 import { AiError } from './ai/client';
 import {
@@ -216,12 +217,19 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     registerCoDmRoutes(app, options.coDm);
     // MC.7: practice drafts from the transcript, for the GM's review.
     registerPracticeDraftRoutes(app, { active: () => active, client: options.coDm.client });
+    // MC.9: running session notes and the end-of-session summary.
     registerNotesRoutes(app, {
       active: () => active,
       client: options.coDm.client,
       flush: (store) => {
         for (const w of logWriters) if (w.store === store) w.flushNow();
       },
+    });
+    // MC.8: suggestion chips from the recent transcript (counted in the spend counter).
+    registerSuggestionRoutes(app, {
+      active: () => active,
+      client: options.coDm.client,
+      now: options.now ?? Date.now,
     });
   }
   registerListenRoutes(app, {

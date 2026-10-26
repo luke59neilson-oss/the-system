@@ -56,6 +56,13 @@ export function e2eFakeClient(key: () => string | null, models: () => AiModelSet
           usage: { inputTokens: 500, outputTokens: 50 },
         });
       }
+      if (request.role === 'fast' && last.startsWith('Suggestions.')) {
+        return Promise.resolve({
+          text: e2eSuggestions(last),
+          model: models().fast,
+          usage: { inputTokens: 400, outputTokens: 60 },
+        });
+      }
       const fixtures = new FixtureAiClient(
         [
           { role: 'fast', match: 'Connection test', text: 'ready', usage: E2E_TEST_USAGE },
@@ -82,6 +89,38 @@ export function e2eFakeClient(key: () => string | null, models: () => AiModelSet
       return fixtures.complete(request);
     },
   };
+}
+
+/**
+ * MC.8, TEST ONLY: the fast model's suggestion chips. A numbered line that
+ * mentions an herbalist becomes a Generate shop chip; one about an arrow, a
+ * Complication encounter chip.
+ */
+export function e2eSuggestions(prompt: string): string {
+  const chips: { line: number; type: string; kind: string; title: string; request: string }[] = [];
+  for (const m of prompt.matchAll(/^(\d+)\. (?:\[[^\]]*\] )?(.*)$/gmu)) {
+    const line = Number(m[1]);
+    const text = m[2] ?? '';
+    if (/herbalist/iu.test(text) && !chips.some((c) => c.kind === 'shop')) {
+      chips.push({
+        line,
+        type: 'generate',
+        kind: 'shop',
+        title: 'Herbalist shop',
+        request: 'An herbalist the party can reach before the canyon',
+      });
+    }
+    if (/arrow/iu.test(text) && !chips.some((c) => c.kind === 'encounter')) {
+      chips.push({
+        line,
+        type: 'complication',
+        kind: 'encounter',
+        title: 'Pale hunters close in',
+        request: 'Pale hunters notice the drawn bow',
+      });
+    }
+  }
+  return JSON.stringify({ chips });
 }
 
 /**

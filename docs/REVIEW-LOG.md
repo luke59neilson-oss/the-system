@@ -1004,3 +1004,9 @@
 ## 2026-10-26 · MC.7 Practice drafts, round 2 (run 0143b463; box checked)
 - Round-1 open Mediums fixed by a fork (43c71d25..d8c98418, D245): M1 a stat-only app action covers its character's moment (±2 min); M4 drafts carry their session and Confirm logs against it (optional GM-only `session` on practice.log); M5 drafts listed in the Practice review queue.
 - Reviewer sonnet on d8c98418 (worktree): 0 H / 1 M / 5 L; check 1,450 unit, MC.7 + M5.5 + M7.3 e2e 3/3. M1 Draft found nothing after End session (read transcript 0): fixed, Draft reads the most recent session when none runs (D246, unit test fails without the fix; MC.7 e2e passes). Lows to QUALITY backlog: null-session `logged` filter, Confirm double-log if drop fails, contest dedupe keyed on last pair only, ±2-min window suppresses silently, MC.7 two screenshots byte-identical.
+
+## 2026-10-26 · MC.8 Suggestions panel, round 1 (run 0143b463)
+- wip/MC.8 merged wip/MC.7 (5345c493; DECISIONS and GM-GUIDE conflicts kept both), screenshots re-rendered (767a05ff). Reviewer sonnet on 767a05ff (worktree): 0 H / 2 M / 3 L; check 1,462 unit, MC.8 + MC.2 e2e 2/2. M1 a reply it could not read re-billed on every 15 s poll (lastCallAt set only on success): fixed, the pace counts from the call (37b37f55; test 872ec9f8 fails without it). M2 a chip dismissed during an in-flight call came back (stale read-modify-write): fixed, re-read after the call (37b37f55; test a3aefe71 fails without it). Lows to the QUALITY backlog. Round 2 due (two Mediums).
+
+## 2026-10-26 · MC.8 Suggestions panel, round 2 (run 0143b463; box checked)
+- Reviewer sonnet on a3aefe71 (worktree): 0 H / 0 M / 4 L (a failed call also holds a manual retry for 60 s; a crash after the pre-call write; M1 test asserts not-200 rather than 502; M2 test polls a flag). Both round-1 fixes verified; route tests 5/5, eslint clean.
