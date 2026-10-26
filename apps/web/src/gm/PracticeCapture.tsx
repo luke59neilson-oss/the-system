@@ -104,6 +104,7 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
     setTags('');
     if (scene) {
       // End-of-scene prompt: move on to the next character, or finish.
+      await answerFor(characterId);
       const next = ids[ids.indexOf(characterId) + 1];
       if (next) pick(next);
       else setScene(false);
@@ -111,10 +112,36 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
     actionRef.current?.focus();
   };
 
-  const skipInScene = () => {
+  // MT.9 review (D222): the GM walking the party answers for a character whose
+  // player has not answered yet, so their screen stops asking.
+  const answerFor = async (id: string) => {
+    const prompt = state.scenePrompt ?? null;
+    if (prompt === null || !prompt.pending.includes(id)) return;
+    const r = await client.command({ type: 'scene.answer', sceneId: prompt.id, characterId: id });
+    if (!r.ok) setOutcome({ ok: false, text: friendlyError(r.error) });
+  };
+
+  const skipInScene = async () => {
+    await answerFor(characterId);
     const next = ids[ids.indexOf(characterId) + 1];
     if (next) pick(next);
     else setScene(false);
+  };
+
+  const startScene = async () => {
+    // MT.9 review (M2): a prompt still waiting on answers is resumed, not
+    // replaced, so nobody's half-typed answer is lost.
+    const open = (state.scenePrompt?.pending.length ?? 0) > 0;
+    if (!open) {
+      const ok = await run(
+        { type: 'scene.end' },
+        "Scene ended: players' screens ask what they practised",
+      );
+      if (!ok) return;
+    }
+    setScene(true);
+    pick(ids[0] ?? '');
+    actionRef.current?.focus();
   };
 
   const pending = state.practice.filter((e) => !e.reviewed);
@@ -151,25 +178,15 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
             <p className="scene-prompt" data-testid="scene-prompt">
               <strong>End of scene:</strong> what did {character?.name} practise? (
               {ids.indexOf(characterId) + 1} of {ids.length}){' '}
-              <button type="button" onClick={skipInScene}>
+              <button type="button" disabled={busy} onClick={() => void skipInScene()}>
                 Nothing for {character?.name}
               </button>
             </p>
           ) : (
-            <button
-              type="button"
-              onClick={() => {
-                // MT.9 (Q63): players' screens ask what they practised too.
-                void run(
-                  { type: 'scene.end' },
-                  "Scene ended: players' screens ask what they practised",
-                );
-                setScene(true);
-                pick(ids[0] ?? '');
-                actionRef.current?.focus();
-              }}
-            >
-              End scene: log practice
+            <button type="button" disabled={busy} onClick={() => void startScene()}>
+              {(state.scenePrompt?.pending.length ?? 0) > 0
+                ? 'Resume end of scene'
+                : 'End scene: log practice'}
             </button>
           )}
           <form onSubmit={(e) => void add(e)} aria-label="Quick-add practice">

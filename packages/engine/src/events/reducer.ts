@@ -2318,6 +2318,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       for (const id of characterIds) {
         if (!hasOwn(state.characters, id)) fail(event, `unknown character "${id}"`);
       }
+      if ((state.scenePrompt ?? null)?.id === sceneId)
+        fail(event, `scene "${sceneId}" already exists`);
       const pending = state.characterOrder.filter((id) => characterIds.includes(id));
       return { ...state, scenePrompt: { id: sceneId, at: event.timestamp, pending } };
     }
@@ -2325,6 +2327,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const { sceneId, characterId } = event.payload;
       const prompt = state.scenePrompt ?? null;
       if (prompt === null || prompt.id !== sceneId) fail(event, 'that scene prompt is closed');
+      if (!hasOwn(state.characters, characterId)) fail(event, `unknown character "${characterId}"`);
       if (!prompt!.pending.includes(characterId))
         fail(event, `${characterId} has already answered`);
       const pending = prompt!.pending.filter((id) => id !== characterId);

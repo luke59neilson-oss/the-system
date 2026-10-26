@@ -572,6 +572,27 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
           )}
         </p>
       )}
+      {client && view.scenePrompt !== null && (
+        // MT.9 review (M3): the prompt sits low in the Practice window, so the
+        // status window flags it where a phone player looks first.
+        <p className="selection-pending scene-pending" data-testid="scene-pending">
+          <span className="selection-label">End of scene</span>
+          <span className="badge" data-testid="scene-badge">
+            What did you practise?
+          </span>
+          <button
+            type="button"
+            className="assign-btn"
+            onClick={() => {
+              const el = document.querySelector<HTMLElement>('[data-testid="player-scene-prompt"]');
+              el?.scrollIntoView({ block: 'start' });
+              el?.querySelector<HTMLElement>('input, textarea')?.focus({ preventScroll: true });
+            }}
+          >
+            [Answer]
+          </button>
+        </p>
+      )}
       {evoNotice && (
         <p className="err" role="alert" data-testid="evolution-notice">
           {evoNotice}
