@@ -63,7 +63,7 @@ const readPcm = (raw: unknown): Float32Array | null => {
 };
 
 /** The running session's number, or 0 outside a session. */
-function sessionNumber(store: CampaignStore): number {
+export function sessionNumber(store: CampaignStore): number {
   const state = store.campaign.state;
   if (!state || state.currentSession === null) return 0;
   return state.sessions.find((s) => s.id === state.currentSession)?.number ?? 0;

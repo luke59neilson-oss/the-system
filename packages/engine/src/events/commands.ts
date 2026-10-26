@@ -227,6 +227,12 @@ export type Command =
       tags?: readonly string[] | undefined;
       /** Default: "player" for a player, "gm" for the GM. */
       source?: 'gm' | 'player' | 'montage' | undefined;
+      /**
+       * GM only (MC.7 review M4): the play session the use happened in, when
+       * the GM confirms it later (a co-DM draft from an earlier session);
+       * null = outside any session. Default: the current session.
+       */
+      session?: string | null | undefined;
     }
   | {
       type: 'practice.edit';
@@ -1219,6 +1225,7 @@ function toEvent(
           stat: command.stat ?? null,
           tags: command.tags ?? [],
           source: command.source ?? (ctx.actor.role === 'player' ? 'player' : 'gm'),
+          ...(command.session !== undefined ? { session: command.session } : {}),
         },
       };
     case 'practice.edit': {

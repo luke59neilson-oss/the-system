@@ -230,7 +230,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <Encounter client={client} state={state} />
               <OfferBuilder client={client} state={state} target={offerTarget} />
               <EvolutionBuilder client={client} state={state} />
-              <PracticeCapture client={client} state={state} />
+              <PracticeCapture client={client} gmKey={gmKey} state={state} />
               <QuestManager client={client} state={state} />
               <Bestiary client={client} state={state} />
               <Trackers client={client} state={state} />

@@ -33,6 +33,7 @@ import { SessionLogWriter, sessionReport, type SessionLogOptions } from './sessi
 import { authPath, gmKeyMatches, isAllowedHost, isAllowedOrigin } from './security';
 import type { CampaignStore } from './store';
 import { registerCoDmRoutes, type CoDm } from './ai/coDm';
+import { registerPracticeDraftRoutes } from './ai/practiceRoutes';
 import { z } from 'zod';
 import { AiError } from './ai/client';
 import {
@@ -208,7 +209,11 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   });
 
   app.get('/health', () => ({ status: 'ok' }));
-  if (options.coDm) registerCoDmRoutes(app, options.coDm);
+  if (options.coDm) {
+    registerCoDmRoutes(app, options.coDm);
+    // MC.7: practice drafts from the transcript, for the GM's review.
+    registerPracticeDraftRoutes(app, { active: () => active, client: options.coDm.client });
+  }
   registerListenRoutes(app, {
     active: () => active,
     stt: options.speech ?? (() => null),

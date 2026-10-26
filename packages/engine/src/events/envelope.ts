@@ -372,6 +372,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     stat: recordId.nullable(),
     tags: z.array(nonBlank).max(20),
     source: z.enum(['gm', 'player', 'montage']),
+    /** MC.7 review M4: the session it happened in, when not the event's own (GM only). */
+    session: recordId.nullable().optional(),
   }),
   /** The GM corrects a practice entry (M5.5); omitted fields stay. Marks it reviewed. */
   'practice.edited': z.strictObject({
