@@ -29,6 +29,14 @@ import { SessionLogWriter, sessionReport, type SessionLogOptions } from './sessi
 import { authPath, gmKeyMatches, isAllowedHost, isAllowedOrigin } from './security';
 import type { CampaignStore } from './store';
 import { registerCoDmRoutes, type CoDm } from './ai/coDm';
+import { z } from 'zod';
+import { AiError } from './ai/client';
+import {
+  GENERATE_KINDS,
+  GENERATE_PROMPT_MAX,
+  buildGenerateRequest,
+  extractJson,
+} from './ai/generate';
 
 export interface CreateServerOptions {
   webRoot: string;
@@ -415,6 +423,46 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       only,
     );
   });
+
+  // MC.2: generate on demand. The strong model writes a content file for the
+  // GM's request; the reply is previewed exactly like an imported file, so
+  // the GM approves, edits or regenerates it in the import window and nothing
+  // applies before that. GM-only (under /api/gm/), and the campaign context
+  // it sends stays between this server and the API.
+  const coDm = options.coDm;
+  if (coDm) {
+    const generateBody = z.strictObject({
+      kind: z.enum(GENERATE_KINDS),
+      prompt: z.string().max(GENERATE_PROMPT_MAX).default(''),
+    });
+    app.post('/api/gm/ai/generate', { bodyLimit: 16 * 1024 }, async (request, reply) => {
+      const state = active?.store.campaign.state;
+      if (!active || !state) return reply.code(404).send({ error: 'No campaign open' });
+      const body = generateBody.safeParse(request.body);
+      if (!body.success) return reply.code(400).send({ error: 'Send { kind, prompt }' });
+      let file: unknown;
+      try {
+        const answer = await coDm.client.complete(
+          buildGenerateRequest(body.data.kind, body.data.prompt, state),
+        );
+        file = extractJson(answer.text);
+      } catch (e) {
+        return reply.code(502).send({
+          error: e instanceof AiError ? e.message : 'The co-DM could not generate that',
+          status: coDm.status(),
+        });
+      }
+      let n = 0;
+      const campaign = active.store.campaign;
+      const preview = previewContent(campaign, file, {
+        actor: { role: 'gm' },
+        sessionId: campaign.state?.currentSession ?? null,
+        now: options.live?.now ?? (() => new Date().toISOString()),
+        newId: () => `preview-${++n}`,
+      });
+      return { file, preview, status: coDm.status() };
+    });
+  }
 
   // Browser navigations to client-side routes get the app shell; anything else
   // (missing assets, API, health, WebSocket paths) stays a 404.
