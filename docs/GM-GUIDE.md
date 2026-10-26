@@ -149,12 +149,14 @@ approve it. Everything except listening needs an Anthropic API key.
   again, never written to logs and never sent to players. **Replace API key**
   or **Remove key** changes it.
 - **Test connection** makes one tiny call to check the key works.
-- **Fast model (listening, suggestions)** and **Strong model (generation)**
+- **Fast model (suggestions, notes, drafts)** and **Strong model (generation)**
   can be changed; press **Save models**. The defaults are a Haiku model for
   quick reads and a Sonnet model for writing content.
 - The spend counter ("This session: $… · N calls") adds up every paid call
   this session, from the API's own token counts. It shows in Co-DM settings
-  and in the Co-DM panel.
+  and in the Co-DM panel and catches up on its own every 20 seconds, so
+  suggestions, notes, drafts and prepare-ahead looks show without a button.
+  It starts again from $0 when a new session starts (or one ends).
 - Without a key the rest of the app works as before; the co-DM panel says
   what it needs.
 
@@ -237,7 +239,8 @@ show "[The System is listening]".
   notes** at a break. The fast model reads the transcript heard since the
   last notes and adds short lines on what happened. They go into the
   session log and its export under "Co-DM notes".
-- **Summary**: after **End session**, press **Summarise session**. The
+- **Summary**: after **End session**, and before you start the next one,
+  press **Summarise session**. The
   co-DM catches up the notes, then writes what happened, who did what, open
   threads and NPCs met. It goes into that session's log and export (the
   `.md` report and its `.json`), so **Copy for Claude** carries it. Press it
@@ -280,6 +283,9 @@ time you use your own key, check the live path once (a few cents):
 7. Look at a player's screen throughout: they should see only the listening
    mark and anything you approved, never the transcript, chips, notes or
    drafts.
+8. Speech: the tests check listening with a stand-in that hears scripted
+   lines, so this is the first real check of on-laptop transcription. During
+   step 4, read the transcript: it should follow what was said closely.
 
 ## Rules settings
 

@@ -55,7 +55,7 @@ test('co-DM settings without a key: models, spend, and nothing to players', asyn
   await expect(win.getByRole('button', { name: 'Test connection' })).toBeDisabled();
   await expect(win.getByTestId('codm-spend')).toHaveText('This session: $0.000 · 0 calls');
 
-  const fast = win.getByLabel('Fast model (listening, suggestions)');
+  const fast = win.getByLabel('Fast model (suggestions, notes, drafts)');
   const strong = win.getByLabel('Strong model (generation)');
   await expect(fast).toHaveValue('claude-haiku-4-5');
   await expect(strong).toHaveValue('claude-sonnet-4-5');

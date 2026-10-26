@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { shouldPollSpend, spendLine, useLiveSpend } from './spend';
 
 interface CoDmStatus {
   hasKey: boolean;
@@ -7,8 +8,6 @@ interface CoDmStatus {
   models: { fast: string; strong: string };
   spend: { calls: number; inputTokens: number; outputTokens: number; dollars: number };
 }
-
-const money = (n: number) => `$${n.toFixed(n < 1 ? 3 : 2)}`;
 
 /**
  * Co-DM settings (MC.1, DESIGN §11): the GM's own Anthropic API key (saved
@@ -23,6 +22,7 @@ export function CoDmSettings({ gmKey }: { gmKey: string }) {
   const [strong, setStrong] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const spend = useLiveSpend(gmKey, shouldPollSpend(status), status?.spend ?? null);
 
   const call = async (method: string, url: string, body?: unknown): Promise<unknown> => {
     const res = await fetch(url, {
@@ -149,7 +149,7 @@ export function CoDmSettings({ gmKey }: { gmKey: string }) {
           )}
           <form onSubmit={saveModels}>
             <label>
-              Fast model (listening, suggestions)
+              Fast model (suggestions, notes, drafts)
               <input value={fast} onChange={(e) => setFast(e.target.value)} />
             </label>
             <label>
@@ -181,10 +181,7 @@ export function CoDmSettings({ gmKey }: { gmKey: string }) {
           >
             Test connection
           </button>
-          <p data-testid="codm-spend">
-            This session: {money(status.spend.dollars)} · {status.spend.calls} call
-            {status.spend.calls === 1 ? '' : 's'}
-          </p>
+          <p data-testid="codm-spend">{spendLine(spend ?? status.spend)}</p>
           {message && (
             <p role="status" className="muted">
               {message}

@@ -98,6 +98,9 @@ test('a mock session runs the co-DM end to end', async ({ browser }) => {
   await imp.getByRole('button', { name: /^Apply \d+$/ }).click();
   await expect(imp.getByRole('status')).toHaveText(/^Applied \d+ entries$/);
   await expect(banners).toHaveCount(0);
+  const panelSpend = codm.getByTestId('codm-panel-spend');
+  await expect(panelSpend).toContainText('call');
+  const afterShop = (await panelSpend.textContent()) ?? '';
 
   // 4. A practice draft from the transcript, confirmed by the GM.
   const practice = gm.locator('section[aria-labelledby="practice-capture-heading"]');
@@ -108,6 +111,9 @@ test('a mock session runs the co-DM end to end', async ({ browser }) => {
   await expect(item).toContainText('Nocks an arrow and waits for the shot');
   await item.getByRole('button', { name: 'Confirm' }).click();
   await expect(win.getByTestId('drafts-message')).toContainText('Logged: Jake [');
+  // Review M1: the practice draft was a paid call made outside the panel; the
+  // counter catches up on its own (SPEND_POLL_MS) without a button.
+  await expect(panelSpend).not.toHaveText(afterShop, { timeout: 30_000 });
 
   // 5. End the session; the summary lands in the session log and export.
   const session = gm.locator('section[aria-labelledby="session-heading"]');

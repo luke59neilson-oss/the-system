@@ -3,6 +3,7 @@ import type { IncomingContent } from './ContentImport';
 import { LOADING_TEXT } from './loadingScreen';
 import { PrepareAhead } from './PrepareAhead';
 import { SessionNotes } from './SessionNotes';
+import { spendLine, useLiveSpend, type Spend } from './spend';
 
 /** The kinds the server's generate route takes (MC.2, DESIGN §11). */
 const KINDS = [
@@ -46,7 +47,9 @@ export function CoDmPanel({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [draft, setDraft] = useState<string | null>(null);
-  const [spend, setSpend] = useState<string | null>(null);
+  const [seedSpend, setSeedSpend] = useState<Spend | null>(null);
+  const [ready, setReady] = useState(false);
+  const spend = useLiveSpend(gmKey, ready, seedSpend);
   // The generation as it came back, to tell whether the GM has edited it.
   const [original, setOriginal] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
@@ -59,7 +62,9 @@ export function CoDmPanel({
   useEffect(() => {
     let cancelled = false;
     void whyNotReady(gmKey).then((blocked) => {
-      if (!cancelled && blocked !== null) setMessage(blocked);
+      if (cancelled) return;
+      if (blocked !== null) setMessage(blocked);
+      setReady(blocked === null);
     });
     return () => {
       cancelled = true;
@@ -106,9 +111,8 @@ export function CoDmPanel({
       };
       if (data.status) {
         const s = data.status.spend;
-        setSpend(
-          `This session: $${s.dollars.toFixed(3)} · ${s.calls} call${s.calls === 1 ? '' : 's'}`,
-        );
+        setSeedSpend({ calls: s.calls, dollars: s.dollars });
+        setReady(true);
       }
       if (!res.ok || data.file === undefined) {
         if (showing) onLoadingFailed?.();
@@ -223,7 +227,7 @@ export function CoDmPanel({
           {message}
         </p>
       )}
-      {spend && <p data-testid="codm-panel-spend">{spend}</p>}
+      {spend && <p data-testid="codm-panel-spend">{spendLine(spend)}</p>}
       {draft !== null && (
         <details>
           <summary>Edit the generated content</summary>
