@@ -7,7 +7,7 @@ import { createServer } from './server';
 import { exportsDirFor } from './sessionLog';
 import { CampaignStore } from './store';
 import { migrateOnLoad } from './migrate';
-import { CoDm } from './ai/coDm';
+import { CoDm, type CoDmOptions } from './ai/coDm';
 import type { SecretCipher } from './ai/keyStore';
 
 /**
@@ -39,6 +39,8 @@ export interface StartOptions {
    * desktop app). Without it the co-DM settings work but no key can be saved.
    */
   aiCipher?: SecretCipher | null | undefined;
+  /** MC.1: the co-DM's AI client; the live Anthropic client when omitted. */
+  aiClient?: CoDmOptions['makeClient'] | undefined;
 }
 
 /**
@@ -115,6 +117,7 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
       coDm: new CoDm({
         dir: path.join(storeOptions.dataDir, 'co-dm'),
         cipher: options.aiCipher ?? null,
+        ...(options.aiClient === undefined ? {} : { makeClient: options.aiClient }),
         sessionId: () => store.campaign.state?.currentSession ?? null,
       }),
     });
