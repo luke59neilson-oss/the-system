@@ -940,3 +940,6 @@
 
 ## 2026-10-26 · QF.26 Pinned banners readable when scrolled · sonnet (worktree, 1f8f4b80)
 - 0 High, 0 Medium, 2 Low (the flat `--bg` stack is a shade darker than the body's radial gradient at the top; the stack's gap fill is intended). `--bg` defined once, no theme overrides it; banners render only on the player screen. MT.6 e2e green. Checked.
+
+## 2026-10-26 · MC.1 AI connection · round-2 fixes verified (run 56591c49)
+- Round 2 M2 (no e2e of the key-saved path) fixed at 62d32407: test-only fake cipher and AI client behind `THE_SYSTEM_E2E_FAKE_AI=1` (D228; the fake cipher refuses non-test keys); e2e covers a refused malformed key, Save, the key never shown or written verbatim, Test connection, spend $0.001 · 1 call, reload, Remove, and no key text in player frames or `/api/` bodies; unit tests for the switch and the fake. Round 2 had no High, so no third round (LOOP §6.4); verified by me: check 1,314 green, MC.1 e2e 2/2. Lows → QUALITY Backlog. Box checked.

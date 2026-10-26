@@ -791,7 +791,7 @@ behind an interface with a recorded-fixture fake, and the live path is
 checked by Luke with his key. Work in file order; generation comes first so
 it is usable early (Luke can run a preview build at any point).
 
-- [ ] **MC.1 AI connection.** GM settings: API key entry (stored encrypted on
+- [x] **MC.1 AI connection.** GM settings: API key entry (stored encrypted on
   the laptop with Electron `safeStorage`, never logged, never in a player
   frame or HTTP body), a "Test connection" button, model choices (fast and
   strong), a per-session spend counter from the API's token usage. A server
