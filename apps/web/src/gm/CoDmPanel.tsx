@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import type { IncomingContent } from './ContentImport';
 import { LOADING_TEXT } from './loadingScreen';
 
@@ -134,6 +134,14 @@ export function CoDmPanel({
   return (
     <section className="window" aria-labelledby="codm-heading">
       <h2 id="codm-heading">Co-DM</h2>
+      <Suggestions
+        gmKey={gmKey}
+        onUse={(chip) => {
+          setKind(chip.kind);
+          setPrompt(chip.request);
+          setMessage(`Ready to generate: ${chip.title}. Press Generate.`);
+        }}
+      />
       <form onSubmit={(e) => void generate(e)}>
         <label>
           Generate
@@ -273,4 +281,132 @@ async function whyNotReady(gmKey: string): Promise<string | null> {
   } catch {
     return 'Could not reach the server';
   }
+}
+
+/** A co-DM suggestion chip (MC.8, D244); GM-only. */
+export interface Chip {
+  readonly id: string;
+  readonly type: 'generate' | 'complication' | 'callback';
+  readonly kind: Kind;
+  readonly title: string;
+  readonly request: string;
+  readonly quote: string;
+}
+
+const CHIP_LABEL: Record<Chip['type'], string> = {
+  generate: 'Generate',
+  complication: 'Complication',
+  callback: 'Callback',
+};
+/** How often the panel asks; the server decides whether a call is due (new talk, interval). */
+const SUGGEST_TICK_MS = 15_000;
+const INTERVALS = [60, 90, 120, 300] as const;
+
+/**
+ * MC.8 (DESIGN §11 "Suggestions"): every minute or two the fast model reads
+ * the recent transcript and offers a few chips, each with the quote behind
+ * it. Use fills in the generate request above; Dismiss removes the chip for
+ * good. The laptop paces the calls and counts them in the spend counter.
+ */
+function Suggestions({ gmKey, onUse }: { gmKey: string; onUse: (chip: Chip) => void }) {
+  const [chips, setChips] = useState<Chip[]>([]);
+  const [intervalS, setIntervalS] = useState<number>(90);
+  const [note, setNote] = useState<string | null>(null);
+  const interval = useRef(intervalS);
+  useEffect(() => {
+    interval.current = intervalS;
+  }, [intervalS]);
+
+  const ask = useCallback(
+    async (manual: boolean) => {
+      const res = await fetch('/api/gm/ai/suggestions', {
+        method: 'POST',
+        headers: { 'x-gm-key': gmKey, 'content-type': 'application/json' },
+        body: JSON.stringify({ manual, intervalS: interval.current }),
+      }).catch(() => null);
+      if (!res) return;
+      const data = (await res.json().catch(() => ({}))) as {
+        chips?: Chip[];
+        called?: boolean;
+        error?: string;
+      };
+      if (data.chips) setChips(data.chips);
+      if (manual) {
+        setNote(
+          !res.ok
+            ? (data.error ?? 'No suggestions right now')
+            : data.called
+              ? null
+              : 'Nothing new heard yet, or asked under a minute ago',
+        );
+      }
+    },
+    [gmKey],
+  );
+
+  useEffect(() => {
+    let live = true;
+    void fetch('/api/gm/ai/suggestions', { headers: { 'x-gm-key': gmKey } })
+      .then(async (res) => {
+        if (!res.ok || !live) return;
+        const data = (await res.json()) as { chips: Chip[] };
+        if (live) setChips(data.chips);
+      })
+      .catch(() => undefined);
+    const timer = setInterval(() => void ask(false), SUGGEST_TICK_MS);
+    return () => {
+      live = false;
+      clearInterval(timer);
+    };
+  }, [gmKey, ask]);
+
+  const dismiss = async (id: string) => {
+    const res = await fetch(`/api/gm/ai/suggestions/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { 'x-gm-key': gmKey },
+    }).catch(() => null);
+    if (res?.ok) setChips(((await res.json()) as { chips: Chip[] }).chips);
+  };
+
+  return (
+    <div className="suggestions" data-testid="suggestions">
+      <h3>Suggestions (GM only)</h3>
+      <p>
+        <label>
+          Every{' '}
+          <select value={intervalS} onChange={(e) => setIntervalS(Number(e.target.value))}>
+            {INTERVALS.map((s) => (
+              <option key={s} value={s}>
+                {s < 120 ? `${s} s` : `${s / 60} min`}
+              </option>
+            ))}
+          </select>
+        </label>{' '}
+        <button type="button" onClick={() => void ask(true)}>
+          Suggest now
+        </button>
+      </p>
+      {note && <p role="status">{note}</p>}
+      {chips.length === 0 ? (
+        <p className="muted">No suggestions yet: they come from what the table says.</p>
+      ) : (
+        <ul className="chips">
+          {chips.map((c) => (
+            <li key={c.id} data-testid="chip">
+              <strong>
+                {CHIP_LABEL[c.type]}: {c.title}
+              </strong>
+              <blockquote>“{c.quote}”</blockquote>
+              <button type="button" onClick={() => onUse(c)}>
+                Use
+              </button>{' '}
+              <button type="button" onClick={() => void dismiss(c.id)}>
+                Dismiss
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }

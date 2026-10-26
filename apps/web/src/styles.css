@@ -2988,3 +2988,21 @@ ol.change-log li.undone .change-text {
   margin: 0.25rem 0 0.5rem;
   font-style: italic;
 }
+
+/* MC.8: co-DM suggestion chips (GM only). */
+.chips {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.chips li {
+  border: 1px solid var(--accent, currentColor);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+}
+.chips blockquote {
+  margin: 0.25rem 0;
+  font-style: italic;
+  opacity: 0.85;
+}
