@@ -61,7 +61,7 @@ export function PracticeDrafts({
       text:
         data?.read === 0
           ? 'No new transcript lines to read'
-          : `Read ${data?.read ?? 0} lines: ${data?.added ?? 0} new drafts`,
+          : `Read ${data?.read ?? 0} lines: ${data?.added ?? 0} new ${data?.added === 1 ? 'draft' : 'drafts'}`,
     });
   };
 

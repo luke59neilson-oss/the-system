@@ -48,6 +48,14 @@ export function e2eFakeClient(key: () => string | null, models: () => AiModelSet
           new AiError('No API key is set: add one in Co-DM settings', 'no-key'),
         );
       }
+      const last = request.messages[request.messages.length - 1]?.content ?? '';
+      if (request.role === 'fast' && last.startsWith('Practice drafts.')) {
+        return Promise.resolve({
+          text: e2ePracticeDrafts(last),
+          model: models().fast,
+          usage: { inputTokens: 500, outputTokens: 50 },
+        });
+      }
       const fixtures = new FixtureAiClient(
         [
           { role: 'fast', match: 'Connection test', text: 'ready', usage: E2E_TEST_USAGE },
@@ -58,6 +66,33 @@ export function e2eFakeClient(key: () => string | null, models: () => AiModelSet
       return fixtures.complete(request);
     },
   };
+}
+
+/**
+ * MC.7, TEST ONLY: the fast model's practice drafts. A line that names a
+ * party member and says "nocks an arrow" is a use of their first skill; the
+ * herbalist line is talk, not a use.
+ */
+export function e2ePracticeDrafts(prompt: string): string {
+  const party = [...prompt.matchAll(/^- (.+?): (.+)$/gmu)].map((m) => ({
+    name: m[1]!,
+    skill: m[2]!.split(', ')[0]!,
+  }));
+  const drafts = [...prompt.matchAll(/^(\d+)\. (?:\[[^\]]*\] )?(.*)$/gmu)].flatMap((m) => {
+    const who = party.find((p) => m[2]!.includes(p.name));
+    return who && m[2]!.includes('nocks an arrow')
+      ? [
+          {
+            line: Number(m[1]),
+            character: who.name,
+            skill: who.skill,
+            action: 'Nocks an arrow and waits for the shot',
+            confidence: 'high',
+          },
+        ]
+      : [];
+  });
+  return JSON.stringify({ drafts });
 }
 
 /** MC.5: what the fake recognizer "hears", one line per speech segment, in a loop. */

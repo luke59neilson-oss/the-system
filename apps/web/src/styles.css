@@ -2982,3 +2982,9 @@ ol.change-log li.undone .change-text {
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* MC.7: a draft's quote sits under it, not far indented. */
+.practice-drafts blockquote {
+  margin: 0.25rem 0 0.5rem;
+  font-style: italic;
+}
