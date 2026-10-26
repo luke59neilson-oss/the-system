@@ -6,6 +6,7 @@ import {
   machineIdFor,
   desktopPort,
   gmWindowUrl,
+  allowsPermission,
   isOwnPage,
   portFallbackMessage,
   SPLASH_TITLE,
@@ -149,8 +150,17 @@ function openGmWindow(server: RunningApp, notice: string | null = null): void {
         if (response === 1) app.quit();
       });
   });
-  win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) =>
-    callback(false),
+  // MC.5: the mic for the co-DM's listening, for this window only; nothing else.
+  win.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) =>
+    callback(
+      allowsPermission(
+        !win.isDestroyed() && wc === win.webContents,
+        permission,
+        'mediaTypes' in details ? details.mediaTypes : undefined,
+        details.requestingUrl,
+        server.port,
+      ),
+    ),
   );
   // Links to anything but our own pages open in the system browser.
   win.webContents.setWindowOpenHandler(({ url }) => {

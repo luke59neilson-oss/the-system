@@ -143,3 +143,20 @@ p{margin:0;color:#8b98ad;font-size:14px}
 export function splashUrl(): string {
   return `data:text/html;charset=utf-8,${encodeURIComponent(splashHtml())}`;
 }
+
+/**
+ * MC.5 (DESIGN §11 "Listening"): the only permission the app ever grants is
+ * the microphone, to the GM window, on its own console page. Video, screen
+ * capture and every other permission stay refused.
+ */
+export function allowsPermission(
+  fromGmWindow: boolean,
+  permission: string,
+  mediaTypes: readonly string[] | undefined,
+  url: string,
+  port: number,
+): boolean {
+  if (!fromGmWindow || permission !== 'media' || !isOwnPage(url, port)) return false;
+  const types = mediaTypes ?? [];
+  return types.length > 0 && types.every((t) => t === 'audio');
+}

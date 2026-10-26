@@ -9,6 +9,7 @@ import { AiError, type AiClient, type AiModelSettings } from './client';
 import { FixtureAiClient } from './fake';
 import { GENERATE_FIXTURES } from './fixtures/generate';
 import type { SecretCipher } from './keyStore';
+import type { SpeechToText } from '../speech/stt';
 
 export const E2E_FAKE_AI_ENV = 'THE_SYSTEM_E2E_FAKE_AI';
 export const E2E_KEY_PREFIX = 'sk-ant-e2e-';
@@ -54,10 +55,27 @@ export function e2eFakeClient(key: () => string | null, models: () => AiModelSet
   };
 }
 
+/** MC.5: what the fake recognizer "hears", one line per speech segment, in a loop. */
+export const E2E_SPEECH_LINES = [
+  'We should find an herbalist before the canyon.',
+  'Jake nocks an arrow and waits.',
+];
+
+/** A stand-in recognizer: each segment is the next scripted line (no model, no audio kept). */
+export function e2eFakeSpeech(): SpeechToText {
+  let n = 0;
+  return {
+    transcribe: () => Promise.resolve(E2E_SPEECH_LINES[n++ % E2E_SPEECH_LINES.length] ?? ''),
+  };
+}
+
 /** The fake pair when the env switch is exactly "1"; null otherwise. */
 export function e2eFakeFromEnv(env: NodeJS.ProcessEnv): {
   cipher: SecretCipher;
   makeClient: (key: () => string | null, models: () => AiModelSettings) => AiClient;
+  speech: SpeechToText;
 } | null {
-  return env[E2E_FAKE_AI_ENV] === '1' ? { cipher: e2eFakeCipher, makeClient: e2eFakeClient } : null;
+  return env[E2E_FAKE_AI_ENV] === '1'
+    ? { cipher: e2eFakeCipher, makeClient: e2eFakeClient, speech: e2eFakeSpeech() }
+    : null;
 }

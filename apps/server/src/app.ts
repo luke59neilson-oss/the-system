@@ -8,6 +8,7 @@ import { exportsDirFor } from './sessionLog';
 import { CampaignStore } from './store';
 import { migrateOnLoad } from './migrate';
 import { CoDm, type CoDmOptions } from './ai/coDm';
+import type { SpeechToText } from './speech/stt';
 import type { SecretCipher } from './ai/keyStore';
 
 /**
@@ -41,6 +42,8 @@ export interface StartOptions {
   aiCipher?: SecretCipher | null | undefined;
   /** MC.1: the co-DM's AI client; the live Anthropic client when omitted. */
   aiClient?: CoDmOptions['makeClient'] | undefined;
+  /** MC.5: on-laptop speech-to-text; listening is unavailable when omitted. */
+  speech?: (() => SpeechToText | null) | undefined;
 }
 
 /**
@@ -95,6 +98,7 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
   };
   try {
     const app = await createServer({
+      ...(options.speech === undefined ? {} : { speech: options.speech }),
       // Re-read interfaces per request so joining a new wifi shows up without a restart.
       joinInfo: () => {
         const port = livePort();

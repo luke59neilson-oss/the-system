@@ -16,7 +16,14 @@ async function main(): Promise<void> {
   const fake = e2eFakeFromEnv(process.env);
   if (fake) console.log(`${E2E_FAKE_AI_ENV}=1: TEST ONLY fake co-DM cipher and AI client`);
   const running = await startApp(
-    fake ? { ...options, aiCipher: fake.cipher, aiClient: fake.makeClient } : options,
+    fake
+      ? {
+          ...options,
+          aiCipher: fake.cipher,
+          aiClient: fake.makeClient,
+          speech: () => fake.speech,
+        }
+      : options,
   );
   const { port, gmKey } = running;
   console.log(

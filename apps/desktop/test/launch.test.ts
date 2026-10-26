@@ -7,6 +7,7 @@ import {
   dataDirFor,
   desktopPort,
   gmWindowUrl,
+  allowsPermission,
   isOwnPage,
   startErrorMessage,
   webRootFor,
@@ -160,5 +161,26 @@ describe('splash (MS.7)', () => {
     expect(decodeURIComponent(splashUrl().replace(/^data:text\/html;charset=utf-8,/, ''))).toBe(
       html,
     );
+  });
+});
+
+describe('permissions (MC.5)', () => {
+  const own = 'http://127.0.0.1:4700/gm';
+  it('grants the mic to the GM window on its own page only', () => {
+    expect(allowsPermission(true, 'media', ['audio'], own, 4700)).toBe(true);
+    expect(allowsPermission(false, 'media', ['audio'], own, 4700)).toBe(false);
+    expect(allowsPermission(true, 'media', ['audio'], 'http://evil.example:4700/', 4700)).toBe(
+      false,
+    );
+    expect(allowsPermission(true, 'media', ['audio'], own, 4701)).toBe(false);
+  });
+  it('refuses video, mixed or unspecified media and every other permission', () => {
+    expect(allowsPermission(true, 'media', ['video'], own, 4700)).toBe(false);
+    expect(allowsPermission(true, 'media', ['audio', 'video'], own, 4700)).toBe(false);
+    expect(allowsPermission(true, 'media', [], own, 4700)).toBe(false);
+    expect(allowsPermission(true, 'media', undefined, own, 4700)).toBe(false);
+    for (const p of ['geolocation', 'notifications', 'clipboard-read', 'display-capture']) {
+      expect(allowsPermission(true, p, ['audio'], own, 4700)).toBe(false);
+    }
   });
 });
