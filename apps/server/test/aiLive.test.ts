@@ -49,6 +49,13 @@ describe('KeyStore', () => {
     expect(readdirSync(dir)).toEqual([]);
   });
 
+  it('says why a key cannot be saved (not the desktop app, or no OS encryption)', () => {
+    const dir = tmp();
+    expect(new KeyStore(dir, null).whyCannotSave()).toBe('no-desktop');
+    expect(new KeyStore(dir, cipher(false)).whyCannotSave()).toBe('no-encryption');
+    expect(new KeyStore(dir, cipher()).whyCannotSave()).toBeNull();
+  });
+
   it('loads null when the file cannot be decrypted to a key', () => {
     const dir = tmp();
     new KeyStore(dir, cipher()).save(KEY);

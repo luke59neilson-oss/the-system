@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 interface CoDmStatus {
   hasKey: boolean;
   canSave: boolean;
+  saveBlocked: 'no-desktop' | 'no-encryption' | null;
   models: { fast: string; strong: string };
   spend: { calls: number; inputTokens: number; outputTokens: number; dollars: number };
 }
@@ -140,8 +141,10 @@ export function CoDmSettings({ gmKey }: { gmKey: string }) {
               )}
             </form>
           ) : (
-            <p className="muted">
-              This copy cannot store a key safely. Open the desktop app to add one.
+            <p className="muted" data-testid="codm-cannot-save">
+              {status.saveBlocked === 'no-encryption'
+                ? 'This computer offers no secure storage for the key (on Linux, a keyring such as GNOME Keyring or KWallet), so it cannot be saved. Everything else works without it.'
+                : 'This copy cannot store a key safely. Open the desktop app on the GM laptop to add one.'}
             </p>
           )}
           <form onSubmit={saveModels}>

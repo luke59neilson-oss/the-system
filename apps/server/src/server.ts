@@ -32,7 +32,8 @@ import { registerCoDmRoutes, type CoDm } from './ai/coDm';
 
 export interface CreateServerOptions {
   webRoot: string;
-  logger?: boolean;
+  /** Fastify request logging; tests pass a stream to capture the log (MC.1 key canary). */
+  logger?: boolean | { stream: { write(line: string): void } };
   /** The open campaign and hub settings; without it the WebSocket only says hello. */
   live?: { store: CampaignStore } & HubOptions;
   /** Extra origins allowed to open the WebSocket (e.g. the Vite dev server). */
@@ -63,7 +64,10 @@ export const PUBLIC_API = new Set(['/api/characters']);
 
 /** Builds the Fastify app. Does not listen; callers decide host and port. */
 export async function createServer(options: CreateServerOptions): Promise<FastifyInstance> {
-  const app = Fastify({ logger: options.logger ?? false });
+  const logger = options.logger ?? false;
+  const app = Fastify({
+    logger: typeof logger === 'boolean' ? logger : { level: 'info', stream: logger.stream },
+  });
   const webRoot = path.resolve(options.webRoot);
 
   if (!existsSync(path.join(webRoot, 'index.html'))) {

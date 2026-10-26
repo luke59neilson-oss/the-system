@@ -37,6 +37,16 @@ export class KeyStore {
     return this.cipher !== null && this.cipher.isAvailable();
   }
 
+  /**
+   * Why no key can be saved here (MC.1 review M2): `no-desktop` when this is
+   * not the desktop app (no cipher at all), `no-encryption` when the desktop
+   * app runs but the OS offers no real encryption; null when saving works.
+   */
+  whyCannotSave(): 'no-desktop' | 'no-encryption' | null {
+    if (this.cipher === null) return 'no-desktop';
+    return this.cipher.isAvailable() ? null : 'no-encryption';
+  }
+
   has(): boolean {
     return existsSync(this.file);
   }

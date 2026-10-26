@@ -98,6 +98,7 @@ describe('co-DM settings routes', () => {
     expect(res.json()).toEqual({
       hasKey: false,
       canSave: true,
+      saveBlocked: null,
       models: { fast: 'claude-haiku-4-5', strong: 'claude-sonnet-4-5' },
       spend: { calls: 0, inputTokens: 0, outputTokens: 0, dollars: 0 },
     });

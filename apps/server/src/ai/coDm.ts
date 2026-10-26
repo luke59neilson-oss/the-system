@@ -48,6 +48,8 @@ export interface CoDmOptions {
 export interface CoDmStatus {
   readonly hasKey: boolean;
   readonly canSave: boolean;
+  /** Why a key cannot be saved, so the panel can say what to do; null when it can. */
+  readonly saveBlocked: 'no-desktop' | 'no-encryption' | null;
   readonly models: AiModelSettings;
   readonly spend: SpendSnapshot;
 }
@@ -102,6 +104,7 @@ export class CoDm {
       // A file this laptop can no longer decrypt is no key (MC.1 review M3).
       hasKey: this.keys.load() !== null,
       canSave: this.keys.canSave(),
+      saveBlocked: this.keys.whyCannotSave(),
       models: this.models,
       spend: this.spend.snapshot(),
     };
