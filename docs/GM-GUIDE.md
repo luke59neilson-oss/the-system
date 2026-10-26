@@ -165,16 +165,18 @@ show "[The System is listening]".
   the player should speak the whole time. If the panel says the voice
   samples file is damaged, move `speakers/speakers.json` out of the campaign
   folder and enrol everyone again; the app never overwrites it.
-- **Practice drafts** (needs an API key): press **Draft from transcript** in
-  the Practice drafts window, at a break or at the end of the session. The
-  fast model reads what was said since the last press and lists each use of
-  a skill it heard, with the quote, time and how sure it is (the character is
-  the one the line names, else the voice match, else the co-DM's guess,
-  marked low). **Confirm** logs it as your own practice entry; **Dismiss**
-  drops it. Nothing counts until you confirm, and marks stay one per skill
-  per session. Contest rolls in the Encounter window log practice for their
-  characters on their own. Drafts are kept in the campaign folder under
-  `codm/`.
+- **Practice drafts** (needs an API key): in the Practice window's review
+  queue, under **Co-DM drafts**, press **Draft from transcript** at a break
+  or at the end of the session. The fast model reads what was said since
+  the last press and lists each use of a skill it heard, with the quote,
+  session, time and how sure it is (the character is the one the line names,
+  else the voice match, else the co-DM's guess, marked low). **Confirm** logs
+  it as your own practice entry in the session it was heard in, even if you
+  confirm it next session; **Dismiss** drops it. Nothing counts until you
+  confirm, and marks stay one per skill per session. Contest rolls in the
+  Encounter window log practice for their characters on their own, so talk
+  within two minutes of a roll is not drafted again for that character.
+  Drafts are kept in the campaign folder under `codm/`.
 - **Suggestions** (needs an API key): the Co-DM panel's Suggestions list
   offers a few ideas from what the table just said, each with the line that
   prompted it: a thing to generate, a complication, or a callback to an

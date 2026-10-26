@@ -77,7 +77,11 @@ test('the co-DM drafts practice from the transcript and the GM confirms one', as
   await listen.getByRole('button', { name: 'Stop listening' }).click();
   await expect(listen.getByTestId('listen-indicator')).toHaveText('Mic off');
 
-  const win = gm.locator('section[aria-labelledby="practice-drafts-heading"]');
+  // MC.7 review M5: drafts wait in the Practice window's review queue.
+  const practice = gm.locator('section[aria-labelledby="practice-capture-heading"]');
+  const win = practice.getByRole('group', { name: /Co-DM drafts/ });
+  await expect(practice.getByRole('heading', { name: /To review/ })).toBeVisible();
+  await expect(win.getByRole('heading', { name: 'Co-DM drafts (0)' })).toBeVisible();
   await expect(win).toContainText('No drafts waiting.');
   await win.getByRole('button', { name: 'Draft from transcript' }).click();
   await expect(win.getByTestId('drafts-message')).toContainText(/Read \d+ lines: 1 new draft$/);
@@ -87,6 +91,9 @@ test('the co-DM drafts practice from the transcript and the GM confirms one', as
   await expect(item).toContainText('Jake');
   await expect(item).toContainText('Nocks an arrow and waits for the shot');
   await expect(item).toContainText('named in the line');
+  // MC.7 review M4: the draft keeps the session it was heard in.
+  await expect(item).toContainText('session 1');
+  await expect(win.getByRole('heading', { name: 'Co-DM drafts (1)' })).toBeVisible();
   await expect(item).toContainText('“Jake nocks an arrow and waits.”');
   // The herbalist line is talk, not a use: no draft for it.
   await expect(list).not.toContainText('herbalist');
@@ -94,10 +101,18 @@ test('the co-DM drafts practice from the transcript and the GM confirms one', as
   await expect(page.getByText('Nocks an arrow and waits for the shot')).toHaveCount(0);
   await win.scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-practice-drafts-1366x768.png') });
+  await practice.getByRole('heading', { name: /To review/ }).scrollIntoViewIfNeeded();
+  await gm.screenshot({ path: path.join(shots, 'gm-review-queue-1366x768.png') });
 
   await item.getByRole('button', { name: 'Confirm' }).click();
   await expect(win.getByTestId('drafts-message')).toContainText('Logged: Jake [');
   await expect(win).toContainText('No drafts waiting.');
+  // The confirmed use counts for session 1: the marks review offers its mark.
+  await expect(
+    gm
+      .locator('section[aria-labelledby="marks-review-heading"]')
+      .getByRole('button', { name: /^Confirm mark: Jake / }),
+  ).not.toHaveCount(0);
   // Re-drafting reads no new lines, so the confirmed use is not drafted again.
   await win.getByRole('button', { name: 'Draft from transcript' }).click();
   await expect(win.getByTestId('drafts-message')).toHaveText('No new transcript lines to read');

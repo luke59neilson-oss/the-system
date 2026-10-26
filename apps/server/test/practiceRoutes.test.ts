@@ -134,6 +134,8 @@ describe('practice draft routes (MC.7)', () => {
       quote: 'Jake uses Archer’s Eye.',
       at: '2026-10-26T19:00:05.000Z',
       attributedBy: 'gm-named',
+      // No play session was running (MC.7 review M4).
+      sessionId: null,
     });
     // Nothing changed in the campaign: drafts are not practice entries.
     expect(store.campaign.state?.practice).toEqual([]);

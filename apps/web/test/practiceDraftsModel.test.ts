@@ -13,6 +13,7 @@ import {
   CO_DM_TAG,
   contestPracticeCommands,
   draftCommand,
+  draftSession,
   draftWho,
   type PracticeDraft,
 } from '../src/gm/practiceDraftsModel';
@@ -54,11 +55,12 @@ const draft: PracticeDraft = {
   at: '2026-10-26T19:00:00.000Z',
   confidence: 'high',
   attributedBy: 'gm-named',
+  sessionId: null,
 };
 
 describe('practice drafts (MC.7)', () => {
   it('confirming a draft logs a reviewed GM entry for that skill, tagged co-dm', () => {
-    const c = apply(base, [draftCommand(draft)]);
+    const c = apply(base, [draftCommand(state, draft)]);
     const [entry] = (c.state as CampaignState).practice;
     expect(entry).toMatchObject({
       characterId: 'jake',
@@ -68,6 +70,20 @@ describe('practice drafts (MC.7)', () => {
       source: 'gm',
       reviewed: true,
     });
+  });
+
+  it('a draft confirmed in a later session credits the session it was heard in (MC.7 review M4)', () => {
+    let c = apply(base, [{ type: 'session.start', sessionId: 'one' }, { type: 'session.end' }]);
+    c = apply(c, [{ type: 'session.start', sessionId: 'two' }]);
+    const s = c.state as CampaignState;
+    const heard = { ...draft, sessionId: 'one' };
+    expect(draftSession(s, heard)).toBe('session 1');
+    expect(draftSession(s, draft)).toBeNull();
+    const r = execute(c, draftCommand(s, heard), { ...ctx, sessionId: 'two' });
+    if (!r.ok) throw new Error(r.error);
+    expect((r.campaign.state as CampaignState).practice[0]?.sessionId).toBe('one');
+    // A session the campaign does not know is not invented: none.
+    expect(draftCommand(s, { ...draft, sessionId: 'gone' })).toMatchObject({ session: null });
   });
 
   it('names the character, or the id when they are gone', () => {

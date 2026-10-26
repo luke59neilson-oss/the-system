@@ -240,6 +240,7 @@ refusal is raised.
 | `name a skill or a stat` | packages/engine/src/events/reducer.ts:1434 | Fix the input or define the thing first |
 | `a skill is listed twice` | packages/engine/src/events/reducer.ts:1435 | Fix the input or define the thing first |
 | `… has no skill "…"` | packages/engine/src/events/reducer.ts:1438 | Fix the input or define the thing first |
+| `no play session "…"` | packages/engine/src/events/reducer.ts:1454 | Fix the input or define the thing first |
 | `unknown practice entry "…"` | packages/engine/src/events/reducer.ts:1464 | Fix the input or define the thing first |
 | `montage "…" already exists` | packages/engine/src/events/reducer.ts:1514 | Fix the input or define the thing first |
 | `unknown clock "…"` | packages/engine/src/events/reducer.ts:1516 | Fix the input or define the thing first |
@@ -364,6 +365,7 @@ refusal is raised.
 | `Event … (…): players may only act on their own character` | packages/engine/src/events/envelope.ts:1042 | Applies to players (or the System), not the GM |
 | `the system does not write notes` | packages/engine/src/events/reducer.ts:354 | Applies to players (or the System), not the GM |
 | `notes are written as yourself` | packages/engine/src/events/reducer.ts:356 | Applies to players (or the System), not the GM |
+| `players log practice in the current session` | packages/engine/src/events/reducer.ts:1452 | Applies to players (or the System), not the GM |
 | `players log practice with source "player"` | packages/engine/src/events/reducer.ts:1429 | Applies to players (or the System), not the GM |
 | `source "player" is for entries a player logs` | packages/engine/src/events/reducer.ts:1432 | Applies to players (or the System), not the GM |
 | `only a player keeps a journal` | packages/engine/src/events/reducer.ts:1602 | Applies to players (or the System), not the GM |
