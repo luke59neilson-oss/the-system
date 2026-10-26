@@ -1,13 +1,15 @@
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_SPEAKER_MATCH,
+  EnrolmentFileError,
   EnrolmentStore,
   FixtureSpeakerEmbedder,
   cosine,
   matchSpeaker,
+  voicedSeconds,
   type Enrolment,
   type SpeakerEmbedder,
 } from '../src/speech/speakers';
@@ -61,9 +63,16 @@ describe('matching a voice (MC.6)', () => {
     expect(matchSpeaker([1, 1, 0], [ana, bo])).toBeNull();
   });
 
-  it('with one enrolment, only the threshold applies', () => {
+  it('with one enrolment, the score must clear the threshold by the margin (D241)', () => {
     expect(matchSpeaker([1, 0.2, 0], [ana])?.name).toBe('Ana');
     expect(matchSpeaker([0, 1, 0], [ana])).toBeNull();
+    // cos ≈ 0.64: over the 0.6 threshold, but not by the 0.1 margin, so an
+    // unknown voice (the GM) does not take the one enrolled name.
+    const nearThreshold = [0.64, Math.sqrt(1 - 0.64 ** 2), 0];
+    expect(cosine(nearThreshold, ana.embedding)).toBeGreaterThan(DEFAULT_SPEAKER_MATCH.threshold);
+    expect(matchSpeaker(nearThreshold, [ana])).toBeNull();
+    // The same voice is labelled when a second enrolment is clearly further away.
+    expect(matchSpeaker(nearThreshold, [ana, enrol('c3', 'Cy', [0, 0, 1])])?.name).toBe('Ana');
   });
 
   it('labels nothing with no enrolments', () => {
@@ -74,6 +83,19 @@ describe('matching a voice (MC.6)', () => {
     const v = [0.7, 0.7, 0.1];
     expect(matchSpeaker(v, [ana], { threshold: 0.95, margin: 0 })).toBeNull();
     expect(matchSpeaker(v, [ana], { threshold: 0.5, margin: 0 })?.name).toBe('Ana');
+  });
+});
+
+describe('voiced seconds (enrolment check, D241)', () => {
+  const RATE = 16000;
+  it('counts only frames at speech level', () => {
+    const sample = new Float32Array(RATE * 4);
+    // 2 s of tone, then 2 s of near-silence (room hiss below the threshold).
+    for (let i = 0; i < sample.length; i++) {
+      sample[i] = i < RATE * 2 ? 0.2 * Math.sin(i / 5) : 0.001 * Math.sin(i);
+    }
+    expect(voicedSeconds(sample, RATE, 30, 0.01)).toBeCloseTo(2, 1);
+    expect(voicedSeconds(new Float32Array(RATE * 4), RATE, 30, 0.01)).toBe(0);
   });
 });
 
@@ -124,9 +146,22 @@ describe('enrolment store (GM-only, per campaign)', () => {
     });
   });
 
-  it('reads a missing or damaged file as no enrolments', () => {
+  it('reads a missing file as no enrolments', () => {
     const dir = tmp();
     expect(new EnrolmentStore(path.join(dir, 'nope')).list()).toEqual([]);
+  });
+
+  it('never overwrites a damaged file: reads, saves and deletes refuse (D241)', () => {
+    for (const body of ['{ not json', 'null', '{"version":1}']) {
+      const dir = tmp();
+      const file = path.join(dir, 'speakers.json');
+      writeFileSync(file, body);
+      const store = new EnrolmentStore(dir);
+      expect(() => store.list()).toThrow(EnrolmentFileError);
+      expect(() => store.save(enrol('c1', 'Ana', [1, 0, 0]))).toThrow(EnrolmentFileError);
+      expect(() => store.remove('c1')).toThrow(EnrolmentFileError);
+      expect(readFileSync(file, 'utf8')).toBe(body);
+    }
   });
 
   it('refuses an empty or non-finite embedding', () => {

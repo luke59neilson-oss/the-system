@@ -4,7 +4,7 @@
 // mic is on; it is chunked and transcribed in memory and only text is kept,
 // in `<campaign dir>/transcripts/session-<NN>.jsonl`.
 import path from 'node:path';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import type { CampaignStore } from '../store';
 import type { LiveHub } from '../hub';
@@ -12,7 +12,12 @@ import type { SpeechToText } from './stt';
 import { Listener, type TranscriptLine } from './transcript';
 import { DEFAULT_VAD } from './vad';
 import type { SpeakerModelStatus, SpeechModelStatus } from './model';
-import { EnrolmentStore, type SpeakerEmbedder } from './speakers';
+import {
+  EnrolmentFileError,
+  EnrolmentStore,
+  voicedSeconds,
+  type SpeakerEmbedder,
+} from './speakers';
 
 /** MC.5 (D236): the speech model the GM downloads on first use. */
 export interface SpeechModelControl {
@@ -44,6 +49,8 @@ export const speakersDir = (store: CampaignStore) => path.join(store.dir, 'speak
 export const ENROL_BODY_LIMIT = DEFAULT_VAD.sampleRate * 4 * 15;
 /** A voice sample shorter than this is too short to tell voices apart. */
 export const ENROL_MIN_SECONDS = 3;
+/** Of which at least this much must be at speech level (not silence or a quiet room; D241). */
+export const ENROL_MIN_VOICED_SECONDS = 1.5;
 
 const readPcm = (raw: unknown): Float32Array | null => {
   if (!Buffer.isBuffer(raw) || raw.length % 4 !== 0) return null;
@@ -72,11 +79,20 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
     await was.listener.stop();
   };
 
+  // The embedder is looked up per segment, so a voice model that finishes
+  // loading after Start still labels lines without a restart (D241).
   const speakerOptions = (store: CampaignStore) => {
-    const embedder = options.speakers?.() ?? null;
-    if (!embedder) return {};
+    if (!options.speakers) return {};
     const enrolments = new EnrolmentStore(speakersDir(store));
+    const embedder: SpeakerEmbedder = {
+      embed: (samples, rate) => options.speakers?.()?.embed(samples, rate) ?? Promise.resolve(null),
+    };
     return { speakers: { embedder, enrolments: () => enrolments.list() } };
+  };
+  const damaged = (reply: FastifyReply, err: unknown) => {
+    if (!(err instanceof EnrolmentFileError)) throw err;
+    app.log.warn({ err }, 'voice samples file is damaged');
+    return reply.code(500).send({ error: err.message });
   };
 
   app.addContentTypeParser(
@@ -156,12 +172,20 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
   app.get('/api/gm/listen/speakers', (_request, reply) => {
     const a = options.active();
     if (!a) return reply.code(404).send({ error: 'No campaign open' });
+    let enrolments;
+    try {
+      enrolments = new EnrolmentStore(speakersDir(a.store)).list();
+    } catch (err) {
+      return damaged(reply, err);
+    }
     return {
       available: (options.speakers?.() ?? null) !== null,
       model: options.model?.speakerStatus?.() ?? null,
-      enrolments: new EnrolmentStore(speakersDir(a.store))
-        .list()
-        .map(({ characterId, name, enrolledAt }) => ({ characterId, name, enrolledAt })),
+      enrolments: enrolments.map(({ characterId, name, enrolledAt }) => ({
+        characterId,
+        name,
+        enrolledAt,
+      })),
     };
   });
 
@@ -171,6 +195,11 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
     async (request, reply) => {
       const a = options.active();
       if (!a) return reply.code(404).send({ error: 'No campaign open' });
+      // One mic at a time: a sample recorded while listening would also go
+      // into the transcript, and the panel's mic is busy (D241).
+      if (current !== null) {
+        return reply.code(409).send({ error: 'Stop listening to record a voice sample' });
+      }
       const embedder = options.speakers?.() ?? null;
       if (!embedder) {
         return reply.code(503).send({ error: 'Speaker labels are not installed on this laptop' });
@@ -186,6 +215,12 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
           .code(400)
           .send({ error: `Record at least ${ENROL_MIN_SECONDS} seconds of speech` });
       }
+      const { sampleRate, frameMs, threshold } = DEFAULT_VAD;
+      if (voicedSeconds(samples, sampleRate, frameMs, threshold) < ENROL_MIN_VOICED_SECONDS) {
+        return reply
+          .code(422)
+          .send({ error: 'Could not hear a voice in that sample; speak up and try again' });
+      }
       let embedding: number[] | null;
       try {
         embedding = await embedder.embed(samples, DEFAULT_VAD.sampleRate);
@@ -197,12 +232,16 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
         return reply.code(422).send({ error: 'Could not hear a voice in that sample; try again' });
       }
       const enrolledAt = new Date(options.now()).toISOString();
-      new EnrolmentStore(speakersDir(a.store)).save({
-        characterId: character.id,
-        name: character.name,
-        embedding,
-        enrolledAt,
-      });
+      try {
+        new EnrolmentStore(speakersDir(a.store)).save({
+          characterId: character.id,
+          name: character.name,
+          embedding,
+          enrolledAt,
+        });
+      } catch (err) {
+        return damaged(reply, err);
+      }
       return { characterId: character.id, name: character.name, enrolledAt };
     },
   );
@@ -212,7 +251,12 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
     (request, reply) => {
       const a = options.active();
       if (!a) return reply.code(404).send({ error: 'No campaign open' });
-      const removed = new EnrolmentStore(speakersDir(a.store)).remove(request.params.characterId);
+      let removed: boolean;
+      try {
+        removed = new EnrolmentStore(speakersDir(a.store)).remove(request.params.characterId);
+      } catch (err) {
+        return damaged(reply, err);
+      }
       if (!removed) return reply.code(404).send({ error: 'No voice sample for that character' });
       return { removed: true };
     },

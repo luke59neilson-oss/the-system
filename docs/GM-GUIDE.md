@@ -161,6 +161,10 @@ show "[The System is listening]".
   match stays unnamed rather than guessing. Only a voice print (numbers) is
   kept, in the campaign folder under `speakers/`, never the recording.
   **Re-record** replaces a sample; **Delete** (that character's voice) removes it.
+  A sample that is mostly silence is refused ("Could not hear a voice"), so
+  the player should speak the whole time. If the panel says the voice
+  samples file is damaged, move `speakers/speakers.json` out of the campaign
+  folder and enrol everyone again; the app never overwrites it.
 
 ## Rules settings
 

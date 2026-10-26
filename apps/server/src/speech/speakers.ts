@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 // MC.6 (DESIGN §11 "Who said what"): each player may enrol a short voice
@@ -61,7 +61,12 @@ export interface SpeakerMatch {
   readonly score: number;
 }
 
-/** The confidently closest enrolled voice, or null (unknown voice, or too close to call). */
+/**
+ * The confidently closest enrolled voice, or null (unknown voice, or too close
+ * to call). With a single enrolment there is no runner-up to beat, so the
+ * score must clear the threshold by the margin too: an unknown voice (the GM,
+ * a guest) stays unlabelled rather than taking the one enrolled name (D241).
+ */
 export const matchSpeaker = (
   embedding: readonly number[],
   enrolments: readonly Enrolment[],
@@ -74,7 +79,8 @@ export const matchSpeaker = (
   const best = scored[0];
   if (best === undefined || best.score < options.threshold) return null;
   const second = scored[1];
-  if (second !== undefined && best.score - second.score < options.margin) return null;
+  const toBeat = second === undefined ? options.threshold : second.score;
+  if (best.score - toBeat < options.margin) return null;
   return { characterId: best.e.characterId, name: best.e.name, score: best.score };
 };
 
@@ -93,21 +99,32 @@ export class EnrolmentStore {
     this.file = path.join(dir, 'speakers.json');
   }
 
+  /**
+   * The saved enrolments; none when the file does not exist yet. A file that
+   * exists but cannot be read throws `EnrolmentFileError`, so a save never
+   * overwrites the other players' voices with an empty list (D241).
+   */
   list(): Enrolment[] {
+    if (!existsSync(this.file)) return [];
+    let data: Partial<EnrolmentFile> | null;
     try {
-      const data = JSON.parse(readFileSync(this.file, 'utf8')) as Partial<EnrolmentFile>;
-      return Array.isArray(data.enrolments) ? data.enrolments.filter(valid) : [];
-    } catch {
-      return [];
+      data = JSON.parse(readFileSync(this.file, 'utf8')) as Partial<EnrolmentFile> | null;
+    } catch (err) {
+      throw new EnrolmentFileError(this.file, err);
     }
+    if (data === null || typeof data !== 'object' || !Array.isArray(data.enrolments)) {
+      throw new EnrolmentFileError(this.file, new Error('no enrolments list'));
+    }
+    return data.enrolments.filter(valid);
   }
 
   /** Adds or replaces this character's enrolment. */
   save(enrolment: Enrolment): void {
     if (!valid(enrolment)) throw new Error('a voice sample needs a finite, non-empty embedding');
-    const rest = this.list().filter((e) => e.characterId !== enrolment.characterId);
+    const before = this.list();
+    const rest = before.filter((e) => e.characterId !== enrolment.characterId);
     const all = [...rest, enrolment];
-    const order = this.list().map((e) => e.characterId);
+    const order = before.map((e) => e.characterId);
     all.sort((a, b) => rank(order, a.characterId) - rank(order, b.characterId));
     this.write(all);
   }
@@ -128,6 +145,39 @@ export class EnrolmentStore {
     writeFileSync(tmp, JSON.stringify(body, null, 2) + '\n');
     renameSync(tmp, this.file);
   }
+}
+
+/** `speakers.json` exists but is damaged; it is left as it is for the GM to fix or move. */
+export class EnrolmentFileError extends Error {
+  constructor(
+    readonly file: string,
+    cause: unknown,
+  ) {
+    super(
+      `The voice samples file is damaged (${path.basename(file)}); move it aside to start over`,
+      {
+        cause,
+      },
+    );
+    this.name = 'EnrolmentFileError';
+  }
+}
+
+/** Seconds of the sample whose level counts as speech (the listener's VAD frames and threshold). */
+export function voicedSeconds(
+  samples: Float32Array,
+  sampleRate: number,
+  frameMs: number,
+  threshold: number,
+): number {
+  const frame = Math.max(1, Math.round((sampleRate * frameMs) / 1000));
+  let voiced = 0;
+  for (let at = 0; at + frame <= samples.length; at += frame) {
+    let sum = 0;
+    for (let i = at; i < at + frame; i++) sum += samples[i]! * samples[i]!;
+    if (Math.sqrt(sum / frame) >= threshold) voiced += 1;
+  }
+  return (voiced * frame) / sampleRate;
 }
 
 const rank = (order: readonly string[], id: string) => {

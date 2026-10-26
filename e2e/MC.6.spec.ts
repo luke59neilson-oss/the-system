@@ -6,17 +6,27 @@ import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MC.6 (DESIGN §11 "Who said what"): the GM enrols each player's voice on the
 // laptop's mic, transcript lines carry a name on a confident match, and a
-// deleted enrolment stops labelling. Chromium's fake mic is one beep, so the
-// test-only fake embedder scripts the voices (e2eFakeSpeakers): Jake says the
-// herbalist line, Miranda the arrow line.
+// deleted enrolment stops labelling. The fake mic plays the repo's synthesized
+// table-talk recording on a loop (enrolment refuses a silent sample, D241);
+// it is the same audio for everyone, so the test-only fake embedder scripts
+// the voices (e2eFakeSpeakers): Jake says the herbalist line, Miranda the
+// arrow line.
 
 const GM_KEY = 'e2e-gm-key-mc6-0123456789abcdef06';
 const shots = path.resolve(import.meta.dirname, '../docs/screens/MC.6');
 const localChromium = '/opt/pw-browsers/chromium';
+const speech = path.resolve(
+  import.meta.dirname,
+  '../apps/server/test/fixtures/speech/table-talk.wav',
+);
 test.use({
   launchOptions: {
     ...(existsSync(localChromium) ? { executablePath: localChromium } : {}),
-    args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
+    args: [
+      '--use-fake-ui-for-media-stream',
+      '--use-fake-device-for-media-stream',
+      `--use-file-for-fake-audio-capture=${speech}`,
+    ],
   },
 });
 let server: RunningServer | null = null;
@@ -105,7 +115,7 @@ test('the GM enrols two voices, lines get names, and a deleted voice stops label
   const unlabelled = transcript
     .locator('li')
     .filter({ hasText: /^\d\d:\d\d:\d\d We should find an herbalist/ });
-  // The fake mic yields a line about every 15 s, and the arrow line may come first.
+  // The arrow line may come first.
   await expect(unlabelled.first()).toBeVisible({ timeout: 45_000 });
   await panel.getByRole('button', { name: 'Stop listening' }).click();
   expect(await transcript.locator('li').count()).toBeGreaterThan(before);

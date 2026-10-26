@@ -48,6 +48,8 @@ export function ListenPanel({
   const [lines, setLines] = useState<Line[]>([]);
   const [model, setModel] = useState<ModelStatus | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  // MC.6: a voice sample is being recorded, so the mic is busy (D241).
+  const [enrolling, setEnrolling] = useState(false);
   const capture = useRef<Capture | null>(null);
   const starting = useRef(false);
   // Bumped by every Start, so a poll read before it never stops the new mic.
@@ -219,7 +221,8 @@ export function ListenPanel({
       <button
         type="button"
         aria-pressed={on}
-        disabled={busy || (available === false && !on)}
+        disabled={busy || (enrolling && !on) || (available === false && !on)}
+        title={enrolling && !on ? 'Wait for the voice sample to finish' : undefined}
         onClick={() => void (on ? stop() : start())}
       >
         {on ? 'Stop listening' : 'Start listening'}
@@ -234,6 +237,7 @@ export function ListenPanel({
         characters={characters}
         listening={on}
         speechReady={available === true}
+        onRecording={setEnrolling}
       />
       <h3>Transcript (GM only)</h3>
       {lines.length === 0 ? (
@@ -268,11 +272,13 @@ function Voices({
   characters,
   listening,
   speechReady,
+  onRecording,
 }: {
   gmKey: string;
   characters: readonly { id: string; name: string }[];
   listening: boolean;
   speechReady: boolean;
+  onRecording: (recording: boolean) => void;
 }) {
   const [available, setAvailable] = useState<boolean | null>(null);
   const [model, setModel] = useState<SpeakerModel | null>(null);
@@ -280,13 +286,23 @@ function Voices({
   const [recording, setRecording] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [reloads, setReloads] = useState(0);
+  // The laptop could not read the saved voices (a damaged file; D241).
+  const [failed, setFailed] = useState<string | null>(null);
   const headers = { 'x-gm-key': gmKey };
+  useEffect(() => onRecording(recording !== null), [recording, onRecording]);
 
   useEffect(() => {
     let live = true;
     void fetch('/api/gm/listen/speakers', { headers: { 'x-gm-key': gmKey } })
       .then(async (res) => {
-        if (!res.ok || !live) return;
+        if (!live) return;
+        if (res.status === 500) {
+          const data = (await res.json().catch(() => ({}))) as { error?: string };
+          if (live) setFailed(data.error ?? 'Could not read the saved voice samples');
+          return;
+        }
+        if (!res.ok) return;
+        setFailed(null);
         const data = (await res.json()) as {
           available: boolean;
           model: SpeakerModel | null;
@@ -358,6 +374,14 @@ function Voices({
     setReloads((n) => n + 1);
   };
 
+  if (failed !== null) {
+    return (
+      <div className="voices" data-testid="voices">
+        <h3>Voices (GM only)</h3>
+        <p role="alert">{failed}</p>
+      </div>
+    );
+  }
   if (available === null) return null;
   const rows = voiceRows(characters, enrolments);
   return (

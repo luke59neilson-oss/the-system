@@ -79,9 +79,10 @@ export class Listener {
   private async label(samples: Float32Array) {
     const speakers = this.options.speakers;
     if (speakers === undefined) return null;
-    const enrolments = speakers.enrolments();
-    if (enrolments.length === 0) return null;
     try {
+      // A damaged enrolments file only loses labels (D241).
+      const enrolments = speakers.enrolments();
+      if (enrolments.length === 0) return null;
       const embedding = await speakers.embedder.embed(samples, this.sampleRate);
       return embedding === null ? null : matchSpeaker(embedding, enrolments, speakers.match);
     } catch (err) {

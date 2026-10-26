@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -286,8 +286,64 @@ describe('voice enrolment routes (MC.6)', () => {
     expect(short.statusCode).toBe(400);
     expect(short.json().error).toMatch(/at least 3 seconds/);
     expect((await post('/api/gm/listen/speakers/jake', Buffer.alloc(7))).statusCode).toBe(400);
+    // 4 s of silence: refused before the embedder is asked (D241).
+    const silent = await post('/api/gm/listen/speakers/jake', pcm(new Float32Array(RATE * 4)));
+    expect(silent.statusCode).toBe(422);
+    expect(silent.json().error).toMatch(/Could not hear a voice/);
+    expect(embeds).toEqual([]);
     // The fake embedder is out of vectors: no voice heard.
     expect((await post('/api/gm/listen/speakers/jake', pcm(tone(4000)))).statusCode).toBe(422);
+  });
+
+  it('refuses to enrol while listening (one mic at a time, D241)', async () => {
+    const on = await app.inject({
+      method: 'POST',
+      url: '/api/gm/listen',
+      headers: { 'x-gm-key': GM, 'content-type': 'application/json' },
+      payload: { on: true },
+    });
+    expect(on.statusCode, on.body).toBe(200);
+    const r = await app.inject({
+      method: 'POST',
+      url: '/api/gm/listen/speakers/jake',
+      headers: gm,
+      payload: pcm(tone(4000)),
+    });
+    expect(r.statusCode).toBe(409);
+    expect(r.json().error).toMatch(/Stop listening/);
+    await app.inject({
+      method: 'POST',
+      url: '/api/gm/listen',
+      headers: { 'x-gm-key': GM, 'content-type': 'application/json' },
+      payload: { on: false },
+    });
+  });
+
+  it('reports a damaged voices file and leaves it as it is (D241)', async () => {
+    const dir = path.join(store.dir, 'speakers');
+    mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, 'speakers.json');
+    writeFileSync(file, '{ damaged');
+    const list = await app.inject({ method: 'GET', url: '/api/gm/listen/speakers', headers: gm });
+    expect(list.statusCode).toBe(500);
+    expect(list.json().error).toMatch(/damaged/);
+    embeds.push([0, 1, 0]);
+    const r = await app.inject({
+      method: 'POST',
+      url: '/api/gm/listen/speakers/jake',
+      headers: gm,
+      payload: pcm(tone(4000)),
+    });
+    expect(r.statusCode).toBe(500);
+    const del = await app.inject({
+      method: 'DELETE',
+      url: '/api/gm/listen/speakers/jake',
+      headers: gm,
+    });
+    expect(del.statusCode).toBe(500);
+    expect(readFileSync(file, 'utf8')).toBe('{ damaged');
+    rmSync(file);
+    embeds.length = 0;
   });
 
   it('takes a 15 s sample but not a longer one', async () => {
