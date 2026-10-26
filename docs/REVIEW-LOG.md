@@ -933,3 +933,10 @@
 - Fixed on wip/MC.1 (2dac7747): H1 Linux `basic_text` safeStorage counts as no encryption; M3 `hasKey` = the key decrypts; M4 the co-DM routes answer a malformed body with a fixed message (canary test added).
 - Open for the next run: M2 panel text when the desktop has no OS encryption ("open the desktop app" is wrong there; send a reason); M5 canary in a player frame and `/api/characters` plus a `logger: true` log capture. Lows: spend in memory only (restart zeroes it), non-integer usage throws after a paid call, `ai-settings.json` not written atomically, model fields free text / disabled Test without a reason / message lingers, `startApp` always builds the live client (guard tests). One High → round 2 required after the fixes.
 
+## 2026-10-26 · MC.1 AI connection · sonnet (worktree, 9c3520f7; round 2, run 46cb339b)
+- Round 1 M2 fixed (status `saveBlocked` reason; panel wording per reason) and M5 fixed (`coDmCanary.test.ts`: real listener with request logging, player WebSocket, `/api/characters`; mutation that logs the key fails it). Reviewer: check 1,308 green, MC.1 e2e green, round-1 fixes verified.
+- Round 2: 0 High, 2 Medium, 3 Low. M1 no timeout on the live call (a stalled network hangs the panel) → fixed on wip/MC.1 (e4784cf4: `AbortSignal.timeout(60 s)`, test with a stalled fake fetch). M2 the key-saved UI path (Save, Remove, Replace, Test success, spend after a test) has no e2e → open; next run adds a test-only fake cipher to the e2e server and covers it, then checks the box (round limit reached; fix verified by the run).
+- Lows: keychain decrypted on every status call (macOS prompts), the no-encryption hint names Linux keyrings on every OS, a test call shows "$0.000".
+
+## 2026-10-26 · QF.26 Pinned banners readable when scrolled · sonnet (worktree, 1f8f4b80)
+- 0 High, 0 Medium, 2 Low (the flat `--bg` stack is a shade darker than the body's radial gradient at the top; the stack's gap fill is intended). `--bg` defined once, no theme overrides it; banners render only on the player screen. MT.6 e2e green. Checked.
