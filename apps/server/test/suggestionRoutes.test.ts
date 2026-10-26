@@ -165,3 +165,58 @@ describe('suggestion routes (MC.8)', () => {
     expect((await post({ intervalS: 5 })).statusCode).toBe(400);
   });
 });
+
+describe('suggestion routes after a bad reply (MC.8 review M1)', () => {
+  let root: string;
+  let app: FastifyInstance;
+  let fake: FixtureAiClient;
+  let clock = Date.parse('2026-10-26T19:00:00.000Z');
+
+  beforeAll(async () => {
+    root = mkdtempSync(path.join(tmpdir(), 'the-system-chips-bad-'));
+    writeFileSync(path.join(root, 'index.html'), '<!doctype html>');
+    const store = campaign(root);
+    const coDm = new CoDm({
+      dir: path.join(root, 'app-data'),
+      cipher: null,
+      makeClient: () => {
+        fake = new FixtureAiClient([{ role: 'fast', match: 'Suggestions.', text: 'not json' }]);
+        return fake;
+      },
+    });
+    app = await createServer({
+      webRoot: root,
+      live: { store, ...hubOpts },
+      coDm,
+      now: () => clock,
+    });
+    const dir = transcriptsDir(store);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      transcriptFile(dir, 0),
+      JSON.stringify({
+        at: '2026-10-26T19:00:00.000Z',
+        startMs: 0,
+        endMs: 0,
+        text: 'An herbalist?',
+      }) + '\n',
+    );
+  });
+  afterAll(async () => {
+    await app.close();
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it('does not ask again on the next poll after a reply it could not read', async () => {
+    const post = () =>
+      app.inject({ method: 'POST', url: '/api/gm/ai/suggestions', headers: gm, payload: {} });
+    expect((await post()).statusCode).not.toBe(200);
+    expect(fake.requests).toHaveLength(1);
+    clock += 15_000;
+    expect((await post()).json()).toMatchObject({ called: false });
+    expect(fake.requests).toHaveLength(1);
+    clock += 120_000;
+    await post();
+    expect(fake.requests).toHaveLength(2);
+  });
+});
