@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   closeSync,
   existsSync,
@@ -97,6 +98,15 @@ function targetSession(state: CampaignState | null): SessionRecord | null {
 }
 
 /** Format tag of the JSON session log and report (M9.1). */
+/** Co-DM notes as markdown; a malformed notes value never stops the session log (D250). */
+function safeNotes(coDm: SessionNotesFile): string {
+  try {
+    return renderNotes(coDm);
+  } catch {
+    return '';
+  }
+}
+
 export const SESSION_REPORT_FORMAT = 'the-system/session-report';
 
 /**
@@ -120,7 +130,7 @@ export function sessionReport(
       ? base
       : sessionLogBase(campaign, range.fromSeq);
   const log = buildSessionLog(campaign, range.fromSeq, fold, toSeq);
-  const notes = coDm ? renderNotes(coDm) : '';
+  const notes = coDm ? safeNotes(coDm) : '';
   const markdown =
     renderSessionLog(log, { startedAt: session.startedAt, writtenAt, session }) +
     (notes ? `\n${notes}` : '');
@@ -191,7 +201,8 @@ export class SessionLogWriter {
 
   private notesKey(sessionNumber: number): string {
     const n = this.notes(sessionNumber);
-    return n ? `${n.notes.length}:${n.summary ? 's' : '-'}` : '';
+    // Any change to the notes or summary (a re-summary included) rewrites the log (D250).
+    return n ? createHash('sha1').update(JSON.stringify(n)).digest('hex').slice(0, 12) : '';
   }
 
   private plan() {

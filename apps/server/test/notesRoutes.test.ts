@@ -8,6 +8,10 @@ import { CoDm } from '../src/ai/coDm';
 import { FixtureAiClient } from '../src/ai/fake';
 import { readFileSync } from 'node:fs';
 import { createServer } from '../src/server';
+import { NotesStore } from '../src/ai/sessionNotes';
+import { draftsDir } from '../src/ai/practiceRoutes';
+import { sessionReport } from '../src/sessionLog';
+import { appendFileSync } from 'node:fs';
 import { transcriptsDir } from '../src/speech/routes';
 import { transcriptFile } from '../src/speech/transcript';
 import { CampaignStore } from '../src/store';
@@ -60,6 +64,19 @@ describe('session notes routes (MC.9)', () => {
       cipher: null,
       makeClient: () => {
         fake = new FixtureAiClient([
+          // Specific fixtures first: the first match wins.
+          { role: 'fast', match: '. Brin left town.', text: '{"notes": ["Brin left town"]}' },
+          { role: 'fast', match: 'Nothing worth noting', text: '{"notes": []}' },
+          {
+            role: 'fast',
+            match: '- Brin left town',
+            text: JSON.stringify({
+              whatHappened: 'Brin left town\n## Not a heading',
+              whoDidWhat: [],
+              openThreads: [],
+              npcsMet: ['Old Brin'],
+            }),
+          },
           { role: 'fast', match: 'Session notes.', text: '{"notes": ["The party met Old Brin"]}' },
           {
             role: 'fast',
@@ -180,5 +197,63 @@ describe('session notes routes (MC.9)', () => {
       session: session.number,
       notes: ['The party met Old Brin'],
     });
+  });
+
+  it('re-reads lines that gave no notes, and a second summary reaches the export (D250)', async () => {
+    const session = store.campaign.state!.sessions.at(-1)!;
+    const tf = transcriptFile(transcriptsDir(store), session.number);
+    const say = (text: string) =>
+      appendFileSync(
+        tf,
+        JSON.stringify({ at: '2026-10-26T20:30:00.000Z', startMs: 0, endMs: 900, text }) + '\n',
+      );
+    const stored = () => new NotesStore(draftsDir(store)).read(session.number);
+    const before = stored().readUpTo;
+    say('Nothing worth noting.');
+    const empty = await app.inject({
+      method: 'POST',
+      url: '/api/gm/ai/session-notes',
+      headers: gm,
+    });
+    expect(empty.json()).toMatchObject({ added: 0 });
+    expect(stored().readUpTo).toBe(before);
+
+    say('Brin left town.');
+    const some = await app.inject({ method: 'POST', url: '/api/gm/ai/session-notes', headers: gm });
+    expect(some.json()).toMatchObject({ added: 1 });
+    // The quiet line was sent again with the new one.
+    const prompt = fake.requests.at(-1)!.messages.at(-1)!.content;
+    expect(prompt).toContain('Nothing worth noting.');
+    expect(stored().readUpTo).toBe(before + 2);
+
+    const sum = await app.inject({
+      method: 'POST',
+      url: '/api/gm/ai/session-summary',
+      headers: gm,
+    });
+    expect(sum.statusCode, sum.body).toBe(200);
+    // Newlines in model text collapse to one line.
+    expect(sum.json().summary.whatHappened).toBe('Brin left town ## Not a heading');
+    const file = path.join(
+      exportsDir(),
+      store.id,
+      `session-${String(session.number).padStart(2, '0')}`,
+    );
+    const md = readFileSync(`${file}.md`, 'utf8');
+    expect(md).toContain('Brin left town ## Not a heading');
+    expect(md).not.toContain('The party met Old Brin in the Crown.');
+  });
+
+  it('a malformed summary never stops the session log (D250)', () => {
+    const session = store.campaign.state!.sessions.at(-1)!;
+    const bad = { readUpTo: 0, notes: ['a'], summary: { whatHappened: 'x' } } as never;
+    const report = sessionReport(
+      store.campaign,
+      session,
+      '2026-10-26T21:00:00.000Z',
+      undefined,
+      bad,
+    );
+    expect(report?.markdown).toBeTruthy();
   });
 });

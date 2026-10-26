@@ -50,7 +50,13 @@ export function notesPrompt(lines: readonly TranscriptLine[]): string {
   ].join('\n');
 }
 
-const line = z.string().trim().min(1).max(400);
+/** One line of text: newlines and runs of spaces collapse, so model text cannot shape the markdown. */
+const oneLine = (max: number) =>
+  z
+    .string()
+    .transform((x) => x.replace(/\s+/g, ' ').trim())
+    .pipe(z.string().min(1).max(max));
+const line = oneLine(400);
 const notesSchema = z.object({ notes: z.array(z.unknown()) });
 
 /** Notes from a reply; non-string or empty items are dropped, not fatal. */
@@ -81,7 +87,7 @@ const listOf = (schema: z.ZodTypeAny) =>
     .transform((xs) => xs.flatMap((x) => (schema.safeParse(x).success ? [schema.parse(x)] : [])));
 
 const summarySchema = z.object({
-  whatHappened: z.string().trim().min(1).max(4000),
+  whatHappened: oneLine(4000),
   whoDidWhat: listOf(z.object({ character: line, did: line })),
   openThreads: listOf(line),
   npcsMet: listOf(line),
@@ -145,6 +151,20 @@ export function renderNotes(file: SessionNotesFile): string {
   return out.join('\n');
 }
 
+// The stored file is checked in full on read, so a hand-edited or damaged
+// file is refused rather than breaking the session log (D250).
+const storedSummary = z.object({
+  whatHappened: z.string(),
+  whoDidWhat: z.array(z.object({ character: z.string(), did: z.string() })),
+  openThreads: z.array(z.string()),
+  npcsMet: z.array(z.string()),
+});
+const fileSchema = z.object({
+  readUpTo: z.number().int().min(0),
+  notes: z.array(z.string()),
+  summary: storedSummary.nullable().default(null),
+});
+
 /** `<campaign>/codm/notes-<NN>.json`, one per play session. */
 export class NotesStore {
   constructor(private readonly dir: string) {}
@@ -156,11 +176,15 @@ export class NotesStore {
   read(session: number): SessionNotesFile {
     const f = this.file(session);
     if (!existsSync(f)) return EMPTY;
-    const data = JSON.parse(readFileSync(f, 'utf8')) as Partial<SessionNotesFile> | null;
-    if (!data || !Array.isArray(data.notes) || typeof data.readUpTo !== 'number') {
+    let data: unknown;
+    try {
+      data = JSON.parse(readFileSync(f, 'utf8'));
+    } catch {
       throw new Error(`Damaged session notes file: ${f}`);
     }
-    return { readUpTo: data.readUpTo, notes: data.notes, summary: data.summary ?? null };
+    const parsed = fileSchema.safeParse(data);
+    if (!parsed.success) throw new Error(`Damaged session notes file: ${f}`);
+    return parsed.data;
   }
 
   write(session: number, value: SessionNotesFile): void {

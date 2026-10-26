@@ -99,6 +99,14 @@ describe('session notes (MC.9)', () => {
       expect(store.read(2).notes).toEqual([]);
       writeFileSync(store.file(3), '{"notes": 1}');
       expect(() => store.read(3)).toThrow(/Damaged/);
+      // A hand-edited summary missing a list is refused too (D250).
+      writeFileSync(
+        store.file(4),
+        JSON.stringify({ readUpTo: 1, notes: ['a'], summary: { whatHappened: 'x' } }),
+      );
+      expect(() => store.read(4)).toThrow(/Damaged/);
+      writeFileSync(store.file(5), 'not json');
+      expect(() => store.read(5)).toThrow(/Damaged/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
