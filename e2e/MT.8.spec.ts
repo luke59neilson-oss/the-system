@@ -83,6 +83,7 @@ test('the GM reveals a faction: players see its name and standing only', async (
   // An edit to a revealed faction reaches players live.
   await factions.getByRole('button', { name: /^Canyon Watch/ }).click();
   const edit = factions.getByRole('form', { name: 'Edit Canyon Watch' });
+  await expect(edit.getByTestId('faction-live-note')).toBeVisible();
   await edit.getByLabel('Standing toward the party').fill('Friendly');
   await edit.getByRole('button', { name: 'Save faction' }).click();
   await expect(win.getByRole('status')).toHaveText('Canyon Watch saved');

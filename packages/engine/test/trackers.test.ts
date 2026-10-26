@@ -141,6 +141,8 @@ describe('survivor factions (M7.4)', () => {
       );
       const view = projectForPlayer(shown.state!, 'mira');
       expect(view.factions).toEqual([{ name: 'Canyon Watch', standing: 'Wary' }]);
+      // Derived, not passed through: each entry carries exactly these two keys.
+      expect(Object.keys(view.factions[0]!).sort()).toEqual(['name', 'standing']);
       const json = JSON.stringify(view);
       expect(json).not.toContain('nurse');
       expect(json).not.toContain('Pale Choir');

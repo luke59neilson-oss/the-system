@@ -313,6 +313,12 @@ function FactionSection({ state, busy, run }: SectionProps) {
               maxLength={4000}
             />
           </label>
+          {current?.revealed === true && (
+            // MT.8 review: the standing of a revealed faction reaches players on save.
+            <p className="muted" data-testid="faction-live-note">
+              Revealed: players see the name and standing as soon as you save.
+            </p>
+          )}
           {problem && <p className="err">{problem}</p>}
           <button type="submit" disabled={command === null || problem !== null}>
             {current ? 'Save faction' : 'Add faction'}

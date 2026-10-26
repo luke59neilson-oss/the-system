@@ -38,7 +38,7 @@ refusal is raised.
 | `Professions unlock at …-grade` | packages/engine/src/character/model.ts:373 | `character.grantProfession` with `override: true` (Edit sheet → "Grant a profession now") grants one before E-grade, at the class level |
 | `Not enough … (has …)` | packages/engine/src/economy/model.ts:140 | Edit holdings (`holdings.adjust`) sets currency and items directly |
 | `Not enough […] (has …, needs …)` | packages/engine/src/economy/model.ts:149 | Edit holdings (`holdings.adjust`) sets currency and items directly |
-| `Approve the skill re-rating first: the GM sets each kept skill's rarity and approves the list (DESIGN §6)` | packages/engine/src/events/commands.ts:1332 | One click: the GM sets and approves the re-rating in the evolution builder (the approval is the GM's own act) |
+| `Approve the skill re-rating first: the GM sets each kept skill's rarity and approves the list (DESIGN §6)` | packages/engine/src/events/commands.ts:1335 | One click: the GM sets and approves the re-rating in the evolution builder (the approval is the GM's own act) |
 | `… must be between 0 and …` | packages/engine/src/events/reducer.ts:973 | Not a rule to overrule: a pool is a value within its maximum. Raise the maximum through stats (`character.setStats`), then set the pool |
 | `the race level … points are already assigned and locked` | packages/engine/src/events/reducer.ts:1036 | Free-point override (`freePoints.override`) rewrites or clears any batch |
 | `assign exactly … points (got …)` | packages/engine/src/events/reducer.ts:1047 | Free-point override (`freePoints.override`) rewrites or clears any batch |
@@ -89,11 +89,11 @@ refusal is raised.
 | `[…] is already equipped there` | packages/engine/src/economy/model.ts:182 | Equip/unequip from the right slot; holdings can be edited directly |
 | `No […] in the inventory` | packages/engine/src/economy/model.ts:184 | Equip/unequip from the right slot; holdings can be edited directly |
 | `Nothing is equipped in …` | packages/engine/src/economy/model.ts:196 | Equip/unequip from the right slot; holdings can be edited directly |
-| `The libraries already hold every default entry` | packages/engine/src/events/commands.ts:885 | Nothing left to seed |
-| `A mark needs a play session` | packages/engine/src/events/commands.ts:1258 | Start a session (Session panel); marks are counted per session |
-| `XP overflow is already on` | packages/engine/src/events/commands.ts:1671 | Already on |
-| `A session is already running; end it first` | packages/engine/src/events/commands.ts:1684 | End or start the session first |
-| `No session is running` | packages/engine/src/events/commands.ts:1689 | End or start the session first |
+| `The libraries already hold every default entry` | packages/engine/src/events/commands.ts:888 | Nothing left to seed |
+| `A mark needs a play session` | packages/engine/src/events/commands.ts:1261 | Start a session (Session panel); marks are counted per session |
+| `XP overflow is already on` | packages/engine/src/events/commands.ts:1679 | Already on |
+| `A session is already running; end it first` | packages/engine/src/events/commands.ts:1692 | End or start the session first |
+| `No session is running` | packages/engine/src/events/commands.ts:1697 | End or start the session first |
 | `trade "…" is already …` | packages/engine/src/events/reducer.ts:328 | The trade is over; propose a new one |
 | `… already holds […]` | packages/engine/src/events/reducer.ts:909 | Titles are held once; award a different title |
 | `no free-point batch for race level …` | packages/engine/src/events/reducer.ts:1030 | No such batch: free points come with race levels; set them with the free-point override |
@@ -109,9 +109,9 @@ refusal is raised.
 | `this montage is already closed` | packages/engine/src/events/reducer.ts:1592 | The montage is not open for that character |
 | `this quest has no World Stability` | packages/engine/src/events/reducer.ts:2010 | Edit the quest to add World Stability or the rule, or nudge it |
 | `the quest is already …` | packages/engine/src/events/reducer.ts:2032 | Already in that status |
-| `a session is already running` | packages/engine/src/events/reducer.ts:2266 | End or start the session first |
-| `no session is running` | packages/engine/src/events/reducer.ts:2282 | End or start the session first |
-| `session "…" is not running` | packages/engine/src/events/reducer.ts:2283 | End or start the session first |
+| `a session is already running` | packages/engine/src/events/reducer.ts:2275 | End or start the session first |
+| `no session is running` | packages/engine/src/events/reducer.ts:2291 | End or start the session first |
+| `session "…" is not running` | packages/engine/src/events/reducer.ts:2292 | End or start the session first |
 | `The level … selection was already chosen` | packages/engine/src/evolution/model.ts:276 | Pick from the current menu; the GM can re-offer or withdraw options |
 | `… has no profession for […]` | packages/engine/src/evolution/model.ts:227 | Profession skills and XP need a profession first |
 | `… already has […]` | packages/engine/src/evolution/model.ts:381 | Pick from the current menu; the GM can re-offer or withdraw options |
@@ -141,8 +141,8 @@ refusal is raised.
 | `… already has that portrait` | packages/engine/src/events/reducer.ts:868 | Nothing to change |
 | `a walled contest has no roll` | packages/engine/src/events/reducer.ts:1923 | A malformed stored contest; share it again from the roller |
 | `this contest needs a roll` | packages/engine/src/events/reducer.ts:1923 | A malformed stored contest; share it again from the roller |
-| `That item is not available` | packages/engine/src/events/commands.ts:1765 | Players see one message that names nothing (QF.9); the GM gives items with Edit holdings (`holdings.adjust`) |
-| `That trade can no longer go through` | packages/engine/src/events/commands.ts:1793 | A side no longer holds its part; the GM moves items and currency with Edit holdings |
+| `That item is not available` | packages/engine/src/events/commands.ts:1773 | Players see one message that names nothing (QF.9); the GM gives items with Edit holdings (`holdings.adjust`) |
+| `That trade can no longer go through` | packages/engine/src/events/commands.ts:1801 | A side no longer holds its part; the GM moves items and currency with Edit holdings |
 | `A grade wall settles this contest; it has no roll` | packages/engine/src/resolution/model.ts:328 | Fix the input (the roller fills it in) |
 | `This contest needs a roll` | packages/engine/src/resolution/model.ts:328 | Fix the input (the roller fills it in) |
 
@@ -181,21 +181,21 @@ refusal is raised.
 | `… overflow` | packages/engine/src/economy/model.ts:142 | Fix the input or define the thing first |
 | `Unknown item "…"` | packages/engine/src/economy/model.ts:146 | Fix the input or define the thing first |
 | `[…] overflow` | packages/engine/src/economy/model.ts:153 | Fix the input or define the thing first |
-| `A participant has both a share and a weight; give one` | packages/engine/src/events/commands.ts:803 | Fix the input or define the thing first |
-| `Give every participant a share, or none` | packages/engine/src/events/commands.ts:810 | Fix the input or define the thing first |
-| `No loot table "…"` | packages/engine/src/events/commands.ts:867 | Fix the input or define the thing first |
-| `Create a campaign first` | packages/engine/src/events/commands.ts:874 | Fix the input or define the thing first |
-| `No random source to roll with` | packages/engine/src/events/commands.ts:1087 | Fix the input or define the thing first |
-| `No campaign yet` | packages/engine/src/events/commands.ts:1407 | Fix the input or define the thing first |
-| `Every character already knows this entity` | packages/engine/src/events/commands.ts:1610 | Fix the input or define the thing first |
-| `Bad event: not plain JSON data` | packages/engine/src/events/envelope.ts:1068 | Fix the input or define the thing first |
-| `Bad event: "__proto__" is not allowed as a key` | packages/engine/src/events/envelope.ts:1071 | Fix the input or define the thing first |
-| `Bad event: …` | packages/engine/src/events/envelope.ts:1073 | Fix the input or define the thing first |
-| `Event …: unknown type "…"` | packages/engine/src/events/envelope.ts:1075 | Fix the input or define the thing first |
-| `Event …: … v… is newer than this app supports (v…); update the app` | packages/engine/src/events/envelope.ts:1078 | Fix the input or define the thing first |
-| `Event …: no upcaster for … v… → v…` | packages/engine/src/events/envelope.ts:1086 | Fix the input or define the thing first |
-| `Event …: upcasting … v… failed: …` | packages/engine/src/events/envelope.ts:1091 | Fix the input or define the thing first |
-| `Event …: bad … payload: …` | packages/engine/src/events/envelope.ts:1096 | Fix the input or define the thing first |
+| `A participant has both a share and a weight; give one` | packages/engine/src/events/commands.ts:806 | Fix the input or define the thing first |
+| `Give every participant a share, or none` | packages/engine/src/events/commands.ts:813 | Fix the input or define the thing first |
+| `No loot table "…"` | packages/engine/src/events/commands.ts:870 | Fix the input or define the thing first |
+| `Create a campaign first` | packages/engine/src/events/commands.ts:877 | Fix the input or define the thing first |
+| `No random source to roll with` | packages/engine/src/events/commands.ts:1090 | Fix the input or define the thing first |
+| `No campaign yet` | packages/engine/src/events/commands.ts:1410 | Fix the input or define the thing first |
+| `Every character already knows this entity` | packages/engine/src/events/commands.ts:1613 | Fix the input or define the thing first |
+| `Bad event: not plain JSON data` | packages/engine/src/events/envelope.ts:1071 | Fix the input or define the thing first |
+| `Bad event: "__proto__" is not allowed as a key` | packages/engine/src/events/envelope.ts:1074 | Fix the input or define the thing first |
+| `Bad event: …` | packages/engine/src/events/envelope.ts:1076 | Fix the input or define the thing first |
+| `Event …: unknown type "…"` | packages/engine/src/events/envelope.ts:1078 | Fix the input or define the thing first |
+| `Event …: … v… is newer than this app supports (v…); update the app` | packages/engine/src/events/envelope.ts:1081 | Fix the input or define the thing first |
+| `Event …: no upcaster for … v… → v…` | packages/engine/src/events/envelope.ts:1089 | Fix the input or define the thing first |
+| `Event …: upcasting … v… failed: …` | packages/engine/src/events/envelope.ts:1094 | Fix the input or define the thing first |
+| `Event …: bad … payload: …` | packages/engine/src/events/envelope.ts:1099 | Fix the input or define the thing first |
 | `Event … (event.undone): …` | packages/engine/src/events/log.ts:93 | Fix the input or define the thing first |
 | `Event …: duplicate event id` | packages/engine/src/events/log.ts:111 | Fix the input or define the thing first |
 | `Event … (event.undone): cannot undo … (…) because a later event depends on it: …` | packages/engine/src/events/log.ts:128 | Fix the input or define the thing first |
@@ -263,14 +263,14 @@ refusal is raised.
 | `unknown faction "…"` | packages/engine/src/events/reducer.ts:2112 | Fix the input or define the thing first |
 | `faction is already revealed` | packages/engine/src/events/reducer.ts:2134 | Nothing to do: players already see it (Trackers → "Hide from players" takes it back) |
 | `faction is already hidden` | packages/engine/src/events/reducer.ts:2134 | Nothing to do: players already cannot see it (Trackers → "Reveal to players") |
-| `entity "…" already exists` | packages/engine/src/events/reducer.ts:2131 | Fix the input or define the thing first |
-| `unknown entity "…"` | packages/engine/src/events/reducer.ts:2161 | Fix the input or define the thing first |
-| `"…" already knows …` | packages/engine/src/events/reducer.ts:2206 | Fix the input or define the thing first |
-| `… holds … … XP, not …` | packages/engine/src/events/reducer.ts:2257 | The migration must match the current XP |
-| `session "…" already exists` | packages/engine/src/events/reducer.ts:2268 | Fix the input or define the thing first |
-| `undo is applied by the event log, not the reducer` | packages/engine/src/events/reducer.ts:2293 | Fix the input or define the thing first |
-| `a region is already called "…"` | packages/engine/src/events/reducer.ts:2336 | Fix the input or define the thing first |
-| `Unknown character "…"` | packages/engine/src/events/reducer.ts:2391 | Fix the input or define the thing first |
+| `entity "…" already exists` | packages/engine/src/events/reducer.ts:2140 | Fix the input or define the thing first |
+| `unknown entity "…"` | packages/engine/src/events/reducer.ts:2170 | Fix the input or define the thing first |
+| `"…" already knows …` | packages/engine/src/events/reducer.ts:2215 | Fix the input or define the thing first |
+| `… holds … … XP, not …` | packages/engine/src/events/reducer.ts:2266 | The migration must match the current XP |
+| `session "…" already exists` | packages/engine/src/events/reducer.ts:2277 | Fix the input or define the thing first |
+| `undo is applied by the event log, not the reducer` | packages/engine/src/events/reducer.ts:2302 | Fix the input or define the thing first |
+| `a region is already called "…"` | packages/engine/src/events/reducer.ts:2345 | Fix the input or define the thing first |
+| `Unknown character "…"` | packages/engine/src/events/reducer.ts:2400 | Fix the input or define the thing first |
 | `… already has a skill "…"` | packages/engine/src/evolution/model.ts:196 | Fix the input or define the thing first |
 | `"…" was a skill of …'s; pick a new name` | packages/engine/src/evolution/model.ts:199 | Fix the input or define the thing first |
 | `A selection menu has …–… options (got …)` | packages/engine/src/evolution/model.ts:280 | Fix the input or define the thing first |
@@ -344,14 +344,14 @@ refusal is raised.
 | `Percent bonus on … for … must be above -100%` | packages/engine/src/bonuses/effective.ts:93 | Fix the input |
 | `Bonus source "…" given twice` | packages/engine/src/bonuses/effective.ts:106 | Fix the input |
 | `Stat "…" is missing or not a whole number` | packages/engine/src/bonuses/effective.ts:115 | Set stats directly (`character.setStats`) |
-| `Bad command…` | packages/engine/src/events/commands.ts:1887 | A malformed command (the app never sends one); fix the input |
+| `Bad command…` | packages/engine/src/events/commands.ts:1895 | A malformed command (the app never sends one); fix the input |
 
 ## Permission
 
 | Refusal | Where | GM way through |
 | --- | --- | --- |
-| `Event … (…): players cannot cause this event` | packages/engine/src/events/envelope.ts:1033 | Applies to players (or the System), not the GM |
-| `Event … (…): players may only act on their own character` | packages/engine/src/events/envelope.ts:1039 | Applies to players (or the System), not the GM |
+| `Event … (…): players cannot cause this event` | packages/engine/src/events/envelope.ts:1036 | Applies to players (or the System), not the GM |
+| `Event … (…): players may only act on their own character` | packages/engine/src/events/envelope.ts:1042 | Applies to players (or the System), not the GM |
 | `the system does not write notes` | packages/engine/src/events/reducer.ts:354 | Applies to players (or the System), not the GM |
 | `notes are written as yourself` | packages/engine/src/events/reducer.ts:356 | Applies to players (or the System), not the GM |
 | `players log practice with source "player"` | packages/engine/src/events/reducer.ts:1429 | Applies to players (or the System), not the GM |
@@ -363,10 +363,10 @@ refusal is raised.
 | `only journal entries can change who reads them` | packages/engine/src/events/reducer.ts:1647 | Applies to players (or the System), not the GM |
 | `only … can cancel this trade` | packages/engine/src/events/reducer.ts:1394 | Limits players only; the GM cancels any trade |
 | `only … can answer this trade` | packages/engine/src/events/reducer.ts:1394 | Limits players only; the GM answers for anyone |
-| `Not allowed: …` | packages/engine/src/events/commands.ts:1890 | Limits players (and the System) only; the GM may send every command |
-| `A trade with the GM can ask only for currency; the GM offers items` | packages/engine/src/events/commands.ts:1767 | Limits players only (Q44); the GM offers items from the GM side |
-| `A practice entry can be at most … characters` | packages/engine/src/events/commands.ts:1827 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |
-| `Practice log is full (… entries); ask the GM` | packages/engine/src/events/commands.ts:1831 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |
-| `Note limit reached (… notes); delete one to add another` | packages/engine/src/events/commands.ts:1842 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |
-| `Notes are full (… characters in all); shorten or delete a note first` | packages/engine/src/events/commands.ts:1863 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |
-| `Too many open trades (…); cancel one first` | packages/engine/src/events/commands.ts:1873 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |
+| `Not allowed: …` | packages/engine/src/events/commands.ts:1898 | Limits players (and the System) only; the GM may send every command |
+| `A trade with the GM can ask only for currency; the GM offers items` | packages/engine/src/events/commands.ts:1775 | Limits players only (Q44); the GM offers items from the GM side |
+| `A practice entry can be at most … characters` | packages/engine/src/events/commands.ts:1835 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |
+| `Practice log is full (… entries); ask the GM` | packages/engine/src/events/commands.ts:1839 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |
+| `Note limit reached (… notes); delete one to add another` | packages/engine/src/events/commands.ts:1850 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |
+| `Notes are full (… characters in all); shorten or delete a note first` | packages/engine/src/events/commands.ts:1871 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |
+| `Too many open trades (…); cancel one first` | packages/engine/src/events/commands.ts:1881 | Limits players only (sizes that keep the log and exports small, M11); the GM is not limited |

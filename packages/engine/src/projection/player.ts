@@ -174,7 +174,9 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   currentRegion: 'party',
   // M7.4: survivor factions are the GM's bookkeeping. MT.8 (Q69): players get
   // the factions the GM has revealed, as name and standing only (never the
-  // head count, base region or notes), as `factions`.
+  // head count, base region or notes), as `factions`. 'party' here means a
+  // derived view (like `currentRegion`), never the raw record: trackers.test.ts
+  // pins each entry to exactly `name` and `standing`.
   factions: 'party',
   factionOrder: 'gm',
   day: 'party',
