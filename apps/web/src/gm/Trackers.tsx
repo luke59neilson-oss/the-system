@@ -17,7 +17,7 @@ const own = <T,>(record: Readonly<Record<string, T>>, id: string | null): T | nu
 /**
  * GM trackers (ROADMAP M7.4, DESIGN §7–§8, D184): the regions the party moves
  * through and the survivor factions. Players see only the current region's
- * name. There is no hunger tracker (MT.3, DESIGN §7: hunger is narrated).
+ * name and the factions the GM has revealed (MT.8: name and standing). There is no hunger tracker (MT.3, DESIGN §7: hunger is narrated).
  */
 export function Trackers({ client, state }: { client: LiveClient; state: CampaignState }) {
   const [busy, setBusy] = useState(false);
@@ -207,11 +207,15 @@ function FactionSection({ state, busy, run }: SectionProps) {
   };
   return (
     <div role="group" aria-labelledby="trackers-factions">
-      <h3 id="trackers-factions">Survivor factions (GM only)</h3>
+      <h3 id="trackers-factions">Survivor factions</h3>
+      <p className="muted">
+        GM only until revealed. Players see a revealed faction's name and standing, never its head
+        count, base or notes.
+      </p>
       {factions.length === 0 ? (
         <p className="muted">No factions yet.</p>
       ) : (
-        <ul className="tracker-list" aria-label="Factions">
+        <ul className="tracker-list faction-list" aria-label="Factions">
           {factions.map((f) => (
             <li key={f.id}>
               <button
@@ -230,6 +234,28 @@ function FactionSection({ state, busy, run }: SectionProps) {
                     .filter(Boolean)
                     .join(' · ')}
                 </span>
+                {f.revealed === true && (
+                  <span className="faction-revealed" data-testid="faction-revealed">
+                    Revealed
+                  </span>
+                )}
+              </button>{' '}
+              <button
+                type="button"
+                className="small"
+                disabled={busy}
+                aria-pressed={f.revealed === true}
+                aria-label={`${f.revealed === true ? 'Hide' : 'Reveal'} ${f.name} ${f.revealed === true ? 'from' : 'to'} players`}
+                onClick={() =>
+                  void run(
+                    { type: 'faction.reveal', factionId: f.id, revealed: f.revealed !== true },
+                    f.revealed === true
+                      ? `${f.name} hidden from players`
+                      : `${f.name} revealed to players`,
+                  )
+                }
+              >
+                {f.revealed === true ? 'Hide from players' : 'Reveal to players'}
               </button>
             </li>
           ))}

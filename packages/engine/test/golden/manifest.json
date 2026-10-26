@@ -88,6 +88,14 @@
       "sha256": "d5fb4d1b964f7044e2e78990eeccaa7e89b1aa97275fcac74c88e77fda8418df",
       "schemaVersion": 33
     },
+    "faction-reveal.jsonl": {
+      "sha256": "c3a1839b13988a5c3c6212f54da5cd37df65820e424c8959984fe16910cb6295",
+      "schemaVersion": 33
+    },
+    "faction-reveal.state.json": {
+      "sha256": "effd59e876db3c1e36015c4ac1b6500a04a9462dcf9062ee7986fb857c16e2e4",
+      "schemaVersion": 33
+    },
     "freepoints.jsonl": {
       "sha256": "e18d62e4312817aabcb70424b9521015f8cec50bdf385fe596c6a5fbfc012f10",
       "schemaVersion": 21

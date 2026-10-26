@@ -990,6 +990,7 @@ describe('property: replay equals incremental state', () => {
       'region.currentSet',
       'faction.defined',
       'faction.edited',
+      'faction.revealSet',
     ]);
     expect(
       EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),

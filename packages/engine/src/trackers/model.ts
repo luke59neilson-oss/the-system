@@ -1,7 +1,7 @@
 /**
  * Trackers (M7.4, DESIGN §7–§8): the regions the party moves through and the
  * survivor factions they meet. Light bookkeeping for the GM; only the current
- * region's name reaches players. (The hunger tracker was retired by MT.3:
+ * region's name and revealed factions' names and standings reach players. (The hunger tracker was retired by MT.3:
  * hunger is narrated, never tracked.)
  */
 
@@ -16,7 +16,10 @@ export interface Region {
   readonly createdAt: string;
 }
 
-/** A survivor faction (DESIGN §8: NPC survivors form factions). GM-only. */
+/**
+ * A survivor faction (DESIGN §8: NPC survivors form factions). GM-only until
+ * the GM reveals it (MT.8, Q69): then players see its name and standing only.
+ */
 export interface Faction {
   readonly id: string;
   readonly name: string;
@@ -28,4 +31,6 @@ export interface Faction {
   readonly standing: string;
   readonly notes: string;
   readonly createdAt: string;
+  /** MT.8: shown to players (name and standing). Absent in older states = hidden. */
+  readonly revealed?: boolean;
 }

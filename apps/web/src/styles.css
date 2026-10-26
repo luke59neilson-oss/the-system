@@ -2810,6 +2810,39 @@ ol.change-log li.undone .change-text {
   flex: 1 1 160px;
   width: auto;
 }
+.quest-factions h3 {
+  margin: 12px 0 4px;
+  font-size: 0.95rem;
+}
+.quest-factions ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.quest-factions li {
+  padding: 2px 0;
+  overflow-wrap: anywhere;
+}
+.faction-list li {
+  flex-direction: column;
+  align-items: stretch;
+}
+.faction-list .library-item {
+  flex: none;
+}
+.faction-list li > button.small {
+  align-self: flex-start;
+}
+.faction-revealed {
+  display: inline-block;
+  white-space: nowrap;
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 0.75rem;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+}
 .tracker-form {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

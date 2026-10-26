@@ -172,8 +172,10 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   regions: 'gm',
   regionOrder: 'gm',
   currentRegion: 'party',
-  // M7.4: survivor factions are the GM's bookkeeping.
-  factions: 'gm',
+  // M7.4: survivor factions are the GM's bookkeeping. MT.8 (Q69): players get
+  // the factions the GM has revealed, as name and standing only (never the
+  // head count, base region or notes), as `factions`.
+  factions: 'party',
   factionOrder: 'gm',
   day: 'party',
   // M4.3: session bookkeeping is the GM's.
@@ -383,6 +385,15 @@ export interface PlayerView {
   readonly contests: readonly PlayerContest[];
   /** The name of the region the party is in (M7.4), or null. */
   readonly region: string | null;
+  /** Factions the GM has revealed (MT.8, Q69), in definition order. */
+  readonly factions: readonly PlayerFaction[];
+}
+
+/** A revealed faction as players see it: its name and standing, nothing else (MT.8). */
+export interface PlayerFaction {
+  readonly name: string;
+  /** How it stands toward the party, in the GM's words; may be empty. */
+  readonly standing: string;
 }
 
 /** One of the viewer's practice entries (tags left out: they may name GM-only action tags). */
@@ -851,6 +862,7 @@ export function projectForPlayer(
     }),
     contests: playerContests(state, viewer.id),
     region: currentRegionName(state),
+    factions: revealedFactions(state),
     hiddenQuests: state.questOrder.filter((id) => {
       const q = hasOwnKey(state.quests, id) ? state.quests[id] : undefined;
       return q !== undefined && hiddenQuestNoticed(q, state.characterOrder).includes(viewer.id);
@@ -1048,6 +1060,14 @@ function playerContests(state: CampaignState, viewerId: string): PlayerContest[]
     });
   }
   return out.reverse();
+}
+
+/** Revealed factions, name and standing only (MT.8). */
+function revealedFactions(state: CampaignState): PlayerFaction[] {
+  return state.factionOrder.flatMap((id) => {
+    const f = hasOwnKey(state.factions, id) ? state.factions[id] : undefined;
+    return f?.revealed === true ? [{ name: f.name, standing: f.standing }] : [];
+  });
 }
 
 /** The current region's name only (M7.4). */

@@ -145,6 +145,7 @@ describe('player projection', () => {
       'campaignName',
       'contests',
       'day',
+      'factions',
       'hiddenQuests',
       'identify',
       'inventory',

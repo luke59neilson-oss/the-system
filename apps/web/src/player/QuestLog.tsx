@@ -1,7 +1,10 @@
 import type { PlayerQuest, PlayerView } from '@the-system/engine';
 import { hiddenQuestText, splitQuests, stabilityLabel, statusText, timeText } from './quests';
 
-/** The quest log (ROADMAP M3.8): visible quests, days left and World Stability. */
+/**
+ * The quest log (ROADMAP M3.8): visible quests, days left and World Stability,
+ * plus where the party is (M7.4) and the factions the GM has revealed (MT.8).
+ */
 export function QuestLog({ view }: { view: PlayerView }) {
   const { active, finished } = splitQuests(view.quests);
   return (
@@ -31,6 +34,20 @@ export function QuestLog({ view }: { view: PlayerView }) {
             <Quest key={q.id} quest={q} />
           ))}
         </details>
+      )}
+      {view.factions.length > 0 && (
+        // MT.8 (Q69): factions the GM has revealed, name and standing only.
+        <div className="quest-factions" data-testid="factions">
+          <h3>Factions</h3>
+          <ul aria-label="Factions">
+            {view.factions.map((f, i) => (
+              <li key={`${i}-${f.name}`}>
+                <span className="quest-title">[{f.name}]</span>
+                {f.standing !== '' && <span className="muted"> · {f.standing}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );

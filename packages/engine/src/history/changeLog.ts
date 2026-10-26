@@ -131,6 +131,7 @@ export const CHANGE_LOG_PHRASES: Readonly<Record<string, string>> = {
   'region.currentSet': 'party moved region',
   'faction.defined': 'faction added',
   'faction.edited': 'faction edited',
+  'faction.revealSet': 'faction shown or hidden',
   'entity.defined': 'Identify entry added',
   'entity.edited': 'Identify entry edited',
   'entity.revealed': 'Identify entry revealed',

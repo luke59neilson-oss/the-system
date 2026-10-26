@@ -2126,6 +2126,15 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       };
       return { ...state, factions: { ...state.factions, [factionId]: next } };
     }
+    case 'faction.revealSet': {
+      const { factionId, revealed } = event.payload;
+      const faction = hasOwn(state.factions, factionId) ? state.factions[factionId] : undefined;
+      if (!faction) return fail(event, `unknown faction "${factionId}"`);
+      if ((faction.revealed === true) === revealed) {
+        fail(event, revealed ? 'faction is already revealed' : 'faction is already hidden');
+      }
+      return { ...state, factions: { ...state.factions, [factionId]: { ...faction, revealed } } };
+    }
     case 'entity.defined': {
       const { entityId, name, label, tiers, knownBy } = event.payload;
       if (hasOwn(state.entities, entityId)) fail(event, `entity "${entityId}" already exists`);

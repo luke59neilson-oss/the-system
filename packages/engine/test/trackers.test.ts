@@ -107,6 +107,97 @@ describe('survivor factions (M7.4)', () => {
     expect(rejects(c, { type: 'faction.edit', factionId: 'f1', regionId: 'nope' })).toMatch(/nope/);
   });
 
+  // MT.8 (Q69): a revealed faction shows players its name and standing only.
+  describe('reveal toggle (MT.8)', () => {
+    const defined: Command[] = [
+      ...setup(),
+      { type: 'region.define', regionId: 'rake', name: 'Rake Canyons' },
+      {
+        type: 'faction.define',
+        factionId: 'f1',
+        name: 'Canyon Watch',
+        regionId: 'rake',
+        members: 12,
+        standing: 'Wary',
+        notes: 'Led by a former nurse.',
+      },
+      { type: 'faction.define', factionId: 'f2', name: 'Pale Choir', standing: 'Hostile' },
+    ];
+
+    it('unrevealed factions never reach players; revealed ones show name and standing only', () => {
+      const hidden = run(defined);
+      for (const id of ['jake', 'mira']) {
+        const view = projectForPlayer(hidden.state!, id);
+        expect(view.factions).toEqual([]);
+        const json = JSON.stringify(view);
+        for (const secret of ['Canyon Watch', 'Wary', 'Pale Choir', 'Hostile']) {
+          expect(json).not.toContain(secret);
+        }
+      }
+      const shown = run(
+        [{ type: 'faction.reveal', factionId: 'f1', revealed: true }],
+        testContext('mt8-1'),
+        hidden,
+      );
+      const view = projectForPlayer(shown.state!, 'mira');
+      expect(view.factions).toEqual([{ name: 'Canyon Watch', standing: 'Wary' }]);
+      const json = JSON.stringify(view);
+      expect(json).not.toContain('nurse');
+      expect(json).not.toContain('Pale Choir');
+      expect(json).not.toContain('"members"');
+      // The base region is not revealed by the faction (no current region is set).
+      expect(json).not.toContain('Rake Canyons');
+    });
+
+    it('edits to a revealed faction reach players; hiding it again removes it', () => {
+      const c = run([
+        ...defined,
+        { type: 'faction.reveal', factionId: 'f2', revealed: true },
+        { type: 'faction.reveal', factionId: 'f1', revealed: true },
+        { type: 'faction.edit', factionId: 'f1', standing: 'Allied', name: 'The Watch' },
+      ]);
+      // Definition order, not reveal order.
+      expect(projectForPlayer(c.state!, 'jake').factions).toEqual([
+        { name: 'The Watch', standing: 'Allied' },
+        { name: 'Pale Choir', standing: 'Hostile' },
+      ]);
+      const hidden = run(
+        [{ type: 'faction.reveal', factionId: 'f1', revealed: false }],
+        testContext('mt8-2'),
+        c,
+      );
+      expect(projectForPlayer(hidden.state!, 'jake').factions).toEqual([
+        { name: 'Pale Choir', standing: 'Hostile' },
+      ]);
+      expect(JSON.stringify(projectForPlayer(hidden.state!, 'jake'))).not.toContain('The Watch');
+    });
+
+    it('is undoable, refuses an unknown faction and a no-op, and is GM-only', () => {
+      const shown = run([...defined, { type: 'faction.reveal', factionId: 'f1', revealed: true }]);
+      const undone = run(
+        [{ type: 'event.undo', eventId: shown.events.at(-1)!.id }],
+        testContext('mt8-3'),
+        shown,
+      );
+      expect(projectForPlayer(undone.state!, 'jake').factions).toEqual([]);
+      expect(rejects(shown, { type: 'faction.reveal', factionId: 'f9', revealed: true })).toMatch(
+        /f9/,
+      );
+      expect(rejects(shown, { type: 'faction.reveal', factionId: 'f1', revealed: true })).toMatch(
+        /already revealed/,
+      );
+      expect(rejects(shown, { type: 'faction.reveal', factionId: 'f2', revealed: false })).toMatch(
+        /already hidden/,
+      );
+      const asPlayer = execute(
+        shown,
+        { type: 'faction.reveal', factionId: 'f2', revealed: true },
+        { ...testContext('p'), actor: { role: 'player', characterId: 'jake' } },
+      );
+      expect(asPlayer.ok).toBe(false);
+    });
+  });
+
   it('only the GM may change trackers', () => {
     const c = run(setup());
     const result = execute(

@@ -585,6 +585,8 @@ export type Command =
       standing?: string | undefined;
       notes?: string | undefined;
     }
+  /** MT.8 (Q69): show a faction's name and standing to players, or hide it again. */
+  | { type: 'faction.reveal'; factionId: string; revealed: boolean }
   | { type: 'campaign.advanceDay'; days?: number | undefined }
   | { type: 'rules.migrate'; migration: 'xpOverflow' }
   /** M4.9: replaces the campaign's rules with an edited copy (validated). */
@@ -744,6 +746,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('region.setCurrent') }),
   z.object({ type: z.literal('faction.define') }),
   z.object({ type: z.literal('faction.edit') }),
+  z.object({ type: z.literal('faction.reveal') }),
   z.object({ type: z.literal('campaign.advanceDay') }),
   z.object({ type: z.literal('rules.migrate'), migration: z.literal('xpOverflow') }),
   z.object({ type: z.literal('rules.set'), rules: z.unknown() }),
@@ -1663,6 +1666,11 @@ function toEvent(
         payload: { factionId, name, regionId, members, standing, notes },
       };
     }
+    case 'faction.reveal':
+      return {
+        type: 'faction.revealSet',
+        payload: { factionId: command.factionId, revealed: command.revealed },
+      };
     case 'campaign.advanceDay':
       return { type: 'campaign.dayAdvanced', payload: { days: command.days ?? 1 } };
     case 'rules.migrate': {

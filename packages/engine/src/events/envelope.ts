@@ -799,6 +799,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     standing: factionStanding.optional(),
     notes: entityNotes.optional(),
   }),
+  /** MT.8 (Q69): the GM shows a faction's name and standing to players, or hides it again. */
+  'faction.revealSet': z.strictObject({ factionId: recordId, revealed: z.boolean() }),
   /** The in-game day counter moves forward (quest timers count down). */
   'campaign.dayAdvanced': z.strictObject({ days: z.number().int().min(1).max(1000) }),
   /**
@@ -923,6 +925,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'region.currentSet': 1,
   'faction.defined': 1,
   'faction.edited': 1,
+  'faction.revealSet': 1,
   'campaign.dayAdvanced': 1,
   'rules.migrated': 1,
   'rules.edited': 1,

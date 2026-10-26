@@ -261,6 +261,8 @@ refusal is raised.
 | `the party is already there` | packages/engine/src/events/reducer.ts:2078 | Fix the input or define the thing first |
 | `faction "…" already exists` | packages/engine/src/events/reducer.ts:2090 | Fix the input or define the thing first |
 | `unknown faction "…"` | packages/engine/src/events/reducer.ts:2112 | Fix the input or define the thing first |
+| `faction is already revealed` | packages/engine/src/events/reducer.ts:2134 | Nothing to do: players already see it (Trackers → "Hide from players" takes it back) |
+| `faction is already hidden` | packages/engine/src/events/reducer.ts:2134 | Nothing to do: players already cannot see it (Trackers → "Reveal to players") |
 | `entity "…" already exists` | packages/engine/src/events/reducer.ts:2131 | Fix the input or define the thing first |
 | `unknown entity "…"` | packages/engine/src/events/reducer.ts:2161 | Fix the input or define the thing first |
 | `"…" already knows …` | packages/engine/src/events/reducer.ts:2206 | Fix the input or define the thing first |

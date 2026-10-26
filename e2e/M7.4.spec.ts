@@ -68,8 +68,8 @@ test('the GM keeps regions and factions; players see the region', async ({ brows
   await expect(regions.getByTestId('current-region')).toContainText('The party is in The Crown');
   await expect(page.getByTestId('region')).toHaveText(' · The Crown');
 
-  // Factions: GM-only.
-  const factions = win.getByRole('group', { name: 'Survivor factions (GM only)' });
+  // Factions: GM-only until revealed (MT.8 tests the reveal).
+  const factions = win.getByRole('group', { name: 'Survivor factions' });
   const factionForm = factions.getByRole('form', { name: 'New faction' });
   await factionForm.getByLabel('Faction name').fill('SECRET Canyon Watch');
   await factionForm.getByLabel('Based in').selectOption({ label: 'The Crown' });
@@ -80,9 +80,9 @@ test('the GM keeps regions and factions; players see the region', async ({ brows
   await factionForm.getByRole('button', { name: 'Add faction' }).click();
   await expect(win.getByRole('status')).toHaveText('SECRET Canyon Watch added');
   await expect(factions.getByRole('list', { name: 'Factions' })).toHaveText(
-    'SECRET Canyon Watch Wary · 4217 survivors · The Crown',
+    'SECRET Canyon Watch Wary · 4217 survivors · The Crown Reveal to players',
   );
-  await factions.getByRole('button', { name: /Canyon Watch/ }).click();
+  await factions.getByRole('button', { name: /^SECRET Canyon Watch/ }).click();
   const editFaction = factions.getByRole('form', { name: 'Edit SECRET Canyon Watch' });
   await editFaction.getByLabel('Standing toward the party').fill('Friendly');
   await editFaction.getByRole('button', { name: 'Save faction' }).click();
