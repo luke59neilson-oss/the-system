@@ -855,7 +855,7 @@ it is usable early (Luke can run a preview build at any point).
   GM laptop's mic), label transcript lines when the match is confident,
   delete an enrolment. *Accept:* labelling test on a two-voice fixture;
   e2e for enrolment and deletion.
-- [ ] **MC.7 Practice drafts.** The fast model drafts practice entries from
+- [x] **MC.7 Practice drafts.** The fast model drafts practice entries from
   the transcript (character, skill, what happened, quote, time, confidence)
   into the end-of-session review; contest rolls done in the app log practice
   directly; nothing counts until the GM confirms. *Accept:* fake-backed tests
