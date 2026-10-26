@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.10 done, MC.A built on wip (not reviewed). Preview ready: Actions → Release → Run workflow (MT).
-**Next item:** MC.A on `wip/MC.A` (head 0ff3de27, based on wip/MC.10 694f086d): merge main in, run the full e2e suite, launch the `fable` review, fix, check box, merge; then "Preview ready … (MC)" in Status.
+**Status:** build complete (2026-10-26): every roadmap item checked except deferred M9.4; `docs/DONE.md` written. Preview ready: Actions → Release → Run workflow (MC).
+**Next item:** none (DONE.md). Luke: run the co-DM live checklist in GM-GUIDE with your key; delete DONE.md to restart runs.
 **Blockers:** none
 
 ## Run log
@@ -1240,3 +1240,12 @@ next item, blockers. -->
 - Lows from MC.9/MC.10 to QUALITY Backlog.
 - Open `wip/*`: wip/MC.A (0ff3de27).
 - Next: MC.A (see Next item). Blockers: none.
+
+### Run 200c63df · 2026-10-26 14:27–15:10 UTC (close-out at minute 40; reason: `docs/DONE.md` written, no unblocked item remains)
+- Preflight: `add_repo` not offered (repo already cloned; reset to origin/main); lock pushed cleanly; vitest 5.0.5; sonnet and fable reviewers work (worktree, background). CI red on main (cb3bb8d9): desktop-smoke ENOTEMPTY, third time. No new answers. Hour 14: no efficiency check or sweep.
+- QF.32 **checked** (new, from the red CI): the forced-kill desktop test freezes, kills and waits for Electron's whole process tree and asserts nothing holds the profile (D255). Sonnet round 1 0 H / 2 M / 4 L, both fixed; round 2 0 H / 0 M / 3 L. Pushed early as a red-CI fix; CI green on 4de16d52.
+- MC.A **checked**: merged main into wip/MC.A; full e2e 122 + latency 8 passed. Fable round 1 0 H / 2 M / 7 L: live spend counter (D253), fixture-audio scope documented with a live speech step in the guide (D254), two Lows fixed; round 2 0 H / 0 M / 2 L. Merged to main.
+- Tests: unit 1,489; e2e MC.* 15/15; desktop smoke 7/7.
+- Lows to QUALITY Backlog. Open `wip/*`: none new (wip/MC.A merged).
+- `docs/DONE.md` rewritten (D207 precedent: M9.4 deferred). Preview ready for MC: Actions → Release → Run workflow.
+- Next: none. Blockers: none.
