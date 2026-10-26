@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.4 done, MC.5 on wip (listening pipeline built and e2e-tested with fakes; live engine, fixture transcription, CPU measurement and review to go). Preview ready: Actions → Release → Run workflow (MT).
-**Next item:** MC.5 on `wip/MC.5` (head 38b351ab, base 71dabc1b): model download on first use (user folder), a synthesized speech fixture transcribed by sherpa-onnx in a unit test (model from GitHub releases), CPU time per audio minute in CI, laptop needs in GM-GUIDE, wire `sherpaSpeechToText` into the desktop app; then the sonnet review; then MC.6
+**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.4 done, MC.5 built on wip (model download, real-engine fixture test, CPU time in CI, packaging) with review round 1 fixed; round 2 and a packaging check to go. Preview ready: Actions → Release → Run workflow (MT).
+**Next item:** MC.5 on `wip/MC.5` (head 2b525d3a, base 71dabc1b): add a CI/desktop check that the packaged app ships `resources/speech/node_modules/sherpa-onnx-*/sherpa-onnx.node` and loads it (review M6), then the sonnet review round 2, merge; then MC.6
 **Blockers:** none
 
 ## Run log
@@ -1179,3 +1179,12 @@ next item, blockers. -->
 - Open `wip/*`: wip/MC.5 (38b351ab).
 - Blockers: none.
 
+
+### Run 5f0b27fe · 2026-10-26 08:12–08:53 UTC (end minute ~42: build ran to 40, then close-out; round 2 could not fit before the hand-off)
+- Preflight: `add_repo` not offered (repo already cloned; stale local main reset to origin/main); lock pushed cleanly; vitest 5.0.5; reviewer model sonnet available. Not an efficiency or sweep hour. CI on main green (71dabc1b).
+- MC.5 (wip/MC.5, head 2b525d3a): first-use model download (Whisper tiny.en int8 from sherpa-onnx's GitHub release, SHA-256 pinned, into `<userData>/models`, pure-JS bz2/tar, progress, stall abort, size cap) with Download/progress/retry in the Listening panel; `sherpa-onnx-node` as a server dependency, external to both bundles, shipped by electron-builder in `resources/speech/node_modules` and loaded via `packagedSpeechLoad`; a synthesized three-line table-talk fixture (Kokoro-82M, Apache-2.0) transcribed by the real engine through the VAD in `npm run test:speech` (separate vitest config) and a CI step that caches the model and writes CPU time per audio minute to the job summary (≈6.3 s/min here, ~330 MB RSS); laptop needs in GM-GUIDE; e2e for the first-use download; D236. Review round 1 (sonnet): 0 H / 6 M / 8 L; M1–M5 fixed, M6 (no CI check of the packaged addon) open. Not checked: round 2 due.
+- Tests: unit 1,386 on wip/MC.5; full e2e 115/115 at 244665e6; MC.5 e2e 2/2 at 2b525d3a; `npm run test:speech` pass.
+- Open `wip/*`: wip/MC.5 (2b525d3a).
+- Next: packaging check for the native addon (review M6), sonnet round 2, merge MC.5; then MC.6.
+- Mistake: the close-out commit (c25f6a06) swept the local speech-model cache (`.cache/`, ~103 MB, ignored only on wip/MC.5) into main; removed and ignored in the next commit, but the blobs stay in history (no history rewrites allowed). Clone size grows by ~100 MB; Luke may purge it with git-filter-repo if it matters.
+- Blockers: none.
