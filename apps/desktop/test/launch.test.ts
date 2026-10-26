@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  packagedSpeechFiles,
   packagedSpeechLoad,
   speechPackageDir,
   DEFAULT_DESKTOP_PORT,
@@ -202,5 +203,19 @@ describe('packaged speech engine (MC.5, D236)', () => {
     } finally {
       rmSync(resources, { recursive: true, force: true });
     }
+  });
+
+  it("names the JS package and this platform's native addon (review M6)", () => {
+    const dir = path.join('res', 'speech', 'node_modules');
+    expect(packagedSpeechFiles('res', 'win32', 'x64')).toEqual({
+      packageDir: path.join(dir, 'sherpa-onnx-node'),
+      addon: path.join(dir, 'sherpa-onnx-win-x64', 'sherpa-onnx.node'),
+    });
+    expect(packagedSpeechFiles('res', 'linux', 'x64').addon).toBe(
+      path.join(dir, 'sherpa-onnx-linux-x64', 'sherpa-onnx.node'),
+    );
+    expect(packagedSpeechFiles('res', 'darwin', 'arm64').addon).toBe(
+      path.join(dir, 'sherpa-onnx-darwin-arm64', 'sherpa-onnx.node'),
+    );
   });
 });

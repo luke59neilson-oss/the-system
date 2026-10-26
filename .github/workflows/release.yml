@@ -74,6 +74,10 @@ jobs:
         run: npm run build
       - name: Package desktop app
         run: npm run package -w @the-system/desktop -- --${{ matrix.target }}
+      # MC.5 review M6: the speech engine ships outside the asar, where
+      # packagedSpeechLoad finds it, and its native addon loads from there.
+      - name: Packaged speech engine present and loads
+        run: npx tsx apps/desktop/scripts/check-packaged-speech.ts "apps/desktop/release/${{ matrix.target }}-unpacked/resources"
       - name: Smoke-test the packaged Linux app
         if: matrix.target == 'linux'
         run: |

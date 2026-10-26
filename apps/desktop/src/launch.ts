@@ -36,6 +36,24 @@ export function speechPackageDir(resourcesPath: string): string {
   return path.join(resourcesPath, 'speech', 'node_modules');
 }
 
+/**
+ * Where the packaged speech engine must sit for this platform (MC.5 review
+ * M6): the JS package and the native addon that sherpa-onnx-node loads from
+ * its sibling `sherpa-onnx-<platform>-<arch>` package ('win' for win32).
+ */
+export function packagedSpeechFiles(
+  resourcesPath: string,
+  platform: string = process.platform,
+  arch: string = process.arch,
+): { packageDir: string; addon: string } {
+  const dir = speechPackageDir(resourcesPath);
+  const os = platform === 'win32' ? 'win' : platform;
+  return {
+    packageDir: path.join(dir, 'sherpa-onnx-node'),
+    addon: path.join(dir, `sherpa-onnx-${os}-${arch}`, 'sherpa-onnx.node'),
+  };
+}
+
 export function packagedSpeechLoad(resourcesPath: string): () => Promise<unknown> {
   const require = createRequire(path.join(speechPackageDir(resourcesPath), 'index.js'));
   // async: a missing package rejects (the model reports it) rather than throwing.
