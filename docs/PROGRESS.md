@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-25): M0–M11, MS, MQ, MR and QF done; new milestones MT (Luke's answers, batch 3) and MC (co-DM, DESIGN §11) added; `docs/DONE.md` removed.
-**Next item:** MT.8 (faction reveal toggle), then MT.9
+**Next item:** resume `wip/MT.9` (review round-1 fixes M2–M4, then round 2), then MT.10
 **Blockers:** none
 
 ## Run log
@@ -1109,3 +1109,12 @@ next item, blockers. -->
 - Open `wip/*`: none new (wip/MT.7 merged).
 - Blockers: none.
 
+
+### Run 316478c4 · 2026-10-26 00:09–00:53 UTC (end minute ~44: hand-off at 44 with MT.9 on wip after its round-1 review; close-out to 50)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` had an unrelated history; reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. CI on main at start (a017f8ec) green. No new answers. Hour 00: efficiency check run (sonnet auditor); no sweep.
+- Efficiency: scorecard row appended (end minute 46.0, items/run 1.5, round-2 7/10, Highs 3, red/day 2). D206 reverted (half its target moved the wrong way; D220); D211 judged next check. Auditor's Tier 1 `npm run orient` waits for a later check; Tier 2 sweep budget → Q77.
+- MT.8 **checked** (pushed to main): `faction.reveal` toggle (Trackers → "Reveal to players"/"Hide from players", "Revealed" pill, live-edit note); players see revealed factions as `[Name] · standing` under the quest log, never head count, base, notes or unrevealed ones; golden `faction-reveal.jsonl`; GM-OVERRIDES locations refreshed (D219). Review sonnet 2 rounds (R1 0H/2M/6L, R2 clean).
+- MT.9 **in progress** on `wip/MT.9` (base 046752cd, head e44483ca): engine `scene.end`/`scene.answer` + optional `scenePrompt` state, player projection `scenePrompt`, golden `scene-prompt.jsonl`, GM End scene sends `scene.end` and lists who has not answered, player prompt in the Practice window (Send to the GM / Nothing this scene), `e2e/MT.9.spec.ts` + screenshots (D221). Round 1 (sonnet) 0H/4M/4L; M1 fixed. **Next step:** fix M2–M4 (see REVIEW-LOG 2026-10-26 MT.9), then review round 2, then merge to main.
+- Tests: unit 1,273 on wip (1,271 on main); full e2e 111/111 green locally on MT.8 before push. Engine coverage not re-measured.
+- Open `wip/*`: wip/MT.9.
+- Blockers: none.
