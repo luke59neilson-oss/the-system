@@ -88,9 +88,14 @@ function checkPortraits(raw: unknown): Map<string, Buffer> {
     }
     const bytes = Buffer.from(data, 'base64');
     const ext = name.slice(name.lastIndexOf('.') + 1);
+    // Own messages for empty and oversize files, so each check is visible (QF.28).
+    if (bytes.length === 0) throw new StoreError(`Export portrait "${name}" is empty`);
+    if (bytes.length > PORTRAIT_MAX_BYTES) {
+      throw new StoreError(
+        `Export portrait "${name}" is over the ${PORTRAIT_MAX_BYTES / (1024 * 1024)} MB limit`,
+      );
+    }
     if (
-      bytes.length === 0 ||
-      bytes.length > PORTRAIT_MAX_BYTES ||
       detectPortrait(bytes) !== ext ||
       createHash('sha256').update(bytes).digest('hex') !== name.slice(0, 64)
     ) {

@@ -33,6 +33,7 @@ import {
   type StoreOptions,
 } from '../src/store';
 import { portraitFile, savePortrait } from '../src/portraits';
+import { PORTRAIT_MAX_BYTES } from '../src/portraitFormat';
 
 let dataDir: string;
 let options: StoreOptions;
@@ -576,7 +577,25 @@ describe('export and import', () => {
     expect(bad({ [a.replace('.png', '.jpg')]: png(4).toString('base64') })).toThrow(
       /does not match/,
     );
-    expect(CampaignStore.list(dataDir)).toEqual(['main']);
+    // QF.28: a real PNG one byte over the upload limit, correctly named, is refused…
+    const huge = Buffer.concat([png(6), Buffer.alloc(PORTRAIT_MAX_BYTES + 1 - png(6).length)]);
+    expect(huge.length).toBe(PORTRAIT_MAX_BYTES + 1);
+    const hugeName = `${createHash('sha256').update(huge).digest('hex')}.png`;
+    expect(bad({ [hugeName]: huge.toString('base64') })).toThrow(/over the 2 MB limit/);
+    // …one at the limit is not (so the refusal above is the size check's).
+    const max = huge.subarray(0, PORTRAIT_MAX_BYTES);
+    const maxName = `${createHash('sha256').update(max).digest('hex')}.png`;
+    const fits = importCampaign(
+      { ...good, portraits: { [maxName]: max.toString('base64') } },
+      'max',
+      options,
+    );
+    expect(portraitFile(fits.dir, maxName)).not.toBeNull();
+    fits.close();
+    // An empty file named by the hash of nothing is refused too.
+    const emptyName = `${createHash('sha256').update(Buffer.alloc(0)).digest('hex')}.png`;
+    expect(bad({ [emptyName]: '' })).toThrow(/is empty/);
+    expect(CampaignStore.list(dataDir).sort()).toEqual(['main', 'max']);
     store.close();
   });
 
