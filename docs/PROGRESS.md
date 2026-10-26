@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.6 done, MC.7 in review on wip, MC.8 built on wip (not reviewed). Preview ready: Actions → Release → Run workflow (MT).
-**Next item:** MC.7 on `wip/MC.7` (head 43c71d25, main merged at dae0cd16): fix review round-1 Mediums M1, M4, M5 (REVIEW-LOG 2026-10-26 MC.7), round-2 sonnet review, check box, merge to main. Then MC.8 on `wip/MC.8` (8055ba4f, based on wip/MC.7 43753ddc; merge wip/MC.7 or main in, then review).
+**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.8 done, MC.9 built on wip (not reviewed). Preview ready: Actions → Release → Run workflow (MT).
+**Next item:** MC.9 on `wip/MC.9` (head fb29b018, based on main 3bb78ed2): merge main in (D247 there vs D248 on main: keep numeric order), launch its sonnet review, fix, check box, merge. Then MC.10.
 **Blockers:** none
 
 ## Run log
@@ -1220,3 +1220,13 @@ next item, blockers. -->
 - Open `wip/*`: wip/MC.7 (43c71d25), wip/MC.8 (8055ba4f).
 - Next: MC.7 (see Next item).
 - Blockers: none.
+
+### Run 0143b463 · 2026-10-26 12:09–13:00 UTC (close-out at minute 46; end minute ~51)
+- Preflight: `add_repo` not offered (repo already cloned; local main had unrelated stale history, reset to origin/main); lock pushed cleanly; vitest 5.0.5; sonnet reviewers work (worktree, blocking calls; build ran in forks beside them). CI green on main (dae0cd16). No new answers.
+- Efficiency check (hour 12): scorecard row added (end 43.7, items/run 1.2). D234 not yet judgeable (5 runs; judge at 18:00). Sonnet auditor: Tier 1 applied, LOOP §8.0 measured close-out (D248, in trial). `npm run orient` waits for a later check.
+- MC.7 **checked**: fork fixed round-1 M1/M4/M5 (D245); sonnet round 2 0 H / 1 M / 5 L; M1 fixed (Draft reads the just-ended session, D246). Merged at ab9b9527.
+- MC.8 **checked**: merged MC.7 in; sonnet round 1 0 H / 2 M / 3 L, both fixed with failing-first tests; round 2 0 H / 0 M / 4 L. Merged to main this close-out.
+- MC.9 built on `wip/MC.9` by a fork (fb29b018, D247: summary only when the GM asks); not reviewed.
+- Tests: unit 1,465 on main; e2e MC.2 + MC.7 + MC.8 3/3 after the merge. Full suite not run locally (CI runs it).
+- Open `wip/*`: wip/MC.9 (fb29b018).
+- Next: MC.9 review (see Next item). Blockers: none.
