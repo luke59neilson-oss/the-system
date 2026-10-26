@@ -2,7 +2,7 @@ import { mkdtempSync, existsSync, readdirSync, readFileSync, rmSync } from 'node
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { _electron as electron, chromium, expect, test } from '@playwright/test';
-import { killTree } from './process-tree';
+import { holders, killTree } from './process-tree';
 import { gmWindow } from './windows';
 
 // MS.5 smoke: the real Electron app starts the server, opens the GM console
@@ -142,6 +142,7 @@ test('a polite close then a forced kill (an installer upgrading) still leaves th
     // The forced kill, before anyone answers. The whole process tree goes,
     // and is gone before cleanup touches the profile (QF.32).
     expect(await killTree(proc)).toEqual([]);
+    expect(holders(userData)).toEqual([]);
     const made = quitCopies();
     expect(made).toHaveLength(1);
     const copy = readFileSync(path.join(backups, made[0] ?? '', 'events.jsonl'), 'utf8');

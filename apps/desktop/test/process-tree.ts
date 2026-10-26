@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, readlinkSync } from 'node:fs';
 import type { ChildProcess } from 'node:child_process';
 
 // QF.32: a forced kill of Electron's main process leaves its helpers (zygote,
@@ -52,29 +52,75 @@ function alive(pid: number): boolean {
 }
 
 /**
+ * Every process with a file open under `dir` (its open descriptors or its
+ * working directory), so a test can prove nothing is still writing there.
+ */
+export function holders(dir: string): number[] {
+  if (!existsSync('/proc')) return [];
+  const found: number[] = [];
+  for (const name of readdirSync('/proc')) {
+    if (!/^\d+$/.test(name) || Number(name) === process.pid) continue;
+    try {
+      const links = [
+        `/proc/${name}/cwd`,
+        ...readdirSync(`/proc/${name}/fd`).map((fd) => `/proc/${name}/fd/${fd}`),
+      ];
+      if (
+        links.some((link) => {
+          try {
+            const target = readlinkSync(link);
+            return target === dir || target.startsWith(`${dir}/`);
+          } catch {
+            return false;
+          }
+        })
+      ) {
+        found.push(Number(name));
+      }
+    } catch {
+      // Ended while we looked, or not ours to read.
+    }
+  }
+  return found;
+}
+
+function signal(pid: number, sig: NodeJS.Signals): void {
+  try {
+    process.kill(pid, sig);
+  } catch {
+    // Already gone.
+  }
+}
+
+/**
  * SIGKILL `proc` and every process it started, then wait (up to `timeoutMs`)
  * until all of them are gone. Returns the pids still alive at the deadline,
  * so a caller can fail loudly instead of racing them.
+ *
+ * The tree is frozen first (SIGSTOP, top down, re-walked until no new member
+ * appears), so nothing can fork a helper between the snapshot and the kill.
  */
 export async function killTree(proc: ChildProcess, timeoutMs = 10_000): Promise<number[]> {
   const pid = proc.pid;
   if (pid === undefined) return [];
-  const helpers = descendants(pid);
   const exited =
     proc.exitCode !== null || proc.signalCode !== null
       ? Promise.resolve()
       : new Promise<void>((resolve) => proc.once('exit', () => resolve()));
-  proc.kill('SIGKILL');
-  await exited;
-  // Helpers started after the snapshot are children of helpers we know of.
-  const all = [...new Set([...helpers, ...helpers.flatMap((p) => descendants(p))])];
-  for (const helper of all) {
-    try {
-      process.kill(helper, 'SIGKILL');
-    } catch {
-      // Already gone.
+  signal(pid, 'SIGSTOP');
+  const frozen = new Set<number>();
+  for (;;) {
+    const fresh = descendants(pid).filter((helper) => !frozen.has(helper));
+    if (fresh.length === 0) break;
+    for (const helper of fresh) {
+      signal(helper, 'SIGSTOP');
+      frozen.add(helper);
     }
   }
+  const all = [...frozen];
+  signal(pid, 'SIGKILL');
+  for (const helper of all) signal(helper, 'SIGKILL');
+  await exited;
   const deadline = Date.now() + timeoutMs;
   let left = all.filter(alive);
   while (left.length > 0 && Date.now() < deadline) {
