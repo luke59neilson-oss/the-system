@@ -463,7 +463,7 @@ the rest follow in file order. Each gets its own §6 review.
   key (or no co-DM) it shows that message and sends neither the request nor
   a loading screen; e2e asserts players receive no broadcast when there is
   no key, and that the same click works once a key is saved.
-- [ ] **QF.31 The idle Listening panel does not poll the laptop.** CI red
+- [x] **QF.31 The idle Listening panel does not poll the laptop.** CI red
   on 910765fc (2026-10-26): `e2e/M2.A.spec.ts` restart test caught a GM
   console "Failed to load resource: … 503": the MC.5 Listening panel asked
   `/api/gm/listen` every 2 s whatever its state, so a request was often in

@@ -1,23 +1,53 @@
 import { describe, expect, it } from 'vitest';
-import { joinBlocks, listenPollNeeded, voiceRows } from '../src/gm/listenModel';
+import {
+  FAST_RETRIES,
+  SLOW_EVERY,
+  firstReadDue,
+  joinBlocks,
+  listenPollNeeded,
+  voiceRows,
+  type ModelStatus,
+} from '../src/gm/listenModel';
 
-// QF.31: the Listening panel polls only while its view can change on its own.
+// QF.31 (D239): the Listening panel polls only while its view can change on its own.
+const idle = { on: false, model: null as ModelStatus | null, loaded: true, capturing: false };
+
 describe('listening poll (QF.31)', () => {
-  it('polls while the mic is on, whatever the model', () => {
-    expect(listenPollNeeded(true, null)).toBe(true);
-    expect(listenPollNeeded(true, { state: 'ready' })).toBe(true);
+  it('polls while the laptop listens or this window holds a mic, whatever the model', () => {
+    expect(listenPollNeeded({ ...idle, on: true })).toBe(true);
+    expect(listenPollNeeded({ ...idle, on: true, model: { state: 'ready' } })).toBe(true);
+    expect(listenPollNeeded({ ...idle, capturing: true })).toBe(true);
   });
 
   it('polls while the speech model downloads or loads', () => {
-    expect(listenPollNeeded(false, { state: 'downloading', received: 1, bytes: 9 })).toBe(true);
-    expect(listenPollNeeded(false, { state: 'loading' })).toBe(true);
+    expect(
+      listenPollNeeded({ ...idle, model: { state: 'downloading', received: 1, bytes: 9 } }),
+    ).toBe(true);
+    expect(listenPollNeeded({ ...idle, model: { state: 'loading' } })).toBe(true);
   });
 
-  it('is quiet when idle: mic off and the model missing, ready, failed or absent', () => {
-    expect(listenPollNeeded(false, null)).toBe(false);
-    expect(listenPollNeeded(false, { state: 'missing', bytes: 9 })).toBe(false);
-    expect(listenPollNeeded(false, { state: 'ready' })).toBe(false);
-    expect(listenPollNeeded(false, { state: 'failed', error: 'x', bytes: 9 })).toBe(false);
+  it('keeps asking until a first read lands', () => {
+    expect(listenPollNeeded({ ...idle, loaded: false })).toBe(true);
+    expect(listenPollNeeded({ ...idle, loaded: false, model: { state: 'ready' } })).toBe(true);
+  });
+
+  it('is quiet when idle: loaded, mic off and the model missing, ready, failed or absent', () => {
+    expect(listenPollNeeded(idle)).toBe(false);
+    expect(listenPollNeeded({ ...idle, model: { state: 'missing', bytes: 9 } })).toBe(false);
+    expect(listenPollNeeded({ ...idle, model: { state: 'ready' } })).toBe(false);
+    expect(listenPollNeeded({ ...idle, model: { state: 'failed', error: 'x', bytes: 9 } })).toBe(
+      false,
+    );
+  });
+
+  it('retries a failing first read every tick at first, then every 10 s', () => {
+    for (let misses = 0; misses < FAST_RETRIES; misses += 1) {
+      expect(firstReadDue(misses, 1)).toBe(true);
+    }
+    const due = Array.from({ length: 10 }, (_, i) => firstReadDue(FAST_RETRIES, i + 1));
+    expect(due.filter(Boolean)).toHaveLength(10 / SLOW_EVERY);
+    expect(firstReadDue(FAST_RETRIES, SLOW_EVERY)).toBe(true);
+    expect(firstReadDue(FAST_RETRIES + 5, SLOW_EVERY + 1)).toBe(false);
   });
 });
 
