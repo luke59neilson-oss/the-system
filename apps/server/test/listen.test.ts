@@ -20,6 +20,12 @@ let ids = 0;
 const hubOpts = { gmKey: GM, now: () => '2026-10-26T07:00:00.000Z', newId: () => `h${++ids}` };
 const tone = (ms: number) =>
   Float32Array.from({ length: (RATE * ms) / 1000 }, (_, i) => 0.2 * Math.sin(i / 5));
+/** A tone whose level rises and falls 4 times a second, like syllables (MC.6 enrolment). */
+const voice = (ms: number) =>
+  Float32Array.from(
+    { length: (RATE * ms) / 1000 },
+    (_, i) => 0.2 * (0.55 + 0.45 * Math.sin((2 * Math.PI * 4 * i) / RATE)) * Math.sin(i / 5),
+  );
 const pcm = (...parts: Float32Array[]) => {
   const n = parts.reduce((a, p) => a + p.length, 0);
   const buf = Buffer.alloc(n * 4);
@@ -238,7 +244,7 @@ describe('voice enrolment routes (MC.6)', () => {
       method: 'POST',
       url: '/api/gm/listen/speakers/jake',
       headers: gm,
-      payload: pcm(tone(4000)),
+      payload: pcm(voice(4000)),
     });
     expect(r.statusCode, r.body).toBe(200);
     expect(r.json()).toEqual({
@@ -278,21 +284,24 @@ describe('voice enrolment routes (MC.6)', () => {
   it('refuses an unknown character, a short sample, bad bytes and an unheard voice', async () => {
     const post = (url: string, payload: Buffer) =>
       app.inject({ method: 'POST', url, headers: gm, payload });
-    expect((await post('/api/gm/listen/speakers/nobody', pcm(tone(4000)))).statusCode).toBe(404);
-    expect((await post('/api/gm/listen/speakers/constructor', pcm(tone(4000)))).statusCode).toBe(
+    expect((await post('/api/gm/listen/speakers/nobody', pcm(voice(4000)))).statusCode).toBe(404);
+    expect((await post('/api/gm/listen/speakers/constructor', pcm(voice(4000)))).statusCode).toBe(
       404,
     );
-    const short = await post('/api/gm/listen/speakers/jake', pcm(tone(1000)));
+    const short = await post('/api/gm/listen/speakers/jake', pcm(voice(1000)));
     expect(short.statusCode).toBe(400);
     expect(short.json().error).toMatch(/at least 3 seconds/);
     expect((await post('/api/gm/listen/speakers/jake', Buffer.alloc(7))).statusCode).toBe(400);
+    // A steady hum (a fan, a tone) is not a voice either.
+    const hum = await post('/api/gm/listen/speakers/jake', pcm(tone(4000)));
+    expect(hum.statusCode).toBe(422);
     // 4 s of silence: refused before the embedder is asked (D241).
     const silent = await post('/api/gm/listen/speakers/jake', pcm(new Float32Array(RATE * 4)));
     expect(silent.statusCode).toBe(422);
     expect(silent.json().error).toMatch(/Could not hear a voice/);
     expect(embeds).toEqual([]);
     // The fake embedder is out of vectors: no voice heard.
-    expect((await post('/api/gm/listen/speakers/jake', pcm(tone(4000)))).statusCode).toBe(422);
+    expect((await post('/api/gm/listen/speakers/jake', pcm(voice(4000)))).statusCode).toBe(422);
   });
 
   it('refuses to enrol while listening (one mic at a time, D241)', async () => {
@@ -307,7 +316,7 @@ describe('voice enrolment routes (MC.6)', () => {
       method: 'POST',
       url: '/api/gm/listen/speakers/jake',
       headers: gm,
-      payload: pcm(tone(4000)),
+      payload: pcm(voice(4000)),
     });
     expect(r.statusCode).toBe(409);
     expect(r.json().error).toMatch(/Stop listening/);
@@ -332,7 +341,7 @@ describe('voice enrolment routes (MC.6)', () => {
       method: 'POST',
       url: '/api/gm/listen/speakers/jake',
       headers: gm,
-      payload: pcm(tone(4000)),
+      payload: pcm(voice(4000)),
     });
     expect(r.statusCode).toBe(500);
     const del = await app.inject({
@@ -351,7 +360,7 @@ describe('voice enrolment routes (MC.6)', () => {
       method: 'POST',
       url: '/api/gm/listen/speakers/jake',
       headers: gm,
-      payload: pcm(tone(16000)),
+      payload: pcm(voice(16000)),
     });
     expect(r.statusCode).toBe(413);
     // 15 s gets through the size check (the fake then hears no voice: 422).
@@ -359,7 +368,7 @@ describe('voice enrolment routes (MC.6)', () => {
       method: 'POST',
       url: '/api/gm/listen/speakers/jake',
       headers: { 'x-gm-key': GM, 'content-type': 'application/octet-stream' },
-      payload: pcm(tone(15000)),
+      payload: pcm(voice(15000)),
     });
     expect(ok.statusCode).toBe(422);
   });

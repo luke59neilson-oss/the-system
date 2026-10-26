@@ -851,7 +851,7 @@ it is usable early (Luke can run a preview build at any point).
   fixture (licence-clean or synthesized); test that no audio file is kept;
   CPU time per minute of audio measured in CI and the laptop needs written
   in `docs/GM-GUIDE.md`.
-- [ ] **MC.6 Speaker labels.** Enrol a short voice sample per player (on the
+- [x] **MC.6 Speaker labels.** Enrol a short voice sample per player (on the
   GM laptop's mic), label transcript lines when the match is confident,
   delete an enrolment. *Accept:* labelling test on a two-voice fixture;
   e2e for enrolment and deletion.

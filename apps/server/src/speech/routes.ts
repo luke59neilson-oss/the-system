@@ -15,6 +15,7 @@ import type { SpeakerModelStatus, SpeechModelStatus } from './model';
 import {
   EnrolmentFileError,
   EnrolmentStore,
+  levelSwing,
   voicedSeconds,
   type SpeakerEmbedder,
 } from './speakers';
@@ -51,6 +52,8 @@ export const ENROL_BODY_LIMIT = DEFAULT_VAD.sampleRate * 4 * 15;
 export const ENROL_MIN_SECONDS = 3;
 /** Of which at least this much must be at speech level (not silence or a quiet room; D241). */
 export const ENROL_MIN_VOICED_SECONDS = 1.5;
+/** Minimum level swing of a sample (speech rises and falls; a fan or hum does not). */
+export const ENROL_MIN_SWING = 0.2;
 
 const readPcm = (raw: unknown): Float32Array | null => {
   if (!Buffer.isBuffer(raw) || raw.length % 4 !== 0) return null;
@@ -216,7 +219,10 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
           .send({ error: `Record at least ${ENROL_MIN_SECONDS} seconds of speech` });
       }
       const { sampleRate, frameMs, threshold } = DEFAULT_VAD;
-      if (voicedSeconds(samples, sampleRate, frameMs, threshold) < ENROL_MIN_VOICED_SECONDS) {
+      if (
+        voicedSeconds(samples, sampleRate, frameMs, threshold) < ENROL_MIN_VOICED_SECONDS ||
+        levelSwing(samples, sampleRate, frameMs, threshold) < ENROL_MIN_SWING
+      ) {
         return reply
           .code(422)
           .send({ error: 'Could not hear a voice in that sample; speak up and try again' });

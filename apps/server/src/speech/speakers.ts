@@ -180,6 +180,31 @@ export function voicedSeconds(
   return (voiced * frame) / sampleRate;
 }
 
+/**
+ * How much the level of the speech-level frames swings (standard deviation ÷
+ * mean of their RMS). Speech rises and falls with syllables; a fan, hum or
+ * steady tone stays flat, so an enrolment needs some swing (D241).
+ */
+export function levelSwing(
+  samples: Float32Array,
+  sampleRate: number,
+  frameMs: number,
+  threshold: number,
+): number {
+  const frame = Math.max(1, Math.round((sampleRate * frameMs) / 1000));
+  const levels: number[] = [];
+  for (let at = 0; at + frame <= samples.length; at += frame) {
+    let sum = 0;
+    for (let i = at; i < at + frame; i++) sum += samples[i]! * samples[i]!;
+    const level = Math.sqrt(sum / frame);
+    if (level >= threshold) levels.push(level);
+  }
+  if (levels.length < 2) return 0;
+  const mean = levels.reduce((a, b) => a + b, 0) / levels.length;
+  const variance = levels.reduce((a, b) => a + (b - mean) ** 2, 0) / levels.length;
+  return Math.sqrt(variance) / mean;
+}
+
 const rank = (order: readonly string[], id: string) => {
   const i = order.indexOf(id);
   return i === -1 ? order.length : i;
