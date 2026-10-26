@@ -169,12 +169,7 @@ them whole costs about 30k tokens per run for history you do not need):
    fix the findings on the reviewed item before continuing. Do not push the
    item to main to get it reviewed. If the Agent tool has no background
    option (each call blocks until it reports), tell a worktree reviewer the
-   exact SHA to `git checkout --detach`, and never wait idle on it (D206,
-   in trial): first commit the item and open `wip/<next item>` with its
-   first commit, then send the review call in the same message as work that
-   does not depend on it (the full e2e run, or the next item's tests in a
-   Bash call), so both run at once. Do not start a blocking review that
-   cannot return by minute 50; hand the item to `wip/*` instead.
+   exact SHA to `git checkout --detach`.
 4. Fix every High and Medium, re-run checks. A **second review round only
    if round 1 found a High or two or more Mediums**; otherwise verify your
    fixes yourself and log them. **At most 2 review rounds per

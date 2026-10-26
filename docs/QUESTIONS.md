@@ -565,3 +565,9 @@ DESIGN/ROADMAP; do not re-apply them.
     evolution bonus). Default: selections stay due. Option: the override
     skips them too (the character never gets those picks). (D214)
     Answer:
+
+77. **Bound sweep reviewers (efficiency check 2026-10-26).** A quality-sweep
+    reviewer once took 46 minutes and pushed a run past the 52-minute stop.
+    Option: give sweep reviewers a scope or time budget (about 15 minutes) and
+    launch sweeps only in a run's first 5 minutes. Default: no change. (D220)
+    Answer:

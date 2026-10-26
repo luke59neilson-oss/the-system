@@ -21,7 +21,6 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
 | D211 "nothing small fits" is not a reason to stop: keep building the current `wip/<item>` until 44 (§5.5 wording) | 2026-10-25 18:48 | end minute ↑ (42.8 → 47), items/run ↑ | 42.8, 1.7 | Highs 3/10, round-2 share 7/10, red/day 4 | 2026-10-26 00:00 + 6 runs |
-| D206 blocking reviews never idle: commit, open `wip/<next>`, send the review call together with independent work (full e2e, next item's tests); no blocking review that cannot return by 50 | 2026-10-25 00:52 | items/run ↑, end minute ↑ | 1.8, 44.2 | Highs 3/10, round-2 share 7/10, red/day 3 | 2026-10-25 06:00 + 6 runs |
 
 ## Kept
 
@@ -34,6 +33,14 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   Chromium cache (2026-10-23 00:08, D131).
 
 ## Reverted
+
+- D206 blocking reviews never idle (2026-10-26 00:09, D220): half the target
+  went the wrong way (items/run 1.8 → 1.5; end minute 44.2 → 46.0), guards
+  flat or better (Highs 3/10, round-2 share 7/10, red/day 3 → 2), so §9.2
+  reverts the LOOP §6.3 wording. The auditor judged it not distinguishable
+  from item size (MT.6, MT.7) and one sweep overrun. Kept: telling a worktree
+  reviewer its SHA, and sending a blocking review in the same message as
+  independent work is still allowed (it is ordinary parallel tool use).
 
 - D195 `npm run clock` + §5.5 wording (2026-10-24 18:07, D205): target
   barely moved (end minute 44.0 → 44.2, items/run 1.6 → 1.8) and two guards
@@ -55,6 +62,15 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   and D132's CI red/day guard too (7 → 10), so §9.2 reverts both.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-10-26 00:09 auditor (sonnet): D206 reverted (D220); D211 judged at
+  the next check. Tier 1 waiting for a later check (one per check, and this
+  check spent its change on the revert): an `npm run orient` script printing
+  the PROGRESS header and last entry, ROADMAP global rules and only the open
+  boxes' text (orient words 10.5k → ~7k), and a 200-word cap on PROGRESS
+  entries. Tier 2 (Q77): bound sweep reviewers (a scope or 15-minute budget
+  in the prompt; launch only at minute ≤5) after the 46-minute Tests sweep
+  that ran a run to minute ~57. Default: no change.
 
 - 2026-10-25 18:08 auditor (sonnet): Tier 1 applied: §5.5 "nothing small
   fits" is not a reason to stop (D211). Tier 2 (Q75): give a round-2

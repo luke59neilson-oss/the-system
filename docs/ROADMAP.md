@@ -753,7 +753,7 @@ behaviour until an answer lands.
   with its reason (Q60). *Accept:* the list is complete (grep of GM-actor
   refusals in `events/commands.ts` and the reducer); one test per new
   override.
-- [ ] **MT.8 Faction reveal toggle.** Per faction, "revealed to players"
+- [x] **MT.8 Faction reveal toggle.** Per faction, "revealed to players"
   shows its name and standing on players' screens (Q69). *Accept:*
   projection test (unrevealed factions never reach players); e2e.
 - [ ] **MT.9 End-of-scene prompt on players' screens.** "End scene" also asks
