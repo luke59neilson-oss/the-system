@@ -16,6 +16,7 @@ import {
 } from '@the-system/engine';
 import { LiveHub, type HubOptions } from './hub';
 import { registerListenRoutes } from './speech/routes';
+import type { SpeakerEmbedder } from './speech/speakers';
 import type { SpeechToText } from './speech/stt';
 import type { SpeechModelControl } from './speech/routes';
 import type { JoinInfo } from './join';
@@ -75,6 +76,8 @@ export interface CreateServerOptions {
   speech?: () => SpeechToText | null;
   /** MC.5: the downloadable speech model behind `speech` (D236). */
   speechModel?: SpeechModelControl;
+  /** MC.6: voice embeddings for speaker labels; absent or null → no labels. */
+  speakers?: () => SpeakerEmbedder | null;
   /** Wall clock for transcript times (injectable for tests). */
   now?: () => number;
 }
@@ -210,6 +213,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     active: () => active,
     stt: options.speech ?? (() => null),
     ...(options.speechModel ? { model: options.speechModel } : {}),
+    ...(options.speakers ? { speakers: options.speakers } : {}),
     now: options.now ?? Date.now,
   });
 

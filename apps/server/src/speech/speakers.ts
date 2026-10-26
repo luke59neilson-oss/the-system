@@ -18,7 +18,7 @@ export interface SpeakerEmbedder {
 export class FixtureSpeakerEmbedder implements SpeakerEmbedder {
   private next = 0;
   constructor(private readonly vectors: readonly (readonly number[])[]) {}
-  embed(): Promise<number[] | null> {
+  embed(_samples: Float32Array, _sampleRate: number): Promise<number[] | null> {
     const v = this.vectors[this.next++];
     return Promise.resolve(v === undefined ? null : [...v]);
   }

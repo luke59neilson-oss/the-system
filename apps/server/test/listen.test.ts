@@ -194,3 +194,116 @@ describe('listening mark (MC.5)', () => {
     rmSync(root, { recursive: true, force: true });
   });
 });
+
+describe('voice enrolment routes (MC.6)', () => {
+  let root: string;
+  let store: CampaignStore;
+  let app: FastifyInstance;
+  const gm = { 'x-gm-key': GM, 'content-type': 'application/octet-stream' };
+  const embeds: number[][] = [[1, 0, 0]];
+  const embedder = {
+    embed: () => Promise.resolve(embeds.shift() ?? null),
+  };
+
+  beforeAll(async () => {
+    root = mkdtempSync(path.join(tmpdir(), 'the-system-enrol-'));
+    writeFileSync(path.join(root, 'index.html'), '<!doctype html>');
+    store = campaign(root);
+    app = await createServer({
+      webRoot: root,
+      live: { store, ...hubOpts },
+      speech: () => new FixtureSpeechToText([]),
+      speakers: () => embedder,
+      now: () => Date.parse('2026-10-26T19:00:00.000Z'),
+    });
+  });
+  afterAll(async () => {
+    await app.close();
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it('is GM-only', async () => {
+    for (const [method, url] of [
+      ['GET', '/api/gm/listen/speakers'],
+      ['POST', '/api/gm/listen/speakers/jake'],
+      ['DELETE', '/api/gm/listen/speakers/jake'],
+    ] as const) {
+      const r = await app.inject({ method, url });
+      expect(r.statusCode, `${method} ${url}`).toBe(403);
+    }
+  });
+
+  it('enrols a 4 s sample, keeps only the embedding, lists names, and deletes it', async () => {
+    const r = await app.inject({
+      method: 'POST',
+      url: '/api/gm/listen/speakers/jake',
+      headers: gm,
+      payload: pcm(tone(4000)),
+    });
+    expect(r.statusCode, r.body).toBe(200);
+    expect(r.json()).toEqual({
+      characterId: 'jake',
+      name: 'Jake',
+      enrolledAt: '2026-10-26T19:00:00.000Z',
+    });
+    const list = await app.inject({ method: 'GET', url: '/api/gm/listen/speakers', headers: gm });
+    expect(list.json()).toEqual({
+      available: true,
+      enrolments: [{ characterId: 'jake', name: 'Jake', enrolledAt: '2026-10-26T19:00:00.000Z' }],
+    });
+    // No embedding leaves the server, and no audio is kept.
+    expect(list.body).not.toContain('embedding');
+    expect(readdirSync(path.join(store.dir, 'speakers'))).toEqual(['speakers.json']);
+    expect(
+      JSON.parse(readFileSync(path.join(store.dir, 'speakers', 'speakers.json'), 'utf8'))
+        .enrolments[0].embedding,
+    ).toEqual([1, 0, 0]);
+    const del = await app.inject({
+      method: 'DELETE',
+      url: '/api/gm/listen/speakers/jake',
+      headers: gm,
+    });
+    expect(del.statusCode).toBe(200);
+    const again = await app.inject({
+      method: 'DELETE',
+      url: '/api/gm/listen/speakers/jake',
+      headers: gm,
+    });
+    expect(again.statusCode).toBe(404);
+    const after = await app.inject({ method: 'GET', url: '/api/gm/listen/speakers', headers: gm });
+    expect(after.json().enrolments).toEqual([]);
+  });
+
+  it('refuses an unknown character, a short sample, bad bytes and an unheard voice', async () => {
+    const post = (url: string, payload: Buffer) =>
+      app.inject({ method: 'POST', url, headers: gm, payload });
+    expect((await post('/api/gm/listen/speakers/nobody', pcm(tone(4000)))).statusCode).toBe(404);
+    expect((await post('/api/gm/listen/speakers/constructor', pcm(tone(4000)))).statusCode).toBe(
+      404,
+    );
+    const short = await post('/api/gm/listen/speakers/jake', pcm(tone(1000)));
+    expect(short.statusCode).toBe(400);
+    expect(short.json().error).toMatch(/at least 3 seconds/);
+    expect((await post('/api/gm/listen/speakers/jake', Buffer.alloc(7))).statusCode).toBe(400);
+    // The fake embedder is out of vectors: no voice heard.
+    expect((await post('/api/gm/listen/speakers/jake', pcm(tone(4000)))).statusCode).toBe(422);
+  });
+
+  it('takes a 15 s sample but not a longer one', async () => {
+    const r = await app.inject({
+      method: 'POST',
+      url: '/api/gm/listen/speakers/jake',
+      headers: gm,
+      payload: pcm(tone(16000)),
+    });
+    expect(r.statusCode).toBe(413);
+    // 15 s gets through the size check (the fake then hears no voice: 422).
+    const ok = await app.inject({
+      method: 'POST',
+      url: '/api/gm/listen/speakers/jake',
+      headers: { 'x-gm-key': GM, 'content-type': 'application/octet-stream' },
+      payload: pcm(tone(15000)),
+    });
+    expect(ok.statusCode).toBe(422);
+  });
+});
