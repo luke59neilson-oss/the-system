@@ -871,7 +871,7 @@ it is usable early (Luke can run a preview build at any point).
   the session log; at session end a summary (what happened, who did what,
   open threads, NPCs met) in the session log and export. *Accept:*
   fake-backed tests; the export contains the summary.
-- [ ] **MC.10 Prepare ahead.** Optional: when the table heads somewhere, the
+- [x] **MC.10 Prepare ahead.** Optional: when the table heads somewhere, the
   co-DM drafts likely content in the background for approval; off by
   default; counted in the spend counter. *Accept:* fake-backed test; e2e of
   approving a prepared draft.

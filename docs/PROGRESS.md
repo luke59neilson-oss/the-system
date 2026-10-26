@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.8 done, MC.9 built on wip (not reviewed). Preview ready: Actions → Release → Run workflow (MT).
-**Next item:** MC.9 on `wip/MC.9` (head fb29b018, based on main 3bb78ed2): merge main in (D247 there vs D248 on main: keep numeric order), launch its sonnet review, fix, check box, merge. Then MC.10.
+**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.10 done, MC.A built on wip (not reviewed). Preview ready: Actions → Release → Run workflow (MT).
+**Next item:** MC.A on `wip/MC.A` (head 0ff3de27, based on wip/MC.10 694f086d): merge main in, run the full e2e suite, launch the `fable` review, fix, check box, merge; then "Preview ready … (MC)" in Status.
 **Blockers:** none
 
 ## Run log
@@ -1230,3 +1230,13 @@ next item, blockers. -->
 - Tests: unit 1,465 on main; e2e MC.2 + MC.7 + MC.8 3/3 after the merge. Full suite not run locally (CI runs it).
 - Open `wip/*`: wip/MC.9 (fb29b018).
 - Next: MC.9 review (see Next item). Blockers: none.
+
+### Run 26bb7f86 · 2026-10-26 13:15–14:02 UTC (close-out at minute 45; end minute ~47)
+- Preflight: `add_repo` not offered (repo already cloned; local main had stale unrelated history, reset to origin/main); lock pushed cleanly; vitest 5.0.5; sonnet reviewers work (worktree, blocking calls; build and fixes ran in forks beside them). CI green on main (93b2a947). No new answers. Hour 13: no efficiency check or sweep.
+- MC.9 **checked**: merged main into wip/MC.9 (MC.8 and MC.9 routes side by side); sonnet round 1 0 H / 3 M / 4 L, all Mediums fixed with failing-first tests (D250); round 2 0 H / 0 M / 5 L. Merged to main.
+- MC.10 **checked**: built by a fork (D249); sonnet round 1 0 H / 5 M / 5 L, fixed or decided (D251: looks driven by the open GM console); round 2 0 H / 2 M / 3 L, both fixed and verified by me (D252). Merged to main.
+- MC.A started by a fork on `wip/MC.A` (0ff3de27): GM-GUIDE co-DM chapter and live-key checklist; `e2e/MC.A.spec.ts` mock session end to end passes; not reviewed.
+- Tests: unit 1,486 on wip/MC.10 (= main code); e2e MC.8 + MC.9 + MC.10 3/3, MC.A 1/1 on its branch. Full suite not run locally (CI runs it; MC.A runs it next).
+- Lows from MC.9/MC.10 to QUALITY Backlog.
+- Open `wip/*`: wip/MC.A (0ff3de27).
+- Next: MC.A (see Next item). Blockers: none.

@@ -1021,3 +1021,7 @@
 ## 2026-10-26 · MC.10 Prepare ahead, round 1 (run 26bb7f86)
 - Built by a fork on wip/MC.10 (9624ab78, D249). Reviewer sonnet on 9624ab78 (worktree): 0 H / 5 M / 5 L; check 1,482 unit, MC.10 e2e pass.
 - Fixed on wip/MC.10 (694f086d, D251): M1 Review deleted the draft before approval → it stays until Dismiss (and Dismiss from the panel had never worked: content-type with no body; fixed); M3 a failed look consumed its lines → read only after the fast reply parses; M4 stale view after a campaign switch → every tick reloads; M5 tests for the 409 guard and a failed look. M2 (looks run only while the GM console is open) kept by decision D251, with no automatic-tick test yet. Round 2 due (5 Mediums): next run.
+
+## 2026-10-26 · MC.10 Prepare ahead, round 2 (run 26bb7f86; box checked)
+- Reviewer sonnet on 694f086d (worktree): 0 H / 2 M / 3 L; check 1,486 unit, MC.10 e2e pass. D251 (looks driven by the open GM console) judged acceptable.
+- M1 the M3 fix could re-pay for the same unreadable stretch every interval → after 2 unreadable replies in a row the lines count as read (`MAX_FAILED_LOOKS`); M2 approved-but-undismissed drafts filled the 3-draft queue and stopped preparing → Review marks a draft `taken`, taken drafts leave the queue. Both with assertions that fail on the old code (2fdb376b, D252). Verified by me (no round 3 per LOOP §6.4): check 1,486 unit, e2e MC.8/MC.9/MC.10 pass. Merged to main.
