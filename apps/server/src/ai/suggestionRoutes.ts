@@ -129,18 +129,25 @@ export function registerSuggestionRoutes(
         .filter((n): n is string => n !== null)
         .slice(0, 60);
       const dismissed = new Set(f.dismissed);
+      // The pace counts from the call, paid or failed, so a bad reply is not
+      // asked again on every poll (MC.8 review M1).
+      store.write({ ...f, lastCallAt: now });
       const chips = await suggest(
         options.client,
         fresh.slice(-RECENT_LINES),
         { party, known },
         dismissed,
       );
-      const current = new Set(chips.map((c) => c.id));
+      // Re-read: a chip dismissed while the call ran stays gone (MC.8 review M2).
+      const latest = store.read();
+      const gone = new Set(latest.dismissed);
+      const fresher = chips.filter((c) => !gone.has(c.id));
+      const current = new Set(fresher.map((c) => c.id));
       store.write({
-        ...f,
+        ...latest,
         // New chips first; older live chips stay below until dismissed.
-        chips: [...chips, ...f.chips.filter((c) => !current.has(c.id))].slice(0, 12),
-        readUpTo: { ...f.readUpTo, [String(session)]: all.length },
+        chips: [...fresher, ...latest.chips.filter((c) => !current.has(c.id))].slice(0, 12),
+        readUpTo: { ...latest.readUpTo, [String(session)]: all.length },
         lastCallAt: now,
       });
       return { chips: store.read().chips, called: true };
