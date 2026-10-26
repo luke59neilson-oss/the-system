@@ -38,6 +38,11 @@ export interface CoDmOptions {
    * Anthropic client; tests pass a fixture fake (LOOP: runs never call the API).
    */
   makeClient?: (key: () => string | null, models: () => AiModelSettings) => AiClient;
+  /**
+   * The play session running now (null between sessions). The spend counter
+   * starts again at 0 whenever this changes, so it shows one session's cost.
+   */
+  sessionId?: () => string | null;
 }
 
 export interface CoDmStatus {
@@ -54,25 +59,45 @@ export class CoDm {
   readonly client: AiClient;
   private models: AiModelSettings;
   private readonly settingsFile: string;
+  private readonly sessionId: () => string | null;
+  private countedFor: string | null;
 
   constructor(options: CoDmOptions) {
     this.keys = new KeyStore(options.dir, options.cipher);
     this.settingsFile = path.join(options.dir, AI_SETTINGS_FILE);
     this.models = this.readModels();
+    this.sessionId = options.sessionId ?? (() => null);
+    this.countedFor = this.sessionId();
     const make =
       options.makeClient ??
       ((key: () => string | null, models: () => AiModelSettings) =>
         new AnthropicClient(key, models));
-    this.client = counted(
+    const inner = counted(
       make(
         () => this.keys.load(),
         () => this.models,
       ),
       this.spend,
     );
+    this.client = {
+      complete: (request) => {
+        this.followSession();
+        return inner.complete(request);
+      },
+    };
+  }
+
+  /** Resets the spend counter when a new session (or none) is running. */
+  private followSession(): void {
+    const now = this.sessionId();
+    if (now !== this.countedFor) {
+      this.countedFor = now;
+      this.spend.reset();
+    }
   }
 
   status(): CoDmStatus {
+    this.followSession();
     return {
       hasKey: this.keys.has(),
       canSave: this.keys.canSave(),

@@ -111,3 +111,30 @@ describe('redactKey', () => {
     expect(redactKey('nothing here')).toBe('nothing here');
   });
 });
+
+describe('CoDm spend per session', () => {
+  it('starts the counter again when the running session changes', async () => {
+    const { mkdtempSync, rmSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const path = await import('node:path');
+    const { CoDm } = await import('../src/ai/coDm');
+    const dir = mkdtempSync(path.join(tmpdir(), 'codm-'));
+    let session: string | null = 's1';
+    const coDm = new CoDm({
+      dir,
+      cipher: null,
+      sessionId: () => session,
+      makeClient: () => new FixtureAiClient([{ match: 'x', text: 'ok' }]),
+    });
+    await coDm.client.complete(ask('x'));
+    await coDm.client.complete(ask('x'));
+    expect(coDm.status().spend.calls).toBe(2);
+    session = 's2';
+    expect(coDm.status().spend.calls).toBe(0);
+    await coDm.client.complete(ask('x'));
+    expect(coDm.status().spend.calls).toBe(1);
+    session = null;
+    expect(coDm.status().spend.calls).toBe(0);
+    rmSync(dir, { recursive: true, force: true });
+  });
+});

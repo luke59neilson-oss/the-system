@@ -38,6 +38,7 @@ import { Bestiary } from './Bestiary';
 import { Trackers } from './Trackers';
 import { Encounter } from './Encounter';
 import { RulesSettings } from './RulesSettings';
+import { CoDmSettings } from './CoDmSettings';
 import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
 
@@ -182,6 +183,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <TitleLibrary client={client} state={state} />
               <OriginLibrary client={client} state={state} />
               <RulesSettings client={client} state={state} />
+              <CoDmSettings gmKey={gmKey} />
               <Feed live={live} state={state} />
             </div>
           </div>

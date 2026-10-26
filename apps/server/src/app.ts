@@ -7,6 +7,8 @@ import { createServer } from './server';
 import { exportsDirFor } from './sessionLog';
 import { CampaignStore } from './store';
 import { migrateOnLoad } from './migrate';
+import { CoDm } from './ai/coDm';
+import type { SecretCipher } from './ai/keyStore';
 
 /**
  * Starts the whole server: opens the real campaign, builds the app and
@@ -32,6 +34,11 @@ export interface StartOptions {
   backupOnClose?: string | undefined;
   /** OS shown in the join help (M10.1); `process.platform` when omitted. */
   platform?: string | undefined;
+  /**
+   * MC.1: encryption for the co-DM's API key (Electron safeStorage in the
+   * desktop app). Without it the co-DM settings work but no key can be saved.
+   */
+  aiCipher?: SecretCipher | null | undefined;
 }
 
 /**
@@ -104,6 +111,12 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
           : { intervalMs: options.sessionLogIntervalMs }),
       },
       live: { store, gmKey, now: () => new Date().toISOString(), newId: () => randomUUID() },
+      // The key and model settings live in their own folder, never in a campaign.
+      coDm: new CoDm({
+        dir: path.join(storeOptions.dataDir, 'co-dm'),
+        cipher: options.aiCipher ?? null,
+        sessionId: () => store.campaign.state?.currentSession ?? null,
+      }),
     });
     listening = app.server;
     try {
