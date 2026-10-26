@@ -1189,7 +1189,7 @@ next item, blockers. -->
 - Mistake: the close-out commit (c25f6a06) swept the local speech-model cache (`.cache/`, ~103 MB, ignored only on wip/MC.5) into main; removed and ignored in the next commit, but the blobs stay in history (no history rewrites allowed). Clone size grows by ~100 MB; Luke may purge it with git-filter-repo if it matters.
 - Blockers: none.
 
-### Run c10fb54d · 2026-10-26 09:09–09:55 UTC (end minute ~45: build to 44 (MC.6 started on wip by then), close-out after)
+### Run c10fb54d · 2026-10-26 09:09–09:51 UTC (end minute ~41, no §5.5 reason: the forked MC.6 build stopped at a clean hand-off at minute ~40 and the close-out followed straight on; the last 3 build minutes were not used)
 - Preflight: `add_repo` not offered (repo already cloned; stale shallow local main reset to origin/main and unshallowed); lock pushed cleanly; vitest 5.0.5; sonnet, fable and haiku reviewers work (worktree; each Agent call blocks, so build work ran in a forked agent alongside each blocking review batch). CI on main green (0e992494). No new answers. Sweep hour (09 UTC), rotation D.
 - Quality sweep D (e781ac3b..ee438ac1): Rules · sonnet 0 H / 1 M / 1 L; Boundaries · fable 0 / 0 / 1; UX · haiku 0 / 3 / 6. Confirmed: 2 M, both fixed this run (QF.29, QF.30); 1 M lowered to Low, 1 M already in the backlog; Lows to the backlog. Last sweep → ee438ac1, next rotation A.
 - MC.5 Listening and transcript **checked**: review M6 fixed (cf1d499d, packaged speech-engine check in ci.yml desktop-smoke and release.yml); sonnet round 2 0 H / 0 M / 4 L; L1 (poll could stop a just-started mic) and L3 (UTC times) fixed (b9d9a9c0); L2, L4 to the backlog. Merged (2da73cbf).
