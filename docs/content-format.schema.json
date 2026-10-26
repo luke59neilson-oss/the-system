@@ -539,6 +539,10 @@
             "description": "Default true. A hidden quest gives players only a notice that it exists.",
             "type": "boolean"
           },
+          "notice": {
+            "description": "Hidden quests only. Default true: every player gets the notice that it exists. false imports it switched off: nobody is told until the GM chooses who gets the notice.",
+            "type": "boolean"
+          },
           "days": {
             "description": "Timer in in-game days from the day it is imported; omit for none.",
             "anyOf": [

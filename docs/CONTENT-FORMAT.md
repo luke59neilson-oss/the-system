@@ -183,6 +183,7 @@ Each option:
 | `title` | yes | |
 | `text` | no | What players read. |
 | `visible` | no | Default `true`. A hidden quest gives players only a System notice that one exists (DESIGN §7). |
+| `notice` | no | Hidden quests only. Default `true`: every player gets the "a hidden quest exists" notice. `false` imports it switched off: nobody is told until the GM chooses who gets the notice in the Quests window (MT.11). |
 | `days` | no | Timer in in-game days, counted from the day the GM imports it. Omit for none. |
 | `stability` | no | A World Stability meter: `{ "initial": 100, "visible": true, "rules": { "kill-pale-hunter": -2 } }`. Rules map an action tag (lower case, no spaces around it) to a non-zero change; the GM applies actions in the Quests window. |
 

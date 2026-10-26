@@ -3,7 +3,13 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { execute, previewContent, projectForPlayer, type Campaign } from '../../src';
+import {
+  execute,
+  notificationHistory,
+  previewContent,
+  projectForPlayer,
+  type Campaign,
+} from '../../src';
 import { kit, rawRules, run, testContext } from '../helpers/events';
 
 const pack = readFileSync(
@@ -147,5 +153,45 @@ describe('tutorial content pack (M9.5)', () => {
     );
     expect(p.ok).toBe(false);
     expect(!p.ok && p.errors[0]?.message).toBe('Action tags are lower case');
+  });
+
+  // MT.11 (Q72): the hidden quest imports switched off; the GM turns it on.
+  it('imports "The Host\'s Response" switched off: no notice until the GM turns it on', () => {
+    const c = importAll(fresh());
+    const hidden = Object.values(c.state!.quests).find((q) => q.title === "The Host's Response")!;
+    expect(hidden.noticeTo).toEqual([]);
+    expect(projectForPlayer(c.state!, 'jake').hiddenQuests).toBe(0);
+    const notices = (x: Campaign) =>
+      notificationHistory(x).filter(
+        (h) => h.notification.kind === 'hiddenQuest' && h.notification.characterId === 'jake',
+      ).length;
+    expect(notices(c)).toBe(0);
+    // A character created later is not told either.
+    const later = run(
+      [{ type: 'character.create', id: 'kim', name: 'Kim', className: 'Archer', classSkills: kit }],
+      ctx,
+      c,
+    );
+    expect(projectForPlayer(later.state!, 'kim').hiddenQuests).toBe(0);
+    const on = run([{ type: 'quest.edit', questId: hidden.id, noticeTo: null }], ctx, later);
+    expect(projectForPlayer(on.state!, 'jake').hiddenQuests).toBe(1);
+    expect(projectForPlayer(on.state!, 'kim').hiddenQuests).toBe(1);
+    expect(notices(on)).toBe(1);
+  });
+
+  it('refuses notice on a quest players can see', () => {
+    const p = previewContent(
+      fresh(),
+      JSON.stringify({
+        format: 'the-system/content',
+        version: 1,
+        quests: [{ title: 'Q', notice: false }],
+      }),
+      ctx,
+    );
+    expect(p.ok).toBe(false);
+    expect(!p.ok && p.errors[0]?.message).toBe(
+      'notice applies only to hidden quests (visible: false)',
+    );
   });
 });

@@ -96,8 +96,12 @@ export function contentToCommands(
   (content.regions ?? []).forEach((r, i) =>
     commands.push({ path: `regions[${i}]`, command: { type: 'region.define', ...r } }),
   );
-  (content.quests ?? []).forEach((q, i) =>
-    commands.push({ path: `quests[${i}]`, command: { type: 'quest.create', ...q } }),
+  // MT.11 (Q72): `notice: false` imports a hidden quest switched off (nobody told).
+  (content.quests ?? []).forEach(({ notice, ...q }, i) =>
+    commands.push({
+      path: `quests[${i}]`,
+      command: { type: 'quest.create', ...q, ...(notice === false ? { noticeTo: [] } : {}) },
+    }),
   );
   (content.gmNotes ?? []).forEach((n, i) =>
     commands.push({

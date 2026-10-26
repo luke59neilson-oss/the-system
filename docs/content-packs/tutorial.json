@@ -22,7 +22,8 @@
     {
       "title": "The Host's Response",
       "text": "The curse is not a curse. It is the world defending itself, and you are what it is defending against. Decide what you are.",
-      "visible": false
+      "visible": false,
+      "notice": false
     }
   ],
   "regions": [

@@ -237,6 +237,12 @@ export const contentQuestSchema = z
       .boolean()
       .optional()
       .describe('Default true. A hidden quest gives players only a notice that it exists.'),
+    notice: z
+      .boolean()
+      .optional()
+      .describe(
+        'Hidden quests only. Default true: every player gets the notice that it exists. false imports it switched off: nobody is told until the GM chooses who gets the notice.',
+      ),
     days: z
       .number()
       .int()
@@ -267,6 +273,10 @@ export const contentQuestSchema = z
       .nullable()
       .optional()
       .describe('An optional World Stability meter (DESIGN §7).'),
+  })
+  .refine((q) => q.notice === undefined || q.visible === false, {
+    message: 'notice applies only to hidden quests (visible: false)',
+    path: ['notice'],
   })
   .describe('A quest (DESIGN §7).');
 
