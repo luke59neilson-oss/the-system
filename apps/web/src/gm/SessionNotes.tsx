@@ -117,6 +117,7 @@ export function SessionNotes({ gmKey }: { gmKey: string }) {
           )}
         </div>
       )}
+      {data && data.notes.length > 0 && <h4>Running notes</h4>}
       {data && data.notes.length > 0 && (
         <ul aria-label="Running notes" data-testid="session-notes-list">
           {data.notes.map((n, i) => (

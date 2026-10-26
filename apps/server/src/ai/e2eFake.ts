@@ -60,6 +60,22 @@ export function e2eFakeClient(key: () => string | null, models: () => AiModelSet
         [
           { role: 'fast', match: 'Connection test', text: 'ready', usage: E2E_TEST_USAGE },
           ...GENERATE_FIXTURES,
+          // MC.9, TEST ONLY: running notes and the session summary.
+          {
+            role: 'fast',
+            match: 'Session notes.',
+            text: '{"notes": ["The party asked about a herbalist", "Jake readied an arrow"]}',
+          },
+          {
+            role: 'fast',
+            match: 'Session summary.',
+            text: JSON.stringify({
+              whatHappened: 'The party looked for a herbalist and Jake readied his bow.',
+              whoDidWhat: [{ character: 'Jake', did: 'Nocked an arrow and waited' }],
+              openThreads: ['Find the herbalist'],
+              npcsMet: [],
+            }),
+          },
         ],
         models(),
       );
