@@ -220,3 +220,82 @@ describe('suggestion routes after a bad reply (MC.8 review M1)', () => {
     expect(fake.requests).toHaveLength(2);
   });
 });
+
+describe('suggestion routes with a dismissal mid-call (MC.8 review M2)', () => {
+  let root: string;
+  let app: FastifyInstance;
+  let release: () => void = () => {};
+  let gated = false;
+  let started = false;
+  let clock = Date.parse('2026-10-26T19:00:00.000Z');
+
+  beforeAll(async () => {
+    root = mkdtempSync(path.join(tmpdir(), 'the-system-chips-race-'));
+    writeFileSync(path.join(root, 'index.html'), '<!doctype html>');
+    const store = campaign(root);
+    const coDm = new CoDm({
+      dir: path.join(root, 'app-data'),
+      cipher: null,
+      makeClient: () => {
+        const inner = new FixtureAiClient([{ role: 'fast', match: 'Suggestions.', text: CHIPS }]);
+        return {
+          complete: async (request) => {
+            started = true;
+            if (gated) await new Promise<void>((resolve) => (release = resolve));
+            return inner.complete(request);
+          },
+        };
+      },
+    });
+    app = await createServer({
+      webRoot: root,
+      live: { store, ...hubOpts },
+      coDm,
+      now: () => clock,
+    });
+    const dir = transcriptsDir(store);
+    mkdirSync(dir, { recursive: true });
+    const line = (text: string, i: number) =>
+      JSON.stringify({ at: '2026-10-26T19:00:00.000Z', startMs: i, endMs: i, text });
+    writeFileSync(transcriptFile(dir, 0), line('We should find an herbalist.', 0) + '\n');
+    afterFirst = () =>
+      writeFileSync(
+        transcriptFile(dir, 0),
+        [line('We should find an herbalist.', 0), line('The herbalist again.', 1)].join('\n') +
+          '\n',
+      );
+  });
+  let afterFirst: () => void = () => {};
+  afterAll(async () => {
+    await app.close();
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it('keeps a chip dismissed while a call is running gone', async () => {
+    const post = () =>
+      app.inject({ method: 'POST', url: '/api/gm/ai/suggestions', headers: gm, payload: {} });
+    const first = await post();
+    expect(first.statusCode, first.body).toBe(200);
+    const herb = (first.json().chips as { id: string; title: string }[]).find(
+      (c) => c.title === 'Herbalist shop',
+    )!;
+    afterFirst();
+    clock += 120_000;
+    gated = true;
+    started = false;
+    const pending = post();
+    while (!started) await new Promise((r) => setTimeout(r, 5));
+    const del = await app.inject({
+      method: 'DELETE',
+      url: `/api/gm/ai/suggestions/${herb.id}`,
+      headers: gm,
+    });
+    expect(del.statusCode).toBe(200);
+    release();
+    const second = await pending;
+    expect(second.statusCode, second.body).toBe(200);
+    expect((second.json().chips as { title: string }[]).map((c) => c.title)).not.toContain(
+      'Herbalist shop',
+    );
+  });
+});
