@@ -20,9 +20,14 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
-| D211 "nothing small fits" is not a reason to stop: keep building the current `wip/<item>` until 44 (§5.5 wording) | 2026-10-25 18:48 | end minute ↑ (42.8 → 47), items/run ↑ | 42.8, 1.7 | Highs 3/10, round-2 share 7/10, red/day 4 | 2026-10-26 00:00 + 6 runs |
+| D234 `npm run metrics` counts review rounds per item across per-round headings (Tier 1, metric repair) | 2026-10-26 06:58 | round-2 share and Highs read per item again (06:15 row: 0/10 → 4/10) | 4/10, Highs 3 | items/run 1.7, end minute 44.2, red/day 2 | 2026-10-26 12:00 + 6 runs |
 
 ## Kept
+
+- D211 "nothing small fits" is not a reason to stop (2026-10-25 18:48, D234):
+  end minute 42.8 → 44.2, items/run flat at 1.7, guards flat or better
+  (Highs 3 → 3, red/day 4 → 2, within the Q71 noise band). Target short of
+  47, but it moved the right way and nothing got worse.
 
 - D170 close-out gate (2026-10-24 00:08, D178): end minute 43.7 → 46.2,
   items/run 1.3 → 1.5, guards flat (Highs 4/10, round-2 share 5/10, red/day 8).
@@ -62,6 +67,12 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   and D132's CI red/day guard too (7 → 10), so §9.2 reverts both.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-10-26 06:15 auditor (sonnet): no Tier 2. Tier 1 applied: fix
+  `parseReviews` (REVIEW-LOG now writes each round under its own heading, so
+  round 2 was never counted; D234). Waits for a later check (Tier 1): the
+  `npm run orient` script (orient words ~9.9k → ~7k) and shorter PROGRESS
+  entries ("preflight as usual" unless something differs).
 
 - 2026-10-26 00:09 auditor (sonnet): D206 reverted (D220); D211 judged at
   the next check. Tier 1 waiting for a later check (one per check, and this
@@ -143,3 +154,4 @@ table last in the file.
 | 2026-10-25 00:48 | 6 | 44.2 | 1.8 | 7/10 | 3 | 24 | 3 | 6.4 | 8172 |
 | 2026-10-25 18:08 | 6 | 42.8 | 1.7 | 7/10 | 3 | 16 | 4 | 7.2 | 10516 |
 | 2026-10-26 00:09 | 6 | 46.0 | 1.5 | 7/10 | 3 | 13 | 2 | 7.4 | 10477 |
+| 2026-10-26 06:15 | 6 | 44.2 | 1.7 | 4/10 (D234 re-count; read 0/10) | 3 | 18 | 2 | 7.9 | 9879 |

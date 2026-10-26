@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1 and MC.2 done, MC.3 on wip. Preview ready: Actions → Release → Run workflow (MT).
-**Next item:** MC.3 on `wip/MC.3` (head 5eeaf225): GM shop list with Sell → GM trade, CONTENT-FORMAT.md shops section, e2e/MC.3 selling a ware, then sonnet review; then MC.4
+**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.3 done, MC.4 on wip (round-1 fixes in, round 2 due). Preview ready: Actions → Release → Run workflow (MT).
+**Next item:** MC.4 on `wip/MC.4` (head 48a22bcd): add e2e for Regenerate replacing a pending loading screen and a failed/cancelled generation taking it down, rebuild, then the round-2 sonnet review; then MC.5
 **Blockers:** none
 
 ## Run log
@@ -1161,3 +1161,13 @@ next item, blockers. -->
 - Tests: unit 1,338 on main (1,344 on wip/MC.3); full e2e 110/110 on wip/MC.2 at 069b67d5 (1 worker); MC.2/M9.3/MC.1 e2e green after round 2.
 - Open `wip/*`: wip/MC.3 (5eeaf225).
 - Blockers: none.
+
+### Run a3970c1a · 2026-10-26 06:15–07:02 UTC (end minute ~47: close-out began at 44)
+- Preflight: as usual (`add_repo` not offered, local `main` again unrelated: reset to origin/main; lock pushed cleanly; vitest 5.0.5). Efficiency hour (06). CI on main was red at 0d6d996e: desktop e2e teardown `rmSync` hit ENOTEMPTY on the Electron profile after the forced kill; fixed with cleanup retries in teardown only (b8ce93fa), CI green since (b8ce93fa, 2ce7a8df).
+- Efficiency check: scorecard row appended; D211 kept; auditor (sonnet) found `metrics.mjs` never counted a round 2 written under its own heading: fixed as this check's Tier 1 (D234, now In trial); orient script and shorter PROGRESS entries wait for a later check.
+- MC.3 **checked**: GM Shops window, Sell → GM trade at the ware price, CONTENT-FORMAT shops section, re-import note. Round 1 (sonnet): 0 H / 2 M / 5 L → open-offer list with Cancel, Sell disabled while offered, GM-only `shop.remove`, golden log shops-removed, viewport screenshot (D232). Round 2: 0 H / 0 M / 4 L (to QUALITY backlog). Merged (2ce7a8df).
+- MC.4 (wip/MC.4, head 48a22bcd, base 2ce7a8df): Co-DM panel loading-screen option (pinned broadcast, clear on approval; D233), unit tests, e2e/MC.4 + screenshots. Round 1 (sonnet): 0 H / 2 M / 5 L. Both Mediums fixed in 48a22bcd (a regeneration replaces the old loading screen; a failed or cancelled generation takes it down) but not yet e2e-tested or re-reviewed: next run adds those e2e cases, rebuilds, runs MC.4/MC.2/MT.6 e2e and the round-2 review.
+- Tests: unit 1,355 on wip/MC.4 (1,352 on main + metrics test); full e2e 111/111 at 998ad972; full e2e at cbcf55b1 running at close-out (see below).
+- Open `wip/*`: wip/MC.4 (48a22bcd).
+- Blockers: none.
+
