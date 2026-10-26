@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** e781ac3b (2026-10-26, C) · **Next rotation:** D
+**Last sweep:** ee438ac1 (2026-10-26, D) · **Next rotation:** A
 
 ## Lenses and rotation
 
@@ -120,6 +120,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-26 03:15 | C, ff8a1be1..e781ac3b | Rules · haiku | 0 | 0 | 1 | 1 L to Backlog | 0 | ~149k |
 | 2026-10-26 03:15 | C, ff8a1be1..e781ac3b | Tests · sonnet | 0 | 1 | 3 | 1 M confirmed by the reviewer's mutation (QF.28); 3 L to Backlog (3 e2e fails at 4 workers pass alone: load) | 0 | ~107k |
 | 2026-10-26 03:15 | C, ff8a1be1..e781ac3b | UX · fable | 1 | 1 | 5 | 1 H confirmed in CSS and fixed this run (QF.26); 1 M confirmed in code (QF.27); 5 L to Backlog | 0 | ~169k |
+| 2026-10-26 09:12 | D, e781ac3b..ee438ac1 | Rules · sonnet | 0 | 1 | 1 | 1 M confirmed in code and fixed this run (QF.29; the region half not real); 1 L to Backlog | 0 | ~90k |
+| 2026-10-26 09:12 | D, e781ac3b..ee438ac1 | Boundaries · fable | 0 | 0 | 1 | 1 L to Backlog | 0 | ~165k |
+| 2026-10-26 09:12 | D, e781ac3b..ee438ac1 | UX · haiku | 0 | 3 | 6 | 1 M confirmed and fixed this run (QF.30); 1 M lowered to Low (Enter in the loading-text field submits the Generate form: standard form behaviour, the GM is filling that form); 1 M already in Backlog (MC.4 L3, leaving the console mid-generation); 6 L to Backlog | 0 | ~115k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -307,6 +310,10 @@ reviewers ran 15–20 minutes each in the background.
 - (Sweep A 2026-10-24, Tests · haiku) Untested: the 2 MB preview body limit (only a mocked 413), `report: false` for a running session's JSON, case-insensitive duplicate notes beyond items; content boundary tests derive from CONTENT_LIMITS itself; M9.5 checks secrets in page text only, not frames; M4.7/M8.4 use fixed waits before negative frame checks; M3.3 timed out once at 4 workers (load).
 - (M10.A review · fable) Windows log-off backup is best-effort (Windows may end the process once WM_ENDSESSION returns; untestable here); the Windows firewall step assumes the app is already in "Allowed apps" (no "Allow another app… → TheSystem.exe" path); `JoinPanel` reads `/api/join` once per mount, so new interfaces show only after a console reload; AppImage launches in tests and release.yml pass `--no-sandbox`, a plain double-click on Ubuntu 24.04 (AppArmor userns) may hit the SUID-sandbox error; the 3 s close-grace comment and path (already noted above) stays.
 - (MC.5 review r2) A second GM view (the browser /gm beside the desktop window) sees listening on with no mic of its own and posts off within a poll, ending the first window's session; a campaign switch leaves the old Listener's open segment unflushed until the next POST.
+- (Sweep D 2026-10-26, Rules · sonnet) `shop.define` accepts the same item twice as wares at different prices.
+- (Sweep D 2026-10-26, Boundaries · fable) `PUT /api/gm/ai/key` is accepted from any GM console, so a GM console opened in a LAN browser would send the Anthropic key over plain HTTP; refuse it unless the request is loopback (`isLoopback` is unused) and hide the form.
+- (Sweep D 2026-10-26, UX · haiku) Enter in the loading-text field submits Generate; a ticked loading screen with blank text sends nothing and says nothing; Test connection disabled without a reason; Shops: Sell disabled with no characters and no hint, identical aria-labels across shops, "for nothing" vs "for 0 Credits", a shop whose items were removed shows "Nothing for sale." with no hint; on a phone the loading text shows twice (banner and toast).
+- (QF.29/QF.30 review) The panel's "no key" message stays after the GM saves a key until the next Generate; the key pre-check ignores Cancel until it returns.
 
 ## Final review (M11.5)
 

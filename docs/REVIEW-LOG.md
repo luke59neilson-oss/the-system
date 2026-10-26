@@ -981,3 +981,8 @@
 - Fixed (b9d9a9c0): L1 a poll read before Start could stop the new mic (start counter; the poll ignores replies read before the latest Start); L3 transcript times showed UTC, now local. To the QUALITY backlog: L2 a second GM view (browser /gm beside the desktop) turns listening off within a poll; L4 a campaign switch leaves the old Listener's open segment unflushed until the next POST.
 - Box checked.
 
+## 2026-10-26 · QF.29 Shop ware names · QF.30 No loading screen without a key · sonnet (worktree, 4eecff5f; run c10fb54d)
+- Found by sweep D (Rules · sonnet; UX · haiku), confirmed in code (commands.ts `use the id` branch; CoDmPanel sent the broadcast before the request).
+- Fixes: a90022aa (QF.29, D237: a named ware resolves to the newest item of that name; the region half was not real, region names cannot repeat); 4eecff5f (QF.30: the panel checks `GET /api/gm/ai` on open and before every Generate; no key, no request and no loading screen; MC.4 e2e both ways).
+- Review: 0 High, 0 Medium, 4 Low; check 1,357, MC.2/MC.3/MC.4 e2e 5/5; replay unaffected (events store item ids). Lows to the QUALITY backlog (stale "no key" message until the next Generate after saving a key; the pre-check ignores Cancel until it returns; settings label wording unchecked; negative e2e checks right after the message). Boxes checked.
+

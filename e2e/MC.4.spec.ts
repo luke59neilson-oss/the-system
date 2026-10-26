@@ -76,10 +76,11 @@ test('a loading screen shows while the co-DM generates and clears on approval', 
   gm.once('dialog', (d) => void d.accept());
   await codm.getByRole('button', { name: 'Regenerate' }).click();
   await expect(banners).toHaveText(['[System] [The System is weaving a tale…]']);
-  // The region already exists, so that entry cannot apply; the rest can.
+  // The region already exists, so that entry cannot apply; the rest can (the
+  // shop sells the new copies of its wares, QF.29).
   await expect(codm.getByTestId('codm-message')).toContainText('Shop ready');
-  await imp.getByRole('button', { name: 'Apply 3' }).click();
-  await expect(imp.getByRole('status')).toHaveText('Applied 3 entries');
+  await imp.getByRole('button', { name: 'Apply 4' }).click();
+  await expect(imp.getByRole('status')).toHaveText('Applied 4 entries');
   await expect(banners).toHaveText(['[System] [The System is weaving a tale…]']);
   const live = gm.locator('section[aria-labelledby="live-banners"]');
   await live.getByRole('button', { name: /Remove the banner/ }).click();
@@ -168,6 +169,61 @@ test('a regeneration replaces the loading screen; a failure or cancel takes it d
   await imp.getByRole('button', { name: /^Apply \d+$/ }).click();
   await expect(imp.getByRole('status')).toContainText('Applied');
   await expect(banners).toHaveText([LOADING]);
+  await gm.close();
+  await page.close();
+});
+
+// QF.30 (sweep D): with no API key the panel says what it needs, and a click
+// on Generate sends players no loading screen (no banner, no toast, nothing
+// in their Notifications) for a call that cannot run.
+test('with no API key the co-DM sends players no loading screen', async ({ browser }) => {
+  test.setTimeout(90_000);
+  const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
+  await gm.getByLabel('Campaign name').fill('Whale');
+  await gm.getByRole('button', { name: 'Create campaign' }).click();
+  const create = gm.locator('form[aria-labelledby="new-character"]');
+  await create.getByLabel('Name', { exact: true }).fill('Jake');
+  await create.getByRole('button', { name: 'Create character' }).click();
+  await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
+
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await page.goto(server.url);
+  await page.getByRole('link', { name: /Jake/ }).click();
+  await expect(page.getByTestId('connection')).toHaveText('Connected');
+  const banners = page.getByTestId('broadcast-banner');
+
+  const codm = gm.locator('section[aria-labelledby="codm-heading"]');
+  const message = codm.getByTestId('codm-message');
+  const noKey = /No API key is set: the co-DM needs your Anthropic API key/;
+  await expect(message).toHaveText(noKey);
+  await codm.getByLabel('Show players a loading screen while the co-DM works').check();
+  await codm.getByLabel('What the table needs').fill('An herbalist in the Crown camp');
+  const generations: string[] = [];
+  gm.on('request', (r) => {
+    if (r.url().endsWith('/api/gm/ai/generate')) generations.push(r.url());
+  });
+  await codm.getByRole('button', { name: 'Generate', exact: true }).click();
+  await expect(message).toHaveText(noKey);
+  await expect(codm.getByRole('button', { name: 'Generate', exact: true })).toBeEnabled();
+  expect(generations).toEqual([]);
+  const history = page.getByTestId('history');
+  await history.getByLabel('Show').selectOption('broadcast');
+  await expect(page.getByTestId('dings').getByText('constructing')).toHaveCount(0);
+  await expect(banners).toHaveCount(0);
+  await expect(page.getByTestId('ding-toast')).toHaveCount(0);
+
+  // Once a key is saved the same click shows the screen, so the check above
+  // was not passing for want of a working broadcast.
+  const saved = await gm.request.put(`${server.url}/api/gm/ai/key`, {
+    headers: { 'x-gm-key': GM_KEY },
+    data: { key: 'sk-ant-e2e-mc4-fake-0123456789abcdef' },
+  });
+  expect(saved.ok()).toBe(true);
+  await codm.getByRole('button', { name: 'Generate', exact: true }).click();
+  await expect(banners).toHaveText([LOADING]);
+  await expect(message).toHaveText('Shop ready: check it in Import content');
+  expect(generations).toHaveLength(1);
   await gm.close();
   await page.close();
 });
