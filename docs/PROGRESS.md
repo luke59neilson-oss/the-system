@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.3 done, MC.4 on wip (round-1 fixes in, round 2 due). Preview ready: Actions → Release → Run workflow (MT).
-**Next item:** MC.4 on `wip/MC.4` (head 48a22bcd): add e2e for Regenerate replacing a pending loading screen and a failed/cancelled generation taking it down, rebuild, then the round-2 sonnet review; then MC.5
+**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.4 done, MC.5 on wip (listening pipeline built and e2e-tested with fakes; live engine, fixture transcription, CPU measurement and review to go). Preview ready: Actions → Release → Run workflow (MT).
+**Next item:** MC.5 on `wip/MC.5` (head 38b351ab, base 71dabc1b): model download on first use (user folder), a synthesized speech fixture transcribed by sherpa-onnx in a unit test (model from GitHub releases), CPU time per audio minute in CI, laptop needs in GM-GUIDE, wire `sherpaSpeechToText` into the desktop app; then the sonnet review; then MC.6
 **Blockers:** none
 
 ## Run log
@@ -1169,5 +1169,13 @@ next item, blockers. -->
 - MC.4 (wip/MC.4, head 48a22bcd, base 2ce7a8df): Co-DM panel loading-screen option (pinned broadcast, clear on approval; D233), unit tests, e2e/MC.4 + screenshots. Round 1 (sonnet): 0 H / 2 M / 5 L. Both Mediums fixed in 48a22bcd (a regeneration replaces the old loading screen; a failed or cancelled generation takes it down) but not yet e2e-tested or re-reviewed: next run adds those e2e cases, rebuilds, runs MC.4/MC.2/MT.6 e2e and the round-2 review.
 - Tests: unit 1,355 on wip/MC.4 (1,352 on main + metrics test); full e2e 111/111 at 998ad972; full e2e at cbcf55b1 (MC.4 round 1): 104+ passed, only MC.4 errored at 0 ms because the close-out switched the tree to main mid-run (its spec was gone); MC.4 alone passed earlier at cbcf55b1.
 - Open `wip/*`: wip/MC.4 (48a22bcd).
+- Blockers: none.
+
+### Run 1e71bb73 · 2026-10-26 07:16–08:02 UTC (end minute ~46: close-out began at 44)
+- Preflight: `add_repo` not offered (repo already cloned; local main reset to origin/main); lock pushed cleanly; vitest 5.0.5. Not an efficiency or sweep hour. CI on main green (cd2ca181).
+- MC.4 **checked**: the round-1 fix read the loading state through a stale closure, so a failed or cancelled generation ended nothing (new e2e failed on 48a22bcd); screens to end now wait in a list settled by `settleEnding` once their banner arrives (unit test); e2e for regenerate, failure, cancel. Round 2 (sonnet): 0 H / 0 M / 3 L; L1 fixed (approving a generation sent without a screen no longer clears an earlier screen; e2e), L2/L3 to the QUALITY backlog. Merged (71dabc1b).
+- MC.5 (wip/MC.5, head 38b351ab): deterministic RMS voice chunker, `SpeechToText` interface with fixture fake, text-only transcript files (`transcripts/session-NN.jsonl`), GM-only listen routes (on/off, audio, status), hub `listening` message and the players' "[The System is listening]" mark, GM Listening panel (mic toggle, indicator, GM-only transcript), mic permission for the GM window only (audio, own page), sherpa-onnx adapter loaded at run time (D235), e2e/MC.5 with Chromium's fake mic and screenshots. Not reviewed yet (item unfinished). Note: `sherpa-onnx-node@2.0.0` installs here (linux-x64 32 MB) and also ships speaker identification (MC.6) and TTS (a licence-clean synthesized fixture).
+- Tests: unit 1,369 on wip/MC.5 (1,355 on main after MC.4); full e2e 113/113 at 1b0e7f5b (MC.4) and 114/114 on wip/MC.5 at e66989e8.
+- Open `wip/*`: wip/MC.5 (38b351ab).
 - Blockers: none.
 
