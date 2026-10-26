@@ -175,6 +175,14 @@ show "[The System is listening]".
   per session. Contest rolls in the Encounter window log practice for their
   characters on their own. Drafts are kept in the campaign folder under
   `codm/`.
+- **Suggestions** (needs an API key): the Co-DM panel's Suggestions list
+  offers a few ideas from what the table just said, each with the line that
+  prompted it: a thing to generate, a complication, or a callback to an
+  earlier thread. It asks the fast model about every 90 seconds while there
+  is new talk (change the pace in **Every**; **Suggest now** asks at once, at
+  most once a minute). **Use** fills in the generate request below it, ready
+  for **Generate**; **Dismiss** removes the idea for good. Calls show in the
+  spend counter.
 
 ## Rules settings
 
