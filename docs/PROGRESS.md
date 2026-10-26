@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.4 done, MC.5 built on wip (model download, real-engine fixture test, CPU time in CI, packaging) with review round 1 fixed; round 2 and a packaging check to go. Preview ready: Actions → Release → Run workflow (MT).
-**Next item:** MC.5 on `wip/MC.5` (head 2b525d3a, base 71dabc1b): add a CI/desktop check that the packaged app ships `resources/speech/node_modules/sherpa-onnx-*/sherpa-onnx.node` and loads it (review M6), then the sonnet review round 2, merge; then MC.6
+**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.5 done, MC.6 started on wip. Preview ready: Actions → Release → Run workflow (MT).
+**Next item:** MC.6 on `wip/MC.6` (head 0fdabb55, base 2da73cbf): pin a sherpa-onnx speaker-embedding model in `model.ts` (D238), wire the `speakers` option, Voices section in ListenPanel (record, Enrol, Delete, speaker on lines), `e2e/MC.6.spec.ts` with the fake embedder; optional two-voice Kokoro fixture
 **Blockers:** none
 
 ## Run log
@@ -1188,3 +1188,15 @@ next item, blockers. -->
 - Next: packaging check for the native addon (review M6), sonnet round 2, merge MC.5; then MC.6.
 - Mistake: the close-out commit (c25f6a06) swept the local speech-model cache (`.cache/`, ~103 MB, ignored only on wip/MC.5) into main; removed and ignored in the next commit, but the blobs stay in history (no history rewrites allowed). Clone size grows by ~100 MB; Luke may purge it with git-filter-repo if it matters.
 - Blockers: none.
+
+### Run c10fb54d · 2026-10-26 09:09–09:55 UTC (end minute ~45: build to 44 (MC.6 started on wip by then), close-out after)
+- Preflight: `add_repo` not offered (repo already cloned; stale shallow local main reset to origin/main and unshallowed); lock pushed cleanly; vitest 5.0.5; sonnet, fable and haiku reviewers work (worktree; each Agent call blocks, so build work ran in a forked agent alongside each blocking review batch). CI on main green (0e992494). No new answers. Sweep hour (09 UTC), rotation D.
+- Quality sweep D (e781ac3b..ee438ac1): Rules · sonnet 0 H / 1 M / 1 L; Boundaries · fable 0 / 0 / 1; UX · haiku 0 / 3 / 6. Confirmed: 2 M, both fixed this run (QF.29, QF.30); 1 M lowered to Low, 1 M already in the backlog; Lows to the backlog. Last sweep → ee438ac1, next rotation A.
+- MC.5 Listening and transcript **checked**: review M6 fixed (cf1d499d, packaged speech-engine check in ci.yml desktop-smoke and release.yml); sonnet round 2 0 H / 0 M / 4 L; L1 (poll could stop a just-started mic) and L3 (UTC times) fixed (b9d9a9c0); L2, L4 to the backlog. Merged (2da73cbf).
+- QF.29 (D237, a named ware resolves to the newest item of that name) and QF.30 (no loading screen or request without an API key) **checked**: sonnet 0 H / 0 M / 4 L (backlog). Merged (910765fc).
+- MC.6 Speaker labels started on `wip/MC.6` (0fdabb55): `SpeakerEmbedder` interface + fake, cosine matcher (≥0.6 and 0.1 margin), per-campaign enrolment store (embeddings only), labels on transcript lines, GM-only enrol/list/delete routes, `sherpaSpeakerEmbedder`; D238; check 1,407 there.
+- Tests: unit 1,389 on main; e2e MC.3/MC.4/MC.5 6/6 at 910765fc (full suite not run: no shared server change; CI runs it).
+- Open `wip/*`: wip/MC.6 (0fdabb55).
+- Next: MC.6 (see Next item).
+- Blockers: none.
+
