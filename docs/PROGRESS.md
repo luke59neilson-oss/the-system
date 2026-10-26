@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1 done, MC.2 on wip. Preview ready: Actions → Release → Run workflow (MT).
-**Next item:** MC.2 on `wip/MC.2` (head b4c69dbe): fix round-1 H1, H2 and M3–M7 (REVIEW-LOG), then review round 2 (sonnet); then MC.3
+**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1 and MC.2 done, MC.3 on wip. Preview ready: Actions → Release → Run workflow (MT).
+**Next item:** MC.3 on `wip/MC.3` (head 5eeaf225): GM shop list with Sell → GM trade, CONTENT-FORMAT.md shops section, e2e/MC.3 selling a ware, then sonnet review; then MC.4
 **Blockers:** none
 
 ## Run log
@@ -1153,3 +1153,11 @@ next item, blockers. -->
 - Open `wip/*`: wip/MC.2 (b4c69dbe).
 - Blockers: none.
 
+
+### Run 5b3bd199 · 2026-10-26 05:08–05:54 UTC (end minute ~45: handed off at 43)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` again had unrelated history: reset to origin/main, old copy kept as local branch `old-local-main`). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Sonnet reviewer works (worktree; Agent call blocks, ran alongside the full e2e). CI on main green (487ae13e). No new answers. Not a sweep or efficiency hour.
+- MC.2 **checked**: round-1 H1/H2 and M3–M7 fixed (069b67d5, D230): one Import load at a time with deferred co-DM hand-over, 150 s generation limit and Cancel (aborts the API call), honest readiness message, confirm before Regenerate drops edits, co-DM note in Import, 503 without a co-DM, per-kind section and 20% cap tests. Round 2 (sonnet): 0 H / 2 M / 6 L; both Mediums fixed (dropped-request abort test on a real listener; `takesIncoming` gate unit-tested) plus 4 Lows. Merged to main (0d6d996e).
+- MC.3 (wip/MC.3, head 5eeaf225, base 0d6d996e): engine `shop.define`/`shop.defined` (GM-only; wares by item id or name; place by region id or name; optional state fields, no schema bump, D231), content `shops` section + docs/content-examples/shop.json, golden log shops.jsonl, GM-overrides rows, generated shops use the section. Next: GM shop list with "Sell" filling a GM trade to the chosen character, CONTENT-FORMAT.md section, e2e/MC.3 + screenshots, review.
+- Tests: unit 1,338 on main (1,344 on wip/MC.3); full e2e 110/110 on wip/MC.2 at 069b67d5 (1 worker); MC.2/M9.3/MC.1 e2e green after round 2.
+- Open `wip/*`: wip/MC.3 (5eeaf225).
+- Blockers: none.
