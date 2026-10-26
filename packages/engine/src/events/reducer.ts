@@ -2131,6 +2131,16 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         shopOrder: [...(state.shopOrder ?? []), shopId],
       };
     }
+    case 'shop.removed': {
+      const { shopId } = event.payload;
+      const shops = state.shops ?? {};
+      if (!hasOwn(shops, shopId)) fail(event, `unknown shop "${shopId}"`);
+      return {
+        ...state,
+        shops: Object.fromEntries(Object.entries(shops).filter(([id]) => id !== shopId)),
+        shopOrder: (state.shopOrder ?? []).filter((id) => id !== shopId),
+      };
+    }
     case 'faction.defined': {
       const { factionId, name, regionId, members, standing, notes } = event.payload;
       if (hasOwn(state.factions, factionId)) fail(event, `faction "${factionId}" already exists`);

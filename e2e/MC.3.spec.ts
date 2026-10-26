@@ -66,14 +66,29 @@ test('the GM sells a shop ware to a player as a GM trade', async ({ browser }) =
   await expect(shop).toContainText('[Clotleaf Salve] (Common) 15 Credits');
   await expect(shop).toContainText('[Bracers of the Grove] (Uncommon) 120 Credits');
   await expect(shop).toContainText('Hook: She pays well for pale-hunter glands.');
-  await shops.scrollIntoViewIfNeeded();
-  await shops.screenshot({ path: path.join(shots, 'gm-shops-1366x768.png') });
 
   await shops.getByLabel('Sell to').selectOption({ label: 'Jake' });
   await shop.getByRole('button', { name: 'Sell Clotleaf Salve' }).click();
   await expect(shops.getByRole('status')).toHaveText(
     'Offered [Clotleaf Salve] to Jake for 15 Credits: waiting for Jake to accept',
   );
+  // One offer at a time per ware and character; the open offer is listed.
+  await expect(shop.getByRole('button', { name: 'Sell Clotleaf Salve' })).toBeDisabled();
+  const offers = shops.getByRole('list', { name: 'Your open offers' });
+  await expect(offers).toHaveText(/To Jake: \[Clotleaf Salve\] for 15 Credits/);
+
+  // A wrong offer is cancelled: it leaves Jake's screen.
+  await shop.getByRole('button', { name: 'Sell Bracers of the Grove' }).click();
+  await expect(page.getByTestId('trade-incoming')).toHaveCount(2);
+  await shops.scrollIntoViewIfNeeded();
+  await gm.screenshot({ path: path.join(shots, 'gm-shops-1366x768.png') });
+  await offers
+    .getByRole('button', {
+      name: 'Cancel the offer to Jake: [Bracers of the Grove] for 120 Credits',
+    })
+    .click();
+  await expect(shops.getByRole('status')).toHaveText('Offer to Jake cancelled');
+  await expect(page.getByTestId('trade-incoming')).toHaveCount(1);
 
   const offer = inv.getByTestId('trade-incoming');
   await expect(offer).toContainText('Clotleaf Salve');
@@ -82,10 +97,22 @@ test('the GM sells a shop ware to a player as a GM trade', async ({ browser }) =
   await offer.getByRole('button', { name: '[Accept]' }).click();
   await expect(inv.getByTestId('currency')).toHaveText('25');
   await expect(inv.getByTestId('items')).toContainText('Clotleaf Salve');
+  await expect(offers).toHaveCount(0);
+  await expect(shop.getByRole('button', { name: 'Sell Clotleaf Salve' })).toBeEnabled();
 
-  // The shop is GM-side: no keeper, hook, shop name or price list reached Jake.
+  // Removing the shop leaves its items in the library.
+  gm.once('dialog', (d) => void d.accept());
+  await shop.getByRole('button', { name: 'Remove shop' }).click();
+  await expect(shops.getByRole('status')).toHaveText('[Sap & Sinew] removed');
+  await expect(shops).toContainText('No shops yet.');
+  await expect(gm.locator('section[aria-labelledby="item-library"]')).toContainText(
+    'Bracers of the Grove',
+  );
+
+  // The shop is GM-side: no keeper, hook, shop name or place reached Jake
+  // (he saw only the wares the GM offered him).
   const all = frames.join('\n');
-  for (const secret of ['Brenna', 'pale-hunter glands', 'Sap & Sinew', 'Bracers of the Grove']) {
+  for (const secret of ['Brenna', 'pale-hunter glands', 'Sap & Sinew', 'The Crown Camp']) {
     expect(all).not.toContain(secret);
   }
   await gm.close();

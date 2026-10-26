@@ -598,6 +598,8 @@ export type Command =
       wares?: readonly { item: string; price: number }[] | undefined;
       hook?: string | undefined;
     }
+  /** MC.3 review: the GM removes a shop (a mistyped or closed one). */
+  | { type: 'shop.remove'; shopId: string }
   /** MT.8 (Q69): show a faction's name and standing to players, or hide it again. */
   | { type: 'faction.reveal'; factionId: string; revealed: boolean }
   | { type: 'campaign.advanceDay'; days?: number | undefined }
@@ -766,6 +768,7 @@ const commandSchema = z.discriminatedUnion('type', [
     type: z.literal('shop.define'),
     wares: z.array(z.object({ item: z.string(), price: z.number() })).optional(),
   }),
+  z.object({ type: z.literal('shop.remove'), shopId: z.string() }),
   z.object({ type: z.literal('faction.edit') }),
   z.object({ type: z.literal('faction.reveal') }),
   z.object({ type: z.literal('campaign.advanceDay') }),
@@ -1731,6 +1734,8 @@ function toEvent(
           notes: command.notes ?? '',
         },
       };
+    case 'shop.remove':
+      return { type: 'shop.removed', payload: { shopId: command.shopId } };
     case 'faction.edit': {
       const { factionId, name, regionId, members, standing, notes } = command;
       // Undefined fields vanish in the event's JSON round trip (= unchanged).

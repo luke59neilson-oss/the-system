@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_RULES, type CampaignState } from '@the-system/engine';
-import { saleCommand, shopRows } from '../src/gm/shopsModel';
+import { gmOffers, saleCommand, saleOpen, shopRows } from '../src/gm/shopsModel';
 
 // MC.3 (DESIGN §11 "Shops"): the GM's shop list and the sale it builds.
 const state = {
@@ -31,6 +31,39 @@ const state = {
     },
   },
   shopOrder: ['sap', 'free', 'missing'],
+  characters: { jake: { id: 'jake', name: 'Jake' } },
+  trades: {
+    t1: {
+      id: 't1',
+      from: null,
+      to: 'jake',
+      give: { currency: 0, items: { salve: 1 } },
+      get: { currency: 15, items: {} },
+      status: 'open',
+      proposedAt: '',
+      closedAt: null,
+    },
+    t2: {
+      id: 't2',
+      from: null,
+      to: 'jake',
+      give: { currency: 0, items: { salve: 2 } },
+      get: { currency: 0, items: {} },
+      status: 'declined',
+      proposedAt: '',
+      closedAt: '',
+    },
+    t3: {
+      id: 't3',
+      from: 'jake',
+      to: null,
+      give: { currency: 5, items: {} },
+      get: { currency: 0, items: {} },
+      status: 'open',
+      proposedAt: '',
+      closedAt: null,
+    },
+  },
 } as unknown as CampaignState;
 
 describe('shops model (MC.3)', () => {
@@ -62,5 +95,13 @@ describe('shops model (MC.3)', () => {
     });
     expect(saleCommand('jake', free!.wares[0]!)).toMatchObject({ get: {} });
     expect(saleCommand('', sap!.wares[0]!)).toBeNull();
+  });
+
+  it("lists only the GM's open offers, and knows a ware already offered", () => {
+    expect(gmOffers(state)).toEqual([
+      { tradeId: 't1', characterId: 'jake', who: 'Jake', text: '[Clotleaf Salve] for 15 Credits' },
+    ]);
+    expect(saleOpen(state, 'jake', 'salve')).toBe(true);
+    expect(saleOpen(state, 'kim', 'salve')).toBe(false);
   });
 });

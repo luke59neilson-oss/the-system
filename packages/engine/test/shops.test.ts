@@ -72,4 +72,24 @@ describe('shops (MC.3)', () => {
     // The shop's list is unchanged: wares are a price list, not stock.
     expect(c.state?.shops?.['sap']?.wares).toEqual([{ itemId: 'salve', price: 15 }]);
   });
+  it('the GM removes a shop; the items stay in the library; an unknown shop is refused', () => {
+    const c = run([
+      ...setup,
+      { type: 'shop.define', shopId: 'sap', name: 'Sap', wares: [{ item: 'salve', price: 1 }] },
+      { type: 'shop.define', shopId: 'bone', name: 'Bone' },
+      { type: 'shop.remove', shopId: 'sap' },
+    ]);
+    expect(c.state?.shopOrder).toEqual(['bone']);
+    expect(Object.keys(c.state?.shops ?? {})).toEqual(['bone']);
+    expect(c.state?.items['salve']?.name).toBe('Clotleaf Salve');
+    const r = execute(c, { type: 'shop.remove', shopId: 'sap' }, testContext('z'));
+    expect(r.ok ? '' : r.error).toContain('unknown shop "sap"');
+    // Players cannot remove shops (GM-only command).
+    const p = execute(
+      c,
+      { type: 'shop.remove', shopId: 'bone' },
+      { ...testContext('y'), actor: { role: 'player', characterId: 'jake' } },
+    );
+    expect(p.ok).toBe(false);
+  });
 });
