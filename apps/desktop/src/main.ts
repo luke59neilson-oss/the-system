@@ -1,11 +1,14 @@
 import { app, BrowserWindow, dialog, Menu, safeStorage, shell } from 'electron';
+import path from 'node:path';
 import { startApp, type RunningApp } from '../../server/src/app';
 import { newGmKey } from '../../server/src/security';
 import {
   dataDirFor,
   machineIdFor,
+  packagedSpeechLoad,
   desktopPort,
   gmWindowUrl,
+  allowsPermission,
   isOwnPage,
   portFallbackMessage,
   SPLASH_TITLE,
@@ -149,8 +152,17 @@ function openGmWindow(server: RunningApp, notice: string | null = null): void {
         if (response === 1) app.quit();
       });
   });
-  win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) =>
-    callback(false),
+  // MC.5: the mic for the co-DM's listening, for this window only; nothing else.
+  win.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) =>
+    callback(
+      allowsPermission(
+        !win.isDestroyed() && wc === win.webContents,
+        permission,
+        'mediaTypes' in details ? details.mediaTypes : undefined,
+        details.requestingUrl,
+        server.port,
+      ),
+    ),
   );
   // Links to anything but our own pages open in the system browser.
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -220,6 +232,9 @@ async function start(): Promise<void> {
           encrypt: (plain) => safeStorage.encryptString(plain),
           decrypt: (data) => safeStorage.decryptString(data),
         },
+        // MC.5 (D236): the speech model downloads on first use into the user folder.
+        speechModelsDir: path.join(app.getPath('userData'), 'models'),
+        ...(app.isPackaged ? { speechLoad: packagedSpeechLoad(process.resourcesPath) } : {}),
         // Tests only: show another OS's firewall help in the join panel.
         platform: (!app.isPackaged && process.env['THE_SYSTEM_TEST_PLATFORM']) || process.platform,
       }),

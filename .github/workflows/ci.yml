@@ -39,6 +39,15 @@ jobs:
         run: npm run typecheck && npm run lint && npm run format:check && npm run banned
       - name: Unit tests with engine coverage
         run: npm run test:coverage
+      # MC.5 (D236): the real speech engine on the recorded fixture; the model
+      # (Whisper tiny.en, GitHub releases) is cached per version of model.ts, which pins it.
+      - name: Cache the speech model
+        uses: actions/cache@v4
+        with:
+          path: .cache/speech-models
+          key: speech-model-${{ hashFiles('apps/server/src/speech/model.ts') }}
+      - name: Speech-to-text on the fixture (CPU time per audio minute in the job summary)
+        run: npm run test:speech
       - name: Build
         run: npm run build
       - name: Bundle the desktop main process (no Electron binary needed)
@@ -112,6 +121,13 @@ jobs:
           sudo apt-get update && sudo apt-get install -y xvfb
       - name: Desktop smoke
         run: npm run build && npm run build -w @the-system/desktop && cd apps/desktop && xvfb-run -a npx playwright test -c playwright.config.ts --reporter=github,list
+      # MC.5 review M6: package an unpacked Linux build (seconds, no
+      # installer) and check the speech engine ships outside the asar and its
+      # native addon loads from there, the way packagedSpeechLoad finds it.
+      - name: Packaged speech engine (unpacked Linux build)
+        run: |
+          npm run package -w @the-system/desktop -- --linux --dir
+          npx tsx apps/desktop/scripts/check-packaged-speech.ts apps/desktop/release/linux-unpacked/resources
       - name: Upload smoke results
         if: failure()
         uses: actions/upload-artifact@v4

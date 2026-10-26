@@ -140,6 +140,12 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
                 ? 'Not connected'
                 : 'Connecting…'}
         </span>
+        {live.listening && live.status === 'joined' && (
+          // MC.5 (DESIGN §11): the players agreed to be heard; this says when.
+          <span className="listening-mark" data-testid="listening" role="status">
+            [The System is listening]
+          </span>
+        )}
         {!pane && (
           <button
             type="button"

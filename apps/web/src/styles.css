@@ -69,6 +69,35 @@ h2 {
 .status-joined {
   color: var(--ok);
 }
+/* MC.5: the GM's mic indicator and transcript. */
+.listen-indicator {
+  font-family: var(--mono);
+  color: var(--muted);
+}
+.listen-on {
+  color: #ff8a8a;
+  font-weight: 600;
+}
+.transcript {
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 0.9rem;
+  padding-left: 1.2em;
+}
+.transcript time {
+  font-family: var(--mono);
+  color: var(--muted);
+}
+/* MC.5: shown on every screen while the co-DM listens. */
+.listening-mark {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 1px 6px;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 45%, transparent);
+}
 .gm-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));

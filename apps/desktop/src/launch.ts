@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 
 /**
@@ -23,6 +24,40 @@ export function webRootFor(isPackaged: boolean, resourcesPath: string, bundleDir
   return isPackaged
     ? path.join(resourcesPath, 'web')
     : path.resolve(bundleDir, '..', '..', 'web', 'dist');
+}
+
+/**
+ * MC.5 (D236): the packaged app's speech engine. electron-builder copies
+ * sherpa-onnx-node and this platform's native package to
+ * `resources/speech/node_modules`, outside the asar, where Node can load the
+ * addon; the bundle keeps the package external.
+ */
+export function speechPackageDir(resourcesPath: string): string {
+  return path.join(resourcesPath, 'speech', 'node_modules');
+}
+
+/**
+ * Where the packaged speech engine must sit for this platform (MC.5 review
+ * M6): the JS package and the native addon that sherpa-onnx-node loads from
+ * its sibling `sherpa-onnx-<platform>-<arch>` package ('win' for win32).
+ */
+export function packagedSpeechFiles(
+  resourcesPath: string,
+  platform: string = process.platform,
+  arch: string = process.arch,
+): { packageDir: string; addon: string } {
+  const dir = speechPackageDir(resourcesPath);
+  const os = platform === 'win32' ? 'win' : platform;
+  return {
+    packageDir: path.join(dir, 'sherpa-onnx-node'),
+    addon: path.join(dir, `sherpa-onnx-${os}-${arch}`, 'sherpa-onnx.node'),
+  };
+}
+
+export function packagedSpeechLoad(resourcesPath: string): () => Promise<unknown> {
+  const require = createRequire(path.join(speechPackageDir(resourcesPath), 'index.js'));
+  // async: a missing package rejects (the model reports it) rather than throwing.
+  return async () => require('sherpa-onnx-node') as unknown;
 }
 
 /** Campaign data in the OS app-data folder (e.g. %APPDATA%/The System/data). */
@@ -142,4 +177,21 @@ p{margin:0;color:#8b98ad;font-size:14px}
 /** data: URL for the splash. */
 export function splashUrl(): string {
   return `data:text/html;charset=utf-8,${encodeURIComponent(splashHtml())}`;
+}
+
+/**
+ * MC.5 (DESIGN §11 "Listening"): the only permission the app ever grants is
+ * the microphone, to the GM window, on its own console page. Video, screen
+ * capture and every other permission stay refused.
+ */
+export function allowsPermission(
+  fromGmWindow: boolean,
+  permission: string,
+  mediaTypes: readonly string[] | undefined,
+  url: string,
+  port: number,
+): boolean {
+  if (!fromGmWindow || permission !== 'media' || !isOwnPage(url, port)) return false;
+  const types = mediaTypes ?? [];
+  return types.length > 0 && types.every((t) => t === 'audio');
 }

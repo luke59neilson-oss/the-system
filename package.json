@@ -18,6 +18,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:speech": "vitest run -c vitest.speech.config.ts",
     "banned": "node scripts/check-banned.mjs",
     "metrics": "node scripts/metrics.mjs",
     "clock": "node scripts/clock.mjs",

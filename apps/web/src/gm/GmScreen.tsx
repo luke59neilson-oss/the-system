@@ -27,6 +27,7 @@ import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
 import { SessionPanel } from './SessionPanel';
 import { ContentImport, type IncomingContent } from './ContentImport';
 import { CoDmPanel } from './CoDmPanel';
+import { ListenPanel } from './ListenPanel';
 import { PortraitPicker } from './PortraitControls';
 import { PartyDashboard } from './PartyDashboard';
 import { XpAward } from './XpAward';
@@ -204,6 +205,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
                 }
               />
               <SessionPanel client={client} state={state} gmKey={gmKey} />
+              <ListenPanel gmKey={gmKey} />
               <CoDmPanel
                 gmKey={gmKey}
                 onGenerated={(c) => setIncoming((cur) => ({ ...c, seq: (cur?.seq ?? 0) + 1 }))}

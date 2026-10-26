@@ -81,6 +81,8 @@ export type ServerMessage =
   /** `warning`: the change was saved, but something after it failed (e.g. a session-end backup). */
   | { type: 'result'; requestId: string; ok: true; warning?: string }
   | { type: 'result'; requestId: string; ok: false; error: string }
+  /** MC.5: the co-DM is listening (players see "the System is listening"). */
+  | { type: 'listening'; on: boolean }
   | { type: 'error'; error: string };
 
 /** Parses one client frame; returns an error string instead of throwing. */

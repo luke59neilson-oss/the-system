@@ -133,6 +133,27 @@ first.
    The preview lists each entry; tick what to apply. A menu or evolution for
    a level not yet reached cannot be ticked: keep the file for later.
 
+## Co-DM listening (optional)
+
+The **Listening** window turns the laptop's mic into a live, GM-only
+transcript for the co-DM. Speech is turned into text on the laptop; no audio
+is ever saved or sent anywhere, only the text lines, in the campaign folder
+under `transcripts/session-NN.jsonl`. While the mic is on, players' screens
+show "[The System is listening]".
+
+- First time: press **Download speech model** (about 118 MB, English,
+  once). It goes into your user folder (`models` beside the app's data), not
+  the installer, and is checked before use. Then press **Start listening**
+  and allow the microphone if Windows asks.
+- Laptop needs: any 64-bit laptop from the last several years. The
+  speech engine (Whisper tiny.en on 2 CPU threads) used about 6 seconds of
+  CPU per minute of talk on a 2-core cloud machine, so it keeps up with the
+  table with plenty to spare; CI measures it again on every push (job
+  summary). Allow about 350 MB of RAM and 105 MB of disk for the model. It
+  works offline.
+- Put the laptop in the middle of the table; a cheap USB conference mic
+  helps a lot in a noisy room.
+
 ## Rules settings
 
 Every number in DESIGN.md (stat budgets, XP per level, grade gates, Identify

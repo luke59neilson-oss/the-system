@@ -8,6 +8,9 @@ import { exportsDirFor } from './sessionLog';
 import { CampaignStore } from './store';
 import { migrateOnLoad } from './migrate';
 import { CoDm, type CoDmOptions } from './ai/coDm';
+import type { SpeechToText } from './speech/stt';
+import { SpeechModel } from './speech/model';
+import { sherpaSpeechToText } from './speech/sherpa';
 import type { SecretCipher } from './ai/keyStore';
 
 /**
@@ -41,6 +44,17 @@ export interface StartOptions {
   aiCipher?: SecretCipher | null | undefined;
   /** MC.1: the co-DM's AI client; the live Anthropic client when omitted. */
   aiClient?: CoDmOptions['makeClient'] | undefined;
+  /** MC.5: on-laptop speech-to-text; listening is unavailable when omitted. */
+  speech?: (() => SpeechToText | null) | undefined;
+  /**
+   * MC.5 (D236): where the speech model is downloaded on first use (the
+   * desktop app passes `<userData>/models`). Ignored when `speech` is set.
+   */
+  speechModelsDir?: string | undefined;
+  /** MC.5: a ready-made speech model (tests); wins over `speechModelsDir`. */
+  speechModel?: SpeechModel | undefined;
+  /** MC.5: loads the sherpa-onnx package (the packaged app's copy sits in resources). */
+  speechLoad?: (() => Promise<unknown>) | undefined;
 }
 
 /**
@@ -94,7 +108,21 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
       : null;
   };
   try {
+    // MC.5: the live recognizer, once its model is downloaded and loaded.
+    const speechModel =
+      options.speechModel ??
+      (options.speech === undefined && options.speechModelsDir !== undefined
+        ? new SpeechModel({
+            dir: options.speechModelsDir,
+            ...(options.speechLoad === undefined
+              ? {}
+              : { load: (files) => sherpaSpeechToText(files, options.speechLoad) }),
+          })
+        : null);
+    void speechModel?.init();
     const app = await createServer({
+      ...(options.speech === undefined ? {} : { speech: options.speech }),
+      ...(speechModel ? { speech: () => speechModel.stt(), speechModel } : {}),
       // Re-read interfaces per request so joining a new wifi shows up without a restart.
       joinInfo: () => {
         const port = livePort();

@@ -91,6 +91,8 @@ export class LiveHub {
   private historyCache: SeqNotification[] | null = null;
   private readonly store: CampaignStore;
   private readonly options: HubOptions;
+  /** MC.5 (DESIGN §11): whether the co-DM is listening; every joined client is told. */
+  private listeningOn = false;
 
   constructor(store: CampaignStore, options: HubOptions) {
     const limit = options.rateLimit;
@@ -134,6 +136,19 @@ export class LiveHub {
   }
 
   /** Registers a socket; returns the handlers the transport calls. */
+  get listening(): boolean {
+    return this.listeningOn;
+  }
+
+  /** MC.5: turns the listening mark on or off for every joined client. */
+  setListening(on: boolean): void {
+    if (on === this.listeningOn) return;
+    this.listeningOn = on;
+    for (const c of this.clients) {
+      if (c.role.role !== 'none') c.send({ type: 'listening', on });
+    }
+  }
+
   connect(send: (message: ServerMessage) => void): Connection {
     const client: Client = {
       role: { role: 'none' },
@@ -197,6 +212,7 @@ export class LiveHub {
       // lastSeq from the view can never skip a notification.
       this.sendMissed(client, message.lastSeq);
       this.sendSnapshot(client);
+      if (this.listeningOn) client.send({ type: 'listening', on: true });
       return;
     }
     // Commands.

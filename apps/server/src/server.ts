@@ -15,6 +15,9 @@ import {
   previewContent,
 } from '@the-system/engine';
 import { LiveHub, type HubOptions } from './hub';
+import { registerListenRoutes } from './speech/routes';
+import type { SpeechToText } from './speech/stt';
+import type { SpeechModelControl } from './speech/routes';
 import type { JoinInfo } from './join';
 import {
   PORTRAIT_MAX_BYTES,
@@ -65,6 +68,15 @@ export interface CreateServerOptions {
   coDm?: CoDm;
   /** How long a co-DM generation may take before the GM is told to retry (MC.2). */
   generateTimeoutMs?: number;
+  /**
+   * MC.5: on-laptop speech-to-text for the co-DM's listening. Null (or
+   * omitted) when none is installed: the listen routes say so.
+   */
+  speech?: () => SpeechToText | null;
+  /** MC.5: the downloadable speech model behind `speech` (D236). */
+  speechModel?: SpeechModelControl;
+  /** Wall clock for transcript times (injectable for tests). */
+  now?: () => number;
 }
 
 /** The demo campaign's id (D53): its own directory, never the real campaign's. */
@@ -194,6 +206,12 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
 
   app.get('/health', () => ({ status: 'ok' }));
   if (options.coDm) registerCoDmRoutes(app, options.coDm);
+  registerListenRoutes(app, {
+    active: () => active,
+    stt: options.speech ?? (() => null),
+    ...(options.speechModel ? { model: options.speechModel } : {}),
+    now: options.now ?? Date.now,
+  });
 
   // Portrait uploads (M4.4) arrive as raw image bytes; the onRequest hook has
   // already refused anyone without the GM key before the body is read.
