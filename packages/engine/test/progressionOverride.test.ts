@@ -85,6 +85,38 @@ describe('GM override for level, XP and grade (MT.5)', () => {
     expect(kinds.map((f) => (f.kind === 'selection' ? f.level : 0))).toEqual([5, 10]);
   });
 
+  it('a lowered class level withdraws an open menu above it (MT.A review)', () => {
+    let c = ok(base(), set({ grade: 'F', classLevel: 7 }));
+    const options = [
+      { name: 'Twin Step', rarity: 'common' },
+      { name: 'Quick Draw', rarity: 'inferior' },
+      { name: 'Still Aim', rarity: 'inferior' },
+    ];
+    c = ok(c, { type: 'selection.offer', characterId: 'jake', level: 5, options });
+    const lower = set({ grade: 'F', classLevel: 3 });
+    const warning = progressionOverrideSummary(c.state!.rules, jake(c), {
+      grade: 'F',
+      classLevel: 3,
+      professionLevel: 0,
+      xp: { class: 0, profession: 0 },
+    });
+    expect(warning.skips.join('\n')).toContain('open skill menu at class level 5 is withdrawn');
+    const c2 = ok(c, lower);
+    expect(jake(c2).selections).toEqual([]);
+    expect(
+      reject(c2, { type: 'selection.choose', characterId: 'jake', level: 5, skill: 'Twin Step' }),
+    ).toBeTruthy();
+    expect(replay(c2.events).state).toEqual(c2.state);
+    // Earning level 5 again makes the selection due again.
+    const c3 = ok(c2, set({ grade: 'F', classLevel: 6 }));
+    const due = characterFlags(c3.state!, 'jake').filter((f) => f.kind === 'selection');
+    expect(due.map((f) => (f.kind === 'selection' ? f.level : 0))).toEqual([5]);
+    // A chosen menu stays.
+    let k = ok(c, { type: 'selection.choose', characterId: 'jake', level: 5, skill: 'Twin Step' });
+    k = ok(k, lower);
+    expect(jake(k).selections.map((s) => s.chosen)).toEqual(['Twin Step']);
+  });
+
   it('is undone by an ordinary undo, and replays to the same state', () => {
     const c0 = base();
     const c1 = ok(c0, set({ grade: 'F', classLevel: 9, xp: { class: 120, profession: 0 } }));

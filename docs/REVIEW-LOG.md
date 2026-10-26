@@ -921,3 +921,9 @@
 
 ## 2026-10-26 · MT.11 Tutorial hidden quest imports switched off · sonnet
 - Round 1 (0bca76e8): 0 High, 0 Medium, 2 Low. check 1,283 green; M9.5/M9.A/M7.1 e2e green. L1 an imported-off quest looked like any hidden quest in the GM's list → the list line now adds "nobody told" (M7.1 and M9.5 e2e green after). L2 the exported JSON Schema cannot express the "notice only on hidden quests" refine; the app's preview and import enforce it and CONTENT-FORMAT.md says so (kept). No round 2 needed.
+
+## 2026-10-26 · MT.A Batch acceptance and review · fable (worktree, b06c7cc2, run 71e1198d)
+- Round 1 (71141cc9..b06c7cc2): 0 High, 1 Medium, 5 Low. Reviewer: check 1,283 green; MT e2e 12/12; full e2e 106/106 (1 worker); screenshots meet DESIGN §9; no GM-only data to players (faction notes/members, other players' scene prompts, merge answers and ledgers probed); hunger upcaster, MR.1 replay and undo dependencies checked.
+- M (MT.5 × selections): lowering the class level left an open menu from the lost level choosable → the override now withdraws unchosen menus above the new level and the warning names them (D225); engine test added.
+- L `scene.ended` capped at 64 characters → 200 (D225). Other 4 Lows (re-rating list edited after approval, GM-OVERRIDES line drift, setState in render in PracticePanel, merge-offer stale wording) → QUALITY Backlog.
+- One Medium, no High: no second round (LOOP §6.4); fix verified by me (npm run check 1,284; e2e MT.5, MT.9 green).

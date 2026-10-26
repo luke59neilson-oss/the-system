@@ -111,7 +111,29 @@ export function applyProgressionOverride(
     professionLevel: target.professionLevel,
     xp: { class: target.xp.class, profession: target.xp.profession },
   };
-  return keepsEvolution(rules, character, next) ? next : { ...next, evolution: null };
+  const withMenus = withdrawnMenus(character, target.classLevel).length
+    ? {
+        ...next,
+        selections: next.selections.filter(
+          (s) => s.chosen !== null || s.level <= target.classLevel,
+        ),
+      }
+    : next;
+  return keepsEvolution(rules, character, withMenus)
+    ? withMenus
+    : { ...withMenus, evolution: null };
+}
+
+/**
+ * Skill menus offered but not yet chosen at class levels above the new one.
+ * A lowered class level withdraws them (MT.A): a skill cannot be chosen for a
+ * level the character no longer has. Reaching the level again makes the
+ * selection due again, for the GM to offer as usual.
+ */
+function withdrawnMenus(character: Character, toClass: number): readonly number[] {
+  return character.selections
+    .filter((s) => s.chosen === null && s.level > toClass)
+    .map((s) => s.level);
 }
 
 /**
@@ -175,6 +197,12 @@ export function progressionOverrideSummary(
       skips.push(
         'Lowering a level takes nothing back: stats, free points and skills from those levels stay, and earning those levels again grants their class spread again',
       );
+      const open = withdrawnMenus(character, toClass).map(String);
+      if (open.length > 0) {
+        skips.push(
+          `The open skill menu${open.length === 1 ? '' : 's'} at class level ${list(open)} ${open.length === 1 ? 'is' : 'are'} withdrawn unchosen; reaching that level again makes the selection due again`,
+        );
+      }
     }
   }
   if (character.profession !== null && target.professionLevel !== character.professionLevel) {

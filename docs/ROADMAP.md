@@ -766,7 +766,7 @@ behaviour until an answer lands.
 - [x] **MT.11 Tutorial hidden quest imports switched off.** "The Host's
   Response" imports inactive; no notice until the GM turns it on (Q72).
   *Accept:* import test.
-- [ ] **MT.A Batch acceptance and review.** Full suite green; `fable` review;
+- [x] **MT.A Batch acceptance and review.** Full suite green; `fable` review;
   "Preview ready" (LOOP §8.2).
 
 ## MC — Co-DM: live listening and generation (DESIGN §11; L20)

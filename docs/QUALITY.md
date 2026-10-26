@@ -163,6 +163,10 @@ reviewers ran 15–20 minutes each in the background.
   (10:31 UTC): now QF.14.
 
 ## Backlog (Lows; M11.5 goes through these)
+- Rules (MT.A review): an approved evolution re-rating list loses entries when a listed skill changes rarity (setRarity, mark upgrade, accepted merge) before the player chooses; the builder says nothing and no re-approval is asked (`evolution/model.ts` dropStaleRerates). Consider a "changed since you approved" note.
+- Docs (MT.A review): `docs/GM-OVERRIDES.md` "Where" line numbers drift (e.g. reducer refusals moved ~19 lines after MT.9); `scripts/gm-overrides.test.ts` checks keys only. Regenerate the column or drop line numbers.
+- UX/code (MT.A review): `PracticePanel.tsx:34` calls `setHeld` during render; derive it instead.
+- UX (MT.A review): `MergeOfferPanel.tsx:59` "This offer no longer fits your skills" also shows when the joint-use count or the once-per-grade limit is the cause; pass the reason.
 - UX (QF.25 review): the GM override warning loses focus to the page when a live change (award, undo, other GM window) closes it; Escape does not close it.
 - Tests (QF.24 review): no engine/server test that a second character's history lacks another's `mergeOffer` notice (the hub's generic `characterId` filter covers it).
 - Boundaries (sweep B 2026-10-25): the GM change log shows unshared private-journal rows as "note written" (no text, but the GM learns a note exists); consider dropping them from the GM view.
