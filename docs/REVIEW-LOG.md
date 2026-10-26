@@ -949,3 +949,7 @@
 
 ## 2026-10-26 · QF.28 Portrait import size and empty-file checks tested · sonnet (worktree, e63568d2)
 - 0 High, 0 Medium, 0 Low. Empty and oversize portraits now have their own messages (the empty check was masked by detectPortrait); both mutations and `>`→`>=` fail a test. Nits: "2 MB" also hard-coded in portraits.ts; `fits.close()` skipped only on failure.
+
+## 2026-10-26 · MC.2 Generate on demand · sonnet (worktree, b4c69dbe; round 1, item not yet checked)
+- Round 1 (487ae13e..b4c69dbe): 2 High, 5 Medium, 3 Low. Reviewer: check 1,327 green; MC.2/M9.3/MC.1 e2e green; no GM-only data to players; route behind the GM key.
+- Open for the next run (fix on wip/MC.2, then round 2): H1 a generation arriving mid-Apply in ContentImport is wiped by the old apply loop (disable Generate/Preview edits while Import is busy, or make apply honour checkRun); H2 `loadText` ignores checkRun, so a slow file pick and a generation race. M3 no timeout/cancel on a generation (server and panel); M4 no-campaign 404 untested, route absent without coDm; M5 regenerate coverage weak and it overwrites edits without warning; M6 per-kind tests don't check sections, no 20% cap case; M7 a refused generation reads as "ready" in the panel. Lows: Generate/Regenerate buttons touch; no "AI-generated, check it" note in Import; recheck catch skips setChecking(false).
