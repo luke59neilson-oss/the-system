@@ -155,12 +155,12 @@ show "[The System is listening]".
   helps a lot in a noisy room.
 - **Voices** (speaker labels): the speech model download also fetches a
   29 MB voice model (if you downloaded speech before it existed, press
-  **Download voice model**). With the mic off, press **Enrol <name>** and
+  **Download voice model**). With the mic off, press **Enrol** beside a character and
   have that player read aloud for 5 seconds. Transcript lines then start
   with the character's name when the voice match is confident; an unsure
   match stays unnamed rather than guessing. Only a voice print (numbers) is
   kept, in the campaign folder under `speakers/`, never the recording.
-  **Re-record** replaces a sample; **Delete … voice** removes it.
+  **Re-record** replaces a sample; **Delete** (that character's voice) removes it.
 
 ## Rules settings
 
