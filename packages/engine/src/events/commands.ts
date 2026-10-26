@@ -1700,15 +1700,12 @@ function toEvent(
           return { itemId: w.item, price: w.price };
         }
         const wanted = w.item.trim().toLowerCase();
-        const matches = itemOrder.filter((id) => items[id]?.name.trim().toLowerCase() === wanted);
-        if (matches.length !== 1) {
-          throw new EventRejectedError(
-            matches.length === 0
-              ? `wares[${i}]: no item named "${w.item}" in the library`
-              : `wares[${i}]: ${matches.length} items are named "${w.item}": use the id`,
-          );
+        // QF.29 (D237): item names may repeat; the most recently defined wins.
+        const match = itemOrder.findLast((id) => items[id]?.name.trim().toLowerCase() === wanted);
+        if (match === undefined) {
+          throw new EventRejectedError(`wares[${i}]: no item named "${w.item}" in the library`);
         }
-        return { itemId: matches[0] as string, price: w.price };
+        return { itemId: match, price: w.price };
       });
       return {
         type: 'shop.defined',

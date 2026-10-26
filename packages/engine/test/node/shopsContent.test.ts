@@ -64,4 +64,64 @@ describe('shops in content files (MC.3)', () => {
       'The campaign already has a shop named [sap & sinew]: this adds another',
     );
   });
+  it('QF.29: a file that defines an item the library already has sells its own copy', () => {
+    const c = run([
+      ...setup,
+      { type: 'item.define', id: 'old-salve', name: 'Clotleaf Salve', rarity: 'common' },
+    ]);
+    const file = JSON.stringify({
+      format: 'the-system/content',
+      version: 1,
+      items: [{ name: 'Clotleaf Salve', rarity: 'common' }],
+      shops: [{ name: 'Sap & Sinew', wares: [{ item: 'clotleaf salve', price: 9 }] }],
+    });
+    const preview = previewContent(c, file, testContext('p'));
+    if (!preview.ok) throw new Error(JSON.stringify(preview.errors));
+    expect(preview.entries.map((e) => e.error)).toEqual([null, null]);
+    const parsed = parseContentFile(file);
+    if (!parsed.ok) throw new Error(JSON.stringify(parsed.errors));
+    let next = c;
+    const ctx = testContext('q');
+    for (const { command } of contentToCommands(parsed.content, c.state!).commands) {
+      const r = execute(next, command, ctx);
+      if (!r.ok) throw new Error(r.error);
+      next = r.campaign;
+    }
+    const shop = Object.values(next.state?.shops ?? {})[0];
+    const newSalve = next.state?.itemOrder.at(-1);
+    expect(newSalve).not.toBe('old-salve');
+    expect(shop?.wares[0]?.itemId).toBe(newSalve);
+  });
+  it('QF.29: the example imports again; its shop sells the new copies at the existing place', () => {
+    const file = readFileSync(
+      path.join(import.meta.dirname, '../../../../docs/content-examples/shop.json'),
+      'utf8',
+    );
+    const parsed = parseContentFile(file);
+    if (!parsed.ok) throw new Error(JSON.stringify(parsed.errors));
+    let c = run(setup);
+    const ctx = testContext('m');
+    for (let pass = 0; pass < 2; pass += 1) {
+      const preview = previewContent(c, file, testContext(`p${pass}`));
+      if (!preview.ok) throw new Error(JSON.stringify(preview.errors));
+      // Region names are unique, so the second pass refuses only the region;
+      // the shop then stands at the one that exists.
+      const failing = preview.entries.filter((e) => e.error !== null).map((e) => e.error);
+      expect(failing).toEqual(
+        pass === 0 ? [] : [expect.stringContaining('a region is already called')],
+      );
+      for (const { command } of contentToCommands(parsed.content, c.state!).commands) {
+        const r = execute(c, command, ctx);
+        if (!r.ok && command.type === 'region.define' && pass === 1) continue;
+        if (!r.ok) throw new Error(r.error);
+        c = r.campaign;
+      }
+    }
+    const [first, second] = (c.state?.shopOrder ?? []).map((id) => c.state?.shops?.[id]);
+    const firstIds = first?.wares.map((w) => w.itemId) ?? [];
+    const secondIds = second?.wares.map((w) => w.itemId) ?? [];
+    expect(secondIds).toHaveLength(firstIds.length);
+    for (const id of secondIds) expect(firstIds).not.toContain(id);
+    expect(second?.regionId).toBe(first?.regionId);
+  });
 });

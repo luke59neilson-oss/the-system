@@ -444,6 +444,23 @@ the rest follow in file order. Each gets its own §6 review.
   `bytes.length === 0` in `store.ts` checkPortraits fails no test.
   *Accept:* store tests import an oversize and an empty portrait (correct
   sha256 names) and expect refusal; each mutation now fails a test.
+- [ ] **QF.29 A shop ware whose name several library items share resolves.**
+  Sweep D (Rules, sonnet), Medium: `commands.ts` `shop.define` (~1695)
+  refused a ware name matching two or more items ("use the id"), but item
+  names may repeat and content files cannot carry ids, so a file (or a
+  co-DM generation) that defines an item the library already has and sells
+  it, or a re-import of `docs/content-examples/shop.json`, failed. Region
+  names are unique (`region.define` refuses a repeat), so a shop's place
+  cannot be ambiguous. *Accept:* a shared ware name resolves to the most
+  recently defined item, so a file's own item wins (D237); engine tests for
+  a file selling its own copy and for re-importing the example.
+- [ ] **QF.30 No loading screen goes to players when the co-DM cannot
+  generate.** Sweep D (UX, haiku), Medium: `CoDmPanel.tsx` sends the loading
+  broadcast before the request, so with no API key players get a "[The
+  System is constructing…]" banner and a lasting Notifications entry for a
+  call that fails at once. *Accept:* with no key saved the panel says what it
+  needs and Generate is disabled, so no loading screen is sent; e2e asserts
+  players receive no broadcast when there is no key.
 
 ## MR — Luke's answers, batch 2 (2026-10-22)
 
