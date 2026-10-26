@@ -16,6 +16,7 @@ import { JoinPanel } from './JoinPanel';
 import { SkillLibrary } from './SkillLibrary';
 import { ItemLibrary } from './ItemLibrary';
 import { Shops } from './Shops';
+import { clearLoadingCommand, loadingBannerId, loadingCommand } from './loadingScreen';
 import { LootTables } from './LootTables';
 import { CurrencyLedger } from './CurrencyLedger';
 import { TitleLibrary } from './TitleLibrary';
@@ -106,6 +107,25 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
   const [tableOpened, setTableOpened] = useState(false);
   // MC.2: co-DM generations open in the Import window.
   const [incoming, setIncoming] = useState<IncomingContent | null>(null);
+  // MC.4: the loading screen sent with a generation, cleared on approval if asked.
+  const [loading, setLoading] = useState<{
+    text: string;
+    since: number;
+    clearOnApprove: boolean;
+  } | null>(null);
+  const loadingId = state && loading ? loadingBannerId(state, loading.text, loading.since) : null;
+  const sendLoading = (text: string, clearOnApprove: boolean) => {
+    const command = loadingCommand(text);
+    if (!state || !command) return;
+    setLoading({ text: text.trim(), since: state.broadcasts.length, clearOnApprove });
+    void client.command(command);
+  };
+  const approved = () => {
+    if (!state || !loading?.clearOnApprove || loadingId === null) return;
+    const command = clearLoadingCommand(state, loadingId);
+    setLoading(null);
+    if (command) void client.command(command);
+  };
   const party = useMemo(() => partyOf(state), [state]);
   const view = resolvePerspective(wanted, party);
   if (view.kind === 'table' && !tableOpened) setTableOpened(true);
@@ -167,8 +187,14 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <CoDmPanel
                 gmKey={gmKey}
                 onGenerated={(c) => setIncoming((cur) => ({ ...c, seq: (cur?.seq ?? 0) + 1 }))}
+                onLoading={sendLoading}
               />
-              <ContentImport client={client} gmKey={gmKey} incoming={incoming} />
+              <ContentImport
+                client={client}
+                gmKey={gmKey}
+                incoming={incoming}
+                onApproved={approved}
+              />
               <JoinPanel gmKey={gmKey} />
               <CreateCharacter client={client} gmKey={gmKey} state={state} />
               <XpAward client={client} state={state} />

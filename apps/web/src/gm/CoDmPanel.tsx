@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { IncomingContent } from './ContentImport';
+import { LOADING_TEXT } from './loadingScreen';
 
 /** The kinds the server's generate route takes (MC.2, DESIGN §11). */
 const KINDS = [
@@ -18,14 +19,23 @@ type Kind = (typeof KINDS)[number][0];
  * Import window to approve. The GM can edit the JSON and preview the edit,
  * or regenerate. GM-only: the request goes to /api/gm/ai/generate with the
  * GM key, and nothing reaches players until the GM applies it.
+ *
+ * MC.4: the GM can show players a pinned System loading screen while it
+ * generates, and have it cleared when the generated content is approved.
  */
 export function CoDmPanel({
   gmKey,
   onGenerated,
+  onLoading,
 }: {
   gmKey: string;
   onGenerated: (content: Omit<IncomingContent, 'seq'>) => void;
+  /** MC.4: send the loading screen (pinned broadcast) as a generation starts. */
+  onLoading?: (text: string, clearOnApprove: boolean) => void;
 }) {
+  const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState(LOADING_TEXT);
+  const [clearOnApprove, setClearOnApprove] = useState(true);
   const [kind, setKind] = useState<Kind>('shop');
   const [prompt, setPrompt] = useState('');
   const [busy, setBusy] = useState(false);
@@ -53,6 +63,7 @@ export function CoDmPanel({
     abort.current = controller;
     setBusy(true);
     setMessage(`[The System is constructing: ${label}…]`);
+    if (loading && loadingText.trim() !== '') onLoading?.(loadingText, clearOnApprove);
     try {
       const res = await fetch('/api/gm/ai/generate', {
         method: 'POST',
@@ -117,6 +128,39 @@ export function CoDmPanel({
             placeholder="An herbalist in the Crown camp, cheap but shady"
           />
         </label>
+        {onLoading && (
+          <fieldset className="codm-loading">
+            <legend>Loading screen</legend>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={loading}
+                onChange={(e) => setLoading(e.target.checked)}
+              />{' '}
+              Show players a loading screen while the co-DM works
+            </label>
+            {loading && (
+              <>
+                <label>
+                  Loading text
+                  <input
+                    value={loadingText}
+                    maxLength={200}
+                    onChange={(e) => setLoadingText(e.target.value)}
+                  />
+                </label>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={clearOnApprove}
+                    onChange={(e) => setClearOnApprove(e.target.checked)}
+                  />{' '}
+                  Clear it when I approve the content
+                </label>
+              </>
+            )}
+          </fieldset>
+        )}
         <div className="codm-actions">
           <button type="submit" disabled={busy}>
             {busy ? 'Generating…' : 'Generate'}

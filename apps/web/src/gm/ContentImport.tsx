@@ -67,10 +67,13 @@ export function ContentImport({
   client,
   gmKey,
   incoming = null,
+  onApproved,
 }: {
   client: LiveClient;
   gmKey: string;
   incoming?: IncomingContent | null;
+  /** MC.4: every ticked entry of a co-DM generation applied (clears a loading screen). */
+  onApproved?: () => void;
 }) {
   const [fileText, setFileText] = useState('');
   const [fileName, setFileName] = useState('');
@@ -237,6 +240,7 @@ export function ContentImport({
     setPreview(null);
     setChecks(new Map());
     setOutcome(`Applied ${applied.size} entr${applied.size === 1 ? 'y' : 'ies'}`);
+    if (generated && applied.size > 0) onApproved?.();
   };
 
   const blocked = [...picked].some((p) => checks.has(p));
