@@ -53,6 +53,17 @@ export function CoDmPanel({
 
   const label = KINDS.find(([k]) => k === kind)?.[1] ?? kind;
 
+  // QF.30 (DESIGN §11): without a key the panel says what it needs up front.
+  useEffect(() => {
+    let cancelled = false;
+    void whyNotReady(gmKey).then((blocked) => {
+      if (!cancelled && blocked !== null) setMessage(blocked);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [gmKey]);
+
   const generate = async (e?: FormEvent) => {
     e?.preventDefault();
     if (
@@ -65,6 +76,14 @@ export function CoDmPanel({
     const controller = new AbortController();
     abort.current = controller;
     setBusy(true);
+    // QF.30: a generation that cannot run sends players no loading screen.
+    const blocked = await whyNotReady(gmKey);
+    if (blocked !== null || controller.signal.aborted) {
+      if (abort.current === controller) abort.current = null;
+      setBusy(false);
+      setMessage(blocked ?? 'Cancelled: nothing was generated');
+      return;
+    }
     setMessage(`[The System is constructing: ${label}…]`);
     const showing = loading && loadingText.trim() !== '' && onLoading !== undefined;
     // A generation without a screen tells the console too, so approving it
@@ -239,4 +258,19 @@ export function readiness(label: string, preview: PreviewSummary | undefined): s
     return `${label} ready, but ${blocked} entr${blocked === 1 ? 'y' : 'ies'} cannot apply: check Import content`;
   }
   return `${label} ready: check it in Import content`;
+}
+
+/** The message to show instead of generating, or null when the co-DM can run (QF.30). */
+const NO_KEY_MESSAGE =
+  'No API key is set: the co-DM needs your Anthropic API key. Add it in Co-DM settings.';
+async function whyNotReady(gmKey: string): Promise<string | null> {
+  try {
+    const res = await fetch('/api/gm/ai', { headers: { 'x-gm-key': gmKey } });
+    if (res.status === 404) return 'The co-DM is not available on this server';
+    if (!res.ok) return 'Could not check the co-DM settings';
+    const status = (await res.json()) as { hasKey?: boolean };
+    return status.hasKey === true ? null : NO_KEY_MESSAGE;
+  } catch {
+    return 'Could not reach the server';
+  }
 }

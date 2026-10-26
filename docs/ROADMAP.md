@@ -458,9 +458,11 @@ the rest follow in file order. Each gets its own §6 review.
   generate.** Sweep D (UX, haiku), Medium: `CoDmPanel.tsx` sends the loading
   broadcast before the request, so with no API key players get a "[The
   System is constructing…]" banner and a lasting Notifications entry for a
-  call that fails at once. *Accept:* with no key saved the panel says what it
-  needs and Generate is disabled, so no loading screen is sent; e2e asserts
-  players receive no broadcast when there is no key.
+  call that fails at once. *Accept:* the panel says what it needs when it
+  opens without a key, and Generate checks the co-DM status first: with no
+  key (or no co-DM) it shows that message and sends neither the request nor
+  a loading screen; e2e asserts players receive no broadcast when there is
+  no key, and that the same click works once a key is saved.
 
 ## MR — Luke's answers, batch 2 (2026-10-22)
 
