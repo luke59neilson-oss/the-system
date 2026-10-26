@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, Menu, shell } from 'electron';
+import { app, BrowserWindow, dialog, Menu, safeStorage, shell } from 'electron';
 import { startApp, type RunningApp } from '../../server/src/app';
 import { newGmKey } from '../../server/src/security';
 import {
@@ -210,6 +210,16 @@ async function start(): Promise<void> {
         machineId: machineIdFor(app.getPath('userData')),
         // M10.1: every quit leaves a copy of the campaign in its backups folder.
         backupOnClose: 'quit',
+        // MC.1: the co-DM's API key is encrypted with the OS keychain / DPAPI.
+        aiCipher: {
+          // Linux's basic_text backend uses a fixed password: not real encryption.
+          isAvailable: () =>
+            safeStorage.isEncryptionAvailable() &&
+            (process.platform !== 'linux' ||
+              safeStorage.getSelectedStorageBackend() !== 'basic_text'),
+          encrypt: (plain) => safeStorage.encryptString(plain),
+          decrypt: (data) => safeStorage.decryptString(data),
+        },
         // Tests only: show another OS's firewall help in the join panel.
         platform: (!app.isPackaged && process.env['THE_SYSTEM_TEST_PLATFORM']) || process.platform,
       }),

@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { ENGINE_API_VERSION } from '@the-system/engine';
 import { startApp } from './app';
 import { ConfigError, resolveOptions } from './config';
+import { E2E_FAKE_AI_ENV, e2eFakeFromEnv } from './ai/e2eFake';
 
 const SHUTDOWN_TIMEOUT_MS = 5_000;
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -11,7 +12,12 @@ const defaultWebRoot = path.resolve(here, '../../web/dist');
 
 async function main(): Promise<void> {
   const options = resolveOptions(process.argv.slice(2), process.env, defaultWebRoot);
-  const running = await startApp(options);
+  // TEST ONLY: the e2e suite's stand-in key cipher and AI client (MC.1).
+  const fake = e2eFakeFromEnv(process.env);
+  if (fake) console.log(`${E2E_FAKE_AI_ENV}=1: TEST ONLY fake co-DM cipher and AI client`);
+  const running = await startApp(
+    fake ? { ...options, aiCipher: fake.cipher, aiClient: fake.makeClient } : options,
+  );
   const { port, gmKey } = running;
   console.log(
     `The System server listening on http://${options.host}:${port} (engine API v${ENGINE_API_VERSION})`,

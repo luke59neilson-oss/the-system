@@ -28,10 +28,12 @@ import { helloMessage } from './protocol';
 import { SessionLogWriter, sessionReport, type SessionLogOptions } from './sessionLog';
 import { authPath, gmKeyMatches, isAllowedHost, isAllowedOrigin } from './security';
 import type { CampaignStore } from './store';
+import { registerCoDmRoutes, type CoDm } from './ai/coDm';
 
 export interface CreateServerOptions {
   webRoot: string;
-  logger?: boolean;
+  /** Fastify request logging; tests pass a stream to capture the log (MC.1 key canary). */
+  logger?: boolean | { stream: { write(line: string): void } };
   /** The open campaign and hub settings; without it the WebSocket only says hello. */
   live?: { store: CampaignStore } & HubOptions;
   /** Extra origins allowed to open the WebSocket (e.g. the Vite dev server). */
@@ -50,6 +52,8 @@ export interface CreateServerOptions {
    * the last write happens when the server closes. Off when omitted.
    */
   sessionLog?: Omit<SessionLogOptions, 'onError'>;
+  /** Co-DM settings and AI client (MC.1); its routes are GM-only. Off when omitted. */
+  coDm?: CoDm;
 }
 
 /** The demo campaign's id (D53): its own directory, never the real campaign's. */
@@ -60,7 +64,10 @@ export const PUBLIC_API = new Set(['/api/characters']);
 
 /** Builds the Fastify app. Does not listen; callers decide host and port. */
 export async function createServer(options: CreateServerOptions): Promise<FastifyInstance> {
-  const app = Fastify({ logger: options.logger ?? false });
+  const logger = options.logger ?? false;
+  const app = Fastify({
+    logger: typeof logger === 'boolean' ? logger : { level: 'info', stream: logger.stream },
+  });
   const webRoot = path.resolve(options.webRoot);
 
   if (!existsSync(path.join(webRoot, 'index.html'))) {
@@ -175,6 +182,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   });
 
   app.get('/health', () => ({ status: 'ok' }));
+  if (options.coDm) registerCoDmRoutes(app, options.coDm);
 
   // Portrait uploads (M4.4) arrive as raw image bytes; the onRequest hook has
   // already refused anyone without the GM key before the body is read.
