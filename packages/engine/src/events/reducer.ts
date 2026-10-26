@@ -1448,7 +1448,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const character = characterOf(state, event, characterId);
       if (session !== undefined) {
         // MC.7 review M4: the GM confirms a co-DM draft in the session it came from.
-        if (event.actor.role === 'player') fail(event, 'players log practice in the current session');
+        if (event.actor.role === 'player')
+          fail(event, 'players log practice in the current session');
         if (session !== null && !state.sessions.some((x) => x.id === session)) {
           fail(event, `no play session "${session}"`);
         }
