@@ -11,6 +11,7 @@ import {
   type Enrolment,
   type SpeakerEmbedder,
 } from '../src/speech/speakers';
+import { sherpaSpeakerEmbedder } from '../src/speech/sherpa';
 import { FixtureSpeechToText } from '../src/speech/stt';
 import { Listener, transcriptFile } from '../src/speech/transcript';
 
@@ -218,5 +219,44 @@ describe('labelling transcript lines (MC.6, two voices)', () => {
     await l.stop();
     expect(l.lines.map((x) => [x.text, x.speaker])).toEqual([['hello', undefined]]);
     expect(errors).toHaveLength(1);
+  });
+});
+
+describe('the live embedder adapter (sherpa-onnx, D238)', () => {
+  it('feeds the whole segment, returns the vector, and gives null when the model is not ready', async () => {
+    const fed: number[] = [];
+    let ready = true;
+    const fake = {
+      default: {
+        SpeakerEmbeddingExtractor: class {
+          constructor(readonly config: { model: string }) {
+            expect(config.model).toBe('/m/voice.onnx');
+          }
+          createStream() {
+            return {
+              acceptWaveform: (o: { samples: Float32Array }) => fed.push(o.samples.length),
+              inputFinished: () => undefined,
+            };
+          }
+          isReady() {
+            return ready;
+          }
+          compute() {
+            return Float32Array.from([0.5, -0.25]);
+          }
+        },
+      },
+    };
+    const e = await sherpaSpeakerEmbedder('/m/voice.onnx', () => Promise.resolve(fake));
+    expect(await e.embed(new Float32Array(48000), 16000)).toEqual([0.5, -0.25]);
+    ready = false;
+    expect(await e.embed(new Float32Array(10), 16000)).toBeNull();
+    expect(fed).toEqual([48000, 10]);
+  });
+
+  it('rejects when the package is missing', async () => {
+    await expect(
+      sherpaSpeakerEmbedder('/m/voice.onnx', () => Promise.reject(new Error('no module'))),
+    ).rejects.toThrow('no module');
   });
 });

@@ -5,6 +5,7 @@
 // native package stays outside the bundles (esbuild external) and is loaded
 // at run time; the packaged desktop app loads its copy from resources.
 import path from 'node:path';
+import type { SpeakerEmbedder } from './speakers';
 import type { SpeechToText } from './stt';
 
 /** Files a Whisper model folder must hold (sherpa-onnx's int8 export). */
@@ -61,6 +62,41 @@ export async function sherpaSpeechToText(
       stream.acceptWaveform({ sampleRate, samples });
       const result = await recognizer.decodeAsync(stream);
       return (result.text ?? '').trim();
+    },
+  };
+}
+
+// MC.6 (D238): voice embeddings for speaker labels, sherpa-onnx's
+// SpeakerEmbeddingExtractor with a downloaded speaker model (one .onnx file).
+interface SherpaEmbedStream {
+  acceptWaveform(o: { sampleRate: number; samples: Float32Array }): void;
+  inputFinished(): void;
+}
+interface SherpaExtractor {
+  createStream(): SherpaEmbedStream;
+  isReady(stream: SherpaEmbedStream): boolean;
+  compute(stream: SherpaEmbedStream, enableExternalBuffer?: boolean): Float32Array;
+}
+interface SherpaSpeakerModule {
+  SpeakerEmbeddingExtractor: new (config: unknown) => SherpaExtractor;
+}
+
+/** Loads the speaker-embedding extractor; rejects when the package or model is missing. */
+export async function sherpaSpeakerEmbedder(
+  model: string,
+  load: () => Promise<unknown> = () => import('sherpa-onnx-node' as string),
+): Promise<SpeakerEmbedder> {
+  const loaded = (await load()) as SherpaSpeakerModule & { default?: SherpaSpeakerModule };
+  const mod = loaded.default?.SpeakerEmbeddingExtractor ? loaded.default : loaded;
+  const extractor = new mod.SpeakerEmbeddingExtractor({ model, numThreads: 1, provider: 'cpu' });
+  return {
+    embed(samples, sampleRate) {
+      const stream = extractor.createStream();
+      stream.acceptWaveform({ sampleRate, samples });
+      stream.inputFinished();
+      // Too little audio for the model to tell a voice: no label.
+      if (!extractor.isReady(stream)) return Promise.resolve(null);
+      return Promise.resolve(Array.from(extractor.compute(stream, false)));
     },
   };
 }
