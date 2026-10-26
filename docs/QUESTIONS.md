@@ -578,3 +578,13 @@ DESIGN/ROADMAP; do not re-apply them.
     launch sweeps only in a run's first 5 minutes. Default: no change. (D220)
     Answer (Luke, 2026-10-26, in chat): no change; sweep reviewers stay
     unbounded. (applied, L21)
+
+78. **How sure before a line gets a name? (MC.6, D241)** Speaker labels
+    prefer silence to a wrong name: a line is named only when the voice is
+    clearly closest (similarity at least 0.6 and 0.1 ahead of the next
+    voice). With only one player enrolled there is no next voice, so that
+    player's lines need 0.7, which keeps the GM's own lines from taking
+    their name but may leave some of theirs unnamed. These numbers have not
+    been tried on real voices yet; your first session with the mic will
+    show it. Default: keep 0.6 / 0.1 and the stricter bar for one voice.
+    Option: lower them if too few lines get names.

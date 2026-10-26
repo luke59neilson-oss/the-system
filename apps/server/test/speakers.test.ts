@@ -8,6 +8,7 @@ import {
   EnrolmentStore,
   FixtureSpeakerEmbedder,
   cosine,
+  levelSwing,
   matchSpeaker,
   voicedSeconds,
   type Enrolment,
@@ -96,6 +97,17 @@ describe('voiced seconds (enrolment check, D241)', () => {
     }
     expect(voicedSeconds(sample, RATE, 30, 0.01)).toBeCloseTo(2, 1);
     expect(voicedSeconds(new Float32Array(RATE * 4), RATE, 30, 0.01)).toBe(0);
+  });
+
+  it('tells a level that rises and falls (speech) from a steady hum', () => {
+    const hum = Float32Array.from({ length: RATE * 4 }, (_, i) => 0.1 * Math.sin(i / 5));
+    const syllables = Float32Array.from(
+      { length: RATE * 4 },
+      (_, i) => 0.2 * (0.55 + 0.45 * Math.sin((2 * Math.PI * 4 * i) / RATE)) * Math.sin(i / 5),
+    );
+    expect(levelSwing(hum, RATE, 30, 0.01)).toBeLessThan(0.05);
+    expect(levelSwing(syllables, RATE, 30, 0.01)).toBeGreaterThan(0.2);
+    expect(levelSwing(new Float32Array(RATE), RATE, 30, 0.01)).toBe(0);
   });
 });
 
