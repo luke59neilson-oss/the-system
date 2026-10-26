@@ -133,7 +133,52 @@ first.
    The preview lists each entry; tick what to apply. A menu or evolution for
    a level not yet reached cannot be ticked: keep the file for later.
 
-## Co-DM listening (optional)
+## Co-DM (optional)
+
+The co-DM is Claude helping you run the table: it listens along, keeps
+notes, offers ideas and writes shops, NPCs, places, encounters, items and
+quest hooks on request. It never changes the campaign on its own. Everything
+it writes waits for your approval, and none of it reaches players until you
+approve it. Everything except listening needs an Anthropic API key.
+
+### API key, models and spend
+
+- Open **Co-DM settings** on the GM console. Paste your **Anthropic API key**
+  (your own pay-as-you-go API account, separate from a Claude subscription)
+  and press **Save key**. It is stored encrypted on this laptop, never shown
+  again, never written to logs and never sent to players. **Replace API key**
+  or **Remove key** changes it.
+- **Test connection** makes one tiny call to check the key works.
+- **Fast model (listening, suggestions)** and **Strong model (generation)**
+  can be changed; press **Save models**. The defaults are a Haiku model for
+  quick reads and a Sonnet model for writing content.
+- The spend counter ("This session: $… · N calls") adds up every paid call
+  this session, from the API's own token counts. It shows in Co-DM settings
+  and in the Co-DM panel.
+- Without a key the rest of the app works as before; the co-DM panel says
+  what it needs.
+
+### Generate on request
+
+In the **Co-DM** panel pick a kind (Shop, NPC, Place, Encounter, Item, Quest
+hook), type **What the table needs** ("an herbalist near the canyon gate"),
+and press **Generate**. The strong model writes it in the content format and
+it opens in **Import content**, where the usual checks apply (flat item
+bonuses, the 20% item cap, rarity ceilings, grades). Edit it in **Edit the
+generated content**, **Regenerate**, or tick and apply it. **Cancel** stops a
+slow request. A **shop** goes into the library with its keeper, wares and
+prices; **Sell** on a ware fills in a GM trade to the chosen character.
+
+### Loading screen
+
+Tick **Show players a loading screen while the co-DM works** before you
+press Generate. Players see a pinned System broadcast ("[The System is
+constructing the area…]", or your own **Loading text**) while you narrate.
+It stays until you remove it from Broadcasts, or, with **Clear it when I
+approve the content** ticked, until you apply the generated content. A
+generation that fails or is cancelled takes it down.
+
+### Listening
 
 The **Listening** window turns the laptop's mic into a live, GM-only
 transcript for the co-DM. Speech is turned into text on the laptop; no audio
@@ -185,6 +230,56 @@ show "[The System is listening]".
   most once a minute). **Use** fills in the generate request below it, ready
   for **Generate**; **Dismiss** removes the idea for good. Calls show in the
   spend counter.
+
+### Session notes and summary
+
+- **Running notes** (needs an API key): in the Co-DM panel press **Take
+  notes** at a break. The fast model reads the transcript heard since the
+  last notes and adds short lines on what happened. They go into the
+  session log and its export under "Co-DM notes".
+- **Summary**: after **End session**, press **Summarise session**. The
+  co-DM catches up the notes, then writes what happened, who did what, open
+  threads and NPCs met. It goes into that session's log and export (the
+  `.md` report and its `.json`), so **Copy for Claude** carries it. Press it
+  again to rewrite the summary; the export follows. It is never written by
+  an automatic paid call, only when you ask.
+- Notes live in the campaign folder under `codm/notes-NN.json`. If one is
+  damaged the session log still writes, just without it.
+
+### Prepare ahead (optional, off by default)
+
+Tick **Draft content for where the table is heading** in the Co-DM panel's
+**Prepare ahead** box. While it is on and the GM console is open, the co-DM
+looks at the new table talk every few minutes (**Look every** 2–30 minutes;
+**Look ahead now** looks at once, at most every 2 minutes). When the party
+is heading somewhere new, it drafts that place, shop or NPC in the
+background. Each draft shows the line that prompted it. **Review** opens it
+in Import content to approve or edit; it stays in the list until you
+**Dismiss** it. At most three drafts wait at once. Each look and each draft
+is a paid call and shows in the spend counter, which is why it is off by
+default.
+
+### Live checklist for your key
+
+The build never calls the paid API; tests use recorded replies. The first
+time you use your own key, check the live path once (a few cents):
+
+1. Co-DM settings: save the key, press **Test connection** (expect "Connected"),
+   and see the spend counter show 1 call.
+2. Generate a Shop from a one-line request; it opens in Import content with
+   no errors, and the spend counter goes up.
+3. Turn on the loading screen, generate again, and check a player's screen
+   shows it and that it clears when you apply.
+4. Start listening, talk for a minute about visiting somewhere, and see a
+   suggestion chip appear (or press **Suggest now**); press **Use**, then
+   **Generate**.
+5. In the Practice review queue press **Draft from transcript**; confirm one
+   draft.
+6. End the session and press **Summarise session**; open the session report
+   in the exports folder and find "Co-DM summary".
+7. Look at a player's screen throughout: they should see only the listening
+   mark and anything you approved, never the transcript, chips, notes or
+   drafts.
 
 ## Rules settings
 
