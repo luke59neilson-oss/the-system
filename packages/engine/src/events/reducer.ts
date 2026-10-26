@@ -1444,8 +1444,15 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       return closeTrade(moved, event, trade, 'accepted');
     }
     case 'practice.logged': {
-      const { characterId, action, skills, stat, tags, source } = event.payload;
+      const { characterId, action, skills, stat, tags, source, session } = event.payload;
       const character = characterOf(state, event, characterId);
+      if (session !== undefined) {
+        // MC.7 review M4: the GM confirms a co-DM draft in the session it came from.
+        if (event.actor.role === 'player') fail(event, 'players log practice in the current session');
+        if (session !== null && !state.sessions.some((x) => x.id === session)) {
+          fail(event, `no play session "${session}"`);
+        }
+      }
       if (event.actor.role === 'player' && source !== 'player') {
         fail(event, 'players log practice with source "player"');
       }
@@ -1468,7 +1475,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const entry: PracticeEntry = {
         id: event.id,
         at: event.timestamp,
-        sessionId: event.sessionId,
+        sessionId: session !== undefined ? session : event.sessionId,
         characterId,
         action,
         skills: [...skills],

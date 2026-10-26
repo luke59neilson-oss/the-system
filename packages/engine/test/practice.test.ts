@@ -95,6 +95,32 @@ describe('practice log', () => {
     expect(ok(c, log('kim', 'Ran', [], 'agility')).state?.practice[1]?.reviewed).toBe(true);
   });
 
+  it('the GM logs a use against an earlier session (MC.7 review M4)', () => {
+    let c = ok(base(), { type: 'session.start', sessionId: 'one' });
+    c = ok(c, { type: 'session.end' });
+    c = ok(c, { type: 'session.start', sessionId: 'two' });
+    const now: CommandContext = { ...ctx, sessionId: 'two' };
+    const back = ok(c, { ...log('jake', 'Shot the lure', [archery]), session: 'one' }, now);
+    expect(back.state?.practice[0]?.sessionId).toBe('one');
+    const outside = ok(c, { ...log('jake', 'Shot the lure', [archery]), session: null }, now);
+    expect(outside.state?.practice[0]?.sessionId).toBeNull();
+    expect(ok(c, log('jake', 'Shot the lure', [archery]), now).state?.practice[0]?.sessionId).toBe(
+      'two',
+    );
+    expect(reject(c, { ...log('jake', 'x', [archery]), session: 'nope' }, now)).toMatch(
+      /no play session/,
+    );
+    expect(
+      reject(
+        c,
+        { ...log('jake', 'x', [archery]), source: 'player', session: 'one' },
+        player('jake', 'two'),
+      ),
+    ).toMatch(/current session/);
+    // The payload replays to the same state.
+    expect(replay(back.events).state?.practice).toEqual(back.state?.practice);
+  });
+
   it('the GM corrects, reviews and removes entries (M5.5)', () => {
     const c = ok(
       ok(base(), log('jake', 'Sniped the hunter', [archery], 'perception'), player('jake')),
