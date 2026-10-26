@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-25): M0–M11, MS, MQ, MR and QF done; new milestones MT (Luke's answers, batch 3) and MC (co-DM, DESIGN §11) added; `docs/DONE.md` removed.
-**Next item:** resume `wip/MT.9` (review round-1 fixes M2–M4, then round 2), then MT.10
+**Next item:** MT.A (full e2e already green at 0bca76e8, 114/114; launch the `fable` review first), then MC.1
 **Blockers:** none
 
 ## Run log
@@ -1118,3 +1118,13 @@ next item, blockers. -->
 - Tests: unit 1,273 on wip (1,271 on main); full e2e 111/111 green locally on MT.8 before push. Engine coverage not re-measured.
 - Open `wip/*`: wip/MT.9.
 - Blockers: none.
+### Run 3f1c942c · 2026-10-26 01:08–01:52 UTC (end minute ~44: at hand-off with MT.A started; its fable review cannot finish before the 52-minute stop)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` reset to origin/main). Lock pushed cleanly. `npm view vitest version` → 5.0.5. CI on main at start (046752cd) green. No new answers. Hour 01: no efficiency check, no sweep.
+- MT.9 **checked** (merged from `wip/MT.9`, pushed df765baa): round-1 M2–M4 fixed (D222: "Resume end of scene" instead of replacing an open prompt; the GM's walk answers for the character; status-window "End of scene · [Answer]" flag; engine tests for stale/double/unknown/partial/undo/forged replay; e2e for "Nothing this scene"). Round 2 (sonnet) 0H/2M/3L, all fixed: the player's draft survives the GM answering for them, a silent GM-side answer race, "New scene (drop unanswered)", D221/D222 wording, GM screenshot.
+- MT.10 **checked** (1bafa6d3): backups copy `portraits/`; exports v2 carry portraits (base64) and import restores them, checking name, size, magic bytes and hash; v1 still imports; status window shows the portrait at the top (D223). Review sonnet 0H/0M/7L (kept).
+- MT.11 **checked** (0bca76e8): content quest `notice: false` imports a hidden quest with nobody told; tutorial pack's "The Host's Response" uses it; GM list says "nobody told" (D224). Review sonnet 0H/0M/2L (L1 fixed).
+- MT.A **started**: full e2e 114/114 green locally at 0bca76e8 (the later QuestManager label change re-ran M7.1 and M9.5, green). Next step: launch the `fable` review over the MT milestone (046752cd^..main or the MT item range in REVIEW-LOG), fix findings, check the box, then "Preview ready: Actions → Release → Run workflow" (MT).
+- Tests: unit 1,283; e2e 114/114. Engine coverage not re-measured.
+- Open `wip/*`: none new (wip/MT.9 and wip/MT.10 are merged).
+- Blockers: none.
+
