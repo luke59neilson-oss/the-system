@@ -1200,7 +1200,7 @@ next item, blockers. -->
 - Next: MC.6 (see Next item).
 - Blockers: none.
 
-### Run dae5b6f4 · 2026-10-26 10:09–10:57 UTC (end minute ~48)
+### Run dae5b6f4 · 2026-10-26 10:09–10:55 UTC (end minute ~45, no §5.5 reason: build ran to the 44 hand-off, close-out was quick; MC.6 review Mediums left for the next run rather than started at 45)
 - Preflight: `add_repo` not offered (repo already cloned; stale local main had unrelated history, reset to origin/main); lock pushed cleanly; vitest 5.0.5; sonnet reviewer works (worktree; Agent calls block, so build/fix work ran in forks alongside each review). Not an efficiency or sweep hour. No new answers.
 - CI red on main at 910765fc (`test`, latency `e2e/M2.A.spec.ts` GM console 503). Passed here alone and with `--workers=2`; root cause: the MC.5 Listening panel polled every 2 s while idle. New **QF.31** (D239), pushed as red-CI fix d3c743c2: `test` job then green; `desktop-smoke` red on a cleanup ENOTEMPTY (new flake, logged in QUALITY).
 - QF.31 **checked**: sonnet round 1 0 H / 2 M / 4 L, fixed (cba56487: whole poll rule in the pure model, read after Stop, first-read backoff); round 2 0 H / 0 M / 4 L (backlog).
