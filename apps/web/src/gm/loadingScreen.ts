@@ -10,22 +10,39 @@ export function loadingCommand(text: string): Command | null {
   return { type: 'system.broadcast', text: t, characterIds: null, display: { mode: 'pinned' } };
 }
 
-/**
- * The id of the newest live (pinned, not removed) banner with this text, sent
- * after `since` broadcasts existed: the loading screen just sent. Null when
- * there is none.
- */
-export function loadingBannerId(state: CampaignState, text: string, since: number): string | null {
-  const t = text.trim();
-  for (let i = state.broadcasts.length - 1; i >= since; i--) {
-    const b = state.broadcasts[i];
-    if (b && b.text === t && b.display?.mode === 'pinned' && !b.removed) return b.id;
-  }
-  return null;
+/** A loading screen the GM sent: its text and how many broadcasts existed before it. */
+export interface SentLoading {
+  text: string;
+  since: number;
 }
 
-/** Takes the loading screen down; null when it is already gone. */
-export function clearLoadingCommand(state: CampaignState, id: string): Command | null {
-  const b = state.broadcasts.find((x) => x.id === id);
-  return b && b.display && !b.removed ? { type: 'broadcast.remove', id } : null;
+/**
+ * MC.4 review round 2: loading screens to take down may not have reached the
+ * state yet (a generation can fail before its banner arrives). For each, the
+ * oldest pinned broadcast with its text sent after `since` and not already
+ * claimed is its banner: a live one gets a `broadcast.remove`, one already
+ * removed needs nothing, and one not there yet waits in `left`. `claimed`
+ * holds banner ids already handled (removals sent but not yet in the state).
+ */
+export function settleEnding(
+  state: CampaignState,
+  ending: readonly SentLoading[],
+  claimed: ReadonlySet<string>,
+): { removals: string[]; left: SentLoading[] } {
+  const taken = new Set(claimed);
+  const removals: string[] = [];
+  const left: SentLoading[] = [];
+  for (const e of ending) {
+    const t = e.text.trim();
+    const b = state.broadcasts
+      .slice(e.since)
+      .find((x) => x.text === t && x.display?.mode === 'pinned' && !taken.has(x.id));
+    if (!b) {
+      left.push(e);
+      continue;
+    }
+    taken.add(b.id);
+    if (!b.removed) removals.push(b.id);
+  }
+  return { removals, left };
 }

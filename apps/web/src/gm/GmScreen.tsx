@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
 import {
   DEFAULT_RULES,
   STARTER_CLASSES,
@@ -16,7 +16,7 @@ import { JoinPanel } from './JoinPanel';
 import { SkillLibrary } from './SkillLibrary';
 import { ItemLibrary } from './ItemLibrary';
 import { Shops } from './Shops';
-import { clearLoadingCommand, loadingBannerId, loadingCommand } from './loadingScreen';
+import { loadingCommand, settleEnding, type SentLoading } from './loadingScreen';
 import { LootTables } from './LootTables';
 import { CurrencyLedger } from './CurrencyLedger';
 import { TitleLibrary } from './TitleLibrary';
@@ -107,29 +107,38 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
   const [tableOpened, setTableOpened] = useState(false);
   // MC.2: co-DM generations open in the Import window.
   const [incoming, setIncoming] = useState<IncomingContent | null>(null);
-  // MC.4: the loading screen sent with a generation, cleared on approval if asked.
-  const [loading, setLoading] = useState<{
-    text: string;
-    since: number;
-    clearOnApprove: boolean;
-  } | null>(null);
-  const loadingId = state && loading ? loadingBannerId(state, loading.text, loading.since) : null;
+  // MC.4: the loading screen sent with a generation, cleared on approval if
+  // asked. A ref mirrors it so a generation's late callbacks (failure, cancel)
+  // see the screen it sent, not the one from the render that started it.
+  const loadingRef = useRef<(SentLoading & { clearOnApprove: boolean }) | null>(null);
+  // Screens to take down whose banner may not have arrived yet (review round 2).
+  const [ending, setEnding] = useState<SentLoading[]>([]);
+  const claimed = useRef(new Set<string>());
+  useEffect(() => {
+    if (!state || ending.length === 0) return;
+    const { removals, left } = settleEnding(state, ending, claimed.current);
+    for (const id of removals) {
+      claimed.current.add(id);
+      void client.command({ type: 'broadcast.remove', id });
+    }
+    if (left.length !== ending.length) setEnding(left);
+  }, [state, ending, client]);
   // Takes the current loading screen down (a regeneration replaces it; a
   // failed or cancelled generation, or an approval, ends it).
   const endLoading = () => {
-    const command = state && loadingId !== null ? clearLoadingCommand(state, loadingId) : null;
-    setLoading(null);
-    if (command) void client.command(command);
+    const cur = loadingRef.current;
+    loadingRef.current = null;
+    if (cur) setEnding((e) => [...e, { text: cur.text, since: cur.since }]);
   };
   const sendLoading = (text: string, clearOnApprove: boolean) => {
     const command = loadingCommand(text);
     if (!state || !command) return;
     endLoading();
-    setLoading({ text: text.trim(), since: state.broadcasts.length, clearOnApprove });
+    loadingRef.current = { text: text.trim(), since: state.broadcasts.length, clearOnApprove };
     void client.command(command);
   };
   const approved = () => {
-    if (loading?.clearOnApprove) endLoading();
+    if (loadingRef.current?.clearOnApprove) endLoading();
   };
   const party = useMemo(() => partyOf(state), [state]);
   const view = resolvePerspective(wanted, party);

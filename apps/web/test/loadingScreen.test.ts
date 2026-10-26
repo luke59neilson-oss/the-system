@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CampaignState } from '@the-system/engine';
-import {
-  LOADING_TEXT,
-  clearLoadingCommand,
-  loadingBannerId,
-  loadingCommand,
-} from '../src/gm/loadingScreen';
+import { LOADING_TEXT, loadingCommand, settleEnding } from '../src/gm/loadingScreen';
 
 // MC.4 (DESIGN §11 "Loading screen"): a pinned System broadcast while content generates.
 const at = '2026-10-26T06:00:00.000Z';
@@ -22,34 +17,29 @@ describe('loading screen (MC.4)', () => {
     expect(loadingCommand('  ')).toBeNull();
   });
 
-  it('finds the banner just sent, not an older or removed one', () => {
+  it('settles screens to take down, waiting for one whose banner has not arrived', () => {
+    const pin = { mode: 'pinned' } as const;
     const s = state([
-      { id: 'old', at, text: LOADING_TEXT, characterIds: null, display: { mode: 'pinned' } },
-      { id: 'list', at, text: LOADING_TEXT, characterIds: null },
-      { id: 'new', at, text: LOADING_TEXT, characterIds: null, display: { mode: 'pinned' } },
+      { id: 'a', at, text: LOADING_TEXT, characterIds: null, display: pin },
+      { id: 'b', at, text: 'Weaving', characterIds: null, display: pin, removed: true },
+      { id: 'c', at, text: LOADING_TEXT, characterIds: null, display: pin },
     ]);
-    expect(loadingBannerId(s, LOADING_TEXT, 1)).toBe('new');
-    expect(loadingBannerId(s, 'other', 0)).toBeNull();
-    const gone = state([
-      {
-        id: 'new',
-        at,
-        text: LOADING_TEXT,
-        characterIds: null,
-        display: { mode: 'pinned' },
-        removed: true,
-      },
-    ]);
-    expect(loadingBannerId(gone, LOADING_TEXT, 0)).toBeNull();
-  });
-
-  it('clears a live banner once; a removed or unknown one needs nothing', () => {
-    const live = state([
-      { id: 'b', at, text: LOADING_TEXT, characterIds: null, display: { mode: 'pinned' } },
-    ]);
-    expect(clearLoadingCommand(live, 'b')).toEqual({ type: 'broadcast.remove', id: 'b' });
-    expect(clearLoadingCommand(live, 'x')).toBeNull();
-    const removed = state([{ ...live.broadcasts[0]!, removed: true }]);
-    expect(clearLoadingCommand(removed, 'b')).toBeNull();
+    const ending = [
+      { text: LOADING_TEXT, since: 0 },
+      { text: LOADING_TEXT, since: 0 },
+      { text: 'Weaving', since: 1 },
+      { text: 'Not yet', since: 3 },
+    ];
+    // Two screens with the same text claim one banner each, oldest first; an
+    // already removed banner needs nothing; a missing one waits.
+    expect(settleEnding(s, ending, new Set())).toEqual({
+      removals: ['a', 'c'],
+      left: [{ text: 'Not yet', since: 3 }],
+    });
+    // A banner whose removal is already sent is not removed twice.
+    expect(settleEnding(s, [{ text: LOADING_TEXT, since: 0 }], new Set(['a']))).toEqual({
+      removals: ['c'],
+      left: [],
+    });
   });
 });
