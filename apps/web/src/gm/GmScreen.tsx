@@ -23,7 +23,8 @@ import { entriesOf } from './originLibraryModel';
 import { resolvePerspective, type PartyMember, type Perspective } from './perspective';
 import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
 import { SessionPanel } from './SessionPanel';
-import { ContentImport } from './ContentImport';
+import { ContentImport, type IncomingContent } from './ContentImport';
+import { CoDmPanel } from './CoDmPanel';
 import { PortraitPicker } from './PortraitControls';
 import { PartyDashboard } from './PartyDashboard';
 import { XpAward } from './XpAward';
@@ -102,6 +103,8 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
   const [offerTarget, setOfferTarget] = useState<OfferTarget | null>(null);
   // Once opened, Table view's panes stay connected (hidden) across switches.
   const [tableOpened, setTableOpened] = useState(false);
+  // MC.2: co-DM generations open in the Import window.
+  const [incoming, setIncoming] = useState<IncomingContent | null>(null);
   const party = useMemo(() => partyOf(state), [state]);
   const view = resolvePerspective(wanted, party);
   if (view.kind === 'table' && !tableOpened) setTableOpened(true);
@@ -160,7 +163,11 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
                 }
               />
               <SessionPanel client={client} state={state} gmKey={gmKey} />
-              <ContentImport client={client} gmKey={gmKey} />
+              <CoDmPanel
+                gmKey={gmKey}
+                onGenerated={(c) => setIncoming((cur) => ({ ...c, seq: (cur?.seq ?? 0) + 1 }))}
+              />
+              <ContentImport client={client} gmKey={gmKey} incoming={incoming} />
               <JoinPanel gmKey={gmKey} />
               <CreateCharacter client={client} gmKey={gmKey} state={state} />
               <XpAward client={client} state={state} />

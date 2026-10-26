@@ -16,6 +16,10 @@ export interface AiRequest {
   readonly system: string;
   readonly messages: readonly AiMessage[];
   readonly maxTokens: number;
+  /** Overrides the client's default time limit (a long generation needs more; MC.2). */
+  readonly timeoutMs?: number;
+  /** Aborts the call, e.g. when the GM cancels or closes the panel (MC.2). */
+  readonly signal?: AbortSignal;
 }
 
 export interface AiUsage {
