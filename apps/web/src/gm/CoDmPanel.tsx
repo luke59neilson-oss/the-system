@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { IncomingContent } from './ContentImport';
 import { LOADING_TEXT } from './loadingScreen';
+import { SessionNotes } from './SessionNotes';
 
 /** The kinds the server's generate route takes (MC.2, DESIGN §11). */
 const KINDS = [
@@ -237,6 +238,7 @@ export function CoDmPanel({
           </button>
         </details>
       )}
+      <SessionNotes gmKey={gmKey} />
     </section>
   );
 }
