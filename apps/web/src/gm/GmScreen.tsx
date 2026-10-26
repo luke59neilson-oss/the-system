@@ -15,6 +15,7 @@ import { feedRows } from './feed';
 import { JoinPanel } from './JoinPanel';
 import { SkillLibrary } from './SkillLibrary';
 import { ItemLibrary } from './ItemLibrary';
+import { Shops } from './Shops';
 import { LootTables } from './LootTables';
 import { CurrencyLedger } from './CurrencyLedger';
 import { TitleLibrary } from './TitleLibrary';
@@ -185,6 +186,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <SkillText client={client} state={state} />
               <SkillLibrary client={client} state={state} />
               <ItemLibrary client={client} state={state} />
+              <Shops client={client} state={state} />
               <LootTables client={client} state={state} />
               <CurrencyLedger client={client} state={state} />
               <TitleLibrary client={client} state={state} />

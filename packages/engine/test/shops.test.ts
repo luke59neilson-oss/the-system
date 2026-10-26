@@ -1,7 +1,7 @@
 // MC.3 (DESIGN §11): shops are GM-side. A shop names a keeper, a place and
 // wares (library items with prices in the campaign currency) and an optional
-// hook; players never receive it. Work in progress: this is the first test,
-// the engine side follows (see docs/PROGRESS.md hand-off).
+// hook; players never receive it. A sale is a GM trade the price list fills
+// in (the GM console builds it; apps/web/test/shopsModel.test.ts).
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_RULES, execute, projectForPlayer, type Command } from '../src';
 import { kit, run, testContext } from './helpers/events';
@@ -46,5 +46,30 @@ describe('shops (MC.3)', () => {
       testContext(),
     );
     expect(r.ok ? '' : r.error).toContain('wares[0]: no item named "Nothing"');
+  });
+  it('a sale is a GM trade at the ware price: accepted, the item and the currency move', () => {
+    const c = run([
+      ...setup,
+      { type: 'gift.give', characterId: null, to: 'jake', currency: 40 },
+      {
+        type: 'shop.define',
+        shopId: 'sap',
+        name: 'Sap & Sinew',
+        wares: [{ item: 'salve', price: 15 }],
+      } as unknown as Command,
+      {
+        type: 'trade.propose',
+        tradeId: 't1',
+        characterId: null,
+        to: 'jake',
+        give: { items: { salve: 1 } },
+        get: { currency: 15 },
+      },
+      { type: 'trade.accept', tradeId: 't1', characterId: 'jake' },
+    ]);
+    expect(c.state?.holdings['jake']?.currency).toBe(25);
+    expect(c.state?.holdings['jake']?.inventory['salve']).toBe(1);
+    // The shop's list is unchanged: wares are a price list, not stock.
+    expect(c.state?.shops?.['sap']?.wares).toEqual([{ itemId: 'salve', price: 15 }]);
   });
 });

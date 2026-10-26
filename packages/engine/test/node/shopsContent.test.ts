@@ -7,6 +7,7 @@ import {
   contentToCommands,
   execute,
   parseContentFile,
+  previewContent,
   type Command,
 } from '../../src';
 import { kit, run, testContext } from '../helpers/events';
@@ -44,5 +45,23 @@ describe('shops in content files (MC.3)', () => {
       ['Bracers of the Grove', 120],
     ]);
     expect(c.state?.regions[shop?.regionId ?? '']?.name).toBe('The Crown Camp');
+  });
+  it('importing the shop again is noted, not refused (shops may share names)', () => {
+    const c = run([
+      ...setup,
+      { type: 'item.define', id: 'salve', name: 'Clotleaf Salve', rarity: 'common' },
+      { type: 'shop.define', name: 'Sap & Sinew', wares: [{ item: 'salve', price: 15 }] },
+    ]);
+    const file = JSON.stringify({
+      format: 'the-system/content',
+      version: 1,
+      shops: [{ name: 'sap & sinew', wares: [{ item: 'Clotleaf Salve', price: 9 }] }],
+    });
+    const preview = previewContent(c, file, testContext('p'));
+    if (!preview.ok) throw new Error(JSON.stringify(preview.errors));
+    expect(preview.entries[0]?.error).toBeNull();
+    expect(preview.entries[0]?.note).toBe(
+      'The campaign already has a shop named [sap & sinew]: this adds another',
+    );
   });
 });

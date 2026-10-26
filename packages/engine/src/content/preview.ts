@@ -19,8 +19,8 @@ export interface ContentPreviewEntry {
   /** Null when the entry would apply; otherwise why not. */
   readonly error: string | null;
   /**
-   * A heads-up that does not block: an item, bestiary entry, quest or GM
-   * note whose name the campaign already has (these may share names, so
+   * A heads-up that does not block: an item, bestiary entry, quest, shop
+   * (MC.3) or GM note whose name the campaign already has (these may share names, so
    * importing a file twice would add a second copy); or, for a drafted skill
    * menu or evolution, whose screen it goes to on Apply, its options, and
    * the menu or release it replaces (M9.A review).
@@ -96,6 +96,10 @@ function entryNote(campaign: Campaign, command: ContentCommand['command']): stri
     case 'quest.create':
       return Object.values(state.quests).some(same(command.title))
         ? `The campaign already has a quest named "${command.title}": this adds another`
+        : null;
+    case 'shop.define':
+      return Object.values(state.shops ?? {}).some(same(command.name))
+        ? `The campaign already has a shop named [${command.name}]: this adds another`
         : null;
     case 'note.create':
       return Object.values(state.notes).some(
