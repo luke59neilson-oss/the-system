@@ -790,6 +790,19 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     standing: factionStanding,
     notes: entityNotes,
   }),
+  /** MC.3: GM adds a shop (DESIGN §11). GM-only. */
+  'shop.defined': z.strictObject({
+    shopId: recordId,
+    name: nonBlank,
+    regionId: recordId.nullable(),
+    keeper: entityNotes,
+    wares: z
+      .array(
+        z.strictObject({ itemId: recordId, price: z.number().int().min(0).max(1_000_000_000) }),
+      )
+      .max(100),
+    hook: entityNotes,
+  }),
   /** M7.4: GM edits a faction; omitted fields stay. */
   'faction.edited': z.strictObject({
     factionId: recordId,
@@ -928,6 +941,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'region.edited': 1,
   'region.currentSet': 1,
   'faction.defined': 1,
+  'shop.defined': 1,
   'faction.edited': 1,
   'faction.revealSet': 1,
   'campaign.dayAdvanced': 1,

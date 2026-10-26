@@ -343,6 +343,7 @@ const KINDS: Record<string, string> = {
   'quest.create': 'Quest',
   'region.define': 'Region',
   'note.create': 'GM note',
+  'shop.define': 'Shop',
 };
 
 /** "Item: Pale Hide Bracers", "Skill menu: level 10". */

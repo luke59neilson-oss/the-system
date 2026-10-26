@@ -991,6 +991,8 @@ describe('property: replay equals incremental state', () => {
       'faction.defined',
       'faction.edited',
       'faction.revealSet',
+      // MC.3: shops have their own tests (shops.test.ts).
+      'shop.defined',
       // MT.9: scene prompts have their own tests (scenePrompt.test.ts) and golden log.
       'scene.ended',
       'scene.answered',

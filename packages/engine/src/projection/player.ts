@@ -178,6 +178,9 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   // derived view (like `currentRegion`), never the raw record: trackers.test.ts
   // pins each entry to exactly `name` and `standing`.
   factions: 'party',
+  // MC.3: shops are the GM's (DESIGN §11: a purchase reaches the player as a GM trade).
+  shops: 'gm',
+  shopOrder: 'gm',
   factionOrder: 'gm',
   day: 'party',
   // M4.3: session bookkeeping is the GM's.

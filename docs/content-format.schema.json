@@ -625,6 +625,67 @@
         "description": "A region of the map (GM-only until the party gets there)."
       }
     },
+    "shops": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "place": {
+            "description": "The region it stands in, by name or id.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "keeper": {
+            "description": "The keeper NPC: name, look, manner.",
+            "type": "string",
+            "maxLength": 4000
+          },
+          "wares": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "item": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80,
+                  "description": "A library item, or one defined in this file, by name or id."
+                },
+                "price": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000000,
+                  "description": "In the campaign currency."
+                }
+              },
+              "required": [
+                "item",
+                "price"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "hook": {
+            "description": "An optional quest hook or complication.",
+            "type": "string",
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "A shop (GM-side; a sale is a GM trade the price list fills in)."
+      }
+    },
     "gmNotes": {
       "maxItems": 500,
       "type": "array",

@@ -27,3 +27,4 @@ export * from './history';
 export * from './dashboard';
 export * from './titles';
 export * from './trackers';
+export * from './shops';

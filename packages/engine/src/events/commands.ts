@@ -585,6 +585,19 @@ export type Command =
       standing?: string | undefined;
       notes?: string | undefined;
     }
+  /**
+   * MC.3: the GM adds a shop. Each ware names a library item by id or name
+   * (any case), so a content file can sell items it defines above.
+   */
+  | {
+      type: 'shop.define';
+      shopId?: string | undefined;
+      name: string;
+      regionId?: string | null | undefined;
+      keeper?: string | undefined;
+      wares?: readonly { item: string; price: number }[] | undefined;
+      hook?: string | undefined;
+    }
   /** MT.8 (Q69): show a faction's name and standing to players, or hide it again. */
   | { type: 'faction.reveal'; factionId: string; revealed: boolean }
   | { type: 'campaign.advanceDay'; days?: number | undefined }
@@ -749,6 +762,10 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('region.edit') }),
   z.object({ type: z.literal('region.setCurrent') }),
   z.object({ type: z.literal('faction.define') }),
+  z.object({
+    type: z.literal('shop.define'),
+    wares: z.array(z.object({ item: z.string(), price: z.number() })).optional(),
+  }),
   z.object({ type: z.literal('faction.edit') }),
   z.object({ type: z.literal('faction.reveal') }),
   z.object({ type: z.literal('campaign.advanceDay') }),
@@ -805,6 +822,25 @@ export function authorize(
     return 'players may only act on their own character';
   }
   return null;
+}
+
+/** MC.3: a region by id, else by name (any case); unknown or ambiguous names are refused. */
+function regionRef(campaign: Campaign, ref: string | null): string | null {
+  if (ref === null) return null;
+  const regions = campaign.state?.regions ?? {};
+  if (Object.prototype.hasOwnProperty.call(regions, ref)) return ref;
+  const wanted = ref.trim().toLowerCase();
+  const matches = (campaign.state?.regionOrder ?? []).filter(
+    (id) => regions[id]?.name.trim().toLowerCase() === wanted,
+  );
+  if (matches.length !== 1) {
+    throw new EventRejectedError(
+      matches.length === 0
+        ? `no region named "${ref}"`
+        : `${matches.length} regions are named "${ref}"`,
+    );
+  }
+  return matches[0] as string;
 }
 
 function awardPayload(command: Extract<Command, { type: 'xp.award' }>) {
@@ -1653,6 +1689,36 @@ function toEvent(
       };
     case 'region.setCurrent':
       return { type: 'region.currentSet', payload: { regionId: command.regionId } };
+    case 'shop.define': {
+      const items = campaign.state?.items ?? {};
+      const itemOrder = campaign.state?.itemOrder ?? [];
+      const wares = (command.wares ?? []).map((w, i) => {
+        if (Object.prototype.hasOwnProperty.call(items, w.item)) {
+          return { itemId: w.item, price: w.price };
+        }
+        const wanted = w.item.trim().toLowerCase();
+        const matches = itemOrder.filter((id) => items[id]?.name.trim().toLowerCase() === wanted);
+        if (matches.length !== 1) {
+          throw new EventRejectedError(
+            matches.length === 0
+              ? `wares[${i}]: no item named "${w.item}" in the library`
+              : `wares[${i}]: ${matches.length} items are named "${w.item}": use the id`,
+          );
+        }
+        return { itemId: matches[0] as string, price: w.price };
+      });
+      return {
+        type: 'shop.defined',
+        payload: {
+          shopId: command.shopId ?? ctx.newId(),
+          name: command.name,
+          regionId: regionRef(campaign, command.regionId ?? null),
+          keeper: command.keeper ?? '',
+          wares,
+          hook: command.hook ?? '',
+        },
+      };
+    }
     case 'faction.define':
       return {
         type: 'faction.defined',

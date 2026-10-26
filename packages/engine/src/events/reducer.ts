@@ -72,6 +72,7 @@ import { applyAction, checkStabilityRules, nudge, type Quest } from '../quests';
 import { parseRulesConfig, type RulesConfig } from '../rules';
 import { rankProblem, tierProblem, type Entity } from '../entities';
 import { type Faction, type Region } from '../trackers';
+import type { Shop } from '../shops/model';
 import {
   validateClassDef,
   validateProfessionDef,
@@ -194,6 +195,12 @@ export interface CampaignState {
   /** Survivor factions by id (M7.4). GM-only. */
   readonly factions: Readonly<Record<string, Faction>>;
   readonly factionOrder: readonly string[];
+  /**
+   * Shops by id (MC.3). GM-only. Absent until the first shop (D231), so
+   * stored states and snapshots need no schema bump.
+   */
+  readonly shops?: Readonly<Record<string, Shop>>;
+  readonly shopOrder?: readonly string[];
   /** In-game day counter, from 1 (quest timers count against it). */
   readonly day: number;
   /** Play sessions in start order (M4.3). GM-only. */
@@ -2097,6 +2104,31 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         ...state,
         currentRegion: regionId,
         regions: { ...state.regions, [regionId]: { ...region, visited: true } },
+      };
+    }
+    case 'shop.defined': {
+      const { shopId, name, regionId, keeper, wares, hook } = event.payload;
+      const shops = state.shops ?? {};
+      if (hasOwn(shops, shopId)) fail(event, `shop "${shopId}" already exists`);
+      if (regionId !== null && !hasOwn(state.regions, regionId)) {
+        fail(event, `unknown region "${regionId}"`);
+      }
+      for (const w of wares) {
+        if (!hasOwn(state.items, w.itemId)) fail(event, `unknown item "${w.itemId}"`);
+      }
+      const shop: Shop = {
+        id: shopId,
+        name,
+        regionId,
+        keeper,
+        wares,
+        hook,
+        createdAt: event.timestamp,
+      };
+      return {
+        ...state,
+        shops: { ...shops, [shopId]: shop },
+        shopOrder: [...(state.shopOrder ?? []), shopId],
       };
     }
     case 'faction.defined': {

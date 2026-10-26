@@ -96,6 +96,17 @@ export function contentToCommands(
   (content.regions ?? []).forEach((r, i) =>
     commands.push({ path: `regions[${i}]`, command: { type: 'region.define', ...r } }),
   );
+  // MC.3: shops after items and regions, so wares and places can name them.
+  (content.shops ?? []).forEach(({ place, ...shop }, i) =>
+    commands.push({
+      path: `shops[${i}]`,
+      command: {
+        type: 'shop.define',
+        ...shop,
+        ...(place === undefined ? {} : { regionId: place }),
+      },
+    }),
+  );
   // MT.11 (Q72): `notice: false` imports a hidden quest switched off (nobody told).
   (content.quests ?? []).forEach(({ notice, ...q }, i) =>
     commands.push({

@@ -288,6 +288,14 @@
       "sha256": "323233f6414e23b9b60053bb0260cda0ea20b3f76cb1f8b04509fbfa00cf12c7",
       "schemaVersion": 33
     },
+    "shops.jsonl": {
+      "sha256": "a80c7275e26f2241f42ab6faa45f62717c388b7b8c0b3304adab150e2adcf429",
+      "schemaVersion": 33
+    },
+    "shops.state.json": {
+      "sha256": "c51aa4b85f5eb6e4a95bda133526bbc8fd03c3b49a2a9e906a365be8a5aa824a",
+      "schemaVersion": 33
+    },
     "skill-grant.jsonl": {
       "sha256": "ee84473c02fd9afb063e520642cff3c6b98a0086fb2efe7591e2dccef731de7a",
       "schemaVersion": 33
