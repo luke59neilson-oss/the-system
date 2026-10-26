@@ -10,6 +10,8 @@ export interface PracticeDraft {
   readonly at: string;
   readonly confidence: 'high' | 'medium' | 'low';
   readonly attributedBy: 'gm-named' | 'voice' | 'model';
+  /** The play session it was heard in (MC.7 review M4); null = none was running. */
+  readonly sessionId: string | null;
 }
 
 /** Tag on practice the GM confirmed from a co-DM draft. */
@@ -17,15 +19,28 @@ export const CO_DM_TAG = 'co-dm';
 /** Tag on practice logged by a contest roll in the app (MC.7). */
 export const CONTEST_TAG = 'contest';
 
-/** Confirming a draft is an ordinary GM practice entry for that skill. */
-export const draftCommand = (d: PracticeDraft): Command => ({
+/**
+ * Confirming a draft is an ordinary GM practice entry for that skill, in the
+ * session the line was heard in (MC.7 review M4), so a draft confirmed the
+ * next session still credits the one it came from. A session since deleted
+ * from the campaign falls back to none.
+ */
+export const draftCommand = (state: CampaignState, d: PracticeDraft): Command => ({
   type: 'practice.log',
   characterId: d.characterId,
   action: d.action,
   skills: [d.skill],
   tags: [CO_DM_TAG],
   source: 'gm',
+  session:
+    d.sessionId !== null && state.sessions.some((s) => s.id === d.sessionId) ? d.sessionId : null,
 });
+
+/** "Session 3" for a draft's session, or null when it was heard outside one. */
+export const draftSession = (state: CampaignState, d: PracticeDraft): string | null => {
+  const s = d.sessionId === null ? undefined : state.sessions.find((x) => x.id === d.sessionId);
+  return s ? `session ${s.number}` : null;
+};
 
 /** The character's current name, or the id when they are gone. */
 export const draftWho = (state: CampaignState, d: PracticeDraft): string =>

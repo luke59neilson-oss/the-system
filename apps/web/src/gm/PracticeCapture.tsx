@@ -12,6 +12,7 @@ import {
   type PendingOffer,
   type StabilityOffer,
 } from './questManagerModel';
+import { PracticeDrafts } from './PracticeDrafts';
 
 type Outcome = { ok: boolean; text: string } | null;
 
@@ -22,9 +23,19 @@ export const QUICK_ADD_CODE = 'KeyP';
  * GM practice capture (ROADMAP M5.5, DESIGN §7): quick-add with a shortcut,
  * an end-of-scene prompt that walks the party one character at a time, and a
  * review of entries the GM has not looked at yet (player and montage
- * entries): correct, remove or mark them reviewed.
+ * entries): correct, remove or mark them reviewed. The co-DM's practice
+ * drafts wait in the same review queue (MC.7 review M5) when the GM key is
+ * known.
  */
-export function PracticeCapture({ client, state }: { client: LiveClient; state: CampaignState }) {
+export function PracticeCapture({
+  client,
+  state,
+  gmKey,
+}: {
+  client: LiveClient;
+  state: CampaignState;
+  gmKey?: string | undefined;
+}) {
   const ids = state.characterOrder.filter((id) => state.characters[id]);
   const [picked, setPicked] = useState('');
   const characterId = ids.includes(picked) ? picked : (ids[0] ?? '');
@@ -435,6 +446,7 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
               </button>
             </>
           )}
+          {gmKey !== undefined && <PracticeDrafts client={client} gmKey={gmKey} state={state} />}
         </>
       )}
     </section>

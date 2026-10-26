@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import type { CampaignState } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
-import { draftCommand, draftWho, type PracticeDraft } from './practiceDraftsModel';
+import { draftCommand, draftSession, draftWho, type PracticeDraft } from './practiceDraftsModel';
 
 /**
  * Co-DM practice drafts (MC.7, DESIGN §11): the fast model reads the session
- * transcript and drafts practice entries; each waits here for the GM. Only
- * Confirm changes the campaign (an ordinary GM `practice.log`); Dismiss drops
+ * transcript and drafts practice entries; each waits for the GM in the
+ * Practice window's review queue (MC.7 review M5), beside the player and
+ * montage entries to review. Only Confirm changes the campaign (an ordinary
+ * GM `practice.log` in the session the line was heard in); Dismiss drops
  * the draft. GM-only.
  */
 export function PracticeDrafts({
@@ -79,7 +81,7 @@ export function PracticeDrafts({
 
   const confirm = async (d: PracticeDraft) => {
     setBusy(true);
-    const r = await client.command(draftCommand(d));
+    const r = await client.command(draftCommand(state, d));
     if (r.ok) await drop(d.id);
     setBusy(false);
     setMessage(
@@ -99,8 +101,8 @@ export function PracticeDrafts({
   };
 
   return (
-    <section className="window practice-drafts" aria-labelledby="practice-drafts-heading">
-      <h2 id="practice-drafts-heading">Practice drafts (co-DM, GM only)</h2>
+    <div className="practice-drafts" role="group" aria-labelledby="practice-drafts-heading">
+      <h3 id="practice-drafts-heading">Co-DM drafts ({drafts.length})</h3>
       <p className="muted">
         Drafted from the transcript. Nothing counts until you confirm it; marks stay one per skill
         per session.
@@ -122,6 +124,7 @@ export function PracticeDrafts({
               <strong>{draftWho(state, d)}</strong> [{d.skill}]: {d.action}{' '}
               <span className="muted">
                 ({d.confidence}, {attributionText[d.attributedBy]},{' '}
+                {draftSession(state, d) ?? 'no session'},{' '}
                 <time dateTime={d.at}>
                   {new Date(d.at).toLocaleTimeString([], { hour12: false })}
                 </time>
@@ -143,7 +146,7 @@ export function PracticeDrafts({
           ))}
         </ul>
       )}
-    </section>
+    </div>
   );
 }
 
