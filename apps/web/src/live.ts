@@ -77,6 +77,7 @@ type ServerMessage =
   /** `warning`: the change was saved, but something after it failed (e.g. a session-end backup). */
   | { type: 'result'; requestId: string; ok: true; warning?: string }
   | { type: 'result'; requestId: string; ok: false; error: string }
+  | { type: 'listening'; on: boolean }
   | { type: 'error'; error: string };
 
 export type JoinAs =
@@ -100,6 +101,8 @@ export interface LiveSnapshot {
   liveSince: number | null;
   /** Campaign id the server says this connection serves (`demo` for the demo, MS.4). */
   campaign: string | null;
+  /** MC.5: the co-DM is listening (DESIGN §11: players see a mark while it is on). */
+  listening: boolean;
 }
 
 export type CommandResult = { ok: true; warning?: string } | { ok: false; error: string };
@@ -119,6 +122,7 @@ export class LiveClient {
     notifications: [],
     liveSince: null,
     campaign: null,
+    listening: false,
   };
   private readonly listeners = new Set<(s: LiveSnapshot) => void>();
   private readonly pending = new Map<string, (r: CommandResult) => void>();
@@ -238,7 +242,8 @@ export class LiveClient {
       }
       case 'joined':
         this.campaignChanged = false;
-        this.update({ status: 'joined', error: null, seq: message.seq });
+        // The server says so again after the join if it is still listening.
+        this.update({ status: 'joined', error: null, seq: message.seq, listening: false });
         return;
       case 'state':
         this.lastSeq = message.seq;
@@ -247,6 +252,9 @@ export class LiveClient {
           seq: message.seq,
           liveSince: this.snapshot.liveSince ?? message.seq,
         });
+        return;
+      case 'listening':
+        this.update({ listening: message.on });
         return;
       case 'view':
         this.lastSeq = message.seq;
