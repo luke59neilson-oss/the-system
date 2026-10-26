@@ -263,6 +263,11 @@ refusal is raised.
 | `unknown faction "…"` | packages/engine/src/events/reducer.ts:2112 | Fix the input or define the thing first |
 | `faction is already revealed` | packages/engine/src/events/reducer.ts:2134 | Nothing to do: players already see it (Trackers → "Hide from players" takes it back) |
 | `faction is already hidden` | packages/engine/src/events/reducer.ts:2134 | Nothing to do: players already cannot see it (Trackers → "Reveal to players") |
+| `shop "…" already exists` | packages/engine/src/events/reducer.ts | Fix the input or define the thing first |
+| `no region named "…"` | packages/engine/src/events/commands.ts | Fix the input or define the thing first (add the region, or leave the place empty) |
+| `… regions are named "…"` | packages/engine/src/events/commands.ts | Fix the input: use the region's id |
+| `wares[…]: no item named "…" in the library` | packages/engine/src/events/commands.ts | Fix the input or define the thing first (define the item, or put it in the same file) |
+| `wares[…]: … items are named "…": use the id` | packages/engine/src/events/commands.ts | Fix the input: use the item's id |
 | `entity "…" already exists` | packages/engine/src/events/reducer.ts:2140 | Fix the input or define the thing first |
 | `unknown entity "…"` | packages/engine/src/events/reducer.ts:2170 | Fix the input or define the thing first |
 | `"…" already knows …` | packages/engine/src/events/reducer.ts:2215 | Fix the input or define the thing first |

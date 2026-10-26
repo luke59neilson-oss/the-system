@@ -59,11 +59,16 @@ export const GENERATE_FIXTURES: readonly AiFixture[] = [
       'Here is the shop:\n```json\n' +
       file({
         title: 'Sap & Sinew, herbalist',
-        gmNotes: [
+        shops: [
           {
-            title: 'Sap & Sinew (herbalist)',
-            body: 'Keeper: Old Brenna, half-blind, smells of resin. Wares: Clotleaf Salve 15 Credits, Lungmoss Tea 8 Credits, Bracers of the Grove 120 Credits. Hook: she pays well for pale-hunter glands.',
-            tags: ['shop', 'herbalist'],
+            name: 'Sap & Sinew',
+            keeper: 'Old Brenna, half-blind, smells of resin.',
+            wares: [
+              { item: 'Clotleaf Salve', price: 15 },
+              { item: 'Lungmoss Tea', price: 8 },
+              { item: 'Bracers of the Grove', price: 120 },
+            ],
+            hook: 'She pays well for pale-hunter glands.',
           },
         ],
         items: [
