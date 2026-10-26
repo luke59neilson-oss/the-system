@@ -1,0 +1,28 @@
+{
+  "format": "the-system/content",
+  "version": 1,
+  "title": "Sap & Sinew, herbalist",
+  "notes": "A shop (MC.3): it sells items defined in the same file; a sale is a GM trade.",
+  "items": [
+    { "name": "Clotleaf Salve", "rarity": "common", "description": "Stops bleeding in a breath." },
+    {
+      "name": "Bracers of the Grove",
+      "rarity": "uncommon",
+      "slot": "bracers",
+      "bonuses": [{ "stat": "vitality", "flat": 2 }]
+    }
+  ],
+  "regions": [{ "name": "The Crown Camp", "notes": "Survivors' huts on the snout knolls." }],
+  "shops": [
+    {
+      "name": "Sap & Sinew",
+      "place": "The Crown Camp",
+      "keeper": "Old Brenna: half-blind, smells of resin, haggles hard.",
+      "wares": [
+        { "item": "Clotleaf Salve", "price": 15 },
+        { "item": "Bracers of the Grove", "price": 120 }
+      ],
+      "hook": "She pays well for pale-hunter glands."
+    }
+  ]
+}

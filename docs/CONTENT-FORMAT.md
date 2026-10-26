@@ -53,6 +53,7 @@ content.
   "evolutions": [],
   "quests": [],
   "regions": [],
+  "shops": [],
   "gmNotes": []
 }
 ```
@@ -194,6 +195,22 @@ Each option:
 | `name` | yes | Unique within the campaign. |
 | `notes` | no | GM-only notes. |
 
+### `shops`: shops (GM-side)
+
+A shop the GM narrates (DESIGN §11). It lists in the GM console's Shops
+window; "Sell" on a ware offers one to the chosen character as a GM trade at
+the listed price, which the player accepts or declines. Wares are a price
+list, not stock. Players never see the shop itself. Example:
+`docs/content-examples/shop.json`.
+
+| Key | Required | Meaning |
+| --- | --- | --- |
+| `name` | yes | The shop's name. |
+| `place` | no | The region it stands in, by name or id (a region in this file or the campaign). |
+| `keeper` | no | The keeper NPC: name, look, manner. |
+| `wares` | no | Up to 100 of `{ "item": "Clotleaf Salve", "price": 15 }`. `item` names a library item, or one in this file's `items`, by name or id (any case; a name two items share is refused: use the id). `price` is a whole number of the campaign currency, 0 or more. |
+| `hook` | no | An optional quest hook or complication. |
+
 ### `gmNotes`: GM private notes
 
 | Key | Required | Meaning |
@@ -214,8 +231,8 @@ sections" and nothing applies for it. Leave it out of new files.
 
 The preview catches what would double up. Skills, titles and regions the
 campaign already has show an error and cannot be ticked. Items and bestiary entries may share names, so a second
-copy only gets a note. Quests and GM notes can repeat: untick
-them when importing a file again (the preview notes a quest or GM note whose title the campaign already has).
+copy only gets a note. Quests, shops and GM notes can repeat: untick
+them when importing a file again (the preview notes a quest, shop or GM note whose name the campaign already has).
 
 ## Versions
 

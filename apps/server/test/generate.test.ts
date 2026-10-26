@@ -100,7 +100,7 @@ describe('co-DM generate on demand', () => {
   });
 
   const SECTIONS: Record<(typeof GENERATE_KINDS)[number], readonly string[]> = {
-    shop: ['item.define', 'note.create'],
+    shop: ['item.define', 'shop.define'],
     npc: ['entity.define', 'note.create'],
     place: ['region.define'],
     encounter: ['entity.define', 'note.create'],

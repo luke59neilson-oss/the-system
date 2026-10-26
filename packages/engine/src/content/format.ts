@@ -287,6 +287,24 @@ export const contentRegionSchema = z
   })
   .describe('A region of the map (GM-only until the party gets there).');
 
+export const contentShopSchema = z
+  .strictObject({
+    name,
+    place: name.optional().describe('The region it stands in, by name or id.'),
+    keeper: text.optional().describe('The keeper NPC: name, look, manner.'),
+    wares: z
+      .array(
+        z.strictObject({
+          item: name.describe('A library item, or one defined in this file, by name or id.'),
+          price: z.number().int().min(0).max(1_000_000_000).describe('In the campaign currency.'),
+        }),
+      )
+      .max(100)
+      .optional(),
+    hook: text.optional().describe('An optional quest hook or complication.'),
+  })
+  .describe('A shop (GM-side; a sale is a GM trade the price list fills in).');
+
 export const contentGmNoteSchema = z
   .strictObject({
     title: name,
@@ -328,6 +346,7 @@ export const contentFileSchema = z
     evolutions: list(contentEvolutionSchema),
     quests: list(contentQuestSchema),
     regions: list(contentRegionSchema),
+    shops: list(contentShopSchema),
     gmNotes: list(contentGmNoteSchema),
     hunger: contentHungerSchema.optional(),
   })

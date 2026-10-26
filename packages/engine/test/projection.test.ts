@@ -170,9 +170,10 @@ describe('player projection', () => {
     expect(Object.keys(CHARACTER_FIELD_VISIBILITY).sort()).toEqual(
       [...Object.keys(state.characters.jake ?? {}), ...optional].sort(),
     );
-    // MT.9's scene prompt is absent until the GM first ends a scene.
+    // MT.9's scene prompt is absent until the GM first ends a scene; MC.3's
+    // shops until the first shop (D231).
     expect(Object.keys(CAMPAIGN_FIELD_VISIBILITY).sort()).toEqual(
-      [...Object.keys(state), 'scenePrompt'].sort(),
+      [...Object.keys(state), 'scenePrompt', 'shops', 'shopOrder'].sort(),
     );
     const view = projectForPlayer(state, 'jake');
     const partyFields = Object.entries(CHARACTER_FIELD_VISIBILITY)

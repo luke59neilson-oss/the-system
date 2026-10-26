@@ -24,9 +24,9 @@ export const GENERATE_LABELS: Readonly<Record<GenerateKind, string>> = {
   questHook: 'Quest hook',
 };
 
-/** Where each kind lands in the content format (MC.3 adds a real shop section). */
+/** Where each kind lands in the content format. */
 const KIND_GUIDE: Readonly<Record<GenerateKind, string>> = {
-  shop: 'A shop: one `gmNotes` entry titled with the shop name (keeper NPC, what it sells with prices in the campaign currency, an optional hook) and 2–5 `items` it sells.',
+  shop: 'A shop: one `shops` entry (name, place if known, keeper NPC, wares naming the items it sells with whole prices in the campaign currency, an optional hook) and the 2–5 `items` it sells, defined in the same file.',
   npc: 'An NPC: one `gmNotes` entry (name, look, wants, secret, how they talk) and, if players could Identify them, one `bestiary` entry with grade, level and tiers.',
   place:
     'A place: one `regions` entry (name, GM notes) and, if it holds something players could Identify, one `bestiary` entry without grade or level.',

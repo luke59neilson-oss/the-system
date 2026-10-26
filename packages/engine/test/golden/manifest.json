@@ -288,6 +288,22 @@
       "sha256": "323233f6414e23b9b60053bb0260cda0ea20b3f76cb1f8b04509fbfa00cf12c7",
       "schemaVersion": 33
     },
+    "shops-removed.jsonl": {
+      "sha256": "a024d07cac2b4b0b4424eb5ab06996699259f6506dd25e57c392094602dee975",
+      "schemaVersion": 33
+    },
+    "shops-removed.state.json": {
+      "sha256": "2d1ed98a38c806f3dfcd8a2d89f3024cf08b9669d5187820c50808be5af71366",
+      "schemaVersion": 33
+    },
+    "shops.jsonl": {
+      "sha256": "a80c7275e26f2241f42ab6faa45f62717c388b7b8c0b3304adab150e2adcf429",
+      "schemaVersion": 33
+    },
+    "shops.state.json": {
+      "sha256": "80b7ec5f2a38f958640b449a9c977fbe9fb4d50501d44596bc0ef53214e8c119",
+      "schemaVersion": 33
+    },
     "skill-grant.jsonl": {
       "sha256": "ee84473c02fd9afb063e520642cff3c6b98a0086fb2efe7591e2dccef731de7a",
       "schemaVersion": 33
