@@ -12,6 +12,7 @@ import { flushSync } from 'react-dom';
 import { titleKey, type OwnSheet, type PlayerView } from '@the-system/engine';
 import { friendlyError, notificationText } from '../format';
 import { BroadcastBanners } from './BroadcastBanners';
+import { PortraitBadge } from '../PortraitBadge';
 import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
 import { playSound, unlockSound } from './sounds';
@@ -399,6 +400,12 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
       <h2 id="status" tabIndex={-1} ref={statusHeading}>
         Status
       </h2>
+      {me.portrait !== null && (
+        // MT.10 (Q40, DESIGN §9): the character's portrait, if any, at the top.
+        <div className="status-portrait" data-testid="status-portrait">
+          <PortraitBadge name={me.name} src={me.portrait} className=" portrait-large" />
+        </div>
+      )}
       <dl className="rows">
         <dt>Name</dt>
         <dd data-testid="name">{me.name}</dd>

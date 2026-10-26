@@ -120,8 +120,9 @@ The desktop app keeps everything in its app-data folder, in `data/`:
 | macOS | `~/Library/Application Support/The System/data` |
 | Linux | `~/.config/The System/data` |
 
-- `campaigns/<id>/` holds each campaign's event log (`events.jsonl`); `backups/` inside it
-  gets a copy at every session end and every time the app quits.
+- `campaigns/<id>/` holds each campaign's event log (`events.jsonl`) and its
+  `portraits/` folder; `backups/` inside it gets a copy of both at every
+  session end and every time the app quits.
 - `exports/` holds the running session log and the end-of-session reports
   (the files to hand to Claude).
 - Copy the whole `data` folder to back up or move to another laptop. Never
@@ -132,7 +133,7 @@ The desktop app keeps everything in its app-data folder, in `data/`:
 After a power cut the app checks the log against its last snapshot. If the
 disk lost writes it refuses to open the campaign and changes nothing; the
 message names the campaign's `backups` folder. Either copy the newest backup's
-files back into the campaign folder, or rename `snapshot.json` (keep the
+files (and its `portraits` folder, if it has one) back into the campaign folder, or rename `snapshot.json` (keep the
 file) to open the log as it is, minus the lost events.
 
 ## Only one window opens

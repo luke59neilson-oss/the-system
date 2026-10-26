@@ -144,4 +144,5 @@ to DESIGN.md's values.
 
 Copy the app's `data` folder (TROUBLESHOOTING → "Where the campaign is
 saved"). Each campaign's `backups` folder holds a copy from every session end
-and every quit.
+and every quit, portraits included. A campaign export (the GM's export file)
+carries the event log and the portraits, and importing it brings both back.

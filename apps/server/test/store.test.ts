@@ -1,5 +1,8 @@
+import { createHash } from 'node:crypto';
 import {
   appendFileSync,
+  cpSync,
+  readdirSync,
   writeSync,
   existsSync,
   mkdirSync,
@@ -26,8 +29,10 @@ import {
   checkCampaignId,
   importCampaign,
   parseLogText,
+  type CampaignExport,
   type StoreOptions,
 } from '../src/store';
+import { portraitFile, savePortrait } from '../src/portraits';
 
 let dataDir: string;
 let options: StoreOptions;
@@ -482,6 +487,7 @@ describe('export and import', () => {
       'events',
       'exportedAt',
       'format',
+      'portraits',
       'version',
     ]);
     store.close();
@@ -498,6 +504,78 @@ describe('export and import', () => {
     expect(() => importCampaign(good, '../evil', options)).toThrow(StoreError);
     const broken = { ...good, events: good.events.slice(1) };
     expect(() => importCampaign(broken, 'x', options)).toThrow(/cannot load/);
+    expect(CampaignStore.list(dataDir)).toEqual(['main']);
+    store.close();
+  });
+
+  // MT.10 (Q40): backups and exports carry the portraits folder and restore it.
+  const png = (seed: number) =>
+    Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      Buffer.from(`portrait-${seed}`),
+    ]);
+
+  it('backs up the portraits folder; copying a backup back restores them', () => {
+    const store = CampaignStore.open('main', options);
+    play(store, script);
+    const a = savePortrait(store.dir, png(1));
+    const b = savePortrait(store.dir, png(2));
+    writeFileSync(path.join(store.dir, 'portraits', 'stray.txt'), 'not a portrait');
+    const folder = store.backup();
+    expect(readdirSync(path.join(folder, 'portraits')).sort()).toEqual([a, b].sort());
+    expect(readFileSync(path.join(folder, 'portraits', a))).toEqual(png(1));
+    const before = store.campaign;
+    store.close();
+    // The restore TROUBLESHOOTING describes: the backup's files into a campaign folder.
+    const restored = path.join(CampaignStore.campaignsDir(dataDir), 'restored');
+    cpSync(folder, restored, { recursive: true });
+    const reopened = CampaignStore.open('restored', options);
+    expect(reopened.campaign).toEqual(before);
+    expect(portraitFile(reopened.dir, a)).not.toBeNull();
+    expect(readFileSync(portraitFile(reopened.dir, b)!)).toEqual(png(2));
+    reopened.close();
+  });
+
+  it('a backup without portraits has no portraits folder', () => {
+    const store = CampaignStore.open('main', options);
+    play(store, script);
+    expect(existsSync(path.join(store.backup(), 'portraits'))).toBe(false);
+    store.close();
+  });
+
+  it('exports portraits and imports them back; version 1 files still import', () => {
+    const store = CampaignStore.open('main', options);
+    play(store, script);
+    const a = savePortrait(store.dir, png(3));
+    const exported = JSON.parse(JSON.stringify(store.exportCampaign())) as CampaignExport;
+    expect(exported.version).toBe(2);
+    expect(Object.keys(exported.portraits ?? {})).toEqual([a]);
+    const copy = importCampaign(exported, 'copy', options);
+    expect(readFileSync(portraitFile(copy.dir, a)!)).toEqual(png(3));
+    copy.close();
+    const v1 = { ...exported, version: 1, portraits: undefined };
+    const old = importCampaign(v1, 'old', options);
+    expect(existsSync(path.join(old.dir, 'portraits'))).toBe(false);
+    old.close();
+    store.close();
+  });
+
+  it('rejects portraits that do not match their names', () => {
+    const store = CampaignStore.open('main', options);
+    play(store, script);
+    const a = savePortrait(store.dir, png(4));
+    const good = store.exportCampaign();
+    const bad = (portraits: unknown) => () => importCampaign({ ...good, portraits }, 'x', options);
+    expect(bad('nope')).toThrow(/must be an object/);
+    expect(bad({ '../evil.png': png(4).toString('base64') })).toThrow(/is not a portrait/);
+    expect(bad({ [a]: 5 })).toThrow(/is not a portrait/);
+    expect(bad({ [a]: png(5).toString('base64') })).toThrow(/does not match/);
+    const html = Buffer.from('<html><script>alert(1)</script></html>');
+    const htmlName = `${createHash('sha256').update(html).digest('hex')}.png`;
+    expect(bad({ [htmlName]: html.toString('base64') })).toThrow(/does not match/);
+    expect(bad({ [a.replace('.png', '.jpg')]: png(4).toString('base64') })).toThrow(
+      /does not match/,
+    );
     expect(CampaignStore.list(dataDir)).toEqual(['main']);
     store.close();
   });

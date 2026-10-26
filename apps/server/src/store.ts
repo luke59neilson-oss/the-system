@@ -14,11 +14,12 @@ import {
   unlinkSync,
   writeSync,
 } from 'node:fs';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { hostname, uptime } from 'node:os';
 import path from 'node:path';
 import {
   EventRejectedError,
+  PORTRAIT_REF,
   appendEvent,
   emptyCampaign,
   parseEvent,
@@ -29,6 +30,7 @@ import {
   type DomainEvent,
   type Snapshot,
 } from '@the-system/engine';
+import { PORTRAIT_MAX_BYTES, detectPortrait } from './portraitFormat';
 
 /**
  * Campaign persistence (ROADMAP M2.1, DECISIONS D2/D42). One directory per
@@ -48,7 +50,8 @@ import {
  */
 
 export const EXPORT_FORMAT = 'the-system-campaign';
-export const EXPORT_VERSION = 1;
+/** 2 (MT.10, Q40): exports carry the portraits folder; version 1 files still import. */
+export const EXPORT_VERSION = 2;
 
 export interface CampaignExport {
   readonly format: typeof EXPORT_FORMAT;
@@ -56,6 +59,46 @@ export interface CampaignExport {
   readonly exportedAt: string;
   readonly campaignId: string;
   readonly events: readonly unknown[];
+  /** Portrait files by name (`<sha256>.<ext>`), base64 (version 2 on). */
+  readonly portraits?: Readonly<Record<string, string>>;
+}
+
+/** The campaign's stored portrait file names (MT.10), sorted. */
+function portraitNames(dir: string): string[] {
+  const folder = path.join(dir, 'portraits');
+  if (!existsSync(folder)) return [];
+  return readdirSync(folder)
+    .filter((name) => PORTRAIT_REF.test(name))
+    .sort();
+}
+
+/**
+ * Checks imported portraits (MT.10): each name must be a portrait name whose
+ * bytes are an image of that type, at most the upload limit, hashing to it.
+ */
+function checkPortraits(raw: unknown): Map<string, Buffer> {
+  const out = new Map<string, Buffer>();
+  if (raw === undefined) return out;
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    throw new StoreError('Export portraits must be an object');
+  }
+  for (const [name, data] of Object.entries(raw)) {
+    if (!PORTRAIT_REF.test(name) || typeof data !== 'string') {
+      throw new StoreError(`Export portrait "${name.slice(0, 80)}" is not a portrait`);
+    }
+    const bytes = Buffer.from(data, 'base64');
+    const ext = name.slice(name.lastIndexOf('.') + 1);
+    if (
+      bytes.length === 0 ||
+      bytes.length > PORTRAIT_MAX_BYTES ||
+      detectPortrait(bytes) !== ext ||
+      createHash('sha256').update(bytes).digest('hex') !== name.slice(0, 64)
+    ) {
+      throw new StoreError(`Export portrait "${name}" does not match its file name`);
+    }
+    out.set(name, bytes);
+  }
+  return out;
 }
 
 export class StoreError extends Error {}
@@ -495,20 +538,39 @@ export class CampaignStore {
       copyFileSync(path.join(this.dir, file), path.join(staging, file));
       fsyncFile(path.join(staging, file));
     }
+    // MT.10 (Q40): the portraits folder too, so a backup restores whole.
+    const names = portraitNames(this.dir);
+    if (names.length > 0) {
+      const into = path.join(staging, 'portraits');
+      mkdirSync(into);
+      for (const name of names) {
+        copyFileSync(path.join(this.dir, 'portraits', name), path.join(into, name));
+        fsyncFile(path.join(into, name));
+      }
+      fsyncDir(into);
+    }
     fsyncDir(staging);
     renameSync(staging, target);
     fsyncDir(backups);
     return target;
   }
 
-  /** The campaign as a portable export: the event log only, never settings or secrets. */
+  /**
+   * The campaign as a portable export: the event log and the portraits folder
+   * (MT.10), never settings or secrets.
+   */
   exportCampaign(): CampaignExport {
+    const portraits: Record<string, string> = {};
+    for (const name of portraitNames(this.dir)) {
+      portraits[name] = readFileSync(path.join(this.dir, 'portraits', name)).toString('base64');
+    }
     return {
       format: EXPORT_FORMAT,
       version: EXPORT_VERSION,
       exportedAt: this.options.now(),
       campaignId: this.id,
       events: JSON.parse(JSON.stringify(this.campaignValue.events)) as unknown[],
+      portraits,
     };
   }
 
@@ -577,10 +639,11 @@ export function importCampaign(raw: unknown, id: string, options: StoreOptions):
   if (typeof data !== 'object' || data === null || data.format !== EXPORT_FORMAT) {
     throw new StoreError('Not a campaign export');
   }
-  if (data.version !== EXPORT_VERSION) {
+  if (data.version !== 1 && data.version !== EXPORT_VERSION) {
     throw new StoreError(`Unsupported export version ${String(data.version)}`);
   }
   if (!Array.isArray(data.events)) throw new StoreError('Export has no event list');
+  const portraits = checkPortraits(data.version === 1 ? undefined : data.portraits);
   checkCampaignId(id);
   let campaign: Campaign;
   try {
@@ -603,6 +666,13 @@ export function importCampaign(raw: unknown, id: string, options: StoreOptions):
     path.join(staging, 'events.jsonl'),
     campaign.events.map((e) => `${JSON.stringify(e)}\n`).join(''),
   );
+  if (portraits.size > 0) {
+    mkdirSync(path.join(staging, 'portraits'));
+    for (const [name, bytes] of portraits) {
+      writeFileDurable(path.join(staging, 'portraits', name), bytes);
+    }
+    fsyncDir(path.join(staging, 'portraits'));
+  }
   renameSync(staging, dir);
   fsyncDir(root);
   return CampaignStore.open(id, options);
