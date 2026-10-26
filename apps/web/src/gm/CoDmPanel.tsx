@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import type { IncomingContent } from './ContentImport';
 
 /** The kinds the server's generate route takes (MC.2, DESIGN §11). */
@@ -32,11 +32,23 @@ export function CoDmPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [draft, setDraft] = useState<string | null>(null);
   const [spend, setSpend] = useState<string | null>(null);
+  // The generation as it came back, to tell whether the GM has edited it.
+  const [original, setOriginal] = useState<string | null>(null);
+  const abort = useRef<AbortController | null>(null);
 
   const label = KINDS.find(([k]) => k === kind)?.[1] ?? kind;
 
   const generate = async (e?: FormEvent) => {
     e?.preventDefault();
+    if (
+      draft !== null &&
+      draft !== original &&
+      !window.confirm('Generate again? Your edits to the last generation will be lost.')
+    ) {
+      return;
+    }
+    const controller = new AbortController();
+    abort.current = controller;
     setBusy(true);
     setMessage(`[The System is constructing: ${label}…]`);
     try {
@@ -44,10 +56,12 @@ export function CoDmPanel({
         method: 'POST',
         headers: { 'x-gm-key': gmKey, 'content-type': 'application/json' },
         body: JSON.stringify({ kind, prompt }),
+        signal: controller.signal,
       });
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
         file?: unknown;
+        preview?: PreviewSummary;
         status?: { spend: { dollars: number; calls: number } };
       };
       if (data.status) {
@@ -62,11 +76,17 @@ export function CoDmPanel({
       }
       const text = JSON.stringify(data.file, null, 2);
       setDraft(text);
-      onGenerated({ text, name: `co-DM ${label.toLowerCase()}` });
-      setMessage(`${label} ready: check it in Import content`);
+      setOriginal(text);
+      onGenerated({ text, name: `co-DM ${label.toLowerCase()}`, generated: true });
+      setMessage(readiness(label, data.preview));
     } catch {
-      setMessage('Could not reach the server');
+      setMessage(
+        controller.signal.aborted
+          ? 'Cancelled: nothing was generated'
+          : 'Could not reach the server',
+      );
     } finally {
+      if (abort.current === controller) abort.current = null;
       setBusy(false);
     }
   };
@@ -95,14 +115,21 @@ export function CoDmPanel({
             placeholder="An herbalist in the Crown camp, cheap but shady"
           />
         </label>
-        <button type="submit" disabled={busy}>
-          {busy ? 'Generating…' : 'Generate'}
-        </button>
-        {draft !== null && (
-          <button type="button" disabled={busy} onClick={() => void generate()}>
-            Regenerate
+        <div className="codm-actions">
+          <button type="submit" disabled={busy}>
+            {busy ? 'Generating…' : 'Generate'}
           </button>
-        )}
+          {busy && (
+            <button type="button" onClick={() => abort.current?.abort()}>
+              Cancel
+            </button>
+          )}
+          {draft !== null && !busy && (
+            <button type="button" onClick={() => void generate()}>
+              Regenerate
+            </button>
+          )}
+        </div>
       </form>
       {message && (
         <p role="status" className="muted" data-testid="codm-message">
@@ -126,7 +153,11 @@ export function CoDmPanel({
             type="button"
             disabled={busy}
             onClick={() =>
-              onGenerated({ text: draft, name: `co-DM ${label.toLowerCase()} (edited)` })
+              onGenerated({
+                text: draft,
+                name: `co-DM ${label.toLowerCase()} (edited)`,
+                generated: true,
+              })
             }
           >
             Preview my edits
@@ -135,4 +166,23 @@ export function CoDmPanel({
       )}
     </section>
   );
+}
+
+/** The parts of the server's import preview the panel reads. */
+interface PreviewSummary {
+  readonly ok: boolean;
+  readonly errors?: readonly unknown[];
+  readonly entries?: readonly { readonly error: string | null }[];
+}
+
+/** What the panel says once a generation is back: ready only if it can apply. */
+export function readiness(label: string, preview: PreviewSummary | undefined): string {
+  if (!preview?.ok) return `${label} broke the rules: see the problems in Import content`;
+  const entries = preview.entries ?? [];
+  const blocked = entries.filter((e) => e.error !== null).length + (preview.errors?.length ?? 0);
+  if (entries.length === 0) return `${label} came back empty: try Regenerate`;
+  if (blocked > 0) {
+    return `${label} ready, but ${blocked} entr${blocked === 1 ? 'y' : 'ies'} cannot apply: check Import content`;
+  }
+  return `${label} ready: check it in Import content`;
 }

@@ -28,6 +28,29 @@ export const GENERATE_FIXTURES: readonly AiFixture[] = [
     match: 'divine relic please',
     text: file({ items: [{ name: 'Shard of a God', rarity: 'divine' }] }),
   },
+  {
+    // Flat and allowed, but far above the 20% item cap: it imports, and the cap
+    // cuts it when worn (DESIGN §4).
+    role: 'strong',
+    match: 'huge bonus please',
+    text: file({
+      items: [
+        {
+          name: 'Heart of the Host',
+          rarity: 'rare',
+          slot: 'necklace',
+          bonuses: [{ stat: 'vitality', flat: 50 }],
+        },
+      ],
+    }),
+  },
+  // A slow model: the GM can cancel it, and the route's time limit stops it.
+  {
+    role: 'strong',
+    match: 'slow please',
+    delayMs: 4_000,
+    text: file({ regions: [{ name: 'Late' }] }),
+  },
   { role: 'strong', match: 'say hello', text: 'Hello! What would you like me to make?' },
   {
     role: 'strong',

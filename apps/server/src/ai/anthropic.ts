@@ -36,11 +36,14 @@ export class AnthropicClient implements AiClient {
       throw new AiError('No API key is set: add one in Co-DM settings', 'no-key');
     }
     const model = this.models()[request.role];
+    const timeoutMs = request.timeoutMs ?? this.timeoutMs;
     let res: Response;
     try {
       res = await this.fetchImpl(ANTHROPIC_URL, {
         method: 'POST',
-        signal: AbortSignal.timeout(this.timeoutMs),
+        signal: request.signal
+          ? AbortSignal.any([AbortSignal.timeout(timeoutMs), request.signal])
+          : AbortSignal.timeout(timeoutMs),
         headers: {
           'content-type': 'application/json',
           'x-api-key': key,

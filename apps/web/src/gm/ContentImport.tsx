@@ -46,6 +46,8 @@ export interface IncomingContent {
   readonly text: string;
   readonly name: string;
   readonly seq: number;
+  /** Written by the co-DM: the window says to check it before applying. */
+  readonly generated?: boolean;
 }
 
 export function ContentImport({
@@ -59,6 +61,7 @@ export function ContentImport({
 }) {
   const [fileText, setFileText] = useState('');
   const [fileName, setFileName] = useState('');
+  const [generated, setGenerated] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
   // Errors from re-checking only the ticked entries (an entry that needs one
@@ -77,41 +80,58 @@ export function ContentImport({
 
   const load = async (file: File | undefined) => {
     if (!file) return;
-    await loadText(() => file.text(), file.name);
+    await loadText(() => file.text(), file.name, false);
   };
 
-  const loadText = async (read: () => Promise<string>, name: string) => {
+  /**
+   * Reads and previews a file. Only the newest load (or re-check) may change
+   * the window, so a slow file pick never overwrites a later generation.
+   */
+  const loadText = async (read: () => Promise<string>, name: string, isGenerated: boolean) => {
     setBusy(true);
     setOutcome(null);
-    checkRun.current++;
+    const run = ++checkRun.current;
     try {
       const text = await read();
       const p = await requestPreview(gmKey, text);
+      if (run !== checkRun.current) return;
       setFileText(text);
       setFileName(name);
+      setGenerated(isGenerated);
       setPreview(p);
       setChecks(new Map());
       setChecking(false);
       setPicked(new Set(p.ok ? p.entries.filter((e) => e.error === null).map((e) => e.path) : []));
     } catch {
-      offline();
+      if (run === checkRun.current) {
+        setPreview(null);
+        setChecks(new Map());
+        setOutcome('Could not check the file: is the server running?');
+      }
     } finally {
       setBusy(false);
     }
   };
 
-  // MC.2: a generation (or the GM's edit of one) opens here like a picked file.
+  // MC.2: a generation (or the GM's edit of one) opens here like a picked
+  // file. One that arrives while the window is busy (loading, or applying
+  // entries) waits until it is done, so an apply never runs against, or
+  // wipes, content the GM has not seen.
   const lastSeq = useRef<number | null>(null);
   useEffect(() => {
-    if (!incoming || incoming.seq === lastSeq.current) return;
+    if (busy || !incoming || incoming.seq === lastSeq.current) return;
     lastSeq.current = incoming.seq;
+    const { text, name } = incoming;
+    const isGenerated = incoming.generated === true;
     const run = ++checkRun.current;
-    void requestPreview(gmKey, incoming.text)
+    setBusy(true);
+    setOutcome(null);
+    requestPreview(gmKey, text)
       .then((p) => {
         if (run !== checkRun.current) return;
-        setOutcome(null);
-        setFileText(incoming.text);
-        setFileName(incoming.name);
+        setFileText(text);
+        setFileName(name);
+        setGenerated(isGenerated);
         setPreview(p);
         setChecks(new Map());
         setChecking(false);
@@ -124,8 +144,9 @@ export function ContentImport({
         setPreview(null);
         setChecks(new Map());
         setOutcome('Could not check the file: is the server running?');
-      });
-  }, [incoming, gmKey]);
+      })
+      .finally(() => setBusy(false));
+  }, [incoming, busy, gmKey]);
 
   /** Re-previews just `paths`, in file order, against the campaign as it is now. */
   const recheck = async (paths: ReadonlySet<string>) => {
@@ -235,6 +256,11 @@ export function ContentImport({
             <code>{fileName}</code>
             {preview.title && ` · ${preview.title}`}
           </p>
+          {generated && (
+            <p className="small muted" data-testid="import-generated-note">
+              Written by the co-DM: read it before you apply it.
+            </p>
+          )}
           {preview.errors.length > 0 && (
             <ul className="err" role="alert" aria-label="Entries that cannot apply">
               {preview.errors.map((e) => (

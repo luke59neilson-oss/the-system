@@ -55,6 +55,9 @@ test('a generated shop opens in the import preview and is approved', async ({ br
   await expect(imp.getByRole('alert', { name: 'Problems in the file' })).toContainText(
     'items[0].bonuses[0]',
   );
+  await expect(codm.getByTestId('codm-message')).toHaveText(
+    'Item broke the rules: see the problems in Import content',
+  );
 
   // A reply with no content at all says so in the panel.
   await codm.getByLabel('What the table needs').fill('say hello');
@@ -70,6 +73,7 @@ test('a generated shop opens in the import preview and is approved', async ({ br
   await expect(codm.getByTestId('codm-panel-spend')).toContainText('3 calls');
   await expect(imp).toContainText('Sap & Sinew, herbalist');
   await expect(imp.getByRole('checkbox')).toHaveCount(4);
+  await expect(imp.getByTestId('import-generated-note')).toBeVisible();
   await codm.screenshot({ path: path.join(shots, 'gm-codm-panel-1366x768.png') });
   await imp.screenshot({ path: path.join(shots, 'gm-codm-import-1366x768.png') });
 
@@ -89,8 +93,30 @@ test('a generated shop opens in the import preview and is approved', async ({ br
   await expect(items).toContainText('Bracers of the Grove');
   await expect(items).toContainText('Lungmoss Brew');
 
-  // Regenerate asks again for the same kind.
+  // Regenerate asks again for the same kind, but first asks before it
+  // throws away the GM's edits.
+  gm.once('dialog', (d) => void d.dismiss());
   await codm.getByRole('button', { name: 'Regenerate' }).click();
+  await expect(codm.getByRole('button', { name: 'Regenerate' })).toBeEnabled();
+  await expect(codm.getByTestId('codm-panel-spend')).toContainText('3 calls');
+  gm.once('dialog', (d) => {
+    expect(d.message()).toContain('edits');
+    void d.accept();
+  });
+  await codm.getByRole('button', { name: 'Regenerate' }).click();
+  await expect(codm.getByTestId('codm-panel-spend')).toContainText('4 calls');
+  await expect(imp.getByRole('checkbox')).toHaveCount(4);
+  await expect(imp).toContainText('Lungmoss Tea');
+
+  // A slow generation can be cancelled; nothing opens and nothing is counted.
+  await codm.getByLabel('Generate').selectOption('place');
+  await codm.getByLabel('What the table needs').fill('slow please');
+  await codm.getByRole('button', { name: 'Generate', exact: true }).click();
+  await expect(codm.getByRole('button', { name: 'Generating…' })).toBeDisabled();
+  await codm.getByRole('button', { name: 'Cancel' }).click();
+  await expect(codm.getByTestId('codm-message')).toHaveText('Cancelled: nothing was generated');
+  await expect(codm.getByRole('button', { name: 'Generate', exact: true })).toBeEnabled();
+  await expect(imp).toContainText('Lungmoss Tea');
   await expect(codm.getByTestId('codm-panel-spend')).toContainText('4 calls');
 
   // The shop's GM note and the generation never reached the player.

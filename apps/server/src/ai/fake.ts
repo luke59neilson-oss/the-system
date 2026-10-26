@@ -18,6 +18,8 @@ export interface AiFixture {
   readonly usage?: { inputTokens: number; outputTokens: number };
   /** Reply with this error instead of text. */
   readonly error?: { message: string; kind: AiError['kind'] };
+  /** Answer only after this long (a slow model), unless the request is aborted first. */
+  readonly delayMs?: number;
 }
 
 export class FixtureAiClient implements AiClient {
@@ -44,13 +46,27 @@ export class FixtureAiClient implements AiClient {
     if (fixture.error) {
       return Promise.reject(new AiError(fixture.error.message, fixture.error.kind));
     }
-    return Promise.resolve({
+    const reply: AiReply = {
       text: fixture.text,
       model: this.models[request.role],
       usage: fixture.usage ?? {
         inputTokens: Math.ceil((request.system.length + prompt.length) / 4),
         outputTokens: Math.ceil(fixture.text.length / 4),
       },
+    };
+    const delay = fixture.delayMs ?? 0;
+    if (delay <= 0) return Promise.resolve(reply);
+    return new Promise((resolve, reject) => {
+      const stop = () => {
+        clearTimeout(timer);
+        reject(new AiError('The request was cancelled', 'network'));
+      };
+      const timer = setTimeout(() => {
+        request.signal?.removeEventListener('abort', stop);
+        resolve(reply);
+      }, delay);
+      if (request.signal?.aborted) stop();
+      else request.signal?.addEventListener('abort', stop, { once: true });
     });
   }
 }

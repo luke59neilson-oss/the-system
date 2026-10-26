@@ -34,6 +34,7 @@ import { AiError } from './ai/client';
 import {
   GENERATE_KINDS,
   GENERATE_PROMPT_MAX,
+  GENERATE_TIMEOUT_MS,
   buildGenerateRequest,
   extractJson,
 } from './ai/generate';
@@ -62,6 +63,8 @@ export interface CreateServerOptions {
   sessionLog?: Omit<SessionLogOptions, 'onError'>;
   /** Co-DM settings and AI client (MC.1); its routes are GM-only. Off when omitted. */
   coDm?: CoDm;
+  /** How long a co-DM generation may take before the GM is told to retry (MC.2). */
+  generateTimeoutMs?: number;
 }
 
 /** The demo campaign's id (D53): its own directory, never the real campaign's. */
@@ -430,27 +433,61 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   // applies before that. GM-only (under /api/gm/), and the campaign context
   // it sends stays between this server and the API.
   const coDm = options.coDm;
-  if (coDm) {
+  if (!coDm) {
+    app.post('/api/gm/ai/generate', (_request, reply) =>
+      reply.code(503).send({ error: 'The co-DM is not available on this server' }),
+    );
+  } else {
     const generateBody = z.strictObject({
       kind: z.enum(GENERATE_KINDS),
       prompt: z.string().max(GENERATE_PROMPT_MAX).default(''),
     });
+    const limitMs = options.generateTimeoutMs ?? GENERATE_TIMEOUT_MS;
     app.post('/api/gm/ai/generate', { bodyLimit: 16 * 1024 }, async (request, reply) => {
       const state = active?.store.campaign.state;
       if (!active || !state) return reply.code(404).send({ error: 'No campaign open' });
       const body = generateBody.safeParse(request.body);
       if (!body.success) return reply.code(400).send({ error: 'Send { kind, prompt }' });
+      // The GM cancelling (or closing the console) stops the API call; so
+      // does the time limit, which the GM hears about instead of a spinner.
+      const abort = new AbortController();
+      reply.raw.on('close', () => {
+        if (!reply.raw.writableFinished) abort.abort();
+      });
+      let timer: NodeJS.Timeout | undefined;
+      const timedOut = new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          abort.abort();
+          reject(
+            new AiError(
+              `The co-DM took longer than ${Math.round(limitMs / 1000)} s; try again or ask for something smaller`,
+              'network',
+            ),
+          );
+        }, limitMs);
+      });
       let file: unknown;
       try {
-        const answer = await coDm.client.complete(
-          buildGenerateRequest(body.data.kind, body.data.prompt, state),
-        );
+        const answer = await Promise.race([
+          coDm.client.complete({
+            ...buildGenerateRequest(body.data.kind, body.data.prompt, state),
+            timeoutMs: limitMs,
+            signal: abort.signal,
+          }),
+          timedOut,
+        ]);
         file = extractJson(answer.text);
       } catch (e) {
         return reply.code(502).send({
           error: e instanceof AiError ? e.message : 'The co-DM could not generate that',
           status: coDm.status(),
         });
+      } finally {
+        clearTimeout(timer);
+      }
+      // The campaign may have been switched or closed while the model worked.
+      if (!active?.store.campaign.state) {
+        return reply.code(404).send({ error: 'No campaign open', status: coDm.status() });
       }
       let n = 0;
       const campaign = active.store.campaign;

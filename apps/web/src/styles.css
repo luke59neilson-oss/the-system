@@ -2933,3 +2933,10 @@ ol.change-log li.undone .change-text {
 .override-toggle {
   margin: 6px 0;
 }
+
+/* MC.2: Generate / Cancel / Regenerate sit apart, never touching. */
+.codm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

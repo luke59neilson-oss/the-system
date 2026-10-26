@@ -39,6 +39,8 @@ const KIND_GUIDE: Readonly<Record<GenerateKind, string>> = {
 
 export const GENERATE_PROMPT_MAX = 2_000;
 export const GENERATE_MAX_TOKENS = 4_000;
+/** A 4,000-token reply from the strong model can take a minute or more. */
+export const GENERATE_TIMEOUT_MS = 150_000;
 
 /**
  * GM-only campaign context for the model: the party, where it is, the
