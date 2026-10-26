@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.5 done, MC.6 built on wip and in review. Preview ready: Actions → Release → Run workflow (MT).
-**Next item:** MC.6 on `wip/MC.6` (head 5491d311, base 2da73cbf, main merged at ce085128): fix review round-1 Mediums M2–M5 (see REVIEW-LOG 2026-10-26 MC.6), merge main, then round-2 sonnet review, check box, merge to main. First check CI: desktop-smoke flake on d3c743c2 (QUALITY Flakes).
+**Status:** in progress (2026-10-26): MT done; MC (co-DM) under way: MC.1–MC.6 done, MC.7 in review on wip, MC.8 built on wip (not reviewed). Preview ready: Actions → Release → Run workflow (MT).
+**Next item:** MC.7 on `wip/MC.7` (head 43c71d25, main merged at dae0cd16): fix review round-1 Mediums M1, M4, M5 (REVIEW-LOG 2026-10-26 MC.7), round-2 sonnet review, check box, merge to main. Then MC.8 on `wip/MC.8` (8055ba4f, based on wip/MC.7 43753ddc; merge wip/MC.7 or main in, then review).
 **Blockers:** none
 
 ## Run log
@@ -1210,3 +1210,13 @@ next item, blockers. -->
 - Next: MC.6 (see Next item).
 - Blockers: none.
 
+
+### Run 6c4032fc · 2026-10-26 11:09–11:49 UTC (end minute ~40, no §5.5 reason: I misjudged the clock and closed out early; MC.7 M1/M4/M5 could have been started)
+- Preflight: `add_repo` not offered (repo already cloned, reset to origin/main); lock pushed cleanly; vitest 5.0.5; sonnet reviewers work (worktree; Agent calls block, so build ran in forks beside each review). CI green on main (71e1a4dd). Hour 11: no efficiency check or sweep. No new answers.
+- MC.6 **checked**: round-1 Mediums fixed (bd48e6c7, D241); sonnet round 2 0 H / 2 M / 4 L; hum check added (level swing), single-voice bar kept with Q78. Merged to main at dae0cd16. MC.6 e2e mic now plays table-talk.wav.
+- MC.7 Practice drafts built on `wip/MC.7` (fork; D242, D243): drafting module and GM-only routes, Practice drafts window, contest rolls log practice, e2e. Sonnet round 1 0 H / 6 M; M2, M3, M6 fixed (43c71d25); M1, M4, M5 open.
+- MC.8 Suggestions panel built on `wip/MC.8` (fork, 8055ba4f, D244): chips with quotes, pacing, dismiss, Use → generate; e2e passes; not reviewed.
+- Tests: unit 1,425 on main; e2e MC.5 + MC.6 3/3, MC.7 + M7.3 2/2 on wip. Full suite not run locally (CI runs it).
+- Open `wip/*`: wip/MC.7 (43c71d25), wip/MC.8 (8055ba4f).
+- Next: MC.7 (see Next item).
+- Blockers: none.
