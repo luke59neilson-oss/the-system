@@ -472,6 +472,12 @@ the rest follow in file order. Each gets its own §6 review.
   opens and polls only while the mic is on, the speech model downloads or
   loads, or no first read has landed (D239); unit test for the rule; MC.5
   e2e and the latency project (`--workers=2`) green.
+- [ ] **QF.32 The forced-kill desktop test waits for Electron's helpers.**
+  CI `desktop-smoke` red three times (d3c743c2, 3bb78ed2, cb3bb8d9):
+  `desktop.spec.ts` cleanup hit ENOTEMPTY on the profile while Electron's
+  helper processes, orphaned by the SIGKILL, were still writing it. *Accept:*
+  the test kills the whole process tree and asserts every member is gone
+  before cleanup; desktop smoke green locally and in CI.
 
 ## MR — Luke's answers, batch 2 (2026-10-22)
 

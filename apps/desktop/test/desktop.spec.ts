@@ -2,6 +2,7 @@ import { mkdtempSync, existsSync, readdirSync, readFileSync, rmSync } from 'node
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { _electron as electron, chromium, expect, test } from '@playwright/test';
+import { killTree } from './process-tree';
 import { gmWindow } from './windows';
 
 // MS.5 smoke: the real Electron app starts the server, opens the GM console
@@ -16,7 +17,8 @@ const root = path.resolve(__dirname, '..');
 const localChromium = '/opt/pw-browsers/chromium';
 // After a forced kill, Electron's helper processes can still be writing to
 // the profile for a moment, so removing it may hit ENOTEMPTY (CI, 0d6d996e).
-// Cleanup retries; no test assertion is retried.
+// Cleanup retries; no test assertion is retried. The forced-kill test also
+// kills the whole tree and waits for it before cleanup (QF.32).
 const CLEANUP = { recursive: true, force: true, maxRetries: 10, retryDelay: 200 } as const;
 
 test('double-click start: server up, GM window connected with the key', async () => {
@@ -137,10 +139,9 @@ test('a polite close then a forced kill (an installer upgrading) still leaves th
         .find((w) => w.webContents.getURL().includes('/gm'))
         ?.close();
     });
-    // The forced kill, before anyone answers.
-    const exited = new Promise((resolve) => proc.once('exit', resolve));
-    proc.kill('SIGKILL');
-    await exited;
+    // The forced kill, before anyone answers. The whole process tree goes,
+    // and is gone before cleanup touches the profile (QF.32).
+    expect(await killTree(proc)).toEqual([]);
     const made = quitCopies();
     expect(made).toHaveLength(1);
     const copy = readFileSync(path.join(backups, made[0] ?? '', 'events.jsonl'), 'utf8');
