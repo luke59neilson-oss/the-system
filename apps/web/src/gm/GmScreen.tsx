@@ -114,17 +114,22 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
     clearOnApprove: boolean;
   } | null>(null);
   const loadingId = state && loading ? loadingBannerId(state, loading.text, loading.since) : null;
+  // Takes the current loading screen down (a regeneration replaces it; a
+  // failed or cancelled generation, or an approval, ends it).
+  const endLoading = () => {
+    const command = state && loadingId !== null ? clearLoadingCommand(state, loadingId) : null;
+    setLoading(null);
+    if (command) void client.command(command);
+  };
   const sendLoading = (text: string, clearOnApprove: boolean) => {
     const command = loadingCommand(text);
     if (!state || !command) return;
+    endLoading();
     setLoading({ text: text.trim(), since: state.broadcasts.length, clearOnApprove });
     void client.command(command);
   };
   const approved = () => {
-    if (!state || !loading?.clearOnApprove || loadingId === null) return;
-    const command = clearLoadingCommand(state, loadingId);
-    setLoading(null);
-    if (command) void client.command(command);
+    if (loading?.clearOnApprove) endLoading();
   };
   const party = useMemo(() => partyOf(state), [state]);
   const view = resolvePerspective(wanted, party);
@@ -188,6 +193,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
                 gmKey={gmKey}
                 onGenerated={(c) => setIncoming((cur) => ({ ...c, seq: (cur?.seq ?? 0) + 1 }))}
                 onLoading={sendLoading}
+                onLoadingFailed={endLoading}
               />
               <ContentImport
                 client={client}

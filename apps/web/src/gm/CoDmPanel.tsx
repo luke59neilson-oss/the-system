@@ -27,11 +27,14 @@ export function CoDmPanel({
   gmKey,
   onGenerated,
   onLoading,
+  onLoadingFailed,
 }: {
   gmKey: string;
   onGenerated: (content: Omit<IncomingContent, 'seq'>) => void;
   /** MC.4: send the loading screen (pinned broadcast) as a generation starts. */
   onLoading?: (text: string, clearOnApprove: boolean) => void;
+  /** MC.4 review: the generation failed or was cancelled, so the loading screen comes down. */
+  onLoadingFailed?: () => void;
 }) {
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState(LOADING_TEXT);
@@ -63,7 +66,8 @@ export function CoDmPanel({
     abort.current = controller;
     setBusy(true);
     setMessage(`[The System is constructing: ${label}…]`);
-    if (loading && loadingText.trim() !== '') onLoading?.(loadingText, clearOnApprove);
+    const showing = loading && loadingText.trim() !== '' && onLoading !== undefined;
+    if (showing) onLoading(loadingText, clearOnApprove);
     try {
       const res = await fetch('/api/gm/ai/generate', {
         method: 'POST',
@@ -84,6 +88,7 @@ export function CoDmPanel({
         );
       }
       if (!res.ok || data.file === undefined) {
+        if (showing) onLoadingFailed?.();
         setMessage(data.error ?? 'The co-DM could not generate that');
         return;
       }
@@ -93,6 +98,7 @@ export function CoDmPanel({
       onGenerated({ text, name: `co-DM ${label.toLowerCase()}`, generated: true });
       setMessage(readiness(label, data.preview));
     } catch {
+      if (showing) onLoadingFailed?.();
       setMessage(
         controller.signal.aborted
           ? 'Cancelled: nothing was generated'
