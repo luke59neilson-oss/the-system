@@ -92,7 +92,7 @@ test('the co-DM notes the session and writes its summary into the export', async
   );
   const summary = notes.getByTestId('session-summary');
   await expect(summary).toContainText('The party looked for a herbalist');
-  await expect(summary).toContainText('[Jake] Nocked an arrow and waited');
+  await expect(summary).toContainText('Jake: Nocked an arrow and waited');
   await expect(summary).toContainText('Find the herbalist');
   await notes.scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-session-summary-1366x768.png') });

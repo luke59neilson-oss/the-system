@@ -71,8 +71,12 @@ export function registerNotesRoutes(
       const file = notes.read(session.number);
       const all = readTranscript(store, session.number);
       const fresh = await takeNotes(options.client, all.slice(file.readUpTo));
-      const next = { ...file, readUpTo: all.length, notes: [...file.notes, ...fresh] };
-      notes.write(session.number, next);
+      // Lines count as read only when notes came back, so a reply with no
+      // usable notes leaves them to be read again (D250).
+      const next = fresh.length
+        ? { ...file, readUpTo: all.length, notes: [...file.notes, ...fresh] }
+        : file;
+      if (fresh.length) notes.write(session.number, next);
       return {
         session: session.number,
         notes: next.notes,
@@ -89,9 +93,12 @@ export function registerNotesRoutes(
       // Catch up on lines heard since the last notes first.
       const all = readTranscript(store, session.number);
       const fresh = await takeNotes(options.client, all.slice(file.readUpTo));
-      file = { ...file, readUpTo: all.length, notes: [...file.notes, ...fresh] };
-      if (file.notes.length === 0) {
+      if (fresh.length) {
+        // Saved before the summary call, so a failed summary keeps them (D250).
+        file = { ...file, readUpTo: all.length, notes: [...file.notes, ...fresh] };
         notes.write(session.number, file);
+      }
+      if (file.notes.length === 0) {
         throw new AiError('Nothing heard this session to summarise', 'bad-reply');
       }
       const party = state.characterOrder

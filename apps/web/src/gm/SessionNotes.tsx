@@ -90,7 +90,7 @@ export function SessionNotes({ gmKey }: { gmKey: string }) {
             <ul aria-label="Who did what">
               {s.whoDidWhat.map((w, i) => (
                 <li key={i}>
-                  [{w.character}] {w.did}
+                  {w.character}: {w.did}
                 </li>
               ))}
             </ul>
