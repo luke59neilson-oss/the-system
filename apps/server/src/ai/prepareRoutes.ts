@@ -37,7 +37,12 @@ interface PreparedFile {
   readonly seen: string[];
   readonly readUpTo: Record<string, number>;
   readonly lastCallAt: number | null;
+  /** Unreadable fast replies in a row on the same lines (review round 2). */
+  readonly failedLooks: number;
 }
+
+/** After this many unreadable replies in a row the lines count as read. */
+export const MAX_FAILED_LOOKS = 2;
 
 const EMPTY: PreparedFile = {
   version: 1,
@@ -47,6 +52,7 @@ const EMPTY: PreparedFile = {
   seen: [],
   readUpTo: {},
   lastCallAt: null,
+  failedLooks: 0,
 };
 
 /** GM-only prepared drafts for one campaign, in `<dir>/prepared.json`. */
@@ -71,6 +77,7 @@ export class PreparedStore {
       seen: data.seen,
       readUpTo: data.readUpTo ?? {},
       lastCallAt: typeof data.lastCallAt === 'number' ? data.lastCallAt : null,
+      failedLooks: typeof data.failedLooks === 'number' ? data.failedLooks : 0,
     };
   }
 
@@ -103,13 +110,14 @@ const view = (f: PreparedFile) => ({
   enabled: f.enabled,
   intervalS: f.intervalS,
   lastCallAt: f.lastCallAt,
-  drafts: f.drafts.map(({ id, kind, place, request, quote, at }) => ({
+  drafts: f.drafts.map(({ id, kind, place, request, quote, at, taken }) => ({
     id,
     kind,
     place,
     request,
     quote,
     at,
+    taken: taken === true,
   })),
 });
 
@@ -179,7 +187,8 @@ export function registerPrepareRoutes(
       const now = options.now();
       const due = prepareDue({
         enabled: f.enabled,
-        waiting: f.drafts.length,
+        // A draft the GM already took to Import no longer holds the queue.
+        waiting: f.drafts.filter((d) => d.taken !== true).length,
         now,
         lastCallAt: f.lastCallAt,
         intervalS: f.intervalS,
@@ -202,13 +211,30 @@ export function registerPrepareRoutes(
       try {
         heading = parseHeading(look.text, lines, new Set(f.seen));
       } catch {
+        // Bounded retries: after MAX_FAILED_LOOKS unreadable replies in a row
+        // the lines count as read, so one bad stretch is not paid for forever.
+        const cur = store.read();
+        const failedLooks = cur.failedLooks + 1;
+        store.write(
+          failedLooks >= MAX_FAILED_LOOKS
+            ? {
+                ...cur,
+                failedLooks: 0,
+                readUpTo: { ...cur.readUpTo, [String(session)]: all.length },
+              }
+            : { ...cur, failedLooks },
+        );
         throw new AiError(
           'The co-DM gave a reply it could not read; it will look again later',
           'bad-reply',
         );
       }
       const read = store.read();
-      store.write({ ...read, readUpTo: { ...read.readUpTo, [String(session)]: all.length } });
+      store.write({
+        ...read,
+        failedLooks: 0,
+        readUpTo: { ...read.readUpTo, [String(session)]: all.length },
+      });
       if (!heading) return { ...view(store.read()), called: true, prepared: null };
       const limitMs = options.timeoutMs ?? GENERATE_TIMEOUT_MS;
       const answer = await options.client.complete({
@@ -241,7 +267,12 @@ export function registerPrepareRoutes(
       const f = store.read();
       const draft = f.drafts.find((d) => d.id === request.params.id);
       if (!draft) return reply.code(404).send({ error: 'No such prepared draft' });
-      return { file: draft.file, kind: draft.kind, place: draft.place, ...view(f) };
+      const next = {
+        ...f,
+        drafts: f.drafts.map((d) => (d.id === draft.id ? { ...d, taken: true } : d)),
+      };
+      store.write(next);
+      return { file: draft.file, kind: draft.kind, place: draft.place, ...view(next) };
     } catch (err) {
       return reply.code(500).send({ error: fail(err) });
     }

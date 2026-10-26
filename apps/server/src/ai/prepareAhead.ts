@@ -29,6 +29,8 @@ export interface PreparedDraft extends Heading {
   readonly file: unknown;
   /** When it was prepared (ms since epoch). */
   readonly at: number;
+  /** Sent to Import by Review; no longer holds the MAX_PREPARED queue. */
+  readonly taken?: boolean;
 }
 
 /** Pacing (D249): default 5 minutes between looks, never under 2. */

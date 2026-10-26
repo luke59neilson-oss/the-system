@@ -223,6 +223,9 @@ describe('prepare-ahead routes (MC.10)', () => {
     // Taking keeps the draft listed until the GM dismisses it (review M1):
     // a refresh or a closed console before approval loses nothing.
     expect(take.json().drafts).toHaveLength(1);
+    // Round 2 M2: a taken draft is marked, and no longer counts toward the
+    // MAX_PREPARED queue, so approving without dismissing never stalls preparing.
+    expect(take.json().drafts[0].taken).toBe(true);
     const listed = await app.inject({ method: 'GET', url: '/api/gm/ai/prepared', headers: gm });
     expect(listed.json().drafts).toHaveLength(1);
     const done = await app.inject({
@@ -276,6 +279,13 @@ describe('prepare-ahead routes (MC.10)', () => {
     await post();
     expect(fake.requests).toHaveLength(n + 2);
     expect(fake.requests.at(-1)!.messages[0]!.content).toContain('Something garbled.');
+    // Round 2 M1: after two unreadable replies in a row the lines count as
+    // read, so the same stretch is not paid for on every interval.
+    clock += 600_000;
+    const n2 = fake.requests.length;
+    const quiet = await post();
+    expect(quiet.json()).toMatchObject({ called: false });
+    expect(fake.requests).toHaveLength(n2);
   });
 
   it('refuses a second look while one runs (409)', async () => {
