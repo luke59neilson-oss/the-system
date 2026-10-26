@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress (2026-10-26): MT done (MT.A checked); MC (co-DM) under way. Preview ready: Actions → Release → Run workflow (MT).
-**Next item:** MC.1 on `wip/MC.1` (code, tests and e2e done; review it first, then check the box), then MC.2
+**Next item:** MC.1 on `wip/MC.1` (head 2dac7747): fix review M2 and M5 (REVIEW-LOG), then round-2 review (sonnet), merge, check; then MC.2
 **Blockers:** none
 
 ## Run log
@@ -1131,7 +1131,7 @@ next item, blockers. -->
 ### Run 71e1198d · 2026-10-26 02:08–~02:58 UTC (end minute ~50)
 - Preflight: `add_repo` not offered; repo already cloned (local `main` reset to origin/main; history unshallowed). Lock pushed cleanly. `npm view vitest version` → 5.0.5. CI on main at start green (1fc9004d). No new answers. Hour 02: no efficiency check, no sweep.
 - MT.A **checked** (3d4a6955): fable review of 71141cc9..b06c7cc2 (reviewer: check 1,283, MT e2e 12/12, full e2e 106/106, screenshots fine, no GM-only leaks). 0 H / 1 M / 5 L. M fixed (D225: lowering the class level by override withdraws open skill menus above it, named in the warning); L `scene.ended` 64 → 200; 4 Lows to the QUALITY Backlog. Preview build due: Luke's one click (Actions → Release → Run workflow, MT).
-- MC.1 **built, not checked**, on `wip/MC.1` (base 3d4a6955, head bc01e511): `apps/server/src/ai/` (AiClient interface, FixtureAiClient, AnthropicClient with injectable fetch, SpendCounter priced by model family, KeyStore encrypted through an injected cipher, CoDm service + GM-only `/api/gm/ai` routes), Electron `safeStorage` cipher in the desktop app, GM panel `CoDmSettings.tsx`, e2e `MC.1.spec.ts` + screenshot (D226). Next step: review (sonnet) → fix → merge to main → check the box. Not covered by e2e: saving a key (the terminal server has no cipher); unit/route tests cover it with a fake cipher.
+- MC.1 **built, not checked**, on `wip/MC.1` (base 3d4a6955, head bc01e511): `apps/server/src/ai/` (AiClient interface, FixtureAiClient, AnthropicClient with injectable fetch, SpendCounter priced by model family, KeyStore encrypted through an injected cipher, CoDm service + GM-only `/api/gm/ai` routes), Electron `safeStorage` cipher in the desktop app, GM panel `CoDmSettings.tsx`, e2e `MC.1.spec.ts` + screenshot (D226). Review round 1 (sonnet): 1 H / 4 M / 5 L; H1, M3, M4 fixed at 2dac7747 (npm run check 1,306 green). Next step: fix M2 (desktop no-encryption wording, send a reason) and M5 (canary in player frames, `/api/characters`, logger output), then a round-2 review, merge to main, check the box. Not covered by e2e: saving a key (the terminal server has no cipher); unit/route tests cover it with a fake cipher.
 - Tests: unit 1,305; e2e MT.5, MT.9, MC.1 green this run (full suite 106/106 by the fable reviewer at b06c7cc2).
 - Open `wip/*`: wip/MC.1.
 - Blockers: none.

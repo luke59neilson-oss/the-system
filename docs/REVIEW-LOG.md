@@ -927,3 +927,9 @@
 - M (MT.5 × selections): lowering the class level left an open menu from the lost level choosable → the override now withdraws unchosen menus above the new level and the warning names them (D225); engine test added.
 - L `scene.ended` capped at 64 characters → 200 (D225). Other 4 Lows (re-rating list edited after approval, GM-OVERRIDES line drift, setState in render in PracticePanel, merge-offer stale wording) → QUALITY Backlog.
 - One Medium, no High: no second round (LOOP §6.4); fix verified by me (npm run check 1,284; e2e MT.5, MT.9 green).
+
+## 2026-10-26 · MC.1 AI connection · sonnet (worktree, bc01e511; round 1, item not yet checked)
+- Round 1 (3d4a6955..bc01e511): 1 High, 4 Medium, 5 Low. Reviewer ran the three AI test files (21 green), screenshot reviewed.
+- Fixed on wip/MC.1 (2dac7747): H1 Linux `basic_text` safeStorage counts as no encryption; M3 `hasKey` = the key decrypts; M4 the co-DM routes answer a malformed body with a fixed message (canary test added).
+- Open for the next run: M2 panel text when the desktop has no OS encryption ("open the desktop app" is wrong there; send a reason); M5 canary in a player frame and `/api/characters` plus a `logger: true` log capture. Lows: spend in memory only (restart zeroes it), non-integer usage throws after a paid call, `ai-settings.json` not written atomically, model fields free text / disabled Test without a reason / message lingers, `startApp` always builds the live client (guard tests). One High → round 2 required after the fixes.
+
