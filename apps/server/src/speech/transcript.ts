@@ -1,5 +1,11 @@
 import { appendFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
+import {
+  matchSpeaker,
+  type Enrolment,
+  type SpeakerEmbedder,
+  type SpeakerMatchOptions,
+} from './speakers';
 import type { SpeechToText } from './stt';
 import { VoiceChunker, type VadOptions, DEFAULT_VAD } from './vad';
 
@@ -13,8 +19,9 @@ export interface TranscriptLine {
   readonly startMs: number;
   readonly endMs: number;
   readonly text: string;
-  /** Set later by speaker labels (MC.6). */
+  /** Speaker label (MC.6): the enrolled character's name, only on a confident voice match. */
   readonly speaker?: string;
+  readonly speakerId?: string;
 }
 
 export const transcriptFile = (dir: string, session: number) =>
@@ -28,6 +35,13 @@ export interface ListenerOptions {
   readonly now: () => number;
   readonly vad?: VadOptions;
   readonly onLine?: (line: TranscriptLine) => void;
+  /** Speaker labels (MC.6); without it lines carry no speaker. */
+  readonly speakers?: {
+    readonly embedder: SpeakerEmbedder;
+    /** Read per line, so an enrolment made or deleted mid-session applies at once. */
+    readonly enrolments: () => readonly Enrolment[];
+    readonly match?: SpeakerMatchOptions;
+  };
   readonly onError?: (err: unknown) => void;
 }
 
@@ -61,6 +75,21 @@ export class Listener {
     return this.queue;
   }
 
+  /** The confident speaker of a segment, or null; a failed embedding only loses the label. */
+  private async label(samples: Float32Array) {
+    const speakers = this.options.speakers;
+    if (speakers === undefined) return null;
+    const enrolments = speakers.enrolments();
+    if (enrolments.length === 0) return null;
+    try {
+      const embedding = await speakers.embedder.embed(samples, this.sampleRate);
+      return embedding === null ? null : matchSpeaker(embedding, enrolments, speakers.match);
+    } catch (err) {
+      this.options.onError?.(err);
+      return null;
+    }
+  }
+
   private enqueue(seg: { startMs: number; endMs: number; samples: Float32Array }): void {
     this.queue = this.queue.then(async () => {
       let text: string;
@@ -72,11 +101,13 @@ export class Listener {
         return;
       }
       if (text === '') return;
+      const speaker = await this.label(seg.samples);
       const line: TranscriptLine = {
         at: new Date(this.startedAt + seg.startMs).toISOString(),
         startMs: seg.startMs,
         endMs: seg.endMs,
         text,
+        ...(speaker === null ? {} : { speaker: speaker.name, speakerId: speaker.characterId }),
       };
       // The line still shows in the GM's panel when the disk write fails
       // (disk full, folder locked); the queue carries on (MC.5 review).
