@@ -70,7 +70,11 @@ export function registerPracticeDraftRoutes(
       // Uses logged in the app this session already count (app action first).
       const logged: LoggedUse[] = state.practice
         .filter((p) => p.sessionId === state.currentSession && p.source === 'gm')
-        .map((p) => ({ characterId: p.characterId, skills: p.skills, at: p.at }));
+        .map((p) => ({ characterId: p.characterId, skills: p.skills, at: p.at }))
+        // A draft still waiting for the GM is not drafted twice (MC.7 review M3).
+        .concat(
+          store.list().map((d) => ({ characterId: d.characterId, skills: [d.skill], at: d.at })),
+        );
       const drafts = await draftPractice(options.client, lines, characters, logged, randomUUID);
       store.add(session, all.length, drafts);
       return { drafts: store.list(), added: drafts.length, read: lines.length };

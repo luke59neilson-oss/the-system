@@ -103,17 +103,15 @@ export function draftPrompt(
   return ['Practice drafts.', 'Party and skills:', ...party, 'Transcript:', ...heard].join('\n');
 }
 
-const replySchema = z.object({
-  drafts: z.array(
-    z.object({
-      line: z.number().int(),
-      character: z.string().max(200),
-      skill: z.string().max(200),
-      action: z.string().max(500),
-      confidence: z.enum(['high', 'medium', 'low']).catch('low'),
-    }),
-  ),
+const draftSchema = z.object({
+  line: z.number().int(),
+  character: z.string().max(200),
+  skill: z.string().max(200),
+  action: z.string().max(500),
+  confidence: z.enum(['high', 'medium', 'low']).catch('low'),
 });
+// Each item is checked on its own, so one malformed draft does not lose the rest (MC.7 review M6).
+const replySchema = z.object({ drafts: z.array(z.unknown()) });
 
 /** The first JSON object in a reply (models sometimes wrap it in a code fence). */
 const jsonIn = (text: string): unknown => {
@@ -142,7 +140,10 @@ export function parseDrafts(
   const seen = new Set<string>(
     logged.flatMap((u) => u.skills.map((s) => JSON.stringify([u.characterId, s]))),
   );
-  for (const d of parsed.drafts) {
+  for (const item of parsed.drafts) {
+    const checked = draftSchema.safeParse(item);
+    if (!checked.success) continue;
+    const d = checked.data;
     const line = lines[d.line - 1];
     if (!line) continue;
     const who = attribute(line, characters, d.character);

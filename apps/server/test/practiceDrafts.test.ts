@@ -127,6 +127,16 @@ describe('parsing the fast model reply', () => {
     ]);
   });
 
+  it('a malformed item is dropped and the rest kept (MC.7 review M6)', () => {
+    const r = JSON.stringify({
+      drafts: [
+        { line: '1', character: null, skill: "Archer's Eye" },
+        { line: 3, character: 'Miranda', skill: 'Heal', action: 'Closes', confidence: 'high' },
+      ],
+    });
+    expect(parseDrafts(r, lines, party, [], ids()).map((d) => d.skill)).toEqual(['Heal']);
+  });
+
   it('refuses a reply that is not the drafts JSON', () => {
     expect(() => parseDrafts('Sure! Here you go.', lines, party, [], ids())).toThrow();
     expect(() => parseDrafts('{"nope":1}', lines, party, [], ids())).toThrow();
