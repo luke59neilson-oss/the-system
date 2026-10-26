@@ -10,7 +10,7 @@ import type { FastifyInstance } from 'fastify';
 import { AiError, type AiClient } from './client';
 import { DraftStore, draftPractice, type DraftCharacter, type LoggedUse } from './practiceDrafts';
 import type { CampaignStore } from '../store';
-import { sessionNumber, transcriptsDir } from '../speech/routes';
+import { transcriptsDir } from '../speech/routes';
 import { transcriptFile, type TranscriptLine } from '../speech/transcript';
 
 export const draftsDir = (store: CampaignStore) => path.join(store.dir, 'codm');
@@ -58,7 +58,14 @@ export function registerPracticeDraftRoutes(
     running = true;
     try {
       const store = new DraftStore(draftsDir(a.store));
-      const session = sessionNumber(a.store);
+      // The running session, else the one that just ended, so the GM can
+      // draft from the end-of-session review (MC.7 review round 2).
+      const target =
+        state.currentSession !== null
+          ? state.sessions.find((x) => x.id === state.currentSession)
+          : state.sessions.at(-1);
+      const sessionId = target?.id ?? null;
+      const session = target?.number ?? 0;
       const all = readTranscript(a.store, session);
       const lines = all.slice(store.readUpTo(session));
       const characters: DraftCharacter[] = state.characterOrder
@@ -69,7 +76,7 @@ export function registerPracticeDraftRoutes(
         });
       // Uses logged in the app this session already count (app action first).
       const logged: LoggedUse[] = state.practice
-        .filter((p) => p.sessionId === state.currentSession && p.source === 'gm')
+        .filter((p) => p.sessionId === sessionId && p.source === 'gm')
         .map((p) => ({ characterId: p.characterId, skills: p.skills, at: p.at }))
         // A draft still waiting for the GM is not drafted twice (MC.7 review M3).
         .concat(
@@ -81,7 +88,7 @@ export function registerPracticeDraftRoutes(
         characters,
         logged,
         randomUUID,
-        state.currentSession,
+        sessionId,
       );
       store.add(session, all.length, drafts);
       return { drafts: store.list(), added: drafts.length, read: lines.length };

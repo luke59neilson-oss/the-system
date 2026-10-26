@@ -169,6 +169,49 @@ describe('practice draft routes (MC.7)', () => {
     expect(gone.statusCode).toBe(404);
   });
 
+  it('drafts the session that just ended from the end-of-session review (round 2)', async () => {
+    let n = 0;
+    const ctx = {
+      actor: { role: 'gm' as const },
+      sessionId: null,
+      now: () => '2026-10-26T20:00:00.000Z',
+      newId: () => `s${++n}`,
+    };
+    for (const command of [{ type: 'session.start' }, { type: 'session.end' }]) {
+      const r = execute(store.campaign, command as never, {
+        ...ctx,
+        sessionId: store.campaign.state?.currentSession ?? null,
+      });
+      if (!r.ok) throw new Error(r.error);
+      store.appendAll(r.events);
+    }
+    const state = store.campaign.state!;
+    expect(state.currentSession).toBeNull();
+    const ended = state.sessions.at(-1)!;
+    const dir = transcriptsDir(store);
+    mkdirSync(dir, { recursive: true });
+    const lines = [
+      { at: '2026-10-26T20:01:00.000Z', startMs: 0, endMs: 900, text: 'Into the canyon.' },
+      {
+        at: '2026-10-26T20:01:05.000Z',
+        startMs: 5000,
+        endMs: 6000,
+        text: 'Jake uses Archer’s Eye.',
+      },
+    ];
+    writeFileSync(
+      transcriptFile(dir, ended.number),
+      lines.map((l) => JSON.stringify(l)).join('\n') + '\n',
+    );
+    const r = await app.inject({ method: 'POST', url: '/api/gm/ai/practice-drafts', headers: gm });
+    expect(r.statusCode, r.body).toBe(200);
+    expect(r.json()).toMatchObject({ added: 1, read: 2 });
+    expect(r.json().drafts.at(-1)).toMatchObject({
+      quote: 'Jake uses Archer’s Eye.',
+      sessionId: ended.id,
+    });
+  });
+
   it('reports a damaged drafts file without overwriting it', async () => {
     const dir = draftsDir(store);
     mkdirSync(dir, { recursive: true });
