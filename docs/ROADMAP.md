@@ -861,7 +861,7 @@ it is usable early (Luke can run a preview build at any point).
   directly; nothing counts until the GM confirms. *Accept:* fake-backed tests
   (a use, talk about a skill that is not a use, GM narration), attribution
   order (app action > GM naming > voice); e2e into the review queue.
-- [ ] **MC.8 Suggestions panel.** Every minute or two (settable), the fast
+- [x] **MC.8 Suggestions panel.** Every minute or two (settable), the fast
   model reads the recent transcript and campaign context and returns a few
   chips (Generate, Complication, Callback) with the quote behind each; a
   click starts MC.2 with the chip filled in; dismissed chips do not return;

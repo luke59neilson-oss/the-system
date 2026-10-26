@@ -20,6 +20,7 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
+| D248 LOOP §8.0 measured close-out: compute the lock minute and write "close-out at minute N" first; under 44 with an open item or Medium goes back to §5 (Tier 1, wording) | 2026-10-26 13:00 | end minute 43.7 → 46–47; items/run +0.2 | end 43.7, items 1.2 | Highs 3, round-2 share 4/10, red/day 4 | 2026-10-26 18:00 + 6 runs |
 | D234 `npm run metrics` counts review rounds per item across per-round headings (Tier 1, metric repair) | 2026-10-26 06:58 | round-2 share and Highs read per item again (06:15 row: 0/10 → 4/10) | 4/10, Highs 3 | items/run 1.7, end minute 44.2, red/day 2 | 2026-10-26 12:00 + 6 runs |
 
 ## Kept
@@ -67,6 +68,8 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   and D132's CI red/day guard too (7 → 10), so §9.2 reverts both.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-10-26 12:10 auditor (sonnet): no Tier 2. D234 not judgeable yet (5 runs; judge at 18:00, likely Kept as a metric repair). Tier 1 applied: measured close-out in §8.0 (D248; three of the last four runs closed out before minute 44 on a guessed clock). Waits for a later check (Tier 1): `npm run orient` (orient words ~9.9k → ~7k). Noted: CI minutes 7.9 → 9.3 from the speech steps; trimming `desktop-smoke` is worth ~1 min, low priority.
 
 - 2026-10-26 06:15 auditor (sonnet): no Tier 2. Tier 1 applied: fix
   `parseReviews` (REVIEW-LOG now writes each round under its own heading, so
@@ -155,3 +158,4 @@ table last in the file.
 | 2026-10-25 18:08 | 6 | 42.8 | 1.7 | 7/10 | 3 | 16 | 4 | 7.2 | 10516 |
 | 2026-10-26 00:09 | 6 | 46.0 | 1.5 | 7/10 | 3 | 13 | 2 | 7.4 | 10477 |
 | 2026-10-26 06:15 | 6 | 44.2 | 1.7 | 4/10 (D234 re-count; read 0/10) | 3 | 18 | 2 | 7.9 | 9879 |
+| 2026-10-26 12:10 | 6 | 43.7 | 1.2 | 4/10 | 3 | 29 | 4 | 9.3 | 9863 |

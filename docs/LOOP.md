@@ -187,8 +187,11 @@ should weigh in on also go in `docs/QUESTIONS.md` with the default you used.
 
 ## 8. Finish the run
 
-0. Before writing close-out notes, check the clock: under 44 with an
-   unblocked item and no §5.5 reason means go back to §5 and start it.
+0. Before any close-out note, compute the minutes since `docs/LOCK.json`
+   `started` with `date -u` and write "close-out at minute N" as the first
+   words of the PROGRESS entry. If N < 44 and an unblocked item or an open
+   review Medium remains, go back to §5 and work it (commit to `wip/*` at
+   44). Only the §5.5 reasons allow N < 48. (D248, in trial)
 1. Append a run entry to `docs/PROGRESS.md`: start/end UTC (and the end
    minute; if before 48, the reason from §5.5), preflight results,
    items finished, test counts, engine coverage, review summary, open `wip/*`
