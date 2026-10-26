@@ -141,6 +141,12 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
               {outcome.text}
             </p>
           )}
+          {(state.scenePrompt?.pending.length ?? 0) > 0 && (
+            <p className="muted" data-testid="scene-waiting">
+              Waiting on players&apos; answers:{' '}
+              {(state.scenePrompt?.pending ?? []).map((id) => nameOf(id)).join(', ')}
+            </p>
+          )}
           {scene ? (
             <p className="scene-prompt" data-testid="scene-prompt">
               <strong>End of scene:</strong> what did {character?.name} practise? (
@@ -153,6 +159,11 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
             <button
               type="button"
               onClick={() => {
+                // MT.9 (Q63): players' screens ask what they practised too.
+                void run(
+                  { type: 'scene.end' },
+                  "Scene ended: players' screens ask what they practised",
+                );
                 setScene(true);
                 pick(ids[0] ?? '');
                 actionRef.current?.focus();

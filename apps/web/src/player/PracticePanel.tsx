@@ -51,6 +51,54 @@ export function PracticePanel({ view, client }: { view: PlayerView; client: Live
           }}
         />
       ))}
+      {client && view.scenePrompt !== null && (
+        // MT.9 (Q63): the GM ended a scene; the answer goes to the GM's review.
+        <div
+          className="scene-prompt"
+          data-testid="player-scene-prompt"
+          role="group"
+          aria-label="End of scene"
+        >
+          <p>
+            <strong>[End of scene]</strong> What did you practise?
+          </p>
+          <PracticeForm
+            view={view}
+            busy={busy}
+            testId="scene-practice-form"
+            submitLabel="Send to the GM"
+            legend="This scene's practice"
+            onSubmit={async (fields) => {
+              const prompt = view.scenePrompt;
+              if (prompt === null) return false;
+              const ok = await send({
+                type: 'practice.log',
+                characterId: view.viewerId,
+                ...fields,
+              });
+              if (!ok) return false;
+              await send({ type: 'scene.answer', sceneId: prompt.id, characterId: view.viewerId });
+              setNotice('Practice sent to the GM for review.');
+              return true;
+            }}
+          />
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              const prompt = view.scenePrompt;
+              if (prompt === null) return;
+              void send({
+                type: 'scene.answer',
+                sceneId: prompt.id,
+                characterId: view.viewerId,
+              }).then((ok) => ok && setNotice('Nothing logged for this scene.'));
+            }}
+          >
+            Nothing this scene
+          </button>
+        </div>
+      )}
       {client && (
         <details className="practice-log" data-testid="practice-log">
           <summary>Log practice</summary>
