@@ -1010,3 +1010,14 @@
 
 ## 2026-10-26 · MC.8 Suggestions panel, round 2 (run 0143b463; box checked)
 - Reviewer sonnet on a3aefe71 (worktree): 0 H / 0 M / 4 L (a failed call also holds a manual retry for 60 s; a crash after the pre-call write; M1 test asserts not-200 rather than 502; M2 test polls a flag). Both round-1 fixes verified; route tests 5/5, eslint clean.
+
+## 2026-10-26 · MC.9 Session notes and summary, round 1 (run 26bb7f86)
+- wip/MC.9 merged main (28898909; server.ts registers both MC.8 suggestion and MC.9 notes routes; D247 before D248). Reviewer sonnet on 28898909 (worktree): 0 H / 3 M / 4 L; check 1,472 unit, MC.9 e2e pass.
+- M1 re-summarising left the export stale (log key ignored summary content) → key is a hash of the notes file; M2 an empty or bad reply advanced `readUpTo` and lost lines → advances only when a note returns; M3 a hand-edited summary threw in `sessionReport` and stopped the session log → zod check on read plus a guard around `renderNotes`. Also L4 one-line model text, L6 catch-up notes saved before summarising, L7 `Jake: …`. All with failing-first tests (263556e2, D250).
+
+## 2026-10-26 · MC.9 Session notes and summary, round 2 (run 26bb7f86; box checked)
+- Reviewer sonnet on 263556e2 (worktree): 0 H / 0 M / 5 L (unbounded re-send of unread lines per click; summary ignores unread lines silently; `safeNotes` silent; misplaced comment; empty strings pass). Lows to QUALITY Backlog. Merged to main.
+
+## 2026-10-26 · MC.10 Prepare ahead, round 1 (run 26bb7f86)
+- Built by a fork on wip/MC.10 (9624ab78, D249). Reviewer sonnet on 9624ab78 (worktree): 0 H / 5 M / 5 L; check 1,482 unit, MC.10 e2e pass.
+- Fixed on wip/MC.10 (694f086d, D251): M1 Review deleted the draft before approval → it stays until Dismiss (and Dismiss from the panel had never worked: content-type with no body; fixed); M3 a failed look consumed its lines → read only after the fast reply parses; M4 stale view after a campaign switch → every tick reloads; M5 tests for the 409 guard and a failed look. M2 (looks run only while the GM console is open) kept by decision D251, with no automatic-tick test yet. Round 2 due (5 Mediums): next run.

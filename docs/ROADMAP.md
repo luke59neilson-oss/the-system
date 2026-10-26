@@ -867,7 +867,7 @@ it is usable early (Luke can run a preview build at any point).
   click starts MC.2 with the chip filled in; dismissed chips do not return;
   calls are rate-limited and counted in the spend counter. *Accept:*
   fake-backed tests; e2e from a fixture transcript to a generated shop.
-- [ ] **MC.9 Session notes and summary.** Running notes from the transcript in
+- [x] **MC.9 Session notes and summary.** Running notes from the transcript in
   the session log; at session end a summary (what happened, who did what,
   open threads, NPCs met) in the session log and export. *Accept:*
   fake-backed tests; the export contains the summary.
