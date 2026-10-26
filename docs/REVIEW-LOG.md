@@ -1025,3 +1025,13 @@
 ## 2026-10-26 · MC.10 Prepare ahead, round 2 (run 26bb7f86; box checked)
 - Reviewer sonnet on 694f086d (worktree): 0 H / 2 M / 3 L; check 1,486 unit, MC.10 e2e pass. D251 (looks driven by the open GM console) judged acceptable.
 - M1 the M3 fix could re-pay for the same unreadable stretch every interval → after 2 unreadable replies in a row the lines count as read (`MAX_FAILED_LOOKS`); M2 approved-but-undismissed drafts filled the 3-draft queue and stopped preparing → Review marks a draft `taken`, taken drafts leave the queue. Both with assertions that fail on the old code (2fdb376b, D252). Verified by me (no round 3 per LOOP §6.4): check 1,486 unit, e2e MC.8/MC.9/MC.10 pass. Merged to main.
+
+## 2026-10-26 · QF.32 forced-kill desktop test waits for Electron's helpers (run 200c63df; box checked)
+- Round 1, sonnet on fa43e9f9 (worktree): 0 H / 2 M / 4 L. M1 helpers forked between the snapshot and the kill escaped → freeze the tree first (SIGSTOP, re-walk until stable), then SIGKILL all; M2 the wait covered only known pids → `holders(userData)` asserts nothing holds the profile open (4de16d52, D255).
+- Round 2, sonnet on 4de16d52: 0 H / 0 M / 3 L (to QUALITY Backlog). Desktop smoke 7/7, polite-close ×8 green. CI green on 4de16d52.
+
+## 2026-10-26 · MC.A Co-DM acceptance and review (run 200c63df; box checked)
+- Round 1, fable on 12bb5da1 (wip/MC.A with main merged): 0 H / 2 M / 7 L; check 1,486 unit, MC.* e2e 15/15; no path for co-DM data to players found; GM-GUIDE matches the code.
+- M1 spend counter was a stale snapshot → `useLiveSpend` rereads every 20 s while a key is saved (D253), unit test, MC.A e2e asserts it catches up without a button; M2 fixture audio drives a scripted stand-in engine → documented (D254) and a speech step added to the live checklist. Lows fixed: fast-model label, summary-timing note. Other Lows to Backlog.
+- Round 2, fable on 540d4e95: 0 H / 0 M / 2 L (to Backlog). check 1,489 unit, MC.* 15/15.
+- Full e2e on 12bb5da1: 122 + latency 8 passed.

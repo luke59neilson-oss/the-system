@@ -472,7 +472,7 @@ the rest follow in file order. Each gets its own §6 review.
   opens and polls only while the mic is on, the speech model downloads or
   loads, or no first read has landed (D239); unit test for the rule; MC.5
   e2e and the latency project (`--workers=2`) green.
-- [ ] **QF.32 The forced-kill desktop test waits for Electron's helpers.**
+- [x] **QF.32 The forced-kill desktop test waits for Electron's helpers.**
   CI `desktop-smoke` red three times (d3c743c2, 3bb78ed2, cb3bb8d9):
   `desktop.spec.ts` cleanup hit ENOTEMPTY on the profile while Electron's
   helper processes, orphaned by the SIGKILL, were still writing it. *Accept:*
@@ -881,7 +881,7 @@ it is usable early (Luke can run a preview build at any point).
   co-DM drafts likely content in the background for approval; off by
   default; counted in the spend counter. *Accept:* fake-backed test; e2e of
   approving a prepared draft.
-- [ ] **MC.A Co-DM acceptance and review.** A recorded mock session (fixture
+- [x] **MC.A Co-DM acceptance and review.** A recorded mock session (fixture
   audio plus the fake AI) runs end to end: transcript, a chip, a generated
   shop approved behind a loading screen, a practice draft confirmed, the
   summary. `fable` review. `docs/GM-GUIDE.md` gains a co-DM chapter and a
