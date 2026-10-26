@@ -77,8 +77,18 @@ export function PracticePanel({ view, client }: { view: PlayerView; client: Live
                 ...fields,
               });
               if (!ok) return false;
-              await send({ type: 'scene.answer', sceneId: prompt.id, characterId: view.viewerId });
-              setNotice('Practice sent to the GM for review.');
+              // MT.9 review: the entry is logged even if the answer fails (a newer
+              // scene replaced this one); say so instead of claiming success.
+              const answered = await send({
+                type: 'scene.answer',
+                sceneId: prompt.id,
+                characterId: view.viewerId,
+              });
+              setNotice(
+                answered
+                  ? 'Practice sent to the GM for review.'
+                  : 'Practice logged for the GM; this scene prompt has closed.',
+              );
               return true;
             }}
           />
