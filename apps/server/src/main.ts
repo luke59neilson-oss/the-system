@@ -34,7 +34,7 @@ async function main(): Promise<void> {
                   options.dataDir,
                 ),
               }
-            : { speech: () => fake.speech }),
+            : { speech: () => fake.speech, speakers: () => fake.speakers }),
         }
       : options,
   );

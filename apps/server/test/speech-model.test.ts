@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -6,12 +7,14 @@ import Fastify from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   SpeechModel,
+  WESPEAKER_EN_CAMPP,
   WHISPER_TINY_EN,
   extractMembers,
   installedFiles,
   type SpeechModelSpec,
 } from '../src/speech/model';
 import { registerListenRoutes } from '../src/speech/routes';
+import type { SpeakerEmbedder } from '../src/speech/speakers';
 import { FixtureSpeechToText } from '../src/speech/stt';
 import type { WhisperModelFiles } from '../src/speech/sherpa';
 
@@ -330,5 +333,108 @@ describe('speech model failure states (MC.5 review)', () => {
     await model.download();
     expect(model.status()).toEqual({ state: 'ready' });
     expect(calls).toEqual([]);
+  });
+});
+
+// MC.6 (D238): the speaker model, one checked .onnx file fetched after Whisper.
+describe('speaker model download (MC.6, D238)', () => {
+  const onnx = Buffer.from('SPEAKER-ONNX');
+  const speaker = {
+    ...WESPEAKER_EN_CAMPP,
+    url: 'https://example.invalid/speaker.onnx',
+    sha256: createHash('sha256').update(onnx).digest('hex'),
+    bytes: onnx.length,
+  };
+  const embedder: SpeakerEmbedder = { embed: () => Promise.resolve([1, 0]) };
+  // Answers the archive for Whisper and the .onnx for the speaker model.
+  const both = (speakerBody: Buffer = onnx) => {
+    const calls: string[] = [];
+    const fetchImpl = ((url: string) => {
+      calls.push(url);
+      const body = url === speaker.url ? speakerBody : bytes;
+      return Promise.resolve(new Response(new Uint8Array(body)));
+    }) as typeof fetch;
+    return { calls, fetchImpl };
+  };
+
+  it('pins the real model: GitHub releases, one .onnx file, a checksum', () => {
+    expect(WESPEAKER_EN_CAMPP.url).toMatch(
+      /^https:\/\/github\.com\/k2-fsa\/sherpa-onnx\/releases\/download\/speaker-recongition-models\//,
+    );
+    expect(WESPEAKER_EN_CAMPP.url.endsWith(WESPEAKER_EN_CAMPP.file)).toBe(true);
+    expect(WESPEAKER_EN_CAMPP.sha256).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('downloads after Whisper, checks it and loads it; a later start loads it offline', async () => {
+    const dir = tempDir();
+    const { calls, fetchImpl } = both();
+    const loadedFiles: string[] = [];
+    const options = {
+      dir,
+      spec,
+      speaker,
+      fetch: fetchImpl,
+      load: recorder().load,
+      loadSpeaker: (file: string) => {
+        loadedFiles.push(file);
+        return Promise.resolve(embedder);
+      },
+    };
+    const model = new SpeechModel(options);
+    expect(model.speakerStatus()).toEqual({ state: 'missing' });
+    expect(model.speakers()).toBeNull();
+    await model.download();
+    expect(calls).toEqual([spec.url, speaker.url]);
+    expect(model.status()).toEqual({ state: 'ready' });
+    expect(model.speakerStatus()).toEqual({ state: 'ready' });
+    expect(model.speakers()).toBe(embedder);
+    expect(readdirSync(path.join(dir, speaker.name))).toEqual([speaker.file]);
+    expect(loadedFiles).toEqual([path.join(dir, speaker.name, speaker.file)]);
+
+    const again = new SpeechModel({ ...options, fetch: serve(Buffer.alloc(0), 500).fetchImpl });
+    await again.init();
+    expect(again.speakers()).toBe(embedder);
+    expect(again.stt()).not.toBeNull();
+  });
+
+  it('a bad speaker download only loses labels; pressing Download again fetches just it', async () => {
+    const dir = tempDir();
+    const bad = both(Buffer.from('SPEAKER-0NNX'));
+    const model = new SpeechModel({
+      dir,
+      spec,
+      speaker,
+      fetch: bad.fetchImpl,
+      load: recorder().load,
+      loadSpeaker: () => Promise.resolve(embedder),
+    });
+    await model.download();
+    expect(model.status()).toEqual({ state: 'ready' });
+    expect(model.stt()).not.toBeNull();
+    expect(model.speakerStatus()).toEqual({
+      state: 'failed',
+      error: 'The downloaded model did not match its checksum; try again',
+    });
+    expect(existsSync(path.join(dir, speaker.name, `${speaker.file}.part`))).toBe(false);
+
+    const good = both();
+    const retry = new SpeechModel({
+      dir,
+      spec,
+      speaker,
+      fetch: good.fetchImpl,
+      load: recorder().load,
+      loadSpeaker: () => Promise.resolve(embedder),
+    });
+    await retry.init();
+    expect(retry.speakers()).toBeNull();
+    await retry.download();
+    expect(good.calls).toEqual([speaker.url]);
+    expect(retry.speakers()).toBe(embedder);
+  });
+
+  it('a server without a speaker model reports none', () => {
+    const model = new SpeechModel({ dir: tempDir(), spec, fetch: serve(bytes).fetchImpl });
+    expect(model.speakerStatus()).toBeNull();
   });
 });

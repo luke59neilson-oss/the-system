@@ -249,6 +249,7 @@ describe('voice enrolment routes (MC.6)', () => {
     const list = await app.inject({ method: 'GET', url: '/api/gm/listen/speakers', headers: gm });
     expect(list.json()).toEqual({
       available: true,
+      model: null,
       enrolments: [{ characterId: 'jake', name: 'Jake', enrolledAt: '2026-10-26T19:00:00.000Z' }],
     });
     // No embedding leaves the server, and no audio is kept.

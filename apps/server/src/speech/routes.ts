@@ -11,13 +11,15 @@ import type { LiveHub } from '../hub';
 import type { SpeechToText } from './stt';
 import { Listener, type TranscriptLine } from './transcript';
 import { DEFAULT_VAD } from './vad';
-import type { SpeechModelStatus } from './model';
+import type { SpeakerModelStatus, SpeechModelStatus } from './model';
 import { EnrolmentStore, type SpeakerEmbedder } from './speakers';
 
 /** MC.5 (D236): the speech model the GM downloads on first use. */
 export interface SpeechModelControl {
   status(): SpeechModelStatus;
   download(): Promise<void>;
+  /** MC.6: the speaker model's state; null or absent when there is none. */
+  speakerStatus?(): SpeakerModelStatus | null;
 }
 
 /** At most 2 s of 16 kHz float audio per request. */
@@ -156,6 +158,7 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
     if (!a) return reply.code(404).send({ error: 'No campaign open' });
     return {
       available: (options.speakers?.() ?? null) !== null,
+      model: options.model?.speakerStatus?.() ?? null,
       enrolments: new EnrolmentStore(speakersDir(a.store))
         .list()
         .map(({ characterId, name, enrolledAt }) => ({ characterId, name, enrolledAt })),

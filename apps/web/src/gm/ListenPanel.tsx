@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { listenPollNeeded, type ModelStatus } from './listenModel';
+import {
+  ENROL_SECONDS,
+  joinBlocks,
+  listenPollNeeded,
+  voiceRows,
+  type ModelStatus,
+  type VoiceEnrolment,
+} from './listenModel';
 
 /** MC.5: the server's VAD and recognizer take mono 16 kHz float PCM. */
 const RATE = 16_000;
@@ -25,7 +32,14 @@ interface Capture {
  * listen route in memory; the laptop transcribes it and keeps only text.
  * While it is on, players' screens say "[The System is listening]".
  */
-export function ListenPanel({ gmKey }: { gmKey: string }) {
+export function ListenPanel({
+  gmKey,
+  characters = [],
+}: {
+  gmKey: string;
+  /** MC.6: the party, for voice enrolment. */
+  characters?: readonly { id: string; name: string }[];
+}) {
   const [on, setOn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -198,6 +212,12 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
           {message}
         </p>
       )}
+      <Voices
+        gmKey={gmKey}
+        characters={characters}
+        listening={on}
+        speechReady={available === true}
+      />
       <h3>Transcript (GM only)</h3>
       {lines.length === 0 ? (
         <p className="muted">Nothing heard yet.</p>
@@ -215,6 +235,185 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
         </ol>
       )}
     </section>
+  );
+}
+
+type SpeakerModel =
+  { state: 'missing' | 'downloading' | 'loading' | 'ready' } | { state: 'failed'; error: string };
+
+/**
+ * MC.6 (DESIGN §11 "Who said what"): each player records a short voice
+ * sample on this laptop's mic; transcript lines then carry their name when
+ * the voice match is confident. Only a voice embedding is kept, never audio.
+ */
+function Voices({
+  gmKey,
+  characters,
+  listening,
+  speechReady,
+}: {
+  gmKey: string;
+  characters: readonly { id: string; name: string }[];
+  listening: boolean;
+  speechReady: boolean;
+}) {
+  const [available, setAvailable] = useState<boolean | null>(null);
+  const [model, setModel] = useState<SpeakerModel | null>(null);
+  const [enrolments, setEnrolments] = useState<VoiceEnrolment[]>([]);
+  const [recording, setRecording] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [reloads, setReloads] = useState(0);
+  const headers = { 'x-gm-key': gmKey };
+
+  useEffect(() => {
+    let live = true;
+    void fetch('/api/gm/listen/speakers', { headers: { 'x-gm-key': gmKey } })
+      .then(async (res) => {
+        if (!res.ok || !live) return;
+        const data = (await res.json()) as {
+          available: boolean;
+          model: SpeakerModel | null;
+          enrolments: VoiceEnrolment[];
+        };
+        if (!live) return;
+        setAvailable(data.available);
+        setModel(data.model);
+        setEnrolments(data.enrolments);
+        // The voice model loads a moment after the speech model: look again.
+        if (
+          !data.available &&
+          (data.model?.state === 'downloading' || data.model?.state === 'loading')
+        ) {
+          setTimeout(() => live && setReloads((n) => n + 1), 2000);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [gmKey, speechReady, reloads]);
+
+  const enrol = async (characterId: string, name: string) => {
+    setMessage(null);
+    setRecording(characterId);
+    const blocks: Float32Array[] = [];
+    let capture: Capture | null = null;
+    try {
+      capture = await startCapture((b) => blocks.push(b));
+      await new Promise((r) => setTimeout(r, ENROL_SECONDS * 1000 + 600));
+    } catch {
+      setMessage('No microphone: allow the mic for this window and try again');
+      setRecording(null);
+      return;
+    } finally {
+      capture?.stop();
+    }
+    const sample = joinBlocks(blocks, ENROL_SECONDS * RATE);
+    const res = await fetch(`/api/gm/listen/speakers/${encodeURIComponent(characterId)}`, {
+      method: 'POST',
+      headers: { ...headers, 'content-type': 'application/octet-stream' },
+      body: sample.slice().buffer,
+    }).catch(() => null);
+    setRecording(null);
+    if (!res?.ok) {
+      const data = (await res?.json().catch(() => ({}))) as { error?: string } | undefined;
+      setMessage(data?.error ?? 'Could not save the voice sample');
+      return;
+    }
+    setMessage(`Voice sample saved for ${name}`);
+    setReloads((n) => n + 1);
+  };
+
+  const remove = async (characterId: string, name: string) => {
+    setMessage(null);
+    const res = await fetch(`/api/gm/listen/speakers/${encodeURIComponent(characterId)}`, {
+      method: 'DELETE',
+      headers,
+    }).catch(() => null);
+    setMessage(res?.ok ? `Voice sample deleted for ${name}` : 'Could not delete the voice sample');
+    setReloads((n) => n + 1);
+  };
+
+  const download = async () => {
+    setMessage(null);
+    const res = await fetch('/api/gm/listen/model', { method: 'POST', headers }).catch(() => null);
+    if (!res?.ok) setMessage('Could not start the download');
+    setReloads((n) => n + 1);
+  };
+
+  if (available === null) return null;
+  const rows = voiceRows(characters, enrolments);
+  return (
+    <div className="voices" data-testid="voices">
+      <h3>Voices (GM only)</h3>
+      {!available ? (
+        <>
+          <p className="muted">
+            {model === null
+              ? 'Speaker labels are not installed on this laptop.'
+              : model.state === 'downloading' || model.state === 'loading'
+                ? 'Getting the voice model ready…'
+                : model.state === 'failed'
+                  ? `The voice model failed: ${model.error}`
+                  : 'Speaker labels need a voice model (29 MB) on this laptop.'}
+          </p>
+          {model !== null &&
+            speechReady &&
+            (model.state === 'missing' || model.state === 'failed') && (
+              <button type="button" onClick={() => void download()}>
+                {model.state === 'failed' ? 'Try again' : 'Download voice model'}
+              </button>
+            )}
+        </>
+      ) : (
+        <>
+          <p className="muted">
+            Each player reads aloud for {ENROL_SECONDS} seconds; their lines get a name when the
+            voice match is confident. Only a voice print is kept, never the recording.
+          </p>
+          {rows.length === 0 ? (
+            <p className="muted">No characters yet.</p>
+          ) : (
+            <ul className="voice-list">
+              {rows.map((r) => (
+                <li key={r.characterId}>
+                  <span>{r.name}</span>{' '}
+                  <span className="muted" data-testid={`voice-${r.characterId}`}>
+                    {recording === r.characterId
+                      ? `● Recording: ${r.name}, speak now…`
+                      : r.enrolledAt
+                        ? 'Voice enrolled'
+                        : 'No voice sample'}
+                  </span>{' '}
+                  <button
+                    type="button"
+                    disabled={recording !== null || listening}
+                    title={listening ? 'Stop listening to record a voice sample' : undefined}
+                    onClick={() => void enrol(r.characterId, r.name)}
+                  >
+                    {r.enrolledAt ? `Re-record ${r.name}` : `Enrol ${r.name}`}
+                  </button>
+                  {r.enrolledAt && (
+                    <button
+                      type="button"
+                      disabled={recording !== null}
+                      onClick={() => void remove(r.characterId, r.name)}
+                    >
+                      {`Delete ${r.name}'s voice`}
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+      {message && (
+        <p role="status" data-testid="voices-message">
+          {message}
+        </p>
+      )}
+    </div>
   );
 }
 

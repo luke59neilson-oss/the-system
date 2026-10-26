@@ -11,6 +11,7 @@ import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import tar from 'tar-stream';
 import bz2 from 'unbzip2-stream';
+import type { SpeakerEmbedder } from './speakers';
 import type { SpeechToText } from './stt';
 import { sherpaSpeechToText, type WhisperModelFiles } from './sherpa';
 
@@ -41,6 +42,33 @@ export const WHISPER_TINY_EN: SpeechModelSpec = {
   },
 };
 
+/** MC.6 (D238): the speaker-embedding model, one .onnx file, fetched after Whisper. */
+export interface SpeakerModelSpec {
+  /** Folder name under the models directory. */
+  readonly name: string;
+  readonly url: string;
+  readonly sha256: string;
+  readonly bytes: number;
+  /** The file's name in that folder. */
+  readonly file: string;
+}
+
+/**
+ * WeSpeaker CAM++ trained on VoxCeleb (English), sherpa-onnx's export on
+ * GitHub releases: 29 MB, 512-number voice embeddings.
+ */
+export const WESPEAKER_EN_CAMPP: SpeakerModelSpec = {
+  name: 'speaker-wespeaker-en-campp',
+  url: 'https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/wespeaker_en_voxceleb_CAM++.onnx',
+  sha256: 'c46fad10b5f81e1aa4a60c162714208577093655076c5450f8c469e522ec54ef',
+  bytes: 29_292_684,
+  file: 'wespeaker_en_voxceleb_CAM++.onnx',
+};
+
+export type SpeakerModelStatus =
+  | { readonly state: 'missing' | 'downloading' | 'loading' | 'ready' }
+  | { readonly state: 'failed'; readonly error: string };
+
 export type SpeechModelStatus =
   | { readonly state: 'missing'; readonly bytes: number }
   | { readonly state: 'downloading'; readonly received: number; readonly bytes: number }
@@ -64,6 +92,9 @@ export interface SpeechModelOptions {
   readonly fetch?: typeof fetch;
   readonly load?: (files: WhisperModelFiles) => Promise<SpeechToText>;
   readonly idleMs?: number;
+  /** MC.6: the speaker model to fetch after Whisper; none (no labels) when omitted. */
+  readonly speaker?: SpeakerModelSpec;
+  readonly loadSpeaker?: (file: string) => Promise<SpeakerEmbedder>;
 }
 
 const message = (err: unknown) => (err instanceof Error ? err.message : String(err));
@@ -120,6 +151,9 @@ export class SpeechModel {
   private engine: SpeechToText | null = null;
   private busy: Promise<void> | null = null;
   private loading = false;
+  private speakerEngine: SpeakerEmbedder | null = null;
+  private speakerState: SpeakerModelStatus = { state: 'missing' };
+  private speakerBusy: Promise<void> | null = null;
 
   constructor(private readonly options: SpeechModelOptions) {
     this.spec = options.spec ?? WHISPER_TINY_EN;
@@ -136,16 +170,28 @@ export class SpeechModel {
     return this.engine;
   }
 
+  /** MC.6: voice embeddings, once the speaker model is loaded. */
+  speakers(): SpeakerEmbedder | null {
+    return this.speakerEngine;
+  }
+
+  /** MC.6: the speaker model's state; null when this server has none. */
+  speakerStatus(): SpeakerModelStatus | null {
+    return this.options.speaker ? this.speakerState : null;
+  }
+
   /** Loads an already downloaded model (at startup); no network. */
   init(): Promise<void> {
+    const speaker = this.prepareSpeaker(false);
     const files = installedFiles(this.options.dir, this.spec);
-    if (!files || this.busy) return this.busy ?? Promise.resolve();
-    return this.run(() => this.loadFiles(files));
+    if (!files || this.busy) return Promise.all([this.busy, speaker]).then(() => undefined);
+    return Promise.all([this.run(() => this.loadFiles(files)), speaker]).then(() => undefined);
   }
 
   /** Downloads (if needed) and loads the model; one run at a time. */
   download(): Promise<void> {
-    if (this.engine) return Promise.resolve();
+    // Whisper is ready (an MC.5 install): fetch only the speaker model.
+    if (this.engine) return this.prepareSpeaker(true);
     if (this.busy) return this.busy;
     // Set before any await, so the request that started it reports it.
     this.current = installedFiles(this.options.dir, this.spec)
@@ -252,5 +298,89 @@ export class SpeechModel {
     const files = installedFiles(dir, spec);
     if (!files) throw new Error('The model files are missing after the download');
     await this.loadFiles(files);
+    // Speaker labels are extra: their failure never stops listening.
+    await this.prepareSpeaker(true);
+  }
+
+  /**
+   * MC.6: loads the speaker model, downloading it first when `network` is
+   * set; never throws (a failure is reported in `speakerStatus`).
+   */
+  private prepareSpeaker(network: boolean): Promise<void> {
+    const spec = this.options.speaker;
+    if (!spec || this.speakerEngine) return Promise.resolve();
+    if (this.speakerBusy) return this.speakerBusy;
+    const file = path.join(this.options.dir, spec.name, spec.file);
+    if (!network && !existsSync(file)) return Promise.resolve();
+    const load = this.options.loadSpeaker;
+    if (!load) return Promise.resolve();
+    this.speakerBusy = (async () => {
+      if (!existsSync(file)) {
+        this.speakerState = { state: 'downloading' };
+        await mkdir(path.dirname(file), { recursive: true });
+        await downloadVerified(this.fetchImpl, spec, file, this.options.idleMs ?? DOWNLOAD_IDLE_MS);
+      }
+      this.speakerState = { state: 'loading' };
+      this.speakerEngine = await load(file);
+      this.speakerState = { state: 'ready' };
+    })()
+      .catch((err: unknown) => {
+        this.speakerState = { state: 'failed', error: message(err) };
+      })
+      .finally(() => {
+        this.speakerBusy = null;
+      });
+    return this.speakerBusy;
+  }
+}
+
+/** Downloads one file to `dest` (via `.part`) and checks its size and SHA-256. */
+export async function downloadVerified(
+  fetchImpl: typeof fetch,
+  spec: { readonly url: string; readonly sha256: string; readonly bytes: number },
+  dest: string,
+  idleMs: number,
+): Promise<void> {
+  const part = `${dest}.part`;
+  const abort = new AbortController();
+  let idle = setTimeout(() => abort.abort(), idleMs);
+  const stalled = () => new Error('The download stalled; try again');
+  try {
+    const response = await fetchImpl(spec.url, { signal: abort.signal }).catch((err: unknown) => {
+      throw abort.signal.aborted ? stalled() : err;
+    });
+    if (!response.ok || !response.body) {
+      throw new Error(`The download failed (HTTP ${response.status})`);
+    }
+    const hash = createHash('sha256');
+    let received = 0;
+    const count = new Transform({
+      transform: (chunk: Buffer, _enc, done) => {
+        clearTimeout(idle);
+        idle = setTimeout(() => abort.abort(), idleMs);
+        received += chunk.length;
+        if (received > spec.bytes) {
+          done(new Error('The download was larger than the model; try again'));
+          return;
+        }
+        hash.update(chunk);
+        done(null, chunk);
+      },
+    });
+    await pipeline(
+      Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]),
+      count,
+      createWriteStream(part),
+      { signal: abort.signal },
+    ).catch((err: unknown) => {
+      throw abort.signal.aborted ? stalled() : err;
+    });
+    if (hash.digest('hex') !== spec.sha256) {
+      throw new Error('The downloaded model did not match its checksum; try again');
+    }
+    await rename(part, dest);
+  } finally {
+    clearTimeout(idle);
+    await rm(part, { force: true });
   }
 }

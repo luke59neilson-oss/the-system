@@ -8,9 +8,10 @@ import { exportsDirFor } from './sessionLog';
 import { CampaignStore } from './store';
 import { migrateOnLoad } from './migrate';
 import { CoDm, type CoDmOptions } from './ai/coDm';
+import type { SpeakerEmbedder } from './speech/speakers';
 import type { SpeechToText } from './speech/stt';
-import { SpeechModel } from './speech/model';
-import { sherpaSpeechToText } from './speech/sherpa';
+import { SpeechModel, WESPEAKER_EN_CAMPP } from './speech/model';
+import { sherpaSpeakerEmbedder, sherpaSpeechToText } from './speech/sherpa';
 import type { SecretCipher } from './ai/keyStore';
 
 /**
@@ -53,6 +54,8 @@ export interface StartOptions {
   speechModelsDir?: string | undefined;
   /** MC.5: a ready-made speech model (tests); wins over `speechModelsDir`. */
   speechModel?: SpeechModel | undefined;
+  /** MC.6: voice embeddings (tests); otherwise they come with the speech model. */
+  speakers?: (() => SpeakerEmbedder | null) | undefined;
   /** MC.5: loads the sherpa-onnx package (the packaged app's copy sits in resources). */
   speechLoad?: (() => Promise<unknown>) | undefined;
 }
@@ -117,12 +120,18 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
             ...(options.speechLoad === undefined
               ? {}
               : { load: (files) => sherpaSpeechToText(files, options.speechLoad) }),
+            // MC.6 (D238): the speaker model comes with it, for voice labels.
+            speaker: WESPEAKER_EN_CAMPP,
+            loadSpeaker: (file) => sherpaSpeakerEmbedder(file, options.speechLoad),
           })
         : null);
     void speechModel?.init();
     const app = await createServer({
       ...(options.speech === undefined ? {} : { speech: options.speech }),
-      ...(speechModel ? { speech: () => speechModel.stt(), speechModel } : {}),
+      ...(speechModel
+        ? { speech: () => speechModel.stt(), speechModel, speakers: () => speechModel.speakers() }
+        : {}),
+      ...(options.speakers === undefined ? {} : { speakers: options.speakers }),
       // Re-read interfaces per request so joining a new wifi shows up without a restart.
       joinInfo: () => {
         const port = livePort();

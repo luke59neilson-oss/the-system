@@ -9,6 +9,7 @@ import { AiError, type AiClient, type AiModelSettings } from './client';
 import { FixtureAiClient } from './fake';
 import { GENERATE_FIXTURES } from './fixtures/generate';
 import type { SecretCipher } from './keyStore';
+import type { SpeakerEmbedder } from '../speech/speakers';
 import type { SpeechToText } from '../speech/stt';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -74,6 +75,31 @@ export function e2eFakeSpeech(): SpeechToText {
 }
 
 /**
+ * MC.6, TEST ONLY: Chromium's fake mic is one beep for everyone, so the fake
+ * embedder scripts the voices by call order: the first two calls (the e2e
+ * enrols Jake, then Miranda) are their voice prints; after that transcript
+ * lines alternate a voice near Jake's and one near Miranda's, matching
+ * E2E_SPEECH_LINES (the herbalist line is Jake's).
+ */
+export function e2eFakeSpeakers(): SpeakerEmbedder {
+  const voices = [
+    [1, 0, 0],
+    [0, 1, 0],
+  ];
+  const lines = [
+    [0.95, 0.1, 0.05],
+    [0.1, 0.95, 0.05],
+  ];
+  let n = 0;
+  return {
+    embed: () => {
+      const i = n++;
+      return Promise.resolve([...(voices[i] ?? lines[(i - voices.length) % lines.length]!)]);
+    },
+  };
+}
+
+/**
  * MC.5 (D236), TEST ONLY: a speech model "downloaded" from a local archive
  * (`THE_SYSTEM_E2E_SPEECH_ARCHIVE`) into `<dataDir>/models`, loading the
  * fake recognizer, so the e2e suite can press Download with no network.
@@ -100,8 +126,14 @@ export function e2eFakeFromEnv(env: NodeJS.ProcessEnv): {
   cipher: SecretCipher;
   makeClient: (key: () => string | null, models: () => AiModelSettings) => AiClient;
   speech: SpeechToText;
+  speakers: SpeakerEmbedder;
 } | null {
   return env[E2E_FAKE_AI_ENV] === '1'
-    ? { cipher: e2eFakeCipher, makeClient: e2eFakeClient, speech: e2eFakeSpeech() }
+    ? {
+        cipher: e2eFakeCipher,
+        makeClient: e2eFakeClient,
+        speech: e2eFakeSpeech(),
+        speakers: e2eFakeSpeakers(),
+      }
     : null;
 }

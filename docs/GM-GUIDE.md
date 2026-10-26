@@ -153,6 +153,14 @@ show "[The System is listening]".
   works offline.
 - Put the laptop in the middle of the table; a cheap USB conference mic
   helps a lot in a noisy room.
+- **Voices** (speaker labels): the speech model download also fetches a
+  29 MB voice model (if you downloaded speech before it existed, press
+  **Download voice model**). With the mic off, press **Enrol <name>** and
+  have that player read aloud for 5 seconds. Transcript lines then start
+  with the character's name when the voice match is confident; an unsure
+  match stays unnamed rather than guessing. Only a voice print (numbers) is
+  kept, in the campaign folder under `speakers/`, never the recording.
+  **Re-record** replaces a sample; **Delete … voice** removes it.
 
 ## Rules settings
 

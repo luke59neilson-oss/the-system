@@ -205,7 +205,13 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
                 }
               />
               <SessionPanel client={client} state={state} gmKey={gmKey} />
-              <ListenPanel gmKey={gmKey} />
+              <ListenPanel
+                gmKey={gmKey}
+                characters={state.characterOrder.flatMap((id) => {
+                  const c = state.characters[id];
+                  return c ? [{ id, name: c.name }] : [];
+                })}
+              />
               <CoDmPanel
                 gmKey={gmKey}
                 onGenerated={(c) => setIncoming((cur) => ({ ...c, seq: (cur?.seq ?? 0) + 1 }))}
