@@ -6,6 +6,7 @@ import { FixtureAiClient } from '../src/ai/fake';
 import {
   DraftStore,
   attribute,
+  coveredByAppAction,
   draftPractice,
   draftPrompt,
   parseDrafts,
@@ -110,6 +111,41 @@ describe('parsing the fast model reply', () => {
       ids(),
     );
     expect(drafts.map((d) => d.skill)).toEqual(['Heal']);
+  });
+
+  it('a contest that rolled only a stat covers that character near its moment (MC.7 review M1, D245)', () => {
+    const at = (iso: string) => ({ characterId: 'jake', skills: [] as string[], at: iso });
+    // The roll a minute after the line: the line is the contest; no draft for Jake.
+    expect(
+      parseDrafts(reply, lines, party, [at('2026-10-26T19:01:00.000Z')], ids()).map(
+        (d) => d.characterId,
+      ),
+    ).toEqual(['miranda']);
+    // A roll well away from the line is another moment: the draft stays.
+    expect(
+      parseDrafts(reply, lines, party, [at('2026-10-26T19:05:00.000Z')], ids()).map(
+        (d) => d.characterId,
+      ),
+    ).toEqual(['jake', 'miranda']);
+    // Another character's roll covers only that character.
+    expect(
+      parseDrafts(
+        reply,
+        lines,
+        party,
+        [{ characterId: 'miranda', skills: [], at: lines[2]!.at }],
+        ids(),
+      ).map((d) => d.characterId),
+    ).toEqual(['jake']);
+    expect(coveredByAppAction('jake', 'not a time', [at(lines[0]!.at)])).toBe(false);
+  });
+
+  it('each draft carries the session it was heard in (MC.7 review M4)', () => {
+    expect(parseDrafts(reply, lines, party, [], ids(), 's7').map((d) => d.sessionId)).toEqual([
+      's7',
+      's7',
+    ]);
+    expect(parseDrafts(reply, lines, party, [], ids())[0]?.sessionId).toBeNull();
   });
 
   it('one draft per character and skill; a voice-only draft is at most medium', () => {
@@ -219,6 +255,7 @@ describe('draft store (GM-only, per campaign)', () => {
     at: '2026-10-26T19:00:00.000Z',
     confidence: 'high',
     attributedBy: 'gm-named',
+    sessionId: 's1',
   });
 
   it('adds, lists, remembers how far it read, and removes', () => {
@@ -230,6 +267,17 @@ describe('draft store (GM-only, per campaign)', () => {
     expect(store.remove('a')).toBe(true);
     expect(store.remove('a')).toBe(false);
     expect(store.list().map((d) => d.id)).toEqual(['b']);
+  });
+
+  it('a draft saved before drafts carried a session lists as session null', () => {
+    const dir = tmp();
+    const legacy: Record<string, unknown> = { ...draft('a') };
+    delete legacy['sessionId'];
+    writeFileSync(
+      path.join(dir, 'practice-drafts.json'),
+      JSON.stringify({ version: 1, readUpTo: {}, drafts: [legacy] }),
+    );
+    expect(new DraftStore(dir).list()[0]?.sessionId).toBeNull();
   });
 
   it('never overwrites a damaged file', () => {

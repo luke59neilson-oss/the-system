@@ -37,13 +37,43 @@ export interface PracticeDraft {
   readonly at: string;
   readonly confidence: DraftConfidence;
   readonly attributedBy: Attribution;
+  /**
+   * The play session the line was heard in (MC.7 review M4), so confirming
+   * it later still credits that session; null = no session was running.
+   */
+  readonly sessionId: string | null;
 }
 
-/** An entry already logged in the app this session (contest rolls etc.). */
+/**
+ * An entry already logged in the app this session (contest rolls etc.).
+ * One naming skills covers those skills for the session; one naming no
+ * skill (a contest rolls a stat) covers that character's moment instead:
+ * talk heard within `APP_ACTION_WINDOW_MS` of it is the same action, which
+ * the app already logged (D245).
+ */
 export interface LoggedUse {
   readonly characterId: string;
   readonly skills: readonly string[];
   readonly at: string;
+}
+
+/** How near (either side) a line must be to a stat-only app action to count as that action (D245). */
+export const APP_ACTION_WINDOW_MS = 2 * 60_000;
+
+/** True when an app action with no skill covers this character's line (D245). */
+export function coveredByAppAction(
+  characterId: string,
+  at: string,
+  logged: readonly LoggedUse[],
+): boolean {
+  const t = Date.parse(at);
+  if (Number.isNaN(t)) return false;
+  return logged.some(
+    (u) =>
+      u.characterId === characterId &&
+      u.skills.length === 0 &&
+      Math.abs(Date.parse(u.at) - t) <= APP_ACTION_WINDOW_MS,
+  );
 }
 
 const RANK: Record<DraftConfidence, number> = { low: 0, medium: 1, high: 2 };
@@ -134,6 +164,7 @@ export function parseDrafts(
   characters: readonly DraftCharacter[],
   logged: readonly LoggedUse[],
   newId: () => string,
+  sessionId: string | null = null,
 ): PracticeDraft[] {
   const parsed = replySchema.parse(jsonIn(text));
   const out: PracticeDraft[] = [];
@@ -153,6 +184,8 @@ export function parseDrafts(
     if (!skill) continue;
     const key = JSON.stringify([character.id, skill]);
     if (seen.has(key)) continue;
+    // App action first (DESIGN §11): a contest rolled in the app is this moment (D245).
+    if (coveredByAppAction(character.id, line.at, logged)) continue;
     seen.add(key);
     const action = d.action.trim() || line.text;
     out.push({
@@ -169,6 +202,7 @@ export function parseDrafts(
             ? lower(d.confidence, 'medium')
             : d.confidence,
       attributedBy: who.by,
+      sessionId,
     });
   }
   return out;
@@ -181,6 +215,7 @@ export async function draftPractice(
   characters: readonly DraftCharacter[],
   logged: readonly LoggedUse[],
   newId: () => string,
+  sessionId: string | null = null,
 ): Promise<PracticeDraft[]> {
   if (lines.length === 0 || characters.length === 0) return [];
   const reply = await client.complete({
@@ -189,7 +224,7 @@ export async function draftPractice(
     messages: [{ role: 'user', content: draftPrompt(lines, characters) }],
     maxTokens: 2000,
   });
-  return parseDrafts(reply.text, lines, characters, logged, newId);
+  return parseDrafts(reply.text, lines, characters, logged, newId, sessionId);
 }
 
 interface DraftFile {
@@ -217,7 +252,8 @@ export class DraftStore {
   }
 
   list(): PracticeDraft[] {
-    return this.read().drafts;
+    // Drafts saved before MC.7 review M4 carry no session: null (none known).
+    return this.read().drafts.map((d) => ({ ...d, sessionId: d.sessionId ?? null }));
   }
 
   readUpTo(session: number): number {

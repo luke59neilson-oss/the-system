@@ -75,7 +75,14 @@ export function registerPracticeDraftRoutes(
         .concat(
           store.list().map((d) => ({ characterId: d.characterId, skills: [d.skill], at: d.at })),
         );
-      const drafts = await draftPractice(options.client, lines, characters, logged, randomUUID);
+      const drafts = await draftPractice(
+        options.client,
+        lines,
+        characters,
+        logged,
+        randomUUID,
+        state.currentSession,
+      );
       store.add(session, all.length, drafts);
       return { drafts: store.list(), added: drafts.length, read: lines.length };
     } catch (err) {
