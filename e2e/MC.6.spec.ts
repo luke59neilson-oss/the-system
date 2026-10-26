@@ -105,7 +105,8 @@ test('the GM enrols two voices, lines get names, and a deleted voice stops label
   const unlabelled = transcript
     .locator('li')
     .filter({ hasText: /^\d\d:\d\d:\d\d We should find an herbalist/ });
-  await expect(unlabelled.first()).toBeVisible({ timeout: 20_000 });
+  // The fake mic yields a line about every 15 s, and the arrow line may come first.
+  await expect(unlabelled.first()).toBeVisible({ timeout: 45_000 });
   await panel.getByRole('button', { name: 'Stop listening' }).click();
   expect(await transcript.locator('li').count()).toBeGreaterThan(before);
   const after = JSON.parse(readFileSync(path.join(speakersDir, 'speakers.json'), 'utf8')) as {
