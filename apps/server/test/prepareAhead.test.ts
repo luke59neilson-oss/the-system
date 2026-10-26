@@ -126,6 +126,8 @@ describe('prepare-ahead routes (MC.10)', () => {
       cipher: null,
       makeClient: () => {
         fake = new FixtureAiClient([
+          { role: 'fast', match: 'slowpoke', delayMs: 100, text: '{"heading": null}' },
+          { role: 'fast', match: 'garbled', text: 'not json at all' },
           {
             role: 'fast',
             match: 'herbalist',
@@ -218,7 +220,17 @@ describe('prepare-ahead routes (MC.10)', () => {
     });
     expect(take.statusCode).toBe(200);
     expect(JSON.stringify(take.json().file)).toContain('Sap & Sinew');
-    expect(take.json().drafts).toEqual([]);
+    // Taking keeps the draft listed until the GM dismisses it (review M1):
+    // a refresh or a closed console before approval loses nothing.
+    expect(take.json().drafts).toHaveLength(1);
+    const listed = await app.inject({ method: 'GET', url: '/api/gm/ai/prepared', headers: gm });
+    expect(listed.json().drafts).toHaveLength(1);
+    const done = await app.inject({
+      method: 'DELETE',
+      url: `/api/gm/ai/prepared/${drafts[0]!.id}`,
+      headers: gm,
+    });
+    expect(done.json().drafts).toEqual([]);
     expect(store.campaign.events.length).toBe(events);
 
     // The same destination is not drafted twice, even when the model names it again.
@@ -244,6 +256,43 @@ describe('prepare-ahead routes (MC.10)', () => {
     expect((await post({ manual: true })).statusCode).toBe(500);
     expect(readFileSync(file, 'utf8')).toBe('null');
     writeFileSync(file, before);
+  });
+
+  it('a look whose reply cannot be read leaves its lines for the next look (review M3)', async () => {
+    const base = [
+      'Nice weather.',
+      "Let's go find that herbalist.",
+      'On we go.',
+      'That herbalist, yes.',
+    ];
+    say([...base, 'Something garbled.']);
+    clock += 600_000;
+    const n = fake.requests.length;
+    const bad = await post();
+    expect(bad.statusCode).toBe(502);
+    expect(fake.requests).toHaveLength(n + 1);
+    // Paced from the failed look, then the same line is read again.
+    clock += 600_000;
+    await post();
+    expect(fake.requests).toHaveLength(n + 2);
+    expect(fake.requests.at(-1)!.messages[0]!.content).toContain('Something garbled.');
+  });
+
+  it('refuses a second look while one runs (409)', async () => {
+    const base = [
+      'Nice weather.',
+      "Let's go find that herbalist.",
+      'On we go.',
+      'That herbalist, yes.',
+    ];
+    say([...base, 'Something garbled.', 'A slowpoke line.']);
+    clock += 600_000;
+    // inject starts on then(); give the first look time to start its slow call.
+    const first = post().then((r) => r);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const second = await post({ manual: true });
+    expect(second.statusCode).toBe(409);
+    expect((await first).json()).toMatchObject({ called: true, prepared: null });
   });
 
   it('refuses a bad interval', async () => {

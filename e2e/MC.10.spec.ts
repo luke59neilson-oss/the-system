@@ -101,7 +101,9 @@ test('a draft prepared ahead is reviewed and approved', async ({ browser }) => {
 
   // Review opens it in Import content; nothing exists until the GM approves.
   await prepared.getByRole('button', { name: 'Review' }).click();
-  await expect(prepared).toHaveCount(0);
+  // The draft stays listed until the GM dismisses it, so nothing is lost
+  // before approval (review M1).
+  await expect(prepared).toHaveCount(1);
   const imp = gm.locator('section[aria-labelledby="import-heading"]');
   await expect(imp).toContainText('Sap & Sinew, herbalist');
   await expect(imp.getByTestId('import-generated-note')).toBeVisible();
@@ -109,8 +111,11 @@ test('a draft prepared ahead is reviewed and approved', async ({ browser }) => {
   await imp.getByRole('button', { name: 'Apply 4' }).click();
   await expect(imp.getByRole('status')).toHaveText('Applied 4 entries');
   const shops = gm.locator('section[aria-labelledby="shops-heading"]');
-  await expect(shops.getByRole('article', { name: 'Sap & Sinew' })).toBeVisible();
-  await imp.scrollIntoViewIfNeeded();
+  const shop = shops.getByRole('article', { name: 'Sap & Sinew' });
+  await expect(shop).toBeVisible();
+  await prepared.getByRole('button', { name: 'Dismiss' }).click();
+  await expect(prepared).toHaveCount(0);
+  await shop.scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-prepared-approved-1366x768.png') });
 
   // The prepared draft, its quote and the transcript never reach the player.

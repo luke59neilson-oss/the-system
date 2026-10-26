@@ -187,13 +187,10 @@ export function registerPrepareRoutes(
         manual: body.data?.manual ?? false,
       });
       if (!due) return { ...view(f), called: false, prepared: null };
-      // The pace counts from the look, paid or failed, and the lines are read
-      // either way, so a bad reply is not asked again on every poll.
-      store.write({
-        ...f,
-        lastCallAt: now,
-        readUpTo: { ...f.readUpTo, [String(session)]: all.length },
-      });
+      // The pace counts from the look, paid or failed, so a failing call is
+      // never retried on every poll. The lines count as read only once the
+      // fast model's reply parses, so a failed look leaves them for the next.
+      store.write({ ...f, lastCallAt: now });
       const lines = fresh.slice(-RECENT_LINES);
       const look = await options.client.complete({
         role: 'fast',
@@ -210,6 +207,8 @@ export function registerPrepareRoutes(
           'bad-reply',
         );
       }
+      const read = store.read();
+      store.write({ ...read, readUpTo: { ...read.readUpTo, [String(session)]: all.length } });
       if (!heading) return { ...view(store.read()), called: true, prepared: null };
       const limitMs = options.timeoutMs ?? GENERATE_TIMEOUT_MS;
       const answer = await options.client.complete({
@@ -231,8 +230,9 @@ export function registerPrepareRoutes(
     }
   });
 
-  // Take: the draft leaves the list and its file goes to the Import window,
-  // where the GM previews, edits and approves it like any content file.
+  // Take: the draft's file goes to the Import window, where the GM previews,
+  // edits and approves it like any content file. The draft stays listed (so a
+  // refresh or a closed console loses nothing) until the GM dismisses it.
   app.post<{ Params: { id: string } }>('/api/gm/ai/prepared/:id/take', (request, reply) => {
     const a = options.active();
     if (!a) return reply.code(404).send({ error: 'No campaign open' });
@@ -241,8 +241,7 @@ export function registerPrepareRoutes(
       const f = store.read();
       const draft = f.drafts.find((d) => d.id === request.params.id);
       if (!draft) return reply.code(404).send({ error: 'No such prepared draft' });
-      store.write({ ...f, drafts: f.drafts.filter((d) => d.id !== draft.id) });
-      return { file: draft.file, kind: draft.kind, place: draft.place, ...view(store.read()) };
+      return { file: draft.file, kind: draft.kind, place: draft.place, ...view(f) };
     } catch (err) {
       return reply.code(500).send({ error: fail(err) });
     }

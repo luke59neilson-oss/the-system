@@ -16,7 +16,7 @@ interface PreparedView {
 
 /** How often the panel asks; the server decides whether a look is due (on, new talk, interval). */
 const PREPARE_TICK_MS = 30_000;
-const INTERVALS = [120, 300, 600] as const;
+const INTERVALS = [120, 300, 600, 1200, 1800] as const;
 
 /**
  * MC.10 (DESIGN §11 "Prepare ahead"): optional, off by default. While on,
@@ -40,7 +40,11 @@ export function PrepareAhead({
     async (url: string, init: RequestInit) => {
       const res = await fetch(url, {
         ...init,
-        headers: { 'x-gm-key': gmKey, 'content-type': 'application/json' },
+        // A DELETE sends no body, and Fastify refuses an empty JSON body.
+        headers: {
+          'x-gm-key': gmKey,
+          ...(init.body !== undefined ? { 'content-type': 'application/json' } : {}),
+        },
       }).catch(() => null);
       if (!res) {
         setNote('Could not reach the server');
@@ -62,21 +66,27 @@ export function PrepareAhead({
     [gmKey],
   );
 
-  useEffect(() => {
-    void fetch('/api/gm/ai/prepared', { headers: { 'x-gm-key': gmKey } })
-      .then(async (res) => (res.ok ? setView((await res.json()) as PreparedView) : undefined))
-      .catch(() => undefined);
-  }, [gmKey]);
+  const load = useCallback(
+    () =>
+      void fetch('/api/gm/ai/prepared', { headers: { 'x-gm-key': gmKey } })
+        .then(async (res) => (res.ok ? setView((await res.json()) as PreparedView) : undefined))
+        .catch(() => undefined),
+    [gmKey],
+  );
+  useEffect(load, [load]);
 
+  // The panel drives the looks (the GM console stays open through play,
+  // D251); the server decides whether one is due. Every tick also brings the
+  // list and setting back from the server, so after a campaign switch the
+  // panel shows the open campaign's (review M4). Both ticks are free calls.
   const enabled = view?.enabled ?? false;
   useEffect(() => {
-    if (!enabled) return;
     const timer = setInterval(
-      () => void call('/api/gm/ai/prepared', { method: 'POST', body: '{}' }),
+      () => (enabled ? void call('/api/gm/ai/prepared', { method: 'POST', body: '{}' }) : load()),
       PREPARE_TICK_MS,
     );
     return () => clearInterval(timer);
-  }, [enabled, call]);
+  }, [enabled, call, load]);
 
   const settings = (next: { enabled: boolean; intervalS?: number }) =>
     void call('/api/gm/ai/prepared/settings', { method: 'PUT', body: JSON.stringify(next) });
@@ -97,7 +107,9 @@ export function PrepareAhead({
     });
     if (data?.file === undefined) return;
     onReview(JSON.stringify(data.file, null, 2), `co-DM prepared: ${d.place}`);
-    setNote(`${d.place} is in Import content: check it there and approve`);
+    setNote(
+      `${d.place} is in Import content: check it there and approve, then Dismiss it here (it stays listed until then)`,
+    );
   };
 
   const dismiss = (d: Prepared) =>
