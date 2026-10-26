@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 
@@ -41,7 +41,22 @@ async function requestPreview(gmKey: string, body: unknown): Promise<Preview> {
   return { ok: false, errors: [{ path: '(file)', message }] };
 }
 
-export function ContentImport({ client, gmKey }: { client: LiveClient; gmKey: string }) {
+/** Content handed over by another window (MC.2: a co-DM generation). `seq` changes per hand-over. */
+export interface IncomingContent {
+  readonly text: string;
+  readonly name: string;
+  readonly seq: number;
+}
+
+export function ContentImport({
+  client,
+  gmKey,
+  incoming = null,
+}: {
+  client: LiveClient;
+  gmKey: string;
+  incoming?: IncomingContent | null;
+}) {
   const [fileText, setFileText] = useState('');
   const [fileName, setFileName] = useState('');
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -62,14 +77,18 @@ export function ContentImport({ client, gmKey }: { client: LiveClient; gmKey: st
 
   const load = async (file: File | undefined) => {
     if (!file) return;
+    await loadText(() => file.text(), file.name);
+  };
+
+  const loadText = async (read: () => Promise<string>, name: string) => {
     setBusy(true);
     setOutcome(null);
     checkRun.current++;
     try {
-      const text = await file.text();
+      const text = await read();
       const p = await requestPreview(gmKey, text);
       setFileText(text);
-      setFileName(file.name);
+      setFileName(name);
       setPreview(p);
       setChecks(new Map());
       setChecking(false);
@@ -80,6 +99,33 @@ export function ContentImport({ client, gmKey }: { client: LiveClient; gmKey: st
       setBusy(false);
     }
   };
+
+  // MC.2: a generation (or the GM's edit of one) opens here like a picked file.
+  const lastSeq = useRef<number | null>(null);
+  useEffect(() => {
+    if (!incoming || incoming.seq === lastSeq.current) return;
+    lastSeq.current = incoming.seq;
+    const run = ++checkRun.current;
+    void requestPreview(gmKey, incoming.text)
+      .then((p) => {
+        if (run !== checkRun.current) return;
+        setOutcome(null);
+        setFileText(incoming.text);
+        setFileName(incoming.name);
+        setPreview(p);
+        setChecks(new Map());
+        setChecking(false);
+        setPicked(
+          new Set(p.ok ? p.entries.filter((e) => e.error === null).map((e) => e.path) : []),
+        );
+      })
+      .catch(() => {
+        if (run !== checkRun.current) return;
+        setPreview(null);
+        setChecks(new Map());
+        setOutcome('Could not check the file: is the server running?');
+      });
+  }, [incoming, gmKey]);
 
   /** Re-previews just `paths`, in file order, against the campaign as it is now. */
   const recheck = async (paths: ReadonlySet<string>) => {

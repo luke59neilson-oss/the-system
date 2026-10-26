@@ -7,6 +7,7 @@
 // can never be stored with it.
 import { AiError, type AiClient, type AiModelSettings } from './client';
 import { FixtureAiClient } from './fake';
+import { GENERATE_FIXTURES } from './fixtures/generate';
 import type { SecretCipher } from './keyStore';
 
 export const E2E_FAKE_AI_ENV = 'THE_SYSTEM_E2E_FAKE_AI';
@@ -42,7 +43,10 @@ export function e2eFakeClient(key: () => string | null, models: () => AiModelSet
         );
       }
       const fixtures = new FixtureAiClient(
-        [{ role: 'fast', match: 'Connection test', text: 'ready', usage: E2E_TEST_USAGE }],
+        [
+          { role: 'fast', match: 'Connection test', text: 'ready', usage: E2E_TEST_USAGE },
+          ...GENERATE_FIXTURES,
+        ],
         models(),
       );
       return fixtures.complete(request);
