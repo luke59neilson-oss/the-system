@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   closeSync,
   existsSync,
@@ -21,6 +22,7 @@ import {
   type SessionRecord,
 } from '@the-system/engine';
 import type { CampaignStore } from './store';
+import { renderNotes, type SessionNotesFile } from './ai/sessionNotes';
 
 /**
  * Session log autosave and session report (ROADMAP M2.4, M4.3; DESIGN §7
@@ -48,6 +50,8 @@ export interface SessionLogOptions {
   readonly every?: (fn: () => void, ms: number) => () => void;
   /** Called when a write fails (the log is only a copy; play goes on). */
   readonly onError?: (error: unknown) => void;
+  /** The co-DM's notes and summary for a session number (MC.9), if any. */
+  readonly notesFor?: (sessionNumber: number) => SessionNotesFile | null;
 }
 
 const defaultEvery = (fn: () => void, ms: number) => {
@@ -94,6 +98,15 @@ function targetSession(state: CampaignState | null): SessionRecord | null {
 }
 
 /** Format tag of the JSON session log and report (M9.1). */
+/** Co-DM notes as markdown; a malformed notes value never stops the session log (D250). */
+function safeNotes(coDm: SessionNotesFile): string {
+  try {
+    return renderNotes(coDm);
+  } catch {
+    return '';
+  }
+}
+
 export const SESSION_REPORT_FORMAT = 'the-system/session-report';
 
 /**
@@ -107,6 +120,7 @@ export function sessionReport(
   session: SessionRecord,
   writtenAt: string,
   base?: SessionLogBase,
+  coDm?: SessionNotesFile | null,
 ): { readonly markdown: string; readonly json: string } | null {
   const range = sessionEventRange(campaign, session.id);
   if (!range) return null;
@@ -116,7 +130,10 @@ export function sessionReport(
       ? base
       : sessionLogBase(campaign, range.fromSeq);
   const log = buildSessionLog(campaign, range.fromSeq, fold, toSeq);
-  const markdown = renderSessionLog(log, { startedAt: session.startedAt, writtenAt, session });
+  const notes = coDm ? safeNotes(coDm) : '';
+  const markdown =
+    renderSessionLog(log, { startedAt: session.startedAt, writtenAt, session }) +
+    (notes ? `\n${notes}` : '');
   const json = `${JSON.stringify(
     {
       format: SESSION_REPORT_FORMAT,
@@ -125,6 +142,9 @@ export function sessionReport(
       session,
       report: session.endedAt !== null,
       ...log,
+      ...(coDm && (coDm.notes.length || coDm.summary)
+        ? { coDm: { notes: coDm.notes, summary: coDm.summary } }
+        : {}),
     },
     null,
     2,
@@ -133,7 +153,7 @@ export function sessionReport(
 }
 
 export class SessionLogWriter {
-  private readonly store: CampaignStore;
+  readonly store: CampaignStore;
   private readonly options: SessionLogOptions;
   /** What the file of the target session last held (session, range, log length/undos). */
   private writtenKey: string | null = null;
@@ -169,6 +189,22 @@ export class SessionLogWriter {
     return path.join(this.options.exportsDir, this.store.id, sessionFileName(sessionNumber));
   }
 
+  private notes(sessionNumber: number): SessionNotesFile | null {
+    try {
+      return this.options.notesFor?.(sessionNumber) ?? null;
+    } catch (error) {
+      // A damaged notes file never stops the session log.
+      this.options.onError?.(error);
+      return null;
+    }
+  }
+
+  private notesKey(sessionNumber: number): string {
+    const n = this.notes(sessionNumber);
+    // Any change to the notes or summary (a re-summary included) rewrites the log (D250).
+    return n ? createHash('sha1').update(JSON.stringify(n)).digest('hex').slice(0, 12) : '';
+  }
+
   private plan() {
     const campaign = this.store.campaign;
     const session = targetSession(campaign.state);
@@ -187,7 +223,7 @@ export class SessionLogWriter {
       fromSeq: range.fromSeq,
       toSeq,
       file: this.fileFor(session.number),
-      key: `${session.id}|${range.fromSeq}|${toSeq}|${version}`,
+      key: `${session.id}|${range.fromSeq}|${toSeq}|${version}|${this.notesKey(session.number)}`,
     };
   }
 
@@ -226,7 +262,13 @@ export class SessionLogWriter {
     ) {
       this.base = sessionLogBase(campaign, plan.fromSeq);
     }
-    const report = sessionReport(campaign, plan.session, this.options.now(), this.base);
+    const report = sessionReport(
+      campaign,
+      plan.session,
+      this.options.now(),
+      this.base,
+      this.notes(plan.session.number),
+    );
     if (!report) return false;
     mkdirSync(path.dirname(plan.file), { recursive: true });
     writeAtomic(plan.file, report.markdown);
@@ -235,6 +277,11 @@ export class SessionLogWriter {
     this.writtenKey = plan.key;
     this.lastWritten = { id: plan.session.id, number: plan.session.number, file: plan.file };
     return true;
+  }
+
+  /** Writes now if anything changed (MC.9 notes); never throws. */
+  flushNow(): void {
+    this.flushQuietly();
   }
 
   /** Stops the timer and writes one last time (shutdown). Never throws. */
