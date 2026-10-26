@@ -212,7 +212,11 @@ async function start(): Promise<void> {
         backupOnClose: 'quit',
         // MC.1: the co-DM's API key is encrypted with the OS keychain / DPAPI.
         aiCipher: {
-          isAvailable: () => safeStorage.isEncryptionAvailable(),
+          // Linux's basic_text backend uses a fixed password: not real encryption.
+          isAvailable: () =>
+            safeStorage.isEncryptionAvailable() &&
+            (process.platform !== 'linux' ||
+              safeStorage.getSelectedStorageBackend() !== 'basic_text'),
           encrypt: (plain) => safeStorage.encryptString(plain),
           decrypt: (data) => safeStorage.decryptString(data),
         },

@@ -138,6 +138,18 @@ describe('co-DM settings routes', () => {
     expect((await gm('POST', '/api/gm/ai/test')).json()).toMatchObject({ ok: false });
   });
 
+  it('a malformed body never echoes its text', async () => {
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/gm/ai/key',
+      headers: { 'x-gm-key': GM, 'content-type': 'application/json' },
+      payload: `{"key":"${API_KEY}`,
+    });
+    bodies.push(res.body);
+    expect(res.statusCode).toBe(400);
+    expect(res.body).not.toContain('sk-ant');
+  });
+
   it('no reply body ever carried the key', () => {
     expect(bodies.length).toBeGreaterThan(5);
     for (const body of bodies) expect(body).not.toContain(API_KEY);

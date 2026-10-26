@@ -99,7 +99,8 @@ export class CoDm {
   status(): CoDmStatus {
     this.followSession();
     return {
-      hasKey: this.keys.has(),
+      // A file this laptop can no longer decrypt is no key (MC.1 review M3).
+      hasKey: this.keys.load() !== null,
       canSave: this.keys.canSave(),
       models: this.models,
       spend: this.spend.snapshot(),
@@ -141,36 +142,47 @@ export class CoDm {
 }
 
 /** GM-only co-DM settings routes (all under /api/gm/, behind the GM key). */
-export function registerCoDmRoutes(app: FastifyInstance, coDm: CoDm): void {
-  app.get('/api/gm/ai', () => coDm.status());
+export function registerCoDmRoutes(root: FastifyInstance, coDm: CoDm): void {
+  void root.register((app, _opts, done) => {
+    // A body that fails to parse must not echo its text (it may hold the key):
+    // every error in this scope gets a fixed message (MC.1 review M4).
+    app.setErrorHandler((error: { statusCode?: number }, _request, reply) => {
+      const code = error.statusCode ?? 500;
+      return reply.code(code).send({
+        error: code < 500 ? 'Bad request to the co-DM settings' : 'Co-DM settings failed',
+      });
+    });
+    app.get('/api/gm/ai', () => coDm.status());
 
-  app.put('/api/gm/ai/key', { bodyLimit: 4096 }, (request, reply) => {
-    const body = z.strictObject({ key: z.string().max(400) }).safeParse(request.body);
-    if (!body.success) return reply.code(400).send({ error: 'Send { key }' });
-    try {
-      coDm.keys.save(body.data.key);
-    } catch (e) {
-      if (e instanceof KeyStoreError) return reply.code(400).send({ error: e.message });
-      return reply.code(500).send({ error: 'The key could not be saved' });
-    }
-    return coDm.status();
+    app.put('/api/gm/ai/key', { bodyLimit: 4096 }, (request, reply) => {
+      const body = z.strictObject({ key: z.string().max(400) }).safeParse(request.body);
+      if (!body.success) return reply.code(400).send({ error: 'Send { key }' });
+      try {
+        coDm.keys.save(body.data.key);
+      } catch (e) {
+        if (e instanceof KeyStoreError) return reply.code(400).send({ error: e.message });
+        return reply.code(500).send({ error: 'The key could not be saved' });
+      }
+      return coDm.status();
+    });
+
+    app.delete('/api/gm/ai/key', () => {
+      coDm.keys.remove();
+      return coDm.status();
+    });
+
+    app.put('/api/gm/ai/models', { bodyLimit: 4096 }, (request, reply) => {
+      const body = modelsSchema.safeParse(request.body);
+      if (!body.success) {
+        return reply
+          .code(400)
+          .send({ error: body.error.issues[0]?.message ?? 'Send { fast, strong }' });
+      }
+      coDm.setModels(body.data);
+      return coDm.status();
+    });
+
+    app.post('/api/gm/ai/test', async () => ({ ...(await coDm.test()), status: coDm.status() }));
+    done();
   });
-
-  app.delete('/api/gm/ai/key', () => {
-    coDm.keys.remove();
-    return coDm.status();
-  });
-
-  app.put('/api/gm/ai/models', { bodyLimit: 4096 }, (request, reply) => {
-    const body = modelsSchema.safeParse(request.body);
-    if (!body.success) {
-      return reply
-        .code(400)
-        .send({ error: body.error.issues[0]?.message ?? 'Send { fast, strong }' });
-    }
-    coDm.setModels(body.data);
-    return coDm.status();
-  });
-
-  app.post('/api/gm/ai/test', async () => ({ ...(await coDm.test()), status: coDm.status() }));
 }
