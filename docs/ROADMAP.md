@@ -433,13 +433,13 @@ the rest follow in file order. Each gets its own §6 review.
   Sweep C (UX, fable): the sticky banner stack was translucent, so status
   rows showed through it on a scrolled phone. *Accept:* the stack and each
   banner have an opaque base (`var(--bg)`) under the tint; MT.6 e2e green.
-- [ ] **QF.27 [Answer] scrolls the scene prompt clear of the banners.**
+- [x] **QF.27 [Answer] scrolls the scene prompt clear of the banners.**
   Sweep C (UX, fable), Medium: `PlayerScreen.tsx` ~596 `scrollIntoView({
   block: 'start' })` puts the prompt under the sticky banner stack (with 2–3
   pinned banners the text field itself is hidden). *Accept:* the prompt's
   heading and field sit below the stack after [Answer] with 3 pinned
   banners at 390×844; e2e asserts it with a bounding-box check.
-- [ ] **QF.28 Portrait import size and empty-file checks are tested.** Sweep
+- [x] **QF.28 Portrait import size and empty-file checks are tested.** Sweep
   C (Tests, sonnet), Medium: deleting `bytes.length > PORTRAIT_MAX_BYTES` or
   `bytes.length === 0` in `store.ts` checkPortraits fails no test.
   *Accept:* store tests import an oversize and an empty portrait (correct

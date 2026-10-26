@@ -321,3 +321,4 @@ Fixed: the hub logs an engine error inside a command. Kept, in `DONE.md`:
 the rest. The Backlog was kept whole (no Low affects play at the table).
 - MT.4 (sonnet review, Low): players' Credits history follows the shared 300-entry ledger, so old rows can drop with no "older entries not shown" note; rows carry no date; a missing counterparty shows its raw id; projection tests lack trade/loot rows.
 - MC.1 (sonnet review round 2, Low): the status route decrypts the key on every call (on macOS the keychain may prompt more than once); the no-encryption hint names Linux keyrings on every OS; a very small test call shows "$0.000"; spend is kept in memory only (a restart starts it at 0).
+- QF.27 (sonnet review, Low): [Answer]'s inline scroll-margin is never cleared and the banner stack is found by its test id; QF.28 nit: "2 MB" is hard-coded in portraits.ts and derived in store.ts.

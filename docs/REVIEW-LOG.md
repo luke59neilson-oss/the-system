@@ -943,3 +943,9 @@
 
 ## 2026-10-26 · MC.1 AI connection · round-2 fixes verified (run 56591c49)
 - Round 2 M2 (no e2e of the key-saved path) fixed at 62d32407: test-only fake cipher and AI client behind `THE_SYSTEM_E2E_FAKE_AI=1` (D228; the fake cipher refuses non-test keys); e2e covers a refused malformed key, Save, the key never shown or written verbatim, Test connection, spend $0.001 · 1 call, reload, Remove, and no key text in player frames or `/api/` bodies; unit tests for the switch and the fake. Round 2 had no High, so no third round (LOOP §6.4); verified by me: check 1,314 green, MC.1 e2e 2/2. Lows → QUALITY Backlog. Box checked.
+
+## 2026-10-26 · QF.27 [Answer] scrolls the scene prompt clear of the banners · sonnet (worktree, 8f668715)
+- 0 High, 0 Medium, 5 Low. check 1,314 green; QF.27/MT.9/MT.6 e2e green; screenshot fine. Lows kept: the inline scroll-margin is never cleared (recomputed per click), the stack is found by test id, one assertion is implied by another, a banner growing after the click can overlap transiently. The e2e fails without the fix (−197 px).
+
+## 2026-10-26 · QF.28 Portrait import size and empty-file checks tested · sonnet (worktree, e63568d2)
+- 0 High, 0 Medium, 0 Low. Empty and oversize portraits now have their own messages (the empty check was masked by detectPortrait); both mutations and `>`→`>=` fail a test. Nits: "2 MB" also hard-coded in portraits.ts; `fits.close()` skipped only on failure.
