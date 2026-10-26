@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress (2026-10-26): MT done (MT.A checked); MC (co-DM) under way. Preview ready: Actions → Release → Run workflow (MT).
-**Next item:** MC.1 on `wip/MC.1` (head 2dac7747): fix review M2 and M5 (REVIEW-LOG), then round-2 review (sonnet), merge, check; then MC.2
+**Next item:** MC.1 on `wip/MC.1` (head e4784cf4): round-2 M2 (e2e for the key-saved path with a test-only fake cipher), then merge and check (no third round); then QF.27, QF.28, MC.2
 **Blockers:** none
 
 ## Run log
@@ -1136,3 +1136,10 @@ next item, blockers. -->
 - Open `wip/*`: wip/MC.1.
 - Blockers: none.
 
+### Run 46cb339b · 2026-10-26 03:08–03:53 UTC (end minute 45: handed off at 44)
+- Preflight: `add_repo` not offered; repo already cloned (local `main` reset to origin/main, unrelated history). Lock pushed cleanly. `npm view vitest version` → 5.0.5. Haiku, sonnet and fable reviewers all work (worktree; each Agent call blocks; the four parallel reviewers took 9–32 min). CI on main green (3d4a6955). No new answers. Sweep hour (03 UTC), rotation C.
+- MC.1 (wip/MC.1): round-1 M2 (status `saveBlocked` reason, panel wording) and M5 (`coDmCanary.test.ts`: player frames, `/api/characters`, request log; mutation-checked) fixed at 9c3520f7. Round-2 sonnet review: 0 H / 2 M / 3 L. M1 (no timeout on the live call) fixed at e4784cf4. M2 (no e2e of the key-saved UI path) open: next run adds a test-only fake cipher to the e2e server, covers Save/Remove/Test/spend, merges, checks. Not checked this run.
+- Sweep C (scope ff8a1be1..e781ac3b): Rules·haiku 0/0/1, Tests·sonnet 0/1/3, UX·fable 1/1/5. High (sticky banners translucent, unreadable when scrolled) confirmed and fixed: QF.26 **checked** (sonnet review clean; merged fc05d08a, D227). Mediums queued as QF.27 (scene prompt under the banners after [Answer]) and QF.28 (portrait import size/empty checks untested). Lows to the QUALITY Backlog.
+- Tests: unit 1,284 on main (1,309 on wip/MC.1); e2e MC.1, MT.6 green this run; full e2e 103/106 at 4 workers by the Tests sweeper (the 3 failures pass alone: load).
+- Open `wip/*`: wip/MC.1 (head e4784cf4).
+- Blockers: none.

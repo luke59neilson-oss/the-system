@@ -848,6 +848,7 @@ button.secondary:hover {
   z-index: 9;
   display: grid;
   gap: 6px;
+  background: var(--bg);
   margin: 0 0 12px;
   /* Several banners must not bury a phone's status window. */
   max-height: 40vh;
@@ -858,7 +859,8 @@ button.secondary:hover {
   padding: 8px 12px;
   border: 1px solid var(--accent, #7fb2ff);
   border-radius: 6px;
-  background: rgba(127, 178, 255, 0.1);
+  /* Opaque under the tint: the stack is sticky, so rows scroll beneath it (QF.26). */
+  background: linear-gradient(rgba(127, 178, 255, 0.1), rgba(127, 178, 255, 0.1)), var(--bg);
   box-shadow: 0 0 10px rgba(127, 178, 255, 0.25);
   font-family: var(--mono, ui-monospace, monospace);
   overflow-wrap: anywhere;

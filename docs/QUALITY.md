@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** ff8a1be1 (2026-10-25, B) · **Next rotation:** C
+**Last sweep:** e781ac3b (2026-10-26, C) · **Next rotation:** D
 
 ## Lenses and rotation
 
@@ -117,6 +117,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-25 21:10 | B, ee1a405..ff8a1be1 | Boundaries · haiku | 0 | 0 | 2 | 2 L to Backlog | 0 | n/a |
 | 2026-10-25 21:10 | B, ee1a405..ff8a1be1 | Tests · fable | 0 | 1 | 5 | 1 M confirmed by reading the tests (QF.23); 5 L not recorded in detail (the run overran and logged only the counts) | 0 | n/a (46 min) |
 | 2026-10-25 21:10 | B, ee1a405..ff8a1be1 | UX · sonnet | 0 | 2 | 6 | 2 M confirmed in code (QF.24, QF.25); 6 L not recorded in detail | 0 | n/a |
+| 2026-10-26 03:15 | C, ff8a1be1..e781ac3b | Rules · haiku | 0 | 0 | 1 | 1 L to Backlog | 0 | ~149k |
+| 2026-10-26 03:15 | C, ff8a1be1..e781ac3b | Tests · sonnet | 0 | 1 | 3 | 1 M confirmed by the reviewer's mutation (QF.28); 3 L to Backlog (3 e2e fails at 4 workers pass alone: load) | 0 | ~107k |
+| 2026-10-26 03:15 | C, ff8a1be1..e781ac3b | UX · fable | 1 | 1 | 5 | 1 H confirmed in CSS and fixed this run (QF.26); 1 M confirmed in code (QF.27); 5 L to Backlog | 0 | ~169k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -163,6 +166,15 @@ reviewers ran 15–20 minutes each in the background.
   (10:31 UTC): now QF.14.
 
 ## Backlog (Lows; M11.5 goes through these)
+- Rules (sweep C 2026-10-26): `skill.granted` allows description/flavor up to 4000 characters (`envelope.ts` ~431) while every other skill text field caps at 2000/1000.
+- Tests (sweep C): `detectPortrait` WebP branch: removing the `WEBP` marker check fails no test (a RIFF WAVE would pass).
+- Tests (sweep C): the sync.test wire canary plants GM-only text in only two places (rules, an XP reason); add faction notes, region names, hidden-quest text.
+- Tests (sweep C): `M8.4.spec.ts` 262/347/359 and `M4.7.spec.ts` 107 prove "nothing happened" with fixed `waitForTimeout`.
+- UX (sweep C): banner "For" input `min={1}` while the rule is 5 s–24 h (`GmScreen.tsx` ~716).
+- UX (sweep C): timed banners show raw seconds left ("7200 s left"); use minutes/hours.
+- UX (sweep C): header chip "Remove all" banners has no confirm (each removal undoable, one by one).
+- UX (sweep C): `MarksReview.tsx` "Extra mark (override)" looks like a routine control; only a hover title says it breaks the rule.
+- UX (sweep C): `SkillOverrides.tsx` Profession kind silently disabled without a profession; same-name profession re-grant (legal since MT.7 round 2) cannot be sent.
 - Rules (MT.A review): an approved evolution re-rating list loses entries when a listed skill changes rarity (setRarity, mark upgrade, accepted merge) before the player chooses; the builder says nothing and no re-approval is asked (`evolution/model.ts` dropStaleRerates). Consider a "changed since you approved" note.
 - Docs (MT.A review): `docs/GM-OVERRIDES.md` "Where" line numbers drift (e.g. reducer refusals moved ~19 lines after MT.9); `scripts/gm-overrides.test.ts` checks keys only. Regenerate the column or drop line numbers.
 - UX/code (MT.A review): `PracticePanel.tsx:34` calls `setHeld` during render; derive it instead.
