@@ -813,7 +813,7 @@ it is usable early (Luke can run a preview build at any point).
 - [x] **MC.4 Loading screen.** A System-styled loading broadcast built on
   MT.6's pinned banner; optional "clear when the pending generation is
   approved". *Accept:* e2e: send, players see it, approve clears it.
-- [ ] **MC.5 Listening and transcript.** A mic toggle in the GM window
+- [x] **MC.5 Listening and transcript.** A mic toggle in the GM window
   (Electron media permission for that window only), on-laptop speech-to-text
   (evaluate whisper.cpp and sherpa-onnx: offline, Windows x64, model
   downloaded on first use to the user folder, not in the installer), voice
