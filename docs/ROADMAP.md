@@ -798,7 +798,7 @@ it is usable early (Luke can run a preview build at any point).
   AI client interface with a fixture-backed fake. *Accept:* canary test that
   the key never reaches players or logs; unit tests on the fake; e2e for the
   settings screen without a real key.
-- [ ] **MC.2 Generate on demand.** A Co-DM panel on the GM console: a kind
+- [x] **MC.2 Generate on demand.** A Co-DM panel on the GM console: a kind
   picker (shop, NPC, place, encounter, item, quest hook) and a free-text box;
   the request goes to the strong model with the campaign context and asks
   for content in the existing format (structured output against
