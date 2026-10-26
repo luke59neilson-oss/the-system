@@ -1167,7 +1167,7 @@ next item, blockers. -->
 - Efficiency check: scorecard row appended; D211 kept; auditor (sonnet) found `metrics.mjs` never counted a round 2 written under its own heading: fixed as this check's Tier 1 (D234, now In trial); orient script and shorter PROGRESS entries wait for a later check.
 - MC.3 **checked**: GM Shops window, Sell → GM trade at the ware price, CONTENT-FORMAT shops section, re-import note. Round 1 (sonnet): 0 H / 2 M / 5 L → open-offer list with Cancel, Sell disabled while offered, GM-only `shop.remove`, golden log shops-removed, viewport screenshot (D232). Round 2: 0 H / 0 M / 4 L (to QUALITY backlog). Merged (2ce7a8df).
 - MC.4 (wip/MC.4, head 48a22bcd, base 2ce7a8df): Co-DM panel loading-screen option (pinned broadcast, clear on approval; D233), unit tests, e2e/MC.4 + screenshots. Round 1 (sonnet): 0 H / 2 M / 5 L. Both Mediums fixed in 48a22bcd (a regeneration replaces the old loading screen; a failed or cancelled generation takes it down) but not yet e2e-tested or re-reviewed: next run adds those e2e cases, rebuilds, runs MC.4/MC.2/MT.6 e2e and the round-2 review.
-- Tests: unit 1,355 on wip/MC.4 (1,352 on main + metrics test); full e2e 111/111 at 998ad972; full e2e at cbcf55b1 running at close-out (see below).
+- Tests: unit 1,355 on wip/MC.4 (1,352 on main + metrics test); full e2e 111/111 at 998ad972; full e2e at cbcf55b1 (MC.4 round 1): 104+ passed, only MC.4 errored at 0 ms because the close-out switched the tree to main mid-run (its spec was gone); MC.4 alone passed earlier at cbcf55b1.
 - Open `wip/*`: wip/MC.4 (48a22bcd).
 - Blockers: none.
 
