@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { listenPollNeeded, type ModelStatus } from './listenModel';
 
 /** MC.5: the server's VAD and recognizer take mono 16 kHz float PCM. */
 const RATE = 16_000;
@@ -11,14 +12,6 @@ interface Line {
   text: string;
   speaker?: string;
 }
-
-/** MC.5 (D236): the downloadable speech model, as the server reports it. */
-type ModelStatus =
-  | { state: 'missing'; bytes: number }
-  | { state: 'downloading'; received: number; bytes: number }
-  | { state: 'loading' }
-  | { state: 'ready' }
-  | { state: 'failed'; error: string; bytes: number; loadFailed?: boolean };
 
 const megabytes = (bytes: number) => Math.max(1, Math.round(bytes / 1_000_000));
 
@@ -44,6 +37,12 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
   // Bumped by every Start, so a poll read before it never stops the new mic.
   const starts = useRef(0);
   const headers = { 'x-gm-key': gmKey };
+  // QF.31: the interval ticks always, but asks the laptop only while needed.
+  // Until a first read lands (offline when the panel opened), it keeps asking.
+  const pollNeeded = useRef(false);
+  useEffect(() => {
+    pollNeeded.current = available === null || listenPollNeeded(on, model);
+  }, [available, on, model]);
 
   useEffect(() => {
     let live = true;
@@ -84,7 +83,9 @@ export function ListenPanel({ gmKey }: { gmKey: string }) {
       }
     };
     void poll();
-    const timer = setInterval(() => void poll(), POLL_MS);
+    const timer = setInterval(() => {
+      if (pollNeeded.current || capture.current !== null) void poll();
+    }, POLL_MS);
     return () => {
       live = false;
       clearInterval(timer);

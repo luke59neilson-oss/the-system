@@ -463,6 +463,15 @@ the rest follow in file order. Each gets its own §6 review.
   key (or no co-DM) it shows that message and sends neither the request nor
   a loading screen; e2e asserts players receive no broadcast when there is
   no key, and that the same click works once a key is saved.
+- [ ] **QF.31 The idle Listening panel does not poll the laptop.** CI red
+  on 910765fc (2026-10-26): `e2e/M2.A.spec.ts` restart test caught a GM
+  console "Failed to load resource: … 503": the MC.5 Listening panel asked
+  `/api/gm/listen` every 2 s whatever its state, so a request was often in
+  flight as the server closed (Fastify answers 503 while closing); third
+  occurrence of this mode (QF.18). *Accept:* the panel reads once when it
+  opens and polls only while the mic is on, the speech model downloads or
+  loads, or no first read has landed (D239); unit test for the rule; MC.5
+  e2e and the latency project (`--workers=2`) green.
 
 ## MR — Luke's answers, batch 2 (2026-10-22)
 
