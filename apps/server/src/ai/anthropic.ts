@@ -26,6 +26,8 @@ export class AnthropicClient implements AiClient {
     private readonly key: () => string | null,
     private readonly models: () => AiModelSettings,
     private readonly fetchImpl: Fetch = (url, init) => fetch(url, init),
+    /** A stalled network must not hang the GM's panel (MC.1 review round 2, M1). */
+    private readonly timeoutMs = 60_000,
   ) {}
 
   async complete(request: AiRequest): Promise<AiReply> {
@@ -38,6 +40,7 @@ export class AnthropicClient implements AiClient {
     try {
       res = await this.fetchImpl(ANTHROPIC_URL, {
         method: 'POST',
+        signal: AbortSignal.timeout(this.timeoutMs),
         headers: {
           'content-type': 'application/json',
           'x-api-key': key,

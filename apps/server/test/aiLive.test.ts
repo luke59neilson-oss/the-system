@@ -123,6 +123,19 @@ describe('AnthropicClient (fake fetch)', () => {
     });
   });
 
+  it('gives up on a stalled network with a network error', async () => {
+    const stalled = new AnthropicClient(
+      () => KEY,
+      () => DEFAULT_AI_MODELS,
+      (_url, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init.signal?.addEventListener('abort', () => reject(new Error('aborted')));
+        }),
+      20,
+    );
+    await expect(stalled.complete(req)).rejects.toMatchObject({ kind: 'network' });
+  });
+
   it('says what it needs without a key, and never echoes the key in errors', async () => {
     const none = new AnthropicClient(
       () => null,
