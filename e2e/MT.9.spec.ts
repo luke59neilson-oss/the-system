@@ -66,7 +66,9 @@ test('End scene asks each player; their answer reaches the GM review', async ({ 
   await expect(win.getByTestId('scene-waiting')).toHaveText("Waiting on players' answers: Kim");
   await expect(win).toContainText('To review (1)');
   await expect(win).toContainText('Climbed the rib under fire');
-  await win.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await win
+    .getByRole('heading', { name: /To review/ })
+    .evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await gm.screenshot({ path: path.join(shots, 'gm-scene-waiting-1366x768.png') });
 
   // Kim answers "Nothing this scene" from the status window's flag (review M3).
@@ -91,15 +93,28 @@ test('End scene asks each player; their answer reaches the GM review', async ({ 
   await win.getByRole('button', { name: 'End scene: log practice' }).click();
   await expect(prompt).toBeVisible();
   await expect(win.getByTestId('scene-waiting')).toContainText('Jake, Kim');
+  await prompt.getByTestId('scene-practice-form-action').fill('Half-typed');
   await win.getByRole('button', { name: 'Nothing for Jake' }).click();
-  await expect(prompt).toHaveCount(0);
   await expect(win.getByTestId('scene-waiting')).toHaveText("Waiting on players' answers: Kim");
+  // Round 2: Jake's draft survives the GM's answer; he can still send it.
+  await expect(prompt.getByTestId('scene-closed')).toBeVisible();
+  await expect(prompt.getByTestId('scene-practice-form-action')).toHaveValue('Half-typed');
+  await expect(page.getByTestId('scene-pending')).toHaveCount(0);
+  await prompt.getByRole('checkbox').first().check();
+  await prompt.getByRole('button', { name: 'Send to the GM' }).click();
+  await expect(page.getByTestId('practice-notice')).toHaveText(
+    'Practice logged for the GM; this scene prompt has closed.',
+  );
+  await expect(prompt).toHaveCount(0);
+  await expect(win).toContainText('Half-typed');
   await expect(kimPrompt).toBeVisible();
   await win.getByLabel(/^Action/).fill('Held the line');
   await win.getByLabel('Stat').selectOption('endurance');
   await win.getByRole('button', { name: 'Log practice' }).click();
-  await expect(kimPrompt).toHaveCount(0);
   await expect(win.getByTestId('scene-waiting')).toHaveCount(0);
+  await expect(kimPrompt.getByTestId('scene-closed')).toBeVisible();
+  await kimPrompt.getByRole('button', { name: 'Close' }).click();
+  await expect(kimPrompt).toHaveCount(0);
 
   expect(kimErrors).toEqual([]);
   expect(pageErrors).toEqual([]);
@@ -126,4 +141,11 @@ test('End scene with answers outstanding resumes the walk, not a new prompt', as
   await win.getByRole('button', { name: 'Resume end of scene' }).click();
   await expect(win.getByTestId('scene-prompt')).toContainText('what did Jake practise?');
   await expect(win.getByTestId('scene-waiting')).toContainText('Jake');
+  // An absent player does not block the next scene (round 2).
+  await gm.reload();
+  await win.getByRole('button', { name: 'New scene (drop unanswered)' }).click();
+  await expect(win.getByTestId('scene-prompt')).toContainText('what did Jake practise?');
+  await expect(win.getByRole('status')).toHaveText(
+    "Scene ended: players' screens ask what they practised",
+  );
 });

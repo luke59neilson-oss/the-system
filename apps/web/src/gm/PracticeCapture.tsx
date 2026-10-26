@@ -117,8 +117,9 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
   const answerFor = async (id: string) => {
     const prompt = state.scenePrompt ?? null;
     if (prompt === null || !prompt.pending.includes(id)) return;
-    const r = await client.command({ type: 'scene.answer', sceneId: prompt.id, characterId: id });
-    if (!r.ok) setOutcome({ ok: false, text: friendlyError(r.error) });
+    // Round 2: a refusal here means the player answered first (or a newer
+    // scene began); the GM's log already succeeded, so keep its outcome.
+    await client.command({ type: 'scene.answer', sceneId: prompt.id, characterId: id });
   };
 
   const skipInScene = async () => {
@@ -128,11 +129,11 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
     else setScene(false);
   };
 
-  const startScene = async () => {
+  const startScene = async (fresh = false) => {
     // MT.9 review (M2): a prompt still waiting on answers is resumed, not
     // replaced, so nobody's half-typed answer is lost.
     const open = (state.scenePrompt?.pending.length ?? 0) > 0;
-    if (!open) {
+    if (fresh || !open) {
       const ok = await run(
         { type: 'scene.end' },
         "Scene ended: players' screens ask what they practised",
@@ -183,11 +184,24 @@ export function PracticeCapture({ client, state }: { client: LiveClient; state: 
               </button>
             </p>
           ) : (
-            <button type="button" disabled={busy} onClick={() => void startScene()}>
-              {(state.scenePrompt?.pending.length ?? 0) > 0
-                ? 'Resume end of scene'
-                : 'End scene: log practice'}
-            </button>
+            <p>
+              <button type="button" disabled={busy} onClick={() => void startScene()}>
+                {(state.scenePrompt?.pending.length ?? 0) > 0
+                  ? 'Resume end of scene'
+                  : 'End scene: log practice'}
+              </button>{' '}
+              {(state.scenePrompt?.pending.length ?? 0) > 0 && (
+                // Round 2 (Low): an absent player must not block the next scene.
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() => void startScene(true)}
+                >
+                  New scene (drop unanswered)
+                </button>
+              )}
+            </p>
           )}
           <form onSubmit={(e) => void add(e)} aria-label="Quick-add practice">
             <label>

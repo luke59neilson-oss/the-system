@@ -25,6 +25,18 @@ export function PracticePanel({ view, client }: { view: PlayerView; client: Live
     return result.ok;
   };
   const recent = recentPractice(view.practice);
+  // MT.9 review round 2: the prompt stays up (with the draft) after the GM
+  // answers for this character, until the player sends or closes it.
+  const [held, setHeld] = useState<string | null>(null);
+  // The prompt this player last sent or closed: it never comes back.
+  const [done, setDone] = useState<string | null>(null);
+  const live = view.scenePrompt?.id ?? null;
+  if (live !== null && live !== held && live !== done) setHeld(live);
+  const finish = () => {
+    setDone(held);
+    setHeld(null);
+  };
+  const closedByGm = held !== null && live === null;
   return (
     <section
       className="window practice-window"
@@ -51,7 +63,7 @@ export function PracticePanel({ view, client }: { view: PlayerView; client: Live
           }}
         />
       ))}
-      {client && view.scenePrompt !== null && (
+      {client && held !== null && (
         // MT.9 (Q63): the GM ended a scene; the answer goes to the GM's review.
         <div
           className="scene-prompt"
@@ -62,6 +74,11 @@ export function PracticePanel({ view, client }: { view: PlayerView; client: Live
           <p>
             <strong>[End of scene]</strong> What did you practise?
           </p>
+          {closedByGm && (
+            <p className="muted" data-testid="scene-closed">
+              The GM has answered this scene for you. You can still send your practice.
+            </p>
+          )}
           <PracticeForm
             view={view}
             busy={busy}
@@ -69,8 +86,7 @@ export function PracticePanel({ view, client }: { view: PlayerView; client: Live
             submitLabel="Send to the GM"
             legend="This scene's practice"
             onSubmit={async (fields) => {
-              const prompt = view.scenePrompt;
-              if (prompt === null) return false;
+              const promptId = view.scenePrompt?.id ?? null;
               const ok = await send({
                 type: 'practice.log',
                 characterId: view.viewerId,
@@ -78,17 +94,21 @@ export function PracticePanel({ view, client }: { view: PlayerView; client: Live
               });
               if (!ok) return false;
               // MT.9 review: the entry is logged even if the answer fails (a newer
-              // scene replaced this one); say so instead of claiming success.
-              const answered = await send({
-                type: 'scene.answer',
-                sceneId: prompt.id,
-                characterId: view.viewerId,
-              });
+              // scene replaced this one, or the GM answered); say so instead of
+              // claiming success.
+              const answered =
+                promptId !== null &&
+                (await send({
+                  type: 'scene.answer',
+                  sceneId: promptId,
+                  characterId: view.viewerId,
+                }));
               setNotice(
                 answered
                   ? 'Practice sent to the GM for review.'
                   : 'Practice logged for the GM; this scene prompt has closed.',
               );
+              finish();
               return true;
             }}
           />
@@ -96,16 +116,23 @@ export function PracticePanel({ view, client }: { view: PlayerView; client: Live
             type="button"
             disabled={busy}
             onClick={() => {
-              const prompt = view.scenePrompt;
-              if (prompt === null) return;
+              const promptId = view.scenePrompt?.id ?? null;
+              if (promptId === null) {
+                finish();
+                return;
+              }
               void send({
                 type: 'scene.answer',
-                sceneId: prompt.id,
+                sceneId: promptId,
                 characterId: view.viewerId,
-              }).then((ok) => ok && setNotice('Nothing logged for this scene.'));
+              }).then((ok) => {
+                if (!ok) return;
+                setNotice('Nothing logged for this scene.');
+                finish();
+              });
             }}
           >
-            Nothing this scene
+            {closedByGm ? 'Close' : 'Nothing this scene'}
           </button>
         </div>
       )}
