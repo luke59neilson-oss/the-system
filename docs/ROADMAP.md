@@ -444,6 +444,34 @@ the rest follow in file order. Each gets its own §6 review.
   `bytes.length === 0` in `store.ts` checkPortraits fails no test.
   *Accept:* store tests import an oversize and an empty portrait (correct
   sha256 names) and expect refusal; each mutation now fails a test.
+- [x] **QF.29 A shop ware whose name several library items share resolves.**
+  Sweep D (Rules, sonnet), Medium: `commands.ts` `shop.define` (~1695)
+  refused a ware name matching two or more items ("use the id"), but item
+  names may repeat and content files cannot carry ids, so a file (or a
+  co-DM generation) that defines an item the library already has and sells
+  it, or a re-import of `docs/content-examples/shop.json`, failed. Region
+  names are unique (`region.define` refuses a repeat), so a shop's place
+  cannot be ambiguous. *Accept:* a shared ware name resolves to the most
+  recently defined item, so a file's own item wins (D237); engine tests for
+  a file selling its own copy and for re-importing the example.
+- [x] **QF.30 No loading screen goes to players when the co-DM cannot
+  generate.** Sweep D (UX, haiku), Medium: `CoDmPanel.tsx` sends the loading
+  broadcast before the request, so with no API key players get a "[The
+  System is constructing…]" banner and a lasting Notifications entry for a
+  call that fails at once. *Accept:* the panel says what it needs when it
+  opens without a key, and Generate checks the co-DM status first: with no
+  key (or no co-DM) it shows that message and sends neither the request nor
+  a loading screen; e2e asserts players receive no broadcast when there is
+  no key, and that the same click works once a key is saved.
+- [ ] **QF.31 The idle Listening panel does not poll the laptop.** CI red
+  on 910765fc (2026-10-26): `e2e/M2.A.spec.ts` restart test caught a GM
+  console "Failed to load resource: … 503": the MC.5 Listening panel asked
+  `/api/gm/listen` every 2 s whatever its state, so a request was often in
+  flight as the server closed (Fastify answers 503 while closing); third
+  occurrence of this mode (QF.18). *Accept:* the panel reads once when it
+  opens and polls only while the mic is on, the speech model downloads or
+  loads, or no first read has landed (D239); unit test for the rule; MC.5
+  e2e and the latency project (`--workers=2`) green.
 
 ## MR — Luke's answers, batch 2 (2026-10-22)
 
