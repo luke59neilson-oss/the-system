@@ -756,7 +756,7 @@ behaviour until an answer lands.
 - [x] **MT.8 Faction reveal toggle.** Per faction, "revealed to players"
   shows its name and standing on players' screens (Q69). *Accept:*
   projection test (unrevealed factions never reach players); e2e.
-- [ ] **MT.9 End-of-scene prompt on players' screens.** "End scene" also asks
+- [x] **MT.9 End-of-scene prompt on players' screens.** "End scene" also asks
   each player what they practised; their entries go to the GM's review
   (Q63). *Accept:* e2e from End scene to the GM's review queue.
 - [ ] **MT.10 Portraits in backups, exports and the status window.** Backups
