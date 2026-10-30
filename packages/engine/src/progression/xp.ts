@@ -540,3 +540,59 @@ export function balancedShares(
   free.forEach((i, k) => (out[i] = parts[k] as number));
   return out;
 }
+
+/** MU.3 (DESIGN §5 "XP award box"): one participant's row in the award box. */
+export interface XpContext {
+  readonly grade: string;
+  readonly classLevel: number;
+  /** null before the character has a profession. */
+  readonly professionLevel: number | null;
+  readonly raceLevel: number;
+  /** XP per level at the character's grade. */
+  readonly perLevel: number;
+  readonly xp: { readonly class: number; readonly profession: number | null };
+  /** XP to the next level per track; null on a capped track or with no profession. */
+  readonly toNext: { readonly class: number | null; readonly profession: number | null };
+}
+
+export function xpContext(rules: RulesConfig, character: Character): XpContext {
+  const per = xpPerLevel(rules, character);
+  const hasProfession = character.profession !== null;
+  const next = (level: number, xp: number) =>
+    isAtCap(rules, character.grade, level) ? null : Math.max(0, per - xp);
+  return {
+    grade: character.grade,
+    classLevel: character.classLevel,
+    professionLevel: hasProfession ? character.professionLevel : null,
+    raceLevel: raceLevel(rules, character),
+    perLevel: per,
+    xp: {
+      class: character.xp.class,
+      profession: hasProfession ? character.xp.profession : null,
+    },
+    toNext: {
+      class: next(character.classLevel, character.xp.class),
+      profession: hasProfession ? next(character.professionLevel, character.xp.profession) : null,
+    },
+  };
+}
+
+/**
+ * MU.3: roughly how many levels `amount` XP on `track` is worth to this
+ * character, across both tracks (overflow included, lost XP not): whole
+ * levels gained plus the part level of XP left over.
+ */
+export function levelsWorth(
+  rules: RulesConfig,
+  character: Character,
+  track: XpTrack,
+  amount: number,
+): number {
+  const after = awardXp(rules, character, track, amount).character;
+  const per = xpPerLevel(rules, character);
+  const levels =
+    after.classLevel - character.classLevel + (after.professionLevel - character.professionLevel);
+  const part =
+    after.xp.class - character.xp.class + (after.xp.profession - character.xp.profession);
+  return levels + part / per;
+}
