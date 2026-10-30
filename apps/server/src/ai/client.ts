@@ -48,6 +48,11 @@ export class AiError extends Error {
   constructor(
     message: string,
     readonly kind: 'no-key' | 'auth' | 'rate-limit' | 'network' | 'bad-reply' | 'fixture',
+    /**
+     * MD.1 review M2: what a streamed call had already used (and is billed for)
+     * when it was cut off or cancelled, so the spend counter still counts it.
+     */
+    readonly partial?: AiReply,
   ) {
     super(message);
   }
@@ -144,7 +149,13 @@ export class SpendCounter {
 export function counted(client: AiClient, counter: SpendCounter): AiClient {
   return {
     async complete(request) {
-      const reply = await client.complete(request);
+      let reply: AiReply;
+      try {
+        reply = await client.complete(request);
+      } catch (err) {
+        if (err instanceof AiError && err.partial) counter.record(err.partial);
+        throw err;
+      }
       counter.record(reply);
       return reply;
     },

@@ -69,3 +69,21 @@ describe('quick responses (MD.1)', () => {
     expect(moveSlot(['a', 'b', 'c'], 0, -1)).toEqual(['a', 'b', 'c']);
   });
 });
+
+describe('a stream that stops early (MD.1 review M1)', () => {
+  it('stops showing "writing…" with a reason; a finished answer is left alone', async () => {
+    const { endQuick, foldQuick } = await import('../src/gm/quickModel');
+    const started = foldQuick(null, {
+      type: 'start',
+      slot: { id: 'twist', label: 'Twist' },
+      quote: 'q',
+      npc: { id: 'sal', name: 'Sal' },
+      richer: false,
+    });
+    expect(started?.npcId).toBe('sal');
+    expect(endQuick(started, 'cut off')).toMatchObject({ streaming: false, error: 'cut off' });
+    const done = foldQuick(started, { type: 'done', say: 's', beats: [] });
+    expect(endQuick(done, 'cut off')).toBe(done);
+    expect(endQuick(null, 'x')).toBeNull();
+  });
+});

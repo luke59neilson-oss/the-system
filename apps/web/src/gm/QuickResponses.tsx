@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  endQuick,
   foldQuick,
   isTypingTarget,
   keyForSlot,
@@ -83,8 +84,8 @@ export function QuickResponses({
   const autoNpc = scene?.npcs.find((n) => n.id === scene.npc)?.name ?? null;
 
   const press = useCallback(
-    async (slot: number, richer = false, again?: string) => {
-      const line = again ?? chosen?.text ?? typedLine ?? undefined;
+    async (slot: number, richer = false, again?: { target: string; npcId: string | null }) => {
+      const line = again?.target ?? chosen?.text ?? typedLine ?? undefined;
       if (line === undefined && !scene?.target) {
         setNote('Nothing to answer yet: click a transcript line or type one');
         return;
@@ -101,7 +102,11 @@ export function QuickResponses({
           body: JSON.stringify({
             slot,
             ...(line !== undefined ? { target: line } : {}),
-            ...(npcChoice === 'auto' ? {} : { npc: npcChoice === 'none' ? null : npcChoice }),
+            ...(again
+              ? { npc: again.npcId }
+              : npcChoice === 'auto'
+                ? {}
+                : { npc: npcChoice === 'none' ? null : npcChoice }),
             ...(richer ? { richer: true } : {}),
           }),
           signal: controller.signal,
@@ -109,11 +114,13 @@ export function QuickResponses({
         if (!res.ok || !res.body) {
           const data = (await res.json().catch(() => ({}))) as { error?: string };
           setNote(data.error ?? 'The co-DM could not answer that');
+          setAnswer((v) => endQuick(v, 'Stopped: a newer request did not answer'));
           return;
         }
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
+        let ended = false;
         for (;;) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -124,13 +131,20 @@ export function QuickResponses({
             const event = JSON.parse(raw) as QuickEvent;
             if (abort.current !== controller) return;
             setAnswer((v) => foldQuick(v, event));
+            if (event.type === 'done' || event.type === 'error') ended = true;
             if ((event.type === 'done' || event.type === 'error') && event.spend) {
               onSpend(event.spend);
             }
           }
         }
+        if (!ended && abort.current === controller) {
+          setAnswer((v) => endQuick(v, 'The answer was cut off: try again'));
+        }
       } catch {
-        if (!controller.signal.aborted) setNote('Could not reach the server');
+        if (!controller.signal.aborted) {
+          setNote('Could not reach the server');
+          setAnswer((v) => endQuick(v, 'The answer was cut off: try again'));
+        }
       } finally {
         if (abort.current === controller) abort.current = null;
       }
@@ -251,7 +265,9 @@ export function QuickResponses({
           {!answer.streaming && last && (
             <button
               type="button"
-              onClick={() => void press(last.slot, true, last.target ?? answer.quote)}
+              onClick={() =>
+                void press(last.slot, true, { target: answer.quote, npcId: answer.npcId })
+              }
             >
               Richer
             </button>

@@ -140,7 +140,7 @@ test('quick responses answer a transcript line with keys 1–5', async ({ browse
   await expect(settings.getByRole('status')).toHaveText(
     'Quick responses saved: the buttons use them now',
   );
-  await settings.scrollIntoViewIfNeeded();
+  await settings.getByRole('heading').evaluate((h) => h.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-quick-settings-1366x768.png') });
   await expect(row.getByRole('button').nth(3)).toHaveText('4 Chaos', { timeout: 10_000 });
   await gm.locator('body').click({ position: { x: 5, y: 5 } });

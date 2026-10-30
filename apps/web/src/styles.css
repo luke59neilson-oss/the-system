@@ -3060,6 +3060,8 @@ ol.change-log li.undone .change-text {
   all: unset;
   display: inline;
   cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.2em;
 }
 .transcript .line-pick:hover,
 .transcript .line-pick:focus-visible {

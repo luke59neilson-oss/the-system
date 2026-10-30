@@ -46,6 +46,8 @@ export interface QuickAnswerView {
   readonly slotLabel: string;
   readonly quote: string;
   readonly npc: string | null;
+  /** The NPC the answer was made for, so Richer asks about the same scene (review L5). */
+  readonly npcId: string | null;
   readonly richer: boolean;
   /** The raw text as it streams in. */
   readonly text: string;
@@ -74,6 +76,7 @@ export function foldQuick(view: QuickAnswerView | null, event: QuickEvent): Quic
         slotLabel: event.slot.label,
         quote: event.quote,
         npc: event.npc?.name ?? null,
+        npcId: event.npc?.id ?? null,
         richer: event.richer,
         text: '',
         say: null,
@@ -115,4 +118,12 @@ export function moveSlot<T>(slots: readonly T[], index: number, by: -1 | 1): T[]
   const out = [...slots];
   [out[index], out[to]] = [out[to] as T, out[index] as T];
   return out;
+}
+
+/**
+ * MD.1 review M1: a stream that stops without its last event (a failed
+ * request, a dropped connection) must not stay "writing…".
+ */
+export function endQuick(view: QuickAnswerView | null, error: string): QuickAnswerView | null {
+  return view?.streaming ? { ...view, error, streaming: false } : view;
 }

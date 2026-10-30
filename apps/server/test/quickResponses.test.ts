@@ -180,6 +180,41 @@ describe('streamed Anthropic replies (MD.1)', () => {
     ).rejects.toThrow('ended early');
   });
 
+  it('a stream cut off after it started is still counted (review M2)', async () => {
+    const { AnthropicClient } = await import('../src/ai/anthropic');
+    const { SpendCounter, counted } = await import('../src/ai/client');
+    const bytes = new TextEncoder().encode(
+      `data: ${JSON.stringify({ type: 'message_start', message: { usage: { input_tokens: 800, output_tokens: 1 } } })}\n\n` +
+        `data: ${JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text: 'SAY: The rope sn' } })}\n\n`,
+    );
+    const client = new AnthropicClient(
+      () => 'sk-ant-test',
+      () => ({ fast: 'claude-haiku-x', strong: 's' }),
+      () =>
+        Promise.resolve(
+          new Response(
+            new ReadableStream({
+              start(c) {
+                c.enqueue(bytes);
+                setTimeout(() => c.error(new Error('socket hang up')), 5);
+              },
+            }),
+          ),
+        ),
+    );
+    const counter = new SpendCounter();
+    await expect(
+      counted(client, counter).complete({
+        role: 'fast',
+        system: 's',
+        messages: [{ role: 'user', content: 'u' }],
+        maxTokens: 5,
+        onText: () => undefined,
+      }),
+    ).rejects.toThrow('cut off');
+    expect(counter.snapshot()).toMatchObject({ calls: 1, inputTokens: 800, outputTokens: 4 });
+  });
+
   it('the live client asks for a stream only when the caller listens', async () => {
     const { AnthropicClient } = await import('../src/ai/anthropic');
     const bodies: Record<string, unknown>[] = [];
@@ -314,6 +349,12 @@ describe('quick-response routes (MD.1)', () => {
               role: 'fast',
               match: 'Button: Broken',
               text: '   ',
+            },
+            {
+              role: 'fast',
+              match: 'Button: Slow',
+              text: 'SAY: Too late.',
+              delayMs: 5000,
             },
             {
               role: 'fast',
@@ -485,6 +526,40 @@ describe('quick-response routes (MD.1)', () => {
     });
     const { events: ev } = await ask({ slot: 1 });
     expect(ev.at(-1)).toMatchObject({ type: 'error', error: 'The co-DM answered nothing usable' });
+  });
+
+  it('a GM who presses again or leaves stops the call in flight (review M3)', async () => {
+    const edited = DEFAULT_QUICK_SLOTS.map((s, i) => (i === 0 ? { ...s, label: 'Slow' } : s));
+    await app.inject({
+      method: 'PUT',
+      url: '/api/gm/ai/quick/settings',
+      headers: gm,
+      payload: { slots: edited },
+    });
+    await app.listen({ port: 0, host: '127.0.0.1' });
+    const port = (app.server.address() as AddressInfo).port;
+    const before = fake.requests.length;
+    const leaving = new AbortController();
+    const res = await fetch(`http://127.0.0.1:${port}/api/gm/ai/quick`, {
+      method: 'POST',
+      headers: { ...gm, 'content-type': 'application/json' },
+      body: JSON.stringify({ slot: 1 }),
+      signal: leaving.signal,
+    });
+    const reader = res.body!.getReader();
+    const first = new TextDecoder().decode((await reader.read()).value);
+    expect(first).toContain('"type":"start"');
+    for (let i = 0; i < 100 && fake.requests.length === before; i++) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    const upstream = fake.requests.at(-1)!;
+    expect(upstream.signal?.aborted).toBe(false);
+    leaving.abort();
+    for (let i = 0; i < 100 && !upstream.signal?.aborted; i++) {
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    expect(upstream.signal?.aborted).toBe(true);
+    app.server.closeAllConnections();
   });
 
   it('the e2e fake names the button, line, NPC and instruction', () => {

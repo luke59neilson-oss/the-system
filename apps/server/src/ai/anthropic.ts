@@ -172,9 +172,21 @@ export async function readStream(
       drain(false);
     }
   } catch (e) {
-    if (e instanceof AiError) throw e;
+    // Billed once the message started: report what was used (MD.1 review M2).
+    const partial: AiReply | undefined =
+      input === null
+        ? undefined
+        : {
+            text,
+            model,
+            usage: {
+              inputTokens: input,
+              outputTokens: Math.max(output ?? 0, Math.ceil(text.length / 4)),
+            },
+          };
+    if (e instanceof AiError) throw new AiError(e.message, e.kind, partial);
     const why = e instanceof Error ? e.message : String(e);
-    throw new AiError(`The answer was cut off: ${redactKey(why, key)}`, 'network');
+    throw new AiError(`The answer was cut off: ${redactKey(why, key)}`, 'network', partial);
   }
   buffer += decoder.decode();
   drain(true);
