@@ -30,6 +30,10 @@ import { sessionNumber } from '../speech/routes';
 
 export const QUICK_SETTINGS_FILE = 'quick-responses.json';
 
+/** The region the party is in, by name (the "place" for kept lore, MD.3). */
+const regionName = (state: CampaignState): string | null =>
+  state.currentRegion === null ? null : (state.regions[state.currentRegion]?.name ?? null);
+
 /** The GM's five slots on this laptop (D256: a GM preference, not campaign data). */
 export class QuickSettingsStore {
   private readonly file: string;
@@ -107,7 +111,8 @@ export function registerQuickRoutes(
   app.get('/api/gm/ai/quick', (_request, reply) => {
     const a = options.active();
     const slots = settings.read();
-    if (!a?.store.campaign.state) return { slots, target: null, npc: null, npcs: [] };
+    if (!a?.store.campaign.state)
+      return { slots, target: null, npc: null, npcs: [], place: null, session: null };
     try {
       const s = scene(a.store);
       const npcs: NpcChoice[] = s.npcs.map((n) => ({ id: n.id, name: n.name }));
@@ -116,6 +121,9 @@ export function registerQuickRoutes(
         target: s.target ? { text: s.target.text, speaker: s.target.speaker ?? null } : null,
         npc: s.npcId,
         npcs,
+        // MD.3: what Keep tags a kept answer with besides its NPC.
+        place: regionName(s.state),
+        session: sessionNumber(a.store) || null,
       };
     } catch {
       return reply.code(500).send({ error: 'Could not read the transcript' });
@@ -153,10 +161,7 @@ export function registerQuickRoutes(
     }
     const npcId = body.data.npc === undefined ? s.npcId : body.data.npc;
     const npc = s.npcs.find((n) => n.id === npcId) ?? null;
-    const region =
-      s.state.currentRegion === null
-        ? null
-        : (s.state.regions[s.state.currentRegion]?.name ?? null);
+    const region = regionName(s.state);
     const context: QuickContext = {
       party: s.state.characterOrder
         .filter((id) => Object.hasOwn(s.state.characters, id))
