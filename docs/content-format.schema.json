@@ -60,6 +60,43 @@
             "description": "Mechanical effects; shown to the owner only.",
             "type": "string",
             "maxLength": 4000
+          },
+          "cost": {
+            "description": "What one use costs (spells, DESIGN §6). Omit for a skill with no cost.",
+            "type": "object",
+            "properties": {
+              "pool": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40,
+                "description": "A pool id from the rules, e.g. \"mp\", \"stamina\", \"hp\"."
+              },
+              "amount": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000000
+              }
+            },
+            "required": [
+              "pool",
+              "amount"
+            ],
+            "additionalProperties": false
+          },
+          "cooldown": {
+            "description": "Cooldown as table text (\"1 minute\"); shown, not enforced.",
+            "type": "string",
+            "maxLength": 80
+          },
+          "range": {
+            "description": "Range (\"30 m\", \"Touch\").",
+            "type": "string",
+            "maxLength": 80
+          },
+          "castingNotes": {
+            "description": "How it is cast (words, gestures, concentration).",
+            "type": "string",
+            "maxLength": 1000
           }
         },
         "required": [
@@ -67,7 +104,7 @@
           "rarity"
         ],
         "additionalProperties": false,
-        "description": "A skill library entry: one per name and rarity (DESIGN §6)."
+        "description": "A skill library entry: one per name and rarity (DESIGN §6). A spell is a skill with a cost and the tag \"spell\"."
       }
     },
     "items": {

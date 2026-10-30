@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_CASTING_NOTES, MAX_CASTING_SHORT, MAX_SKILL_COST } from '../skills/library';
 
 /**
  * Content files (ROADMAP M9.2; DESIGN §6 "often from imported files Claude
@@ -92,8 +93,28 @@ export const contentSkillSchema = z
     description: description.optional().describe('What the owner reads on their sheet.'),
     flavor: z.string().max(CONTENT_LIMITS.flavor).optional(),
     effects: text.optional().describe('Mechanical effects; shown to the owner only.'),
+    cost: z
+      .strictObject({
+        pool: id.describe('A pool id from the rules, e.g. "mp", "stamina", "hp".'),
+        amount: z.number().int().min(1).max(MAX_SKILL_COST),
+      })
+      .optional()
+      .describe('What one use costs (spells, DESIGN §6). Omit for a skill with no cost.'),
+    cooldown: z
+      .string()
+      .max(MAX_CASTING_SHORT)
+      .optional()
+      .describe('Cooldown as table text ("1 minute"); shown, not enforced.'),
+    range: z.string().max(MAX_CASTING_SHORT).optional().describe('Range ("30 m", "Touch").'),
+    castingNotes: z
+      .string()
+      .max(MAX_CASTING_NOTES)
+      .optional()
+      .describe('How it is cast (words, gestures, concentration).'),
   })
-  .describe('A skill library entry: one per name and rarity (DESIGN §6).');
+  .describe(
+    'A skill library entry: one per name and rarity (DESIGN §6). A spell is a skill with a cost and the tag "spell".',
+  );
 
 export const contentItemSchema = z
   .strictObject({

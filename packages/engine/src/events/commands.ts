@@ -472,6 +472,11 @@ export type Command =
       flavor?: string | undefined;
       /** GM-only effects text. */
       effects?: string | undefined;
+      /** MU.4 spells: cost per use (pool id and amount); null removes it on edit. */
+      cost?: { pool: string; amount: number } | null | undefined;
+      cooldown?: string | undefined;
+      range?: string | undefined;
+      castingNotes?: string | undefined;
     }
   | {
       type: 'skillDef.edit';
@@ -482,6 +487,11 @@ export type Command =
       description?: string | undefined;
       flavor?: string | undefined;
       effects?: string | undefined;
+      /** MU.4 spells: cost per use (pool id and amount); null removes it on edit. */
+      cost?: { pool: string; amount: number } | null | undefined;
+      cooldown?: string | undefined;
+      range?: string | undefined;
+      castingNotes?: string | undefined;
     }
   | {
       type: 'classDef.define';
@@ -1551,10 +1561,17 @@ function toEvent(
           description: command.description ?? '',
           flavor: command.flavor ?? '',
           effects: command.effects ?? '',
+          ...(command.cost
+            ? { cost: { pool: command.cost.pool, amount: command.cost.amount } }
+            : {}),
+          ...(command.cooldown?.trim() ? { cooldown: command.cooldown } : {}),
+          ...(command.range?.trim() ? { range: command.range } : {}),
+          ...(command.castingNotes?.trim() ? { castingNotes: command.castingNotes } : {}),
         },
       };
     case 'skillDef.edit': {
       const { skillDefId, name, rarity, tags, description, flavor, effects } = command;
+      const { cost, cooldown, range, castingNotes } = command;
       // Undefined fields vanish in the event's JSON round trip (= unchanged).
       return {
         type: 'skillDef.edited',
@@ -1566,6 +1583,10 @@ function toEvent(
           description,
           flavor,
           effects,
+          cost,
+          cooldown,
+          range,
+          castingNotes,
         },
       };
     }

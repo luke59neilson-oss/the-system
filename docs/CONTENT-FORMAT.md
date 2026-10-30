@@ -108,6 +108,20 @@ text.
 | `description` | no | What the owner reads on their sheet. |
 | `flavor` | no | Flavour line. |
 | `effects` | no | Mechanical effects; shown to the skill's owner only, never other players. |
+| `cost` | no | Spells (MU.4): what one use costs, `{ "pool": "mp", "amount": 15 }`. `pool` is a pool id from the rules (`hp`, `mp`, `stamina` by default); `amount` a whole number from 1. |
+| `cooldown` | no | Up to 80 characters of table text ("10 seconds", "once per fight"); shown, not enforced. |
+| `range` | no | Up to 80 characters ("30 m", "Touch"). |
+| `castingNotes` | no | Up to 1,000 characters: words, gestures, concentration. |
+
+A **spell** is a skill with a `cost` and the tag `"spell"`:
+
+```json
+{ "name": "Arcane Bolt", "rarity": "common", "tags": ["spell"],
+  "description": "A bolt of raw mana.", "cost": { "pool": "mp", "amount": 15 },
+  "cooldown": "10 seconds", "range": "30 m", "castingNotes": "Point and speak the word." }
+```
+
+Cost, cooldown, range and casting notes are shown to the skill's owner only.
 
 ### `items`: item library entries
 

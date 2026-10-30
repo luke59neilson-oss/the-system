@@ -47,7 +47,9 @@ import {
   setSkillRarity,
   upgradeSkill,
   validateSkillDef,
+  withCasting,
   type SkillDef,
+  type SkillDefInput,
 } from '../skills';
 import { applyProgressionOverride, awardXp, shareXp } from '../progression';
 import {
@@ -512,7 +514,10 @@ function syncFromLibrary(
   return characters === null ? after : { ...after, characters };
 }
 
-function defineSkill(state: CampaignState, event: DomainEvent, def: SkillDef): CampaignState {
+function defineSkill(state: CampaignState, event: DomainEvent, raw: SkillDefInput): CampaignState {
+  // MU.4: blank casting fields store as absent, so older entries are unchanged.
+  const { cost, cooldown, range, castingNotes, ...base } = raw;
+  const def = withCasting(base, { cost, cooldown, range, castingNotes });
   if (hasOwn(state.skillLibrary, def.id)) fail(event, `library skill "${def.id}" already exists`);
   rule(event, () => validateSkillDef(state.rules, def, state.skillLibrary));
   return {
@@ -1197,18 +1202,26 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         ? state.skillLibrary[skillDefId]
         : undefined;
       if (!old) return fail(event, `unknown library skill "${skillDefId}"`);
-      const def: SkillDef = {
-        id: skillDefId,
-        name: changes.name ?? old.name,
-        rarity: changes.rarity ?? old.rarity,
-        tags: changes.tags ?? old.tags,
-        description: changes.description ?? old.description,
-        flavor: changes.flavor ?? old.flavor,
-        effects: changes.effects ?? old.effects,
-      };
-      const same = (Object.keys(def) as (keyof SkillDef)[]).every(
-        (k) => JSON.stringify(def[k]) === JSON.stringify(old[k]),
+      const keep = <T>(v: T | undefined, was: T): T => (v === undefined ? was : v);
+      const def: SkillDef = withCasting(
+        {
+          id: skillDefId,
+          name: changes.name ?? old.name,
+          rarity: changes.rarity ?? old.rarity,
+          tags: changes.tags ?? old.tags,
+          description: changes.description ?? old.description,
+          flavor: changes.flavor ?? old.flavor,
+          effects: changes.effects ?? old.effects,
+        },
+        {
+          cost: changes.cost === undefined ? old.cost : changes.cost,
+          cooldown: keep(changes.cooldown, old.cooldown),
+          range: keep(changes.range, old.range),
+          castingNotes: keep(changes.castingNotes, old.castingNotes),
+        },
       );
+      const keys = new Set([...Object.keys(def), ...Object.keys(old)] as (keyof SkillDef)[]);
+      const same = [...keys].every((k) => JSON.stringify(def[k]) === JSON.stringify(old[k]));
       if (same) fail(event, 'nothing to change');
       rule(event, () => validateSkillDef(state.rules, def, state.skillLibrary));
       return { ...state, skillLibrary: { ...state.skillLibrary, [skillDefId]: def } };

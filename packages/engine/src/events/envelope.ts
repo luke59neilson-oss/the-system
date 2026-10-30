@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { PORTRAIT_REF } from '../character/model';
+import { MAX_CASTING_NOTES, MAX_CASTING_SHORT, MAX_SKILL_COST } from '../skills/library';
 
 /**
  * Event envelope and payload schemas (ROADMAP M1.3). Events are the only source
@@ -82,6 +83,11 @@ const lootTableFields = {
   rolls: z.number().int().min(1).max(20),
   entries: z.array(lootEntry).min(1).max(50),
 };
+/** MU.4: one use of a skill costs a whole amount from one pool. */
+const skillCost = z.strictObject({
+  pool: recordId,
+  amount: z.number().int().min(1).max(MAX_SKILL_COST),
+});
 /** Skill library entry fields (M4.1). Text is trimmed; blank means none. */
 const skillDefFields = {
   name: nonBlank,
@@ -90,6 +96,11 @@ const skillDefFields = {
   description: skillDescription.trim(),
   flavor: skillFlavor.trim(),
   effects: z.string().trim().max(4000),
+  /** MU.4 spells: optional; absent on entries made before MU.4. */
+  cost: skillCost.optional(),
+  cooldown: z.string().trim().max(MAX_CASTING_SHORT).optional(),
+  range: z.string().trim().max(MAX_CASTING_SHORT).optional(),
+  castingNotes: z.string().trim().max(MAX_CASTING_NOTES).optional(),
 };
 /** Class, race and profession library fields (M4.2). */
 const librarySkillRef = z.strictObject({ name: nonBlank, rarity: recordId });
@@ -493,6 +504,11 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     description: skillDefFields.description.optional(),
     flavor: skillDefFields.flavor.optional(),
     effects: skillDefFields.effects.optional(),
+    /** MU.4: null removes the cost; "" clears a text field. */
+    cost: skillCost.nullable().optional(),
+    cooldown: skillDefFields.cooldown,
+    range: skillDefFields.range,
+    castingNotes: skillDefFields.castingNotes,
   }),
   /** GM adds a starting class to the class library (M4.2; GM-only). */
   'classDef.defined': z.strictObject({ id: recordId, ...classDefFields }),
