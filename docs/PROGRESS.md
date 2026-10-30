@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-30): MU.4 (spells) and QF.37 done and reviewed. MU.5 (Cast) built on `wip/MU.5`, review round 1 back with 2 Mediums to fix.
-**Next item:** MU.5 Cast (resume `wip/MU.5`: merge main, fix the 2 round-1 Mediums in REVIEW-LOG, sonnet round 2); then MU.6
+**Status:** in progress (2026-10-30): MU.5 (Cast) and MU.6 (reference lists) done and reviewed; milestone MU needs only MU.A.
+**Next item:** MU.A (full e2e suite green, `fable` review, then "Preview ready" per LOOP §8.2)
 **Blockers:** none
 
 ## Run log
@@ -1339,3 +1339,11 @@ next item, blockers. -->
 - Tests: unit 1,641 on main before the QF.37 merge (1,629 + MU.4's). Engine coverage not re-measured this run.
 - Open `wip/*`: `wip/MU.5` (head e8ab6cba).
 - Next: MU.5, then MU.6. Blockers: none.
+
+### Run · 2026-10-30 23:09–23:54 UTC (close-out at minute 45; end minute 45)
+- Preflight: `add_repo` not offered; repo already cloned and in scope; first fetch hit a proxy reset, retry worked; lock pushed cleanly; vitest 5.0.5; sonnet reviewers work (worktree, background). CI green on main (b36a8015, then a655e649). No new answers. Not a sweep or efficiency hour.
+- MU.5 finished: resumed `wip/MU.5`, merged main; round-1 Mediums fixed (projection canary case for casts; e2e checks the practice review lists both casts unreviewed and undo removes one); round 2 sonnet 0 High, 0 Medium, 4 Low; three Lows fixed (feed and review screenshots, one red line after a refusal, Cast's description carries the refusal). Merged to main (a655e649).
+- MU.6 finished: Primal Hunter CSVs embedded by `npm run reference` (sync-tested), GM-only `/api/gm/reference` search and a Reference window in Library & settings (god-tied flagged, hideable), up to 8 non-god rows as naming examples in co-DM generation and quick-response prompts (D272, Q86). Sonnet round 1: 2 Medium (thin god filter; e2e player canary partly vacuous), fixed; round 2: 0 High, 0 Medium, 2 Low. Merged to main (b17b1d87).
+- Tests: unit 1,665 (was 1,651). e2e run locally: MU.1–MU.6, M8.3, MD.*, MC.2, MC.10 (16 passed); the full suite was not run locally this run (CI runs it on the push); MU.A runs it in full. Engine coverage not re-measured.
+- Open `wip/*`: none in progress (`wip/MU.5`, `wip/MU.6` merged).
+- Next: MU.A. Blockers: none.
