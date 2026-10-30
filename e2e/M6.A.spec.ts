@@ -90,6 +90,7 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
   // Item library: an equippable charm (+5 Vitality) and a plain fang.
   const items = gm.locator('section[aria-labelledby="item-library"]');
   const itemForm = items.locator('form[aria-labelledby="item-library-form"]');
+  await openWindow(gm, 'item-library');
   await itemForm.getByLabel('Item name').fill('Bone Charm');
   await itemForm.getByLabel('Slot').selectOption({ label: 'Necklace' });
   await itemForm.getByLabel('Vitality').fill('5');

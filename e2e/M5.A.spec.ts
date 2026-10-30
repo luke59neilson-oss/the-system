@@ -153,6 +153,7 @@ test('selection, evolution, mark upgrade and merge between the GM and the player
   await awardClassXp(gm, 300, REASON);
   await expect(player.getByTestId('class')).toHaveText('[Storm Archer – lvl 5]');
   const offers = gm.locator('section[aria-labelledby="offer-builder"]');
+  await openWindow(gm, 'offer-builder');
   await offers.getByLabel('Character').selectOption({ label: 'Jake' });
   const due = offers.getByRole('list', { name: 'Due selections' }).getByRole('listitem');
   await expect(due).toHaveText(['Selection (lvl 5) · ceiling Rare · build the menu']);

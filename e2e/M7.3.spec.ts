@@ -68,6 +68,7 @@ test('the GM rolls and shares contests, deals damage and runs a clock', async ({
   const roller = win.locator('form[aria-labelledby="contest-roller"]');
   const sideA = roller.getByRole('group', { name: 'Side A' });
   const sideB = roller.getByRole('group', { name: 'Side B' });
+  await openWindow(gm, 'encounter');
   await sideA.getByLabel('Who').selectOption({ label: 'Jake' });
   await sideA.getByLabel('Stat').selectOption({ label: 'Perception' });
   await expect(sideA.getByRole('textbox', { name: 'Value', exact: true })).toHaveValue('10');

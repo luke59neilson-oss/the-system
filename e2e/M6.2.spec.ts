@@ -47,9 +47,9 @@ test('the GM defines and rolls a loot table; the player receives the roll live',
   // Two items in the library to draw from.
   const library = gm.locator('section[aria-labelledby="item-library"]');
   const itemForm = library.locator('form[aria-labelledby="item-library-form"]');
+  await openWindow(gm, 'item-library');
   for (const name of ['Whale Louse Pelt', 'Hunter Fang']) {
     await itemForm.getByLabel('Item name').fill(name);
-    await openWindow(gm, 'item-library');
     await itemForm.getByRole('button', { name: 'Add to library' }).click();
     await expect(library.getByRole('status')).toHaveText(`[${name}] added to the library`);
   }

@@ -1,5 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
+import { TABS } from '../apps/web/src/gm/tabsModel';
+import { openTab } from './helpers/gmTabs';
 import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 import { contrastFailures } from './helpers/contrast';
@@ -53,11 +55,17 @@ test('every text on the player screen and GM console reads at 4.5:1 or better', 
   };
   const openAll = (p: Page) =>
     p.evaluate(`document.querySelectorAll('details').forEach((d) => { d.open = true; })`);
-  note('gm', await contrastFailures(gm));
-  await openAll(gm);
-  const gmScan = await contrastFailures(gm);
-  expect(gmScan.checked).toBeGreaterThan(50);
-  note('gm (details open)', gmScan);
+  // MU.1: the console shows one tab at a time, so scan each tab.
+  let gmChecked = 0;
+  for (const t of TABS) {
+    await openTab(gm, t.id);
+    note(`gm ${t.id}`, await contrastFailures(gm));
+    await openAll(gm);
+    const gmScan = await contrastFailures(gm);
+    gmChecked += gmScan.checked;
+    note(`gm ${t.id} (details open)`, gmScan);
+  }
+  expect(gmChecked).toBeGreaterThan(50);
 
   for (const who of ['demo-jake', 'demo-sultan']) {
     const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });

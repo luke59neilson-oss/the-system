@@ -239,6 +239,7 @@ test('the dashboard chip opens a capstone selection, which needs a ceiling optio
     'Capstone selection (lvl 10) · ceiling Rare · menu sent, player choosing',
   );
   // The dashboard chip now waits on the player.
+  await openWindow(gm, 'party');
   await expect(
     gm
       .getByTestId('flags-demo-casper')

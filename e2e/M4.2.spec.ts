@@ -63,6 +63,7 @@ test('the GM manages classes, races and professions; characters start from them'
   await gm.getByRole('button', { name: 'Create campaign' }).click();
 
   const lib = gm.locator('section[aria-labelledby="origin-library"]');
+  await openWindow(gm, 'origin-library');
   const tab = (name: RegExp) =>
     lib.getByRole('group', { name: 'Library' }).getByRole('button', { name });
   // The default set arrived with the campaign.
@@ -224,10 +225,10 @@ test('a campaign started without defaults can add them later', async ({ browser 
     const errors = watchErrors(gm);
     await gm.goto(`${own.url}/gm#key=${GM_KEY}`);
     await gm.getByLabel('Campaign name').fill('Bare');
-    await openWindow(gm, 'origin-library');
     await gm.getByLabel(/Start with the default classes/).uncheck();
     await gm.getByRole('button', { name: 'Create campaign' }).click();
     const lib = gm.locator('section[aria-labelledby="origin-library"]');
+    await openWindow(gm, 'origin-library');
     await expect(lib.getByRole('note')).toContainText(
       'Until then new characters start from the six built-in classes.',
     );
