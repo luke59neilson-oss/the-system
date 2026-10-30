@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync }
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openTab } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MC.6 (DESIGN §11 "Who said what"): the GM enrols each player's voice on the
@@ -68,6 +69,7 @@ test('the GM enrols two voices, lines get names, and a deleted voice stops label
   await page.getByRole('link', { name: /Jake/ }).click();
   await expect(page.getByTestId('connection')).toHaveText('Connected');
 
+  await openTab(gm, 'session');
   const panel = gm.locator('section[aria-labelledby="listen-heading"]');
   const voices = panel.getByTestId('voices');
   for (const name of ['Jake', 'Miranda']) {

@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openTab } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M4.6 XP award dialog (DESIGN §5): even split with editable shares and a
@@ -52,6 +53,7 @@ test('the GM previews and awards XP with a custom split', async ({ browser }) =>
     );
   const [jake, kim, ada] = ids as [string, string, string];
 
+  await openTab(gm, 'session');
   const award = gm.getByRole('form', { name: 'Award class XP' });
   // The typical-session helper fills the amount for the three G-grade characters:
   // 600 each is typical, but a fresh G character has only 400 XP of room, so it
