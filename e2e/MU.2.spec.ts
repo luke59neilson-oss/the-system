@@ -119,6 +119,13 @@ test('the GM gives an item: a pop-up and a log line on the phone and in View as'
     'The GM set your stats: Strength 1.0 → 1.4',
   );
   await expect(log.getByRole('listitem').nth(1)).toContainText(line);
+  await log.scrollIntoViewIfNeeded();
+  await phone.screenshot({ path: path.join(shots, 'player-running-log-390x844.png') });
+  // Full history shows every notice, gifts and GM changes included.
+  await phone.getByTestId('full-history').click();
+  await expect(phone.getByTestId('history').getByLabel('Show', { exact: true })).toHaveValue('all');
+  await expect(phone.getByTestId('dings')).toContainText(line);
+  await expect(phone.getByTestId('dings')).toContainText('The GM set your stats');
 
   // View as: the same log, and pop-ups (muted) for what arrives while it is open.
   await gm

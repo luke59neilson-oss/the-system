@@ -1,6 +1,6 @@
 import { notificationText } from '../format';
 import type { LiveSnapshot } from '../live';
-import { RUNNING_LOG_SIZE, runningLog, whenLabel } from './history';
+import { FULL_HISTORY_EVENT, RUNNING_LOG_SIZE, runningLog, whenLabel } from './history';
 
 /**
  * MU.2 (DESIGN §7 "Player log"): every change the GM makes to this character,
@@ -25,7 +25,11 @@ export function RunningLog({ live }: { live: LiveSnapshot }) {
         </ol>
       )}
       <p>
-        <a href="#dings" data-testid="full-history">
+        <a
+          href="#dings"
+          data-testid="full-history"
+          onClick={() => window.dispatchEvent(new Event(FULL_HISTORY_EVENT))}
+        >
           Full history
         </a>
       </p>

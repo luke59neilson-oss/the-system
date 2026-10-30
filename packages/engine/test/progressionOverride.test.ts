@@ -273,8 +273,19 @@ describe('GM override for level, XP and grade (MT.5)', () => {
     const view = projectForPlayer(c.state!, 'jake');
     expect(JSON.stringify(view)).toContain('"classLevel":6');
     const last = c.events[c.events.length - 1]!;
-    // No 'DING!': the levels were set, not earned.
-    expect(notificationsBetween(c0.state, c.state, last)).toEqual([]);
+    // No 'DING!': the levels were set, not earned. MU.2: the player is told
+    // the GM set them.
+    expect(notificationsBetween(c0.state, c.state, last)).toEqual([
+      {
+        kind: 'gmChange',
+        characterId: 'jake',
+        change: 'progression',
+        diffs: [
+          { label: 'Grade', from: 'G', to: 'F' },
+          { label: 'Class level', from: '0', to: '6' },
+        ],
+      },
+    ]);
     expect(describeEvent(c0.state, c.state!, last)[0]).toEqual({
       kind: 'character',
       text: "The GM set Jake's level, XP or grade: Grade G → F, Class level 0 → 6, Race level 0 → 6",

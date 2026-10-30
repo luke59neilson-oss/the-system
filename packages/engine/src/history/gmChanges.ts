@@ -337,14 +337,12 @@ export function gmChangeNotices(
         ? before.titleLibrary[event.payload.titleDefId]
         : undefined;
       if (!def || !old) break;
-      const names = new Set([old.name.toLowerCase(), def.name.toLowerCase()]);
+      const holds = (c: Character | undefined, name: string) =>
+        (c?.titles ?? []).some((t) => t.trim().toLowerCase() === name.toLowerCase());
       for (const id of after.characterOrder) {
-        const now = charOf(after, id);
-        const was = charOf(before, id);
-        const held = (c: Character | undefined) =>
-          (c?.titles ?? []).some((t) => names.has(t.trim().toLowerCase()));
-        // A newly linked holder gets the 'title' notice instead (M6.A).
-        if (held(was) && held(now))
+        // Only a holder linked to this title before and after; a newly linked
+        // holder gets the 'title' notice instead (M6.A), never both.
+        if (holds(charOf(before, id), old.name) && holds(charOf(after, id), def.name))
           push({ characterId: id, change: 'titleEdited', subject: def.name });
       }
       break;

@@ -58,6 +58,9 @@ export function matchesFilter(n: LiveNotification, filter: HistoryFilter): boole
   }
 }
 
+/** MU.2: the running log's "Full history" link asks the Notifications window to show everything. */
+export const FULL_HISTORY_EVENT = 'the-system:full-history';
+
 /** MU.2: how many lines the running log on the main screen keeps. UI, not a rule number. */
 export const RUNNING_LOG_SIZE = 20;
 

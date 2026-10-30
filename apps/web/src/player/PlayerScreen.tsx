@@ -19,6 +19,7 @@ import { playSound, unlockSound } from './sounds';
 import { RunningLog } from './RunningLog';
 import { contestLines, newContests } from './contest';
 import {
+  FULL_HISTORY_EVENT,
   HISTORY_FILTERS,
   filterHistory,
   isDing,
@@ -1047,6 +1048,16 @@ function Feed({
   const [messageLimit, setMessageLimit] = useState(HISTORY_PAGE);
   const dingList = useRef<HTMLOListElement>(null);
   const messageList = useRef<HTMLOListElement>(null);
+  // MU.2: "Full history" in the running log shows every notice, not only the DINGs.
+  useEffect(() => {
+    const showAll = () => {
+      setFilter('all');
+      setQuery('');
+      setDingLimit(HISTORY_PAGE);
+    };
+    window.addEventListener(FULL_HISTORY_EVENT, showAll);
+    return () => window.removeEventListener(FULL_HISTORY_EVENT, showAll);
+  }, []);
   const rows = filterHistory(live.notifications, filter, query);
   const messages = view.messages.slice(-messageLimit).reverse();
   return (

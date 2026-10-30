@@ -62,6 +62,8 @@ export function notificationText(n: LiveNotification): string {
       const why = n.reason.trim() === '' ? '' : `: ${n.reason.trim()}`;
       return `The GM took ${what ?? 'an item'}${why}`;
     }
+    case 'gmChange':
+      return gmChangeText(n);
     case 'trade': {
       const who = n.other ?? 'The GM';
       switch (n.action) {
@@ -75,8 +77,6 @@ export function notificationText(n: LiveNotification): string {
           return `${who} withdrew a trade offer`;
       }
     }
-    case 'gmChange':
-      return gmChangeText(n);
   }
 }
 
