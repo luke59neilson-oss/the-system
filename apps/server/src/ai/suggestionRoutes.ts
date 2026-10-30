@@ -35,6 +35,12 @@ interface SuggestionFile {
   readonly slots?: (string | null)[];
   /** Transcript lines already read, per session number. */
   readonly readUpTo: Record<string, number>;
+  /**
+   * MD.2 review M1: lines already used to cut the wait short, per session. A
+   * question gets one early look; if that look fails, the same question does
+   * not trigger another (the normal interval still retries its lines).
+   */
+  readonly questionsUpTo?: Record<string, number>;
   readonly lastCallAt: number | null;
 }
 
@@ -60,6 +66,7 @@ export class SuggestionStore {
       dismissed: data.dismissed,
       ...(Array.isArray(data.slots) ? { slots: data.slots } : {}),
       readUpTo: data.readUpTo ?? {},
+      ...(data.questionsUpTo ? { questionsUpTo: data.questionsUpTo } : {}),
       lastCallAt: typeof data.lastCallAt === 'number' ? data.lastCallAt : null,
     };
   }
@@ -129,6 +136,17 @@ export function registerSuggestionRoutes(
     const body = postSchema.safeParse(request.body ?? undefined);
     if (!body.success) return reply.code(400).send({ error: 'Bad suggestion request' });
     if (running) return reply.code(409).send({ error: 'Already suggesting' });
+    // MD.2 review M2: without a key, read nothing and ask nothing; the pace
+    // stays free for when a key is saved. Only "Suggest now" hears why.
+    if (options.hasKey && !options.hasKey()) {
+      try {
+        const f = new SuggestionStore(draftsDir(a.store)).read();
+        if (body.data?.manual !== true) return { ...view(f), called: false, needsKey: true };
+        return reply.code(409).send({ ...view(f), called: false, error: 'No API key is set' });
+      } catch (err) {
+        return reply.code(500).send({ error: fail(err) });
+      }
+    }
     running = true;
     try {
       const store = new SuggestionStore(draftsDir(a.store));
@@ -143,12 +161,13 @@ export function registerSuggestionRoutes(
         intervalS: body.data?.intervalS ?? SUGGEST_INTERVAL_DEFAULT_S,
         newLines: fresh.length,
         manual: body.data?.manual ?? false,
-        question: fresh.some((l) => isQuestionOrAttempt(l)),
+        question: all
+          .slice(
+            Math.max(f.readUpTo[String(session)] ?? 0, f.questionsUpTo?.[String(session)] ?? 0),
+          )
+          .some((l) => isQuestionOrAttempt(l)),
       });
       if (!due) return { ...view(f), called: false };
-      if (options.hasKey && !options.hasKey()) {
-        return reply.code(409).send({ ...view(f), called: false, error: 'No API key is set' });
-      }
       const party = state.characterOrder
         .filter((id) => Object.hasOwn(state.characters, id))
         .map((id) => state.characters[id]!.name);
@@ -159,7 +178,11 @@ export function registerSuggestionRoutes(
       const dismissed = new Set(f.dismissed);
       // The pace counts from the call, paid or failed, so a bad reply is not
       // asked again on every poll (MC.8 review M1).
-      store.write({ ...f, lastCallAt: now });
+      store.write({
+        ...f,
+        lastCallAt: now,
+        questionsUpTo: { ...f.questionsUpTo, [String(session)]: all.length },
+      });
       const chips = await suggest(
         options.client,
         fresh.slice(-RECENT_LINES),

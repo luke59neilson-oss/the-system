@@ -225,6 +225,11 @@ describe('suggestion routes after a bad reply (MC.8 review M1)', () => {
     clock += 15_000;
     expect((await post()).json()).toMatchObject({ called: false });
     expect(fake.requests).toHaveLength(1);
+    // The line is a question, but it already had its early look: a failed
+    // call is not retried every 30 s (MD.2 review M1).
+    clock += 20_000;
+    expect((await post()).json()).toMatchObject({ called: false });
+    expect(fake.requests).toHaveLength(1);
     clock += 120_000;
     await post();
     expect(fake.requests).toHaveLength(2);
@@ -450,9 +455,13 @@ describe('suggestions without a key (MD.2, D258)', () => {
         headers: gm,
         payload: { manual },
       });
+    // A poll is a quiet no; "Suggest now" says why.
     const r = await post();
-    expect(r.statusCode).toBe(409);
-    expect(r.json()).toMatchObject({ called: false, error: 'No API key is set' });
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toMatchObject({ called: false, needsKey: true });
+    const asked = await post(true);
+    expect(asked.statusCode).toBe(409);
+    expect(asked.json()).toMatchObject({ called: false, error: 'No API key is set' });
     expect(fake.requests).toHaveLength(0);
     coDm.keys.save('sk-ant-e2e-suggest-0123456789abcdef');
     // At the same moment: the keyless poll did not start the 60 s wait.
