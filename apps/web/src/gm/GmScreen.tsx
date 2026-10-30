@@ -46,6 +46,7 @@ import { RulesSettings } from './RulesSettings';
 import { CoDmSettings } from './CoDmSettings';
 import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
+import { ConsoleTabs, Place, useConsoleTab } from './ConsoleTabs';
 
 /**
  * Minimal GM screen (ROADMAP MS.1): create a campaign and characters from a
@@ -103,6 +104,8 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
   const state = live.state;
   const [wanted, setWanted] = useState<Perspective>({ kind: 'gm' });
   const [picked, setPicked] = useState<string[] | null>(null);
+  // MU.1: the open tab of the console (remembered on this laptop).
+  const [tab, setTab] = useConsoleTab();
   // A dashboard selection chip asks the offer builder to open that selection (M5.1).
   const [offerTarget, setOfferTarget] = useState<OfferTarget | null>(null);
   // MD.1: the transcript line the GM clicked for the quick responses.
@@ -198,64 +201,131 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
         <div className="perspective-body">
           {/* Kept mounted while viewing as a character so half-filled GM forms survive. */}
           <div className="gm-pane" hidden={view.kind === 'character'}>
-            <div className="gm-grid">
-              <PartyDashboard
-                client={client}
-                gmKey={gmKey}
-                state={state}
-                onBuildMenu={(characterId, level) =>
-                  setOfferTarget((t) => ({ characterId, level, n: (t?.n ?? 0) + 1 }))
-                }
-              />
-              <SessionPanel client={client} state={state} gmKey={gmKey} />
-              <ListenPanel
-                gmKey={gmKey}
-                onPickLine={(text) => setQuickLine((p) => ({ text, n: (p?.n ?? 0) + 1 }))}
-                characters={state.characterOrder.flatMap((id) => {
-                  const c = state.characters[id];
-                  return c ? [{ id, name: c.name }] : [];
-                })}
-              />
-              <CoDmPanel
-                gmKey={gmKey}
-                client={client}
-                state={state}
-                picked={quickLine}
-                onGenerated={(c) => setIncoming((cur) => ({ ...c, seq: (cur?.seq ?? 0) + 1 }))}
-                onLoading={sendLoading}
-                onLoadingFailed={endLoading}
-              />
-              <ContentImport
-                client={client}
-                gmKey={gmKey}
-                incoming={incoming}
-                onApproved={approved}
-              />
-              <JoinPanel gmKey={gmKey} />
-              <CreateCharacter client={client} gmKey={gmKey} state={state} />
-              <XpAward client={client} state={state} />
-              <Encounter client={client} state={state} />
-              <OfferBuilder client={client} state={state} target={offerTarget} />
-              <EvolutionBuilder client={client} state={state} />
-              <PracticeCapture client={client} gmKey={gmKey} state={state} />
-              <QuestManager client={client} state={state} />
-              <Bestiary client={client} state={state} />
-              <Trackers client={client} state={state} />
-              <MarksReview client={client} state={state} />
-              <MergeBuilder client={client} state={state} />
-              <Broadcast client={client} state={state} />
-              <ChangeLog client={client} gmKey={gmKey} state={state} />
-              <SkillText client={client} state={state} />
-              <SkillLibrary client={client} state={state} />
-              <ItemLibrary client={client} state={state} />
-              <Shops client={client} state={state} />
-              <LootTables client={client} state={state} />
-              <CurrencyLedger client={client} state={state} />
-              <TitleLibrary client={client} state={state} />
-              <OriginLibrary client={client} state={state} />
-              <RulesSettings client={client} state={state} />
-              <CoDmSettings gmKey={gmKey} />
-              <Feed live={live} state={state} />
+            <ConsoleTabs tab={tab} onChange={setTab} />
+            <div
+              className="gm-grid"
+              role="tabpanel"
+              id={`tabpanel-${tab}`}
+              aria-labelledby={`tab-${tab}`}
+            >
+              <Place id="party" tab={tab}>
+                <PartyDashboard
+                  client={client}
+                  gmKey={gmKey}
+                  state={state}
+                  onBuildMenu={(characterId, level) => {
+                    setOfferTarget((t) => ({ characterId, level, n: (t?.n ?? 0) + 1 }));
+                    setTab('progression');
+                  }}
+                />
+              </Place>
+              <Place id="join" tab={tab}>
+                <JoinPanel gmKey={gmKey} />
+              </Place>
+              <Place id="create-character" tab={tab}>
+                <CreateCharacter client={client} gmKey={gmKey} state={state} />
+              </Place>
+              <Place id="session" tab={tab}>
+                <SessionPanel client={client} state={state} gmKey={gmKey} />
+              </Place>
+              <Place id="award-xp" tab={tab}>
+                <XpAward client={client} state={state} />
+              </Place>
+              <Place id="listen" tab={tab}>
+                <ListenPanel
+                  gmKey={gmKey}
+                  onPickLine={(text) => setQuickLine((p) => ({ text, n: (p?.n ?? 0) + 1 }))}
+                  characters={state.characterOrder.flatMap((id) => {
+                    const c = state.characters[id];
+                    return c ? [{ id, name: c.name }] : [];
+                  })}
+                />
+              </Place>
+              <Place id="codm" tab={tab}>
+                <CoDmPanel
+                  gmKey={gmKey}
+                  client={client}
+                  state={state}
+                  picked={quickLine}
+                  onGenerated={(c) => setIncoming((cur) => ({ ...c, seq: (cur?.seq ?? 0) + 1 }))}
+                  onLoading={sendLoading}
+                  onLoadingFailed={endLoading}
+                />
+              </Place>
+              <Place id="import" tab={tab}>
+                <ContentImport
+                  client={client}
+                  gmKey={gmKey}
+                  incoming={incoming}
+                  onApproved={approved}
+                />
+              </Place>
+              <Place id="encounter" tab={tab}>
+                <Encounter client={client} state={state} />
+              </Place>
+              <Place id="quest-manager" tab={tab}>
+                <QuestManager client={client} state={state} />
+              </Place>
+              <Place id="broadcast" tab={tab}>
+                <Broadcast client={client} state={state} />
+              </Place>
+              <Place id="shops" tab={tab}>
+                <Shops client={client} state={state} />
+              </Place>
+              <Place id="currency-ledger" tab={tab}>
+                <CurrencyLedger client={client} state={state} />
+              </Place>
+              <Place id="trackers" tab={tab}>
+                <Trackers client={client} state={state} />
+              </Place>
+              <Place id="change-log" tab={tab}>
+                <ChangeLog client={client} gmKey={gmKey} state={state} />
+              </Place>
+              <Place id="feed" tab={tab}>
+                <Feed live={live} state={state} />
+              </Place>
+              <Place id="offer-builder" tab={tab}>
+                <OfferBuilder client={client} state={state} target={offerTarget} />
+              </Place>
+              <Place id="evolution-builder" tab={tab}>
+                <EvolutionBuilder client={client} state={state} />
+              </Place>
+              <Place id="practice-capture" tab={tab}>
+                <PracticeCapture client={client} gmKey={gmKey} state={state} />
+              </Place>
+              <Place id="marks-review" tab={tab}>
+                <MarksReview client={client} state={state} />
+              </Place>
+              <Place id="merge-builder" tab={tab}>
+                <MergeBuilder client={client} state={state} />
+              </Place>
+              <Place id="skill-text" tab={tab}>
+                <SkillText client={client} state={state} />
+              </Place>
+              <Place id="skill-library" tab={tab}>
+                <SkillLibrary client={client} state={state} />
+              </Place>
+              <Place id="item-library" tab={tab}>
+                <ItemLibrary client={client} state={state} />
+              </Place>
+              <Place id="loot-tables" tab={tab}>
+                <LootTables client={client} state={state} />
+              </Place>
+              <Place id="title-library" tab={tab}>
+                <TitleLibrary client={client} state={state} />
+              </Place>
+              <Place id="origin-library" tab={tab}>
+                <OriginLibrary client={client} state={state} />
+              </Place>
+              <Place id="bestiary" tab={tab}>
+                <Bestiary client={client} state={state} />
+              </Place>
+              <Place id="rules-settings" tab={tab}>
+                <RulesSettings client={client} state={state} />
+              </Place>
+              <Place id="codm-settings" tab={tab}>
+                <CoDmSettings gmKey={gmKey} />
+              </Place>
             </div>
           </div>
           {viewed && (

@@ -11,6 +11,23 @@ The rules themselves are in
 player;
 when something will not connect, see [`TROUBLESHOOTING.md`](https://github.com/luke59neilson-oss/the-system/blob/main/docs/TROUBLESHOOTING.md).
 
+## Where everything is (the console's tabs)
+
+The console opens on **Home**; three tabs hold everything else. The open tab
+is remembered on this laptop. Click a tab, or focus the tab bar and use the
+arrow keys (Home and End jump to the ends). A dashboard link (a selection
+waiting, a banner) opens the tab that handles it.
+
+| Tab | Windows |
+| --- | --- |
+| Home | Party (a card per character, with what needs you), Players join (address and QR), New character |
+| Session | Session (start, end, day), Award XP (quick), Listening, Co-DM (quick responses, picks, generate, lore), Import (approve generated content), Encounter, Quests, Broadcast, Shops, Credits ledger, Trackers, Change log, System feed |
+| Progression | Award XP (full), Skill offers, Evolution builder, Practice log, Marks review, Merges |
+| Library & settings | Skill text, Skill library, Item library, Loot tables, Title library, Classes, races and professions, Bestiary, Rules settings, Co-DM settings |
+
+Award XP is the one window in two places. The list mirrors
+`apps/web/src/gm/tabsModel.ts`.
+
 ## Install and start
 
 1. Download the newest preview from the repo's **Releases** page: the

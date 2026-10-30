@@ -615,3 +615,11 @@ DESIGN/ROADMAP; do not re-apply them.
     legend you copy it into a party note. Default: as described. Option: a
     "Share with the party" button on a lore note that makes that party copy
     for you.
+
+82. **Where co-DM generations are approved (MU.1, D261).** DESIGN §9a lists
+    content import under Library & settings, but a co-DM generation (a shop
+    while you walk the party across town) opens in the Import window for
+    you to approve. To keep that in front of you mid-narration, Import sits
+    on the **Session** tab beside the co-DM, and pasting a content pack from
+    Claude happens there too. Default: Import on Session. Option: Import on
+    Library & settings, with a generation switching you to that tab.
