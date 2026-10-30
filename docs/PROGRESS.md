@@ -1284,7 +1284,7 @@ next item, blockers. -->
 - Open `wip/*`: `wip/MD.A` (head 557caf35). Next step: run the full e2e suite (from M8.4 on at least), then the `fable` review of MD (MD.1–MD.3 + MD.A), then check MD.A and write "Preview ready" (LOOP §8.2).
 - Next: MD.A. Blockers: none.
 
-### Run rb440e45c · 2026-10-30 17:08–17:54 UTC (close-out at minute 45)
+### Run rb440e45c · 2026-10-30 17:08–17:52 UTC (close-out at minute 43; lock released at minute 44: the wip hand-off was pushed and the remaining work is mechanical spec migration for the next run)
 - Preflight: repo already attached; fetched and fast-forwarded main; lock pushed cleanly; vitest 5.0.5; `fable` reviewer worked (worktree, blocking call; full e2e ran beside it). CI green on main (0a3c632c). No new answers. Not an efficiency or sweep hour.
 - MD.A done: full e2e 126/126 at 2 workers; latency 7/8 under reviewer load, M11.3 passed alone (Flakes). Fable review of MD (a027a705..2f9c5246): 0 H / 1 M / 5 L, 4 mutations all caught, no GM-only leak. M1 (keys 1–0 live while the GM views as a character) fixed with a `paneShown` guard, unit test and an MD.A e2e step (caught by mutation); extra MD.A screenshot of slots 6–0. Merged to main, MD.A checked. Preview ready (milestone MD).
 - MU.1 started on `wip/MU.1` (base b67150d6, head 31bd6a3a): `tabsModel.ts` (window → tab table, remembered tab, arrow keys; 6 unit tests), `ConsoleTabs.tsx` (tab bar, `Place` wrapper keeps windows mounted), GmScreen renders every window in its place, GM-GUIDE table, D261, Q82, `e2e/MU.1.spec.ts` (every window opens from its tab, remembered tab, keyboard; screenshots at 1366×768 and 1920×1080) passes. e2e helper `e2e/helpers/gmTabs.ts` (`openTab`, `openWindow`, `reveal`). Migrated and green: MD.1–MD.A, MC.1–MC.10, MC.A, M4.6.
