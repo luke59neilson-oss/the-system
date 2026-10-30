@@ -638,3 +638,11 @@ DESIGN/ROADMAP; do not re-apply them.
     rows, which serves as the Session tab's party at a glance. Default: one
     form on both tabs. Option: a smaller Session form (amount and who only)
     with the target and bonus on Progression.
+
+85. **Spell costs on hand-edited and upgraded skills (MU.4, D270).** A
+    skill's cost, cooldown, range and casting notes come from the library
+    entry, like its effects, even when you have hand-written that player's
+    copy of the text. When a spell is upgraded to a rarity the library has no
+    entry for yet, it keeps the cost of the nearest lower rarity's entry until
+    you write one. Default: as described. Option: let a hand edit also set a
+    per-character cost.

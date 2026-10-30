@@ -35,7 +35,7 @@ import { identifyRarity, resolveIdentify } from './identify';
 import {
   atCeiling,
   entryForSkill,
-  castingOf,
+  castingForSkill,
   type SkillCasting,
   markRules,
   marksToUpgrade,
@@ -789,7 +789,7 @@ function ownEffects(state: CampaignState, s: CharacterSkill): string | null {
 
 /** MU.4: the owner sees their skill's cost, cooldown, range and notes. */
 function ownCasting(state: CampaignState, s: CharacterSkill): { casting?: SkillCasting } {
-  const casting = castingOf(entryForSkill(state.rules, state.skillLibrary, s));
+  const casting = castingForSkill(state.rules, state.skillLibrary, s);
   return casting === null ? {} : { casting };
 }
 

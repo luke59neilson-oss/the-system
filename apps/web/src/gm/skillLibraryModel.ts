@@ -1,4 +1,4 @@
-import type { CampaignState, SkillDef } from '@the-system/engine';
+import { MAX_SKILL_COST, type CampaignState, type SkillDef } from '@the-system/engine';
 
 /** The GM's skill library form (ROADMAP M4.1). Pure helpers; tested in skillLibraryModel.test.ts. */
 
@@ -111,13 +111,13 @@ function amountOf(text: string): number | null {
   const t = text.trim();
   if (!/^\d+$/.test(t)) return null;
   const n = Number(t);
-  return n >= 1 && n <= 1_000_000 ? n : null;
+  return n >= 1 && n <= MAX_SKILL_COST ? n : null;
 }
 
 /** Why the draft cannot be saved yet (MU.4 cost), or null. */
 export function draftProblem(d: SkillDraft): string | null {
   if (d.costPool !== '' && amountOf(d.costAmount) === null) {
-    return 'The cost is a whole number from 1 to 1,000,000';
+    return `The cost is a whole number from 1 to ${MAX_SKILL_COST.toLocaleString('en-US')}`;
   }
   if (d.costPool === '' && d.costAmount.trim() !== '') return 'Choose the pool the cost comes from';
   return null;

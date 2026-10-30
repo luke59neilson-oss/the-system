@@ -207,6 +207,30 @@ export function entryForSkill(
   );
 }
 
+/**
+ * MU.4 (D270): the casting details a character's copy uses. Like effects they
+ * follow the library entry for the copy's text rarity, hand-edited text or
+ * not (a hand edit freezes description and flavour only). When the library has
+ * no entry at that rarity (an upgrade the GM has not written up yet), the
+ * nearest lower rarity's entry of the same name lends its casting, so a spell
+ * never loses its cost by being upgraded. An entry that exists but has no
+ * casting means none at that rarity.
+ */
+export function castingForSkill(
+  rules: RulesConfig,
+  library: Readonly<Record<string, SkillDef>>,
+  skill: Pick<CharacterSkill, 'name' | 'rarity' | 'textRarity'>,
+): SkillCasting | null {
+  const def = entryForSkill(rules, library, skill);
+  if (def || !rules.skills.libraryByRarity) return castingOf(def);
+  const ladder = rules.skills.rarities.map((r) => r.id);
+  for (let i = ladder.indexOf(textRarityOf(skill)) - 1; i >= 0; i--) {
+    const lower = librarySkill(library, skill.name, ladder[i]);
+    if (lower) return castingOf(lower);
+  }
+  return null;
+}
+
 /** The rarity whose entry a copy's text follows: its own, unless re-rated (MR.1). */
 export function textRarityOf(skill: Pick<CharacterSkill, 'rarity' | 'textRarity'>): string {
   return skill.textRarity ?? skill.rarity;

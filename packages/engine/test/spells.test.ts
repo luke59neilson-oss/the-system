@@ -137,6 +137,57 @@ describe('spells: skills with costs (MU.4)', () => {
     expect(kims).not.toContain('CANARY');
   });
 
+  it("an upgrade with no entry at the new rarity keeps the lower entry's cost (D270)", () => {
+    let c = ok(run([created], ctx), bolt);
+    c = ok(c, jake);
+    const cost = () =>
+      projectForPlayer(c.state!, 'jake').me.skills.find((s) => s.name === 'Arcane Bolt')?.casting
+        ?.cost;
+    c = ok(c, {
+      type: 'skill.setRarity',
+      characterId: 'jake',
+      skill: 'Arcane Bolt',
+      rarity: 'rare',
+    });
+    expect(cost()).toEqual({ pool: 'mp', amount: 15 });
+    // The nearest lower entry wins, not the first one found.
+    c = ok(c, {
+      type: 'skillDef.define',
+      id: 'bolt-u',
+      name: 'Arcane Bolt',
+      rarity: 'uncommon',
+      tags: ['spell'],
+      cost: { pool: 'mp', amount: 25 },
+    });
+    expect(cost()).toEqual({ pool: 'mp', amount: 25 });
+    // Once the rarity has its own entry, that entry decides, even with no cost.
+    c = ok(c, {
+      type: 'skillDef.define',
+      id: 'bolt-r',
+      name: 'Arcane Bolt',
+      rarity: 'rare',
+      tags: [],
+    });
+    expect(cost()).toBeUndefined();
+  });
+
+  it('a hand-edited copy keeps its text but follows the library cost, like effects (D270)', () => {
+    let c = ok(run([created], ctx), bolt);
+    c = ok(c, jake);
+    c = ok(c, {
+      type: 'skill.describe',
+      characterId: 'jake',
+      skill: 'Arcane Bolt',
+      description: 'Hand-written by the GM.',
+      flavor: null,
+    });
+    c = ok(c, { type: 'skillDef.edit', skillDefId: 'bolt', cost: { pool: 'mp', amount: 20 } });
+    const mine = projectForPlayer(c.state!, 'jake').me.skills.find((s) => s.name === 'Arcane Bolt');
+    expect(mine?.description).toBe('Hand-written by the GM.');
+    expect(mine?.casting?.cost).toEqual({ pool: 'mp', amount: 20 });
+    expect(mine?.effects).toBe('CANARY 2d6 arcane damage.');
+  });
+
   it('a stored log replays to the same state with and without spells', () => {
     let c = ok(run([created], ctx), bolt);
     c = ok(c, jake);
