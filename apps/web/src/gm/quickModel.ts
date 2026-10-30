@@ -161,6 +161,33 @@ export const keepTitle = (scene: {
   readonly place: string | null;
 }): string => scene.npc ?? scene.place ?? 'Lore';
 
+/**
+ * MD.3: Keep on a generated item starts from its names and descriptions: one
+ * line per named entry in any section ("Name: text"), plus the names, so the
+ * GM can tag the note to an NPC. Unknown shapes are skipped, never thrown on.
+ */
+export function generatedLore(file: unknown): { text: string; names: string[] } {
+  const lines: string[] = [];
+  const names: string[] = [];
+  if (file && typeof file === 'object') {
+    for (const section of Object.values(file as Record<string, unknown>)) {
+      if (!Array.isArray(section)) continue;
+      for (const entry of section as unknown[]) {
+        if (!entry || typeof entry !== 'object') continue;
+        const e = entry as Record<string, unknown>;
+        const name = [e.name, e.title].find((v): v is string => typeof v === 'string');
+        if (!name) continue;
+        const said = [e.description, e.body, e.notes, e.gmNotes].find(
+          (v): v is string => typeof v === 'string' && v.trim() !== '',
+        );
+        names.push(name);
+        lines.push(said ? `${name}: ${said.replace(/\s+/g, ' ').trim()}` : name);
+      }
+    }
+  }
+  return { text: lines.join('\n'), names };
+}
+
 /** MD.3 Lore view: GM notes tagged lore, newest first. */
 export function loreNotes<
   N extends {

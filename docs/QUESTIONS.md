@@ -607,3 +607,11 @@ DESIGN/ROADMAP; do not re-apply them.
     fraction of a cent each on the fast model). With no API key it never
     looks. Default: as described. Options: leave a dismissed slot empty
     until the next look; a longer wait after a question.
+
+81. **Sharing kept lore (MD.3, D260).** Keep saves an answer or a
+    generated item as a GM note tagged lore, the NPC, the place and the
+    session; the co-DM reads it for that NPC or place and is told not to
+    contradict it. GM notes can never be shared with players, so to share a
+    legend you copy it into a party note. Default: as described. Option: a
+    "Share with the party" button on a lore note that makes that party copy
+    for you.

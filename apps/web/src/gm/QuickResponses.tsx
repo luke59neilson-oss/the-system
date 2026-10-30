@@ -291,7 +291,7 @@ export function QuickResponses({
             >
               Richer
             </button>
-          )}
+          )}{' '}
           {!answer.streaming && !answer.error && onKeep && keepDraft === null && (
             <button
               type="button"

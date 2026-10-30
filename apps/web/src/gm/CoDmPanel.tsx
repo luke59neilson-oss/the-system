@@ -6,7 +6,14 @@ import type { CampaignState } from '@the-system/engine';
 import type { LiveClient } from '../live';
 import { LoreView } from './LoreView';
 import { QuickResponses, type KeptLore, type PickedLine } from './QuickResponses';
-import { isTypingTarget, keyForSlot, slotForKey } from './quickModel';
+import {
+  generatedLore,
+  isTypingTarget,
+  keepTags,
+  keepTitle,
+  keyForSlot,
+  slotForKey,
+} from './quickModel';
 import { SessionNotes } from './SessionNotes';
 import { spendLine, useLiveSpend, type Spend } from './spend';
 
@@ -292,8 +299,111 @@ export function CoDmPanel({
           </button>
         </details>
       )}
+      {draft !== null && !busy && client && state && (
+        <KeepGenerated key={original ?? ''} draft={draft} client={client} state={state} />
+      )}
       <SessionNotes gmKey={gmKey} />
     </section>
+  );
+}
+
+/**
+ * MD.3 Keep on a generated item: saves its names and descriptions (edited
+ * first) as a GM lore note, tagged to an NPC the GM picks from its names, the
+ * current place and the session.
+ */
+function KeepGenerated({
+  draft,
+  client,
+  state,
+}: {
+  draft: string;
+  client: LiveClient;
+  state: CampaignState;
+}) {
+  const [text, setText] = useState<string | null>(null);
+  const [npc, setNpc] = useState('');
+  const [note, setNote] = useState<string | null>(null);
+  let parsed: { text: string; names: string[] } = { text: '', names: [] };
+  try {
+    parsed = generatedLore(JSON.parse(draft) as unknown);
+  } catch {
+    // An edited draft that no longer parses offers nothing to keep.
+  }
+  if (parsed.text === '' && text === null) return null;
+  const place = state.currentRegion ? (state.regions[state.currentRegion]?.name ?? null) : null;
+  const session = state.sessions.find((s) => s.id === state.currentSession)?.number ?? null;
+  if (text === null) {
+    return (
+      <p>
+        <button
+          type="button"
+          onClick={() => {
+            setNote(null);
+            setText(parsed.text);
+          }}
+        >
+          Keep as lore
+        </button>
+        {note && <span role="status"> {note}</span>}
+      </p>
+    );
+  }
+  return (
+    <form
+      className="quick-keep"
+      aria-label="Keep generated as lore"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const body = text.trim();
+        if (body === '') {
+          setNote('Nothing to keep: the note is empty');
+          return;
+        }
+        const scope = { npc: npc === '' ? null : npc, place };
+        void client
+          .command({
+            type: 'note.create',
+            characterId: null,
+            kind: 'gm',
+            title: keepTitle(scope),
+            body,
+            tags: keepTags({ ...scope, session }),
+          })
+          .then((r) => {
+            if (r.ok) {
+              setText(null);
+              setNote('Kept as lore (GM only)');
+            } else setNote(r.error);
+          });
+      }}
+    >
+      <label>
+        Lore to keep (edit before saving)
+        <textarea
+          value={text}
+          maxLength={4000}
+          rows={4}
+          onChange={(e) => setText(e.target.value)}
+        />
+      </label>
+      <label>
+        Tag to NPC
+        <select value={npc} onChange={(e) => setNpc(e.target.value)}>
+          <option value="">None</option>
+          {parsed.names.map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button type="submit">Save lore</button>{' '}
+      <button type="button" onClick={() => setText(null)}>
+        Cancel
+      </button>
+      {note && <p role="status">{note}</p>}
+    </form>
   );
 }
 
