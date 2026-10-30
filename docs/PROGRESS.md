@@ -1265,7 +1265,7 @@ next item, blockers. -->
 - Open `wip/*`: `wip/MD.3` (base 1d2ee26a, head 2e9d3bb4): `loreFor` (GM notes tagged `lore` + `npc:`/`place:`, newest first) and `loreTags` with unit tests; quick responses now read kept lore (route test). Next step: a Keep button on a quick answer and on a generated item (editable, sends a GM `note.create` with `loreTags`), a Lore view listing and editing lore notes, lore in generation prompts, the projection canary, and e2e Keep → Lore view; then D260 and review.
 - Lows to QUALITY Backlog. Next: MD.3. Blockers: none.
 
-### Run r895f81d3 · 2026-10-30 15:11–16:00 UTC (close-out at minute 46)
+### Run r895f81d3 · 2026-10-30 15:11–15:57 UTC (close-out at minute 45; lock released at minute 46: the open MD.3 Medium needs a UI change plus a review round, which cannot finish before the 52 hard stop; pushed to `wip/MD.3`)
 - Preflight: repo already attached; fetched and fast-forwarded main; lock pushed cleanly; vitest 5.0.5; fable, sonnet and haiku reviewers work (worktree, blocking calls; build ran in a fork beside the sweep). **CI red on main (1d2ee26a)**: M8.3, MC.10, MC.A. No new answers. Sweep hour (15 UTC), rotation A.
 - CI fixed (bff5db12, pushed): MD.2 fallout in one CSS rule and two stale tests (REVIEW-LOG).
 - Quality sweep A (ee438ac1..2b49d88f): Rules · fable 0 H / 2 M / 4 L; Boundaries · sonnet 0 / 0 / 1; Tests · haiku 0 / 5 / 5. Confirmed 6 M → QF.33–QF.35; 1 M lowered to Low (e2e canaries exist); Lows to Backlog. Last sweep → bff5db12, next rotation B.
