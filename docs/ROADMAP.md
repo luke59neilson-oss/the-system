@@ -508,7 +508,7 @@ the rest follow in file order. Each gets its own §6 review.
   `expectToast`; (d) the free-points line read "The GM set your race level
   3 free points". Sweep B 2026-10-30, Tests and UX. *Accept:* each mutation
   caught; M5.3 green.
-- [ ] **QF.37 Quick-response buttons show their names.** At 1366×768 the five
+- [x] **QF.37 Quick-response buttons show their names.** At 1366×768 the five
   fixed buttons truncate to "1 Yes…", "2 Yes…", "3 No,…" (`styles.css`
   ~3095 `nowrap` + ellipsis in a 5-column grid), so the GM cannot tell
   "Yes, and…" from "Yes, but…" without hovering (DESIGN §11, L22: find them

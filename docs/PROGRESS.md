@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-30): MU.3 done and reviewed (XP context in the award box); sweep B fixed QF.36 (High). MU.4 (spells) built on `wip/MU.4`, review round 1 back with 2 Mediums to fix.
-**Next item:** MU.4 spells (resume `wip/MU.4`: merge main, fix the 2 round-1 Mediums in REVIEW-LOG, sonnet round 2); then QF.37
+**Status:** in progress (2026-10-30): MU.4 (spells) and QF.37 done and reviewed. MU.5 (Cast) built on `wip/MU.5`, review round 1 back with 2 Mediums to fix.
+**Next item:** MU.5 Cast (resume `wip/MU.5`: merge main, fix the 2 round-1 Mediums in REVIEW-LOG, sonnet round 2); then MU.6
 **Blockers:** none
 
 ## Run log
@@ -1330,3 +1330,12 @@ next item, blockers. -->
 - Open `wip/*`: `wip/MU.4` (head ebe1d236).
 - Next: MU.4, then QF.37. Blockers: none.
 
+
+### Run · 2026-10-30 22:07–22:56 UTC (close-out at minute 45; end minute 49)
+- Preflight: `add_repo` not offered; repo already cloned and in scope; fetched and fast-forwarded main; lock pushed cleanly; vitest 5.0.5; sonnet reviewers work (worktree, blocking calls; builds ran in forks beside the reviews). CI green on main (93a7a0e3). No new answers. Not a sweep or efficiency hour.
+- MU.4 finished: resumed `wip/MU.4`, merged main (DECISIONS conflict, both kept); round-1 Mediums fixed (D270: casting follows the entry like effects; `castingForSkill` lends the nearest lower rarity's cost after an upgrade with no entry); Q85; round 2 sonnet 0 High, 0 Medium, 4 Low (to Backlog). Merged to main.
+- QF.37 done (fork build): names wrap whole with a 12 px floor (keys 11 px), e2e at 1366×768 and 1920×1080; sonnet 2 rounds (round 1: 2 Medium — no size floor, one viewport — fixed; round 2: 0 High, 0 Medium, 3 Low: floor path untested on a panel under ~355 px, near-duplicate 1920 shot, custom labels unchecked).
+- MU.5 on `wip/MU.5` (head e8ab6cba, base main 053ac53c), built by a fork: `skill.cast` command/event (price stored in the event, owner-only, refused when the pool is too low), practice entry tagged `cast` (player source, for review), owner notification, change-log undo, Cast button in the skill dialog, golden `cast.jsonl`, `e2e/MU.5.spec.ts` with screenshots; D271. Review round 1 (sonnet): 0 High, 2 Medium — (1) no projection canary case for casts (add one to `projection.test.ts`); (2) the e2e never checks the GM's practice review shows the unreviewed "Cast [Arcane Bolt]" entry, nor that undo removes it. Lows: too-low message shown twice; Cast button looks enabled when too low; removed pool id in refusal; change-log row lacks amount; feed screenshot cut off. Next step: merge main into `wip/MU.5`, fix both Mediums, sonnet round 2.
+- Tests: unit 1,641 on main before the QF.37 merge (1,629 + MU.4's). Engine coverage not re-measured this run.
+- Open `wip/*`: `wip/MU.5` (head e8ab6cba).
+- Next: MU.5, then MU.6. Blockers: none.
