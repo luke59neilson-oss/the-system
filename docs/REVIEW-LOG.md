@@ -1060,3 +1060,7 @@
 
 ## 2026-10-30 · Quality sweep A · fixes
 - None applied this run; confirmed Mediums queued as QF.33–QF.35.
+- M3 fixed (e3668fc5): the Lore view edits title, NPC and place (`retagLore` replaces only the npc:/place: tags, keeps lore/session/other tags) and deletes after a confirm; unit tests and e2e extended.
+
+## 2026-10-30 · MD.3 · round 2 · sonnet (worktree, e3668fc5)
+- 0 High / 0 Medium / 3 Low. M2, M3 verified fixed (M1 taken from its d51bce51 tests); check 1,544 unit and MD.3 e2e green in the reviewer's worktree. Lows (Edit on a second note drops the first draft; status line not cleared on Cancel; blank title saves as "Lore" silently) to QUALITY Backlog. MD.3 checked.

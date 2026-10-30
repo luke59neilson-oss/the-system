@@ -932,7 +932,7 @@ fixture-backed fake in tests.
   list; the row also refreshes when a new player question or attempt is
   heard, not only on the timer. *Accept:* unit tests for stable slots
   (fill, dismiss, overflow); e2e with keys 6–0.
-- [ ] **MD.3 Keep lore.** **Keep** on a quick response or a generated item
+- [x] **MD.3 Keep lore.** **Keep** on a quick response or a generated item
   saves it (editable before saving) as a GM lore note tagged to the NPC,
   place and session; a Lore view lists and edits kept lore; prompts for that
   NPC or place include the matching lore (bounded, newest first) with an
