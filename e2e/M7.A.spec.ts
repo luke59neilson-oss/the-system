@@ -98,7 +98,6 @@ test('a sample encounter end to end; stability reaches players only when shown',
   await openWindow(gm, 'encounter');
   await sideA.getByLabel('Who').selectOption({ label: 'Jake' });
   await sideA.getByLabel('Stat').selectOption({ label: 'Agility' });
-  await openWindow(gm, 'bestiary');
   await sideB.getByLabel('Who').selectOption({ label: 'SECRET Pale Hunter (bestiary)' });
   await sideB.getByLabel('Stat').selectOption({ label: 'Agility' });
   await expect(sideB.getByRole('textbox', { name: 'Value', exact: true })).toHaveValue('17');

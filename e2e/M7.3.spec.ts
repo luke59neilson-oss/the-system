@@ -77,7 +77,6 @@ test('the GM rolls and shares contests, deals damage and runs a clock', async ({
   );
 
   // A grade wall: two grades above, no roll, the higher grade wins.
-  await openWindow(gm, 'bestiary');
   await sideB.getByLabel('Who').selectOption({ label: 'SECRET Beast Lord (bestiary)' });
   await sideB.getByLabel('Stat').selectOption({ label: 'Strength' });
   await expect(sideB.getByRole('textbox', { name: 'Value', exact: true })).toHaveValue('31337');
