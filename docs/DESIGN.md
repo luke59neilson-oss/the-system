@@ -420,6 +420,28 @@ a name, a keeper NPC, wares and a hook.
   rarity ceilings, grades). Kinds: shops (name, keeper NPC, wares with
   prices, an optional quest or complication), NPCs, places, encounters
   (bestiary entries at sensible grades), items, quest hooks.
+- **Quick responses (Luke, 2026-10-30):** ten buttons in two fixed rows on
+  the co-DM panel, keys 1–0, so the GM learns them by feel.
+  - **Slots 1–5 never change:** 1 **Yes, and…** (it works, plus something),
+    2 **Yes, but…** (it works, at a cost), 3 **No, but…** (it doesn't; here is
+    another way), 4 **In character** (a few lines in the voice of the NPC
+    being spoken to, with a legend, rumour or hook where it fits), 5
+    **Twist** (something unexpected happens). Names and the instruction
+    behind each can be edited in settings; these are the defaults.
+  - **Slots 6–10** are the co-DM's picks (the suggestion chips), in stable
+    positions: a new pick fills an empty or dismissed slot and never
+    reshuffles the others.
+  - A button answers the most recent player question or attempt, shown as
+    the quote it answers; clicking a transcript line points the buttons at
+    that line instead, and with listening off the GM types the line.
+  - Each answer is one line the GM can say as-is plus 2–3 short beats (a
+    hook, a detail, a name) to riff on. Answers are made on click with the
+    fast model and appear as they are written; **Richer** re-asks the strong
+    model. Nothing is pre-drafted (Luke chose click-only).
+  - **Keep** saves an answer (or any part of it) as a GM lore note tagged to
+    the NPC, place and session; the co-DM includes kept lore for the NPC and
+    place in later prompts and does not contradict it. Lore stays GM-only
+    unless the GM shares the note.
 - **Shops** are GM-side: the GM narrates, and a purchase is a GM trade that
   the shop's price list fills in.
 - **Loading screen:** a System-styled broadcast ("[The System is

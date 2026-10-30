@@ -886,3 +886,39 @@ it is usable early (Luke can run a preview build at any point).
   shop approved behind a loading screen, a practice draft confirmed, the
   summary. `fable` review. `docs/GM-GUIDE.md` gains a co-DM chapter and a
   short live checklist for Luke's key. "Preview ready" (LOOP §8.2).
+
+## MD — Co-DM quick responses (Luke, 2026-10-30; DESIGN §11; L22)
+
+Runs never call the paid API (LOOP Hard rules); every AI call uses the
+fixture-backed fake in tests.
+
+- [ ] **MD.1 The fixed five.** A row of five buttons on the co-DM panel with
+  keys 1–5, always in this order: Yes, and… · Yes, but… · No, but… · In
+  character · Twist. Each sends the fast model the target line, the recent
+  transcript, bounded campaign context (party, region, the NPC in the scene:
+  the last NPC the GM named or voiced, changeable from a picker) and kept
+  lore (MD.3), and shows one sayable line plus 2–3 beats, streamed as it is
+  written, under the quote it answers. Target: the newest player question or
+  attempt; clicking a transcript line retargets; with listening off, a text
+  box. **Richer** re-asks the strong model. Settings let the GM rename,
+  rewrite the instruction behind, and reorder the five; Reset restores the
+  defaults. GM-only, counted in the spend counter. *Accept:* fake-backed
+  tests for each button and for retargeting, edited instructions reaching
+  the prompt, keys 1–5, the canary (no response text in player frames); e2e
+  from a fixture transcript line to a shown answer.
+- [ ] **MD.2 The co-DM's five.** The suggestion chips (MC.8) become a second
+  fixed row of five slots with keys 6–0: a new chip fills an empty or
+  dismissed slot and never reorders the others; extra chips wait in a "more"
+  list; the row also refreshes when a new player question or attempt is
+  heard, not only on the timer. *Accept:* unit tests for stable slots
+  (fill, dismiss, overflow); e2e with keys 6–0.
+- [ ] **MD.3 Keep lore.** **Keep** on a quick response or a generated item
+  saves it (editable before saving) as a GM lore note tagged to the NPC,
+  place and session; a Lore view lists and edits kept lore; prompts for that
+  NPC or place include the matching lore (bounded, newest first) with an
+  instruction not to contradict it. Players never see lore unless the GM
+  shares the note. *Accept:* projection canary (lore notes GM-only);
+  fake-backed test that kept lore reaches the prompt; e2e Keep → Lore view.
+- [ ] **MD.A Acceptance and review.** A fixture session uses all ten slots and
+  keeps a legend; full suite green; `fable` review; "Preview ready"
+  (LOOP §8.2).

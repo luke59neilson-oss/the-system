@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** build complete (2026-10-26): every roadmap item checked except deferred M9.4; `docs/DONE.md` written. Preview ready: Actions → Release → Run workflow (MC).
-**Next item:** none (DONE.md). Luke: run the co-DM live checklist in GM-GUIDE with your key; delete DONE.md to restart runs.
+**Status:** in progress again (2026-10-30): every earlier milestone done; new milestone MD (co-DM quick responses, DESIGN §11) added; `docs/DONE.md` removed. Preview ready: the 2026-10-30 build has everything before MD.
+**Next item:** MD.1 The fixed five
 **Blockers:** none
 
 ## Run log
