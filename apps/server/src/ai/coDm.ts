@@ -56,6 +56,8 @@ export interface CoDmStatus {
 
 export class CoDm {
   readonly keys: KeyStore;
+  /** The OS app-data folder the co-DM keeps its settings in. */
+  readonly dir: string;
   readonly spend = new SpendCounter();
   /** Every AI call goes through this; each reply is counted. */
   readonly client: AiClient;
@@ -65,6 +67,7 @@ export class CoDm {
   private countedFor: string | null;
 
   constructor(options: CoDmOptions) {
+    this.dir = options.dir;
     this.keys = new KeyStore(options.dir, options.cipher);
     this.settingsFile = path.join(options.dir, AI_SETTINGS_FILE);
     this.models = this.readModels();

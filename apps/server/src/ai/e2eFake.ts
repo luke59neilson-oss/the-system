@@ -6,7 +6,7 @@
 // any key that is not an obvious test key (`sk-ant-e2e-…`), so a real key
 // can never be stored with it.
 import { AiError, type AiClient, type AiModelSettings } from './client';
-import { FixtureAiClient } from './fake';
+import { FixtureAiClient, streamPieces } from './fake';
 import { GENERATE_FIXTURES } from './fixtures/generate';
 import type { SecretCipher } from './keyStore';
 import type { SpeakerEmbedder } from '../speech/speakers';
@@ -62,6 +62,21 @@ export function e2eFakeClient(key: () => string | null, models: () => AiModelSet
           model: models().fast,
           usage: { inputTokens: 400, outputTokens: 60 },
         });
+      }
+      if (last.startsWith('Quick response.')) {
+        const text = e2eQuickResponse(last, request.role);
+        return (async () => {
+          for (const piece of streamPieces(text)) {
+            if (request.signal?.aborted) throw new AiError('The request was cancelled', 'network');
+            request.onText?.(piece);
+            await new Promise((r) => setTimeout(r, 15));
+          }
+          return {
+            text,
+            model: models()[request.role],
+            usage: { inputTokens: 600, outputTokens: 60 },
+          };
+        })();
       }
       if (request.role === 'fast' && last.startsWith('Prepare ahead.')) {
         return Promise.resolve({
@@ -253,4 +268,24 @@ export function e2eFakeFromEnv(env: NodeJS.ProcessEnv): {
         speakers: e2eFakeSpeakers(),
       }
     : null;
+}
+
+/**
+ * MD.1, TEST ONLY: a quick response that names the button, the line it
+ * answers and the NPC, so the e2e can tell retargeting and edited
+ * instructions reached the prompt. The strong model (Richer) says so.
+ */
+export function e2eQuickResponse(prompt: string, role: 'fast' | 'strong'): string {
+  const field = (name: string) =>
+    new RegExp(`^${name}: (.*)$`, 'mu').exec(prompt)?.[1]?.trim() ?? '';
+  const button = field('Button');
+  const line = field('Answer this line').replace(/^"|"$/gu, '');
+  const npc = field('NPC in the scene');
+  const instruction = field('Instruction');
+  return [
+    `SAY: ${role === 'strong' ? '(richer) ' : ''}${button} to "${line}"`,
+    `- NPC: ${npc}`,
+    `- Instruction: ${instruction}`,
+    '- A pale glow pulses under the skin of the canyon',
+  ].join('\n');
 }

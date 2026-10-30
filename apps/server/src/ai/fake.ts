@@ -55,7 +55,14 @@ export class FixtureAiClient implements AiClient {
       },
     };
     const delay = fixture.delayMs ?? 0;
-    if (delay <= 0) return Promise.resolve(reply);
+    // MD.1: a streamed request hears the text in word-sized pieces first.
+    const stream = () => {
+      if (request.onText) for (const piece of streamPieces(fixture.text)) request.onText(piece);
+    };
+    if (delay <= 0) {
+      stream();
+      return Promise.resolve(reply);
+    }
     return new Promise((resolve, reject) => {
       const stop = () => {
         clearTimeout(timer);
@@ -63,10 +70,16 @@ export class FixtureAiClient implements AiClient {
       };
       const timer = setTimeout(() => {
         request.signal?.removeEventListener('abort', stop);
+        stream();
         resolve(reply);
       }, delay);
       if (request.signal?.aborted) stop();
       else request.signal?.addEventListener('abort', stop, { once: true });
     });
   }
+}
+
+/** Splits text into word-sized pieces that join back to the same text (MD.1 streaming). */
+export function streamPieces(text: string): string[] {
+  return text.match(/\s*\S+|\s+$/gu) ?? [];
 }

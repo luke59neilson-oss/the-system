@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { IncomingContent } from './ContentImport';
 import { LOADING_TEXT } from './loadingScreen';
 import { PrepareAhead } from './PrepareAhead';
+import { QuickResponses, type PickedLine } from './QuickResponses';
 import { SessionNotes } from './SessionNotes';
 import { spendLine, useLiveSpend, type Spend } from './spend';
 
@@ -31,8 +32,11 @@ export function CoDmPanel({
   onGenerated,
   onLoading,
   onLoadingFailed,
+  picked = null,
 }: {
   gmKey: string;
+  /** MD.1: the transcript line the GM last clicked, to point the quick responses at. */
+  picked?: PickedLine | null;
   onGenerated: (content: Omit<IncomingContent, 'seq'>) => void;
   /** MC.4: send the loading screen (pinned broadcast) as a generation starts. */
   onLoading?: (text: string | null, clearOnApprove: boolean) => void;
@@ -140,6 +144,14 @@ export function CoDmPanel({
   return (
     <section className="window" aria-labelledby="codm-heading">
       <h2 id="codm-heading">Co-DM</h2>
+      <QuickResponses
+        gmKey={gmKey}
+        picked={picked}
+        onSpend={(s) => {
+          setSeedSpend(s);
+          setReady(true);
+        }}
+      />
       <Suggestions
         gmKey={gmKey}
         onUse={(chip) => {

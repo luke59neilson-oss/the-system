@@ -37,8 +37,11 @@ interface Capture {
 export function ListenPanel({
   gmKey,
   characters = [],
+  onPickLine,
 }: {
   gmKey: string;
+  /** MD.1: clicking a line points the quick responses at it. */
+  onPickLine?: (text: string) => void;
   /** MC.6: the party, for voice enrolment. */
   characters?: readonly { id: string; name: string }[];
 }) {
@@ -249,8 +252,22 @@ export function ListenPanel({
               <time dateTime={l.at}>
                 {new Date(l.at).toLocaleTimeString([], { hour12: false })}
               </time>{' '}
-              {l.speaker ? `${l.speaker}: ` : ''}
-              {l.text}
+              {onPickLine ? (
+                <button
+                  type="button"
+                  className="line-pick"
+                  title="Point the quick responses at this line"
+                  onClick={() => onPickLine(l.text)}
+                >
+                  {l.speaker ? `${l.speaker}: ` : ''}
+                  {l.text}
+                </button>
+              ) : (
+                <>
+                  {l.speaker ? `${l.speaker}: ` : ''}
+                  {l.text}
+                </>
+              )}
             </li>
           ))}
         </ol>

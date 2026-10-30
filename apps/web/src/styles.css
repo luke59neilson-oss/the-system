@@ -3006,3 +3006,63 @@ ol.change-log li.undone .change-text {
   font-style: italic;
   opacity: 0.85;
 }
+
+/* MD.1: quick responses (GM only): five fixed buttons with their keys. */
+.quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+.quick-row button {
+  flex: 1 1 auto;
+  padding: 0.45rem 0.5rem;
+  white-space: nowrap;
+}
+.quick-row kbd {
+  display: inline-block;
+  min-width: 1.2em;
+  padding: 0 0.25em;
+  border: 1px solid var(--accent, currentColor);
+  border-radius: 3px;
+  font-size: 0.8em;
+  opacity: 0.85;
+}
+.quick-target q {
+  font-style: italic;
+}
+.quick-answer {
+  border: 1px solid var(--accent, currentColor);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+}
+.quick-answer blockquote {
+  margin: 0 0 0.25rem;
+  font-style: italic;
+  opacity: 0.85;
+}
+.quick-say {
+  font-size: 1.1em;
+  font-weight: 600;
+  margin: 0.25rem 0;
+}
+.quick-beats {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.2rem;
+}
+.quick-settings ol {
+  padding-left: 1.2rem;
+}
+.quick-settings li {
+  margin-bottom: 0.6rem;
+}
+.transcript .line-pick {
+  all: unset;
+  display: inline;
+  cursor: pointer;
+}
+.transcript .line-pick:hover,
+.transcript .line-pick:focus-visible {
+  text-decoration: underline;
+  outline: 1px dotted var(--accent, currentColor);
+}

@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { QuickResponseSettings } from './QuickResponseSettings';
 import { shouldPollSpend, spendLine, useLiveSpend } from './spend';
 
 interface CoDmStatus {
@@ -182,6 +183,7 @@ export function CoDmSettings({ gmKey }: { gmKey: string }) {
             Test connection
           </button>
           <p data-testid="codm-spend">{spendLine(spend ?? status.spend)}</p>
+          <QuickResponseSettings gmKey={gmKey} />
           {message && (
             <p role="status" className="muted">
               {message}

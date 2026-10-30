@@ -588,3 +588,12 @@ DESIGN/ROADMAP; do not re-apply them.
     been tried on real voices yet; your first session with the mic will
     show it. Default: keep 0.6 / 0.1 and the stricter bar for one voice.
     Option: lower them if too few lines get names.
+
+79. **Which line do the quick responses answer? (MD.1, D256)** The buttons
+    answer the newest line that reads as a player's question or attempt (ends
+    with "?", or "I try…", "can we…", "I sneak…"); with none, the newest line.
+    The "NPC in the scene" is the one last named aloud (by your name for it or
+    the name players know); the laptop cannot tell who is voicing whom, so
+    the picker changes it. Your button names, instructions and order are
+    saved on the laptop, so they are the same in every campaign. Default:
+    as described. Option: per-campaign button settings.

@@ -27,6 +27,7 @@ import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
 import { SessionPanel } from './SessionPanel';
 import { ContentImport, type IncomingContent } from './ContentImport';
 import { CoDmPanel } from './CoDmPanel';
+import type { PickedLine } from './QuickResponses';
 import { ListenPanel } from './ListenPanel';
 import { PortraitPicker } from './PortraitControls';
 import { PartyDashboard } from './PartyDashboard';
@@ -104,6 +105,8 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
   const [picked, setPicked] = useState<string[] | null>(null);
   // A dashboard selection chip asks the offer builder to open that selection (M5.1).
   const [offerTarget, setOfferTarget] = useState<OfferTarget | null>(null);
+  // MD.1: the transcript line the GM clicked for the quick responses.
+  const [quickLine, setQuickLine] = useState<PickedLine | null>(null);
   // Once opened, Table view's panes stay connected (hidden) across switches.
   const [tableOpened, setTableOpened] = useState(false);
   // MC.2: co-DM generations open in the Import window.
@@ -207,6 +210,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <SessionPanel client={client} state={state} gmKey={gmKey} />
               <ListenPanel
                 gmKey={gmKey}
+                onPickLine={(text) => setQuickLine((p) => ({ text, n: (p?.n ?? 0) + 1 }))}
                 characters={state.characterOrder.flatMap((id) => {
                   const c = state.characters[id];
                   return c ? [{ id, name: c.name }] : [];
@@ -214,6 +218,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               />
               <CoDmPanel
                 gmKey={gmKey}
+                picked={quickLine}
                 onGenerated={(c) => setIncoming((cur) => ({ ...c, seq: (cur?.seq ?? 0) + 1 }))}
                 onLoading={sendLoading}
                 onLoadingFailed={endLoading}

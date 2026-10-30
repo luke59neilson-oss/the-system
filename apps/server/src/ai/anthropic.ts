@@ -54,6 +54,7 @@ export class AnthropicClient implements AiClient {
           max_tokens: request.maxTokens,
           system: request.system,
           messages: request.messages,
+          ...(request.onText ? { stream: true } : {}),
         }),
       });
     } catch (e) {
@@ -76,6 +77,7 @@ export class AnthropicClient implements AiClient {
             : `The API answered ${res.status}`;
       throw new AiError(body ? `${lead} (${body})` : lead, kind);
     }
+    if (request.onText) return readStream(res, model, request.onText, key);
     const data = (await res.json().catch(() => null)) as MessagesReply | null;
     const blocks = Array.isArray(data?.content) ? (data.content as unknown[]) : null;
     const input = data?.usage?.input_tokens;
@@ -96,4 +98,88 @@ export class AnthropicClient implements AiClient {
       usage: { inputTokens: input, outputTokens: output },
     };
   }
+}
+
+/**
+ * MD.1: reads a streamed Messages reply (server-sent events), passing each
+ * text delta on as it arrives; resolves with the whole text and the usage.
+ */
+export async function readStream(
+  res: Response,
+  fallbackModel: string,
+  onText: (delta: string) => void,
+  key?: string,
+): Promise<AiReply> {
+  if (!res.body) throw new AiError('The API reply was not in the expected shape', 'bad-reply');
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let text = '';
+  let model = fallbackModel;
+  let input: number | null = null;
+  let output: number | null = null;
+  let stopped = false;
+  const handle = (data: string) => {
+    let event: {
+      type?: unknown;
+      message?: { model?: unknown; usage?: { input_tokens?: unknown; output_tokens?: unknown } };
+      delta?: { type?: unknown; text?: unknown };
+      usage?: { output_tokens?: unknown; input_tokens?: unknown };
+      error?: { message?: unknown };
+    };
+    try {
+      event = JSON.parse(data) as typeof event;
+    } catch {
+      return;
+    }
+    if (event.type === 'message_start') {
+      if (typeof event.message?.model === 'string') model = event.message.model;
+      const u = event.message?.usage;
+      if (typeof u?.input_tokens === 'number') input = u.input_tokens;
+      if (typeof u?.output_tokens === 'number') output = u.output_tokens;
+    } else if (event.type === 'content_block_delta') {
+      if (event.delta?.type === 'text_delta' && typeof event.delta.text === 'string') {
+        text += event.delta.text;
+        onText(event.delta.text);
+      }
+    } else if (event.type === 'message_delta') {
+      if (typeof event.usage?.output_tokens === 'number') output = event.usage.output_tokens;
+      if (typeof event.usage?.input_tokens === 'number') input = event.usage.input_tokens;
+    } else if (event.type === 'message_stop') {
+      stopped = true;
+    } else if (event.type === 'error') {
+      const why = typeof event.error?.message === 'string' ? event.error.message : 'stream error';
+      throw new AiError(`The API stopped mid-answer (${redactKey(why, key)})`, 'bad-reply');
+    }
+  };
+  const drain = (final: boolean) => {
+    const parts = buffer.split(/\r?\n\r?\n/u);
+    buffer = final ? '' : (parts.pop() ?? '');
+    for (const part of parts) {
+      const data = part
+        .split(/\r?\n/u)
+        .filter((l) => l.startsWith('data:'))
+        .map((l) => l.slice(5).trimStart())
+        .join('\n');
+      if (data !== '') handle(data);
+    }
+  };
+  const reader = res.body.getReader();
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      drain(false);
+    }
+  } catch (e) {
+    if (e instanceof AiError) throw e;
+    const why = e instanceof Error ? e.message : String(e);
+    throw new AiError(`The answer was cut off: ${redactKey(why, key)}`, 'network');
+  }
+  buffer += decoder.decode();
+  drain(true);
+  if (!stopped || input === null || output === null) {
+    throw new AiError('The API answer ended early', 'bad-reply');
+  }
+  return { text, model, usage: { inputTokens: input, outputTokens: output } };
 }

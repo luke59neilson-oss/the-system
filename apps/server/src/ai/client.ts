@@ -20,6 +20,11 @@ export interface AiRequest {
   readonly timeoutMs?: number;
   /** Aborts the call, e.g. when the GM cancels or closes the panel (MC.2). */
   readonly signal?: AbortSignal;
+  /**
+   * MD.1: called with each piece of text as the model writes it (streamed).
+   * The reply still resolves with the whole text and the usage.
+   */
+  readonly onText?: (delta: string) => void;
 }
 
 export interface AiUsage {
