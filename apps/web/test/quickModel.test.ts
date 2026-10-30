@@ -4,6 +4,7 @@ import {
   isTypingTarget,
   keyForSlot,
   moveSlot,
+  paneShown,
   slotForKey,
   splitLines,
   streamingPreview,
@@ -85,5 +86,14 @@ describe('a stream that stops early (MD.1 review M1)', () => {
     const done = foldQuick(started, { type: 'done', say: 's', beats: [] });
     expect(endQuick(done, 'cut off')).toBe(done);
     expect(endQuick(null, 'x')).toBeNull();
+  });
+
+  it('keys work only while the panel is on screen, not in a hidden GM pane (View as)', () => {
+    const at = (hiddenAncestor: boolean) => ({
+      closest: (sel: string) => (sel === '[hidden]' && hiddenAncestor ? {} : null),
+    });
+    expect(paneShown(at(false))).toBe(true);
+    expect(paneShown(at(true))).toBe(false);
+    expect(paneShown(null)).toBe(false);
   });
 });

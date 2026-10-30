@@ -118,6 +118,27 @@ test('a fixture session uses all ten slots and keeps a legend', async ({ browser
   expect(seen.size).toBe(5);
   await quick.scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-ten-slots-1366x768.png') });
+  await row.scrollIntoViewIfNeeded();
+  await gm.screenshot({ path: path.join(shots, 'gm-picks-6-0-1366x768.png') });
+
+  // Review M1: while the GM views as a character, keys 1–0 do nothing (no
+  // paid call, no hidden form filled).
+  const quickPosts: string[] = [];
+  gm.on('request', (r) => {
+    if (r.method() === 'POST' && /\/api\/gm\/ai\/quick/u.test(r.url())) quickPosts.push(r.url());
+  });
+  await needs.fill('');
+  const bar = gm.getByRole('navigation', { name: 'View as' });
+  await bar.getByRole('button', { name: 'Jake' }).click();
+  await gm.keyboard.press('2');
+  await gm.keyboard.press('6');
+  await gm.waitForTimeout(500);
+  expect(quickPosts).toEqual([]);
+  await bar.getByRole('button', { name: 'GM' }).click();
+  await expect(needs).toHaveValue('');
+  await gm.locator('body').click({ position: { x: 5, y: 5 } });
+  await gm.keyboard.press('2');
+  await expect.poll(() => quickPosts.length).toBeGreaterThan(0);
 
   // Players never see the legend.
   expect(frames.length).toBeGreaterThan(0);

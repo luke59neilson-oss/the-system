@@ -3,6 +3,7 @@ import {
   endQuick,
   foldQuick,
   isTypingTarget,
+  paneShown,
   keepTags,
   keepText,
   keepTitle,
@@ -74,6 +75,7 @@ export function QuickResponses({
   const [last, setLast] = useState<{ slot: number; target: string | undefined } | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
+  const root = useRef<HTMLDivElement | null>(null);
   useEffect(() => () => abort.current?.abort(), []);
 
   useEffect(() => {
@@ -176,6 +178,7 @@ export function QuickResponses({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat || isTypingTarget(e.target as HTMLElement | null, e)) return;
+      if (!paneShown(root.current)) return;
       const slot = slotForKey(e.key);
       if (slot === null || slot > 5) return;
       e.preventDefault();
@@ -193,7 +196,7 @@ export function QuickResponses({
     : null;
 
   return (
-    <div className="quick" data-testid="quick-responses">
+    <div className="quick" data-testid="quick-responses" ref={root}>
       <h3>Quick responses (GM only)</h3>
       <p className="quick-target" data-testid="quick-target">
         {target ? (
