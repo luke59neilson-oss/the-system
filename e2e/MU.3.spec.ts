@@ -62,5 +62,16 @@ test('the award box shows each player’s level, XP and what the award is worth'
     await expect(award.getByTestId(`worth-${kim}`)).toHaveText(' · ≈ 1.5 levels');
     await gm.screenshot({ path: path.join(shots, `gm-award-${tab}-1366x768.png`) });
   }
+
+  // Uneven shares by hand (review): 50 for Jake leaves 250 for Kim.
+  const award = gm.getByRole('form', { name: 'Award class XP' });
+  await award.getByLabel('Set shares by hand').check();
+  await award.getByLabel('Jake’s share', { exact: true }).fill('50');
+  await expect(award.getByTestId(`share-${kim}`)).toHaveText(' · 250 XP');
+  await expect(award.getByTestId(`worth-${jake}`)).toHaveText(' · ≈ 0.5 levels');
+  await expect(award.getByTestId(`worth-${kim}`)).toHaveText(' · ≈ 2.5 levels');
+  // A share too small to show reads as such.
+  await award.getByLabel('Jake’s share', { exact: true }).fill('4');
+  await expect(award.getByTestId(`worth-${jake}`)).toHaveText(' · ≈ under 0.1 levels');
   expect(errors).toEqual([]);
 });
