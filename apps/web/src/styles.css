@@ -3144,3 +3144,13 @@ ol.change-log li.undone .change-text {
   text-decoration: underline;
   outline: 1px dotted var(--accent, currentColor);
 }
+
+/* MU.2: the running log keeps the sheet in view; the full history is below. */
+.running-log ol {
+  max-height: 14rem;
+  overflow-y: auto;
+  margin: 0;
+}
+.pane-mode .running-log ol {
+  max-height: 8rem;
+}
