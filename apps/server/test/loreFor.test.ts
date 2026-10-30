@@ -23,6 +23,19 @@ describe('kept lore for a generation request (MD.3)', () => {
     expect(lines.length).toBeLessThan(50);
     expect(lines[0]).toBe(`- ${'x'.repeat(100)}`);
   });
+  it('skips a note too long for the budget and keeps the rest (review M1)', () => {
+    const lines = loreLines(['y'.repeat(4000), 'Tam owes a debt.']);
+    expect(lines).toEqual(['- Tam owes a debt.']);
+  });
+  it('matches an NPC name only as a whole word (review M2)', () => {
+    const short = [{ kind: 'gm', tags: ['lore', 'npc:Al'], body: 'Al lies.', updatedAt: at(9) }];
+    expect(loreForRequest(short, null, 'also a tamper-proof chest')).toEqual([]);
+    expect(loreForRequest(short, null, 'a rival for Al.')).toEqual(['Al lies.']);
+    const accented = [
+      { kind: 'gm', tags: ['lore', 'npc:Zoë'], body: 'Zoë sings.', updatedAt: at(9) },
+    ];
+    expect(loreForRequest(accented, null, 'a song for zoë')).toEqual(['Zoë sings.']);
+  });
 });
 
 // MD.3 (DESIGN §11 "Keep"): kept lore for the NPC and place, newest first;
