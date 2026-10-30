@@ -186,6 +186,7 @@ function Cast({
         type="button"
         data-testid="skill-cast"
         disabled={busy}
+        className={short ? 'cast-short' : undefined}
         aria-describedby="skill-cast-pool"
         onClick={() => void cast()}
       >

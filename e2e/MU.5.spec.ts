@@ -141,6 +141,11 @@ test('a player casts from their phone; too low is refused; the GM sees it and un
   await openWindow(gm, 'feed');
   await expect(feed.getByText('Cast [Arcane Bolt]: −40 MP (20 left)')).toBeVisible();
   await expect(feed.getByText('Cast [Arcane Bolt]: −40 MP (60 left)')).toBeVisible();
+  // Both casts wait in the GM's practice review as unreviewed player entries.
+  const review = gm.locator('section[aria-labelledby="practice-capture-heading"]');
+  await openWindow(gm, 'practice-capture');
+  await expect(review).toContainText('To review (2)');
+  await expect(review.getByText('Cast [Arcane Bolt]')).toHaveCount(2);
   const log = gm.locator('section[aria-labelledby="change-log"]');
   await openWindow(gm, 'change-log');
   const rows = log.getByRole('listitem').filter({ hasText: 'Jake skill cast (Arcane Bolt)' });
@@ -150,6 +155,11 @@ test('a player casts from their phone; too low is refused; the GM sees it and un
   await last.getByRole('button', { name: 'Confirm undo' }).click();
   await expect(last).toContainText('(undone)');
   await expect(detail.getByTestId('skill-cast-pool')).toHaveText('MP 60/100');
+  // Undo also takes the cast's practice entry out of the review.
+  await openWindow(gm, 'practice-capture');
+  await expect(review).toContainText('To review (1)');
+  await expect(review.getByText('Cast [Arcane Bolt]')).toHaveCount(1);
+  await openWindow(gm, 'feed');
   await gm.screenshot({ path: path.join(shots, 'gm-feed-1366x768.png') });
 
   // Jake on a laptop sees the same.

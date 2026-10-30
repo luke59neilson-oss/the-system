@@ -798,6 +798,10 @@ button.secondary:hover {
   color: var(--muted);
   white-space: nowrap;
 }
+/* MU.5: too low to cast — still pressable (the server explains), but dimmed. */
+.skill-cast button.cast-short {
+  opacity: 0.6;
+}
 .skill-casting {
   display: grid;
   grid-template-columns: max-content 1fr;
