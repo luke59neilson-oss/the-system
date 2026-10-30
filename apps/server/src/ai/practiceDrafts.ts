@@ -82,10 +82,15 @@ const lower = (a: DraftConfidence, b: DraftConfidence): DraftConfidence =>
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/** Characters whose name the line says as a whole word. */
+/**
+ * Characters whose name the line says as a whole word. Unicode letter and
+ * number boundaries, as `sceneNpc` uses, so "Zoë" matches (`\b` is ASCII-only; QF.34).
+ */
 export function namedIn(text: string, characters: readonly DraftCharacter[]): DraftCharacter[] {
   return characters.filter(
-    (c) => c.name.trim() !== '' && new RegExp(`\\b${escape(c.name.trim())}\\b`, 'iu').test(text),
+    (c) =>
+      c.name.trim() !== '' &&
+      new RegExp(`(?<![\\p{L}\\p{N}])${escape(c.name.trim())}(?![\\p{L}\\p{N}])`, 'iu').test(text),
   );
 }
 

@@ -9,6 +9,7 @@ import {
   coveredByAppAction,
   draftPractice,
   draftPrompt,
+  namedIn,
   parseDrafts,
   type DraftCharacter,
   type PracticeDraft,
@@ -59,6 +60,20 @@ describe('attribution order (app action > GM naming > voice)', () => {
   });
   it('matches whole names only', () => {
     expect(attribute(line('Jakeson waves.', 'miranda'), party, null)?.characterId).toBe('miranda');
+  });
+  it('matches non-ASCII names as whole words (QF.34)', () => {
+    const zoe: DraftCharacter = { id: 'zoe', name: 'Zoë', skills: ['Heal'] };
+    const eli: DraftCharacter = { id: 'eli', name: 'Élise', skills: [] };
+    const all = [...party, zoe, eli];
+    expect(namedIn('Zoë heals the wound.', all).map((c) => c.id)).toEqual(['zoe']);
+    expect(namedIn('ok, zoë, roll it', all).map((c) => c.id)).toEqual(['zoe']);
+    expect(namedIn('Then Élise runs.', all).map((c) => c.id)).toEqual(['eli']);
+    // Still whole names only: letters on either side are part of another word.
+    expect(namedIn('Zoëlle and aÉlise wave.', all)).toEqual([]);
+    expect(attribute(line('Zoë heals Jake.', 'miranda'), [zoe], null)).toEqual({
+      characterId: 'zoe',
+      by: 'gm-named',
+    });
   });
 });
 
