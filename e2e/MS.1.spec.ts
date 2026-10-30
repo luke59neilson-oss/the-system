@@ -116,14 +116,15 @@ test('GM creates a campaign and characters, awards XP, and broadcasts', async ({
   await page.getByRole('button', { name: 'Send broadcast' }).click();
   await expect(page.getByText('Broadcast sent')).toBeVisible();
   // One feed row for a broadcast to everyone.
-  await expect(page.getByRole('listitem').filter({ hasText: all })).toHaveText(`Everyone ${all}`);
+  const feed = page.locator('[data-window="feed"]');
+  await expect(feed.getByRole('listitem').filter({ hasText: all })).toHaveText(`Everyone ${all}`);
   expect((await live).broadcast).toBe(all);
 
   // A whisper to Jake reaches Jake only, and stays in his view after reconnecting.
   await page.getByLabel('Message').fill('You feel watched.');
   await page.getByLabel('Recipients').selectOption({ label: 'Jake' });
   await page.getByRole('button', { name: 'Send broadcast' }).click();
-  await expect(page.getByRole('listitem').filter({ hasText: 'You feel watched.' })).toHaveText(
+  await expect(feed.getByRole('listitem').filter({ hasText: 'You feel watched.' })).toHaveText(
     'Jake You feel watched.',
   );
   expect((await listen(idOf('Jake'), false)).messages).toEqual([all, 'You feel watched.']);

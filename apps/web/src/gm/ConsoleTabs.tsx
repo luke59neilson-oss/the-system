@@ -56,7 +56,8 @@ export function ConsoleTabs({
             role="tab"
             id={`tab-${t.id}`}
             aria-selected={tab === t.id}
-            aria-controls={`tabpanel-${t.id}`}
+            // Only the open tab's panel is rendered (MU.1 review).
+            aria-controls={tab === t.id ? `tabpanel-${t.id}` : undefined}
             tabIndex={tab === t.id ? 0 : -1}
             ref={(el) => {
               if (el) refs.current.set(t.id, el);

@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
-import { openWindow, reveal } from './helpers/gmTabs';
+import { openTab, openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MT.6 Broadcasts last a set time or stay pinned (DESIGN §7, Q60): sending
@@ -76,7 +76,7 @@ test('timed and pinned banners reach players; the GM removes a pinned one', asyn
   await jake.screenshot({ path: path.join(shots, 'player-pinned-banner-390x844.png') });
   // The header says a banner is up, wherever the GM has scrolled.
   const chip = gm.getByTestId('banners-chip');
-  await expect(chip.getByRole('link')).toHaveText('1 banner up');
+  await expect(chip.getByRole('button', { name: /up$/ })).toHaveText('1 banner up');
   await gm.getByRole('heading', { name: 'The System · GM' }).scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-banners-chip-1366x768.png') });
   const live = gm.locator('section[aria-labelledby="live-banners"]');
@@ -97,7 +97,16 @@ test('timed and pinned banners reach players; the GM removes a pinned one', asyn
     await form.getByRole('button', { name: 'Send broadcast' }).click();
     await expect(banners.filter({ hasText: text })).toHaveCount(1);
   }
-  await expect(chip.getByRole('link')).toHaveText('2 banners up');
+  const upChip = chip.getByRole('button', { name: /up$/ });
+  await expect(upChip).toHaveText('2 banners up');
+  // MU.1 review: the chip opens Broadcast on Session every time, not only once.
+  const sessionTab = gm.getByRole('tab', { name: 'Session', exact: true });
+  for (let i = 0; i < 2; i++) {
+    await openTab(gm, 'home');
+    await upChip.click();
+    await expect(sessionTab).toHaveAttribute('aria-selected', 'true');
+    await expect(gm.locator('[data-window="broadcast"]')).toBeVisible();
+  }
   await chip.getByRole('button', { name: 'Remove all' }).click();
   await expect(banners).toHaveCount(0);
   await expect(chip).toHaveCount(0);
