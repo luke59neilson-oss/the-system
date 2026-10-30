@@ -1064,3 +1064,9 @@
 
 ## 2026-10-30 · MD.3 · round 2 · sonnet (worktree, e3668fc5)
 - 0 High / 0 Medium / 3 Low. M2, M3 verified fixed (M1 taken from its d51bce51 tests); check 1,544 unit and MD.3 e2e green in the reviewer's worktree. Lows (Edit on a second note drops the first draft; status line not cleared on Cancel; blank title saves as "Lore" silently) to QUALITY Backlog. MD.3 checked.
+
+## 2026-10-30 · QF.33, QF.34 · round 1 · sonnet (worktree, 8842d54f)
+- 0 High / 1 Medium / 3 Low. M1 the new QF.33 route test relied on the previous test's leftover draft and failed under shuffle → fixed (ccb276cc on main as 6f6dd767): its own describe, campaign and server; session 1 drafts, ends, session 2 drafts the same use, a repeat in session 2 is blocked; fails with the session filter removed; passes shuffled (seeds 1, 3, 5; seed 2 fails only the older MC.7 test, Backlog). Verified myself (one Medium: no round 2). Lows to Backlog. QF.33, QF.34 checked.
+
+## 2026-10-30 · QF.35 · round 1 · sonnet (worktree, 7d9e28ce)
+- 0 High / 0 Medium / 4 Low. All three mutations applied by the reviewer and caught; both files pass alone and shuffled (3 seeds); `useLiveSpend` behaviour unchanged. Lows to Backlog. QF.35 checked.
