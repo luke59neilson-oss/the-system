@@ -455,6 +455,34 @@ describe('quick-response routes (MD.1)', () => {
     expect(lastPrompt()).toContain('NPC in the scene: (none)');
   });
 
+  it('kept lore for the NPC in the scene reaches the prompt (MD.3)', async () => {
+    const ctx = {
+      actor: { role: 'gm' as const },
+      sessionId: null,
+      now: () => '2026-10-30T07:30:00.000Z',
+      newId: () => `lore${++ids}`,
+    };
+    const r = execute(
+      store.campaign,
+      {
+        type: 'note.create',
+        characterId: null,
+        kind: 'gm',
+        title: 'Old Tam',
+        body: 'Tam owes the ferryman a debt he will not name.',
+        tags: ['lore', 'npc:Old Tam'],
+      },
+      ctx,
+    );
+    if (!r.ok) throw new Error(r.error);
+    store.appendAll(r.events);
+    await ask({ slot: 4, npc: 'tam' });
+    expect(lastPrompt()).toContain('Kept lore (do not contradict):');
+    expect(lastPrompt()).toContain('- Tam owes the ferryman a debt he will not name.');
+    await ask({ slot: 4, npc: 'sal' });
+    expect(lastPrompt()).not.toContain('ferryman a debt');
+  });
+
   it('Richer re-asks the strong model', async () => {
     const { events: ev } = await ask({ slot: 2, richer: true });
     expect(fake.requests.at(-1)?.role).toBe('strong');
