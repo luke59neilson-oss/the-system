@@ -22,6 +22,7 @@
     "banned": "node scripts/check-banned.mjs",
     "metrics": "node scripts/metrics.mjs",
     "clock": "node scripts/clock.mjs",
+    "orient": "node scripts/orient.mjs",
     "golden:record": "node scripts/golden-manifest.mjs record",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run banned && npm run test",
     "e2e": "npm run build && playwright test --project=e2e && playwright test --project=latency",

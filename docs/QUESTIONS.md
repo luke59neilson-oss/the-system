@@ -615,3 +615,10 @@ DESIGN/ROADMAP; do not re-apply them.
     legend you copy it into a party note. Default: as described. Option: a
     "Share with the party" button on a lore note that makes that party copy
     for you.
+
+83. **CI on wip branches instead of long local e2e runs? (efficiency, Tier 2;
+    2026-10-30 auditor).** Run the same CI on `wip/**` pushes with the e2e
+    split into 2 shards, and let a run accept a green CI result on its pushed
+    wip commit in place of a full local e2e run at close-out and `Mx.A`. Local
+    full runs on the 2-CPU workspace often get cut off and slow the reviewer
+    beside them. Cost: more Actions minutes on wip pushes. Default: no change.
