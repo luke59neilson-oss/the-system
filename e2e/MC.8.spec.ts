@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openTab } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MC.8 (DESIGN §11 "Suggestions"): the co-DM reads the table talk and offers
@@ -54,6 +55,7 @@ test('a suggestion chip from the table talk becomes a generated shop', async ({ 
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
+  await openTab(gm, 'session');
 
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const frames: string[] = [];

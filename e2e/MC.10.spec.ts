@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openTab } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MC.10 (DESIGN §11 "Prepare ahead"): off by default; once the GM turns it
@@ -55,6 +56,7 @@ test('a draft prepared ahead is reviewed and approved', async ({ browser }) => {
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
+  await openTab(gm, 'session');
   const saved = await gm.request.put(`${server.url}/api/gm/ai/key`, {
     headers: { 'x-gm-key': GM_KEY },
     data: { key: 'sk-ant-e2e-mc10-fake-0123456789abcdef' },

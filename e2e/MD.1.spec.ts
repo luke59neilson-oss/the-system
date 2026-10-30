@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openTab } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MD.1 (DESIGN §11 "Quick responses"): five fixed buttons, keys 1–5, answer
@@ -54,6 +55,7 @@ test('quick responses answer a transcript line with keys 1–5', async ({ browse
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
+  await openTab(gm, 'session');
   const saved = await gm.request.put(`${server.url}/api/gm/ai/key`, {
     headers: { 'x-gm-key': GM_KEY },
     data: { key: 'sk-ant-e2e-md1-fake-0123456789abcdef' },
@@ -132,6 +134,7 @@ test('quick responses answer a transcript line with keys 1–5', async ({ browse
 
   // Settings: rename Twist and rewrite its instruction, move it up one; the
   // row and the prompt follow. Reset brings the defaults back.
+  await openTab(gm, 'library');
   const settings = gm.locator('form[aria-labelledby="quick-settings-heading"]');
   await settings.getByLabel('Button 5 name').fill('Chaos');
   await settings.getByLabel('Button 5 instruction').fill('Set something on fire.');
@@ -142,6 +145,7 @@ test('quick responses answer a transcript line with keys 1–5', async ({ browse
   );
   await settings.getByRole('heading').evaluate((h) => h.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-quick-settings-1366x768.png') });
+  await openTab(gm, 'session');
   await expect(row.getByRole('button').nth(3)).toHaveText('4 Chaos', { timeout: 10_000 });
   await gm.locator('body').click({ position: { x: 5, y: 5 } });
   await gm.keyboard.press('4');
@@ -149,9 +153,11 @@ test('quick responses answer a transcript line with keys 1–5', async ({ browse
     'Chaos to "Can I bargain with the ferryman?"',
   );
   await expect(answer.locator('.quick-beats')).toContainText('Instruction: Set something on fire.');
+  await openTab(gm, 'library');
   await settings.getByRole('button', { name: 'Reset' }).click();
   await expect(settings.getByLabel('Button 4 name')).toHaveValue('In character');
   await expect(settings.getByLabel('Button 5 name')).toHaveValue('Twist');
+  await openTab(gm, 'session');
   await expect(row.getByRole('button').nth(4)).toHaveText('5 Twist', { timeout: 10_000 });
 
   // The spend counter counted the five quick calls (suggestions may add more).

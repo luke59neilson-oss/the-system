@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync }
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openTab } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MC.5 (DESIGN §11 "Listening"): the GM turns the mic on; Chromium's fake
@@ -51,6 +52,7 @@ test('the GM listens: a GM-only transcript, and players see the listening mark',
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
+  await openTab(gm, 'session');
 
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const frames: string[] = [];
@@ -116,6 +118,7 @@ test('first use: the GM downloads the speech model, then listens', async ({ brow
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Whale');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await openTab(gm, 'session');
 
   const panel = gm.locator('section[aria-labelledby="listen-heading"]');
   const offer = panel.getByTestId('speech-model');
