@@ -101,6 +101,12 @@ export function withCasting(
   return out;
 }
 
+/** A pool's short label: the part in brackets ("Mana Points (MP)" → "MP"), else its name (MU.5). */
+export function poolLabel(rules: Pick<RulesConfig, 'pools'>, id: string): string {
+  const name = rules.pools.find((p) => p.id === id)?.name ?? id;
+  return /\(([^()]+)\)\s*$/.exec(name)?.[1] ?? name;
+}
+
 /** True when the entry is a spell: tagged "spell" (any case) or with a cost. */
 export function isSpell(def: Pick<SkillDef, 'tags' | 'cost'>): boolean {
   return def.cost !== undefined || def.tags.some((t) => t.toLowerCase() === 'spell');

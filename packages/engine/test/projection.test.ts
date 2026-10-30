@@ -750,6 +750,64 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
     return { state: s, owner, gm };
   }
 
+  it('a cast reaches only its caster: spell, cost, casting notes and practice (MU.5)', () => {
+    const ctx = testContext('cast');
+    const jakeCtx = { ...ctx, actor: { role: 'player' as const, characterId: 'jake' } };
+    const spell = (id: string, name: string, tag: string): Command => ({
+      type: 'skillDef.define',
+      id,
+      name,
+      rarity: 'common',
+      tags: ['spell'],
+      description: `${tag}-description`,
+      effects: `${GM}-${id}-effects-is-owner-only`,
+      cost: { pool: 'mp', amount: 37 },
+      cooldown: `${tag}-cooldown`,
+      range: `${tag}-range`,
+      castingNotes: `${tag}-notes`,
+    });
+    let c = run(
+      [
+        created,
+        spell('owned', 'Ownerbolt', 'OWNER-jake'),
+        // A library spell nobody owns is GM-only.
+        spell('unowned', `${GM}-Unowned`, `${GM}-unowned`),
+        {
+          type: 'character.create',
+          id: 'jake',
+          name: 'Jake',
+          className: 'Caster',
+          classSkills: [...kit.slice(0, 2), { name: 'Ownerbolt', rarity: 'common' }],
+        },
+        make('kim', 'Kim'),
+      ],
+      ctx,
+    );
+    const cast = execute(
+      c,
+      { type: 'skill.cast', characterId: 'jake', skill: 'Ownerbolt' },
+      jakeCtx,
+    );
+    if (!cast.ok) throw new Error(cast.error);
+    c = cast.campaign;
+    const state = c.state;
+    if (!state) throw new Error('no state');
+    expect(state.practice.at(-1)).toMatchObject({ action: 'Cast [Ownerbolt]', reviewed: false });
+    const jake = JSON.stringify(projectForPlayer(state, 'jake'));
+    const kim = JSON.stringify(projectForPlayer(state, 'kim'));
+    // Non-vacuous: the caster gets the spell, its cost and casting details.
+    for (const part of ['Ownerbolt', 'OWNER-jake-cooldown', 'OWNER-jake-range', 'OWNER-jake-notes'])
+      expect(jake).toContain(part);
+    expect(jake).toContain('"amount":37');
+    // Nobody else learns of the spell or the cast; nobody gets the unowned entry.
+    expect(kim).not.toContain('Ownerbolt');
+    expect(kim).not.toContain('OWNER-jake');
+    expect(kim).not.toContain('"amount":37');
+    expect(jake).not.toContain(`${GM}-unowned`);
+    expect(jake).not.toContain(`${GM}-Unowned`);
+    expect(kim).not.toContain(GM);
+  });
+
   /** Every whole number in the JSON (sentinels are integers). */
   const numbersIn = (json: string) => new Set((json.match(/\d+(?:\.\d+)?/g) ?? []).map(Number));
 

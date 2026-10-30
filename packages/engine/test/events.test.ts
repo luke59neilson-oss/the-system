@@ -997,6 +997,8 @@ describe('property: replay equals incremental state', () => {
       // MT.9: scene prompts have their own tests (scenePrompt.test.ts) and golden log.
       'scene.ended',
       'scene.answered',
+      // MU.5: casting has its own tests (cast.test.ts) and golden log (cast.jsonl).
+      'skill.cast',
     ]);
     expect(
       EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),

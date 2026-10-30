@@ -33,6 +33,8 @@ export function notificationText(n: LiveNotification): string {
       return `*Skill merge offered: [${n.skills[0]}] + [${n.skills[1]}] → [${n.name}] - Accept or decline it in the Skill Merge window*`;
     case 'skillMerge':
       return `*'DING!' Skills merged: [${n.skills[0]}] + [${n.skills[1]}] → [${n.name} (${n.rarity})]*`;
+    case 'spellCast':
+      return `Cast [${n.skill}]: −${n.amount.toLocaleString('en-US')} ${n.pool} (${n.left.toLocaleString('en-US')} left)`;
     case 'broadcast':
       return n.text;
     case 'hiddenQuest':

@@ -3,7 +3,7 @@ import { MAX_NICKNAME, type OwnSheet, type PlayerView } from '@the-system/engine
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 import { cssToken, rarityName } from './sheet';
-import { costText, kindLabel, markProgress } from './skillDetailModel';
+import { costText, kindLabel, markProgress, poolShort } from './skillDetailModel';
 
 type Skill = OwnSheet['skills'][number];
 
@@ -118,6 +118,7 @@ export function SkillDetail({
               </>
             )}
           </dl>
+          {skill.casting.cost && <Cast skill={skill} view={view} client={client} />}
         </section>
       )}
       <section aria-labelledby="skill-detail-marks">
@@ -138,6 +139,78 @@ export function SkillDetail({
         )}
       </section>
     </dialog>
+  );
+}
+
+/**
+ * MU.5: the Cast button. The pool pays the cost (the server refuses when it
+ * is too low, and the button says so first); the use goes to the GM's
+ * practice review. Cooldowns are shown above, never enforced. Absent in View
+ * as (no client).
+ */
+function Cast({
+  skill,
+  view,
+  client,
+}: {
+  skill: Skill;
+  view: PlayerView;
+  client: LiveClient | null;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const cost = skill.casting?.cost;
+  if (!cost || !client) return null;
+  const pool = view.me.pools.find((p) => p.id === cost.pool);
+  const have = pool?.current ?? 0;
+  const label = poolShort(view.rules, cost.pool);
+  const short = have < cost.amount;
+  const cast = async () => {
+    setBusy(true);
+    setMessage(null);
+    const result = await client.command({
+      type: 'skill.cast',
+      characterId: view.me.id,
+      skill: skill.name,
+    });
+    setBusy(false);
+    setMessage(
+      result.ok
+        ? { ok: true, text: `Cast! −${cost.amount} ${label}. The GM will review the use.` }
+        : { ok: false, text: friendlyError(result.error) },
+    );
+  };
+  return (
+    <div className="skill-cast">
+      <button
+        type="button"
+        data-testid="skill-cast"
+        disabled={busy}
+        className={short ? 'cast-short' : undefined}
+        aria-describedby="skill-cast-pool skill-cast-result"
+        onClick={() => void cast()}
+      >
+        Cast ({costText(view.rules, skill)})
+      </button>
+      {/* After a refusal the server's message says it; no second red line. */}
+      {!(short && message && !message.ok) && (
+        <p id="skill-cast-pool" className={short ? 'err' : 'muted'} data-testid="skill-cast-pool">
+          {short
+            ? `Not enough ${label}: ${have} of ${cost.amount}`
+            : `${label} ${have}/${pool?.max ?? have}`}
+        </p>
+      )}
+      {message && (
+        <p
+          className={message.ok ? 'ok' : 'err'}
+          role={message.ok ? 'status' : 'alert'}
+          id="skill-cast-result"
+          data-testid="skill-cast-result"
+        >
+          {message.text}
+        </p>
+      )}
+    </div>
   );
 }
 

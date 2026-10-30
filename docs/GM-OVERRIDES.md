@@ -39,6 +39,8 @@ refusal is raised.
 | `Not enough … (has …)` | packages/engine/src/economy/model.ts:140 | Edit holdings (`holdings.adjust`) sets currency and items directly |
 | `Not enough […] (has …, needs …)` | packages/engine/src/economy/model.ts:149 | Edit holdings (`holdings.adjust`) sets currency and items directly |
 | `Approve the skill re-rating first: the GM sets each kept skill's rarity and approves the list (DESIGN §6)` | packages/engine/src/events/commands.ts:1335 | One click: the GM sets and approves the re-rating in the evolution builder (the approval is the GM's own act) |
+| `Not enough … to cast […]: … of …` | packages/engine/src/events/commands.ts:889 | Set the pool (Edit sheet → pools, `character.setPools`) first, or log the use as practice without spending (`practice.log`); cooldowns are never enforced |
+| `not enough …: … of …` | packages/engine/src/events/reducer.ts:1721 | The replay check behind the one above (a recorded cast the pool cannot pay); same way through |
 | `… must be between 0 and …` | packages/engine/src/events/reducer.ts:973 | Not a rule to overrule: a pool is a value within its maximum. Raise the maximum through stats (`character.setStats`), then set the pool |
 | `the race level … points are already assigned and locked` | packages/engine/src/events/reducer.ts:1036 | Free-point override (`freePoints.override`) rewrites or clears any batch |
 | `assign exactly … points (got …)` | packages/engine/src/events/reducer.ts:1047 | Free-point override (`freePoints.override`) rewrites or clears any batch |
@@ -239,6 +241,7 @@ refusal is raised.
 | `a trade needs something on it` | packages/engine/src/events/reducer.ts:1352 | Fix the input or define the thing first |
 | `name a skill or a stat` | packages/engine/src/events/reducer.ts:1434 | Fix the input or define the thing first |
 | `a skill is listed twice` | packages/engine/src/events/reducer.ts:1435 | Fix the input or define the thing first |
+| `[…] has no cost to cast` | packages/engine/src/events/commands.ts:886 | Give the library entry a cost (Skill library → Cost pool and amount), or log the use as practice (`practice.log`) |
 | `… has no skill "…"` | packages/engine/src/events/reducer.ts:1438 | Fix the input or define the thing first |
 | `no play session "…"` | packages/engine/src/events/reducer.ts:1454 | Fix the input or define the thing first |
 | `unknown practice entry "…"` | packages/engine/src/events/reducer.ts:1464 | Fix the input or define the thing first |
