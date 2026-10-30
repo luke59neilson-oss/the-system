@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-30): milestone MD done and reviewed. **Preview ready: Actions → Release → Run workflow** (milestone MD, co-DM quick responses). MU (console tabs, player log, XP context, spells) under way.
-**Next item:** MU.1 Home dashboard and tabs (resume `wip/MU.1`: fix the last failing migrated specs, full suite, sonnet review)
+**Status:** in progress (2026-10-30): MU.1 done and reviewed (console tabs). MU.2 (player running log) under way on `wip/MU.2`.
+**Next item:** MU.2 Player running log; View as matches the player (resume `wip/MU.2`: run e2e/MU.2.spec.ts, full suite, sonnet review)
 **Blockers:** none
 
 ## Run log
@@ -1303,3 +1303,11 @@ next item, blockers. -->
 - Open `wip/*`: `wip/MU.1` (head 43f978ae).
 - Next: MU.1. Blockers: none.
 
+### Run · 2026-10-30 19:08–19:59 UTC (close-out at minute 49)
+- Preflight: repo attached; fetched and fast-forwarded main; lock pushed cleanly; vitest 5.0.5. CI green on main (b67150d6). No new answers. Hour 19: no efficiency check, no sweep.
+- MU.1 finished: last failing migrated specs fixed (MS.1, MS.4, MR.3, QF.17; then M7.3, M7.A from the full run; latency M2.A, MS.3, MS.A); M8.3 now walks every console tab from the keyboard; quick-response row fixed at five columns. Full e2e at 2 workers: 125 passed, 3 failed, all three fixed and re-run green; latency 5/8, the 3 fixed and re-run green.
+- Review: sonnet, 2 rounds (round 1: 0 High, 4 Medium; round 2: 0 High, 1 Medium, fixed). Merged to main (905a4718). D264 (orient trial renumbered from a duplicate D262), D265 (§9a placements), Q84.
+- MU.2 on `wip/MU.2` (head 7b37c2f8, base main before merge): engine `PLAYER_NOTICE_AUDIT` (every event type: notifies / silent with reason / none) and `gmChange` notices (`packages/engine/src/history/gmChanges.ts`, test `playerLog.test.ts`, 48 tests green); web wording (`gmChangeText`), running log (`RunningLog.tsx`, last 20, Full history link), View-as panes show pop-ups muted; `e2e/MU.2.spec.ts` written, not yet run. Next step: merge main into wip/MU.2, build, run MU.2 + MS.3 + QF.17 + M3.3 specs, full suite, sonnet review.
+- Tests: unit 1,559 (main) + 52 on wip. `npm run check` green on 5a9e0433; the round-2 fix (NeedsYou prop) typechecked, linted and its e2e re-run.
+- Open `wip/*`: `wip/MU.2` (head 7b37c2f8).
+- Next: MU.2. Blockers: none.

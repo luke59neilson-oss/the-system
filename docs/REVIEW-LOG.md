@@ -1073,3 +1073,9 @@
 
 ## 2026-10-30 · MD.A (milestone MD: MD.1–MD.3, QF.33–QF.35, MD.A) · round 1 · fable (worktree, 2f9c5246)
 - 0 High / 1 Medium / 5 Low. `npm run check` green (1,549), MD.1/2/3/A e2e green; 4 mutations (slot stability, lore in prompt, question-triggered refresh, typing guard) all caught; no GM-only data path found. M1 keys 1–0 stayed live while the GM pane was hidden (View as) → fixed b29da91a (`paneShown` guard on both rows; unit test; MD.A e2e step, caught by mutation). Low "MD.A shot does not show slots 6–0" fixed (new `gm-picks-6-0` screenshot). Other Lows to Backlog. Verified myself (one Medium: no round 2). Full e2e 126/126 at 2 workers; latency 7/8 under reviewer load, M11.3 passed alone (Flakes). MD.A checked.
+
+## 2026-10-30 · MU.1 Home dashboard and tabs · sonnet (2 rounds)
+- Round 1 (b632a8a1): no High; Medium: banners chip hash link worked once; Session lacked party at a glance / quick vs full Award XP identical; §9a windows elsewhere without a decision; Needs you missed co-DM drafts. Lows: aria-controls targets missing, focus lost after a Needs-you link, home QR below the fold, M8.3 tab switching by mouse, practice capture on Progression.
+- Fixes (5a9e0433): chip is a button opening Broadcast each time (MT.6 checks twice); openWindow moves focus to the window; aria-controls only on the open tab; Needs you counts co-DM drafts; D265 records the §9a placements, Q84 asks about separate quick/full XP forms; GM-GUIDE updated.
+- Round 2 (5a9e0433): no High; Medium: draft count stale after generating/discarding drafts → fixed: Home re-counts each time it opens. Lows (static tabIndex, rAF focus timing) left to the backlog.
+- Also this run: e2e migrations fixed (MS.1, MS.4, MR.3, QF.17, M7.3, M7.A, M2.A, MS.3, MS.A; M8.3 walks every tab); quick-response buttons stay one row of five in a tab panel.

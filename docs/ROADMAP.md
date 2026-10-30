@@ -947,7 +947,7 @@ fixture-backed fake in tests.
 
 DESIGN §5, §6, §7, §9a. After MD.
 
-- [ ] **MU.1 Home dashboard and tabs.** The GM console opens on the home
+- [x] **MU.1 Home dashboard and tabs.** The GM console opens on the home
   dashboard (DESIGN §9a) and holds every other window in the Session,
   Progression and Library & settings tabs as panels, not one long page; the
   open tab is remembered; tabs reachable from the keyboard. Every existing
