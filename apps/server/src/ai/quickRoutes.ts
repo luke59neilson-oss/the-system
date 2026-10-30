@@ -17,6 +17,7 @@ import {
   QUICK_RECENT_LINES,
   QUICK_SYSTEM,
   findTarget,
+  loreFor,
   parseQuick,
   quickPrompt,
   quickSlotsSchema,
@@ -162,7 +163,8 @@ export function registerQuickRoutes(
         .map((id) => s.state.characters[id]!.name),
       region,
       npc: npc ? { name: npc.name, notes: npc.notes } : null,
-      lore: [],
+      // MD.3: kept lore for this NPC and place, newest first (bounded in the prompt).
+      lore: loreFor(Object.values(s.state.notes), { npc: npc?.name ?? null, place: region }),
     };
 
     const out = new PassThrough();
