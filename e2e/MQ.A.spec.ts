@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MQ.A review fix: the GM's XP form says what an award would lose before it is
@@ -35,6 +36,7 @@ test('the XP form warns when an award passes the grade top and would be lost', a
   const id = characters[0]?.id ?? '';
 
   // 400 XP takes a fresh G-grade character to level 4, the grade top: nothing lost.
+  await openWindow(page, 'award-xp');
   await page.getByLabel('Amount').fill('400');
   await expect(page.getByTestId(`share-${id}`)).toHaveText(' · 400 XP');
   await expect(page.getByTestId(`lost-${id}`)).toHaveCount(0);
