@@ -166,11 +166,14 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
       </div>
       {grades.length > 0 && (
         <p className="muted small" data-testid="typical-session">
-          Typical session (≈ {rules.campaign.typicalLevelsPerSession} levels):{' '}
+          Grade reference:{' '}
           {grades.map((g, i) => (
             <span key={g}>
               {i > 0 && ' · '}
-              {g}-grade {typicalSessionXp(rules, g).toLocaleString('en-US')} XP each{' '}
+              {g}: 1 level ={' '}
+              {(rules.grades.find((x) => x.id === g)?.xpPerLevel ?? 0).toLocaleString('en-US')} XP;
+              a typical session ≈ {rules.campaign.typicalLevelsPerSession} levels ={' '}
+              {typicalSessionXp(rules, g).toLocaleString('en-US')} XP each{' '}
               {(() => {
                 const group = chosen
                   .map((id) => state.characters[id])
