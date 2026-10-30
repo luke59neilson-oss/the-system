@@ -939,7 +939,7 @@ fixture-backed fake in tests.
   instruction not to contradict it. Players never see lore unless the GM
   shares the note. *Accept:* projection canary (lore notes GM-only);
   fake-backed test that kept lore reaches the prompt; e2e Keep → Lore view.
-- [ ] **MD.A Acceptance and review.** A fixture session uses all ten slots and
+- [x] **MD.A Acceptance and review.** A fixture session uses all ten slots and
   keeps a legend; full suite green; `fable` review; "Preview ready"
   (LOOP §8.2).
 

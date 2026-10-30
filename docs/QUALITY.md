@@ -133,6 +133,7 @@ reviewers ran 15–20 minutes each in the background.
 
 ## Flakes
 
+- 2026-10-30 17:25 · Local only: `e2e/M11.3.spec.ts:39` (latency, 1366×768, under 2 s) failed while a reviewer ran `npm run check` in parallel (load ~12 on 2 CPUs); passed alone (both viewports). Load, not the app; CI green.
 - 2026-10-26 14:30 · Repeated: CI `desktop-smoke` red on 3bb78ed2 and cb3bb8d9 with the same ENOTEMPTY → QF.32 (the test now freezes, kills and waits for the whole Electron tree; D255). Fixed.
 - 2026-10-26 10:55 · CI `desktop-smoke` red on d3c743c2 (QF.31, web-only change; `test` job green): `apps/desktop/test/desktop.spec.ts:151` cleanup `rmSync(userData)` threw ENOTEMPTY after the forced-kill test (Chromium still writing the profile as it died). Not reproduced (no time this run). Watch for a repeat; a second one becomes a QF item (retry rmSync with `maxRetries`, or wait for the process tree to exit).
 - 2026-10-26 10:15 · CI `test` red on 910765fc: `e2e/M2.A.spec.ts:169` (latency, restart test) GM console "Failed to load resource: … 503". Passed here alone (×3) and in the latency project with `--workers=2`. Not a test race this time: the MC.5 Listening panel polled every 2 s while idle, so a request was in flight as the server closed. Fixed by QF.31.
@@ -175,6 +176,7 @@ reviewers ran 15–20 minutes each in the background.
   (10:31 UTC): now QF.14.
 
 ## Backlog (Lows; M11.5 goes through these)
+- MD.A review 2026-10-30 (fable): Richer re-asks the last *pressed* slot even when that press failed (`QuickResponses.tsx` `last`); Keep tags place/session from the current scene poll, not the answer's; a clicked line older than the last 12 has no surrounding context in the prompt (`quickRoutes.ts:106`); the rows of five wrap 3+2 / 2-2-1 in the co-DM column (revisit with MU.1 tabs); duplicate `/api/gm/listen` polling from QuickResponses and ListenPanel.
 - Sweep A 2026-10-30 (Rules): a stream that ends without `message_stop` is not counted in spend (`anthropic.ts` readStream: no `partial`); no golden pins `practice.logged` with `session`; montage-logged uses are not "already logged" for co-DM drafts (`practiceRoutes.ts:79`); a draft confirmed for an earlier session lands in the current session's report.
 - Sweep A 2026-10-30 (Boundaries): the GM window has no `setPermissionCheckHandler` (`apps/desktop/src/main.ts` ~152).
 - Sweep A 2026-10-30 (Tests): no unit-level player-frame canary for chips, notes, summary, prepared and practice drafts, transcript (e2e only); the quick-response canary waits a fixed 100 ms; `.catch('npc')` on chip kind untested; `MD.1.spec.ts:91` fixed 1500 ms wait; `prepareAhead.test.ts:302` races on `setTimeout(30)`; `coDm.test.ts:155` key-leak check depends on earlier tests filling `bodies`.

@@ -1070,3 +1070,6 @@
 
 ## 2026-10-30 · QF.35 · round 1 · sonnet (worktree, 7d9e28ce)
 - 0 High / 0 Medium / 4 Low. All three mutations applied by the reviewer and caught; both files pass alone and shuffled (3 seeds); `useLiveSpend` behaviour unchanged. Lows to Backlog. QF.35 checked.
+
+## 2026-10-30 · MD.A (milestone MD: MD.1–MD.3, QF.33–QF.35, MD.A) · round 1 · fable (worktree, 2f9c5246)
+- 0 High / 1 Medium / 5 Low. `npm run check` green (1,549), MD.1/2/3/A e2e green; 4 mutations (slot stability, lore in prompt, question-triggered refresh, typing guard) all caught; no GM-only data path found. M1 keys 1–0 stayed live while the GM pane was hidden (View as) → fixed b29da91a (`paneShown` guard on both rows; unit test; MD.A e2e step, caught by mutation). Low "MD.A shot does not show slots 6–0" fixed (new `gm-picks-6-0` screenshot). Other Lows to Backlog. Verified myself (one Medium: no round 2). Full e2e 126/126 at 2 workers; latency 7/8 under reviewer load, M11.3 passed alone (Flakes). MD.A checked.
