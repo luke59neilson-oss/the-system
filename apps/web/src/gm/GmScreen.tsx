@@ -243,6 +243,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
                 <NeedsYou
                   state={state}
                   gmKey={gmKey}
+                  shown={tab === 'home'}
                   onOpen={openWindow}
                   onBuildMenu={(characterId, level) => {
                     setOfferTarget((t) => ({ characterId, level, n: (t?.n ?? 0) + 1 }));

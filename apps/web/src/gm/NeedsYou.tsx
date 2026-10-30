@@ -12,15 +12,18 @@ export function NeedsYou({
   onOpen,
   onBuildMenu,
   gmKey,
+  shown = true,
 }: {
   state: CampaignState;
   /** For the co-DM's practice drafts, which live on the server (MU.1 review). */
   gmKey?: string | undefined;
+  /** True while Home is the open tab: drafts are re-counted each time it opens. */
+  shown?: boolean;
   /** Opens a GM window by id (switches to its tab and brings it into view). */
   onOpen: (windowId: string) => void;
   onBuildMenu: (characterId: string, level: number) => void;
 }) {
-  const drafts = useDraftCount(gmKey, state.practice.length);
+  const drafts = useDraftCount(gmKey, state.practice.length, shown);
   const items = needsYou(state);
   if (drafts > 0)
     items.push({
@@ -62,10 +65,10 @@ export function NeedsYou({
 }
 
 /** How many co-DM practice drafts wait (MC.7); 0 without a key or on any error. */
-function useDraftCount(gmKey: string | undefined, practiceCount: number): number {
+function useDraftCount(gmKey: string | undefined, practiceCount: number, shown: boolean): number {
   const [count, setCount] = useState(0);
   useEffect(() => {
-    if (gmKey === undefined) return;
+    if (gmKey === undefined || !shown) return;
     let live = true;
     void fetch('/api/gm/ai/practice-drafts', { headers: { 'x-gm-key': gmKey } })
       .then(async (res) => {
@@ -77,6 +80,6 @@ function useDraftCount(gmKey: string | undefined, practiceCount: number): number
     return () => {
       live = false;
     };
-  }, [gmKey, practiceCount]);
+  }, [gmKey, practiceCount, shown]);
   return count;
 }
