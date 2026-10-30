@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-30): MU.1 done and reviewed (console tabs). MU.2 (player running log) under way on `wip/MU.2`.
-**Next item:** MU.2 Player running log; View as matches the player (resume `wip/MU.2`: run e2e/MU.2.spec.ts, full suite, sonnet review)
+**Status:** in progress (2026-10-30): MU.2 done and reviewed (player running log). MU.3 (XP context in the award box) built on `wip/MU.3`, review not yet run.
+**Next item:** MU.3 XP context in the award box (resume `wip/MU.3`: merge main, run MU.3 + M4.6 specs, sonnet review)
 **Blockers:** none
 
 ## Run log
@@ -1311,3 +1311,12 @@ next item, blockers. -->
 - Tests: unit 1,559 (main) + 52 on wip. `npm run check` green on 5a9e0433; the round-2 fix (NeedsYou prop) typechecked, linted and its e2e re-run.
 - Open `wip/*`: `wip/MU.2` (head 7b37c2f8).
 - Next: MU.2. Blockers: none.
+
+### Run · 2026-10-30 20:07–20:51 UTC (close-out at minute 44)
+- Preflight: `add_repo` not offered this session, but the repo was already cloned and in scope; fetched and fast-forwarded main; lock pushed cleanly; vitest 5.0.5. CI: last completed main run (80923cd5) red on M8.3, which MU.1's merge fixed; the run on 277e5c96 was still in progress. No new answers. Hour 20: no efficiency check, no sweep.
+- MU.2 finished: resumed `wip/MU.2`, merged main; fixed a lint error (`notificationText` fallthrough), "Full history" now opens Notifications on "Everything", a title rename tells only holders linked before and after, three older unit tests updated for the new notices; added a phone screenshot of the log. Full e2e (1 worker): 129 passed; latency 8/8 after the review fixes (M4.A had failed on the old XP toast flood, fixed by D267). Review: sonnet, 2 rounds (round 1: 0 High, 2 Medium — phone log placement, XP award toast flood — fixed; round 2: 0 High, 0 Medium, 2 Low). Merged to main (30ed358b). D266, D267.
+- MU.3 on `wip/MU.3` (head 9a06dbc0, base main 30ed358b): engine `xpContext` and `levelsWorth` with 7 unit tests (overflow, caps, uneven shares); award box rows show grade, levels, XP now/per level and to next, and "≈ N levels" per share; the typical-session line is now the grade reference line (M4.6 spec updated and green); `e2e/MU.3.spec.ts` green with screenshots of Session and Progression. D268. `npm run check` green (1,618 tests). Next step: merge main, run MU.3 + M4.6 + MS.3 specs, sonnet review (not launched: it would not report before the stop at 52).
+- Tests: unit 1,618 on wip/MU.3 (1,611 on main). Engine coverage not re-measured this run.
+- Open `wip/*`: `wip/MU.3` (head 9a06dbc0).
+- Next: MU.3. Blockers: none.
+
