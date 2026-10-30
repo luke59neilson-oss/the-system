@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loreFor } from '../src/ai/quickResponses';
+import { loreFor, loreTags } from '../src/ai/quickResponses';
 
 // MD.3 (DESIGN §11 "Keep"): kept lore for the NPC and place, newest first;
 // only GM notes tagged lore; never a player's journal or a party note.
@@ -33,5 +33,26 @@ describe('kept lore for a scene (MD.3)', () => {
   });
   it('is empty with no NPC or place in the scene', () => {
     expect(loreFor(notes, { npc: null, place: null })).toEqual([]);
+  });
+});
+
+describe('tags for a kept answer (MD.3)', () => {
+  it('tags lore with the NPC, place and session it came from', () => {
+    expect(loreTags({ npc: 'Old Tam', place: 'The Crown', session: 3 })).toEqual([
+      'lore',
+      'npc:Old Tam',
+      'place:The Crown',
+      'session:3',
+    ]);
+    expect(loreTags({ npc: null, place: null, session: null })).toEqual(['lore']);
+  });
+  it('a kept note is found again for its NPC', () => {
+    const tags = loreTags({ npc: 'Sal', place: null, session: 1 });
+    expect(
+      loreFor([{ kind: 'gm', tags, body: 'Sal hates boats.', updatedAt: 'x' }], {
+        npc: 'Sal',
+        place: null,
+      }),
+    ).toEqual(['Sal hates boats.']);
   });
 });

@@ -235,3 +235,17 @@ export function loreFor(
     .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0))
     .map((n) => n.body.trim());
 }
+
+/** MD.3: the tags a kept answer gets: lore, the NPC, the place and the session. */
+export function loreTags(scene: {
+  readonly npc: string | null;
+  readonly place: string | null;
+  readonly session: number | null;
+}): string[] {
+  return [
+    LORE_TAG,
+    ...(scene.npc ? [`npc:${scene.npc}`] : []),
+    ...(scene.place ? [`place:${scene.place}`] : []),
+    ...(scene.session !== null ? [`session:${scene.session}`] : []),
+  ];
+}
