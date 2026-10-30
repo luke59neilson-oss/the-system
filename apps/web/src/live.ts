@@ -1,4 +1,9 @@
-import { DEMO_CHARACTERS, type CampaignState, type PlayerView } from '@the-system/engine';
+import {
+  DEMO_CHARACTERS,
+  type CampaignState,
+  type GmChangeNotice,
+  type PlayerView,
+} from '@the-system/engine';
 
 /**
  * Browser side of the live protocol (server: apps/server/src/protocol.ts).
@@ -57,7 +62,9 @@ export type LiveNotification =
       characterId: string;
       action: 'proposed' | 'accepted' | 'declined' | 'cancelled';
       other: string | null;
-    };
+    }
+  /** MU.2: any other change the GM made to this character. */
+  | GmChangeNotice;
 
 export interface SeqNotification {
   seq: number;
