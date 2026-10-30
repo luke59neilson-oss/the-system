@@ -35,6 +35,7 @@ import type { CampaignStore } from './store';
 import { registerCoDmRoutes, type CoDm } from './ai/coDm';
 import { draftsDir, registerPracticeDraftRoutes } from './ai/practiceRoutes';
 import { registerNotesRoutes } from './ai/notesRoutes';
+import { registerReferenceRoutes } from './reference/routes';
 import { NotesStore } from './ai/sessionNotes';
 import { registerSuggestionRoutes } from './ai/suggestionRoutes';
 import { registerQuickRoutes } from './ai/quickRoutes';
@@ -215,6 +216,8 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   });
 
   app.get('/health', () => ({ status: 'ok' }));
+  // MU.6: the Primal Hunter reference lists, GM-only.
+  registerReferenceRoutes(app);
   if (options.coDm) {
     registerCoDmRoutes(app, options.coDm);
     // MC.7: practice drafts from the transcript, for the GM's review.

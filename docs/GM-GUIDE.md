@@ -23,7 +23,7 @@ waiting, a banner) opens the tab that handles it.
 | Home | Needs you (what waits on the GM, each a link to its window), Party (a card per character, with what needs you), Players join (address and QR), New character |
 | Session | Session (start, end, day), Award XP, Listening, Co-DM (quick responses, picks, generate, lore), Import (approve generated content), Encounter, Quests, Broadcast, Shops, Credits ledger, Trackers, Change log, System feed |
 | Progression | Award XP, Skill offers, Evolution builder, Practice log, Marks review, Merges |
-| Library & settings | Skill text, Skill library, Item library, Loot tables, Title library, Classes, races and professions, Bestiary, Rules settings, Co-DM settings |
+| Library & settings | Skill text, Skill library, Item library, Loot tables, Title library, Classes, races and professions, Bestiary, Reference (Primal Hunter lists), Rules settings, Co-DM settings |
 
 Award XP is the one window in two places: the same form on both tabs (a
 half-typed award shows on either). Its participant rows are the Session
@@ -105,6 +105,11 @@ send it to a player.
      exists, nothing more.
    - **Bestiary and NPCs**: entries with grade, level and Identify text per
      rarity; **Reveal** adds one to players' Identify lists.
+   - **Reference** (Library & settings): search the Primal Hunter lists
+     (skills, items, creatures, classes and professions) for names in the
+     books' style. GM-only. The co-DM sees a few matching rows as naming
+     examples, never the ones flagged god-tied. To add rows, edit the CSVs in
+     `docs/reference/primal-hunter/` and run `npm run reference`.
    - **Item library** (**Give** / **Take**), **Loot tables** (**Roll**),
      **Ledger** (**Grant** / **Fine** currency), **Title library**
      (**Award title**), **Trackers** (regions, survivor factions; hunger is narrated, not tracked).

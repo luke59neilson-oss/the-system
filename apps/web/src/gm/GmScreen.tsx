@@ -48,6 +48,7 @@ import { MergeBuilder } from './MergeBuilder';
 import { PracticeCapture } from './PracticeCapture';
 import { QuestManager } from './QuestManager';
 import { Bestiary } from './Bestiary';
+import { Reference } from './Reference';
 import { Trackers } from './Trackers';
 import { Encounter } from './Encounter';
 import { RulesSettings } from './RulesSettings';
@@ -362,6 +363,9 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               </Place>
               <Place id="bestiary" tab={tab}>
                 <Bestiary client={client} state={state} />
+              </Place>
+              <Place id="reference" tab={tab}>
+                <Reference gmKey={gmKey} />
               </Place>
               <Place id="rules-settings" tab={tab}>
                 <RulesSettings client={client} state={state} />

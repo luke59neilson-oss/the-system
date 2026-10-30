@@ -10,3 +10,4 @@ docs
 *.md
 apps/desktop/release/
 .claude/worktrees/
+apps/server/src/reference/lists.generated.ts

@@ -12,6 +12,7 @@ import {
 } from '@the-system/engine';
 import { AiError, type AiRequest } from './client';
 import { loreForRequest, loreLines } from './quickResponses';
+import { referencePromptBlock } from '../reference/reference';
 
 export const GENERATE_KINDS = ['shop', 'npc', 'place', 'encounter', 'item', 'questHook'] as const;
 export type GenerateKind = (typeof GENERATE_KINDS)[number];
@@ -99,6 +100,9 @@ export function buildGenerateRequest(
   const here = state.currentRegion ? (state.regions[state.currentRegion]?.name ?? null) : null;
   const lore = loreLines(loreForRequest(Object.values(state.notes), here, prompt));
   if (lore.length) content.push(['Kept lore (do not contradict):', ...lore].join('\n'));
+  // MU.6: a few book names of the right kind as naming and tone examples (never god-tied).
+  const examples = referencePromptBlock(kind, `${prompt} ${here ?? ''}`);
+  if (examples) content.push(examples);
   return {
     role: 'strong',
     system,
