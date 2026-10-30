@@ -21,12 +21,16 @@ waiting, a banner) opens the tab that handles it.
 | Tab | Windows |
 | --- | --- |
 | Home | Needs you (what waits on the GM, each a link to its window), Party (a card per character, with what needs you), Players join (address and QR), New character |
-| Session | Session (start, end, day), Award XP (quick), Listening, Co-DM (quick responses, picks, generate, lore), Import (approve generated content), Encounter, Quests, Broadcast, Shops, Credits ledger, Trackers, Change log, System feed |
-| Progression | Award XP (full), Skill offers, Evolution builder, Practice log, Marks review, Merges |
+| Session | Session (start, end, day), Award XP, Listening, Co-DM (quick responses, picks, generate, lore), Import (approve generated content), Encounter, Quests, Broadcast, Shops, Credits ledger, Trackers, Change log, System feed |
+| Progression | Award XP, Skill offers, Evolution builder, Practice log, Marks review, Merges |
 | Library & settings | Skill text, Skill library, Item library, Loot tables, Title library, Classes, races and professions, Bestiary, Rules settings, Co-DM settings |
 
-Award XP is the one window in two places. The list mirrors
-`apps/web/src/gm/tabsModel.ts`.
+Award XP is the one window in two places: the same form on both tabs (a
+half-typed award shows on either). Its participant rows are the Session
+tab's party at a glance. Titles are awarded from the Title library;
+professions are offered in the Evolution builder; factions live in
+Trackers; campaigns and backups sit in the header on every tab. The list
+mirrors `apps/web/src/gm/tabsModel.ts`.
 
 ## Install and start
 

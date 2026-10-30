@@ -630,3 +630,11 @@ DESIGN/ROADMAP; do not re-apply them.
     wip commit in place of a full local e2e run at close-out and `Mx.A`. Local
     full runs on the 2-CPU workspace often get cut off and slow the reviewer
     beside them. Cost: more Actions minutes on wip pushes. Default: no change.
+
+84. **Quick and full Award XP (MU.1, D265).** DESIGN §9a has a quick Award XP
+    on Session and the full one on Progression. They are one form shown on
+    both tabs: amount, track, who shares, target grade and the above-level
+    bonus fit in one panel, and MU.3 adds each player's level and XP to its
+    rows, which serves as the Session tab's party at a glance. Default: one
+    form on both tabs. Option: a smaller Session form (amount and who only)
+    with the target and bonus on Progression.

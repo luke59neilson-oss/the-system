@@ -125,6 +125,12 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
       requestAnimationFrame(() => {
         const el = document.querySelector<HTMLElement>(`[data-window="${id}"] .window`);
         el?.scrollIntoView({ block: 'start' });
+        // MU.1 review: focus follows to the opened window (the link that
+        // opened it may now be hidden on another tab).
+        if (el) {
+          if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+          el.focus({ preventScroll: true });
+        }
       });
     },
     [setTab],
@@ -215,7 +221,9 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               : 'Connecting…'}
         </span>
         {state && <SessionChip state={state} />}
-        {state && <BannersChip client={client} state={state} />}
+        {state && (
+          <BannersChip client={client} state={state} onOpen={() => openWindow('broadcast')} />
+        )}
         {state && <PerspectiveBar party={party} current={view} onChange={setWanted} />}
       </header>
       {live.status === 'joined' && <CampaignSwitch gmKey={gmKey} stateName={state?.name ?? null} />}
@@ -234,6 +242,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               <Place id="needs-you" tab={tab}>
                 <NeedsYou
                   state={state}
+                  gmKey={gmKey}
                   onOpen={openWindow}
                   onBuildMenu={(characterId, level) => {
                     setOfferTarget((t) => ({ characterId, level, n: (t?.n ?? 0) + 1 }));
@@ -395,7 +404,16 @@ function SessionChip({ state }: { state: CampaignState }) {
  * MT.6: how many banners are up on players' screens, beside the session chip,
  * with Remove all, so the GM never forgets a pinned banner below the fold.
  */
-function BannersChip({ client, state }: { client: LiveClient; state: CampaignState }) {
+function BannersChip({
+  client,
+  state,
+  onOpen,
+}: {
+  client: LiveClient;
+  state: CampaignState;
+  /** Opens the Broadcast window on its tab (MU.1 review: a hash link fired only once). */
+  onOpen: () => void;
+}) {
   const timed = state.broadcasts.some((b) => b.display?.mode === 'timed' && !b.removed);
   const now = useTick(timed);
   const up = activeBanners(state.broadcasts, now, (b) => Date.parse(b.at));
@@ -416,7 +434,9 @@ function BannersChip({ client, state }: { client: LiveClient; state: CampaignSta
   };
   return (
     <span className="banners-chip" data-testid="banners-chip">
-      <a href="#broadcast">{up.length === 1 ? '1 banner up' : `${up.length} banners up`}</a>
+      <button type="button" className="flag-link" onClick={onOpen}>
+        {up.length === 1 ? '1 banner up' : `${up.length} banners up`}
+      </button>
       <button
         type="button"
         className="secondary small"
