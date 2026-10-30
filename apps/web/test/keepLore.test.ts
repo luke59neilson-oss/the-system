@@ -58,3 +58,31 @@ describe('Keep lore (MD.3)', () => {
     expect(out.map((x) => x.id)).toEqual(['b', 'a']);
   });
 });
+
+// MD.3 review M3: the Lore view retags a note to another NPC or place.
+describe('Lore view retagging (MD.3 review M3)', () => {
+  it('reads the NPC and place a note is tagged to', async () => {
+    const { loreScope } = await import('../src/gm/quickModel');
+    expect(loreScope(['lore', 'NPC:Old Tam', 'place:The Crown', 'session:2'])).toEqual({
+      npc: 'Old Tam',
+      place: 'The Crown',
+    });
+    expect(loreScope(['lore'])).toEqual({ npc: '', place: '' });
+  });
+
+  it('replaces the NPC and place tags and keeps every other tag', async () => {
+    const { retagLore } = await import('../src/gm/quickModel');
+    expect(
+      retagLore(['lore', 'npc:Old Tam', 'place:The Crown', 'session:2', 'debt'], {
+        npc: ' Sal ',
+        place: 'Rake Canyons',
+      }),
+    ).toEqual(['lore', 'npc:Sal', 'place:Rake Canyons', 'session:2', 'debt']);
+    // Blank removes; the lore tag is never lost, even if missing.
+    expect(retagLore(['npc:Sal', 'session:1'], { npc: '', place: '' })).toEqual([
+      'lore',
+      'session:1',
+    ]);
+    expect(retagLore(['Lore', 'PLACE:x'], { npc: 'A', place: '' })).toEqual(['Lore', 'npc:A']);
+  });
+});

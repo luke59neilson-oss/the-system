@@ -82,6 +82,16 @@ test('Keep saves a quick answer as GM lore; the Lore view lists and edits it', a
   await note.getByRole('button', { name: 'Save' }).click();
   await expect(lore.getByRole('status')).toHaveText('Lore saved');
   await expect(note).toContainText('two tolls');
+  // Review M3: the GM retitles it and tags it to an NPC and a place.
+  await note.getByRole('button', { name: 'Edit' }).click();
+  const edit = note.getByRole('form', { name: 'Edit kept lore' });
+  await edit.getByLabel('Title').fill('The ferryman');
+  await edit.getByLabel('NPC').fill('Old Tam');
+  await edit.getByLabel('Place').fill('The Crown');
+  await edit.getByRole('button', { name: 'Save' }).click();
+  await expect(lore.getByRole('status')).toHaveText('Lore saved');
+  await expect(note.locator('strong')).toHaveText('The ferryman');
+  await expect(note).toContainText('npc:Old Tam · place:The Crown');
   await lore.scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-lore-view-1366x768.png') });
 
@@ -97,6 +107,17 @@ test('Keep saves a quick answer as GM lore; the Lore view lists and edits it', a
   await expect(codm.getByText('Kept as lore (GM only)').last()).toBeVisible();
   await expect(lore.locator('summary')).toHaveText('Kept lore (2)');
   await expect(note.first()).toContainText('Sap & Sinew');
+
+  // Review M3: the GM deletes a kept note (after confirming).
+  gm.once('dialog', (d) => void d.accept());
+  await lore
+    .getByTestId('lore-note')
+    .filter({ hasText: 'two tolls' })
+    .getByRole('button', { name: 'Delete' })
+    .click();
+  await expect(lore.getByRole('status')).toHaveText('Lore deleted');
+  await expect(lore.locator('summary')).toHaveText('Kept lore (1)');
+  await expect(lore).not.toContainText('two tolls');
 
   // Players never see kept lore.
   expect(frames.length).toBeGreaterThan(0);

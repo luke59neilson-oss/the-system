@@ -204,3 +204,28 @@ export function loreNotes<
       a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : a.id < b.id ? -1 : 1,
     );
 }
+
+/** MD.3 review M3: the NPC and place a kept note is tagged to (first of each). */
+export function loreScope(tags: readonly string[]): { npc: string; place: string } {
+  const pick = (prefix: string): string =>
+    tags.find((t) => t.toLowerCase().startsWith(prefix))?.slice(prefix.length) ?? '';
+  return { npc: pick('npc:'), place: pick('place:') };
+}
+
+/**
+ * MD.3 review M3: a note's tags after the GM retags it in the Lore view: the
+ * NPC and place tags are replaced (blank removes them), every other tag (lore,
+ * session, the GM's own) is kept in place, and the lore tag is never lost.
+ */
+export function retagLore(
+  tags: readonly string[],
+  scope: { readonly npc: string; readonly place: string },
+): string[] {
+  const npc = scope.npc.trim();
+  const place = scope.place.trim();
+  const kept = tags.filter((t) => !/^(npc|place):/iu.test(t));
+  const out = kept.some((t) => t.toLowerCase() === LORE_TAG) ? kept : [LORE_TAG, ...kept];
+  const at = out.findIndex((t) => t.toLowerCase() === LORE_TAG) + 1;
+  out.splice(at, 0, ...(npc ? [`npc:${npc}`] : []), ...(place ? [`place:${place}`] : []));
+  return out;
+}
