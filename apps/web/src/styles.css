@@ -3081,16 +3081,19 @@ ol.change-log li.undone .change-text {
 }
 
 /* MD.1: quick responses (GM only): five fixed buttons with their keys. */
+/* MU.1: always one row of five (DESIGN §11), however narrow the tab's panel. */
 .quick-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.4rem;
   margin: 0.5rem 0;
 }
 .quick-row button {
-  flex: 1 1 auto;
-  padding: 0.45rem 0.5rem;
+  min-width: 0;
+  padding: 0.45rem 0.3rem;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .quick-row kbd {
   display: inline-block;
