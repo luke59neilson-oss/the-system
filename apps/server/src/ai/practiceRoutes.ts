@@ -78,9 +78,14 @@ export function registerPracticeDraftRoutes(
       const logged: LoggedUse[] = state.practice
         .filter((p) => p.sessionId === sessionId && p.source === 'gm')
         .map((p) => ({ characterId: p.characterId, skills: p.skills, at: p.at }))
-        // A draft still waiting for the GM is not drafted twice (MC.7 review M3).
+        // A draft still waiting for the GM is not drafted twice (MC.7 review M3),
+        // but only this session's: marks are one per skill per session, so a
+        // draft left over from an earlier session blocks nothing now (QF.33).
         .concat(
-          store.list().map((d) => ({ characterId: d.characterId, skills: [d.skill], at: d.at })),
+          store
+            .list()
+            .filter((d) => d.sessionId === sessionId)
+            .map((d) => ({ characterId: d.characterId, skills: [d.skill], at: d.at })),
         );
       const drafts = await draftPractice(
         options.client,

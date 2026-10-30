@@ -212,6 +212,69 @@ describe('practice draft routes (MC.7)', () => {
     });
   });
 
+  it('a pending draft from an earlier session does not block the same use now (QF.33)', async () => {
+    // The previous test left session 1's Archer's Eye draft pending.
+    const before = await app.inject({
+      method: 'GET',
+      url: '/api/gm/ai/practice-drafts',
+      headers: gm,
+    });
+    const leftover = before.json().drafts.at(-1);
+    expect(leftover).toMatchObject({ characterId: 'jake', skill: "Archer's Eye" });
+    let n = 0;
+    const r0 = execute(store.campaign, { type: 'session.start' } as never, {
+      actor: { role: 'gm' as const },
+      sessionId: null,
+      now: () => '2026-10-27T19:00:00.000Z',
+      newId: () => `t${++n}`,
+    });
+    if (!r0.ok) throw new Error(r0.error);
+    store.appendAll(r0.events);
+    const now = store.campaign.state!;
+    const current = now.sessions.find((x) => x.id === now.currentSession)!;
+    expect(current.id).not.toBe(leftover.sessionId);
+    const dir = transcriptsDir(store);
+    const lines = [
+      { at: '2026-10-27T19:01:00.000Z', startMs: 0, endMs: 900, text: 'Back to the canyon.' },
+      {
+        at: '2026-10-27T19:01:05.000Z',
+        startMs: 5000,
+        endMs: 6000,
+        text: 'Jake uses Archer’s Eye.',
+      },
+    ];
+    writeFileSync(
+      transcriptFile(dir, current.number),
+      lines.map((l) => JSON.stringify(l)).join('\n') + '\n',
+    );
+    const r = await app.inject({ method: 'POST', url: '/api/gm/ai/practice-drafts', headers: gm });
+    expect(r.statusCode, r.body).toBe(200);
+    expect(r.json()).toMatchObject({ added: 1, read: 2 });
+    expect(r.json().drafts.at(-1)).toMatchObject({
+      skill: "Archer's Eye",
+      sessionId: current.id,
+    });
+    // This session's own pending draft still blocks drafting it twice.
+    writeFileSync(
+      transcriptFile(dir, current.number),
+      [
+        ...lines,
+        { ...lines[0], at: '2026-10-27T19:08:00.000Z', startMs: 8000, endMs: 8500 },
+        { ...lines[1], at: '2026-10-27T19:09:00.000Z', startMs: 9000, endMs: 9900 },
+      ]
+        .map((l) => JSON.stringify(l))
+        .join('\n') + '\n',
+    );
+    const again = await app.inject({
+      method: 'POST',
+      url: '/api/gm/ai/practice-drafts',
+      headers: gm,
+    });
+    expect(again.statusCode, again.body).toBe(200);
+    expect(again.json()).toMatchObject({ added: 0, read: 2 });
+    expect(fake.requests.at(-1)?.messages.at(-1)?.content).toContain('Jake uses Archer’s Eye.');
+  });
+
   it('reports a damaged drafts file without overwriting it', async () => {
     const dir = draftsDir(store);
     mkdirSync(dir, { recursive: true });
