@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-30): every earlier milestone done; new milestone MD (co-DM quick responses, DESIGN §11) added; `docs/DONE.md` removed. Preview ready: the 2026-10-30 build has everything before MD.
-**Next item:** MD.3 Keep lore (resume `wip/MD.3`: fix review M3, then round 2)
+**Next item:** MD.A Acceptance and review (resume `wip/MD.A`: finish the full e2e run, then the `fable` review)
 **Blockers:** none
 
 ## Run log
@@ -1273,3 +1273,13 @@ next item, blockers. -->
 - Tests: unit 1,542 on `wip/MD.3` (npm run check green); e2e MD.1, MD.2, MD.3, MC.2, MC.8, MC.A, MC.10, M8.3 green at 2 workers (fork). Full e2e not run (CI runs it on bff5db12).
 - Open `wip/*`: `wip/MD.3` (base 2b49d88f + origin/main merged, head d51bce51). Next step: Lore view delete + edit title and NPC/place tags (engine already has `note.deleted` and tags in `note.edited`), e2e for it, then sonnet round 2, push main, check MD.3.
 - Next: MD.3. Blockers: none.
+
+### Run rbb90613d · 2026-10-30 16:08–16:57 UTC (close-out at minute 47; lock released at minute 49; MD.A needs the fable review, which cannot finish before the 52 hard stop)
+- Preflight: repo already attached; fetched and fast-forwarded main; lock pushed cleanly; vitest 5.0.5; sonnet reviewers work (worktree, blocking calls; builds ran in forks beside them). CI green on main (bff5db12). No new answers. Not an efficiency or sweep hour.
+- MD.3 done: review M3 fixed (Lore view edits title, NPC and place, deletes after a confirm; `retagLore`/`loreScope` unit tests; e2e extended). Sonnet round 2: 0 H / 0 M / 3 L. Merged to main, checked.
+- QF.33, QF.34 done (fork): only this session's pending drafts block a new one; `namedIn` uses Unicode boundaries ("Zoë"). Sonnet: 0 H / 1 M / 3 L; M1 (order-dependent test) fixed with its own server, verified by mutation and shuffle. Checked.
+- QF.35 done (fork): overlap test for the suggestions 409 guard; prepare-ahead and enrolment tests stand alone; spend poll split into `startSpendPoll`/`shownSpend` with tests. Sonnet: 0 H / 0 M / 4 L, all three mutations caught. Checked.
+- MD.A started on `wip/MD.A` (base 0a3c632c, head 557caf35): e2e `MD.A.spec.ts` (keys 1–5 answer, Keep a legend, keys 6–0 fill generate, canary) passes. Full e2e at 2 workers: 58 passed, 0 failed before the 7-minute cut-off at M8.4 (rest not run this run).
+- Tests: unit 1,549 (npm run check green on main); e2e MD.3, MD.A, MC.7, MC.A green.
+- Open `wip/*`: `wip/MD.A` (head 557caf35). Next step: run the full e2e suite (from M8.4 on at least), then the `fable` review of MD (MD.1–MD.3 + MD.A), then check MD.A and write "Preview ready" (LOOP §8.2).
+- Next: MD.A. Blockers: none.
