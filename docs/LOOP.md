@@ -47,8 +47,11 @@ Luke is not watching. Never stop to ask him a question.
 
 ## 4. Orient (targeted reads)
 
-Read in full: `CLAUDE.md`, `docs/DESIGN.md`, `docs/ANSWERS.md`. Of the
-rest, read only what bears on this run (the logs grow every hour; reading
+Read in full: `CLAUDE.md`, `docs/DESIGN.md`, `docs/ANSWERS.md`. Then run
+`npm run orient` (D262, in trial): it prints exactly the reads listed below
+(PROGRESS header and last entry, ROADMAP global rules and every milestone
+with an open or `[~]` box, QUESTIONS without an Answer line, the L-entries).
+Of the rest, read only what bears on this run (the logs grow every hour; reading
 them whole costs about 30k tokens per run for history you do not need):
 
 - `docs/PROGRESS.md`: the header lines (Status, Next item, Blockers) and the

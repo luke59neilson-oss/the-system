@@ -623,3 +623,10 @@ DESIGN/ROADMAP; do not re-apply them.
     on the **Session** tab beside the co-DM, and pasting a content pack from
     Claude happens there too. Default: Import on Session. Option: Import on
     Library & settings, with a generation switching you to that tab.
+
+83. **CI on wip branches instead of long local e2e runs? (efficiency, Tier 2;
+    2026-10-30 auditor).** Run the same CI on `wip/**` pushes with the e2e
+    split into 2 shards, and let a run accept a green CI result on its pushed
+    wip commit in place of a full local e2e run at close-out and `Mx.A`. Local
+    full runs on the 2-CPU workspace often get cut off and slow the reviewer
+    beside them. Cost: more Actions minutes on wip pushes. Default: no change.

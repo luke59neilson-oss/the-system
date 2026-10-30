@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress (2026-10-30): milestone MD done and reviewed. **Preview ready: Actions → Release → Run workflow** (milestone MD, co-DM quick responses). MU (console tabs, player log, XP context, spells) under way.
-**Next item:** MU.1 Home dashboard and tabs (resume `wip/MU.1`: migrate the remaining e2e specs to open their window's tab, then the home "needs you" list)
+**Next item:** MU.1 Home dashboard and tabs (resume `wip/MU.1`: fix the last failing migrated specs, full suite, sonnet review)
 **Blockers:** none
 
 ## Run log
@@ -1292,3 +1292,14 @@ next item, blockers. -->
 - Tests: unit 1,550 + 6 (wip); `npm run check` green on main.
 - Open `wip/*`: `wip/MU.1` (head 31bd6a3a).
 - Next: MU.1. Blockers: none.
+
+### Run r20448ef6 · 2026-10-30 18:08–18:55 UTC (close-out at minute 44; lock released at minute 47: the wip hand-off is pushed and the remaining MU.1 work is spec fixes that need a full e2e run, which does not fit before 52)
+- Preflight: repo attached; fetched and fast-forwarded main; lock pushed cleanly; vitest 5.0.5. CI green on main (b67150d6). No new answers. Efficiency hour (18).
+- Efficiency check: scorecard row added (end 48.2, items 1.2, round-2 4/10, Highs 3, red/day 2, orient 10,629 words). D248 Kept (D263). Sonnet auditor: Tier 1 `npm run orient` applied (D262, in trial; prints LOOP §4's reads, ~3.4k words); Tier 2 CI-on-wip with sharded e2e → Q83 (default no change).
+- MU.1 (on `wip/MU.1`, base b67150d6, head 43f978ae): home "Needs you" window (`needsYouModel.ts` + `NeedsYou.tsx`: GM-side flags, unreviewed practice, open player requests, each opening its window's tab; campaign/day/session line; 3 unit tests; MU.1 e2e test added, D262); every older GM spec migrated by script to open its window's tab (`openWindow`/`reveal`), plus hand fixes; M8.3 contrast now scans each tab.
+- Full e2e on wip at 2 workers (before the last hand fixes): 112 passed, 16 failed. Fixed since, not re-run: M4.2 ×2, M5.1, M6.2, M5.A, M6.A, M7.3, M8.3, M7.A, MQ.12, MQ.A. Still failing: MS.1 (`page.evaluate: nothing for <id>`), MR.3, MS.4, QF.17, M3.3 (30 s test timeout under load; try alone first).
+- Hand-off: next step: run the failing specs above alone, fix, run the full suite, then the sonnet review of MU.1 (b67150d6..HEAD).
+- Tests: unit 1,550 + 9 (wip). `npm run check` green on main.
+- Open `wip/*`: `wip/MU.1` (head 43f978ae).
+- Next: MU.1. Blockers: none.
+

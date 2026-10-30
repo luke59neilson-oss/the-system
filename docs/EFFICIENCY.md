@@ -20,10 +20,11 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
-| D248 LOOP §8.0 measured close-out: compute the lock minute and write "close-out at minute N" first; under 44 with an open item or Medium goes back to §5 (Tier 1, wording) | 2026-10-26 13:00 | end minute 43.7 → 46–47; items/run +0.2 | end 43.7, items 1.2 | Highs 3, round-2 share 4/10, red/day 4 | 2026-10-26 18:00 + 6 runs |
+| D262 `npm run orient` prints LOOP §4's targeted reads (PROGRESS header and last entry, ROADMAP global rules and open milestones, unanswered QUESTIONS, L-entries) (Tier 1, helper script) | 2026-10-30 18:09 | orient words 10,629 → ~6,000 | end 48.2, items 1.2 | Highs 3, round-2 share 4/10, red/day 2 | 2026-10-30 18:00 + 6 runs |
 
 ## Kept
 
+- D248 measured close-out (2026-10-26 13:00, D263): end minute 43.7 → 48.2, items/run flat at 1.2, guards flat (Highs 3, round-2 share 4/10, red/day 4 → 2).
 - D234 metrics count review rounds per item (2026-10-26 06:58, D257): round-2 share and Highs read per item again (4/10, 3); items/run 1.7 → 1.8, end minute 44.2 → 44.8; guards flat.
 - D211 "nothing small fits" is not a reason to stop (2026-10-25 18:48, D234):
   end minute 42.8 → 44.2, items/run flat at 1.7, guards flat or better
@@ -68,6 +69,8 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   and D132's CI red/day guard too (7 → 10), so §9.2 reverts both.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-10-30 18:09 auditor (sonnet): Tier 1 applied: `npm run orient` (D262; orient words 10.6k → ~6k, items/run +0–0.1). Tier 2 (Q83): run CI on `wip/**` pushes with e2e in 2 shards, and accept a green CI run on the pushed wip SHA in place of a full local e2e at close-out and `Mx.A` (local full runs keep getting cut off on 2 CPUs and compete with reviewers; costs Actions minutes). Default: no change. Judged: D248 Kept (D263); the auditor notes the end-minute gain comes mostly from long hand-offs and full-e2e tails, not extra items.
 
 - 2026-10-30 12:19 auditor (sonnet): no Tier 2. D234 Kept; D248 not judgeable (2 runs). Tier 1 waiting: `npm run orient` plus a 200-word PROGRESS cap (orient words ~9.9k → ~7k); writing "send independent work beside a blocking review" into §6.3 (judged a repeat of D206's note, so not applied). Not applied this check: the run's round-2 review ran 15 minutes and pushed close-out past minute 52.
 
@@ -162,3 +165,4 @@ table last in the file.
 | 2026-10-26 06:15 | 6 | 44.2 | 1.7 | 4/10 (D234 re-count; read 0/10) | 3 | 18 | 2 | 7.9 | 9879 |
 | 2026-10-26 12:10 | 6 | 43.7 | 1.2 | 4/10 | 3 | 29 | 4 | 9.3 | 9863 |
 | 2026-10-30 12:19 | 6 | 44.8 | 1.8 | 4/10 | 3 | 0 | 0 | 0.0 | 9879 |
+| 2026-10-30 18:09 | 6 | 48.2 | 1.2 | 4/10 | 3 | 6 | 2 | 13.1 | 10629 |
