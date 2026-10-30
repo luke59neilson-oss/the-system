@@ -922,3 +922,49 @@ fixture-backed fake in tests.
 - [ ] **MD.A Acceptance and review.** A fixture session uses all ten slots and
   keeps a legend; full suite green; `fable` review; "Preview ready"
   (LOOP §8.2).
+
+## MU — Console layout, player log, XP context, spells (Luke, 2026-10-30; L23)
+
+DESIGN §5, §6, §7, §9a. After MD.
+
+- [ ] **MU.1 Home dashboard and tabs.** The GM console opens on the home
+  dashboard (DESIGN §9a) and holds every other window in the Session,
+  Progression and Library & settings tabs as panels, not one long page; the
+  open tab is remembered; tabs reachable from the keyboard. Every existing
+  window lives in exactly one place (a table in `docs/GM-GUIDE.md`), except
+  Award XP, which is on Session (quick) and Progression (full). *Accept:* e2e
+  that every window opens from its tab; screenshots of home and each tab at
+  1366×768 and 1920×1080; the keyboard-only spec (M8.3) still passes.
+- [ ] **MU.2 Player running log; View as matches the player.** Audit every
+  GM action that changes a character and make each one notify the player (or
+  list it in the audit as silent on purpose, with the reason); a running log
+  on the player's main screen (newest first, last 20, link to the full
+  history); View-as panes show the same pop-ups and log (sound muted).
+  *Accept:* an engine test that enumerates the character-changing GM events
+  and checks each notifies or is listed; e2e: the GM gives an item → a
+  pop-up and a log line on the player's screen and in View as.
+- [ ] **MU.3 XP context in the award box.** Per participant: grade, class and
+  profession level, XP now / per level at the grade, XP to next level; for
+  the typed award, each share and ≈ levels per player; the grade reference
+  line; on both the quick and full Award XP. *Accept:* unit tests for the
+  numbers (overflow, caps, uneven shares); e2e.
+- [ ] **MU.4 Spells: skills with costs.** Library skill entries (per name and
+  rarity) gain optional cost (pool and amount), cooldown, range and casting
+  notes and a "spell" tag; a skill creator form; players see costs on their
+  skills; the content format and the co-DM's generation schema carry them;
+  stored logs replay unchanged. *Accept:* engine and schema tests; e2e
+  creating a spell and seeing it on the owner's screen.
+- [ ] **MU.5 Cast from the player's phone.** A **Cast** button on a skill with
+  a cost: the pool goes down, refused with a clear message when too low;
+  the use is logged as practice (player source, for the GM's review) and
+  shows in the GM's feed; the GM can undo or adjust. Cooldowns are shown,
+  not enforced. *Accept:* engine tests (spend, too low, undo), canary, e2e.
+- [ ] **MU.6 Primal Hunter reference lists.** The lists in
+  `docs/reference/primal-hunter/` (CSV; own-words summaries; `god-tied`
+  entries flagged) become GM-only reference: a searchable Reference view in
+  Library & settings, and a small, relevant sample (by kind and theme tags,
+  excluding `god-tied`) in co-DM generation and quick-response prompts as
+  naming and tone examples. *Accept:* unit tests (filtering, bounded size),
+  canary (never in player frames), e2e search.
+- [ ] **MU.A Acceptance and review.** Full suite green; `fable` review;
+  "Preview ready" (LOOP §8.2).

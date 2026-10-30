@@ -144,6 +144,12 @@ blue-white tint and a heavier brushed texture so the change is visible.
   weaker grades). The app shows the GM a "typical session ≈ 6 levels"
   helper.
 
+**XP award box (Luke, 2026-10-30):** each participant's row shows their
+grade, levels, XP now and per level at their grade, and XP to the next
+level; the typed award shows each share and roughly how many levels it is
+per player, with a reference line ("F: 1 level = 300 XP; a typical session
+≈ 6 levels = 1,800 each").
+
 ## 6. Skills
 
 - **Rarity ladder:** Inferior → Common → Uncommon → Rare → Epic → Ancient →
@@ -172,6 +178,13 @@ blue-white tint and a heavier brushed texture so the change is visible.
   The skill's text and effects do not change (same power, new label), and a
   lowered skill keeps all its marks, so a well-practised skill may climb
   straight back with its next upgrade (after which it starts at 0).
+- **Spells are skills with costs (Luke, 2026-10-30).** Any skill (per name
+  and rarity in the library) can carry a cost (mana, stamina or health, an
+  amount), a cooldown, range and casting notes, and a "spell" tag; the GM
+  creates them in the skill library. A player taps **Cast** on their phone:
+  the pool goes down (refused when it is too low), and the use is logged as
+  practice for the GM's review; the GM can undo or adjust. Cooldowns are
+  shown, not enforced.
 - **Skill names:** the System gives the official name; the player may add a
   nickname ("Jake Juice"). Show both.
 - **Skill library (Luke, Q37):** one entry per skill name **and rarity**, so an
@@ -276,6 +289,11 @@ turning point). GM confirms marks in the end-of-session review.
   history (Q65).
 - **Factions** are GM-only until the GM reveals one; a revealed faction
   shows players its name and standing (Q69).
+- **Player log:** every change the GM makes to a character (items, Credits,
+  stats, pools, skills, titles, quests, overrides) reaches the player as a
+  notification, and the player's main screen keeps a running log of them,
+  newest first, beside the full history. View as shows the GM exactly what
+  the player sees, pop-ups and log included (sound muted).
 - **Notes:** player private journal, party shared notes, GM private notes;
   tags linking notes to characters, NPCs, regions, quests; search. The GM
   cannot read a private journal entry unless the player marks it shareable.
@@ -300,6 +318,26 @@ turning point). GM confirms marks in the end-of-session review.
   injects into its own window. The key never appears in the join URL or QR.
   The server checks Origin on WebSocket upgrade and denies GM HTTP routes by
   default.
+
+## 9a. GM console layout (Luke, 2026-10-30)
+
+No single long page. The console opens on a **home dashboard**: the campaign
+and session (day, session running or not), the join address and QR, one card
+per character (portrait, grade, levels, XP to next level, pool bars), and
+what needs the GM (selections waiting, evolutions to build, practice drafts,
+merge answers, players' requests), each a link to where it is handled. Three
+tabs hold everything else, each a set of panels instead of one scroll:
+
+- **Session:** the party at a glance with a quick **Award XP**; the co-DM
+  (quick responses, suggestions, listening, generation, loading screen);
+  encounters and contests; quests and World Stability; broadcasts; loot and
+  shops; trackers; notes; View as; the change log with undo.
+- **Progression:** the full XP award; skill offers; marks review; merges;
+  the evolution builder; professions; the practice log review; titles.
+- **Library & settings:** skills and spells, classes, races, professions,
+  items, titles, NPCs and the bestiary, factions, loot tables, the reference
+  lists, content import, rules settings, co-DM settings, campaigns and
+  backups.
 
 ## 9. Status screen (player sheet layout)
 
