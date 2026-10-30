@@ -35,6 +35,15 @@ export function isTypingTarget(
   return false;
 }
 
+/**
+ * The rows' keys only work while their panel is on screen: the GM pane stays
+ * mounted (hidden) while the GM views as a character, and a key pressed there
+ * must not make a paid call or fill a form the GM cannot see (MD.A review).
+ */
+export function paneShown(el: { closest(selector: string): unknown } | null): boolean {
+  return el !== null && el.closest('[hidden]') === null;
+}
+
 /** Splits a growing NDJSON buffer into whole lines and the unfinished rest. */
 export function splitLines(buffer: string): { lines: string[]; rest: string } {
   const parts = buffer.split('\n');

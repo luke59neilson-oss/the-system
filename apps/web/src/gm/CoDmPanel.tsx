@@ -9,6 +9,7 @@ import { QuickResponses, type KeptLore, type PickedLine } from './QuickResponses
 import {
   generatedLore,
   isTypingTarget,
+  paneShown,
   keepTags,
   keepTitle,
   keyForSlot,
@@ -484,6 +485,7 @@ const rowOf = (data: { slots?: (Chip | null)[]; more?: Chip[] }): Row | null =>
  */
 function Suggestions({ gmKey, onUse }: { gmKey: string; onUse: (chip: Chip) => void }) {
   const [row, setRow] = useState<Row>(EMPTY_ROW);
+  const picksRoot = useRef<HTMLDivElement | null>(null);
   const [intervalS, setIntervalS] = useState<number>(90);
   const [note, setNote] = useState<string | null>(null);
   const interval = useRef(intervalS);
@@ -558,6 +560,7 @@ function Suggestions({ gmKey, onUse }: { gmKey: string; onUse: (chip: Chip) => v
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat || isTypingTarget(e.target as HTMLElement | null, e)) return;
+      if (!paneShown(picksRoot.current)) return;
       const slot = slotForKey(e.key);
       if (slot === null || slot < FIRST_PICK) return;
       e.preventDefault();
@@ -585,7 +588,7 @@ function Suggestions({ gmKey, onUse }: { gmKey: string; onUse: (chip: Chip) => v
   );
 
   return (
-    <div className="suggestions" data-testid="suggestions">
+    <div className="suggestions" data-testid="suggestions" ref={picksRoot}>
       <h3>Co-DM picks (GM only)</h3>
       <p>
         <label>
