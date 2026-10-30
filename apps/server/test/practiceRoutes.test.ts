@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { DEFAULT_RULES, execute } from '@the-system/engine';
 import { CoDm } from '../src/ai/coDm';
@@ -212,69 +212,6 @@ describe('practice draft routes (MC.7)', () => {
     });
   });
 
-  it('a pending draft from an earlier session does not block the same use now (QF.33)', async () => {
-    // The previous test left session 1's Archer's Eye draft pending.
-    const before = await app.inject({
-      method: 'GET',
-      url: '/api/gm/ai/practice-drafts',
-      headers: gm,
-    });
-    const leftover = before.json().drafts.at(-1);
-    expect(leftover).toMatchObject({ characterId: 'jake', skill: "Archer's Eye" });
-    let n = 0;
-    const r0 = execute(store.campaign, { type: 'session.start' } as never, {
-      actor: { role: 'gm' as const },
-      sessionId: null,
-      now: () => '2026-10-27T19:00:00.000Z',
-      newId: () => `t${++n}`,
-    });
-    if (!r0.ok) throw new Error(r0.error);
-    store.appendAll(r0.events);
-    const now = store.campaign.state!;
-    const current = now.sessions.find((x) => x.id === now.currentSession)!;
-    expect(current.id).not.toBe(leftover.sessionId);
-    const dir = transcriptsDir(store);
-    const lines = [
-      { at: '2026-10-27T19:01:00.000Z', startMs: 0, endMs: 900, text: 'Back to the canyon.' },
-      {
-        at: '2026-10-27T19:01:05.000Z',
-        startMs: 5000,
-        endMs: 6000,
-        text: 'Jake uses Archer’s Eye.',
-      },
-    ];
-    writeFileSync(
-      transcriptFile(dir, current.number),
-      lines.map((l) => JSON.stringify(l)).join('\n') + '\n',
-    );
-    const r = await app.inject({ method: 'POST', url: '/api/gm/ai/practice-drafts', headers: gm });
-    expect(r.statusCode, r.body).toBe(200);
-    expect(r.json()).toMatchObject({ added: 1, read: 2 });
-    expect(r.json().drafts.at(-1)).toMatchObject({
-      skill: "Archer's Eye",
-      sessionId: current.id,
-    });
-    // This session's own pending draft still blocks drafting it twice.
-    writeFileSync(
-      transcriptFile(dir, current.number),
-      [
-        ...lines,
-        { ...lines[0], at: '2026-10-27T19:08:00.000Z', startMs: 8000, endMs: 8500 },
-        { ...lines[1], at: '2026-10-27T19:09:00.000Z', startMs: 9000, endMs: 9900 },
-      ]
-        .map((l) => JSON.stringify(l))
-        .join('\n') + '\n',
-    );
-    const again = await app.inject({
-      method: 'POST',
-      url: '/api/gm/ai/practice-drafts',
-      headers: gm,
-    });
-    expect(again.statusCode, again.body).toBe(200);
-    expect(again.json()).toMatchObject({ added: 0, read: 2 });
-    expect(fake.requests.at(-1)?.messages.at(-1)?.content).toContain('Jake uses Archer’s Eye.');
-  });
-
   it('reports a damaged drafts file without overwriting it', async () => {
     const dir = draftsDir(store);
     mkdirSync(dir, { recursive: true });
@@ -282,5 +219,108 @@ describe('practice draft routes (MC.7)', () => {
     const r = await app.inject({ method: 'GET', url: '/api/gm/ai/practice-drafts', headers: gm });
     expect(r.statusCode).toBe(500);
     rmSync(path.join(dir, 'practice-drafts.json'));
+  });
+});
+
+// QF.33 (review round 1 M1): its own campaign and server, so it passes alone
+// and in any order.
+describe('practice drafts across sessions (QF.33)', () => {
+  let root: string;
+  let store: CampaignStore;
+  let app: FastifyInstance;
+  let fake: FixtureAiClient | undefined;
+
+  beforeEach(async () => {
+    root = mkdtempSync(path.join(tmpdir(), 'the-system-drafts-qf33-'));
+    writeFileSync(path.join(root, 'index.html'), '<!doctype html>');
+    store = campaign(root);
+    fake = undefined;
+    const coDm = new CoDm({
+      dir: path.join(root, 'app-data'),
+      cipher: null,
+      makeClient: () => {
+        fake = new FixtureAiClient([
+          {
+            role: 'fast',
+            match: 'Practice drafts.',
+            text: JSON.stringify({
+              drafts: [
+                {
+                  line: 2,
+                  character: 'Jake',
+                  skill: "Archer's Eye",
+                  action: 'Spots the weak scale',
+                  confidence: 'high',
+                },
+              ],
+            }),
+          },
+        ]);
+        return fake;
+      },
+    });
+    app = await createServer({ webRoot: root, live: { store, ...hubOpts }, coDm });
+  });
+  afterEach(async () => {
+    await app.close();
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  const run = (type: string, at: string) => {
+    let n = 0;
+    const r = execute(store.campaign, { type } as never, {
+      actor: { role: 'gm' as const },
+      sessionId: store.campaign.state?.currentSession ?? null,
+      now: () => at,
+      newId: () => `${type}-${at}-${++n}`,
+    });
+    if (!r.ok) throw new Error(r.error);
+    store.appendAll(r.events);
+  };
+  const say = (at: string, lines: readonly string[]) => {
+    const state = store.campaign.state!;
+    const current = state.sessions.find((x) => x.id === state.currentSession)!;
+    const dir = transcriptsDir(store);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      transcriptFile(dir, current.number),
+      lines
+        .map((text, i) => JSON.stringify({ at, startMs: i * 5000, endMs: i * 5000 + 900, text }))
+        .join('\n') + '\n',
+    );
+    return current.id;
+  };
+  const post = () => app.inject({ method: 'POST', url: '/api/gm/ai/practice-drafts', headers: gm });
+
+  it('a pending draft from an earlier session does not block the same use now', async () => {
+    run('session.start', '2026-10-26T19:00:00.000Z');
+    const first = say('2026-10-26T19:01:00.000Z', ['Into the canyon.', 'Jake uses Archer’s Eye.']);
+    const r1 = await post();
+    expect(r1.statusCode, r1.body).toBe(200);
+    expect(r1.json()).toMatchObject({ added: 1 });
+    run('session.end', '2026-10-26T22:00:00.000Z');
+    // Session 1's draft is still pending (never confirmed or dismissed).
+    run('session.start', '2026-10-27T19:00:00.000Z');
+    const second = say('2026-10-27T19:01:00.000Z', [
+      'Back to the canyon.',
+      'Jake uses Archer’s Eye.',
+    ]);
+    expect(second).not.toBe(first);
+    const r2 = await post();
+    expect(r2.statusCode, r2.body).toBe(200);
+    expect(r2.json()).toMatchObject({ added: 1, read: 2 });
+    const drafts = r2.json().drafts as { skill: string; sessionId: string }[];
+    expect(drafts.map((d) => d.sessionId)).toEqual([first, second]);
+    // This session's own pending draft still blocks drafting it twice.
+    say('2026-10-27T19:09:00.000Z', [
+      'Back to the canyon.',
+      'Jake uses Archer’s Eye.',
+      'Again.',
+      'Jake uses Archer’s Eye.',
+    ]);
+    const r3 = await post();
+    expect(r3.statusCode, r3.body).toBe(200);
+    expect(r3.json()).toMatchObject({ added: 0 });
+    expect(fake?.requests.at(-1)?.messages.at(-1)?.content).toContain('Jake uses Archer’s Eye.');
   });
 });
