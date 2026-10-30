@@ -530,4 +530,17 @@ describe('player notice audit (MU.2)', () => {
       detail: '50',
     });
   });
+
+  it('an XP award that levels the character is told by its DING alone (review)', () => {
+    const { notices } = lastNotices({
+      act: {
+        type: 'xp.award',
+        track: 'class',
+        amount: 100,
+        participants: [{ characterId: 'jake' }],
+      },
+    });
+    expect(notices.some((n) => n.kind === 'level')).toBe(true);
+    expect(notices.some((n) => n.kind === 'gmChange' && n.change === 'xp')).toBe(false);
+  });
 });

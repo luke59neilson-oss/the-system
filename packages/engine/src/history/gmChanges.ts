@@ -1,7 +1,6 @@
-import type { Character } from '../character';
+import { raceLevel, type Character } from '../character';
 import type { DomainEvent, EventType } from '../events/envelope';
 import type { CampaignState } from '../events/reducer';
-import { shareXp } from '../progression';
 import { slotKey } from '../economy';
 
 /**
@@ -279,19 +278,34 @@ export function gmChangeNotices(
         if (now.profession !== null) {
           add('Profession level', was.professionLevel, now.professionLevel);
         }
+        add('Race level', raceLevel(before.rules, was), raceLevel(after.rules, now));
         add('Class XP', was.xp.class, now.xp.class);
         if (now.profession !== null) add('Profession XP', was.xp.profession, now.xp.profession);
-        push({ characterId: now.id, change: 'progression', diffs });
+        // Review (MU.2): a set that changed nothing tells nobody.
+        if (diffs.length > 0) push({ characterId: now.id, change: 'progression', diffs });
       }
       break;
     }
     case 'xp.awarded': {
-      const { track, shares, enemyLevel, enemyGrade } = event.payload;
-      for (const s of shares) {
+      // Review (MU.2): an award that levels a track is told by its 'DING!'
+      // alone; otherwise the line names what each track actually gained, so
+      // overflow lands on the right track and lost XP is not claimed.
+      for (const s of event.payload.shares) {
         const was = charOf(before, s.characterId);
-        if (!was) continue;
-        const gained = shareXp(before.rules, was, s.share, enemyLevel, enemyGrade, s.raceLevel);
-        push({ characterId: s.characterId, change: 'xp', subject: track, detail: String(gained) });
+        const now = charOf(after, s.characterId);
+        if (!was || !now) continue;
+        if (was.classLevel !== now.classLevel || was.professionLevel !== now.professionLevel)
+          continue;
+        for (const track of ['class', 'profession'] as const) {
+          const gained = now.xp[track] - was.xp[track];
+          if (gained > 0)
+            push({
+              characterId: s.characterId,
+              change: 'xp',
+              subject: track,
+              detail: String(gained),
+            });
+        }
       }
       break;
     }

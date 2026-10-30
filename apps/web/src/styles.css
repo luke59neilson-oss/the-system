@@ -456,6 +456,10 @@ a {
   .player-grid .quests {
     order: 2;
   }
+  /* MU.2 review: the running log sits on the main screen, before the quests. */
+  .player-grid .running-log {
+    order: 2;
+  }
   /* Party (M3.12): a glance at everyone's pools before the inventory. */
   .player-grid .party-window {
     order: 3;

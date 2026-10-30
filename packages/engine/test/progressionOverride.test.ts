@@ -283,6 +283,7 @@ describe('GM override for level, XP and grade (MT.5)', () => {
         diffs: [
           { label: 'Grade', from: 'G', to: 'F' },
           { label: 'Class level', from: '0', to: '6' },
+          { label: 'Race level', from: '0', to: '6' },
         ],
       },
     ]);
