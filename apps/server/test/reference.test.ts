@@ -150,6 +150,30 @@ describe('co-DM sample', () => {
     }
   });
 
+  it('no row the co-DM could see over the real lists, for any kind, names a god', () => {
+    const seen = new Set<string>();
+    for (const kind of kinds)
+      for (let i = 0; i < 200; i++)
+        for (const e of referenceSample(all, kind, `req ${i}`)) seen.add(e.id);
+    // Non-vacuous: most of the lists rotate through.
+    expect(seen.size).toBeGreaterThan(150);
+    for (const id of seen) {
+      const e = all.find((x) => x.id === id);
+      if (!e) throw new Error(id);
+      expect(e.godTied, e.name).toBe(false);
+      expect(sampleLine(e), e.name).not.toMatch(GOD_WORDS);
+    }
+    for (const name of [
+      'Orrery of the Godless One',
+      'Altar of the Damned',
+      'Altmar Signet of Supremacy',
+    ])
+      expect(
+        [...seen].map((id) => all.find((x) => x.id === id)?.name),
+        name,
+      ).not.toContain(name);
+  });
+
   it('picks the lists that suit the kind and rows that match the request', () => {
     expect(referenceSample(all, 'shop', 'a weapons shop').every((e) => e.list === 'items')).toBe(
       true,

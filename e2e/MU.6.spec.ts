@@ -51,6 +51,14 @@ test('the GM searches the reference; players never receive it', async ({ browser
         .catch(() => undefined);
   });
 
+  // A player is on before the GM searches, and stays on.
+  await gm.getByRole('tab', { name: 'Home' }).click();
+  const create = gm.locator('form[aria-labelledby="new-character"]');
+  await create.getByLabel('Name', { exact: true }).fill('Jake');
+  await create.getByRole('button', { name: 'Create character' }).click();
+  await player.goto(server.url);
+  await player.getByRole('link', { name: /Jake/ }).click();
+  await expect(player.getByTestId('connection')).toHaveText('Connected');
   await openWindow(gm, 'reference');
   const ref = gm.locator('section[aria-labelledby="reference"]');
   await expect(ref.getByRole('heading', { name: 'Reference' })).toBeVisible();
@@ -75,21 +83,14 @@ test('the GM searches the reference; players never receive it', async ({ browser
   await ref.evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-reference-god-tied-1366x768.png') });
   await ref.getByLabel('Show god-tied').uncheck();
-  await expect(ref.getByTestId('reference-count')).not.toHaveText('');
+  await expect(ref.getByTestId('reference-count')).toHaveText(/entr/);
   await expect(ref.getByTestId('reference-god-tied-flag')).toHaveCount(0);
   await ref.getByLabel('Search the reference').fill('zzzz nothing');
   await expect(ref.getByTestId('reference-count')).toHaveText('Nothing matches.');
 
-  // The player joins (a character exists) and sees nothing of it.
-  await gm.getByRole('tab', { name: 'Home' }).click();
-  const create = gm.locator('form[aria-labelledby="new-character"]');
-  await create.getByLabel('Name', { exact: true }).fill('Jake');
-  await create.getByRole('button', { name: 'Create character' }).click();
-  await player.goto(server.url);
-  await player.getByRole('link', { name: /Jake/ }).click();
-  await expect(player.getByTestId('connection')).toHaveText('Connected');
   const anon = await player.request.get(`${server.url}/api/gm/reference?q=boar`);
   expect(anon.status()).toBe(403);
+  await expect.poll(() => seen.length).toBeGreaterThan(0);
   const all = seen.join('\n') + (await player.content());
   expect(all).not.toContain('Irontusk');
   expect(all).not.toContain('Malefic Viper');

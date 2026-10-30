@@ -32,7 +32,9 @@ export function Reference({ gmKey }: { gmKey: string }) {
           setError(null);
         })
         .catch((err: unknown) => {
-          if (live) setError(err instanceof Error ? err.message : 'Could not search the reference');
+          if (!live) return;
+          setResult(null);
+          setError(err instanceof Error ? err.message : 'Could not search the reference');
         });
     }, 150);
     return () => {

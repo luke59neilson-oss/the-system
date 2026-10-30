@@ -50,11 +50,12 @@ const SHARED = new Set([
 ]);
 export const GOD_TIED = 'god-tied';
 /**
- * Words that tie a row to the books' gods. A row whose name or summary (the
- * parts the co-DM reads) uses one stays out of samples even when untagged.
+ * Words that tie a row to the books' gods or their worship. A row whose
+ * prompt line (name, kind, rarity, summary: everything the co-DM reads) uses
+ * one stays out of samples even when untagged.
  */
 export const GOD_WORDS =
-  /\b(gods?|goddess(es)?|godhood|primordials?|divine|deity|deities|patron|malefic viper|viper's)\b/i;
+  /\b(gods?|godless|goddess(es)?|godhood|primordials?|divine|deity|deities|patron|malefic|viper's|chosen|heretic\w*|bless\w*|cult\w*|sacrific\w*|altars?|worship\w*|pantheon)\b/i;
 
 const label = (column: string) => column.replace(/_/g, ' ');
 
@@ -171,10 +172,7 @@ export function referenceSample(
     words(e.name).filter((w) => asked.has(w)).length;
   const pool = entries.filter(
     (e) =>
-      !e.godTied &&
-      !GOD_WORDS.test(`${e.name} ${e.summary}`) &&
-      lists.includes(e.list) &&
-      e.summary !== '',
+      !e.godTied && !GOD_WORDS.test(sampleLine(e)) && lists.includes(e.list) && e.summary !== '',
   );
   if (!pool.length) return [];
   const start = hash(`${kind}\n${request}`) % pool.length;
@@ -190,6 +188,7 @@ export function referenceSample(
   for (const e of ranked) {
     if (picked.length >= REFERENCE_SAMPLE_MAX) break;
     if (picked.filter((p) => p.list === e.list).length >= perList) continue;
+    if (picked.some((p) => p.name.toLowerCase() === e.name.toLowerCase())) continue;
     const line = sampleLine(e);
     if (chars + line.length > REFERENCE_SAMPLE_CHARS) continue;
     picked.push(e);
