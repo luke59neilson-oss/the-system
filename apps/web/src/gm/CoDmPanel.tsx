@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { IncomingContent } from './ContentImport';
 import { LOADING_TEXT } from './loadingScreen';
 import { PrepareAhead } from './PrepareAhead';
-import { QuickResponses, type PickedLine } from './QuickResponses';
+import type { CampaignState } from '@the-system/engine';
+import type { LiveClient } from '../live';
+import { LoreView } from './LoreView';
+import { QuickResponses, type KeptLore, type PickedLine } from './QuickResponses';
 import { isTypingTarget, keyForSlot, slotForKey } from './quickModel';
 import { SessionNotes } from './SessionNotes';
 import { spendLine, useLiveSpend, type Spend } from './spend';
@@ -34,8 +37,13 @@ export function CoDmPanel({
   onLoading,
   onLoadingFailed,
   picked = null,
+  client,
+  state,
 }: {
   gmKey: string;
+  /** MD.3: Keep saves lore as a GM note; the Lore view lists it. */
+  client?: LiveClient;
+  state?: CampaignState;
   /** MD.1: the transcript line the GM last clicked, to point the quick responses at. */
   picked?: PickedLine | null;
   onGenerated: (content: Omit<IncomingContent, 'seq'>) => void;
@@ -152,7 +160,23 @@ export function CoDmPanel({
           setSeedSpend(s);
           setReady(true);
         }}
+        {...(client
+          ? {
+              onKeep: async (lore: KeptLore) => {
+                const r = await client.command({
+                  type: 'note.create',
+                  characterId: null,
+                  kind: 'gm',
+                  title: lore.title,
+                  body: lore.body,
+                  tags: lore.tags,
+                });
+                return r.ok ? null : r.error;
+              },
+            }
+          : {})}
       />
+      {client && state && <LoreView client={client} state={state} />}
       <Suggestions
         gmKey={gmKey}
         onUse={(chip) => {

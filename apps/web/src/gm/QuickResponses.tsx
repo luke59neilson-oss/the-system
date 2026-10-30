@@ -3,6 +3,9 @@ import {
   endQuick,
   foldQuick,
   isTypingTarget,
+  keepTags,
+  keepText,
+  keepTitle,
   keyForSlot,
   slotForKey,
   splitLines,
@@ -23,6 +26,16 @@ interface QuickScene {
   target: { text: string; speaker: string | null } | null;
   npc: string | null;
   npcs: { id: string; name: string }[];
+  /** MD.3: the region and session a kept answer is tagged with. */
+  place?: string | null;
+  session?: number | null;
+}
+
+/** MD.3: a kept answer, saved by the panel as a GM lore note. */
+export interface KeptLore {
+  readonly title: string;
+  readonly body: string;
+  readonly tags: readonly string[];
 }
 
 /** How often the row rereads the newest question and the NPC in the scene. */
@@ -40,11 +53,16 @@ export function QuickResponses({
   gmKey,
   picked,
   onSpend,
+  onKeep,
 }: {
   gmKey: string;
   picked: PickedLine | null;
   onSpend: (spend: { calls: number; dollars: number }) => void;
+  /** MD.3: save a kept answer; resolves to an error message, or null when saved. */
+  onKeep?: (lore: KeptLore) => Promise<string | null>;
 }) {
+  const [keepDraft, setKeepDraft] = useState<string | null>(null);
+  const [keepNote, setKeepNote] = useState<string | null>(null);
   const [scene, setScene] = useState<QuickScene | null>(null);
   const [listening, setListening] = useState(false);
   const [typed, setTyped] = useState('');
@@ -94,6 +112,8 @@ export function QuickResponses({
       const controller = new AbortController();
       abort.current = controller;
       setNote(null);
+      setKeepDraft(null);
+      setKeepNote(null);
       setLast({ slot, target: line });
       try {
         const res = await fetch('/api/gm/ai/quick', {
@@ -272,6 +292,58 @@ export function QuickResponses({
               Richer
             </button>
           )}
+          {!answer.streaming && !answer.error && onKeep && keepDraft === null && (
+            <button
+              type="button"
+              onClick={() => {
+                setKeepNote(null);
+                setKeepDraft(keepText({ say: answer.say, beats: answer.beats }));
+              }}
+            >
+              Keep
+            </button>
+          )}
+          {keepDraft !== null && onKeep && (
+            <form
+              className="quick-keep"
+              aria-label="Keep as lore"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const body = keepDraft.trim();
+                if (body === '') {
+                  setKeepNote('Nothing to keep: the note is empty');
+                  return;
+                }
+                const scope = { npc: answer.npc, place: scene?.place ?? null };
+                void onKeep({
+                  title: keepTitle(scope),
+                  body,
+                  tags: keepTags({ ...scope, session: scene?.session ?? null }),
+                }).then((err) => {
+                  if (err) setKeepNote(err);
+                  else {
+                    setKeepDraft(null);
+                    setKeepNote('Kept as lore (GM only)');
+                  }
+                });
+              }}
+            >
+              <label>
+                Lore to keep (edit before saving)
+                <textarea
+                  value={keepDraft}
+                  maxLength={4000}
+                  rows={4}
+                  onChange={(e) => setKeepDraft(e.target.value)}
+                />
+              </label>
+              <button type="submit">Save lore</button>{' '}
+              <button type="button" onClick={() => setKeepDraft(null)}>
+                Cancel
+              </button>
+            </form>
+          )}
+          {keepNote && <p role="status">{keepNote}</p>}
         </div>
       )}
     </div>

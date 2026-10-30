@@ -218,6 +218,8 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               />
               <CoDmPanel
                 gmKey={gmKey}
+                client={client}
+                state={state}
                 picked={quickLine}
                 onGenerated={(c) => setIncoming((cur) => ({ ...c, seq: (cur?.seq ?? 0) + 1 }))}
                 onLoading={sendLoading}

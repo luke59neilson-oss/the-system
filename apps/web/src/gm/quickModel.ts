@@ -127,3 +127,53 @@ export function moveSlot<T>(slots: readonly T[], index: number, by: -1 | 1): T[]
 export function endQuick(view: QuickAnswerView | null, error: string): QuickAnswerView | null {
   return view?.streaming ? { ...view, error, streaming: false } : view;
 }
+
+/** MD.3: the tag every kept-lore note carries (mirrors the server's LORE_TAG). */
+export const LORE_TAG = 'lore';
+
+/** MD.3: the tags a kept answer gets: lore, the NPC, the place and the session (D260). */
+export function keepTags(scene: {
+  readonly npc: string | null;
+  readonly place: string | null;
+  readonly session: number | null;
+}): string[] {
+  return [
+    LORE_TAG,
+    ...(scene.npc ? [`npc:${scene.npc}`] : []),
+    ...(scene.place ? [`place:${scene.place}`] : []),
+    ...(scene.session ? [`session:${scene.session}`] : []),
+  ];
+}
+
+/** MD.3: the text Keep starts from: the sayable line, then each beat on its own line. */
+export function keepText(answer: {
+  readonly say: string | null;
+  readonly beats: readonly string[];
+}): string {
+  return [answer.say ?? '', ...answer.beats.map((b) => `- ${b}`)]
+    .filter((l) => l.trim() !== '')
+    .join('\n');
+}
+
+/** MD.3: a kept note's title: the NPC, else the place, else "Lore". */
+export const keepTitle = (scene: {
+  readonly npc: string | null;
+  readonly place: string | null;
+}): string => scene.npc ?? scene.place ?? 'Lore';
+
+/** MD.3 Lore view: GM notes tagged lore, newest first. */
+export function loreNotes<
+  N extends {
+    readonly id: string;
+    readonly kind: string;
+    readonly tags: readonly string[];
+    readonly updatedAt: string;
+  },
+>(notes: readonly N[]): N[] {
+  return notes
+    .filter((n) => n.kind === 'gm' && n.tags.some((t) => t.toLowerCase() === LORE_TAG))
+    .slice()
+    .sort((a, b) =>
+      a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : a.id < b.id ? -1 : 1,
+    );
+}
