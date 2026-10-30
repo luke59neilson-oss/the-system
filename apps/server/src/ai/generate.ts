@@ -11,6 +11,7 @@ import {
   type CampaignState,
 } from '@the-system/engine';
 import { AiError, type AiRequest } from './client';
+import { loreForRequest, loreLines } from './quickResponses';
 
 export const GENERATE_KINDS = ['shop', 'npc', 'place', 'encounter', 'item', 'questHook'] as const;
 export type GenerateKind = (typeof GENERATE_KINDS)[number];
@@ -93,11 +94,15 @@ export function buildGenerateRequest(
     `What the GM asked for: ${prompt.trim() || '(nothing more; use the context)'}`,
     'Campaign context (GM-only):',
     campaignContext(state),
-  ].join('\n\n');
+  ];
+  // MD.3: kept lore for the current place and any NPC the GM names; do not contradict it.
+  const here = state.currentRegion ? (state.regions[state.currentRegion]?.name ?? null) : null;
+  const lore = loreLines(loreForRequest(Object.values(state.notes), here, prompt));
+  if (lore.length) content.push(['Kept lore (do not contradict):', ...lore].join('\n'));
   return {
     role: 'strong',
     system,
-    messages: [{ role: 'user', content }],
+    messages: [{ role: 'user', content: content.join('\n\n') }],
     maxTokens: GENERATE_MAX_TOKENS,
   };
 }

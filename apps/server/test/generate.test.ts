@@ -391,4 +391,41 @@ describe('generate request and reply helpers', () => {
     expect(req.messages[0]?.content).toContain('an herbalist');
     expect(campaignContext(state)).toContain('Currency: Credits.');
   });
+
+  it('includes kept lore for an NPC the GM names (MD.3), and none otherwise', () => {
+    const now = () => '2026-10-30T15:00:00.000Z';
+    let n = 0;
+    const ctx = { actor: { role: 'gm' as const }, sessionId: null, now, newId: () => `e${++n}` };
+    let campaign = { events: [], state: null } as never as Parameters<typeof execute>[0];
+    for (const command of [
+      { type: 'campaign.create', name: 'W', rules: JSON.parse(JSON.stringify(DEFAULT_RULES)) },
+      {
+        type: 'note.create',
+        characterId: null,
+        kind: 'gm',
+        title: 'Old Tam',
+        body: 'Tam owes the ferryman.',
+        tags: ['lore', 'npc:Old Tam'],
+      },
+      {
+        type: 'note.create',
+        characterId: null,
+        kind: 'party',
+        body: 'Party gossip about Old Tam.',
+        tags: ['lore', 'npc:Old Tam'],
+      },
+    ]) {
+      const r = execute(campaign, command as never, ctx);
+      if (!r.ok) throw new Error(r.error);
+      campaign = r.campaign;
+    }
+    const state = campaign.state;
+    if (!state) throw new Error('no state');
+    const asked = buildGenerateRequest('shop', 'a shop run by old tam', state).messages[0]?.content;
+    expect(asked).toContain('Kept lore (do not contradict):');
+    expect(asked).toContain('- Tam owes the ferryman.');
+    expect(asked).not.toContain('Party gossip');
+    const other = buildGenerateRequest('shop', 'an herbalist', state).messages[0]?.content;
+    expect(other).not.toContain('Kept lore');
+  });
 });

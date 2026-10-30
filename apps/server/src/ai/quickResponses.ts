@@ -141,6 +141,19 @@ export const QUICK_SYSTEM = [
 const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim();
 const clip = (s: string, n: number) => (s.length <= n ? s : `${s.slice(0, n - 1)}…`);
 
+/** MD.3: kept lore as prompt lines, newest first, bounded by QUICK_LORE_MAX characters. */
+export function loreLines(notes: readonly string[]): string[] {
+  const lore: string[] = [];
+  let used = 0;
+  for (const note of notes) {
+    const line = oneLine(note);
+    if (used + line.length > QUICK_LORE_MAX) break;
+    lore.push(`- ${line}`);
+    used += line.length;
+  }
+  return lore;
+}
+
 export function quickPrompt(args: {
   readonly slot: QuickSlot;
   readonly target: string;
@@ -148,14 +161,7 @@ export function quickPrompt(args: {
   readonly context: QuickContext;
 }): string {
   const { slot, target, recent, context } = args;
-  const lore: string[] = [];
-  let used = 0;
-  for (const note of context.lore) {
-    const line = oneLine(note);
-    if (used + line.length > QUICK_LORE_MAX) break;
-    lore.push(`- ${line}`);
-    used += line.length;
-  }
+  const lore = loreLines(context.lore);
   return [
     'Quick response.',
     `Button: ${oneLine(slot.label)}`,
@@ -234,6 +240,34 @@ export function loreFor(
     .slice()
     .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0))
     .map((n) => n.body.trim());
+}
+
+/**
+ * MD.3: kept lore for a generation request: the current place's lore, plus
+ * the lore of every NPC whose name the GM's request mentions
+ * (case-insensitive), newest first, each note once.
+ */
+export function loreForRequest(
+  notes: Parameters<typeof loreFor>[0],
+  place: string | null,
+  request: string,
+): string[] {
+  const asked = request.toLowerCase();
+  const wanted = (tag: string): boolean => {
+    const t = tag.toLowerCase();
+    if (place && t === `place:${place.toLowerCase()}`) return true;
+    const name = /^npc:(.+)$/u.exec(t)?.[1]?.trim();
+    return !!name && asked.includes(name);
+  };
+  const bodies = notes
+    .filter((n) => n.kind === 'gm')
+    .filter((n) => n.tags.some((t) => t.toLowerCase() === LORE_TAG))
+    .filter((n) => n.tags.some(wanted))
+    .filter((n) => n.body.trim() !== '')
+    .slice()
+    .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0))
+    .map((n) => n.body.trim());
+  return [...new Set(bodies)];
 }
 
 /** MD.3: the tags a kept answer gets: lore, the NPC, the place and the session. */
