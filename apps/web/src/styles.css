@@ -3117,12 +3117,27 @@ ol.change-log li.undone .change-text {
   gap: 0.4rem;
   margin: 0.5rem 0;
 }
+/* QF.37: the key sits on its own line and the name below it wraps between
+   words (never mid-word, never an ellipsis), so the GM can tell "Yes, and…"
+   from "Yes, but…" at a glance. The font follows the row's width (container
+   units) so the longest default word ("character") fits a narrow panel; the
+   grid stretches every button in the row to the tallest. */
+.quick-row {
+  container-type: inline-size;
+}
 .quick-row button {
   min-width: 0;
-  padding: 0.45rem 0.3rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 0.4rem 0.15rem;
+  font-size: min(0.9rem, 3.1cqi);
+  white-space: normal;
+  overflow-wrap: normal;
+  line-height: 1.25;
+  text-align: center;
+}
+.quick-row button kbd {
+  display: block;
+  width: fit-content;
+  margin: 0 auto 0.2rem;
 }
 .quick-row kbd {
   display: inline-block;
