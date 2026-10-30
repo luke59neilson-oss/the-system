@@ -21,6 +21,89 @@ export interface SkillDef {
   readonly flavor: string;
   /** GM-only effects text (mechanics, numbers, reminders). */
   readonly effects: string;
+  /**
+   * MU.4 (spells, DESIGN §6): what one use costs: a pool id from the rules
+   * and a whole amount. Absent = no cost (stored logs replay unchanged).
+   */
+  readonly cost?: SkillCost;
+  /** MU.4: cooldown as the GM writes it ("1 minute"); shown, not enforced. */
+  readonly cooldown?: string;
+  /** MU.4: range as the GM writes it ("30 m", "Touch"). */
+  readonly range?: string;
+  /** MU.4: casting notes (gestures, words, concentration). */
+  readonly castingNotes?: string;
+}
+
+/** A library entry as an event carries it: casting fields may be undefined. */
+export type SkillDefInput = Omit<SkillDef, 'cost' | CastingTextField> & {
+  readonly cost?: SkillCost | undefined;
+  readonly cooldown?: string | undefined;
+  readonly range?: string | undefined;
+  readonly castingNotes?: string | undefined;
+};
+
+/** MU.4: a skill's cost per use. */
+export interface SkillCost {
+  readonly pool: string;
+  readonly amount: number;
+}
+
+/** The casting fields a skill entry may carry (MU.4). */
+export const CASTING_TEXT_FIELDS = ['cooldown', 'range', 'castingNotes'] as const;
+export type CastingTextField = (typeof CASTING_TEXT_FIELDS)[number];
+/** Longest cooldown or range text; casting notes may run to MAX_CASTING_NOTES. */
+export const MAX_CASTING_SHORT = 80;
+export const MAX_CASTING_NOTES = 1000;
+/** Largest cost one use may have. */
+export const MAX_SKILL_COST = 1_000_000;
+
+/** The casting details of an entry, or null when it has none (MU.4). */
+export interface SkillCasting {
+  readonly cost: SkillCost | null;
+  readonly cooldown: string | null;
+  readonly range: string | null;
+  readonly castingNotes: string | null;
+}
+
+export function castingOf(def: SkillDef | undefined): SkillCasting | null {
+  if (!def) return null;
+  const text = (v: string | undefined) => (v === undefined || v.trim() === '' ? null : v.trim());
+  const casting: SkillCasting = {
+    cost: def.cost ? { pool: def.cost.pool, amount: def.cost.amount } : null,
+    cooldown: text(def.cooldown),
+    range: text(def.range),
+    castingNotes: text(def.castingNotes),
+  };
+  return Object.values(casting).every((v) => v === null) ? null : casting;
+}
+
+/**
+ * Drops empty casting fields so an entry without them stores exactly as
+ * before MU.4 (`cost: null` and blank text mean none).
+ */
+export function withCasting(
+  base: Omit<SkillDef, 'cost' | CastingTextField>,
+  fields: {
+    readonly cost?: SkillCost | null | undefined;
+    readonly cooldown?: string | undefined;
+    readonly range?: string | undefined;
+    readonly castingNotes?: string | undefined;
+  },
+): SkillDef {
+  const out: {
+    -readonly [K in keyof SkillDef]: SkillDef[K];
+  } = { ...base };
+  if (fields.cost) out.cost = { pool: fields.cost.pool, amount: fields.cost.amount };
+  for (const key of CASTING_TEXT_FIELDS) {
+    const v = fields[key]?.trim() ?? '';
+    if (v !== '') out[key] = v;
+  }
+  return out;
+}
+
+/** True when the entry is a spell: tagged "spell" (any case) or with a cost. */
+export function isSpell(def: Pick<SkillDef, 'tags' | 'cost'>): boolean {
+  return def.cost !== undefined || def.tags.some((t) => t.toLowerCase() === 'spell');
 }
 
 /** Longest tag, and most tags, a library skill may carry. */
@@ -41,6 +124,12 @@ export function normalizeTags(tags: readonly string[]): string[] {
   return out;
 }
 
+const castingLabel: Record<CastingTextField, string> = {
+  cooldown: 'A cooldown',
+  range: 'A range',
+  castingNotes: 'Casting notes',
+};
+
 const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /** Throws CharacterRuleError when the definition breaks a library rule. */
@@ -58,6 +147,24 @@ export function validateSkillDef(
   for (const tag of def.tags) {
     if (tag.length > MAX_SKILL_TAG) {
       throw new CharacterRuleError(`A tag is at most ${MAX_SKILL_TAG} characters`);
+    }
+  }
+  if (def.cost !== undefined) {
+    if (!rules.pools.some((p) => p.id === def.cost?.pool)) {
+      throw new CharacterRuleError(`Unknown pool "${def.cost.pool}"`);
+    }
+    if (
+      !Number.isInteger(def.cost.amount) ||
+      def.cost.amount < 1 ||
+      def.cost.amount > MAX_SKILL_COST
+    ) {
+      throw new CharacterRuleError(`A cost is a whole number from 1 to ${MAX_SKILL_COST}`);
+    }
+  }
+  for (const key of CASTING_TEXT_FIELDS) {
+    const max = key === 'castingNotes' ? MAX_CASTING_NOTES : MAX_CASTING_SHORT;
+    if ((def[key]?.length ?? 0) > max) {
+      throw new CharacterRuleError(`${castingLabel[key]} is at most ${max} characters`);
     }
   }
   // MQ.12 (L4): one entry per name and rarity; before it, one per name (D90).
@@ -98,6 +205,30 @@ export function entryForSkill(
     skill.name,
     rules.skills.libraryByRarity ? textRarityOf(skill) : undefined,
   );
+}
+
+/**
+ * MU.4 (D270): the casting details a character's copy uses. Like effects they
+ * follow the library entry for the copy's text rarity, hand-edited text or
+ * not (a hand edit freezes description and flavour only). When the library has
+ * no entry at that rarity (an upgrade the GM has not written up yet), the
+ * nearest lower rarity's entry of the same name lends its casting, so a spell
+ * never loses its cost by being upgraded. An entry that exists but has no
+ * casting means none at that rarity.
+ */
+export function castingForSkill(
+  rules: RulesConfig,
+  library: Readonly<Record<string, SkillDef>>,
+  skill: Pick<CharacterSkill, 'name' | 'rarity' | 'textRarity'>,
+): SkillCasting | null {
+  const def = entryForSkill(rules, library, skill);
+  if (def || !rules.skills.libraryByRarity) return castingOf(def);
+  const ladder = rules.skills.rarities.map((r) => r.id);
+  for (let i = ladder.indexOf(textRarityOf(skill)) - 1; i >= 0; i--) {
+    const lower = librarySkill(library, skill.name, ladder[i]);
+    if (lower) return castingOf(lower);
+  }
+  return null;
 }
 
 /** The rarity whose entry a copy's text follows: its own, unless re-rated (MR.1). */

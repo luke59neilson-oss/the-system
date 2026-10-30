@@ -35,6 +35,8 @@ import { identifyRarity, resolveIdentify } from './identify';
 import {
   atCeiling,
   entryForSkill,
+  castingForSkill,
+  type SkillCasting,
   markRules,
   marksToUpgrade,
   mergeSkills,
@@ -297,6 +299,11 @@ export interface OwnSheet {
      * (MQ.12, L4; never on party views); null for none or on older rules.
      */
     readonly effects: string | null;
+    /**
+     * MU.4 spells: the library entry's cost, cooldown, range and casting
+     * notes, owner only; absent when the entry has none.
+     */
+    readonly casting?: SkillCasting;
     /** Marks the next upgrade needs, or null when the ladder has no next step. */
     readonly marksNeeded: number | null;
     /** The rarity id a mark upgrade leads to, or null. */
@@ -711,6 +718,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
       description: s.description,
       flavor: s.flavor,
       effects: ownEffects(state, s),
+      ...ownCasting(state, s),
       ...markProgress(rules, c, s),
     })),
     merges: copyRecord(
@@ -777,6 +785,12 @@ function ownEffects(state: CampaignState, s: CharacterSkill): string | null {
   if (!state.rules.skills.libraryByRarity) return null;
   const text = entryForSkill(state.rules, state.skillLibrary, s)?.effects.trim() ?? '';
   return text === '' ? null : text;
+}
+
+/** MU.4: the owner sees their skill's cost, cooldown, range and notes. */
+function ownCasting(state: CampaignState, s: CharacterSkill): { casting?: SkillCasting } {
+  const casting = castingForSkill(state.rules, state.skillLibrary, s);
+  return casting === null ? {} : { casting };
 }
 
 /** Where a skill stands on the mark ladder (DESIGN §6), from the rules config. */

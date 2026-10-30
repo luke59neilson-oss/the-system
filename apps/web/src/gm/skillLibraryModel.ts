@@ -1,4 +1,4 @@
-import type { CampaignState, SkillDef } from '@the-system/engine';
+import { MAX_SKILL_COST, type CampaignState, type SkillDef } from '@the-system/engine';
 
 /** The GM's skill library form (ROADMAP M4.1). Pure helpers; tested in skillLibraryModel.test.ts. */
 
@@ -10,7 +10,18 @@ export interface SkillDraft {
   description: string;
   flavor: string;
   effects: string;
+  /** MU.4: ticked = the entry carries the "spell" tag (kept out of `tags`). */
+  spell: boolean;
+  /** MU.4: the pool one use spends ("" = no cost) and the amount as typed. */
+  costPool: string;
+  costAmount: string;
+  cooldown: string;
+  range: string;
+  castingNotes: string;
 }
+
+const SPELL = 'spell';
+const isSpellTag = (t: string) => t.trim().toLowerCase() === SPELL;
 
 /** Splits typed tags on commas, trimming and dropping blanks and repeats (ignoring case). */
 export function parseTags(text: string): string[] {
@@ -34,6 +45,12 @@ export function emptyDraft(rarities: readonly { id: string }[]): SkillDraft {
     description: '',
     flavor: '',
     effects: '',
+    spell: false,
+    costPool: '',
+    costAmount: '',
+    cooldown: '',
+    range: '',
+    castingNotes: '',
   };
 }
 
@@ -42,10 +59,16 @@ export function draftOf(def: SkillDef): SkillDraft {
   return {
     name: def.name,
     rarity: def.rarity,
-    tags: def.tags.join(', '),
+    tags: def.tags.filter((t) => !isSpellTag(t)).join(', '),
     description: def.description,
     flavor: def.flavor,
     effects: def.effects,
+    spell: def.tags.some(isSpellTag),
+    costPool: def.cost?.pool ?? '',
+    costAmount: def.cost ? String(def.cost.amount) : '',
+    cooldown: def.cooldown ?? '',
+    range: def.range ?? '',
+    castingNotes: def.castingNotes ?? '',
   };
 }
 
@@ -70,28 +93,76 @@ export function librarySkills(
   });
 }
 
-type Fields = Omit<SkillDraft, 'tags'> & { tags: string[] };
+interface Fields {
+  name: string;
+  rarity: string;
+  tags: string[];
+  description: string;
+  flavor: string;
+  effects: string;
+  cost: { pool: string; amount: number } | null;
+  cooldown: string;
+  range: string;
+  castingNotes: string;
+}
 
-const fieldsOf = (d: SkillDraft): Fields => ({
-  name: d.name.trim(),
-  rarity: d.rarity,
-  tags: parseTags(d.tags),
-  description: d.description.trim(),
-  flavor: d.flavor.trim(),
-  effects: d.effects.trim(),
-});
+/** The typed cost as a whole number, or null when it is not one (1 or more). */
+function amountOf(text: string): number | null {
+  const t = text.trim();
+  if (!/^\d+$/.test(t)) return null;
+  const n = Number(t);
+  return n >= 1 && n <= MAX_SKILL_COST ? n : null;
+}
+
+/** Why the draft cannot be saved yet (MU.4 cost), or null. */
+export function draftProblem(d: SkillDraft): string | null {
+  if (d.costPool !== '' && amountOf(d.costAmount) === null) {
+    return `The cost is a whole number from 1 to ${MAX_SKILL_COST.toLocaleString('en-US')}`;
+  }
+  if (d.costPool === '' && d.costAmount.trim() !== '') return 'Choose the pool the cost comes from';
+  return null;
+}
+
+const fieldsOf = (d: SkillDraft): Fields => {
+  const tags = parseTags(d.tags).filter((t) => !isSpellTag(t));
+  const amount = amountOf(d.costAmount);
+  return {
+    name: d.name.trim(),
+    rarity: d.rarity,
+    tags: d.spell ? [...tags, SPELL] : tags,
+    description: d.description.trim(),
+    flavor: d.flavor.trim(),
+    effects: d.effects.trim(),
+    cost: d.costPool !== '' && amount !== null ? { pool: d.costPool, amount } : null,
+    cooldown: d.cooldown.trim(),
+    range: d.range.trim(),
+    castingNotes: d.castingNotes.trim(),
+  };
+};
 
 /**
  * The command that saves a draft: a define for a new entry, or an edit with
- * only the changed fields. Null when an edit changes nothing.
+ * only the changed fields. Null when an edit changes nothing or the draft has
+ * a problem (`draftProblem`).
  */
 export function saveCommand(
   draft: SkillDraft,
   editing: SkillDef | null,
 ): ({ type: string } & Record<string, unknown>) | null {
+  if (draftProblem(draft) !== null) return null;
   const next = fieldsOf(draft);
-  if (editing === null) return { type: 'skillDef.define', ...next };
-  const old: Fields = { ...fieldsOf(draftOf(editing)), tags: [...editing.tags] };
+  if (editing === null) {
+    // Blank casting fields are left out, so a plain skill sends what it did before MU.4.
+    const { cost, cooldown, range, castingNotes, ...rest } = next;
+    const text = Object.entries({ cooldown, range, castingNotes }).filter(([, v]) => v !== '');
+    return {
+      type: 'skillDef.define',
+      ...rest,
+      ...(cost ? { cost } : {}),
+      ...Object.fromEntries(text),
+    };
+  }
+  const old: Fields = fieldsOf(draftOf(editing));
   const changes: Record<string, unknown> = {};
   for (const key of Object.keys(next) as (keyof Fields)[]) {
     if (JSON.stringify(next[key]) !== JSON.stringify(old[key])) changes[key] = next[key];
