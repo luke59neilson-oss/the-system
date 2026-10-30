@@ -6,6 +6,7 @@
 // spend counter sees them; answers are GM-only and never reach players.
 import { z } from 'zod';
 import type { TranscriptLine } from '../speech/transcript';
+import { referencePromptBlock } from '../reference/reference';
 
 export const QUICK_SLOT_IDS = ['yes-and', 'yes-but', 'no-but', 'in-character', 'twist'] as const;
 export type QuickSlotId = (typeof QUICK_SLOT_IDS)[number];
@@ -175,6 +176,13 @@ export function quickPrompt(args: {
       ? `NPC in the scene: ${context.npc.name}${context.npc.notes ? ` (${clip(oneLine(context.npc.notes), QUICK_NPC_NOTES_MAX)})` : ''}`
       : 'NPC in the scene: (none)',
     ...(lore.length ? ['Kept lore (do not contradict):', ...lore] : []),
+    // MU.6: a few book names as naming and tone examples (never god-tied).
+    ...[
+      referencePromptBlock(
+        'quick',
+        [target, context.region ?? '', context.npc?.name ?? ''].join(' '),
+      ),
+    ].filter((b) => b !== ''),
     'Recent table talk:',
     ...(recent.length
       ? recent.map((l) => `${l.speaker ? `[${l.speaker}] ` : ''}${oneLine(l.text)}`)

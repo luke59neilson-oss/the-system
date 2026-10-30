@@ -3201,3 +3201,45 @@ ol.change-log li.undone .change-text {
 .pane-mode .running-log ol {
   max-height: 8rem;
 }
+
+/* MU.6: the GM-only Reference view. */
+.reference-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: end;
+}
+.reference-search input[type='search'] {
+  min-width: 16em;
+}
+.reference-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 32em;
+  overflow-y: auto;
+}
+.reference-results li {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(90, 127, 184, 0.3);
+}
+.reference-results p {
+  margin: 2px 0;
+  overflow-wrap: anywhere;
+}
+.reference-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+.reference-details {
+  font-size: 0.9em;
+}
+.tag-flag {
+  color: var(--err);
+  border: 1px solid var(--err);
+  border-radius: 4px;
+  padding: 0 4px;
+  font-size: 0.85em;
+}

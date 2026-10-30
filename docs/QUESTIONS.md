@@ -646,3 +646,11 @@ DESIGN/ROADMAP; do not re-apply them.
     entry for yet, it keeps the cost of the nearest lower rarity's entry until
     you write one. Default: as described. Option: let a hand edit also set a
     per-character cost.
+
+86. **Reference lists in the co-DM's prompts (MU.6, D272).** Generations and
+    quick responses get up to 8 rows from the Primal Hunter lists as naming
+    and tone examples, told to invent their own names in that style. Rows
+    tagged god-tied, or whose summary names a god, are never sent. After
+    editing a CSV, `npm run reference` (or the next build run) brings the app
+    up to date. Default: as described. Options: more or fewer examples; let
+    the co-DM reuse book names as-is.
