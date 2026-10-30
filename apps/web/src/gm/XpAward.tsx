@@ -256,12 +256,15 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
                     · ≈ {formatLevels(levelsWorth(rules, state.characters[id], track, r.gained))}
                   </span>
                 )}
-                {!r && previewError !== null && i >= 0 && shares?.[i] !== undefined && (
-                  <span className="muted" data-testid={`worth-${id}`}>
-                    {' '}
-                    · ≈ levels shown once the error above is fixed
-                  </span>
-                )}
+                {!r &&
+                  (previewError ?? shareError) !== null &&
+                  i >= 0 &&
+                  shares?.[i] !== undefined && (
+                    <span className="muted" data-testid={`worth-${id}`}>
+                      {' '}
+                      · ≈ levels shown once the error is fixed
+                    </span>
+                  )}
                 {r && r.gained !== r.share && (
                   <span className="muted" data-testid={`gained-${id}`}>
                     {' '}
