@@ -2,8 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { FixtureAiClient } from '../src/ai/fake';
 import {
   MAX_CHIPS,
+  MORE_MAX,
+  PICK_SLOTS,
   SUGGEST_INTERVAL_MIN_S,
+  SUGGEST_QUESTION_WAIT_S,
+  arrangePicks,
   chipId,
+  rowChips,
+  type SuggestionChip,
   parseChips,
   suggest,
   suggestDue,
@@ -107,5 +113,123 @@ describe('pacing (MC.8, D244)', () => {
     expect(
       suggestDue({ ...base, manual: true, lastCallAt: base.now - SUGGEST_INTERVAL_MIN_S * 1000 }),
     ).toBe(true);
+  });
+});
+
+describe('a new question or attempt (MD.2, D258)', () => {
+  const base = { now: 1_000_000, intervalS: 300, newLines: 1, manual: false };
+  it('makes a call due after the short wait, not the interval', () => {
+    const at = (s: number) => base.now - s * 1000;
+    expect(
+      suggestDue({ ...base, question: true, lastCallAt: at(SUGGEST_QUESTION_WAIT_S - 1) }),
+    ).toBe(false);
+    expect(suggestDue({ ...base, question: true, lastCallAt: at(SUGGEST_QUESTION_WAIT_S) })).toBe(
+      true,
+    );
+    expect(suggestDue({ ...base, question: false, lastCallAt: at(SUGGEST_QUESTION_WAIT_S) })).toBe(
+      false,
+    );
+    // A manual ask on a question waits the short time too, never less.
+    expect(
+      suggestDue({
+        ...base,
+        manual: true,
+        question: true,
+        lastCallAt: at(SUGGEST_QUESTION_WAIT_S),
+      }),
+    ).toBe(true);
+    expect(
+      suggestDue({
+        ...base,
+        manual: true,
+        question: true,
+        lastCallAt: at(SUGGEST_QUESTION_WAIT_S - 1),
+      }),
+    ).toBe(false);
+  });
+  it('still needs new talk', () => {
+    expect(suggestDue({ ...base, question: true, newLines: 0, lastCallAt: null })).toBe(false);
+  });
+});
+
+describe('stable slots for the co-DM row (MD.2)', () => {
+  const chip = (title: string): SuggestionChip => ({
+    id: chipId('generate', 'npc', title),
+    type: 'generate',
+    kind: 'npc',
+    title,
+    request: title,
+    quote: 'q',
+  });
+  const titles = (row: ReturnType<typeof arrangePicks>) => ({
+    slots: row.slots.map((c) => c?.title ?? null),
+    more: row.more.map((c) => c.title),
+  });
+  const [a, b, c, d, e, f, g] = ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map(chip) as SuggestionChip[];
+
+  it('fills empty slots in order and puts the rest in more', () => {
+    expect(PICK_SLOTS).toBe(5);
+    expect(titles(arrangePicks(undefined, [a!, b!]))).toEqual({
+      slots: ['A', 'B', null, null, null],
+      more: [],
+    });
+    expect(titles(arrangePicks(undefined, [a!, b!, c!, d!, e!, f!, g!]))).toEqual({
+      slots: ['A', 'B', 'C', 'D', 'E'],
+      more: ['F', 'G'],
+    });
+  });
+
+  it('never reorders: new chips (listed first) fill only empty slots', () => {
+    const first = arrangePicks(undefined, [a!, b!, c!]);
+    const slots = first.slots.map((x) => x?.id ?? null);
+    // A later call offers D and E first; A, B, C keep their slots.
+    const next = arrangePicks(slots, [d!, e!, ...rowChips(first)]);
+    expect(titles(next)).toEqual({ slots: ['A', 'B', 'C', 'D', 'E'], more: [] });
+    // And one more call: F waits, nothing moves.
+    const again = arrangePicks(
+      next.slots.map((x) => x?.id ?? null),
+      [f!, ...rowChips(next)],
+    );
+    expect(titles(again)).toEqual({ slots: ['A', 'B', 'C', 'D', 'E'], more: ['F'] });
+  });
+
+  it('a dismissed slot takes the first waiting chip; others stay put', () => {
+    const full = arrangePicks(undefined, [a!, b!, c!, d!, e!, f!, g!]);
+    const ids = full.slots.map((x) => x?.id ?? null);
+    const without = rowChips(full).filter((x) => x.id !== b!.id);
+    expect(titles(arrangePicks(ids, without))).toEqual({
+      slots: ['A', 'F', 'C', 'D', 'E'],
+      more: ['G'],
+    });
+    // With nothing waiting, the slot stays empty.
+    const few = arrangePicks(undefined, [a!, b!, c!]);
+    const left = rowChips(few).filter((x) => x.id !== a!.id);
+    expect(
+      titles(
+        arrangePicks(
+          few.slots.map((x) => x?.id ?? null),
+          left,
+        ),
+      ),
+    ).toEqual({
+      slots: [null, 'B', 'C', null, null],
+      more: [],
+    });
+  });
+
+  it('bounds the more list, never drops a slotted chip, and ignores duplicates', () => {
+    const many = Array.from({ length: 20 }, (_, i) => chip(`N${i}`));
+    const row = arrangePicks(undefined, many);
+    expect(row.more).toHaveLength(MORE_MAX);
+    // The oldest slotted chips sit at the end of a newest-first list; they stay.
+    const ids = row.slots.map((x) => x?.id ?? null);
+    const fresh = Array.from({ length: 20 }, (_, i) => chip(`M${i}`));
+    const later = arrangePicks(ids, [...fresh, ...rowChips(row)]);
+    expect(later.slots.map((x) => x?.title)).toEqual(['N0', 'N1', 'N2', 'N3', 'N4']);
+    expect(later.more.map((x) => x.title)).toEqual(fresh.slice(0, MORE_MAX).map((x) => x.title));
+    expect(titles(arrangePicks([a!.id, a!.id], [a!, a!, b!]))).toEqual({
+      slots: ['A', 'B', null, null, null],
+      more: [],
+    });
   });
 });

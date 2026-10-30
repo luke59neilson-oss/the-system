@@ -5,13 +5,19 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { DEFAULT_RULES, execute } from '@the-system/engine';
 import { CoDm } from '../src/ai/coDm';
+import { e2eFakeCipher } from '../src/ai/e2eFake';
 import { FixtureAiClient } from '../src/ai/fake';
 import { createServer } from '../src/server';
 import { transcriptsDir } from '../src/speech/routes';
 import { transcriptFile } from '../src/speech/transcript';
 import { CampaignStore } from '../src/store';
 
-// MC.8: GM-only suggestion routes, backed by the fixture fast model.
+// MC.8: GM-only suggestion routes, backed by the fixture fast model. A test
+// key is saved: without one nothing is asked (MD.2, D258).
+const withKey = (c: CoDm): CoDm => {
+  c.keys.save('sk-ant-e2e-suggest-0123456789abcdef');
+  return c;
+};
 const GM = 's'.repeat(32);
 let ids = 0;
 const hubOpts = { gmKey: GM, now: () => '2026-10-26T07:00:00.000Z', newId: () => `h${++ids}` };
@@ -68,21 +74,23 @@ describe('suggestion routes (MC.8)', () => {
     root = mkdtempSync(path.join(tmpdir(), 'the-system-chips-'));
     writeFileSync(path.join(root, 'index.html'), '<!doctype html>');
     store = campaign(root);
-    coDm = new CoDm({
-      dir: path.join(root, 'app-data'),
-      cipher: null,
-      makeClient: () => {
-        fake = new FixtureAiClient([
-          {
-            role: 'fast',
-            match: 'Suggestions.',
-            usage: { inputTokens: 1000, outputTokens: 200 },
-            text: CHIPS,
-          },
-        ]);
-        return fake;
-      },
-    });
+    coDm = withKey(
+      new CoDm({
+        dir: path.join(root, 'app-data'),
+        cipher: e2eFakeCipher,
+        makeClient: () => {
+          fake = new FixtureAiClient([
+            {
+              role: 'fast',
+              match: 'Suggestions.',
+              usage: { inputTokens: 1000, outputTokens: 200 },
+              text: CHIPS,
+            },
+          ]);
+          return fake;
+        },
+      }),
+    );
     app = await createServer({
       webRoot: root,
       live: { store, ...hubOpts },
@@ -176,14 +184,16 @@ describe('suggestion routes after a bad reply (MC.8 review M1)', () => {
     root = mkdtempSync(path.join(tmpdir(), 'the-system-chips-bad-'));
     writeFileSync(path.join(root, 'index.html'), '<!doctype html>');
     const store = campaign(root);
-    const coDm = new CoDm({
-      dir: path.join(root, 'app-data'),
-      cipher: null,
-      makeClient: () => {
-        fake = new FixtureAiClient([{ role: 'fast', match: 'Suggestions.', text: 'not json' }]);
-        return fake;
-      },
-    });
+    const coDm = withKey(
+      new CoDm({
+        dir: path.join(root, 'app-data'),
+        cipher: e2eFakeCipher,
+        makeClient: () => {
+          fake = new FixtureAiClient([{ role: 'fast', match: 'Suggestions.', text: 'not json' }]);
+          return fake;
+        },
+      }),
+    );
     app = await createServer({
       webRoot: root,
       live: { store, ...hubOpts },
@@ -233,20 +243,22 @@ describe('suggestion routes with a dismissal mid-call (MC.8 review M2)', () => {
     root = mkdtempSync(path.join(tmpdir(), 'the-system-chips-race-'));
     writeFileSync(path.join(root, 'index.html'), '<!doctype html>');
     const store = campaign(root);
-    const coDm = new CoDm({
-      dir: path.join(root, 'app-data'),
-      cipher: null,
-      makeClient: () => {
-        const inner = new FixtureAiClient([{ role: 'fast', match: 'Suggestions.', text: CHIPS }]);
-        return {
-          complete: async (request) => {
-            started = true;
-            if (gated) await new Promise<void>((resolve) => (release = resolve));
-            return inner.complete(request);
-          },
-        };
-      },
-    });
+    const coDm = withKey(
+      new CoDm({
+        dir: path.join(root, 'app-data'),
+        cipher: e2eFakeCipher,
+        makeClient: () => {
+          const inner = new FixtureAiClient([{ role: 'fast', match: 'Suggestions.', text: CHIPS }]);
+          return {
+            complete: async (request) => {
+              started = true;
+              if (gated) await new Promise<void>((resolve) => (release = resolve));
+              return inner.complete(request);
+            },
+          };
+        },
+      }),
+    );
     app = await createServer({
       webRoot: root,
       live: { store, ...hubOpts },
@@ -297,5 +309,155 @@ describe('suggestion routes with a dismissal mid-call (MC.8 review M2)', () => {
     expect((second.json().chips as { title: string }[]).map((c) => c.title)).not.toContain(
       'Herbalist shop',
     );
+  });
+});
+
+describe('the co-DM row of five (MD.2)', () => {
+  let root: string;
+  let store: CampaignStore;
+  let app: FastifyInstance;
+  let fake: FixtureAiClient;
+  let clock = Date.parse('2026-10-26T19:00:00.000Z');
+  const ideas = (line: number, names: string[]) =>
+    JSON.stringify({
+      chips: names.map((title) => ({ line, type: 'generate', kind: 'npc', title, request: title })),
+    });
+
+  beforeAll(async () => {
+    root = mkdtempSync(path.join(tmpdir(), 'the-system-chips-row-'));
+    writeFileSync(path.join(root, 'index.html'), '<!doctype html>');
+    store = campaign(root);
+    const coDm = withKey(
+      new CoDm({
+        dir: path.join(root, 'app-data'),
+        cipher: e2eFakeCipher,
+        makeClient: () => {
+          fake = new FixtureAiClient([
+            { role: 'fast', match: 'The camp is quiet.', text: ideas(1, ['A', 'B', 'C']) },
+            { role: 'fast', match: 'Can we cross', text: ideas(1, ['D', 'E', 'F', 'G']) },
+            { role: 'fast', match: 'Suggestions.', text: ideas(1, ['Z']) },
+          ]);
+          return fake;
+        },
+      }),
+    );
+    app = await createServer({
+      webRoot: root,
+      live: { store, ...hubOpts },
+      coDm,
+      now: () => clock,
+    });
+  });
+  afterAll(async () => {
+    await app.close();
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  const heard: string[] = [];
+  const say = (text: string) => {
+    heard.push(text);
+    const dir = transcriptsDir(store);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      transcriptFile(dir, 0),
+      heard
+        .map((t, i) =>
+          JSON.stringify({ at: '2026-10-26T19:00:00.000Z', startMs: i, endMs: i, text: t }),
+        )
+        .join('\n') + '\n',
+    );
+  };
+  const post = () =>
+    app.inject({ method: 'POST', url: '/api/gm/ai/suggestions', headers: gm, payload: {} });
+  type Row = { slots: ({ title: string; id: string } | null)[]; more: { title: string }[] };
+  const shape = (r: Row) => ({
+    slots: r.slots.map((c) => c?.title ?? null),
+    more: r.more.map((c) => c.title),
+  });
+
+  it('fills slots, keeps them stable, refreshes on a question, and refills a dismissed slot', async () => {
+    say('The camp is quiet.');
+    const first = await post();
+    expect(first.json().called).toBe(true);
+    expect(shape(first.json())).toEqual({ slots: ['A', 'B', 'C', null, null], more: [] });
+
+    // 30 s later a plain line is not enough (the interval is 90 s)…
+    clock += 30_000;
+    say('The fire crackles.');
+    expect((await post()).json().called).toBe(false);
+    // …but a player question is: the row refreshes without waiting for the timer.
+    say('Can we cross the river tonight?');
+    const second = await post();
+    expect(second.json().called).toBe(true);
+    expect(fake.requests).toHaveLength(2);
+    expect(shape(second.json())).toEqual({ slots: ['A', 'B', 'C', 'D', 'E'], more: ['F', 'G'] });
+
+    // Dismissing B empties slot 7 and the first waiting chip takes it; nothing else moves.
+    const b = (second.json() as Row).slots[1]!;
+    const del = await app.inject({
+      method: 'DELETE',
+      url: `/api/gm/ai/suggestions/${b.id}`,
+      headers: gm,
+    });
+    expect(shape(del.json())).toEqual({ slots: ['A', 'F', 'C', 'D', 'E'], more: ['G'] });
+    const got = await app.inject({ method: 'GET', url: '/api/gm/ai/suggestions', headers: gm });
+    expect(shape(got.json())).toEqual({ slots: ['A', 'F', 'C', 'D', 'E'], more: ['G'] });
+  });
+});
+
+describe('suggestions without a key (MD.2, D258)', () => {
+  let root: string;
+  let app: FastifyInstance;
+  let coDm: CoDm;
+  let fake: FixtureAiClient;
+  const clock = Date.parse('2026-10-26T19:00:00.000Z');
+
+  beforeAll(async () => {
+    root = mkdtempSync(path.join(tmpdir(), 'the-system-chips-nokey-'));
+    writeFileSync(path.join(root, 'index.html'), '<!doctype html>');
+    const store = campaign(root);
+    coDm = new CoDm({
+      dir: path.join(root, 'app-data'),
+      cipher: e2eFakeCipher,
+      makeClient: () => {
+        fake = new FixtureAiClient([{ role: 'fast', match: 'Suggestions.', text: CHIPS }]);
+        return fake;
+      },
+    });
+    app = await createServer({
+      webRoot: root,
+      live: { store, ...hubOpts },
+      coDm,
+      now: () => clock,
+    });
+    const dir = transcriptsDir(store);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      transcriptFile(dir, 0),
+      JSON.stringify({ at: '2026-10-26T19:00:00.000Z', startMs: 0, endMs: 0, text: 'Hi.' }) + '\n',
+    );
+  });
+  afterAll(async () => {
+    await app.close();
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it('asks nothing and keeps the pace free until a key is saved', async () => {
+    const post = (manual = false) =>
+      app.inject({
+        method: 'POST',
+        url: '/api/gm/ai/suggestions',
+        headers: gm,
+        payload: { manual },
+      });
+    const r = await post();
+    expect(r.statusCode).toBe(409);
+    expect(r.json()).toMatchObject({ called: false, error: 'No API key is set' });
+    expect(fake.requests).toHaveLength(0);
+    coDm.keys.save('sk-ant-e2e-suggest-0123456789abcdef');
+    // At the same moment: the keyless poll did not start the 60 s wait.
+    const now = await post(true);
+    expect(now.json().called).toBe(true);
+    expect(fake.requests).toHaveLength(1);
   });
 });

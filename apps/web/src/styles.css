@@ -3007,6 +3007,53 @@ ol.change-log li.undone .change-text {
   opacity: 0.85;
 }
 
+/* MD.2: the co-DM's row of five (keys 6–0): fixed slots, empty ones shown. */
+.pick-row {
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.35rem;
+  margin: 0.5rem 0;
+}
+.suggestions .chips li {
+  position: relative;
+  padding: 0.3rem 1.8rem 0.3rem 0.4rem;
+}
+.suggestions .chips li > button:first-child {
+  width: 100%;
+  padding: 0.3rem 0.4rem;
+  text-align: left;
+}
+.suggestions .chips blockquote {
+  margin: 0.2rem 0 0;
+  font-size: 0.8em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.suggestions .pick-dismiss {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.8em;
+  line-height: 1.2;
+}
+.pick-row li.pick-empty {
+  padding: 0.45rem 0.5rem;
+}
+.pick-row li.pick-empty {
+  border-style: dashed;
+  opacity: 0.6;
+}
+.pick-row kbd {
+  display: inline-block;
+  min-width: 1.2em;
+  padding: 0 0.25em;
+  border: 1px solid var(--accent, currentColor);
+  border-radius: 3px;
+  font-size: 0.8em;
+}
+
 /* MD.1: quick responses (GM only): five fixed buttons with their keys. */
 .quick-row {
   display: flex;

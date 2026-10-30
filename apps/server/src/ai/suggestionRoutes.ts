@@ -10,7 +10,10 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { AiError, type AiClient } from './client';
 import { draftsDir, readTranscript } from './practiceRoutes';
+import { isQuestionOrAttempt } from './quickResponses';
 import {
+  arrangePicks,
+  rowChips,
   SUGGEST_INTERVAL_DEFAULT_S,
   SUGGEST_INTERVAL_MAX_S,
   SUGGEST_INTERVAL_MIN_S,
@@ -28,6 +31,8 @@ interface SuggestionFile {
   readonly version: 1;
   readonly chips: SuggestionChip[];
   readonly dismissed: string[];
+  /** MD.2: the chip id in each of the five slots (keys 6–0), or null when empty. */
+  readonly slots?: (string | null)[];
   /** Transcript lines already read, per session number. */
   readonly readUpTo: Record<string, number>;
   readonly lastCallAt: number | null;
@@ -53,9 +58,16 @@ export class SuggestionStore {
       version: 1,
       chips: data.chips,
       dismissed: data.dismissed,
+      ...(Array.isArray(data.slots) ? { slots: data.slots } : {}),
       readUpTo: data.readUpTo ?? {},
       lastCallAt: typeof data.lastCallAt === 'number' ? data.lastCallAt : null,
     };
+  }
+
+  /** Writes the chips arranged into stable slots (MD.2). */
+  writeArranged(body: SuggestionFile, chips: readonly SuggestionChip[]): void {
+    const row = arrangePicks(body.slots, chips);
+    this.write({ ...body, chips: rowChips(row), slots: row.slots.map((c) => c?.id ?? null) });
   }
 
   write(body: SuggestionFile): void {
@@ -65,6 +77,12 @@ export class SuggestionStore {
     renameSync(tmp, this.file);
   }
 }
+
+/** What the panel gets: the row of five, the "more" list, and every live chip. */
+const view = (f: SuggestionFile) => {
+  const row = arrangePicks(f.slots, f.chips);
+  return { slots: row.slots, more: row.more, chips: rowChips(row) };
+};
 
 const nameOf = (x: unknown): string | null => {
   if (x === null || typeof x !== 'object') return null;
@@ -81,7 +99,13 @@ const postSchema = z
 
 export function registerSuggestionRoutes(
   app: FastifyInstance,
-  options: { active: () => { store: CampaignStore } | null; client: AiClient; now: () => number },
+  options: {
+    active: () => { store: CampaignStore } | null;
+    client: AiClient;
+    now: () => number;
+    /** MD.2: without a key nothing is asked, so polling cannot use up the pace (D258). */
+    hasKey?: () => boolean;
+  },
 ): void {
   const fail = (err: unknown) =>
     err instanceof AiError ? err.message : 'Could not read or save the suggestions';
@@ -91,7 +115,7 @@ export function registerSuggestionRoutes(
     if (!a) return reply.code(404).send({ error: 'No campaign open' });
     try {
       const f = new SuggestionStore(draftsDir(a.store)).read();
-      return { chips: f.chips, lastCallAt: f.lastCallAt };
+      return { ...view(f), lastCallAt: f.lastCallAt };
     } catch (err) {
       return reply.code(500).send({ error: fail(err) });
     }
@@ -119,8 +143,12 @@ export function registerSuggestionRoutes(
         intervalS: body.data?.intervalS ?? SUGGEST_INTERVAL_DEFAULT_S,
         newLines: fresh.length,
         manual: body.data?.manual ?? false,
+        question: fresh.some((l) => isQuestionOrAttempt(l)),
       });
-      if (!due) return { chips: f.chips, called: false };
+      if (!due) return { ...view(f), called: false };
+      if (options.hasKey && !options.hasKey()) {
+        return reply.code(409).send({ ...view(f), called: false, error: 'No API key is set' });
+      }
       const party = state.characterOrder
         .filter((id) => Object.hasOwn(state.characters, id))
         .map((id) => state.characters[id]!.name);
@@ -143,14 +171,17 @@ export function registerSuggestionRoutes(
       const gone = new Set(latest.dismissed);
       const fresher = chips.filter((c) => !gone.has(c.id));
       const current = new Set(fresher.map((c) => c.id));
-      store.write({
-        ...latest,
-        // New chips first; older live chips stay below until dismissed.
-        chips: [...fresher, ...latest.chips.filter((c) => !current.has(c.id))].slice(0, 12),
-        readUpTo: { ...latest.readUpTo, [String(session)]: all.length },
-        lastCallAt: now,
-      });
-      return { chips: store.read().chips, called: true };
+      // New chips first; older live chips keep their slots, and a new chip
+      // fills only an empty or dismissed slot (MD.2); the rest wait in "more".
+      store.writeArranged(
+        {
+          ...latest,
+          readUpTo: { ...latest.readUpTo, [String(session)]: all.length },
+          lastCallAt: now,
+        },
+        [...fresher, ...latest.chips.filter((c) => !current.has(c.id))],
+      );
+      return { ...view(store.read()), called: true };
     } catch (err) {
       return reply.code(err instanceof AiError ? 502 : 500).send({ error: fail(err) });
     } finally {
@@ -167,12 +198,12 @@ export function registerSuggestionRoutes(
       const f = store.read();
       const id = request.params.id;
       if (!f.chips.some((c) => c.id === id)) return reply.code(404).send({ error: 'No such chip' });
-      store.write({
-        ...f,
-        chips: f.chips.filter((c) => c.id !== id),
-        dismissed: [...new Set([...f.dismissed, id])],
-      });
-      return { chips: store.read().chips };
+      // The slot empties and takes the first waiting chip; no other slot moves.
+      store.writeArranged(
+        { ...f, dismissed: [...new Set([...f.dismissed, id])] },
+        f.chips.filter((c) => c.id !== id),
+      );
+      return view(store.read());
     } catch (err) {
       return reply.code(500).send({ error: fail(err) });
     }

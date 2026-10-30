@@ -228,10 +228,12 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       },
     });
     // MC.8: suggestion chips from the recent transcript (counted in the spend counter).
+    const suggestCoDm = options.coDm;
     registerSuggestionRoutes(app, {
       active: () => active,
       client: options.coDm.client,
       now: options.now ?? Date.now,
+      hasKey: () => suggestCoDm.status().hasKey,
     });
     // MD.1: quick responses (GM-only, streamed, counted in the spend counter).
     const quickCoDm = options.coDm;

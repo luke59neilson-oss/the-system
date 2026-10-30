@@ -114,32 +114,73 @@ export function e2eFakeClient(key: () => string | null, models: () => AiModelSet
 }
 
 /**
- * MC.8, TEST ONLY: the fast model's suggestion chips. A numbered line that
- * mentions an herbalist becomes a Generate shop chip; one about an arrow, a
- * Complication encounter chip.
+ * MC.8 + MD.2, TEST ONLY: the fast model's suggestion chips. A numbered line
+ * that mentions an herbalist gives three chips (the shop first); one about an
+ * arrow, three more (the Complication encounter first). Six fill the co-DM's
+ * row of five and leave one waiting under "More".
  */
+const E2E_CHIPS: readonly {
+  readonly when: RegExp;
+  readonly chips: readonly { type: string; kind: string; title: string; request: string }[];
+}[] = [
+  {
+    when: /herbalist/iu,
+    chips: [
+      {
+        type: 'generate',
+        kind: 'shop',
+        title: 'Herbalist shop',
+        request: 'An herbalist the party can reach before the canyon',
+      },
+      {
+        type: 'generate',
+        kind: 'npc',
+        title: 'A rival herbalist',
+        request: 'A rival herbalist who undercuts the first',
+      },
+      {
+        type: 'generate',
+        kind: 'item',
+        title: 'Bitterroot salve',
+        request: 'A cheap salve that stings',
+      },
+    ],
+  },
+  {
+    when: /arrow/iu,
+    chips: [
+      {
+        type: 'complication',
+        kind: 'encounter',
+        title: 'Pale hunters close in',
+        request: 'Pale hunters notice the drawn bow',
+      },
+      {
+        type: 'callback',
+        kind: 'place',
+        title: 'The first scar',
+        request: 'The canyon scar where they woke',
+      },
+      {
+        type: 'generate',
+        kind: 'questHook',
+        title: 'A lost arrowhead',
+        request: 'An old arrowhead that is not theirs',
+      },
+    ],
+  },
+];
+
 export function e2eSuggestions(prompt: string): string {
   const chips: { line: number; type: string; kind: string; title: string; request: string }[] = [];
   for (const m of prompt.matchAll(/^(\d+)\. (?:\[[^\]]*\] )?(.*)$/gmu)) {
     const line = Number(m[1]);
     const text = m[2] ?? '';
-    if (/herbalist/iu.test(text) && !chips.some((c) => c.kind === 'shop')) {
-      chips.push({
-        line,
-        type: 'generate',
-        kind: 'shop',
-        title: 'Herbalist shop',
-        request: 'An herbalist the party can reach before the canyon',
-      });
-    }
-    if (/arrow/iu.test(text) && !chips.some((c) => c.kind === 'encounter')) {
-      chips.push({
-        line,
-        type: 'complication',
-        kind: 'encounter',
-        title: 'Pale hunters close in',
-        request: 'Pale hunters notice the drawn bow',
-      });
+    for (const group of E2E_CHIPS) {
+      if (!group.when.test(text)) continue;
+      for (const c of group.chips) {
+        if (!chips.some((x) => x.title === c.title)) chips.push({ line, ...c });
+      }
     }
   }
   return JSON.stringify({ chips });

@@ -54,11 +54,6 @@ test('a suggestion chip from the table talk becomes a generated shop', async ({ 
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
-  const saved = await gm.request.put(`${server.url}/api/gm/ai/key`, {
-    headers: { 'x-gm-key': GM_KEY },
-    data: { key: 'sk-ant-e2e-mc8-fake-0123456789abcdef' },
-  });
-  expect(saved.ok()).toBe(true);
 
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const frames: string[] = [];
@@ -74,12 +69,20 @@ test('a suggestion chip from the table talk becomes a generated shop', async ({ 
   });
   await listen.getByRole('button', { name: 'Stop listening' }).click();
   await expect(listen.getByTestId('listen-indicator')).toHaveText('Mic off');
+  // The key goes in once both lines are heard, so the first call reads both
+  // (without a key nothing is asked: MD.2, D258).
+  const saved = await gm.request.put(`${server.url}/api/gm/ai/key`, {
+    headers: { 'x-gm-key': GM_KEY },
+    data: { key: 'sk-ant-e2e-mc8-fake-0123456789abcdef' },
+  });
+  expect(saved.ok()).toBe(true);
 
   const codm = gm.locator('section[aria-labelledby="codm-heading"]');
   const suggestions = codm.getByTestId('suggestions');
   await suggestions.getByRole('button', { name: 'Suggest now' }).click();
   const chips = suggestions.getByTestId('chip');
-  await expect(chips).toHaveCount(2);
+  // Six chips: five in the co-DM's row (MD.2), one waiting under More.
+  await expect(chips).toHaveCount(6);
   const shop = chips.filter({ hasText: 'Generate: Herbalist shop' });
   await expect(shop).toContainText('“We should find an herbalist before the canyon.”');
   await suggestions.scrollIntoViewIfNeeded();
@@ -90,10 +93,11 @@ test('a suggestion chip from the table talk becomes a generated shop', async ({ 
     .filter({ hasText: 'Pale hunters close in' })
     .getByRole('button', { name: 'Dismiss' })
     .click();
-  await expect(chips).toHaveCount(1);
+  await expect(chips).toHaveCount(5);
+  await expect(chips.filter({ hasText: 'Pale hunters close in' })).toHaveCount(0);
 
   // Use fills in the generate request; the shop lands in the import preview.
-  await shop.getByRole('button', { name: 'Use' }).click();
+  await shop.getByRole('button', { name: /Generate: Herbalist shop/ }).click();
   await expect(codm.getByLabel('Generate')).toHaveValue('shop');
   await expect(codm.getByLabel('What the table needs')).toHaveValue(
     'An herbalist the party can reach before the canyon',

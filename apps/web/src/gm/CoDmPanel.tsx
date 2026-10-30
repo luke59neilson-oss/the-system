@@ -3,6 +3,7 @@ import type { IncomingContent } from './ContentImport';
 import { LOADING_TEXT } from './loadingScreen';
 import { PrepareAhead } from './PrepareAhead';
 import { QuickResponses, type PickedLine } from './QuickResponses';
+import { isTypingTarget, keyForSlot, slotForKey } from './quickModel';
 import { SessionNotes } from './SessionNotes';
 import { spendLine, useLiveSpend, type Spend } from './spend';
 
@@ -321,18 +322,34 @@ const CHIP_LABEL: Record<Chip['type'], string> = {
   complication: 'Complication',
   callback: 'Callback',
 };
-/** How often the panel asks; the server decides whether a call is due (new talk, interval). */
-const SUGGEST_TICK_MS = 15_000;
+/**
+ * How often the panel asks; the server decides whether a call is due (new
+ * talk and the interval, or 30 s after a new player question: MD.2, D258).
+ */
+const SUGGEST_TICK_MS = 5_000;
 const INTERVALS = [60, 90, 120, 300] as const;
+/** The co-DM's row is slots 6–10 of the quick-response keys (MD.2). */
+const FIRST_PICK = 6;
+
+interface Row {
+  readonly slots: (Chip | null)[];
+  readonly more: Chip[];
+}
+const EMPTY_ROW: Row = { slots: [null, null, null, null, null], more: [] };
+const rowOf = (data: { slots?: (Chip | null)[]; more?: Chip[] }): Row | null =>
+  Array.isArray(data.slots) ? { slots: data.slots, more: data.more ?? [] } : null;
 
 /**
- * MC.8 (DESIGN §11 "Suggestions"): every minute or two the fast model reads
- * the recent transcript and offers a few chips, each with the quote behind
- * it. Use fills in the generate request above; Dismiss removes the chip for
- * good. The laptop paces the calls and counts them in the spend counter.
+ * MC.8 + MD.2 (DESIGN §11 "Suggestions", "Slots 6–10"): the fast model reads
+ * the recent transcript and offers chips, each with the quote behind it. They
+ * sit in a fixed row of five (keys 6–9 and 0): a new chip fills only an
+ * empty or dismissed slot, so a chip never moves; extras wait under "More".
+ * Use (or the key) fills in the generate request above; Dismiss removes the
+ * chip for good. The laptop paces the calls and counts them in the spend
+ * counter.
  */
 function Suggestions({ gmKey, onUse }: { gmKey: string; onUse: (chip: Chip) => void }) {
-  const [chips, setChips] = useState<Chip[]>([]);
+  const [row, setRow] = useState<Row>(EMPTY_ROW);
   const [intervalS, setIntervalS] = useState<number>(90);
   const [note, setNote] = useState<string | null>(null);
   const interval = useRef(intervalS);
@@ -349,18 +366,20 @@ function Suggestions({ gmKey, onUse }: { gmKey: string; onUse: (chip: Chip) => v
       }).catch(() => null);
       if (!res) return;
       const data = (await res.json().catch(() => ({}))) as {
-        chips?: Chip[];
+        slots?: (Chip | null)[];
+        more?: Chip[];
         called?: boolean;
         error?: string;
       };
-      if (data.chips) setChips(data.chips);
+      const next = rowOf(data);
+      if (next) setRow(next);
       if (manual) {
         setNote(
           !res.ok
             ? (data.error ?? 'No suggestions right now')
             : data.called
               ? null
-              : 'Nothing new heard yet, or asked under a minute ago',
+              : 'Nothing new heard yet, or asked too recently',
         );
       }
     },
@@ -372,8 +391,8 @@ function Suggestions({ gmKey, onUse }: { gmKey: string; onUse: (chip: Chip) => v
     void fetch('/api/gm/ai/suggestions', { headers: { 'x-gm-key': gmKey } })
       .then(async (res) => {
         if (!res.ok || !live) return;
-        const data = (await res.json()) as { chips: Chip[] };
-        if (live) setChips(data.chips);
+        const next = rowOf((await res.json()) as { slots?: (Chip | null)[]; more?: Chip[] });
+        if (live && next) setRow(next);
       })
       .catch(() => undefined);
     const timer = setInterval(() => void ask(false), SUGGEST_TICK_MS);
@@ -388,12 +407,52 @@ function Suggestions({ gmKey, onUse }: { gmKey: string; onUse: (chip: Chip) => v
       method: 'DELETE',
       headers: { 'x-gm-key': gmKey },
     }).catch(() => null);
-    if (res?.ok) setChips(((await res.json()) as { chips: Chip[] }).chips);
+    if (!res?.ok) return;
+    const next = rowOf((await res.json()) as { slots?: (Chip | null)[]; more?: Chip[] });
+    if (next) setRow(next);
   };
+
+  const pick = useCallback(
+    (chip: Chip) => {
+      setNote(null);
+      onUse(chip);
+    },
+    [onUse],
+  );
+
+  // Keys 6–9 and 0 use the chip in that slot, except while typing in a field.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.repeat || isTypingTarget(e.target as HTMLElement | null, e)) return;
+      const slot = slotForKey(e.key);
+      if (slot === null || slot < FIRST_PICK) return;
+      e.preventDefault();
+      const chip = row.slots[slot - FIRST_PICK] ?? null;
+      if (chip) pick(chip);
+      else setNote(`Slot ${keyForSlot(slot)} is empty: the co-DM fills it from the table talk`);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [row, pick]);
+
+  const chipBody = (c: Chip) => (
+    <>
+      <blockquote>“{c.quote}”</blockquote>
+      <button
+        type="button"
+        className="pick-dismiss"
+        aria-label={`Dismiss ${c.title}`}
+        title="Dismiss for good"
+        onClick={() => void dismiss(c.id)}
+      >
+        ✕
+      </button>
+    </>
+  );
 
   return (
     <div className="suggestions" data-testid="suggestions">
-      <h3>Suggestions (GM only)</h3>
+      <h3>Co-DM picks (GM only)</h3>
       <p>
         <label>
           Every{' '}
@@ -410,25 +469,40 @@ function Suggestions({ gmKey, onUse }: { gmKey: string; onUse: (chip: Chip) => v
         </button>
       </p>
       {note && <p role="status">{note}</p>}
-      {chips.length === 0 ? (
-        <p className="muted">No suggestions yet: they come from what the table says.</p>
-      ) : (
-        <ul className="chips">
-          {chips.map((c) => (
-            <li key={c.id} data-testid="chip">
-              <strong>
-                {CHIP_LABEL[c.type]}: {c.title}
-              </strong>
-              <blockquote>“{c.quote}”</blockquote>
-              <button type="button" onClick={() => onUse(c)}>
-                Use
-              </button>{' '}
-              <button type="button" onClick={() => void dismiss(c.id)}>
-                Dismiss
+      <ol className="chips pick-row" aria-label="Co-DM picks">
+        {row.slots.map((c, i) => {
+          const key = keyForSlot(FIRST_PICK + i);
+          return c ? (
+            <li key={`slot-${i}`} data-testid="chip" data-slot={key}>
+              <button type="button" aria-keyshortcuts={key} onClick={() => pick(c)}>
+                <kbd>{key}</kbd> {CHIP_LABEL[c.type]}: {c.title}
               </button>
+              {chipBody(c)}
             </li>
-          ))}
-        </ul>
+          ) : (
+            <li key={`slot-${i}`} className="pick-empty" data-testid="pick-empty" data-slot={key}>
+              <kbd>{key}</kbd> <span className="muted">empty</span>
+            </li>
+          );
+        })}
+      </ol>
+      {row.slots.every((c) => c === null) && (
+        <p className="muted">No suggestions yet: they come from what the table says.</p>
+      )}
+      {row.more.length > 0 && (
+        <details className="pick-more" data-testid="pick-more">
+          <summary>More ({row.more.length})</summary>
+          <ul className="chips">
+            {row.more.map((c) => (
+              <li key={c.id} data-testid="chip">
+                <button type="button" onClick={() => pick(c)}>
+                  {CHIP_LABEL[c.type]}: {c.title}
+                </button>
+                {chipBody(c)}
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </div>
   );

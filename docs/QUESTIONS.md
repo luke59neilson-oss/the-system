@@ -597,3 +597,13 @@ DESIGN/ROADMAP; do not re-apply them.
     the picker changes it. Your button names, instructions and order are
     saved on the laptop, so they are the same in every campaign. Default:
     as described. Option: per-campaign button settings.
+
+80. **How the co-DM's row of five fills (MD.2, D258).** Chips sit in five
+    fixed slots (keys 6–9 and 0). A slot keeps its chip until you dismiss
+    it; when you do, the newest waiting idea from "More" takes that slot at once, and nothing else moves. One look can now offer
+    up to six ideas (five plus one waiting). A new player question or
+    attempt makes the co-DM look again 30 seconds after its last look,
+    instead of waiting for your interval (at most two looks a minute, a
+    fraction of a cent each on the fast model). With no API key it never
+    looks. Default: as described. Options: leave a dismissed slot empty
+    until the next look; a longer wait after a question.
