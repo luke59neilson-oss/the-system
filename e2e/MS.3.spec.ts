@@ -85,12 +85,12 @@ test(
     await expect(jake.getByTestId('name')).toHaveText('Jake');
     await expect(jake.getByTestId('class')).toHaveText('[Archer – lvl 0]');
     await expect(jake.getByRole('link', { name: 'Switch character' })).toHaveCount(0);
-    await openWindow(gm, 'award-xp');
     await expect(gm.getByRole('heading', { name: 'Award class XP' })).toBeHidden();
     await gm.screenshot({ path: path.join(shots, 'view-as-character-1366x768.png') });
 
     // Back to GM: the console is there again.
     await bar.getByRole('button', { name: 'GM' }).click();
+    await openWindow(gm, 'award-xp');
     await expect(gm.getByRole('heading', { name: 'Award class XP' })).toBeVisible();
     await expect(gm.locator('iframe:visible')).toHaveCount(0);
 

@@ -128,10 +128,12 @@ test(
     expect(campaignFiles.some((f) => f.startsWith('events.jsonl.torn-'))).toBe(true);
 
     // Play goes on in the same session; the next shutdown rewrites its log.
+    await openWindow(gm, 'party');
     await expect(gm.getByRole('heading', { name: /Milestone Two/ })).toBeVisible({
       timeout: 10_000,
     });
     await expect(gm.getByTestId('session-chip')).toHaveText('Session 1 · Day 1');
+    await openWindow(gm, 'award-xp');
     await gm.getByRole('checkbox', { name: 'Miranda' }).first().uncheck();
     await gm.getByLabel('Amount').fill('300');
     await gm.getByRole('button', { name: 'Award XP' }).click();

@@ -113,6 +113,7 @@ test(
     // The GM link for another browser on this computer (the desktop app never
     // prints its key): folded away, and it opens a working console.
     const gmLink = gm.getByLabel('GM link');
+    await openWindow(gm, 'join');
     await expect(gmLink).toBeHidden();
     await gm.getByText('Open the GM console in another browser on this computer').click();
     await expect(gmLink).toHaveValue(`${server.url}/gm#key=${GM_KEY}`);
@@ -159,8 +160,8 @@ test(
     await gm.screenshot({ path: path.join(shots, 'gm-after-restart-1366x768.png') });
 
     // And play goes on after the restart.
-    await gm.getByRole('checkbox', { name: 'Miranda' }).first().uncheck();
     await openWindow(gm, 'award-xp');
+    await gm.getByRole('checkbox', { name: 'Miranda' }).first().uncheck();
     await gm.getByLabel('Amount').fill('400');
     await gm.getByRole('button', { name: 'Award XP' }).click();
     await expect(phone.getByTestId('class')).toHaveText('[Archer – lvl 4]', { timeout: 1000 });
