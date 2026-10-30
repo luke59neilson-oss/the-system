@@ -1035,3 +1035,10 @@
 - M1 spend counter was a stale snapshot → `useLiveSpend` rereads every 20 s while a key is saved (D253), unit test, MC.A e2e asserts it catches up without a button; M2 fixture audio drives a scripted stand-in engine → documented (D254) and a speech step added to the live checklist. Lows fixed: fast-model label, summary-timing note. Other Lows to Backlog.
 - Round 2, fable on 540d4e95: 0 H / 0 M / 2 L (to Backlog). check 1,489 unit, MC.* 15/15.
 - Full e2e on 12bb5da1: 122 + latency 8 passed.
+
+## 2026-10-30 · MD.1 The fixed five · round 1 · sonnet (worktree, 4c628878)
+- 0 High / 3 Medium / 6 Low. M1 an answer stuck in "writing…" when a later request failed or a stream ended early; M2 a cut-off paid stream not counted in the spend counter; M3 no abort/disconnect tests.
+- Fixed (6fefab89): `endQuick` on every early end; `AiError.partial` usage recorded by `counted`; tests for client disconnect aborting the upstream call, the partial count, and endQuick. Lows fixed: Richer keeps the answer's NPC (L5), transcript lines underlined as clickable (L4), settings screenshot shows the form top (L9). Others to the QUALITY Backlog.
+
+## 2026-10-30 · MD.1 · round 2 · sonnet (worktree, 6fefab89)
+- 0 High / 0 Medium / 3 Low: M1–M3 and L5 verified fixed. Lows: a generic "newer request" note on any non-OK reply; a final NDJSON line without a newline is dropped (shows "cut off"); unrelated screenshot churn in the fix commit (reverted before push). One `npm run check` run in the reviewer's worktree hit a 120 s timeout in an unnamed heavy test; the re-run was clean (noted as a possible flake).

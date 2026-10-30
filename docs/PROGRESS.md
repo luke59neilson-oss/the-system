@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-30): every earlier milestone done; new milestone MD (co-DM quick responses, DESIGN §11) added; `docs/DONE.md` removed. Preview ready: the 2026-10-30 build has everything before MD.
-**Next item:** MD.1 The fixed five
+**Next item:** MD.2 The co-DM's five
 **Blockers:** none
 
 ## Run log
@@ -1249,3 +1249,11 @@ next item, blockers. -->
 - Lows to QUALITY Backlog. Open `wip/*`: none new (wip/MC.A merged).
 - `docs/DONE.md` rewritten (D207 precedent: M9.4 deferred). Preview ready for MC: Actions → Release → Run workflow.
 - Next: none. Blockers: none.
+
+### Run e8249c0e · 2026-10-30 12:18–13:15 UTC (close-out at minute 56; overran: the blocking round-2 review took 15 minutes)
+- Preflight: repo already attached (`add_repo` not offered); fetched and fast-forwarded main; lock pushed cleanly; vitest 5.0.5; sonnet reviewers work (worktree, blocking: no background option). CI green on main (7a55990). No new answers.
+- Hour 12 efficiency check: metrics row appended; D234 Kept, D248 not judged (2 runs) (D257); sonnet auditor: no Tier 2, no Tier 1 applied this check.
+- MD.1 **checked**: five quick-response buttons (keys 1–5), streamed NDJSON answers over a GM-only route (AI client `onText`; Anthropic `stream: true`), clicked/typed retargeting, NPC picker, Richer on the strong model, settings to rename/rewrite/reorder with Reset (D256, Q79). Sonnet round 1 0 H / 3 M / 6 L, all Mediums fixed; round 2 0 H / 0 M / 3 L.
+- Tests: unit 1,518; e2e MD.1 1/1; full e2e run while closing out: 109+ passed, 0 failed when the lock was released (not finished).
+- Open `wip/*`: none. Lows to QUALITY Backlog. Unrelated screenshot churn from the full e2e reverted before the push.
+- Next: MD.2. Blockers: none.

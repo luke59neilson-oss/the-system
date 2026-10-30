@@ -892,7 +892,7 @@ it is usable early (Luke can run a preview build at any point).
 Runs never call the paid API (LOOP Hard rules); every AI call uses the
 fixture-backed fake in tests.
 
-- [ ] **MD.1 The fixed five.** A row of five buttons on the co-DM panel with
+- [x] **MD.1 The fixed five.** A row of five buttons on the co-DM panel with
   keys 1–5, always in this order: Yes, and… · Yes, but… · No, but… · In
   character · Twist. Each sends the fast model the target line, the recent
   transcript, bounded campaign context (party, region, the NPC in the scene:
