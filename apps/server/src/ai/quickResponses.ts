@@ -147,7 +147,9 @@ export function loreLines(notes: readonly string[]): string[] {
   let used = 0;
   for (const note of notes) {
     const line = oneLine(note);
-    if (used + line.length > QUICK_LORE_MAX) break;
+    // Review M1: a note too long for what is left is skipped, not the end:
+    // one long note must not drop every shorter note after it.
+    if (used + line.length > QUICK_LORE_MAX) continue;
     lore.push(`- ${line}`);
     used += line.length;
   }
@@ -247,6 +249,11 @@ export function loreFor(
  * the lore of every NPC whose name the GM's request mentions
  * (case-insensitive), newest first, each note once.
  */
+function wholeWord(text: string, word: string): boolean {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'u').test(text);
+}
+
 export function loreForRequest(
   notes: Parameters<typeof loreFor>[0],
   place: string | null,
@@ -257,7 +264,8 @@ export function loreForRequest(
     const t = tag.toLowerCase();
     if (place && t === `place:${place.toLowerCase()}`) return true;
     const name = /^npc:(.+)$/u.exec(t)?.[1]?.trim();
-    return !!name && asked.includes(name);
+    // Review M2: a whole-word match, Unicode-aware, so "Al" is not "also".
+    return !!name && wholeWord(asked, name);
   };
   const bodies = notes
     .filter((n) => n.kind === 'gm')
