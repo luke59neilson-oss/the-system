@@ -187,20 +187,24 @@ function Cast({
         data-testid="skill-cast"
         disabled={busy}
         className={short ? 'cast-short' : undefined}
-        aria-describedby="skill-cast-pool"
+        aria-describedby="skill-cast-pool skill-cast-result"
         onClick={() => void cast()}
       >
         Cast ({costText(view.rules, skill)})
       </button>
-      <p id="skill-cast-pool" className={short ? 'err' : 'muted'} data-testid="skill-cast-pool">
-        {short
-          ? `Not enough ${label}: ${have} of ${cost.amount}`
-          : `${label} ${have}/${pool?.max ?? have}`}
-      </p>
+      {/* After a refusal the server's message says it; no second red line. */}
+      {!(short && message && !message.ok) && (
+        <p id="skill-cast-pool" className={short ? 'err' : 'muted'} data-testid="skill-cast-pool">
+          {short
+            ? `Not enough ${label}: ${have} of ${cost.amount}`
+            : `${label} ${have}/${pool?.max ?? have}`}
+        </p>
+      )}
       {message && (
         <p
           className={message.ok ? 'ok' : 'err'}
           role={message.ok ? 'status' : 'alert'}
+          id="skill-cast-result"
           data-testid="skill-cast-result"
         >
           {message.text}

@@ -133,7 +133,9 @@ test('a player casts from their phone; too low is refused; the GM sees it and un
   await cast.click();
   await expect(detail.getByTestId('skill-cast-result')).toContainText('Not enough MP');
   await expect(detail.getByTestId('skill-cast-result')).toContainText('20 of 40');
-  await expect(detail.getByTestId('skill-cast-pool')).toHaveText('Not enough MP: 20 of 40');
+  // One red line, not two: the pool line steps aside for the refusal.
+  await expect(detail.getByTestId('skill-cast-pool')).toHaveCount(0);
+  await expect(cast).toHaveAccessibleDescription(/Not enough MP to cast/);
   await phone.screenshot({ path: path.join(shots, 'player-too-low-390x844.png') });
 
   // The GM's feed shows each cast; the change log undoes the last one.
@@ -146,6 +148,7 @@ test('a player casts from their phone; too low is refused; the GM sees it and un
   await openWindow(gm, 'practice-capture');
   await expect(review).toContainText('To review (2)');
   await expect(review.getByText('Cast [Arcane Bolt]')).toHaveCount(2);
+  await review.screenshot({ path: path.join(shots, 'gm-practice-review-1366x768.png') });
   const log = gm.locator('section[aria-labelledby="change-log"]');
   await openWindow(gm, 'change-log');
   const rows = log.getByRole('listitem').filter({ hasText: 'Jake skill cast (Arcane Bolt)' });
@@ -160,7 +163,7 @@ test('a player casts from their phone; too low is refused; the GM sees it and un
   await expect(review).toContainText('To review (1)');
   await expect(review.getByText('Cast [Arcane Bolt]')).toHaveCount(1);
   await openWindow(gm, 'feed');
-  await gm.screenshot({ path: path.join(shots, 'gm-feed-1366x768.png') });
+  await feed.screenshot({ path: path.join(shots, 'gm-feed-1366x768.png') });
 
   // Jake on a laptop sees the same.
   const jake = await browser.newPage({ viewport: { width: 1366, height: 768 } });
