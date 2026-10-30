@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-30): every earlier milestone done; new milestone MD (co-DM quick responses, DESIGN §11) added; `docs/DONE.md` removed. Preview ready: the 2026-10-30 build has everything before MD.
-**Next item:** MD.2 The co-DM's five
+**Next item:** MD.3 Keep lore (resume `wip/MD.3`)
 **Blockers:** none
 
 ## Run log
@@ -1257,3 +1257,10 @@ next item, blockers. -->
 - Tests: unit 1,518; e2e MD.1 1/1; full e2e run while closing out: 109+ passed, 0 failed when the lock was released (not finished).
 - Open `wip/*`: none. Lows to QUALITY Backlog. Unrelated screenshot churn from the full e2e reverted before the push.
 - Next: MD.2. Blockers: none.
+
+### Run r-1430 · 2026-10-30 14:11–15:01 UTC (close-out at minute 42, lock released at minute 50; MD.3 handed off on `wip/MD.3` at minute 43)
+- Preflight: repo already attached (`add_repo` not offered); fetched and fast-forwarded main; lock pushed cleanly; vitest 5.0.5; sonnet reviewers work (worktree, blocking: no background option). CI green on main (69e4c92). No new answers. Not an efficiency or sweep hour.
+- MD.2 **checked**: the suggestion chips sit in a fixed row of five slots under the quick responses (keys 6–9, 0); a chip keeps its slot, a new chip fills only an empty or dismissed slot, extras wait under More (up to 7), a call may offer 6; a new player question or attempt makes a look due 30 s after the last (once per question); with no key nothing is read or asked (D258, D259, Q80). MC.8 e2e updated (six chips; key saved after listening). Sonnet round 1 0 H / 2 M / 5 L, both Mediums fixed; round 2 0 H / 0 M / 3 L.
+- Tests: unit 1,526 on main (+4 on `wip/MD.3`); e2e MD.2, MC.8, MD.1 3/3; full e2e (shared server and CSS touched) run while closing out: 49 of 124 passed, 0 failed when stopped at the hard stop (CI runs the rest); screenshot churn reverted.
+- Open `wip/*`: `wip/MD.3` (base 1d2ee26a, head 2e9d3bb4): `loreFor` (GM notes tagged `lore` + `npc:`/`place:`, newest first) and `loreTags` with unit tests; quick responses now read kept lore (route test). Next step: a Keep button on a quick answer and on a generated item (editable, sends a GM `note.create` with `loreTags`), a Lore view listing and editing lore notes, lore in generation prompts, the projection canary, and e2e Keep → Lore view; then D260 and review.
+- Lows to QUALITY Backlog. Next: MD.3. Blockers: none.
