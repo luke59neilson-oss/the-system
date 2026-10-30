@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress again (2026-10-30): every earlier milestone done; new milestone MD (co-DM quick responses, DESIGN §11) added; `docs/DONE.md` removed. Preview ready: the 2026-10-30 build has everything before MD.
-**Next item:** MD.A Acceptance and review (resume `wip/MD.A`: finish the full e2e run, then the `fable` review)
+**Status:** in progress (2026-10-30): milestone MD done and reviewed. **Preview ready: Actions → Release → Run workflow** (milestone MD, co-DM quick responses). MU (console tabs, player log, XP context, spells) under way.
+**Next item:** MU.1 Home dashboard and tabs (resume `wip/MU.1`: migrate the remaining e2e specs to open their window's tab, then the home "needs you" list)
 **Blockers:** none
 
 ## Run log
@@ -1283,3 +1283,12 @@ next item, blockers. -->
 - Tests: unit 1,549 (npm run check green on main); e2e MD.3, MD.A, MC.7, MC.A green.
 - Open `wip/*`: `wip/MD.A` (head 557caf35). Next step: run the full e2e suite (from M8.4 on at least), then the `fable` review of MD (MD.1–MD.3 + MD.A), then check MD.A and write "Preview ready" (LOOP §8.2).
 - Next: MD.A. Blockers: none.
+
+### Run rb440e45c · 2026-10-30 17:08–17:52 UTC (close-out at minute 43; lock released at minute 44: the wip hand-off was pushed and the remaining work is mechanical spec migration for the next run)
+- Preflight: repo already attached; fetched and fast-forwarded main; lock pushed cleanly; vitest 5.0.5; `fable` reviewer worked (worktree, blocking call; full e2e ran beside it). CI green on main (0a3c632c). No new answers. Not an efficiency or sweep hour.
+- MD.A done: full e2e 126/126 at 2 workers; latency 7/8 under reviewer load, M11.3 passed alone (Flakes). Fable review of MD (a027a705..2f9c5246): 0 H / 1 M / 5 L, 4 mutations all caught, no GM-only leak. M1 (keys 1–0 live while the GM views as a character) fixed with a `paneShown` guard, unit test and an MD.A e2e step (caught by mutation); extra MD.A screenshot of slots 6–0. Merged to main, MD.A checked. Preview ready (milestone MD).
+- MU.1 started on `wip/MU.1` (base b67150d6, head 31bd6a3a): `tabsModel.ts` (window → tab table, remembered tab, arrow keys; 6 unit tests), `ConsoleTabs.tsx` (tab bar, `Place` wrapper keeps windows mounted), GmScreen renders every window in its place, GM-GUIDE table, D261, Q82, `e2e/MU.1.spec.ts` (every window opens from its tab, remembered tab, keyboard; screenshots at 1366×768 and 1920×1080) passes. e2e helper `e2e/helpers/gmTabs.ts` (`openTab`, `openWindow`, `reveal`). Migrated and green: MD.1–MD.A, MC.1–MC.10, MC.A, M4.6.
+- Hand-off: most older GM specs now fail because their window is on another tab. Seen failing in a partial full run (51/127 before stopping): M11.2, M3.2–M3.5, M4.1, M4.2, M4.5, M4.7–M4.9, M5.1–M5.5, M5.A, M6.1–M6.4, M6.A, M7.1, M7.2; the rest (M7.3 on, M8–M11, MQ, MR, MS, MT, QF) not yet run. Next step: add `openTab`/`openWindow` before each window's first use (see MC/MD diffs), run each file, then the home dashboard's "what needs you" list (DESIGN §9a), the M8.3 keyboard spec, full suite, sonnet review.
+- Tests: unit 1,550 + 6 (wip); `npm run check` green on main.
+- Open `wip/*`: `wip/MU.1` (head 31bd6a3a).
+- Next: MU.1. Blockers: none.
