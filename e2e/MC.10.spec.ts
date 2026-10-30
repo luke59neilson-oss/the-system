@@ -83,6 +83,20 @@ test('a draft prepared ahead is reviewed and approved', async ({ browser }) => {
   await listen.getByRole('button', { name: 'Stop listening' }).click();
   await expect(listen.getByTestId('listen-indicator')).toHaveText('Mic off');
 
+  // The herbalist line is a player question, so the suggestion row takes its
+  // own look (MD.2, D258); let that one call land before counting.
+  const base = server.url;
+  const calls = async () => {
+    const res = await gm.request.get(`${base}/api/gm/ai`, {
+      headers: { 'x-gm-key': GM_KEY },
+    });
+    return ((await res.json()) as { spend: { calls: number } }).spend.calls;
+  };
+  await expect(codm.getByTestId('suggestions').getByTestId('chip').first()).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect.poll(calls).toBe(1);
+
   // The box follows the server's saved setting, so click and wait for it.
   await toggle.click();
   await expect(toggle).toBeChecked();
@@ -91,11 +105,8 @@ test('a draft prepared ahead is reviewed and approved', async ({ browser }) => {
   await expect(prepared).toHaveCount(1);
   await expect(prepared).toContainText('Prepared: Herbalist');
   await expect(prepared).toContainText('“We should find an herbalist before the canyon.”');
-  // Both calls (the look and the draft) are counted.
-  const status = await gm.request.get(`${server.url}/api/gm/ai`, {
-    headers: { 'x-gm-key': GM_KEY },
-  });
-  expect(((await status.json()) as { spend: { calls: number } }).spend.calls).toBe(2);
+  // Both calls (the look ahead and the draft) are counted.
+  expect(await calls()).toBe(3);
   await ahead.scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-prepared-1366x768.png') });
 

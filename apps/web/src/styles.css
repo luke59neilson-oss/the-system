@@ -3040,10 +3040,8 @@ ol.change-log li.undone .change-text {
 }
 .pick-row li.pick-empty {
   padding: 0.45rem 0.5rem;
-}
-.pick-row li.pick-empty {
+  /* Dashed border marks an empty slot; no opacity, so "empty" keeps 4.5:1 (M8.3). */
   border-style: dashed;
-  opacity: 0.6;
 }
 .pick-row kbd {
   display: inline-block;

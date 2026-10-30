@@ -85,7 +85,8 @@ test('a mock session runs the co-DM end to end', async ({ browser }) => {
   await suggestions.getByRole('button', { name: 'Suggest now' }).click();
   const shop = suggestions.getByTestId('chip').filter({ hasText: 'Generate: Herbalist shop' });
   await expect(shop).toContainText('“We should find an herbalist before the canyon.”');
-  await shop.getByRole('button', { name: 'Use' }).click();
+  // Since MD.2 the chip itself is the button (keys 6–0), not a Use button.
+  await shop.getByRole('button', { name: /Generate: Herbalist shop/ }).click();
 
   // 3. The shop generates behind a loading screen; approving clears it.
   await codm.getByLabel('Show players a loading screen while the co-DM works').check();
