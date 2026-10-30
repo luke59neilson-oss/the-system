@@ -110,6 +110,7 @@ test('a Table-view pane pins a skill-upgrade DING, not only level-ups', async ({
   );
 
   // The GM confirms the mark and upgrades the skill from the console beside the panes.
+  await openWindow(gm, 'marks-review');
   const review = gm.locator('section[aria-labelledby="marks-review-heading"]');
   const row = review.locator('section[aria-labelledby="marks-jake"]');
   await row.getByRole('button', { name: 'Confirm mark: Jake Basic Archery' }).click();
@@ -117,7 +118,6 @@ test('a Table-view pane pins a skill-upgrade DING, not only level-ups', async ({
     .getByTestId('upgrade-prompt')
     .getByRole('button', { name: 'Upgrade Jake Basic Archery' })
     .click();
-  await openWindow(gm, 'marks-review');
   await expect(review.getByRole('status')).toHaveText('Jake: [Basic Archery] is now Common');
 
   // The pane's pinned DING is now the upgrade.

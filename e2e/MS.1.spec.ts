@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
+import { openWindow } from './helpers/gmTabs';
 
 // MS.1 Minimal GM screen: create a character from a starter class, award XP
 // with the even split, send a System broadcast.
@@ -101,6 +102,7 @@ test('GM creates a campaign and characters, awards XP, and broadcasts', async ({
   const live = listen(idOf('Jake'), true);
 
   // Even split preview, then the award levels every character live.
+  await openWindow(page, 'award-xp');
   await page.getByLabel('Amount').fill('301');
   await expect(page.getByTestId(/^share-/)).toHaveText([' · 101 XP', ' · 100 XP', ' · 100 XP']);
   await page.getByLabel('Reason (GM only)').fill('Pale hunter pack');
