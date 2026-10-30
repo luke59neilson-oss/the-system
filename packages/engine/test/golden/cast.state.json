@@ -6,10 +6,7 @@
     "campaign": {
       "levelCap": 240,
       "typicalLevelsPerSession": 6,
-      "typicalLevelsPerSessionRange": [
-        4,
-        8
-      ],
+      "typicalLevelsPerSessionRange": [4, 8],
       "plannedSessions": 40
     },
     "stats": {
@@ -167,10 +164,7 @@
     "xp": {
       "aboveLevelBonusPerLevel": 0.1,
       "aboveLevelBonusCap": 1,
-      "gradeBelowFactors": [
-        0.3333333333333333,
-        0
-      ],
+      "gradeBelowFactors": [0.3333333333333333, 0],
       "overflow": true,
       "defaultSplit": "even"
     },
@@ -471,9 +465,7 @@
       "portrait": null
     }
   },
-  "characterOrder": [
-    "jake"
-  ],
+  "characterOrder": ["jake"],
   "broadcasts": [],
   "scheduledBroadcasts": [],
   "items": {},
@@ -489,9 +481,7 @@
       "id": "bolt",
       "name": "Mana Bolt",
       "rarity": "inferior",
-      "tags": [
-        "spell"
-      ],
+      "tags": ["spell"],
       "description": "",
       "flavor": "",
       "effects": "",
@@ -503,9 +493,7 @@
       "range": "20 m"
     }
   },
-  "skillLibraryOrder": [
-    "bolt"
-  ],
+  "skillLibraryOrder": ["bolt"],
   "classLibrary": {},
   "classLibraryOrder": [],
   "raceLibrary": {},
@@ -522,13 +510,9 @@
       "sessionId": "s1",
       "characterId": "jake",
       "action": "Cast [Mana Bolt]",
-      "skills": [
-        "Mana Bolt"
-      ],
+      "skills": ["Mana Bolt"],
       "stat": null,
-      "tags": [
-        "cast"
-      ],
+      "tags": ["cast"],
       "source": "player",
       "reviewed": false
     },
@@ -538,13 +522,9 @@
       "sessionId": "s1",
       "characterId": "jake",
       "action": "Cast [Mana Bolt]",
-      "skills": [
-        "Mana Bolt"
-      ],
+      "skills": ["Mana Bolt"],
       "stat": null,
-      "tags": [
-        "cast"
-      ],
+      "tags": ["cast"],
       "source": "gm",
       "reviewed": true
     },
@@ -554,13 +534,9 @@
       "sessionId": "s1",
       "characterId": "jake",
       "action": "Cast [Mana Bolt]",
-      "skills": [
-        "Mana Bolt"
-      ],
+      "skills": ["Mana Bolt"],
       "stat": null,
-      "tags": [
-        "cast"
-      ],
+      "tags": ["cast"],
       "source": "player",
       "reviewed": false
     }
