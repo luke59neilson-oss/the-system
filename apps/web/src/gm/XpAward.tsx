@@ -11,6 +11,7 @@ import {
   type XpTrack,
 } from '@the-system/engine';
 import { friendlyError } from '../format';
+import { formatLevels, xpContextText } from './xpAwardModel';
 import type { CommandResult, LiveClient } from '../live';
 
 const WHOLE = /^\d+$/;
@@ -236,17 +237,9 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
               {(() => {
                 const c = state.characters[id];
                 if (!c) return null;
-                const x = xpContext(rules, c);
-                const toNext = (n: number | null) =>
-                  n === null ? 'at the grade’s top' : `${n.toLocaleString('en-US')} to next`;
                 return (
                   <span className="muted small xp-context" data-testid={`context-${id}`}>
-                    {x.grade}-grade · Class {x.classLevel}
-                    {x.professionLevel !== null && ` · Profession ${x.professionLevel}`} ·{' '}
-                    {x.xp.class.toLocaleString('en-US')}/{x.perLevel.toLocaleString('en-US')} XP,{' '}
-                    {toNext(x.toNext.class)}
-                    {x.xp.profession !== null &&
-                      ` · profession ${x.xp.profession.toLocaleString('en-US')}/${x.perLevel.toLocaleString('en-US')}, ${toNext(x.toNext.profession)}`}
+                    {xpContextText(xpContext(rules, c))}
                   </span>
                 );
               })()}
@@ -261,6 +254,12 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
                   <span className="muted" data-testid={`worth-${id}`}>
                     {' '}
                     · ≈ {formatLevels(levelsWorth(rules, state.characters[id], track, r.gained))}
+                  </span>
+                )}
+                {!r && previewError !== null && i >= 0 && shares?.[i] !== undefined && (
+                  <span className="muted" data-testid={`worth-${id}`}>
+                    {' '}
+                    · ≈ levels shown once the error above is fixed
                   </span>
                 )}
                 {r && r.gained !== r.share && (
@@ -375,10 +374,4 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
         ))}
     </form>
   );
-}
-
-/** MU.3: "1.5 levels", "1 level", "0 levels". */
-function formatLevels(n: number): string {
-  const rounded = Math.round(n * 10) / 10;
-  return `${rounded.toLocaleString('en-US')} ${rounded === 1 ? 'level' : 'levels'}`;
 }
