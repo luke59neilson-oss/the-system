@@ -986,7 +986,7 @@ DESIGN §5, §6, §7, §9a. After MD.
   the typed award, each share and ≈ levels per player; the grade reference
   line; on both the quick and full Award XP. *Accept:* unit tests for the
   numbers (overflow, caps, uneven shares); e2e.
-- [ ] **MU.4 Spells: skills with costs.** Library skill entries (per name and
+- [x] **MU.4 Spells: skills with costs.** Library skill entries (per name and
   rarity) gain optional cost (pool and amount), cooldown, range and casting
   notes and a "spell" tag; a skill creator form; players see costs on their
   skills; the content format and the co-DM's generation schema carry them;
