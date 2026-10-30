@@ -147,13 +147,16 @@ describe('M6.A review fixes', () => {
     expect(define.notices).toEqual([
       { kind: 'title', characterId: 'kim', title: 'forerunner', text: 'First to set foot.' },
     ]);
-    // Editing the text again does not re-announce it.
+    // Editing the text again does not re-announce it; MU.2 tells the holder
+    // the GM changed their title, once.
     const edit = step(define.campaign, {
       type: 'titleDef.edit',
       titleDefId: 'runner',
       text: 'First of all.',
     });
-    expect(edit.notices).toEqual([]);
+    expect(edit.notices).toEqual([
+      { kind: 'gmChange', characterId: 'kim', change: 'titleEdited', subject: 'forerunner' },
+    ]);
   });
 
   it('a rename onto a name someone holds tells only the newly linked holder', () => {
@@ -172,8 +175,11 @@ describe('M6.A review fixes', () => {
       titleDefId: 'spread',
       name: 'Rapid Spread II',
     });
+    // MU.2: Jake, who held it all along, is told of the rename; Kim only
+    // gets the 'title' notice.
     expect(rename.notices).toEqual([
       { kind: 'title', characterId: 'kim', title: 'Rapid Spread II', text: 'Fast.' },
+      { kind: 'gmChange', characterId: 'jake', change: 'titleEdited', subject: 'Rapid Spread II' },
     ]);
   });
 });

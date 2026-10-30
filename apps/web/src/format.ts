@@ -62,6 +62,8 @@ export function notificationText(n: LiveNotification): string {
       const why = n.reason.trim() === '' ? '' : `: ${n.reason.trim()}`;
       return `The GM took ${what ?? 'an item'}${why}`;
     }
+    case 'gmChange':
+      return gmChangeText(n);
     case 'trade': {
       const who = n.other ?? 'The GM';
       switch (n.action) {
@@ -75,6 +77,75 @@ export function notificationText(n: LiveNotification): string {
           return `${who} withdrew a trade offer`;
       }
     }
+  }
+}
+
+type GmChange = Extract<LiveNotification, { kind: 'gmChange' }>;
+
+/** "Strength 1.0 → 1.4, Agility 1.0 → 1.1" */
+function diffText(n: GmChange): string {
+  return (n.diffs ?? []).map((d) => `${d.label} ${d.from} → ${d.to}`).join(', ');
+}
+
+/** MU.2: the player log line for a GM change to the character (DESIGN §7). */
+export function gmChangeText(n: GmChange): string {
+  const s = n.subject ?? '';
+  const d = n.detail ?? '';
+  const diffs = diffText(n);
+  const with_ = (text: string) => (diffs === '' ? text : `${text}: ${diffs}`);
+  switch (n.change) {
+    case 'renamed':
+      return with_('The System has renamed you');
+    case 'portrait':
+      return 'The GM changed your portrait';
+    case 'stats':
+      return with_('The GM set your stats');
+    case 'pools':
+      return with_('The GM set your pools');
+    case 'progression':
+      return with_('The GM set your progression');
+    case 'xp':
+      return `+${d} ${s === 'profession' ? 'profession' : 'class'} XP`;
+    case 'freePoints':
+      return with_(`The GM set your race level ${d} free points`);
+    case 'professionWithdrawn':
+      return `Profession offer withdrawn: [${s}]`;
+    case 'titleEdited':
+      return `Title updated: [${s}]`;
+    case 'equipped':
+      return s === '' ? 'The GM equipped an item' : `The GM equipped [${s}]`;
+    case 'unequipped':
+      return s === '' ? 'The GM unequipped an item' : `The GM unequipped [${s}]`;
+    case 'skillGranted':
+      return `*Skill acquired: [${s} (${d})]*`;
+    case 'skillRarity':
+      return with_(`Skill [${s}] re-rated`);
+    case 'skillUnique':
+      return d === 'on' ? `Skill [${s}] is now Unique` : `Skill [${s}] is no longer Unique`;
+    case 'skillText':
+      return `Skill description updated: [${s}]`;
+    case 'skillNickname':
+      return d === '' ? `Nickname cleared: [${s}]` : `Nickname set: [${s}] "${d}"`;
+    case 'skillMark':
+      return d === '' ? `Mastery mark earned: [${s}]` : `Mastery mark earned: [${s}] (${d} marks)`;
+    case 'mergeDeclined':
+      return s === '' ? 'Skill merge declined' : `Skill merge declined: [${s}]`;
+    case 'selectionOffered':
+      return `*Skill selection available (level ${d}) - Choose in the Skill Selection window*`;
+    case 'selectionWithdrawn':
+      return `Skill option withdrawn: [${s}]`;
+    case 'selectionChosen':
+      return `Skill selected for you (level ${d}): [${s}]`;
+    case 'evolutionReleased':
+      return '*Evolution available - Choose your path in the Evolution window*';
+    case 'evolutionChosen':
+      return s === '' ? 'Evolution chosen' : `*Evolution complete: [${s}] (${d}-grade)*`;
+    case 'questNew':
+      return `New quest: ${s}`;
+    case 'questUpdated':
+      return `Quest updated: ${s}`;
+    case 'questStatus':
+      return `Quest ${d}: ${s}`;
   }
 }
 

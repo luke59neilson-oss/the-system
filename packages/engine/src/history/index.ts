@@ -5,6 +5,7 @@ import { applyEvent, type CampaignState } from '../events/reducer';
 import { hiddenQuestNoticed } from '../quests';
 import { titleDefByName } from '../titles';
 import { isEmptyBundle, type Bundle } from '../economy';
+import { gmChangeNotices, type GmChangeNotice } from './gmChanges';
 
 /**
  * System notifications (DESIGN §9 "DING!") and their history back to day 1
@@ -127,7 +128,9 @@ export type SystemNotification =
       readonly name: string;
       /** Rarity display name of the merged skill. */
       readonly rarity: string;
-    };
+    }
+  /** MU.2: any other change the GM made to this character; only its owner is told. */
+  | GmChangeNotice;
 
 /** A notification with where it sits in the campaign. */
 export interface HistoryItem {
@@ -352,6 +355,8 @@ export function notificationsBetween(
       out.push({ kind: 'skillMerge', characterId, skills: [skills[0], skills[1]], name, rarity });
     }
   }
+  // MU.2: every other GM change to a character tells its player.
+  if (event && before) out.push(...gmChangeNotices(before, after, event));
   // MT.5: a GM override sets levels without earning them (no spread, no free
   // points), so it sends no 'DING!' that would say otherwise.
   const overridden = event?.type === 'character.progressionSet';
@@ -430,6 +435,7 @@ export function notificationHistory(campaign: Campaign): HistoryItem[] {
   return out;
 }
 export * from './changeLog';
+export * from './gmChanges';
 
 /** A gift notification for `to` (M3.7); `giver` null = the GM. */
 function giftNotice(

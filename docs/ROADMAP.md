@@ -955,7 +955,7 @@ DESIGN §5, §6, §7, §9a. After MD.
   Award XP, which is on Session (quick) and Progression (full). *Accept:* e2e
   that every window opens from its tab; screenshots of home and each tab at
   1366×768 and 1920×1080; the keyboard-only spec (M8.3) still passes.
-- [ ] **MU.2 Player running log; View as matches the player.** Audit every
+- [x] **MU.2 Player running log; View as matches the player.** Audit every
   GM action that changes a character and make each one notify the player (or
   list it in the audit as silent on purpose, with the reason); a running log
   on the player's main screen (newest first, last 20, link to the full

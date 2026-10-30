@@ -16,8 +16,10 @@ import { PortraitBadge } from '../PortraitBadge';
 import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
 import { playSound, unlockSound } from './sounds';
+import { RunningLog } from './RunningLog';
 import { contestLines, newContests } from './contest';
 import {
+  FULL_HISTORY_EVENT,
   HISTORY_FILTERS,
   filterHistory,
   isDing,
@@ -178,7 +180,8 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
           </a>
         )}
       </header>
-      {!pane && view && <DingQueue key={live.campaign ?? ''} live={live} volume={level} />}
+      {/* MU.2: View as shows the same pop-ups, with the sound muted. */}
+      {view && <DingQueue key={live.campaign ?? ''} live={live} volume={pane ? 0 : level} />}
       {!pane && view && <ContestPopup key={live.campaign ?? ''} contests={view.contests} />}
       {live.campaign === 'demo' && (
         <p className="demo-badge" data-testid="demo-badge">
@@ -202,6 +205,7 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
             {/* MT.2: an open merge offer waits on an answer, so it sits on top. */}
             <MergeOfferPanel view={view} client={pane ? null : client} />
             <Status view={view} client={pane ? null : client} />
+            <RunningLog live={live} />
             <ProfessionsPanel view={view} client={pane ? null : client} />
             <PartyPanel view={view} />
             <Inventory view={view} client={pane ? null : client} />
@@ -1044,6 +1048,16 @@ function Feed({
   const [messageLimit, setMessageLimit] = useState(HISTORY_PAGE);
   const dingList = useRef<HTMLOListElement>(null);
   const messageList = useRef<HTMLOListElement>(null);
+  // MU.2: "Full history" in the running log shows every notice, not only the DINGs.
+  useEffect(() => {
+    const showAll = () => {
+      setFilter('all');
+      setQuery('');
+      setDingLimit(HISTORY_PAGE);
+    };
+    window.addEventListener(FULL_HISTORY_EVENT, showAll);
+    return () => window.removeEventListener(FULL_HISTORY_EVENT, showAll);
+  }, []);
   const rows = filterHistory(live.notifications, filter, query);
   const messages = view.messages.slice(-messageLimit).reverse();
   return (
