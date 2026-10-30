@@ -1,5 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { loreFor, loreTags } from '../src/ai/quickResponses';
+import { loreFor, loreForRequest, loreLines, loreTags } from '../src/ai/quickResponses';
+
+describe('kept lore for a generation request (MD.3)', () => {
+  const at = (h: number) => `2026-10-30T${String(h).padStart(2, '0')}:00:00Z`;
+  const notes = [
+    { kind: 'gm', tags: ['lore', 'place:The Crown'], body: 'The Crown hums.', updatedAt: at(9) },
+    { kind: 'gm', tags: ['lore', 'npc:Old Tam'], body: 'Tam owes a debt.', updatedAt: at(10) },
+    { kind: 'gm', tags: ['lore', 'npc:Sal'], body: 'Sal hates boats.', updatedAt: at(11) },
+    { kind: 'gm', tags: ['npc:Old Tam'], body: 'Not lore.', updatedAt: at(12) },
+    { kind: 'party', tags: ['lore', 'npc:Old Tam'], body: 'Party note.', updatedAt: at(13) },
+  ];
+  it('takes the place and every NPC the request names, newest first', () => {
+    expect(loreForRequest(notes, 'The Crown', 'a stall for OLD TAM')).toEqual([
+      'Tam owes a debt.',
+      'The Crown hums.',
+    ]);
+    expect(loreForRequest(notes, null, 'an herbalist')).toEqual([]);
+  });
+  it('bounds the prompt lines', () => {
+    const long = Array.from({ length: 50 }, () => 'x'.repeat(100));
+    const lines = loreLines(long);
+    expect(lines.length).toBeLessThan(50);
+    expect(lines[0]).toBe(`- ${'x'.repeat(100)}`);
+  });
+});
 
 // MD.3 (DESIGN §11 "Keep"): kept lore for the NPC and place, newest first;
 // only GM notes tagged lore; never a player's journal or a party note.
