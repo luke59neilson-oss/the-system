@@ -498,7 +498,7 @@ the rest follow in file order. Each gets its own §6 review.
   `if (!poll) return;` fails no test: add a hook test counting fetches with
   and without a key and the seed-over-stale-poll rule. Sweep A 2026-10-30,
   Tests. *Accept:* each mutation now caught; both files pass shuffled.
-- [ ] **QF.36 (High) MU.2 notices: tests that can fail.** (a) dropping the
+- [x] **QF.36 (High) MU.2 notices: tests that can fail.** (a) dropping the
   hidden-quest guard in `gmChanges.ts` (`if (!now?.visible) break;`) fails
   no test, so a hidden quest's title could reach every phone with green CI:
   assert no notice carries a hidden quest while it stays hidden; (b) the
@@ -981,7 +981,7 @@ DESIGN §5, §6, §7, §9a. After MD.
   *Accept:* an engine test that enumerates the character-changing GM events
   and checks each notifies or is listed; e2e: the GM gives an item → a
   pop-up and a log line on the player's screen and in View as.
-- [ ] **MU.3 XP context in the award box.** Per participant: grade, class and
+- [x] **MU.3 XP context in the award box.** Per participant: grade, class and
   profession level, XP now / per level at the grade, XP to next level; for
   the typed award, each share and ≈ levels per player; the grade reference
   line; on both the quick and full Award XP. *Accept:* unit tests for the
