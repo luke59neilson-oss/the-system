@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** ee438ac1 (2026-10-26, D) · **Next rotation:** A
+**Last sweep:** bff5db12 (2026-10-30, A) · **Next rotation:** B
 
 ## Lenses and rotation
 
@@ -123,6 +123,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-26 09:12 | D, e781ac3b..ee438ac1 | Rules · sonnet | 0 | 1 | 1 | 1 M confirmed in code and fixed this run (QF.29; the region half not real); 1 L to Backlog | 0 | ~90k |
 | 2026-10-26 09:12 | D, e781ac3b..ee438ac1 | Boundaries · fable | 0 | 0 | 1 | 1 L to Backlog | 0 | ~165k |
 | 2026-10-26 09:12 | D, e781ac3b..ee438ac1 | UX · haiku | 0 | 3 | 6 | 1 M confirmed and fixed this run (QF.30); 1 M lowered to Low (Enter in the loading-text field submits the Generate form: standard form behaviour, the GM is filling that form); 1 M already in Backlog (MC.4 L3, leaving the console mid-generation); 6 L to Backlog | 0 | ~115k |
+| 2026-10-30 15:12 | A, ee438ac1..2b49d88f | Rules · fable | 0 | 2 | 4 | 2 M confirmed (R1 by trace, R2 by node probe): QF.33, QF.34; 4 L to Backlog | 0 | ~160k |
+| 2026-10-30 15:12 | A, ee438ac1..2b49d88f | Boundaries · sonnet | 0 | 0 | 1 | 1 L to Backlog | 0 | ~148k |
+| 2026-10-30 15:12 | A, ee438ac1..2b49d88f | Tests · haiku | 0 | 5 | 5 | 4 M confirmed by mutation / shuffle (QF.35); 1 M lowered to Low (player-frame canaries exist at e2e level: MC.5, MC.7, MC.8, MC.10, MC.A); 5 L to Backlog | 0 | ~147k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -172,6 +175,9 @@ reviewers ran 15–20 minutes each in the background.
   (10:31 UTC): now QF.14.
 
 ## Backlog (Lows; M11.5 goes through these)
+- Sweep A 2026-10-30 (Rules): a stream that ends without `message_stop` is not counted in spend (`anthropic.ts` readStream: no `partial`); no golden pins `practice.logged` with `session`; montage-logged uses are not "already logged" for co-DM drafts (`practiceRoutes.ts:79`); a draft confirmed for an earlier session lands in the current session's report.
+- Sweep A 2026-10-30 (Boundaries): the GM window has no `setPermissionCheckHandler` (`apps/desktop/src/main.ts` ~152).
+- Sweep A 2026-10-30 (Tests): no unit-level player-frame canary for chips, notes, summary, prepared and practice drafts, transcript (e2e only); the quick-response canary waits a fixed 100 ms; `.catch('npc')` on chip kind untested; `MD.1.spec.ts:91` fixed 1500 ms wait; `prepareAhead.test.ts:302` races on `setTimeout(30)`; `coDm.test.ts:155` key-leak check depends on earlier tests filling `bodies`.
 - MD.2 (2026-10-30 reviews): "?" lines from the GM or an NPC also count as questions for the early look; keys 6–0 call preventDefault even with nothing in the slot; More chips have no key; the stored `slots` / `questionsUpTo` shapes are only loosely checked on read; waiting chips past `MORE_MAX` drop without being marked dismissed; slot 0 sits alone on a third row in the narrow column; the pre-call `lastCallAt` write can undo a dismissal made in the same milliseconds; no test for a second question after a failed call or an old file without `questionsUpTo`.
 - MD.1 (2026-10-30 review): the quick-row scene poll rereads the whole transcript every 4 s; the target heuristic matches GM narration ("we go", "I look"); the shown target can lag the sent one by up to 4 s; non-OK reply note wording; a last NDJSON line without a newline is dropped.
 - Rules (sweep C 2026-10-26): `skill.granted` allows description/flavor up to 4000 characters (`envelope.ts` ~431) while every other skill text field caps at 2000/1000.

@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-30): every earlier milestone done; new milestone MD (co-DM quick responses, DESIGN §11) added; `docs/DONE.md` removed. Preview ready: the 2026-10-30 build has everything before MD.
-**Next item:** MD.3 Keep lore (resume `wip/MD.3`)
+**Next item:** MD.3 Keep lore (resume `wip/MD.3`: fix review M3, then round 2)
 **Blockers:** none
 
 ## Run log
@@ -1264,3 +1264,12 @@ next item, blockers. -->
 - Tests: unit 1,526 on main (+4 on `wip/MD.3`); e2e MD.2, MC.8, MD.1 3/3; full e2e (shared server and CSS touched) run while closing out: 49 of 124 passed, 0 failed when stopped at the hard stop (CI runs the rest); screenshot churn reverted.
 - Open `wip/*`: `wip/MD.3` (base 1d2ee26a, head 2e9d3bb4): `loreFor` (GM notes tagged `lore` + `npc:`/`place:`, newest first) and `loreTags` with unit tests; quick responses now read kept lore (route test). Next step: a Keep button on a quick answer and on a generated item (editable, sends a GM `note.create` with `loreTags`), a Lore view listing and editing lore notes, lore in generation prompts, the projection canary, and e2e Keep → Lore view; then D260 and review.
 - Lows to QUALITY Backlog. Next: MD.3. Blockers: none.
+
+### Run r895f81d3 · 2026-10-30 15:11–16:00 UTC (close-out at minute 46)
+- Preflight: repo already attached; fetched and fast-forwarded main; lock pushed cleanly; vitest 5.0.5; fable, sonnet and haiku reviewers work (worktree, blocking calls; build ran in a fork beside the sweep). **CI red on main (1d2ee26a)**: M8.3, MC.10, MC.A. No new answers. Sweep hour (15 UTC), rotation A.
+- CI fixed (bff5db12, pushed): MD.2 fallout in one CSS rule and two stale tests (REVIEW-LOG).
+- Quality sweep A (ee438ac1..2b49d88f): Rules · fable 0 H / 2 M / 4 L; Boundaries · sonnet 0 / 0 / 1; Tests · haiku 0 / 5 / 5. Confirmed 6 M → QF.33–QF.35; 1 M lowered to Low (e2e canaries exist); Lows to Backlog. Last sweep → bff5db12, next rotation B.
+- MD.3 not checked: Keep on quick answers and generated items, Lore view (list + edit body), lore in generation prompts, canary, e2e, D260, Q81 done on `wip/MD.3`. Sonnet round 1: 0 H / 3 M / 5 L; M1, M2 fixed (d51bce51); **M3 open** (Lore view needs delete and title/tag editing). Round 2 due after M3.
+- Tests: unit 1,542 on `wip/MD.3` (npm run check green); e2e MD.1, MD.2, MD.3, MC.2, MC.8, MC.A, MC.10, M8.3 green at 2 workers (fork). Full e2e not run (CI runs it on bff5db12).
+- Open `wip/*`: `wip/MD.3` (base 2b49d88f + origin/main merged, head d51bce51). Next step: Lore view delete + edit title and NPC/place tags (engine already has `note.deleted` and tags in `note.edited`), e2e for it, then sonnet round 2, push main, check MD.3.
+- Next: MD.3. Blockers: none.

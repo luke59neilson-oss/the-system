@@ -479,6 +479,26 @@ the rest follow in file order. Each gets its own §6 review.
   the test kills the whole process tree and asserts every member is gone
   before cleanup; desktop smoke green locally and in CI.
 
+- [ ] **QF.33 Practice drafts: only this session's pending drafts block a new one.**
+  `apps/server/src/ai/practiceRoutes.ts:81-84` adds every pending draft, from
+  any session, to "already logged", so a draft left from session 1 stops the
+  co-DM drafting the same character and skill in session 2 (one mark per
+  skill per session, DESIGN §6). Sweep A 2026-10-30, Rules. *Accept:* route
+  test with a leftover session-1 draft; session 2 drafts the use.
+- [ ] **QF.34 Practice drafts: GM-naming works for non-ASCII names.**
+  `practiceDrafts.ts:88` `namedIn` uses `\b`, so "Zoë" is never matched and
+  attribution falls to the voice label (DESIGN §11 trust order). Use the
+  Unicode boundaries `sceneNpc` uses. *Accept:* unit test with "Zoë".
+- [ ] **QF.35 Co-DM route tests that can fail.** (a) the suggestions route
+  409 guard (`suggestionRoutes.ts:138`) can be deleted with all tests green:
+  add an overlapping-POST test; (b) `prepareAhead.test.ts` "drafts content
+  for where" fails alone and `listen.test.ts` "enrols a 4 s sample" fails
+  under `--sequence.shuffle --sequence.seed=1793373478758`: give each test
+  its own fake and settings; (c) `apps/web/src/gm/spend.ts`: removing
+  `if (!poll) return;` fails no test: add a hook test counting fetches with
+  and without a key and the seed-over-stale-poll rule. Sweep A 2026-10-30,
+  Tests. *Accept:* each mutation now caught; both files pass shuffled.
+
 ## MR — Luke's answers, batch 2 (2026-10-22)
 
 Answers to Q43–Q52 (DESIGN §2, §6, §7 updated; L14–L18). They change finished

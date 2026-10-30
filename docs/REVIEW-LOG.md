@@ -1048,3 +1048,15 @@
 
 ## 2026-10-30 · MD.2 · round 2 · sonnet (worktree, f6b39e71)
 - 0 High / 0 Medium / 3 Low: M1 and M2 verified fixed. Lows (test gaps for a second question after a failure and old files; a hand-edited `questionsUpTo`; a narrow dismissal race in the pre-call write) to QUALITY Backlog.
+
+## 2026-10-30 · CI fix (MD.2 fallout) · bff5db12
+- Red CI on 1d2ee26a: M8.3 empty-slot contrast 3.62:1 (opacity removed; dashed border marks the slot), MC.A clicked a removed "Use" button (now clicks the chip, as MC.8), MC.10 did not count the question look (D258; test waits for it). All three failed alone too: real, not flakes. Verified with 1 and 2 workers.
+
+## 2026-10-30 · MD.3 · round 1 · sonnet (worktree, c8bcf91b)
+- 0 High / 3 Medium / 5 Low. No leak path (lore is a `gm` note; `player.ts` drops them, View as included; export needs an `export` tag).
+- M1 an over-long newest note ended `loreLines` and dropped all lore → fixed (skip, keep going; test). M2 NPC lore matched by substring ("Al" in "also") → fixed (Unicode whole-word; test with "Al" and "Zoë"). Both on `wip/MD.3` d51bce51.
+- M3 the Lore view edits only the body: no delete, no title or tag edit → **open**, next run. Round 2 due (3 Mediums).
+- Lows: e2e has no NPC/place tags and no Keep → later prompt; KeepGenerated hides on unexpected shapes and lets an item be tagged as NPC; Lore view has no filter and sits collapsed at the bottom; one shared status line; place/session taken from the polled scene can be stale.
+
+## 2026-10-30 · Quality sweep A · fixes
+- None applied this run; confirmed Mediums queued as QF.33–QF.35.
