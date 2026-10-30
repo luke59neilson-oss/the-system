@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
+import { expectToast } from './helpers/toast';
 
 // M3.7 Inventory, gifts, trades: the demo's equipped ring and bow on Jake's
 // screen (D70), effective stats and pool maxima (D81), equip/unequip, a gift
@@ -188,7 +189,7 @@ test('inventory: gear, effective stats, gifts and trades', async ({ browser }) =
     'You offer Jake [Healing Potion (Common)] for 10 Credits',
   );
   await miranda.screenshot({ path: path.join(shots, 'player-trade-390x844.png'), fullPage: true });
-  await expect(jake.getByTestId('ding-toast')).toContainText('Miranda offers you a trade');
+  await expectToast(jake, 'Miranda offers you a trade');
   const offer = inv.getByTestId('trade-incoming');
   await expect(offer).toContainText('Miranda offers you [Healing Potion (Common)] for 10 Credits');
   await jake.screenshot({
