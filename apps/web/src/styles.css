@@ -3116,19 +3116,18 @@ ol.change-log li.undone .change-text {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.4rem;
   margin: 0.5rem 0;
+  container-type: inline-size;
 }
 /* QF.37: the key sits on its own line and the name below it wraps between
    words (never mid-word, never an ellipsis), so the GM can tell "Yes, and…"
    from "Yes, but…" at a glance. The font follows the row's width (container
    units) so the longest default word ("character") fits a narrow panel; the
-   grid stretches every button in the row to the tallest. */
-.quick-row {
-  container-type: inline-size;
-}
+   grid stretches every button in the row to the tallest. Never below 12 px
+   (keys 11 px), so a narrow panel cannot shrink them past a glance. */
 .quick-row button {
   min-width: 0;
   padding: 0.4rem 0.15rem;
-  font-size: min(0.9rem, 3.1cqi);
+  font-size: max(12px, min(0.9rem, 3.1cqi));
   white-space: normal;
   overflow-wrap: normal;
   line-height: 1.25;
@@ -3145,7 +3144,7 @@ ol.change-log li.undone .change-text {
   padding: 0 0.25em;
   border: 1px solid var(--accent, currentColor);
   border-radius: 3px;
-  font-size: 0.8em;
+  font-size: max(11px, 0.8em);
   opacity: 0.85;
 }
 .quick-target q {
