@@ -41,4 +41,26 @@ describe('levelsWorth', () => {
     const c: Character = { ...fresh(), xp: { class: 50, profession: 0 } };
     expect(levelsWorth(rules, c, 'class', 100)).toBeCloseTo(1);
   });
+
+  it('counts XP that overflows to the profession at the class cap', () => {
+    // Class at G's top (4) with a profession at 2: 150 class XP overflows.
+    const c: Character = {
+      ...fresh(),
+      classLevel: 4,
+      profession: { name: 'Cook' } as unknown as Character['profession'],
+      professionLevel: 2,
+      xp: { class: 0, profession: 0 },
+    };
+    expect(levelsWorth(rules, c, 'class', 150)).toBeCloseTo(1.5);
+    expect(xpContext(rules, c).toNext).toEqual({ class: null, profession: 100 });
+  });
+
+  it('uneven shares: each player’s own share is priced on their own row', () => {
+    const a = fresh();
+    const b: Character = { ...fresh(), classLevel: 3, xp: { class: 90, profession: 0 } };
+    expect(levelsWorth(rules, a, 'class', 400)).toBeCloseTo(4);
+    // 10 XP reach level 4 (the top): a tenth of a level's XP; the other 390
+    // has nowhere to go (the preview's "lost" and "lvl 3 → 4" say the rest).
+    expect(levelsWorth(rules, b, 'class', 400)).toBeCloseTo(0.1);
+  });
 });
