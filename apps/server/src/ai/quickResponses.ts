@@ -202,3 +202,36 @@ export function parseQuick(text: string): QuickAnswer {
   }
   return { say: say.replace(/^"(.*)"$/u, '$1'), beats };
 }
+
+/** MD.3: the tag every kept-lore note carries (a GM note; D260 when done). */
+export const LORE_TAG = 'lore';
+
+/**
+ * MD.3 (DESIGN §11 "Keep"): the kept lore for the NPC and place in the scene,
+ * newest first: GM notes tagged `lore` and `npc:<name>` or `place:<name>`
+ * (case-insensitive). Bounding happens in the prompt (QUICK_LORE_MAX).
+ */
+export function loreFor(
+  notes: readonly {
+    readonly kind: string;
+    readonly tags: readonly string[];
+    readonly body: string;
+    readonly updatedAt: string;
+  }[],
+  scene: { readonly npc: string | null; readonly place: string | null },
+): string[] {
+  const want = new Set(
+    [scene.npc && `npc:${scene.npc}`, scene.place && `place:${scene.place}`]
+      .filter((t): t is string => typeof t === 'string')
+      .map((t) => t.toLowerCase()),
+  );
+  if (want.size === 0) return [];
+  return notes
+    .filter((n) => n.kind === 'gm')
+    .filter((n) => n.tags.some((t) => t.toLowerCase() === LORE_TAG))
+    .filter((n) => n.tags.some((t) => want.has(t.toLowerCase())))
+    .filter((n) => n.body.trim() !== '')
+    .slice()
+    .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0))
+    .map((n) => n.body.trim());
+}
