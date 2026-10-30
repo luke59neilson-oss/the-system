@@ -1042,3 +1042,9 @@
 
 ## 2026-10-30 · MD.1 · round 2 · sonnet (worktree, 6fefab89)
 - 0 High / 0 Medium / 3 Low: M1–M3 and L5 verified fixed. Lows: a generic "newer request" note on any non-OK reply; a final NDJSON line without a newline is dropped (shows "cut off"); unrelated screenshot churn in the fix commit (reverted before push). One `npm run check` run in the reviewer's worktree hit a 120 s timeout in an unnamed heavy test; the re-run was clean (noted as a possible flake).
+
+## 2026-10-30 · MD.2 · round 1 · sonnet (worktree, 34d21b05)
+- 0 High / 2 Medium / 5 Low. M1: a failed call on a question line was retried every 30 s for as long as the line stayed unread → fixed: a question cuts the wait short once (`questionsUpTo`, D259), with a test. M2: keyless 5 s polls read the transcript and got a 409 each time → fixed: a keyless poll is a 200 `needsKey` before any read; only "Suggest now" gets the 409 message (test). Lows to QUALITY Backlog.
+
+## 2026-10-30 · MD.2 · round 2 · sonnet (worktree, f6b39e71)
+- 0 High / 0 Medium / 3 Low: M1 and M2 verified fixed. Lows (test gaps for a second question after a failure and old files; a hand-edited `questionsUpTo`; a narrow dismissal race in the pre-call write) to QUALITY Backlog.

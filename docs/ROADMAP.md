@@ -906,7 +906,7 @@ fixture-backed fake in tests.
   tests for each button and for retargeting, edited instructions reaching
   the prompt, keys 1–5, the canary (no response text in player frames); e2e
   from a fixture transcript line to a shown answer.
-- [ ] **MD.2 The co-DM's five.** The suggestion chips (MC.8) become a second
+- [x] **MD.2 The co-DM's five.** The suggestion chips (MC.8) become a second
   fixed row of five slots with keys 6–0: a new chip fills an empty or
   dismissed slot and never reorders the others; extra chips wait in a "more"
   list; the row also refreshes when a new player question or attempt is
