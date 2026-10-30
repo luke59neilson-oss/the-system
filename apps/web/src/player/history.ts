@@ -49,9 +49,27 @@ export function matchesFilter(n: LiveNotification, filter: HistoryFilter): boole
       return n.kind === 'broadcast' || n.kind === 'hiddenQuest' || n.kind === 'mergeOffer';
     case 'items':
       return (
-        n.kind === 'gift' || n.kind === 'itemsTaken' || n.kind === 'trade' || n.kind === 'currency'
+        n.kind === 'gift' ||
+        n.kind === 'itemsTaken' ||
+        n.kind === 'trade' ||
+        n.kind === 'currency' ||
+        (n.kind === 'gmChange' && (n.change === 'equipped' || n.change === 'unequipped'))
       );
   }
+}
+
+/** MU.2: how many lines the running log on the main screen keeps. UI, not a rule number. */
+export const RUNNING_LOG_SIZE = 20;
+
+/**
+ * MU.2 (DESIGN §7 "Player log"): the running log on the player's main screen:
+ * every notification, newest first, the last `size` of them.
+ */
+export function runningLog(
+  items: readonly SeqNotification[],
+  size = RUNNING_LOG_SIZE,
+): SeqNotification[] {
+  return items.slice(-size).reverse();
 }
 
 /** Newest first, narrowed by filter and a case-insensitive text search. */

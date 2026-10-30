@@ -16,6 +16,7 @@ import { PortraitBadge } from '../PortraitBadge';
 import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
 import { playSound, unlockSound } from './sounds';
+import { RunningLog } from './RunningLog';
 import { contestLines, newContests } from './contest';
 import {
   HISTORY_FILTERS,
@@ -178,7 +179,8 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
           </a>
         )}
       </header>
-      {!pane && view && <DingQueue key={live.campaign ?? ''} live={live} volume={level} />}
+      {/* MU.2: View as shows the same pop-ups, with the sound muted. */}
+      {view && <DingQueue key={live.campaign ?? ''} live={live} volume={pane ? 0 : level} />}
       {!pane && view && <ContestPopup key={live.campaign ?? ''} contests={view.contests} />}
       {live.campaign === 'demo' && (
         <p className="demo-badge" data-testid="demo-badge">
@@ -202,6 +204,7 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
             {/* MT.2: an open merge offer waits on an answer, so it sits on top. */}
             <MergeOfferPanel view={view} client={pane ? null : client} />
             <Status view={view} client={pane ? null : client} />
+            <RunningLog live={live} />
             <ProfessionsPanel view={view} client={pane ? null : client} />
             <PartyPanel view={view} />
             <Inventory view={view} client={pane ? null : client} />
