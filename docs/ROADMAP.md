@@ -997,7 +997,7 @@ DESIGN §5, §6, §7, §9a. After MD.
   the use is logged as practice (player source, for the GM's review) and
   shows in the GM's feed; the GM can undo or adjust. Cooldowns are shown,
   not enforced. *Accept:* engine tests (spend, too low, undo), canary, e2e.
-- [ ] **MU.6 Primal Hunter reference lists.** The lists in
+- [x] **MU.6 Primal Hunter reference lists.** The lists in
   `docs/reference/primal-hunter/` (CSV; own-words summaries; `god-tied`
   entries flagged) become GM-only reference: a searchable Reference view in
   Library & settings, and a small, relevant sample (by kind and theme tags,
