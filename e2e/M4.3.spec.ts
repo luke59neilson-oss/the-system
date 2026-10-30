@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync }
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M4.3 Campaign and sessions: the GM creates a campaign, starts a session,
@@ -61,8 +62,10 @@ test(
     const panel = gm.locator('section[aria-labelledby="session-heading"]');
     const chip = gm.getByTestId('session-chip');
     await expect(chip).toHaveText('No session · Day 1');
+    await openWindow(gm, 'session');
     await expect(panel.getByTestId('session-now')).toContainText('No session running.');
     await expect(panel).toContainText('None yet.');
+    await openWindow(gm, 'create-character');
     await gm.getByLabel('Name', { exact: true }).fill('Jake');
     await gm.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
@@ -74,6 +77,7 @@ test(
     await expect(phone.getByTestId('connection')).toHaveText('Connected');
 
     // Start: the chip and the window follow at once.
+    await openWindow(gm, 'session');
     await panel.getByRole('button', { name: 'Start session 1' }).click();
     await expect(chip).toHaveText('Session 1 · Day 1');
     await expect(panel.getByTestId('session-now')).toContainText('Session 1 is running');

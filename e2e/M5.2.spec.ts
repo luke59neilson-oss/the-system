@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M5.2 evolution builder (DESIGN §2, §6): options with a one-time bonus,
@@ -63,6 +64,7 @@ test('the GM builds and releases an evolution with re-rating', async ({ browser 
   await gm.getByRole('button', { name: 'Load demo campaign' }).click();
   await expect(gm.getByTestId('demo-badge')).toBeVisible();
   const builder = gm.locator('section[aria-labelledby="evolution-builder"]');
+  await openWindow(gm, 'evolution-builder');
   await expect(builder.getByTestId('no-evolution')).toBeVisible();
 
   // Sultan (G, level 0) reaches the top of G: the F evolution is available.
@@ -129,6 +131,7 @@ test('the GM builds and releases an evolution with re-rating', async ({ browser 
   await expect(player.getByTestId('class')).toHaveText(/^\[Storm Hunter – lvl \d+\]$/);
   await expect(player.getByTestId('skills-class')).toContainText(/Archer.s Eye \(Inferior\)/);
   // Sultan is done; the builder moves on to Casper, still waiting.
+  await openWindow(gm, 'evolution-builder');
   await expect(builder.getByLabel('Character')).toHaveValue('demo-casper');
   await expect(builder.getByLabel('Character').locator('option')).toHaveCount(1);
   expect(errors).toEqual([]);
@@ -155,6 +158,7 @@ test('the release waits on a selection; transforms, profession offers and withdr
     amount: 5000,
     participants: [{ characterId: 'demo-casper' }],
   });
+  await openWindow(gm, 'evolution-builder');
   await builder.getByLabel('Character').selectOption('demo-casper');
   const form = builder.getByRole('form', { name: 'Evolution release' });
   await expect(form.getByTestId('evolution-waits')).toHaveText(
@@ -210,6 +214,7 @@ test('the release waits on a selection; transforms, profession offers and withdr
   await player.getByRole('link', { name: /Casper/ }).click();
   await player.getByTestId('evolution-pending').getByRole('button', { name: '[Evolve]' }).click();
   const dialog = player.getByTestId('evolution');
+  await openWindow(gm, 'evolution-builder');
   await expect(dialog).toContainText(`[${skill}`);
   await expect(dialog).toContainText('→ [Pathfinder’s Eye (Rare)]');
   await dialog.getByRole('button', { name: 'Choose Pathfinder' }).click();

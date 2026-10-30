@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M6.2 loot tables (DESIGN §7 "Items"): the GM defines a weighted table, rolls
@@ -38,6 +39,7 @@ test('the GM defines and rolls a loot table; the player receives the roll live',
   await gm.getByLabel('Campaign name').fill('Loot');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
@@ -47,6 +49,7 @@ test('the GM defines and rolls a loot table; the player receives the roll live',
   const itemForm = library.locator('form[aria-labelledby="item-library-form"]');
   for (const name of ['Whale Louse Pelt', 'Hunter Fang']) {
     await itemForm.getByLabel('Item name').fill(name);
+    await openWindow(gm, 'item-library');
     await itemForm.getByRole('button', { name: 'Add to library' }).click();
     await expect(library.getByRole('status')).toHaveText(`[${name}] added to the library`);
   }
@@ -88,6 +91,7 @@ test('the GM defines and rolls a loot table; the player receives the roll live',
   await player.getByRole('link', { name: /Jake/ }).click();
   await expect(player.getByTestId('connection')).toHaveText('Connected');
 
+  await openWindow(gm, 'loot-tables');
   await list.getByRole('button', { name: /Pale hunter drop/ }).click();
   const roll = loot.getByRole('group', { name: 'Roll [Pale hunter drop]' });
   await roll.getByLabel('Roll for').selectOption({ label: 'Jake' });

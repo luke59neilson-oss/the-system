@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MR.4 (DESIGN §6, L17): a skill copy the GM hand-wrote keeps its text when
@@ -127,6 +128,7 @@ test('hand-written text survives an upgrade until the GM presses Use library tex
   // A copy that follows the library: Use library text is disabled.
   const form = gm.locator('form[aria-labelledby="skill-text"]');
   const useLibrary = form.getByRole('button', { name: 'Use library text' });
+  await openWindow(gm, 'skill-text');
   await form.getByLabel('Character').selectOption({ label: 'Jake' });
   await form.getByLabel('Skill').selectOption('Identify');
   await expect(form.getByTestId('skill-text-source')).toHaveText('Follows the library entry.');

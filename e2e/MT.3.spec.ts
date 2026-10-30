@@ -2,6 +2,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MT.3 No hunger tracker (DESIGN §7, Q68): hunger is narrated, never tracked.
@@ -64,6 +65,7 @@ test('an old campaign with hunger opens with no hunger anywhere; imports ignore 
 
   // The GM console: the trackers window keeps regions and factions only.
   const win = gm.locator('section[aria-labelledby="trackers"]');
+  await openWindow(gm, 'trackers');
   await expect(win.getByRole('group', { name: 'Regions' })).toBeVisible();
   await expect(win.getByRole('group', { name: 'Hunger' })).toHaveCount(0);
   await expect(gm.getByText(/hunger tracker in this campaign|peckish|starving/iu)).toHaveCount(0);

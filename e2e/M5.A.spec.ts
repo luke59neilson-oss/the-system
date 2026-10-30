@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M5.A milestone acceptance (DESIGN §2, §6, §7): one character goes through
@@ -61,6 +62,7 @@ async function gmCommand(gm: Page, command: Record<string, unknown>): Promise<vo
 
 async function awardClassXp(gm: Page, amount: number, reason: string): Promise<void> {
   const award = gm.getByRole('form', { name: 'Award class XP' });
+  await openWindow(gm, 'award-xp');
   await award.getByLabel('Amount').fill(String(amount));
   await award.getByLabel('Reason (GM only)').fill(reason);
   await award.getByRole('button', { name: 'Award XP' }).click();
@@ -112,6 +114,7 @@ test('selection, evolution, mark upgrade and merge between the GM and the player
   await awardClassXp(gm, 4 * 100, REASON);
   await expect(player.getByTestId('class')).toHaveText(/lvl 4\]$/);
   const evolution = gm.locator('section[aria-labelledby="evolution-builder"]');
+  await openWindow(gm, 'evolution-builder');
   await expect(evolution.getByLabel('Character')).toHaveValue('jake');
   const release = evolution.getByRole('form', { name: 'Evolution release' });
   const path1 = release.getByRole('group', { name: 'Option 1' });
@@ -180,6 +183,7 @@ test('selection, evolution, mark upgrade and merge between the GM and the player
 
   // 3. Practice in session 1: the player logs Archer's Eye and Gale Step
   // together three times; the GM reviews the entries.
+  await openWindow(gm, 'session');
   await gm.getByRole('button', { name: 'Start session 1' }).click();
   const practice = player.getByTestId('practice');
   await practice.getByTestId('practice-log').locator('summary').click();
@@ -197,6 +201,7 @@ test('selection, evolution, mark upgrade and merge between the GM and the player
     await expect(form.getByTestId('practice-form-action')).toHaveValue('');
   }
   const capture = gm.locator('section[aria-labelledby="practice-capture-heading"]');
+  await openWindow(gm, 'practice-capture');
   await expect(capture).toContainText('To review (3)');
   // The merge alert says its uses are not reviewed yet (and Archer's Eye is
   // still Common, so the engine refuses it for now).

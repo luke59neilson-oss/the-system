@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M9.5 Tutorial content pack: the GM imports docs/content-packs/tutorial.json
@@ -62,6 +63,7 @@ test('the GM imports the tutorial pack and the player sees the quest', async ({ 
   });
 
   const panel = gm.locator('section[aria-labelledby="import-heading"]');
+  await openWindow(gm, 'import');
   await panel.getByLabel('Content file (.json)').setInputFiles(pack);
   await expect(panel).toContainText('Tutorial: The Host');
   await expect(panel.getByText('Quest: The World Is Dying')).toBeVisible();

@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MS.4 Demo campaign: a GM menu entry loads a ready-made party in its own
@@ -43,9 +44,11 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('My Real Campaign');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await openWindow(gm, 'create-character');
   await gm.getByLabel('Name', { exact: true }).fill('Ada');
   await gm.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Ada', exact: true })).toBeVisible();
+  await openWindow(gm, 'award-xp');
   await gm.getByLabel('Amount').fill('150');
   await gm.getByRole('button', { name: 'Award XP' }).click();
   await expect(gm.getByTestId('demo-badge')).toHaveCount(0);
@@ -94,6 +97,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   await gm.getByRole('checkbox', { name: 'Jake' }).uncheck();
   await gm.getByRole('checkbox', { name: 'Miranda' }).uncheck();
   await gm.getByRole('checkbox', { name: 'Casper' }).uncheck();
+  await openWindow(gm, 'award-xp');
   await gm.getByLabel('Amount').fill('100');
   await gm.getByRole('button', { name: 'Award XP' }).click();
   await expect(gm.getByTestId('class-level-demo-sultan')).toHaveText('1');

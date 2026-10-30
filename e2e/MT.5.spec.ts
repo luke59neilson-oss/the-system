@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MT.5 GM override for level, XP and grade (DESIGN §7, Q59): the GM sheet sets
@@ -36,6 +37,7 @@ test('the GM sets level, XP and grade after a warning, and can undo it', async (
   await gm.getByLabel('Campaign name').fill('Override');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
@@ -49,6 +51,7 @@ test('the GM sets level, XP and grade after a warning, and can undo it', async (
 
   const party = gm.locator('section[aria-labelledby="party"]');
   const card = party.locator('[data-testid^="row-"]', { hasText: 'Jake' });
+  await openWindow(gm, 'party');
   const jakeId = (await card.getAttribute('data-testid'))!.slice(4);
   await card.getByRole('button', { name: 'Edit sheet' }).click();
   const box = card.getByRole('group', { name: 'Level, XP and grade override' });
@@ -104,10 +107,12 @@ test('the GM sets level, XP and grade after a warning, and can undo it', async (
   // One change-log row, undone like any other event.
   const log = gm.locator('section[aria-labelledby="change-log"]');
   const row = log.getByRole('listitem').filter({ hasText: "The GM set Jake's level" });
+  await openWindow(gm, 'change-log');
   await expect(row).toHaveCount(1);
   await row.getByRole('button', { name: 'Undo' }).click();
   await row.getByRole('button', { name: 'Confirm undo' }).click();
   await expect(row).toContainText('(undone)');
+  await openWindow(gm, 'party');
   await expect(card.getByTestId(`class-level-${jakeId}`)).toHaveText('0');
   await expect(player.getByTestId('race')).toHaveText('[Human (G) – lvl 0]');
   // The open editor reloads the live values, so the undone override is not

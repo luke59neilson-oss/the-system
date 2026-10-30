@@ -20,7 +20,7 @@ waiting, a banner) opens the tab that handles it.
 
 | Tab | Windows |
 | --- | --- |
-| Home | Party (a card per character, with what needs you), Players join (address and QR), New character |
+| Home | Needs you (what waits on the GM, each a link to its window), Party (a card per character, with what needs you), Players join (address and QR), New character |
 | Session | Session (start, end, day), Award XP (quick), Listening, Co-DM (quick responses, picks, generate, lore), Import (approve generated content), Encounter, Quests, Broadcast, Shops, Credits ledger, Trackers, Change log, System feed |
 | Progression | Award XP (full), Skill offers, Evolution builder, Practice log, Marks review, Merges |
 | Library & settings | Skill text, Skill library, Item library, Loot tables, Title library, Classes, races and professions, Bestiary, Rules settings, Co-DM settings |

@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MT.7 (DESIGN §7 GM authority, Q60): where the app enforces a rule on the GM,
@@ -94,6 +95,7 @@ test('sheet overrides, an extra mark and a merge past the rules', async ({ brows
   //    and a profession before E-grade, each with its warning first.
   const party = gm.locator('section[aria-labelledby="party"]');
   const card = party.locator('[data-testid^="row-"]', { hasText: 'Jake' });
+  await openWindow(gm, 'party');
   await card.getByRole('button', { name: 'Edit sheet' }).click();
   const box = card.getByRole('group', { name: 'Skill and profession overrides' });
   const rarity = box.getByRole('group', { name: 'Set a skill’s rarity' });
@@ -129,6 +131,7 @@ test('sheet overrides, an extra mark and a merge past the rules', async ({ brows
   await card.getByRole('button', { name: 'Close editor' }).click();
 
   // 2. A second mark in one session.
+  await openWindow(gm, 'session');
   await gm.getByRole('button', { name: 'Start session 1' }).click();
   for (const action of ['Cut and step', 'Step then cut', 'Spinning cut']) {
     await gmCommand(gm, {
@@ -139,6 +142,7 @@ test('sheet overrides, an extra mark and a merge past the rules', async ({ brows
     });
   }
   const marks = gm.locator('section[aria-labelledby="marks-review-heading"]');
+  await openWindow(gm, 'marks-review');
   await marks.getByRole('button', { name: 'Confirm mark: Jake Quick Cut' }).click();
   await marks.getByRole('button', { name: 'Extra mark (override): Jake Quick Cut' }).click();
   await expect(marks.getByRole('status')).toHaveText(
@@ -169,6 +173,7 @@ test('sheet overrides, an extra mark and a merge past the rules', async ({ brows
 
   // The change log names each override, and undoing the merge brings both skills back.
   const log = gm.locator('section[aria-labelledby="change-log"]');
+  await openWindow(gm, 'change-log');
   await expect(log.getByRole('listitem').filter({ hasText: '(GM override)' })).toHaveCount(3);
   const row = log.getByRole('listitem').filter({ hasText: 'Jake merged Quick Cut' });
   await row.getByRole('button', { name: 'Undo' }).click();
@@ -192,6 +197,7 @@ test('an early montage and an evolution released before its selections', async (
   // 1. A montage on an empty clock.
   const win = gm.locator('section[aria-labelledby="encounter"]');
   const clocks = win.locator('[aria-labelledby="clocks"]');
+  await openWindow(gm, 'encounter');
   await clocks.getByLabel('Clock name').fill('Climb the rib');
   await clocks.getByLabel('Segments').fill('6');
   await clocks.getByRole('button', { name: 'Start clock' }).click();
@@ -219,6 +225,7 @@ test('an early montage and an evolution released before its selections', async (
   });
   const builder = gm.locator('section[aria-labelledby="evolution-builder"]');
   const form = builder.getByRole('form', { name: 'Evolution release' });
+  await openWindow(gm, 'evolution-builder');
   await expect(form.getByTestId('evolution-waits')).toContainText('lvl 5');
   await form.getByRole('group', { name: 'Option 1' }).getByLabel('Class name').fill('Ranger');
   await form.getByLabel(/Approve this re-rating/).check();

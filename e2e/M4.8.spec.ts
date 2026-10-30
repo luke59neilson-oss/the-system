@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M4.8 Change log and undo: the GM sees events in words, filters them, and
@@ -28,9 +29,11 @@ test('the GM undoes a broadcast from the change log', async ({ page }) => {
   await page.getByLabel('Campaign name').fill('Log Test');
   await page.getByRole('button', { name: 'Create campaign' }).click();
   const create = page.locator('form[aria-labelledby="new-character"]');
+  await reveal(page, create);
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   const form = page.locator('form[aria-labelledby="broadcast"]');
+  await openWindow(page, 'broadcast');
   await form.getByLabel('Message').fill('The Host stirs.');
   await form.getByRole('button', { name: 'Send broadcast' }).click();
   const log = page.locator('section[aria-labelledby="change-log"]');
@@ -68,6 +71,7 @@ test("a player's nickname shows up live in the log; the GM undoes it everywhere"
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Live Log');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await openWindow(gm, 'create-character');
   await gm.getByLabel('Name', { exact: true }).fill('Jake');
   await gm.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
@@ -84,6 +88,7 @@ test("a player's nickname shows up live in the log; the GM undoes it everywhere"
 
   const log = gm.locator('section[aria-labelledby="change-log"]');
   const row = log.getByRole('listitem').filter({ hasText: 'Jake skill nicknamed (Basic Archery)' });
+  await openWindow(gm, 'change-log');
   await expect(row).toHaveCount(1);
   await expect(row).toContainText('player');
   await log.getByLabel('Kind').selectOption({ label: 'Skills and practice' });

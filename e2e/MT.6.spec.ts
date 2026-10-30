@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MT.6 Broadcasts last a set time or stay pinned (DESIGN §7, Q60): sending
@@ -37,6 +38,7 @@ test('timed and pinned banners reach players; the GM removes a pinned one', asyn
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
   for (const name of ['Jake', 'Kim']) {
+    await reveal(gm, create);
     await create.getByLabel('Name', { exact: true }).fill(name);
     await create.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -49,6 +51,7 @@ test('timed and pinned banners reach players; the GM removes a pinned one', asyn
 
   const form = gm.locator('form[aria-labelledby="broadcast"]');
   // A timed banner: 5 seconds, then it comes down by itself; the message stays.
+  await openWindow(gm, 'broadcast');
   await form.getByLabel('Message').fill('The ground trembles.');
   await form.getByLabel('Show').selectOption('timed');
   await form.getByLabel('Banner time', { exact: true }).fill('3');
@@ -77,6 +80,7 @@ test('timed and pinned banners reach players; the GM removes a pinned one', asyn
   await gm.getByRole('heading', { name: 'The System · GM' }).scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-banners-chip-1366x768.png') });
   const live = gm.locator('section[aria-labelledby="live-banners"]');
+  await reveal(gm, live);
   await live.scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-live-banners-1366x768.png') });
   await live.getByRole('button', { name: /Remove the banner/ }).click();
@@ -87,6 +91,7 @@ test('timed and pinned banners reach players; the GM removes a pinned one', asyn
 
   // Remove all, from the header, takes every banner down at once.
   for (const text of ['A storm gathers.', 'The tide turns.']) {
+    await openWindow(gm, 'broadcast');
     await form.getByLabel('Message').fill(text);
     await form.getByLabel('Show').selectOption('pinned');
     await form.getByRole('button', { name: 'Send broadcast' }).click();

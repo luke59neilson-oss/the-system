@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M4.7 System broadcast: a System-style message to one, several or all, now
@@ -42,6 +43,7 @@ test('the GM sends to several now and schedules messages for later days', async 
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
   for (const name of ['Jake', 'Kim', 'Ada']) {
+    await reveal(gm, create);
     await create.getByLabel('Name', { exact: true }).fill(name);
     await create.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -67,6 +69,7 @@ test('the GM sends to several now and schedules messages for later days', async 
 
   const form = gm.locator('form[aria-labelledby="broadcast"]');
   // Now, to several: Kim and Ada.
+  await openWindow(gm, 'broadcast');
   await form.getByLabel('Message').fill('You hear the Host breathe.');
   await form.getByLabel('Recipients').selectOption('several');
   await expect(form.getByRole('button', { name: 'Send broadcast' })).toBeDisabled();
@@ -126,6 +129,7 @@ test('the GM sends to several now and schedules messages for later days', async 
   await expect(jake.locator('section[aria-labelledby="messages"]')).not.toContainText(SECRET);
 
   // Day 3: the message for everyone arrives on both screens; the list empties.
+  await openWindow(gm, 'broadcast');
   await day.getByRole('button', { name: /Advance/ }).click();
   await expect(gm.getByTestId('day')).toHaveText('3');
   await expect(kim.getByTestId('messages')).toContainText('Day 3 dawns over the Host.');

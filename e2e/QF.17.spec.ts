@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // QF.17: a Table-view pane pins the newest DING of every kind (level-up,
@@ -84,6 +85,7 @@ test('a Table-view pane pins a skill-upgrade DING, not only level-ups', async ({
       session,
     });
   }
+  await openWindow(gm, 'session');
   await gm.getByRole('button', { name: 'Start session 1' }).click();
   await gmCommand(gm, {
     type: 'practice.log',
@@ -115,6 +117,7 @@ test('a Table-view pane pins a skill-upgrade DING, not only level-ups', async ({
     .getByTestId('upgrade-prompt')
     .getByRole('button', { name: 'Upgrade Jake Basic Archery' })
     .click();
+  await openWindow(gm, 'marks-review');
   await expect(review.getByRole('status')).toHaveText('Jake: [Basic Archery] is now Common');
 
   // The pane's pinned DING is now the upgrade.

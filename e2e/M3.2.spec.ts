@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M3.2 Status screen: the DESIGN §9 layout in order, rarity-coloured skills
@@ -114,6 +115,7 @@ test('status screens follow DESIGN §9 and update live', async ({ browser }) => 
 
   // Live: the GM awards Sultan XP; his level changes and glows, nothing reloads.
   for (const name of ['Jake', 'Miranda', 'Casper']) {
+    await openWindow(gm, 'award-xp');
     await gm.getByRole('checkbox', { name }).uncheck();
   }
   await gm.getByLabel('Amount').fill('100');

@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MS.2 Minimal player screen: DESIGN §9 core rows (name, race, class, levels,
@@ -48,6 +49,7 @@ test(
     await gm.getByLabel('Campaign name').fill('Tutorial: The Whale');
     await gm.getByRole('button', { name: 'Create campaign' }).click();
     for (const name of ['Jake', 'Miranda']) {
+      await openWindow(gm, 'create-character');
       await gm.getByLabel('Name', { exact: true }).fill(name);
       await gm.getByRole('button', { name: 'Create character' }).click();
       await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -79,6 +81,7 @@ test(
     await expect(player.getByText('[Identify (Common)]')).toBeVisible();
 
     // GM awards XP: the DING lands on the player screen within a second.
+    await openWindow(gm, 'award-xp');
     await gm.getByLabel('Amount').fill('301');
     await gm.getByLabel('Reason (GM only)').fill(REASON);
     const sent = Date.now();

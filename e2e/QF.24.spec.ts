@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // QF.24 (sweep B, UX): a merge offer announces itself on the owner's screen
@@ -73,6 +74,7 @@ test('a merge offer pops up for its owner and stays in their Notifications', asy
     className: 'Archer',
     classSkills: kit,
   });
+  await openWindow(gm, 'session');
   await gm.getByRole('button', { name: 'Start session 1' }).click();
   for (const action of ['Cut and step', 'Step then cut', 'Spinning cut']) {
     await gmCommand(gm, {
@@ -83,6 +85,7 @@ test('a merge offer pops up for its owner and stays in their Notifications', asy
     });
   }
   const builder = gm.locator('section[aria-labelledby="merge-builder-heading"]');
+  await openWindow(gm, 'merge-builder');
   await expect(builder).toContainText('Jake accepts or declines on their screen.');
 
   const player = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -110,6 +113,7 @@ test('a merge offer pops up for its owner and stays in their Notifications', asy
   await amy.getByRole('link', { name: /Amy/ }).click();
   await expect(amy.getByTestId('connection')).toHaveText('Connected');
 
+  await openWindow(gm, 'merge-builder');
   await builder.getByLabel('Merged skill name').fill('Stepping Cut');
   await builder.getByRole('button', { name: 'Send merge offer' }).click();
   const notice =

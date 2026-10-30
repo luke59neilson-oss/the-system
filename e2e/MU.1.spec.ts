@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 import { TABS, windowsOn } from '../apps/web/src/gm/tabsModel';
 
@@ -34,6 +35,7 @@ test('every window opens from its tab; the tab is remembered', async ({ browser 
   await expect(tabs.getByRole('tab')).toHaveText(TABS.map((t) => t.label));
   await expect(tabs.getByRole('tab', { name: 'Home' })).toHaveAttribute('aria-selected', 'true');
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
@@ -77,4 +79,30 @@ test('every window opens from its tab; the tab is remembered', async ({ browser 
     await gm.screenshot({ path: path.join(shots, `gm-${t.id}-1920x1080.png`) });
   }
   await context.close();
+});
+
+test('home lists what needs the GM; each item opens its window', async ({ browser }) => {
+  server = await startBuiltServer({ GM_KEY }, { dataDir });
+  const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  gm.on('dialog', (d) => void d.accept());
+  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
+  await gm.getByLabel('Campaign name').fill('Needs');
+  await gm.getByRole('button', { name: 'Create campaign' }).click();
+  const home = gm.locator('section[aria-labelledby="needs-you"]');
+  await expect(home).toContainText('Nothing waits on you.');
+  await expect(home.getByTestId('home-session')).toHaveText(
+    /^Needs · day \d+ · no session running$/,
+  );
+  await gm.getByRole('button', { name: 'Load demo campaign' }).click();
+  await expect(gm.getByTestId('demo-badge')).toBeVisible();
+  const items = home.getByRole('list', { name: 'Waiting on the GM' }).getByRole('button');
+  const practice = items.filter({ hasText: /practice (entry|entries) to review/ });
+  await expect(practice).toHaveCount(1);
+  await gm.screenshot({ path: path.join(shots, 'gm-home-needs-you-1366x768.png') });
+  await practice.click();
+  await expect(gm.getByRole('tab', { name: 'Progression' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(gm.locator('[data-window="practice-capture"]')).toBeVisible();
 });

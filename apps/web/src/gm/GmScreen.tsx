@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+} from 'react';
 import {
   DEFAULT_RULES,
   STARTER_CLASSES,
@@ -47,6 +55,8 @@ import { CoDmSettings } from './CoDmSettings';
 import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
 import { ConsoleTabs, Place, useConsoleTab } from './ConsoleTabs';
+import { NeedsYou } from './NeedsYou';
+import { tabOf } from './tabsModel';
 
 /**
  * Minimal GM screen (ROADMAP MS.1): create a campaign and characters from a
@@ -106,6 +116,19 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
   const [picked, setPicked] = useState<string[] | null>(null);
   // MU.1: the open tab of the console (remembered on this laptop).
   const [tab, setTab] = useConsoleTab();
+  // MU.1: a "needs you" link opens its window's tab, then brings it into view.
+  const openWindow = useCallback(
+    (id: string) => {
+      const owner = tabOf(id);
+      if (!owner) return;
+      setTab(owner);
+      requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>(`[data-window="${id}"] .window`);
+        el?.scrollIntoView({ block: 'start' });
+      });
+    },
+    [setTab],
+  );
   // A dashboard selection chip asks the offer builder to open that selection (M5.1).
   const [offerTarget, setOfferTarget] = useState<OfferTarget | null>(null);
   // MD.1: the transcript line the GM clicked for the quick responses.
@@ -208,6 +231,16 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               id={`tabpanel-${tab}`}
               aria-labelledby={`tab-${tab}`}
             >
+              <Place id="needs-you" tab={tab}>
+                <NeedsYou
+                  state={state}
+                  onOpen={openWindow}
+                  onBuildMenu={(characterId, level) => {
+                    setOfferTarget((t) => ({ characterId, level, n: (t?.n ?? 0) + 1 }));
+                    setTab('progression');
+                  }}
+                />
+              </Place>
               <Place id="party" tab={tab}>
                 <PartyDashboard
                   client={client}

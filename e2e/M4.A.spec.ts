@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M4.A GM console acceptance: the GM creates 3 characters and awards XP with
@@ -49,6 +50,7 @@ test(
     const create = gm.locator('form[aria-labelledby="new-character"]');
     const names = ['Jake', 'Miranda', 'Casper'] as const;
     for (const name of names) {
+      await reveal(gm, create);
       await create.getByLabel('Name', { exact: true }).fill(name);
       await create.getByRole('button', { name: 'Create character' }).click();
       await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -81,6 +83,7 @@ test(
     // Custom split of 1,000 class XP: Jake 400 (level 4), Miranda 100
     // (level 1), Casper balances to 500 (level 4, 100 lost past the G top).
     const award = gm.getByRole('form', { name: 'Award class XP' });
+    await openWindow(gm, 'award-xp');
     await award.getByLabel('Amount').fill('1000');
     await award.getByRole('checkbox', { name: 'Set shares by hand' }).check();
     await award.getByLabel('Jake’s share').fill('400');

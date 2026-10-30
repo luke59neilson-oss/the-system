@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M7.3 encounter panel (DESIGN §7, D88, D115): the GM rolls a contest with the
@@ -39,12 +40,14 @@ test('the GM rolls and shares contests, deals damage and runs a clock', async ({
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
   for (const name of ['Jake', 'Kim']) {
+    await reveal(gm, create);
     await create.getByLabel('Name', { exact: true }).fill(name);
     await create.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
   }
   // An E-grade bestiary entry: two grades above the G-grade party.
   const bestiary = gm.locator('form[aria-labelledby="bestiary-form"]');
+  await openWindow(gm, 'bestiary');
   await bestiary.getByLabel('Name (GM only)').fill('SECRET Beast Lord');
   await bestiary.getByLabel('Label players see (blank: the name)').fill('Beast Lord');
   await bestiary.getByLabel('Grade').selectOption('E');
@@ -73,6 +76,7 @@ test('the GM rolls and shares contests, deals damage and runs a clock', async ({
   );
 
   // A grade wall: two grades above, no roll, the higher grade wins.
+  await openWindow(gm, 'bestiary');
   await sideB.getByLabel('Who').selectOption({ label: 'SECRET Beast Lord (bestiary)' });
   await sideB.getByLabel('Stat').selectOption({ label: 'Strength' });
   await expect(sideB.getByRole('textbox', { name: 'Value', exact: true })).toHaveValue('31337');
@@ -89,6 +93,7 @@ test('the GM rolls and shares contests, deals damage and runs a clock', async ({
   );
   await expect(page.getByTestId('contest-popup')).toHaveCount(0);
   await roller.getByRole('button', { name: 'Share with the table' }).click();
+  await openWindow(gm, 'encounter');
   await expect(win.getByRole('status').last()).toHaveText('Shared with the table');
   const popup = page.getByTestId('contest-popup');
   await expect(popup).toContainText('[Jake · Perception] vs [Beast Lord]');

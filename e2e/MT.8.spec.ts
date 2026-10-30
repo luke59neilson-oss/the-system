@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MT.8 (Q69, DESIGN §7): factions are GM-only until the GM reveals one; a
@@ -37,6 +38,7 @@ test('the GM reveals a faction: players see its name and standing only', async (
   await gm.getByLabel('Campaign name').fill('Whale');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
@@ -51,6 +53,7 @@ test('the GM reveals a faction: players see its name and standing only', async (
 
   const win = gm.locator('section[aria-labelledby="trackers"]');
   const regionForm = win.getByRole('form', { name: 'New region' });
+  await openWindow(gm, 'trackers');
   await regionForm.getByLabel('Region name').fill('HIDDEN-BASE Rake Canyons');
   await regionForm.getByRole('button', { name: 'Add region' }).click();
   await expect(win.getByRole('status')).toHaveText('HIDDEN-BASE Rake Canyons added');

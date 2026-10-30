@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MQ.14 Bonus rules (DESIGN §4): items give flat bonuses only (a percentage
@@ -61,6 +62,7 @@ test('item bonuses are flat and capped at 20% of base; the status screen says so
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Bonus Rules');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await openWindow(gm, 'create-character');
   await gm.getByLabel('Name', { exact: true }).fill('Ada');
   await gm.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Ada', exact: true })).toBeVisible();

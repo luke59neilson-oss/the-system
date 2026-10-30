@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M7.1 quest manager (DESIGN §7 "Quests", D67, D122, D180): the GM creates a
@@ -42,6 +43,7 @@ test('the GM runs quests and World Stability; players see only what is visible',
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
   for (const name of ['Jake', 'Kim']) {
+    await reveal(gm, create);
     await create.getByLabel('Name', { exact: true }).fill(name);
     await create.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -62,6 +64,7 @@ test('the GM runs quests and World Stability; players see only what is visible',
 
   // Create a visible quest with a timer and World Stability the players see.
   const qm = gm.locator('section[aria-labelledby="quest-manager"]');
+  await openWindow(gm, 'quest-manager');
   await expect(qm).toContainText('No quests yet.');
   const form = qm.locator('form[aria-labelledby="quest-form"]');
   await form.getByLabel('Quest title').fill('The world is dying');
@@ -111,6 +114,7 @@ test('the GM runs quests and World Stability; players see only what is visible',
   // A practice entry tagged with a quest's action offers its stability rule.
   const practice = gm.locator('section[aria-labelledby="practice-capture-heading"]');
   const quick = practice.getByRole('form', { name: 'Quick-add practice' });
+  await openWindow(gm, 'practice-capture');
   await quick.getByLabel('Character').selectOption({ label: 'Jake' });
   await quick.getByLabel(/^Action \(Alt/).fill('Burned out a curse zone');
   await quick.getByLabel('Stat').selectOption('strength');
@@ -143,6 +147,7 @@ test('the GM runs quests and World Stability; players see only what is visible',
   await jake.page.screenshot({ path: path.join(shots, 'player-quest-390x844.png') });
 
   // A hidden quest told to Kim only.
+  await openWindow(gm, 'quest-manager');
   await qm.getByRole('button', { name: 'New quest' }).click();
   await form.getByLabel('Quest title').fill('SECRET Heart of the Host');
   await form.getByLabel('Quest text (players see this)').fill('SECRET reach the Drum.');

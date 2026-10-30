@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { deflateSync } from 'node:zlib';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M4.4 Character creation: the GM creates characters with a name, a starting
@@ -100,6 +101,7 @@ test('the GM creates characters with portraits; players see them live', async ({
 
   // Name, starting class from the default library, portrait with a preview.
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await create.getByLabel('Name', { exact: true }).fill('Jake Thayne');
   await create.getByLabel('Starting class').selectOption({ label: 'Warrior (Heavy)' });
   await expect(create).toContainText('[Identify (Common)] (race skill, added automatically)');
@@ -125,6 +127,7 @@ test('the GM creates characters with portraits; players see them live', async ({
   const party = gm.locator('section[aria-labelledby="party"]');
   const jakeRow = party.locator('[data-testid^="row-"]', { hasText: 'Jake Thayne' });
   const kimRow = party.locator('[data-testid^="row-"]', { hasText: 'Kim' });
+  await openWindow(gm, 'party');
   await expect(kimRow).toBeVisible();
   const jakeImg = jakeRow.getByTestId('portrait').locator('img');
   await expect(jakeImg).toHaveAttribute('src', /^\/portraits\/[0-9a-f]{64}\.(webp|png)$/);
@@ -153,6 +156,7 @@ test('the GM creates characters with portraits; players see them live', async ({
   await expect(phone.getByTestId('connection')).toHaveText('Connected');
   await expect(phone.getByText('[Identify (Common)]')).toBeVisible();
   const member = phone.getByTestId('party-member');
+  await openWindow(gm, 'party');
   await expect(member.getByTestId('portrait').locator('img')).toBeVisible();
   await noSidewaysScroll(phone);
   await phone.screenshot({ path: path.join(shots, 'player-status-390x844.png'), fullPage: true });
@@ -171,6 +175,7 @@ test('the GM creates characters with portraits; players see them live', async ({
   await member.screenshot({ path: path.join(shots, 'party-member-390x844.png') });
 
   // A file that is not an image is refused with a message; nothing changes.
+  await reveal(gm, create);
   await create.getByTestId('portrait-file').setInputFiles({
     name: 'notes.png',
     mimeType: 'image/png',

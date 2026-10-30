@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal as revealWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M7.2 bestiary and NPCs (DESIGN §7 "Identify", D84, D123, D181): the GM adds
@@ -41,6 +42,7 @@ test('the GM keeps a bestiary; players see only labels and unlocked tiers', asyn
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
   for (const name of ['Jake', 'Kim']) {
+    await revealWindow(gm, create);
     await create.getByLabel('Name', { exact: true }).fill(name);
     await create.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -54,6 +56,7 @@ test('the GM keeps a bestiary; players see only labels and unlocked tiers', asyn
   await expect(page.getByTestId('connection')).toHaveText('Connected');
 
   const win = gm.locator('section[aria-labelledby="bestiary"]');
+  await openWindow(gm, 'bestiary');
   await expect(win).toContainText('Nothing in the bestiary yet.');
   const form = win.locator('form[aria-labelledby="bestiary-form"]');
   await form.getByLabel('Name (GM only)').fill('SECRET Pale hunter');

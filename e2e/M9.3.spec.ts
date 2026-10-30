@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M9.3 Import with approval: a bad file shows errors and changes nothing; a
@@ -30,6 +31,7 @@ test('the GM previews a content file and applies the ticked entries', async ({ b
   const panel = gm.locator('section[aria-labelledby="import-heading"]');
   const input = panel.getByLabel('Content file (.json)');
 
+  await openWindow(gm, 'import');
   await input.setInputFiles({
     name: 'bad.json',
     mimeType: 'application/json',
@@ -49,6 +51,7 @@ test('the GM previews a content file and applies the ticked entries', async ({ b
   await expect(panel.getByRole('status')).toHaveText('Applied 2 entries');
   // The ticked item and title are in the libraries; the unticked item is not.
   const items = gm.locator('section[aria-labelledby="item-library"]');
+  await openWindow(gm, 'item-library');
   await expect(items).toContainText('Pale Hide Bracers');
   await expect(items).not.toContainText('Canyon Salt');
   await gm.close();
@@ -66,6 +69,7 @@ test('entries that cannot apply are shown; a changed campaign stops the apply', 
 
   // A duplicate skill and an offer to a character who is not in the campaign.
   const skill = { name: 'Twice Told', rarity: 'rare' };
+  await openWindow(gm, 'import');
   await input.setInputFiles({
     name: 'mixed.json',
     mimeType: 'application/json',
@@ -93,6 +97,7 @@ test('entries that cannot apply are shown; a changed campaign stops the apply', 
   const other = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   await other.goto(`${server.url}/gm#key=${GM_KEY}`);
   const otherPanel = other.locator('section[aria-labelledby="import-heading"]');
+  await openWindow(other, 'import');
   await otherPanel
     .getByLabel('Content file (.json)')
     .setInputFiles(path.join(examples, 'library.json'));
@@ -102,6 +107,7 @@ test('entries that cannot apply are shown; a changed campaign stops the apply', 
   // The first window's preview is stale. Items may share names, so the two
   // items apply again; the title is refused, the apply stops there, the
   // applied entries leave the list and the rest are checked again.
+  await openWindow(gm, 'import');
   await panel.getByRole('button', { name: 'Apply 3' }).click();
   await expect(panel.getByRole('status')).toContainText('Applied 2; titles[0] failed');
   await expect(panel.getByRole('status')).toContainText('check the entries above again');
@@ -137,6 +143,7 @@ test('server refusals and a lost server show as messages, and a blocked tick sto
       body: '{"error":"No campaign open"}',
     }),
   );
+  await openWindow(gm, 'import');
   await input.setInputFiles(library);
   await expect(panel.getByRole('alert', { name: 'Problems in the file' })).toContainText(
     'No campaign open',

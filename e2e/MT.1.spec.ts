@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MT.1 (DESIGN §6, L19): the evolution builder lists each kept skill at the
@@ -69,6 +70,7 @@ test('the GM sets and approves the re-rating; the player sees it', async ({ brow
     participants: [{ characterId: 'demo-sultan' }],
   });
   const builder = gm.locator('section[aria-labelledby="evolution-builder"]');
+  await openWindow(gm, 'evolution-builder');
   await expect(builder.getByLabel('Character')).toHaveValue('demo-sultan');
   const form = builder.getByRole('form', { name: 'Evolution release' });
   await form.getByRole('group', { name: 'Option 1' }).getByLabel('Class name').fill('Far Shot');

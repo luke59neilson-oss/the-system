@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MR.2 Every upgrade starts at 0 marks (DESIGN §6, L15): the skill detail says
@@ -67,6 +68,7 @@ for (const viewport of [
     await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
     await gm.getByLabel('Campaign name').fill(`Fresh marks ${viewport.width}`);
     await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await openWindow(gm, 'create-character');
     await gm.getByLabel('Name', { exact: true }).fill('Jake');
     await gm.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();

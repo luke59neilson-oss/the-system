@@ -16,6 +16,7 @@ export const TABS: readonly { readonly id: ConsoleTab; readonly label: string }[
 /** Every GM window, by id, with the tab(s) it lives in. */
 export const WINDOWS: Readonly<Record<string, readonly ConsoleTab[]>> = {
   // Home: the campaign at a glance and what needs the GM.
+  'needs-you': ['home'],
   party: ['home'],
   join: ['home'],
   'create-character': ['home'],
