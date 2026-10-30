@@ -992,7 +992,7 @@ DESIGN §5, §6, §7, §9a. After MD.
   skills; the content format and the co-DM's generation schema carry them;
   stored logs replay unchanged. *Accept:* engine and schema tests; e2e
   creating a spell and seeing it on the owner's screen.
-- [ ] **MU.5 Cast from the player's phone.** A **Cast** button on a skill with
+- [x] **MU.5 Cast from the player's phone.** A **Cast** button on a skill with
   a cost: the pool goes down, refused with a clear message when too low;
   the use is logged as practice (player source, for the GM's review) and
   shows in the GM's feed; the GM can undo or adjust. Cooldowns are shown,
