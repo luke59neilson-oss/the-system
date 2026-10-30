@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MT.4 Credits history for players (DESIGN §7, Q65): each player sees their
@@ -37,6 +38,7 @@ test("each player sees their own Credits history and nobody else's", async ({ br
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
   for (const name of ['Jake', 'Kim']) {
+    await reveal(gm, create);
     await create.getByLabel('Name', { exact: true }).fill(name);
     await create.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -57,6 +59,7 @@ test("each player sees their own Credits history and nobody else's", async ({ br
   await expect(jake.page.getByTestId('credits-history')).toHaveCount(0);
 
   const win = gm.locator('section[aria-labelledby="currency-ledger"]');
+  await openWindow(gm, 'currency-ledger');
   await win.getByRole('button', { name: 'Everyone' }).click();
   await win.getByLabel('Credits each').fill('50');
   await win.getByLabel('Reason (the player sees this)').fill('Bounty on the pale hunter');

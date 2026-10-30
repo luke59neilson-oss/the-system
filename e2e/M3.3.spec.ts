@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M3.3 Notifications and history: the book-style DING feed back to day 1
@@ -61,6 +62,7 @@ async function gmCommand(gm: Page, command: Record<string, unknown>): Promise<vo
 }
 
 async function award(gm: Page, amount: number, reason = '') {
+  await openWindow(gm, 'award-xp');
   await gm.getByLabel('Amount').fill(String(amount));
   await gm.getByLabel('Reason (GM only)').fill(reason);
   const form = gm.locator('form[aria-labelledby="award-xp"]');
@@ -80,6 +82,7 @@ test('the DING history reaches back to day 1 and new DINGs queue up', async ({ b
   await gm.getByLabel('Campaign name').fill('History Test');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   for (const name of ['Jake', 'Miranda']) {
+    await openWindow(gm, 'create-character');
     await gm.getByLabel('Name', { exact: true }).fill(name);
     await gm.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();

@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M3.4 Free points: a player spreads one batch, reviews, confirms; the batch
@@ -61,6 +62,7 @@ const focusedText = (page: Page) =>
 
 async function award(gm: Page, amount: number) {
   const form = gm.locator('form[aria-labelledby="award-xp"]');
+  await openWindow(gm, 'award-xp');
   await gm.getByLabel('Amount').fill(String(amount));
   await gm.getByRole('button', { name: 'Award XP' }).click();
   await expect(form.getByRole('status').or(form.getByRole('alert'))).toHaveText('XP awarded');
@@ -72,6 +74,7 @@ test('a player assigns a free-point batch, which then locks', async ({ browser }
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Points Test');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await openWindow(gm, 'create-character');
   await gm.getByLabel('Name', { exact: true }).fill('Jake');
   await gm.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();

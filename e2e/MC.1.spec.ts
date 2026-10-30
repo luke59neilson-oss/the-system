@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openTab } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MC.1 (DESIGN §11): the co-DM settings panel without a real key. The
@@ -48,6 +49,7 @@ test('co-DM settings without a key: models, spend, and nothing to players', asyn
   await page.getByRole('link', { name: /Jake/ }).click();
   await expect(page.getByTestId('connection')).toHaveText('Connected');
 
+  await openTab(gm, 'library');
   const win = gm.locator('section[aria-labelledby="codm-settings"]');
   await win.scrollIntoViewIfNeeded();
   await expect(win.getByTestId('codm-key-state')).toContainText('No API key yet');
@@ -117,6 +119,7 @@ test('co-DM key saved: save, test connection, spend, remove', async ({ browser }
     await page.getByRole('link', { name: /Jake/ }).click();
     await expect(page.getByTestId('connection')).toHaveText('Connected');
 
+    await openTab(gm, 'library');
     const panel = () => gm.locator('section[aria-labelledby="codm-settings"]');
     const win = panel();
     await win.scrollIntoViewIfNeeded();

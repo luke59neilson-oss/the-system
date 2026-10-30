@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openTab } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MC.3 (DESIGN §11 "Shops"): the GM imports a shop (as the co-DM would write
@@ -33,6 +34,7 @@ test('the GM sells a shop ware to a player as a GM trade', async ({ browser }) =
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
+  await openTab(gm, 'session');
 
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const frames: string[] = [];

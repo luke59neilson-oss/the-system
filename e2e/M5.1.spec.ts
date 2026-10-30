@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M5.1 offer builder (DESIGN §6): due selections with the capstone and
@@ -66,6 +67,7 @@ test('the GM builds, checks and sends a menu, and withdraws a passed-over option
   await expect(gm.getByTestId('demo-badge')).toBeVisible();
 
   const builder = gm.locator('section[aria-labelledby="offer-builder"]');
+  await openWindow(gm, 'offer-builder');
   await builder.getByLabel('Character').selectOption({ label: 'Jake' });
   // Jake (D, level 52) has his level 50 menu open with the player.
   const due = builder.getByRole('list', { name: 'Due selections' }).getByRole('listitem');
@@ -201,6 +203,7 @@ test('the dashboard chip opens a capstone selection, which needs a ceiling optio
     .getByRole('button', { name: 'Capstone selection (lvl 10): build the menu' });
   await chip.click();
 
+  // The chip opens the Progression tab itself.
   const builder = gm.locator('section[aria-labelledby="offer-builder"]');
   await expect(builder.getByLabel('Character')).toHaveValue('demo-casper');
   const due = builder.getByRole('list', { name: 'Due selections' }).getByRole('listitem');
@@ -236,6 +239,7 @@ test('the dashboard chip opens a capstone selection, which needs a ceiling optio
     'Capstone selection (lvl 10) · ceiling Rare · menu sent, player choosing',
   );
   // The dashboard chip now waits on the player.
+  await openWindow(gm, 'party');
   await expect(
     gm
       .getByTestId('flags-demo-casper')
@@ -251,10 +255,13 @@ test('a character with nothing due says so', async ({ browser }) => {
   await gm.getByLabel('Campaign name').fill('Quiet');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const builder = gm.locator('section[aria-labelledby="offer-builder"]');
+  await openWindow(gm, 'offer-builder');
   await expect(builder).toContainText('No characters yet.');
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await create.getByLabel('Name', { exact: true }).fill('Kim');
   await create.getByRole('button', { name: 'Create character' }).click();
+  await openWindow(gm, 'offer-builder');
   await expect(builder.getByTestId('no-due-selections')).toBeVisible();
   await expect(builder.getByRole('form', { name: 'Selection menu' })).toHaveCount(0);
   expect(errors).toEqual([]);

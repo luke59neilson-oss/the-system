@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MT.9 (Q63, DESIGN §7): "End scene" also asks each player what they
@@ -37,6 +38,7 @@ test('End scene asks each player; their answer reaches the GM review', async ({ 
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
   for (const name of ['Jake', 'Kim']) {
+    await reveal(gm, create);
     await create.getByLabel('Name', { exact: true }).fill(name);
     await create.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -49,6 +51,7 @@ test('End scene asks each player; their answer reaches the GM review', async ({ 
   await expect(page.getByTestId('player-scene-prompt')).toHaveCount(0);
 
   const win = gm.locator('section[aria-labelledby="practice-capture-heading"]');
+  await openWindow(gm, 'practice-capture');
   await win.getByRole('button', { name: 'End scene: log practice' }).click();
   await expect(win.getByTestId('scene-waiting')).toContainText('Jake, Kim');
 
@@ -85,6 +88,7 @@ test('End scene asks each player; their answer reaches the GM review', async ({ 
   await expect(kim.getByTestId('practice-notice')).toHaveText('Nothing logged for this scene.');
   await expect(kimPrompt).toHaveCount(0);
   await expect(kim.getByTestId('scene-pending')).toHaveCount(0);
+  await openWindow(gm, 'practice-capture');
   await expect(win.getByTestId('scene-waiting')).toHaveCount(0);
 
   // The GM's own walk answers for anyone who has not (review M2, D222).
@@ -129,20 +133,24 @@ test('End scene with answers outstanding resumes the walk, not a new prompt', as
   await gm.getByLabel('Campaign name').fill('Whale');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
   const win = gm.locator('section[aria-labelledby="practice-capture-heading"]');
+  await openWindow(gm, 'practice-capture');
   await win.getByRole('button', { name: 'End scene: log practice' }).click();
   await expect(win.getByTestId('scene-waiting')).toContainText('Jake');
   // Leave the walk without answering: reload drops the GM's local walk state.
   await gm.reload();
+  await openWindow(gm, 'practice-capture');
   await expect(win.getByRole('button', { name: 'Resume end of scene' })).toBeVisible();
   await win.getByRole('button', { name: 'Resume end of scene' }).click();
   await expect(win.getByTestId('scene-prompt')).toContainText('what did Jake practise?');
   await expect(win.getByTestId('scene-waiting')).toContainText('Jake');
   // An absent player does not block the next scene (round 2).
   await gm.reload();
+  await openWindow(gm, 'practice-capture');
   await win.getByRole('button', { name: 'New scene (drop unanswered)' }).click();
   await expect(win.getByTestId('scene-prompt')).toContainText('what did Jake practise?');
   await expect(win.getByRole('status')).toHaveText(

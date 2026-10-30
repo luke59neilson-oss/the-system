@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M7.4 trackers (DESIGN §7–§8, D184): the GM adds regions and moves the
@@ -39,6 +40,7 @@ test('the GM keeps regions and factions; players see the region', async ({ brows
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
   for (const name of ['Jake', 'Kim']) {
+    await reveal(gm, create);
     await create.getByLabel('Name', { exact: true }).fill(name);
     await create.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -57,6 +59,7 @@ test('the GM keeps regions and factions; players see the region', async ({ brows
   // Regions: add two, move the party into the first.
   const regions = win.getByRole('group', { name: 'Regions' });
   const regionForm = regions.getByRole('form', { name: 'New region' });
+  await openWindow(gm, 'trackers');
   await regionForm.getByLabel('Region name').fill('The Crown');
   await regionForm.getByLabel('Region notes (GM only)').fill('SECRET spawn knolls');
   await regionForm.getByRole('button', { name: 'Add region' }).click();

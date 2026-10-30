@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M6.A milestone acceptance (DESIGN §4 "Bonuses", §7 "Items", "Titles"): the
@@ -67,6 +68,7 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
   for (const name of ['Jake', 'Kim']) {
+    await reveal(gm, create);
     await create.getByLabel('Name', { exact: true }).fill(name);
     await create.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -88,10 +90,12 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
   // Item library: an equippable charm (+5 Vitality) and a plain fang.
   const items = gm.locator('section[aria-labelledby="item-library"]');
   const itemForm = items.locator('form[aria-labelledby="item-library-form"]');
+  await openWindow(gm, 'item-library');
   await itemForm.getByLabel('Item name').fill('Bone Charm');
   await itemForm.getByLabel('Slot').selectOption({ label: 'Necklace' });
   await itemForm.getByLabel('Vitality').fill('5');
   await itemForm.getByRole('button', { name: 'Add to library' }).click();
+  await openWindow(gm, 'item-library');
   await expect(items.getByRole('status')).toHaveText('[Bone Charm] added to the library');
   await itemForm.getByLabel('Item name').fill('Hunter Fang');
   await itemForm.getByRole('button', { name: 'Add to library' }).click();
@@ -102,6 +106,7 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
 
   // Currency: 50 each.
   const credits = gm.locator('section[aria-labelledby="currency-ledger"]');
+  await openWindow(gm, 'currency-ledger');
   await credits.getByRole('button', { name: 'Everyone' }).click();
   await credits.getByLabel('Credits each').fill('50');
   await credits.getByLabel('Reason (the player sees this)').fill('Bounty on the pale hunter');
@@ -113,11 +118,13 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
   // Loot roll: a one-entry table always drops the charm.
   const loot = gm.locator('section[aria-labelledby="loot-tables"]');
   const lootForm = loot.locator('form[aria-labelledby="loot-table-form"]');
+  await openWindow(gm, 'loot-tables');
   await lootForm.getByLabel('Table name').fill('Pale hunter drop');
   const entry = lootForm.getByRole('group', { name: 'Entry 1' });
   await entry.getByLabel('Kind').selectOption({ label: 'Item' });
   await entry.getByLabel('Item', { exact: true }).selectOption({ label: 'Bone Charm' });
   await lootForm.getByRole('button', { name: 'Add table' }).click();
+  await openWindow(gm, 'loot-tables');
   await expect(loot.getByRole('status')).toHaveText('[Pale hunter drop] added');
   await loot
     .getByRole('list', { name: 'Loot tables' })
@@ -196,6 +203,7 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
   // Title award: +10% Vitality on top: (10 + 2) × 1.1 = 13.2, rounded to 13 → HP max 130.
   const titles = gm.locator('section[aria-labelledby="title-library"]');
   const titleForm = titles.locator('form[aria-labelledby="title-library-form"]');
+  await openWindow(gm, 'title-library');
   await titleForm.getByLabel('Title name').fill('Rapid Spread');
   await titleForm.getByLabel('System text (the holder sees this)').fill(TITLE_TEXT);
   await titleForm.getByLabel('Vitality percent').fill('10');
@@ -251,6 +259,7 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
   // The GM ledger records the grant and the trade.
   // Newest first: the trade (one row per side, with balances), then the grants.
   const rows = credits.getByTestId('ledger-row');
+  await openWindow(gm, 'currency-ledger');
   await expect(rows).toHaveCount(4);
   const trade = rows.filter({ hasText: 'Trade' });
   await expect(trade).toHaveCount(2);

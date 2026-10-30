@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // QF.27 (sweep C, UX): with three pinned banners on a phone, [Answer] in the
@@ -27,6 +28,7 @@ test('[Answer] scrolls the scene prompt clear of three pinned banners', async ({
   await gm.getByLabel('Campaign name').fill('Whale');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
@@ -43,6 +45,7 @@ test('[Answer] scrolls the scene prompt clear of three pinned banners', async ({
     'A storm gathers over the Crown.',
     'The tide turns in the Red Rivers.',
   ]) {
+    await openWindow(gm, 'broadcast');
     await form.getByLabel('Message').fill(text);
     await form.getByLabel('Show').selectOption('pinned');
     await form.getByRole('button', { name: 'Send broadcast' }).click();
@@ -51,11 +54,13 @@ test('[Answer] scrolls the scene prompt clear of three pinned banners', async ({
   await expect(banners).toHaveCount(3);
 
   const win = gm.locator('section[aria-labelledby="practice-capture-heading"]');
+  await openWindow(gm, 'practice-capture');
   await win.getByRole('button', { name: 'End scene: log practice' }).click();
   await jake.getByTestId('scene-pending').getByRole('button', { name: '[Answer]' }).click();
 
   const prompt = jake.getByTestId('player-scene-prompt');
   const field = prompt.getByTestId('scene-practice-form-action');
+  await openWindow(gm, 'broadcast');
   await expect(field).toBeFocused();
   // Let the scroll settle, then compare boxes in the viewport.
   await expect

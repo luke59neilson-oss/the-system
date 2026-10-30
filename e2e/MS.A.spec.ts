@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MS.A Milestone acceptance: the walking skeleton end to end, as Luke would
@@ -57,6 +58,7 @@ test(
     await gm.getByLabel('Campaign name').fill('First Session');
     await gm.getByRole('button', { name: 'Create campaign' }).click();
     for (const name of ['Jake', 'Miranda']) {
+      await openWindow(gm, 'create-character');
       await gm.getByLabel('Name', { exact: true }).fill(name);
       await gm.getByRole('button', { name: 'Create character' }).click();
       await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -78,6 +80,7 @@ test(
     await expect(phone.getByTestId('class')).toHaveText('[Archer – lvl 0]');
 
     // The GM awards XP and broadcasts: both land on the phone live.
+    await openWindow(gm, 'award-xp');
     await gm.getByLabel('Amount').fill('301');
     await gm.getByLabel('Reason (GM only)').fill(REASON);
     const sent = Date.now();
@@ -110,6 +113,7 @@ test(
     // The GM link for another browser on this computer (the desktop app never
     // prints its key): folded away, and it opens a working console.
     const gmLink = gm.getByLabel('GM link');
+    await openWindow(gm, 'join');
     await expect(gmLink).toBeHidden();
     await gm.getByText('Open the GM console in another browser on this computer').click();
     await expect(gmLink).toHaveValue(`${server.url}/gm#key=${GM_KEY}`);
@@ -156,6 +160,7 @@ test(
     await gm.screenshot({ path: path.join(shots, 'gm-after-restart-1366x768.png') });
 
     // And play goes on after the restart.
+    await openWindow(gm, 'award-xp');
     await gm.getByRole('checkbox', { name: 'Miranda' }).first().uncheck();
     await gm.getByLabel('Amount').fill('400');
     await gm.getByRole('button', { name: 'Award XP' }).click();

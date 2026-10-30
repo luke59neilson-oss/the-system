@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M4.5 Party dashboard: a card per character with what waits on the GM or the
@@ -55,6 +56,7 @@ test('flags show what waits; the sheet editor sends audited edits live', async (
     ['Jake', 'Archer'],
     ['Kim', 'Caster'],
   ] as const) {
+    await reveal(gm, create);
     await create.getByLabel('Name', { exact: true }).fill(name);
     await create.getByLabel('Starting class').selectOption({ label: cls });
     await create.getByRole('button', { name: 'Create character' }).click();
@@ -63,15 +65,18 @@ test('flags show what waits; the sheet editor sends audited edits live', async (
   const party = gm.locator('section[aria-labelledby="party"]');
   const jake = party.locator('[data-testid^="row-"]', { hasText: 'Jake' });
   const kim = party.locator('[data-testid^="row-"]', { hasText: 'Kim' });
+  await openWindow(gm, 'party');
   const jakeId = (await jake.getAttribute('data-testid'))!.slice(4);
   await expect(jake.getByTestId(`flags-${jakeId}`)).toHaveText('Nothing waiting.');
 
   // Jake alone to the top of G: his evolution is the GM's to release, and his
   // free points are his to spend. Kim has nothing waiting.
   const award = gm.getByRole('form', { name: 'Award class XP' });
+  await openWindow(gm, 'award-xp');
   await award.getByLabel('Amount').fill('400');
   await award.getByRole('checkbox', { name: /Kim/ }).uncheck();
   await award.getByRole('button', { name: 'Award XP' }).click();
+  await openWindow(gm, 'party');
   await expect(jake.getByTestId(`class-level-${jakeId}`)).toHaveText('4');
   const flags = jake.getByRole('list', { name: 'Jake: waiting' });
   await expect(flags.getByRole('listitem')).toHaveText([
@@ -90,6 +95,7 @@ test('flags show what waits; the sheet editor sends audited edits live', async (
   const hpBefore = await phone.getByTestId('pool-hp').innerText();
 
   // Edit the sheet: Vitality 10 → 12 raises max HP to 120; set HP to 115; a nickname.
+  await openWindow(gm, 'party');
   await jake.getByRole('button', { name: 'Edit sheet' }).click();
   const editor = gm.getByRole('form', { name: 'Edit Jake’s sheet' });
   await expect(editor).toBeVisible();

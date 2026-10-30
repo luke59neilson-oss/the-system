@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { deflateSync } from 'node:zlib';
 import { expect, test, type Page } from './helpers/test';
+import { reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MT.10 (Q40, DESIGN §9): the status window shows the character's portrait at
@@ -82,6 +83,7 @@ test('the status window shows the portrait at the top; the export carries it', a
   await gm.getByLabel('Campaign name').fill('Whale');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByTestId('portrait-file').setInputFiles({
     name: 'jake.png',

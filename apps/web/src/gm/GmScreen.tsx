@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+} from 'react';
 import {
   DEFAULT_RULES,
   STARTER_CLASSES,
@@ -46,6 +54,9 @@ import { RulesSettings } from './RulesSettings';
 import { CoDmSettings } from './CoDmSettings';
 import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
+import { ConsoleTabs, Place, useConsoleTab } from './ConsoleTabs';
+import { NeedsYou } from './NeedsYou';
+import { tabOf } from './tabsModel';
 
 /**
  * Minimal GM screen (ROADMAP MS.1): create a campaign and characters from a
@@ -103,6 +114,27 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
   const state = live.state;
   const [wanted, setWanted] = useState<Perspective>({ kind: 'gm' });
   const [picked, setPicked] = useState<string[] | null>(null);
+  // MU.1: the open tab of the console (remembered on this laptop).
+  const [tab, setTab] = useConsoleTab();
+  // MU.1: a "needs you" link opens its window's tab, then brings it into view.
+  const openWindow = useCallback(
+    (id: string) => {
+      const owner = tabOf(id);
+      if (!owner) return;
+      setTab(owner);
+      requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>(`[data-window="${id}"] .window`);
+        el?.scrollIntoView({ block: 'start' });
+        // MU.1 review: focus follows to the opened window (the link that
+        // opened it may now be hidden on another tab).
+        if (el) {
+          if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+          el.focus({ preventScroll: true });
+        }
+      });
+    },
+    [setTab],
+  );
   // A dashboard selection chip asks the offer builder to open that selection (M5.1).
   const [offerTarget, setOfferTarget] = useState<OfferTarget | null>(null);
   // MD.1: the transcript line the GM clicked for the quick responses.
@@ -189,7 +221,9 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               : 'Connecting…'}
         </span>
         {state && <SessionChip state={state} />}
-        {state && <BannersChip client={client} state={state} />}
+        {state && (
+          <BannersChip client={client} state={state} onOpen={() => openWindow('broadcast')} />
+        )}
         {state && <PerspectiveBar party={party} current={view} onChange={setWanted} />}
       </header>
       {live.status === 'joined' && <CampaignSwitch gmKey={gmKey} stateName={state?.name ?? null} />}
@@ -198,64 +232,143 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
         <div className="perspective-body">
           {/* Kept mounted while viewing as a character so half-filled GM forms survive. */}
           <div className="gm-pane" hidden={view.kind === 'character'}>
-            <div className="gm-grid">
-              <PartyDashboard
-                client={client}
-                gmKey={gmKey}
-                state={state}
-                onBuildMenu={(characterId, level) =>
-                  setOfferTarget((t) => ({ characterId, level, n: (t?.n ?? 0) + 1 }))
-                }
-              />
-              <SessionPanel client={client} state={state} gmKey={gmKey} />
-              <ListenPanel
-                gmKey={gmKey}
-                onPickLine={(text) => setQuickLine((p) => ({ text, n: (p?.n ?? 0) + 1 }))}
-                characters={state.characterOrder.flatMap((id) => {
-                  const c = state.characters[id];
-                  return c ? [{ id, name: c.name }] : [];
-                })}
-              />
-              <CoDmPanel
-                gmKey={gmKey}
-                client={client}
-                state={state}
-                picked={quickLine}
-                onGenerated={(c) => setIncoming((cur) => ({ ...c, seq: (cur?.seq ?? 0) + 1 }))}
-                onLoading={sendLoading}
-                onLoadingFailed={endLoading}
-              />
-              <ContentImport
-                client={client}
-                gmKey={gmKey}
-                incoming={incoming}
-                onApproved={approved}
-              />
-              <JoinPanel gmKey={gmKey} />
-              <CreateCharacter client={client} gmKey={gmKey} state={state} />
-              <XpAward client={client} state={state} />
-              <Encounter client={client} state={state} />
-              <OfferBuilder client={client} state={state} target={offerTarget} />
-              <EvolutionBuilder client={client} state={state} />
-              <PracticeCapture client={client} gmKey={gmKey} state={state} />
-              <QuestManager client={client} state={state} />
-              <Bestiary client={client} state={state} />
-              <Trackers client={client} state={state} />
-              <MarksReview client={client} state={state} />
-              <MergeBuilder client={client} state={state} />
-              <Broadcast client={client} state={state} />
-              <ChangeLog client={client} gmKey={gmKey} state={state} />
-              <SkillText client={client} state={state} />
-              <SkillLibrary client={client} state={state} />
-              <ItemLibrary client={client} state={state} />
-              <Shops client={client} state={state} />
-              <LootTables client={client} state={state} />
-              <CurrencyLedger client={client} state={state} />
-              <TitleLibrary client={client} state={state} />
-              <OriginLibrary client={client} state={state} />
-              <RulesSettings client={client} state={state} />
-              <CoDmSettings gmKey={gmKey} />
-              <Feed live={live} state={state} />
+            <ConsoleTabs tab={tab} onChange={setTab} />
+            <div
+              className="gm-grid"
+              role="tabpanel"
+              id={`tabpanel-${tab}`}
+              aria-labelledby={`tab-${tab}`}
+            >
+              <Place id="needs-you" tab={tab}>
+                <NeedsYou
+                  state={state}
+                  gmKey={gmKey}
+                  shown={tab === 'home'}
+                  onOpen={openWindow}
+                  onBuildMenu={(characterId, level) => {
+                    setOfferTarget((t) => ({ characterId, level, n: (t?.n ?? 0) + 1 }));
+                    setTab('progression');
+                  }}
+                />
+              </Place>
+              <Place id="party" tab={tab}>
+                <PartyDashboard
+                  client={client}
+                  gmKey={gmKey}
+                  state={state}
+                  onBuildMenu={(characterId, level) => {
+                    setOfferTarget((t) => ({ characterId, level, n: (t?.n ?? 0) + 1 }));
+                    setTab('progression');
+                  }}
+                />
+              </Place>
+              <Place id="join" tab={tab}>
+                <JoinPanel gmKey={gmKey} />
+              </Place>
+              <Place id="create-character" tab={tab}>
+                <CreateCharacter client={client} gmKey={gmKey} state={state} />
+              </Place>
+              <Place id="session" tab={tab}>
+                <SessionPanel client={client} state={state} gmKey={gmKey} />
+              </Place>
+              <Place id="award-xp" tab={tab}>
+                <XpAward client={client} state={state} />
+              </Place>
+              <Place id="listen" tab={tab}>
+                <ListenPanel
+                  gmKey={gmKey}
+                  onPickLine={(text) => setQuickLine((p) => ({ text, n: (p?.n ?? 0) + 1 }))}
+                  characters={state.characterOrder.flatMap((id) => {
+                    const c = state.characters[id];
+                    return c ? [{ id, name: c.name }] : [];
+                  })}
+                />
+              </Place>
+              <Place id="codm" tab={tab}>
+                <CoDmPanel
+                  gmKey={gmKey}
+                  client={client}
+                  state={state}
+                  picked={quickLine}
+                  onGenerated={(c) => setIncoming((cur) => ({ ...c, seq: (cur?.seq ?? 0) + 1 }))}
+                  onLoading={sendLoading}
+                  onLoadingFailed={endLoading}
+                />
+              </Place>
+              <Place id="import" tab={tab}>
+                <ContentImport
+                  client={client}
+                  gmKey={gmKey}
+                  incoming={incoming}
+                  onApproved={approved}
+                />
+              </Place>
+              <Place id="encounter" tab={tab}>
+                <Encounter client={client} state={state} />
+              </Place>
+              <Place id="quest-manager" tab={tab}>
+                <QuestManager client={client} state={state} />
+              </Place>
+              <Place id="broadcast" tab={tab}>
+                <Broadcast client={client} state={state} />
+              </Place>
+              <Place id="shops" tab={tab}>
+                <Shops client={client} state={state} />
+              </Place>
+              <Place id="currency-ledger" tab={tab}>
+                <CurrencyLedger client={client} state={state} />
+              </Place>
+              <Place id="trackers" tab={tab}>
+                <Trackers client={client} state={state} />
+              </Place>
+              <Place id="change-log" tab={tab}>
+                <ChangeLog client={client} gmKey={gmKey} state={state} />
+              </Place>
+              <Place id="feed" tab={tab}>
+                <Feed live={live} state={state} />
+              </Place>
+              <Place id="offer-builder" tab={tab}>
+                <OfferBuilder client={client} state={state} target={offerTarget} />
+              </Place>
+              <Place id="evolution-builder" tab={tab}>
+                <EvolutionBuilder client={client} state={state} />
+              </Place>
+              <Place id="practice-capture" tab={tab}>
+                <PracticeCapture client={client} gmKey={gmKey} state={state} />
+              </Place>
+              <Place id="marks-review" tab={tab}>
+                <MarksReview client={client} state={state} />
+              </Place>
+              <Place id="merge-builder" tab={tab}>
+                <MergeBuilder client={client} state={state} />
+              </Place>
+              <Place id="skill-text" tab={tab}>
+                <SkillText client={client} state={state} />
+              </Place>
+              <Place id="skill-library" tab={tab}>
+                <SkillLibrary client={client} state={state} />
+              </Place>
+              <Place id="item-library" tab={tab}>
+                <ItemLibrary client={client} state={state} />
+              </Place>
+              <Place id="loot-tables" tab={tab}>
+                <LootTables client={client} state={state} />
+              </Place>
+              <Place id="title-library" tab={tab}>
+                <TitleLibrary client={client} state={state} />
+              </Place>
+              <Place id="origin-library" tab={tab}>
+                <OriginLibrary client={client} state={state} />
+              </Place>
+              <Place id="bestiary" tab={tab}>
+                <Bestiary client={client} state={state} />
+              </Place>
+              <Place id="rules-settings" tab={tab}>
+                <RulesSettings client={client} state={state} />
+              </Place>
+              <Place id="codm-settings" tab={tab}>
+                <CoDmSettings gmKey={gmKey} />
+              </Place>
             </div>
           </div>
           {viewed && (
@@ -292,7 +405,16 @@ function SessionChip({ state }: { state: CampaignState }) {
  * MT.6: how many banners are up on players' screens, beside the session chip,
  * with Remove all, so the GM never forgets a pinned banner below the fold.
  */
-function BannersChip({ client, state }: { client: LiveClient; state: CampaignState }) {
+function BannersChip({
+  client,
+  state,
+  onOpen,
+}: {
+  client: LiveClient;
+  state: CampaignState;
+  /** Opens the Broadcast window on its tab (MU.1 review: a hash link fired only once). */
+  onOpen: () => void;
+}) {
   const timed = state.broadcasts.some((b) => b.display?.mode === 'timed' && !b.removed);
   const now = useTick(timed);
   const up = activeBanners(state.broadcasts, now, (b) => Date.parse(b.at));
@@ -313,7 +435,9 @@ function BannersChip({ client, state }: { client: LiveClient; state: CampaignSta
   };
   return (
     <span className="banners-chip" data-testid="banners-chip">
-      <a href="#broadcast">{up.length === 1 ? '1 banner up' : `${up.length} banners up`}</a>
+      <button type="button" className="flag-link" onClick={onOpen}>
+        {up.length === 1 ? '1 banner up' : `${up.length} banners up`}
+      </button>
       <button
         type="button"
         className="secondary small"

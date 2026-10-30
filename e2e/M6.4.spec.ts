@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M6.4 titles (DESIGN §4 "Bonuses", §7 "Titles"): the GM defines a title in
@@ -42,6 +43,7 @@ test('the GM defines, awards and edits a title; only the holder sees its text an
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
   for (const name of ['Jake', 'Kim']) {
+    await reveal(gm, create);
     await create.getByLabel('Name', { exact: true }).fill(name);
     await create.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -63,8 +65,10 @@ test('the GM defines, awards and edits a title; only the holder sees its text an
 
   // Define a title: +10% Vitality and +5 flat Strength (0.5 on the sheet).
   const lib = gm.locator('section[aria-labelledby="title-library"]');
+  await openWindow(gm, 'title-library');
   await expect(lib).toContainText('No titles yet.');
   const form = lib.locator('form[aria-labelledby="title-library-form"]');
+  await openWindow(gm, 'title-library');
   await form.getByLabel('Title name').fill('Rapid Spread');
   await form.getByLabel('System text (the holder sees this)').fill(TEXT);
   await form.getByLabel('Vitality percent').fill('ten');

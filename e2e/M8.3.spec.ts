@@ -1,5 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
+import { TABS } from '../apps/web/src/gm/tabsModel';
+import { openTab } from './helpers/gmTabs';
 import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 import { contrastFailures } from './helpers/contrast';
@@ -53,11 +55,17 @@ test('every text on the player screen and GM console reads at 4.5:1 or better', 
   };
   const openAll = (p: Page) =>
     p.evaluate(`document.querySelectorAll('details').forEach((d) => { d.open = true; })`);
-  note('gm', await contrastFailures(gm));
-  await openAll(gm);
-  const gmScan = await contrastFailures(gm);
-  expect(gmScan.checked).toBeGreaterThan(50);
-  note('gm (details open)', gmScan);
+  // MU.1: the console shows one tab at a time, so scan each tab.
+  let gmChecked = 0;
+  for (const t of TABS) {
+    await openTab(gm, t.id);
+    note(`gm ${t.id}`, await contrastFailures(gm));
+    await openAll(gm);
+    const gmScan = await contrastFailures(gm);
+    gmChecked += gmScan.checked;
+    note(`gm ${t.id} (details open)`, gmScan);
+  }
+  expect(gmChecked).toBeGreaterThan(50);
 
   for (const who of ['demo-jake', 'demo-sultan']) {
     const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
@@ -117,6 +125,8 @@ test('every text on the player screen and GM console reads at 4.5:1 or better', 
 // reading order) and pointer-cursor elements a keyboard cannot reach.
 const MARK = `(() => {
   const sel = 'a[href], button, input, select, textarea, summary, [tabindex]';
+  // A fresh count each time (MU.1: once per console tab).
+  for (const el of document.querySelectorAll('[data-kb]')) el.removeAttribute('data-kb');
   const stops = [];
   for (const el of document.querySelectorAll(sel)) {
     if (el.matches(':disabled') || el.getAttribute('tabindex') === '-1') continue;
@@ -209,7 +219,14 @@ test('the player screen and GM console work from the keyboard alone', async ({ b
   test.setTimeout(120_000);
   const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   await demo(gm);
-  expect(await tabThrough(gm)).toBeGreaterThan(20);
+  // MU.1: one tab shows at a time, so every tab is walked from the keyboard.
+  let gmStops = 0;
+  for (const t of TABS) {
+    await openTab(gm, t.id);
+    await gm.evaluate(`document.activeElement && document.activeElement.blur()`);
+    gmStops += await tabThrough(gm);
+  }
+  expect(gmStops).toBeGreaterThan(20);
 
   const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   await page.goto(`${server.url}/play/demo-jake`);

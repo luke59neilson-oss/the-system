@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
+import { openWindow } from './helpers/gmTabs';
 
 // MR.3 XP overflow for every campaign (DESIGN §2, L16, D153): a campaign stored
 // on the old banking rules switches to overflow when the app loads it, so the
@@ -43,6 +44,7 @@ test('a stored banking campaign loads with XP overflow on', async ({ page }) => 
   await page.goto(`${server.url}/gm#key=${GM_KEY}`);
   await expect(page.getByTestId('connection')).toHaveText('Connected');
   await expect(page.getByTestId('class-level-jake')).toHaveText('4');
+  await openWindow(page, 'award-xp');
   await page.getByLabel('Amount').fill('300');
   await page.getByRole('checkbox', { name: /Ana/ }).uncheck();
   await expect(page.getByTestId('lost-jake')).toHaveText(' · 300 lost');

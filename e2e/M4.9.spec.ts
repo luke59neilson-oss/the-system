@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M4.9 Rules settings: the GM edits a rules value as an event, the player sees
@@ -31,6 +32,7 @@ test('the GM edits, validates and resets the rules; players see the change live'
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Rules Test');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await openWindow(gm, 'create-character');
   await gm.getByLabel('Name', { exact: true }).fill('Jake');
   await gm.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
@@ -43,6 +45,7 @@ test('the GM edits, validates and resets the rules; players see the change live'
 
   const panel = gm.locator('section[aria-labelledby="rules-settings"]');
   const save = panel.getByRole('button', { name: 'Save rules' });
+  await openWindow(gm, 'rules-settings');
   await expect(save).toBeDisabled();
   await panel.locator('summary', { hasText: 'Economy' }).click();
   await panel.getByLabel('Currency name').fill('Shards');
@@ -90,6 +93,7 @@ test('the GM edits, validates and resets the rules; players see the change live'
   await expect(inventory).toContainText('Credits');
 
   const log = gm.locator('section[aria-labelledby="change-log"]');
+  await openWindow(gm, 'change-log');
   await expect(log.getByRole('listitem').filter({ hasText: 'Rules settings changed' })).toHaveCount(
     4,
   );

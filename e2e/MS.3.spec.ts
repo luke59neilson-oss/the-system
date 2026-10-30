@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MS.3 Perspective switcher: the GM app's "View as" bar ([GM] [each character]
@@ -66,6 +67,7 @@ test(
     await gm.getByLabel('Campaign name').fill('Tutorial: The Whale');
     await gm.getByRole('button', { name: 'Create campaign' }).click();
     for (const name of PARTY) {
+      await openWindow(gm, 'create-character');
       await gm.getByLabel('Name', { exact: true }).fill(name);
       await gm.getByRole('button', { name: 'Create character' }).click();
       await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -88,6 +90,7 @@ test(
 
     // Back to GM: the console is there again.
     await bar.getByRole('button', { name: 'GM' }).click();
+    await openWindow(gm, 'award-xp');
     await expect(gm.getByRole('heading', { name: 'Award class XP' })).toBeVisible();
     await expect(gm.locator('iframe:visible')).toHaveCount(0);
 

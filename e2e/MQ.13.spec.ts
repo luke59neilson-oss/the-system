@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MQ.13 The books' starting classes (DESIGN §10): a new campaign offers the
@@ -97,6 +98,7 @@ test('the GM starts a character from each of the six classes', async ({ browser 
   // The library holds the books' six, in DESIGN §10's spirit (Archer first).
   const lib = gm.locator('section[aria-labelledby="origin-library"]');
   const classes = lib.getByRole('list', { name: 'Library classes' });
+  await openWindow(gm, 'origin-library');
   await expect(classes.getByRole('listitem')).toHaveCount(6);
   await expect(classes.getByRole('button', { name: /\[Warrior \(Heavy\)\]/ })).toContainText(
     'Strength 2 · Endurance 1 · Vitality 1 · Toughness 1',
@@ -109,6 +111,7 @@ test('the GM starts a character from each of the six classes', async ({ browser 
   await lib.screenshot({ path: path.join(shots, 'gm-six-classes-1366x768.png') });
 
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await expect(create.getByLabel('Starting class').locator('option')).toHaveText(
     SIX.map((c) => c.cls),
   );

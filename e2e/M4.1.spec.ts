@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M4.1 Skill library: the GM creates and edits library skills (rarity, tags,
@@ -63,6 +64,7 @@ test('the GM builds the skill library; granted skills take its text', async ({ b
   await gm.getByRole('button', { name: 'Create campaign' }).click();
 
   const library = gm.locator('section[aria-labelledby="skill-library"]');
+  await openWindow(gm, 'skill-library');
   await expect(library.getByText('No skills yet.')).toBeVisible();
   const add = library.getByRole('button', { name: 'Add to library' });
   await expect(add).toBeDisabled();
@@ -133,6 +135,7 @@ test('the GM builds the skill library; granted skills take its text', async ({ b
   await gm.screenshot({ path: path.join(shots, 'gm-library-1366x768.png'), fullPage: true });
 
   // New character: Identify arrives with the library's text.
+  await openWindow(gm, 'create-character');
   await gm.getByLabel('Name', { exact: true }).fill('Jake');
   await gm.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
@@ -168,6 +171,7 @@ test('the GM builds the skill library; granted skills take its text', async ({ b
   }
 
   // Later library edits reach the granted copy (MQ.12).
+  await openWindow(gm, 'skill-library');
   await identifyItem.click();
   await library.getByLabel('Description (players see this)').fill('Rewritten later.');
   await library.getByRole('button', { name: 'Save changes' }).click();
@@ -184,10 +188,12 @@ test('the GM builds the skill library; granted skills take its text', async ({ b
   const otherErrors = watchErrors(other);
   await other.goto(`${server.url}/gm#key=${GM_KEY}`);
   const otherLibrary = other.locator('section[aria-labelledby="skill-library"]');
+  await openWindow(other, 'skill-library');
   await otherLibrary.getByRole('button', { name: /\[Identify\]/ }).click();
   await otherLibrary.getByLabel('Flavour (players see this)').fill('From the other tab.');
   await otherLibrary.getByRole('button', { name: 'Save changes' }).click();
   await expect(otherLibrary.getByRole('status')).toHaveText('[Identify] saved');
+  await openWindow(gm, 'skill-library');
   await expect(library.getByLabel('Flavour (players see this)')).toHaveValue('From the other tab.');
   // ...while a form with local edits warns, keeps them, and can reload.
   await library.getByLabel('Effects (only the skill’s owner sees this)').fill('Local change.');

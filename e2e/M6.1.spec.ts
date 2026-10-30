@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M6.1 item library (DESIGN §7 "Items"): the GM creates and edits items
@@ -38,13 +39,16 @@ test('the GM creates, edits, gives and takes an item; the player sees it live', 
   await gm.getByLabel('Campaign name').fill('Items');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
 
   const library = gm.locator('section[aria-labelledby="item-library"]');
+  await openWindow(gm, 'item-library');
   await expect(library).toContainText('No items yet.');
   const form = library.locator('form[aria-labelledby="item-library-form"]');
+  await openWindow(gm, 'item-library');
   await form.getByLabel('Item name').fill('Bone Charm');
   await form.getByLabel('Slot').selectOption({ label: 'Necklace' });
   await form.getByLabel('Description (players see this)').fill('A knuckle on a cord.');
@@ -68,6 +72,7 @@ test('the GM creates, edits, gives and takes an item; the player sees it live', 
   await expect(player.getByTestId('connection')).toHaveText('Connected');
 
   // Give two, take one.
+  await openWindow(gm, 'item-library');
   await list.getByRole('button', { name: /Bone Charm/ }).click();
   const give = library.getByRole('group', { name: 'Give or take [Bone Charm]' });
   await expect(give.getByTestId('item-held')).toHaveText('Jake holds 0');

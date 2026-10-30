@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M5.5 practice capture (DESIGN §7): the GM's quick-add (Alt+P), the
@@ -90,8 +91,10 @@ test('the GM quick-adds practice, walks the end-of-scene prompt and reviews play
       classSkills: kit,
     });
   }
+  await openWindow(gm, 'session');
   await gm.getByRole('button', { name: 'Start session 1' }).click();
   const win = gm.locator('section[aria-labelledby="practice-capture-heading"]');
+  await openWindow(gm, 'practice-capture');
   await expect(win).toContainText('To review (0)');
 
   // Two player entries arrive for review.

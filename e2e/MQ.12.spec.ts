@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MQ.12 Skill library rules (DESIGN §6, L4): entries are keyed by name and
@@ -89,6 +90,7 @@ test('upgrades take the next rarity’s text; edits propagate; effects stay with
   // Two entries for one name: Common and Uncommon. Only Uncommon has effects.
   const library = gm.locator('section[aria-labelledby="skill-library"]');
   const add = library.getByRole('button', { name: 'Add to library' });
+  await openWindow(gm, 'skill-library');
   await library.getByLabel('Official name').fill('Identify');
   await library.getByLabel('Rarity').selectOption({ label: 'Common' });
   await library.getByLabel('Description (players see this)').fill('Common: learn a name.');
@@ -118,6 +120,7 @@ test('upgrades take the next rarity’s text; edits propagate; effects stay with
         { name: 'Archer’s Eye', rarity: 'common' },
       ],
     });
+    await openWindow(gm, 'party');
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
   }
 
@@ -161,6 +164,7 @@ test('upgrades take the next rarity’s text; edits propagate; effects stay with
 
   // The GM edits the Uncommon entry in the library form: Jake's open dialog
   // follows; Kim's Common copy does not change.
+  await openWindow(gm, 'skill-library');
   await list.getByRole('button', { name: /\[Identify\].*\(Uncommon\)/ }).click();
   await library
     .getByLabel('Description (players see this)')

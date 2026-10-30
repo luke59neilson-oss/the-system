@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // QF.13: a long campaign's change log arrives a page at a time. The GM sees
@@ -53,6 +54,7 @@ test('the change log pages, searches the whole log and stays live', async ({ pag
   await expect(page.getByTestId('connection')).toHaveText('Connected');
   const log = page.locator('section[aria-labelledby="change-log"]');
   const rows = log.getByRole('listitem');
+  await openWindow(page, 'change-log');
   await expect(rows).toHaveCount(100);
   // Loading the stored log turned XP overflow on (L16): the newest row.
   await expect(rows.first()).toContainText('XP now overflows');

@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // QF.25 (sweep B, UX): the GM's level/XP/grade override keeps keyboard focus.
@@ -38,10 +39,12 @@ test('keyboard focus follows the override warning from Review to Cancel and Appl
   await gm.getByLabel('Campaign name').fill('Focus');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   const party = gm.locator('section[aria-labelledby="party"]');
   const card = party.locator('[data-testid^="row-"]', { hasText: 'Jake' });
+  await openWindow(gm, 'party');
   await card.getByRole('button', { name: 'Edit sheet' }).click();
   const box = card.getByRole('group', { name: 'Level, XP and grade override' });
   const review = box.getByRole('button', { name: 'Review override' });

@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M5.3 marks review (DESIGN §6–7): after a session the GM sees each
@@ -68,6 +69,7 @@ test('the GM reviews a session, confirms marks and upgrades; the player gets the
   await gm.getByLabel('Campaign name').fill('Marks');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const review = gm.locator('section[aria-labelledby="marks-review-heading"]');
+  await openWindow(gm, 'marks-review');
   await expect(review).toContainText('No session played yet.');
 
   for (const [id, name] of [
@@ -91,6 +93,7 @@ test('the GM reviews a session, confirms marks and upgrades; the player gets the
       session,
     });
   }
+  await openWindow(gm, 'session');
   await gm.getByRole('button', { name: 'Start session 1' }).click();
   const log = (characterId: string, action: string, skills: string[]) =>
     gmCommand(gm, { type: 'practice.log', characterId, action, skills });
@@ -105,6 +108,7 @@ test('the GM reviews a session, confirms marks and upgrades; the player gets the
   await expect(rows.nth(0)).toContainText('[Basic Archery (Inferior)]used 3× · 2/3 marks');
   await expect(rows.nth(0)).toContainText('shot the rope from 80 m. · repeat');
   await expect(rows.nth(1)).toContainText('[Archer’s Eye (Common)]used 1× · 0/4 marks');
+  await openWindow(gm, 'marks-review');
   await expect(review.locator('section[aria-labelledby="marks-lee"]')).toContainText(
     '[Basic One-Handed Weapon (Inferior)]',
   );
@@ -124,6 +128,7 @@ test('the GM reviews a session, confirms marks and upgrades; the player gets the
 
   // Confirm the mark: the row says so and the upgrade prompt appears.
   await jake.getByRole('button', { name: 'Confirm mark: Jake Basic Archery' }).click();
+  await openWindow(gm, 'marks-review');
   await expect(review.getByRole('status')).toHaveText('Jake: mark confirmed on [Basic Archery]');
   await expect(rows.nth(0)).toContainText('3/3 marks');
   await expect(rows.nth(0)).toContainText('Marked this session');
@@ -159,8 +164,10 @@ test('the GM reviews a session, confirms marks and upgrades; the player gets the
   await player.screenshot({ path: path.join(shots, 'player-skill-upgrade-390x844.png') });
 
   // After the session ends the review stays on it; a second mark on the same skill is not offered.
+  await openWindow(gm, 'session');
   await gm.getByRole('button', { name: 'End session…' }).click();
   await gm.getByRole('button', { name: 'End session 1' }).click();
+  await openWindow(gm, 'marks-review');
   await expect(review.getByLabel('Session')).toHaveValue(/.+/);
   await expect(review.getByLabel('Session').locator('option')).toHaveText(['Session 1']);
   await expect(rows.nth(1).getByRole('button', { name: /Confirm mark/ })).toBeVisible();

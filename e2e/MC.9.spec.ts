@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:f
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openTab } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MC.9 (DESIGN §11 "Memory"): the co-DM keeps running notes from the
@@ -52,6 +53,7 @@ test('the co-DM notes the session and writes its summary into the export', async
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
+  await openTab(gm, 'session');
   const saved = await gm.request.put(`${server.url}/api/gm/ai/key`, {
     headers: { 'x-gm-key': GM_KEY },
     data: { key: 'sk-ant-e2e-mc9-fake-0123456789abcdef' },

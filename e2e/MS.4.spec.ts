@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MS.4 Demo campaign: a GM menu entry loads a ready-made party in its own
@@ -43,9 +44,11 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('My Real Campaign');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await openWindow(gm, 'create-character');
   await gm.getByLabel('Name', { exact: true }).fill('Ada');
   await gm.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Ada', exact: true })).toBeVisible();
+  await openWindow(gm, 'award-xp');
   await gm.getByLabel('Amount').fill('150');
   await gm.getByRole('button', { name: 'Award XP' }).click();
   await expect(gm.getByTestId('demo-badge')).toHaveCount(0);
@@ -66,6 +69,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   // Ada's screen says what happened (and shows nothing of the demo).
   await expect(ada.getByRole('alert')).toContainText('switched to another campaign');
   await expect(ada.getByTestId('status')).toHaveCount(0);
+  await openWindow(gm, 'party');
   await expect(gm.getByRole('heading', { name: /Demo: The Whale/ })).toBeVisible();
   await expect.poll(() => partyNames(gm)).toEqual(['Jake', 'Miranda', 'Casper', 'Sultan']);
   const levels = await gm.locator('[data-testid^="class-level-"]').allInnerTexts();
@@ -91,6 +95,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   await phone.screenshot({ path: path.join(shots, 'player-demo-390x844.png'), fullPage: true });
 
   // The GM can play in the demo like any campaign.
+  await openWindow(gm, 'award-xp');
   await gm.getByRole('checkbox', { name: 'Jake' }).uncheck();
   await gm.getByRole('checkbox', { name: 'Miranda' }).uncheck();
   await gm.getByRole('checkbox', { name: 'Casper' }).uncheck();
@@ -107,6 +112,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   // Back to the real campaign: Ada exactly as she was, no demo anywhere.
   await gm.getByRole('button', { name: 'Back to my campaign' }).click();
   await expect(gm.getByTestId('demo-badge')).toHaveCount(0);
+  await openWindow(gm, 'party');
   await expect(gm.getByRole('heading', { name: /My Real Campaign/ })).toBeVisible();
   await expect.poll(() => partyNames(gm)).toEqual(['Ada']);
   await expect(gm.locator('[data-testid^="class-level-"]')).toHaveText(['1']);
@@ -126,6 +132,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   await expect(ada.getByTestId('dings').getByRole('listitem')).toHaveCount(2);
   await expect(ada.getByTestId('messages')).toHaveCount(0);
   // The GM feed still holds the real campaign's DINGs (one hub per campaign).
+  await openWindow(gm, 'feed');
   await expect(gm.getByRole('listitem').filter({ hasText: 'Ada' }).first()).toBeVisible();
   await expect(gm.getByRole('listitem').filter({ hasText: 'Sultan' })).toHaveCount(0);
   // The demo phone waits with a notice instead of falling back to real data.

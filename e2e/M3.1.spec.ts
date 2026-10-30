@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M3.1 Join screen: character list with portrait, name and grade; pick one;
@@ -39,6 +40,7 @@ test('players pick a character from the list and the browser remembers it', asyn
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Join Test');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await openWindow(gm, 'create-character');
   await gm.getByLabel('Name', { exact: true }).fill('Ada Lovelace');
   await gm.getByRole('button', { name: 'Create character' }).click();
   await expect(

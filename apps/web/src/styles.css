@@ -120,6 +120,34 @@ h2 {
 .feed {
   grid-column: 1 / -1;
 }
+/* MU.1: each window's place is invisible to the grid; off-tab places hide. */
+.place {
+  display: contents;
+}
+.place[hidden] {
+  display: none;
+}
+.console-tabs [role='tablist'] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+  border-bottom: 1px solid var(--accent);
+}
+.console-tabs [role='tab'] {
+  font-family: var(--mono);
+  border-radius: 6px 6px 0 0;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: transparent;
+  color: inherit;
+  padding: 6px 14px;
+}
+.console-tabs [role='tab'][aria-selected='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 -2px 8px color-mix(in srgb, var(--accent) 35%, transparent);
+}
 label {
   display: flex;
   flex-direction: column;
@@ -3053,16 +3081,19 @@ ol.change-log li.undone .change-text {
 }
 
 /* MD.1: quick responses (GM only): five fixed buttons with their keys. */
+/* MU.1: always one row of five (DESIGN §11), however narrow the tab's panel. */
 .quick-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.4rem;
   margin: 0.5rem 0;
 }
 .quick-row button {
-  flex: 1 1 auto;
-  padding: 0.45rem 0.5rem;
+  min-width: 0;
+  padding: 0.45rem 0.3rem;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .quick-row kbd {
   display: inline-block;

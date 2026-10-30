@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // QF.17: a Table-view pane pins the newest DING of every kind (level-up,
@@ -84,6 +85,7 @@ test('a Table-view pane pins a skill-upgrade DING, not only level-ups', async ({
       session,
     });
   }
+  await openWindow(gm, 'session');
   await gm.getByRole('button', { name: 'Start session 1' }).click();
   await gmCommand(gm, {
     type: 'practice.log',
@@ -108,6 +110,7 @@ test('a Table-view pane pins a skill-upgrade DING, not only level-ups', async ({
   );
 
   // The GM confirms the mark and upgrades the skill from the console beside the panes.
+  await openWindow(gm, 'marks-review');
   const review = gm.locator('section[aria-labelledby="marks-review-heading"]');
   const row = review.locator('section[aria-labelledby="marks-jake"]');
   await row.getByRole('button', { name: 'Confirm mark: Jake Basic Archery' }).click();

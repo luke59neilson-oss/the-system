@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M5.4 merges (DESIGN §6): the merge alert, building the merged skill and
@@ -74,7 +75,9 @@ test('the GM builds and sends a merge; the player gets the DING and the new skil
     classSkills: kit,
   });
   const builder = gm.locator('section[aria-labelledby="merge-builder-heading"]');
+  await openWindow(gm, 'merge-builder');
   await expect(builder).toContainText('No merge alerts');
+  await openWindow(gm, 'session');
   await gm.getByRole('button', { name: 'Start session 1' }).click();
   for (const action of ['Cut and step', 'Step then cut', 'Spinning cut']) {
     await gmCommand(gm, {
@@ -85,6 +88,7 @@ test('the GM builds and sends a merge; the player gets the DING and the new skil
     });
   }
   const alerts = builder.getByRole('list', { name: 'Merge alerts' });
+  await openWindow(gm, 'merge-builder');
   await expect(alerts).toHaveText('[Quick Cut] + [Side Step] · together 3× → Rare');
   const send = builder.getByRole('button', { name: 'Send merge offer' });
   await expect(send).toBeDisabled();
@@ -123,6 +127,7 @@ test('the GM builds and sends a merge; the player gets the DING and the new skil
   await player.getByRole('link', { name: /Jake/ }).click();
   await expect(player.getByTestId('connection')).toHaveText('Connected');
 
+  await openWindow(gm, 'merge-builder');
   await send.click();
   // MT.2: the merge waits on the player's answer.
   await expect(builder.getByTestId('merge-pending')).toContainText(

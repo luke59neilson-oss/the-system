@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M4.2 Class, race and profession libraries: a new campaign starts with the
@@ -62,6 +63,7 @@ test('the GM manages classes, races and professions; characters start from them'
   await gm.getByRole('button', { name: 'Create campaign' }).click();
 
   const lib = gm.locator('section[aria-labelledby="origin-library"]');
+  await openWindow(gm, 'origin-library');
   const tab = (name: RegExp) =>
     lib.getByRole('group', { name: 'Library' }).getByRole('button', { name });
   // The default set arrived with the campaign.
@@ -69,6 +71,7 @@ test('the GM manages classes, races and professions; characters start from them'
   await expect(tab(/^Races \(1\)/)).toBeVisible();
   // No default professions (MQ.6): the GM tailors them per character.
   await expect(tab(/^Professions \(0\)/)).toBeVisible();
+  await openWindow(gm, 'origin-library');
   await expect(lib.getByRole('button', { name: /Add the default set/ })).toHaveCount(0);
   const classes = lib.getByRole('list', { name: 'Library classes' });
   await expect(classes.getByRole('listitem')).toHaveCount(6);
@@ -172,6 +175,7 @@ test('the GM manages classes, races and professions; characters start from them'
 
   // A character from a library class and race.
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await create.getByLabel('Name', { exact: true }).fill('Miranda');
   await create.getByLabel('Starting class').selectOption({ label: 'Caster' });
   await create.getByLabel('Race').selectOption('Dwarf');
@@ -224,11 +228,13 @@ test('a campaign started without defaults can add them later', async ({ browser 
     await gm.getByLabel(/Start with the default classes/).uncheck();
     await gm.getByRole('button', { name: 'Create campaign' }).click();
     const lib = gm.locator('section[aria-labelledby="origin-library"]');
+    await openWindow(gm, 'origin-library');
     await expect(lib.getByRole('note')).toContainText(
       'Until then new characters start from the six built-in classes.',
     );
     // The character form falls back to the six built-in classes and the rules' race.
     const create = gm.locator('form[aria-labelledby="new-character"]');
+    await reveal(gm, create);
     await expect(create.getByLabel('Starting class').locator('option')).toHaveText([
       'Archer',
       'Warrior (Light)',
@@ -239,12 +245,14 @@ test('a campaign started without defaults can add them later', async ({ browser 
     ]);
     await expect(create.getByLabel('Race').locator('option')).toHaveText(['Human']);
     const seed = lib.getByRole('button', { name: /Add the default set \(\d+ missing\)/ });
+    await openWindow(gm, 'origin-library');
     await seed.click();
     await expect(lib.getByRole('status')).toContainText(/Added \d+ default entries/);
     await expect(seed).toHaveCount(0);
     await expect(
       lib.getByRole('list', { name: 'Library classes' }).getByRole('listitem'),
     ).toHaveCount(6);
+    await reveal(gm, create);
     await expect(create.getByLabel('Starting class').locator('option')).toHaveCount(6);
     expect(errors).toEqual([]);
   } finally {

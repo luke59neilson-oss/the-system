@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M6.2 loot tables (DESIGN §7 "Items"): the GM defines a weighted table, rolls
@@ -38,6 +39,7 @@ test('the GM defines and rolls a loot table; the player receives the roll live',
   await gm.getByLabel('Campaign name').fill('Loot');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
@@ -45,6 +47,7 @@ test('the GM defines and rolls a loot table; the player receives the roll live',
   // Two items in the library to draw from.
   const library = gm.locator('section[aria-labelledby="item-library"]');
   const itemForm = library.locator('form[aria-labelledby="item-library-form"]');
+  await openWindow(gm, 'item-library');
   for (const name of ['Whale Louse Pelt', 'Hunter Fang']) {
     await itemForm.getByLabel('Item name').fill(name);
     await itemForm.getByRole('button', { name: 'Add to library' }).click();
@@ -54,6 +57,7 @@ test('the GM defines and rolls a loot table; the player receives the roll live',
   const loot = gm.locator('section[aria-labelledby="loot-tables"]');
   await expect(loot).toContainText('No loot tables yet.');
   const form = loot.locator('form[aria-labelledby="loot-table-form"]');
+  await openWindow(gm, 'loot-tables');
   await form.getByLabel('Table name').fill('Pale hunter drop');
   const entry = (n: number) => form.getByRole('group', { name: `Entry ${n}` });
   // The form opened before any item existed, so its first entry pays currency.
@@ -88,6 +92,7 @@ test('the GM defines and rolls a loot table; the player receives the roll live',
   await player.getByRole('link', { name: /Jake/ }).click();
   await expect(player.getByTestId('connection')).toHaveText('Connected');
 
+  await openWindow(gm, 'loot-tables');
   await list.getByRole('button', { name: /Pale hunter drop/ }).click();
   const roll = loot.getByRole('group', { name: 'Roll [Pale hunter drop]' });
   await roll.getByLabel('Roll for').selectOption({ label: 'Jake' });

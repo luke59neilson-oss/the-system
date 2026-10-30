@@ -616,9 +616,25 @@ DESIGN/ROADMAP; do not re-apply them.
     "Share with the party" button on a lore note that makes that party copy
     for you.
 
+82. **Where co-DM generations are approved (MU.1, D261).** DESIGN §9a lists
+    content import under Library & settings, but a co-DM generation (a shop
+    while you walk the party across town) opens in the Import window for
+    you to approve. To keep that in front of you mid-narration, Import sits
+    on the **Session** tab beside the co-DM, and pasting a content pack from
+    Claude happens there too. Default: Import on Session. Option: Import on
+    Library & settings, with a generation switching you to that tab.
+
 83. **CI on wip branches instead of long local e2e runs? (efficiency, Tier 2;
     2026-10-30 auditor).** Run the same CI on `wip/**` pushes with the e2e
     split into 2 shards, and let a run accept a green CI result on its pushed
     wip commit in place of a full local e2e run at close-out and `Mx.A`. Local
     full runs on the 2-CPU workspace often get cut off and slow the reviewer
     beside them. Cost: more Actions minutes on wip pushes. Default: no change.
+
+84. **Quick and full Award XP (MU.1, D265).** DESIGN §9a has a quick Award XP
+    on Session and the full one on Progression. They are one form shown on
+    both tabs: amount, track, who shares, target grade and the above-level
+    bonus fit in one panel, and MU.3 adds each player's level and XP to its
+    rows, which serves as the Session tab's party at a glance. Default: one
+    form on both tabs. Option: a smaller Session form (amount and who only)
+    with the target and bonus on Progression.

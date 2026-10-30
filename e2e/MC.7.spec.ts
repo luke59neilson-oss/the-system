@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openTab } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MC.7 (DESIGN §11 "Practice drafts"): the co-DM drafts practice from the
@@ -55,6 +56,7 @@ test('the co-DM drafts practice from the transcript and the GM confirms one', as
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
+  await openTab(gm, 'session');
   const saved = await gm.request.put(`${server.url}/api/gm/ai/key`, {
     headers: { 'x-gm-key': GM_KEY },
     data: { key: 'sk-ant-e2e-mc7-fake-0123456789abcdef' },
@@ -78,6 +80,7 @@ test('the co-DM drafts practice from the transcript and the GM confirms one', as
   await expect(listen.getByTestId('listen-indicator')).toHaveText('Mic off');
 
   // MC.7 review M5: drafts wait in the Practice window's review queue.
+  await openTab(gm, 'progression');
   const practice = gm.locator('section[aria-labelledby="practice-capture-heading"]');
   const win = practice.getByRole('group', { name: /Co-DM drafts/ });
   await expect(practice.getByRole('heading', { name: /To review/ })).toBeVisible();

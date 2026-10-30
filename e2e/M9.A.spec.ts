@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M9.A milestone acceptance (Claude bridge and content packs): the whole loop
@@ -134,6 +135,7 @@ test('tutorial pack → session → report for Claude → drafted evolution → 
 
   // 1. The tutorial pack applies whole.
   const panel = gm.locator('section[aria-labelledby="import-heading"]');
+  await openWindow(gm, 'import');
   await panel.getByLabel('Content file (.json)').setInputFiles(pack);
   const apply = panel.getByRole('button', { name: /^Apply \d+$/ });
   await expect(apply).toBeEnabled();
@@ -149,6 +151,7 @@ test('tutorial pack → session → report for Claude → drafted evolution → 
 
   // 2. Session 1: Jake takes 400 XP to the top of G (class 4 = race 4).
   const session = gm.locator('section[aria-labelledby="session-heading"]');
+  await openWindow(gm, 'session');
   await session.getByRole('button', { name: 'Start session 1' }).click();
   await expect(session.getByRole('status')).toHaveText('Session 1 started');
   await gm.getByLabel('Amount').fill('400');

@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M9.1 Session report: ending a session writes the report as markdown and
@@ -56,6 +57,7 @@ test('the GM copies a session report for Claude and saves it as JSON', async ({ 
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Report Test');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await openWindow(gm, 'create-character');
   await gm.getByLabel('Name', { exact: true }).fill('Jake');
   await gm.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
@@ -67,6 +69,7 @@ test('the GM copies a session report for Claude and saves it as JSON', async ({ 
   await expect(phone.getByTestId('connection')).toHaveText('Connected');
 
   const panel = gm.locator('section[aria-labelledby="session-heading"]');
+  await openWindow(gm, 'session');
   await panel.getByRole('button', { name: 'Start session 1' }).click();
   await expect(panel.getByRole('status')).toHaveText('Session 1 started');
   await gm.getByLabel('Amount').fill('300');
@@ -183,6 +186,7 @@ test('without a secure context the copy falls back to the legacy copy command', 
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   const panel = gm.locator('section[aria-labelledby="session-heading"]');
   const row = panel.getByRole('table').getByRole('row').nth(1);
+  await openWindow(gm, 'session');
   await row.getByRole('button', { name: 'Copy session 1 report for Claude' }).click();
   await expect(panel.getByRole('status')).toHaveText(
     'Session 1 report copied: paste it into Claude',
@@ -216,6 +220,7 @@ test('when every copy is refused the report is shown selected to copy by hand', 
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   const panel = gm.locator('section[aria-labelledby="session-heading"]');
   const row = panel.getByRole('table').getByRole('row').nth(1);
+  await openWindow(gm, 'session');
   await row.getByRole('button', { name: 'Copy session 1 report for Claude' }).click();
   await expect(panel.getByRole('alert')).toHaveText(
     'This browser blocked the copy: select the report below and copy it.',

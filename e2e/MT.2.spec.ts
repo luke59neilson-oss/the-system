@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MT.2 (DESIGN §6, Q62): the GM sends a merge as an offer; the player declines
@@ -71,6 +72,7 @@ test('a merge offer: the player declines, then accepts a second offer', async ({
     className: 'Archer',
     classSkills: kit,
   });
+  await openWindow(gm, 'session');
   await gm.getByRole('button', { name: 'Start session 1' }).click();
   for (const action of ['Cut and step', 'Step then cut', 'Spinning cut']) {
     await gmCommand(gm, {
@@ -81,6 +83,7 @@ test('a merge offer: the player declines, then accepts a second offer', async ({
     });
   }
   const builder = gm.locator('section[aria-labelledby="merge-builder-heading"]');
+  await openWindow(gm, 'merge-builder');
   await expect(builder).toContainText('Jake accepts or declines on their screen.');
 
   const player = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -91,6 +94,7 @@ test('a merge offer: the player declines, then accepts a second offer', async ({
   await expect(player.getByTestId('merge-offer')).toHaveCount(0);
 
   // 1. The GM sends an offer; it waits on Jake and nothing is merged yet.
+  await openWindow(gm, 'merge-builder');
   await builder.getByLabel('Merged skill name').fill('Stepping Cut');
   await builder.getByLabel('Description (optional)').fill('Cut as you slip aside.');
   await builder.getByRole('button', { name: 'Send merge offer' }).click();
@@ -121,6 +125,7 @@ test('a merge offer: the player declines, then accepts a second offer', async ({
   await gm.screenshot({ path: path.join(shots, 'gm-offer-declined-1366x768.png') });
   // The answer is campaign state, so it survives a GM reload.
   await gm.reload();
+  await openWindow(gm, 'merge-builder');
   await expect(builder.getByTestId('merge-answer')).toHaveText(
     'Jake declined [Quick Cut] + [Side Step] → [Stepping Cut]; both skills stay.',
   );

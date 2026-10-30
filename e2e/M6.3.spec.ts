@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M6.3 currency (DESIGN §7 "Items"): the GM grants the party currency with a
@@ -40,6 +41,7 @@ test('the GM grants and fines currency; players see their own notices; the ledge
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
   for (const name of ['Jake', 'Kim']) {
+    await reveal(gm, create);
     await create.getByLabel('Name', { exact: true }).fill(name);
     await create.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -59,6 +61,7 @@ test('the GM grants and fines currency; players see their own notices; the ledge
   const kim = await watch('Kim');
 
   const win = gm.locator('section[aria-labelledby="currency-ledger"]');
+  await openWindow(gm, 'currency-ledger');
   await expect(win.getByRole('heading', { level: 2 })).toHaveText('Credits');
   await expect(win).toContainText('No Credits has changed hands yet.');
   await expect(win.getByTestId('currency-balance')).toHaveText(['0 Credits', '0 Credits']);

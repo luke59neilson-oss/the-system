@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M3.5 Skill detail: official name in its rarity colour (always shown), the
@@ -54,6 +55,7 @@ async function gmCommand(gm: Page, command: Record<string, unknown>): Promise<vo
 
 async function award(gm: Page, amount: number) {
   const form = gm.locator('form[aria-labelledby="award-xp"]');
+  await openWindow(gm, 'award-xp');
   await gm.getByLabel('Amount').fill(String(amount));
   await gm.getByRole('button', { name: 'Award XP' }).click();
   await expect(form.getByRole('status').or(form.getByRole('alert'))).toHaveText('XP awarded');
@@ -65,6 +67,7 @@ test('a player reads a skill and nicknames it; the official name stays', async (
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Skills Test');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await openWindow(gm, 'create-character');
   await gm.getByLabel('Name', { exact: true }).fill('Jake');
   await gm.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
@@ -150,6 +153,7 @@ test('a player reads a skill and nicknames it; the official name stays', async (
   await expect(detail.getByTestId('skill-detail-flavor')).toHaveCount(0);
   // The GM writes it in the console's Skill text form; the open detail updates live.
   const form = gm.locator('form[aria-labelledby="skill-text"]');
+  await openWindow(gm, 'skill-text');
   await form.getByLabel('Skill').selectOption('Identify');
   await expect(form.getByLabel('Description')).toHaveValue('');
   await form.getByLabel('Description').fill('Reveals what the System knows.');

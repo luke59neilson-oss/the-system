@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M7.A milestone acceptance: a sample encounter end to end (a bestiary foe, a
@@ -41,12 +42,14 @@ test('a sample encounter end to end; stability reaches players only when shown',
   await gm.getByRole('button', { name: 'Create campaign' }).click();
   const create = gm.locator('form[aria-labelledby="new-character"]');
   for (const name of ['Jake', 'Kim']) {
+    await reveal(gm, create);
     await create.getByLabel('Name', { exact: true }).fill(name);
     await create.getByRole('button', { name: 'Create character' }).click();
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
   }
   // The foe: a same-grade bestiary entry, so the contest is a real roll.
   const bestiary = gm.locator('form[aria-labelledby="bestiary-form"]');
+  await openWindow(gm, 'bestiary');
   await bestiary.getByLabel('Name (GM only)').fill('SECRET Pale Hunter');
   await bestiary.getByLabel('Label players see (blank: the name)').fill('Pale hunter');
   await bestiary.getByLabel('Grade').selectOption('G');
@@ -66,10 +69,12 @@ test('a sample encounter end to end; stability reaches players only when shown',
   // A quest with World Stability rules, gauge hidden from players.
   const qm = gm.locator('section[aria-labelledby="quest-manager"]');
   const form = qm.locator('form[aria-labelledby="quest-form"]');
+  await openWindow(gm, 'quest-manager');
   await form.getByLabel('Quest title').fill('The world is dying');
   await form.getByLabel('Quest text (players see this)').fill('Find what is killing it.');
   await form.getByLabel(/World Stability rules/).fill('cleanse: -5\nsystem beast: +2');
   await form.getByRole('button', { name: 'Add quest' }).click();
+  await openWindow(gm, 'quest-manager');
   await expect(qm.getByRole('status')).toHaveText('[The world is dying] added');
   const quest = page.getByTestId('quest');
   await expect(quest).toContainText('The world is dying');
@@ -90,6 +95,7 @@ test('a sample encounter end to end; stability reaches players only when shown',
   const roller = win.locator('form[aria-labelledby="contest-roller"]');
   const sideA = roller.getByRole('group', { name: 'Side A' });
   const sideB = roller.getByRole('group', { name: 'Side B' });
+  await openWindow(gm, 'encounter');
   await sideA.getByLabel('Who').selectOption({ label: 'Jake' });
   await sideA.getByLabel('Stat').selectOption({ label: 'Agility' });
   await sideB.getByLabel('Who').selectOption({ label: 'SECRET Pale Hunter (bestiary)' });
@@ -115,6 +121,7 @@ test('a sample encounter end to end; stability reaches players only when shown',
 
   // The foe hits back: Jake takes 30 HP.
   const pools = win.locator('form[aria-labelledby="pool-tool"]');
+  await openWindow(gm, 'encounter');
   await pools.getByLabel('Character').selectOption({ label: 'Jake' });
   await pools.getByLabel('Points', { exact: true }).fill('30');
   await pools.getByRole('button', { name: 'Apply' }).click();
@@ -122,6 +129,7 @@ test('a sample encounter end to end; stability reaches players only when shown',
 
   // A clock for the chase; half full with no failures offers a montage.
   const clocks = win.locator('[aria-labelledby="clocks"]');
+  await openWindow(gm, 'encounter');
   await clocks.getByLabel('Clock name').fill('Run it down');
   await clocks.getByLabel('Segments').fill('4');
   await clocks.getByRole('button', { name: 'Start clock' }).click();

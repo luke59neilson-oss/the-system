@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:f
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from './helpers/test';
+import { openTab } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MC.A (DESIGN §11): a recorded mock session runs the co-DM end to end. The
@@ -55,6 +56,7 @@ test('a mock session runs the co-DM end to end', async ({ browser }) => {
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
+  await openTab(gm, 'session');
   const saved = await gm.request.put(`${server.url}/api/gm/ai/key`, {
     headers: { 'x-gm-key': GM_KEY },
     data: { key: 'sk-ant-e2e-mca-fake-0123456789abcdef' },
@@ -104,6 +106,7 @@ test('a mock session runs the co-DM end to end', async ({ browser }) => {
   const afterShop = (await panelSpend.textContent()) ?? '';
 
   // 4. A practice draft from the transcript, confirmed by the GM.
+  await openTab(gm, 'progression');
   const practice = gm.locator('section[aria-labelledby="practice-capture-heading"]');
   const win = practice.getByRole('group', { name: /Co-DM drafts/ });
   await win.getByRole('button', { name: 'Draft from transcript' }).click();
@@ -117,6 +120,7 @@ test('a mock session runs the co-DM end to end', async ({ browser }) => {
   await expect(panelSpend).not.toHaveText(afterShop, { timeout: 30_000 });
 
   // 5. End the session; the summary lands in the session log and export.
+  await openTab(gm, 'session');
   const session = gm.locator('section[aria-labelledby="session-heading"]');
   await session.getByRole('button', { name: 'End session…' }).click();
   await session.getByRole('button', { name: 'End session 1' }).click();

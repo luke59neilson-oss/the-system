@@ -2,6 +2,7 @@ import { appendFileSync, mkdtempSync, readFileSync, readdirSync, rmSync } from '
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M2.A Milestone acceptance (server and sync): a GM and two players play over
@@ -63,9 +64,11 @@ test(
     await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
     await gm.getByLabel('Campaign name').fill('Milestone Two');
     await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await openWindow(gm, 'session');
     await gm.getByRole('button', { name: 'Start session 1' }).click();
     await expect(gm.getByTestId('session-chip')).toHaveText('Session 1 · Day 1');
     for (const name of ['Jake', 'Miranda']) {
+      await openWindow(gm, 'create-character');
       await gm.getByLabel('Name', { exact: true }).fill(name);
       await gm.getByRole('button', { name: 'Create character' }).click();
       await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
@@ -83,6 +86,7 @@ test(
     const miranda = await join('Miranda');
 
     // Live updates to both phones; a whisper only to Miranda.
+    await openWindow(gm, 'award-xp');
     await gm.getByLabel('Amount').fill('300');
     await gm.getByLabel('Reason (GM only)').fill(REASON);
     await gm.getByRole('button', { name: 'Award XP' }).click();
@@ -124,10 +128,12 @@ test(
     expect(campaignFiles.some((f) => f.startsWith('events.jsonl.torn-'))).toBe(true);
 
     // Play goes on in the same session; the next shutdown rewrites its log.
+    await openWindow(gm, 'party');
     await expect(gm.getByRole('heading', { name: /Milestone Two/ })).toBeVisible({
       timeout: 10_000,
     });
     await expect(gm.getByTestId('session-chip')).toHaveText('Session 1 · Day 1');
+    await openWindow(gm, 'award-xp');
     await gm.getByRole('checkbox', { name: 'Miranda' }).first().uncheck();
     await gm.getByLabel('Amount').fill('300');
     await gm.getByRole('button', { name: 'Award XP' }).click();

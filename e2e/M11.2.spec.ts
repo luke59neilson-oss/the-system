@@ -9,6 +9,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
+import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M11.2 Recovery: the laptop loses power mid-session. The server dies with
@@ -59,8 +60,10 @@ test('power loss mid-session: hard kill, torn log, stale lock; both screens reco
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Recovery');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await openWindow(gm, 'session');
   await gm.getByRole('button', { name: 'Start session 1' }).click();
   await expect(gm.getByTestId('session-chip')).toHaveText('Session 1 · Day 1');
+  await openWindow(gm, 'create-character');
   await gm.getByLabel('Name', { exact: true }).fill('Jake');
   await gm.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
@@ -71,6 +74,7 @@ test('power loss mid-session: hard kill, torn log, stale lock; both screens reco
   await jake.getByRole('link', { name: /Jake/ }).click();
   await expect(jake.getByTestId('connection')).toHaveText('Connected');
 
+  await openWindow(gm, 'award-xp');
   await gm.getByLabel('Amount').fill('100');
   await gm.getByLabel('Reason (GM only)').fill(REASON);
   await gm.getByRole('button', { name: 'Award XP' }).click();
