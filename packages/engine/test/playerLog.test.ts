@@ -245,6 +245,19 @@ const SCENARIOS: Partial<Record<EventType, Scenario>> = {
     ],
     act: { type: 'trade.cancel', tradeId: 'tr', characterId: null },
   },
+  'skill.cast': {
+    setup: [
+      {
+        type: 'skillDef.define',
+        id: 'archery',
+        name: 'Basic Archery',
+        rarity: 'inferior',
+        tags: [],
+        cost: { pool: 'stamina', amount: 5 },
+      },
+    ],
+    act: { type: 'skill.cast', characterId: 'jake', skill: 'Basic Archery' },
+  },
   'skill.nicknamed': {
     act: {
       type: 'skill.nickname',

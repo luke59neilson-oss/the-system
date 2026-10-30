@@ -4,6 +4,7 @@ import type { Campaign } from '../events/log';
 import { applyEvent, type CampaignState } from '../events/reducer';
 import { hiddenQuestNoticed } from '../quests';
 import { titleDefByName } from '../titles';
+import { poolLabel } from '../skills/library';
 import { isEmptyBundle, type Bundle } from '../economy';
 import { gmChangeNotices, type GmChangeNotice } from './gmChanges';
 
@@ -129,6 +130,20 @@ export type SystemNotification =
       /** Rarity display name of the merged skill. */
       readonly rarity: string;
     }
+  | {
+      /**
+       * MU.5: a skill was cast and its pool paid (by the player, or the GM on
+       * their behalf); only its owner is told, and the GM's feed shows it.
+       */
+      readonly kind: 'spellCast';
+      readonly characterId: string;
+      readonly skill: string;
+      /** The pool's short label ("MP"). */
+      readonly pool: string;
+      readonly amount: number;
+      /** The pool's value after the cast. */
+      readonly left: number;
+    }
   /** MU.2: any other change the GM made to this character; only its owner is told. */
   | GmChangeNotice;
 
@@ -163,6 +178,17 @@ export function notificationsBetween(
 ): SystemNotification[] {
   if (after === null) return [];
   const out: SystemNotification[] = [];
+  if (event?.type === 'skill.cast') {
+    const { characterId, skill, pool, amount } = event.payload;
+    out.push({
+      kind: 'spellCast',
+      characterId,
+      skill,
+      pool: poolLabel(after.rules, pool),
+      amount,
+      left: after.characters[characterId]?.pools[pool] ?? 0,
+    });
+  }
   if (event?.type === 'system.broadcast') {
     const recipients = event.payload.characterIds ?? after.characterOrder;
     for (const characterId of recipients) {

@@ -417,6 +417,16 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     shareable: z.boolean().optional(),
   }),
   'note.deleted': z.strictObject({ noteId: recordId, characterId: recordId.nullable() }),
+  /**
+   * MU.5: a skill with a cost is cast; the pool pays `amount` (priced when
+   * cast) and the use is logged as practice for the GM's review (D271).
+   */
+  'skill.cast': z.strictObject({
+    characterId: recordId,
+    skill: nonBlank,
+    pool: recordId,
+    amount: z.number().int().min(1).max(MAX_SKILL_COST),
+  }),
   /** A player (or the GM) nicknames a skill; null or blank clears it (M1.9). */
   'skill.nicknamed': z.strictObject({
     characterId: recordId,
@@ -915,6 +925,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'note.created': 1,
   'note.edited': 1,
   'note.deleted': 1,
+  'skill.cast': 1,
   'skill.nicknamed': 1,
   'skill.described': 1,
   'skill.uniqueSet': 1,
@@ -1065,6 +1076,7 @@ export const PLAYER_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   'note.edited',
   'note.deleted',
   'skill.nicknamed',
+  'skill.cast',
   'skill.mergeAnswered',
   'selection.chosen',
   'evolution.chosen',

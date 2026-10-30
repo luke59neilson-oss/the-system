@@ -119,6 +119,7 @@ export const PLAYER_NOTICE_AUDIT: Readonly<Record<EventType, PlayerNoticeAudit>>
   'note.created': none,
   'note.edited': none,
   'note.deleted': none,
+  'skill.cast': notifies,
   'skill.nicknamed': notifies,
   'skill.described': notifies,
   'skill.uniqueSet': notifies,

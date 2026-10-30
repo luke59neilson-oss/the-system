@@ -696,6 +696,9 @@ function writesPool(event: DomainEvent, characterId: string, poolId: string): bo
   if (event.type === 'evolution.chosen') {
     return event.payload.characterId === characterId && event.payload.legacy !== true;
   }
+  if (event.type === 'skill.cast') {
+    return event.payload.characterId === characterId && event.payload.pool === poolId;
+  }
   return false;
 }
 
@@ -1698,6 +1701,42 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       };
       if (next.title === '' && next.body.trim() === '') fail(event, 'a note needs a title or text');
       return { ...state, notes: { ...state.notes, [noteId]: next } };
+    }
+    case 'skill.cast': {
+      // MU.5 (D271): the pool pays the cost priced at cast time; refused
+      // when too low. The use joins the practice log: a player's cast waits
+      // for the GM's review, a GM's cast on their behalf counts as reviewed.
+      const { characterId, skill, pool, amount } = event.payload;
+      const character = characterOf(state, event, characterId);
+      if (!character.skills.some((s) => s.name === skill)) {
+        fail(event, `${character.name} has no skill "${skill}"`);
+      }
+      checkKeys(
+        event,
+        [pool],
+        state.rules.pools.map((p) => p.id),
+        'pool',
+      );
+      const have = character.pools[pool] ?? 0;
+      if (have < amount) fail(event, `not enough ${pool}: ${have} of ${amount}`);
+      const source = event.actor.role === 'player' ? 'player' : 'gm';
+      const entry: PracticeEntry = {
+        id: event.id,
+        at: event.timestamp,
+        sessionId: event.sessionId,
+        characterId,
+        action: `Cast [${skill}]`,
+        skills: [skill],
+        stat: null,
+        tags: ['cast'],
+        source,
+        reviewed: source === 'gm',
+      };
+      const next = withCharacter(state, {
+        ...character,
+        pools: { ...character.pools, [pool]: have - amount },
+      });
+      return { ...next, practice: [...next.practice, entry] };
     }
     case 'skill.nicknamed': {
       const { characterId, skill, nickname } = event.payload;

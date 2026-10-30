@@ -11,7 +11,7 @@ import { CharacterRuleError, raceLevel } from '../character';
 import { settleContest, type ContestSideRecord, type GradeGapMode } from '../resolution';
 import { titleDefByName } from '../titles';
 import { keptRerate } from '../evolution';
-import { normalizeTags } from '../skills/library';
+import { castingForSkill, normalizeTags, poolLabel } from '../skills/library';
 import { missingDefaultEntries } from '../content/defaults';
 import { largestRemainderSplit } from '../progression';
 import { bankedXp } from './migrations';
@@ -267,6 +267,8 @@ export type Command =
     }
   | { type: 'note.delete'; noteId: string; characterId: string | null }
   | { type: 'skill.nickname'; characterId: string; skill: string; nickname: string | null }
+  /** MU.5: the owner (or the GM) casts a skill with a cost; the pool pays it. */
+  | { type: 'skill.cast'; characterId: string; skill: string }
   | {
       type: 'skill.describe';
       characterId: string;
@@ -722,6 +724,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('note.edit') }),
   z.object({ type: z.literal('note.delete') }),
   z.object({ type: z.literal('skill.nickname') }),
+  z.object({ type: z.literal('skill.cast') }),
   z.object({ type: z.literal('skill.describe') }),
   z.object({ type: z.literal('skill.setUnique') }),
   z.object({ type: z.literal('skill.setRarity') }),
@@ -821,6 +824,7 @@ export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>([
   'note.edit',
   'note.delete',
   'skill.nickname',
+  'skill.cast',
   'skill.answerMerge',
   'selection.choose',
   'evolution.choose',
@@ -860,6 +864,33 @@ function regionRef(campaign: Campaign, ref: string | null): string | null {
     );
   }
   return matches[0] as string;
+}
+
+/**
+ * MU.5 (D271): prices a cast now from the library (`castingForSkill`), so a
+ * later library edit does not change what an earlier cast cost; refuses a
+ * skill with no cost and a pool that is too low, naming only the caster's own
+ * numbers.
+ */
+function castPayload(campaign: Campaign, command: Extract<Command, { type: 'skill.cast' }>) {
+  const state = campaign.state;
+  const character =
+    state && Object.prototype.hasOwnProperty.call(state.characters, command.characterId)
+      ? state.characters[command.characterId]
+      : undefined;
+  if (!state || !character)
+    throw new EventRejectedError(`unknown character "${command.characterId}"`);
+  const skill = character.skills.find((s) => s.name === command.skill);
+  if (!skill) throw new EventRejectedError(`${character.name} has no skill "${command.skill}"`);
+  const cost = castingForSkill(state.rules, state.skillLibrary, skill)?.cost;
+  if (!cost) throw new EventRejectedError(`[${skill.name}] has no cost to cast`);
+  const have = character.pools[cost.pool] ?? 0;
+  if (have < cost.amount) {
+    throw new EventRejectedError(
+      `Not enough ${poolLabel(state.rules, cost.pool)} to cast [${skill.name}]: ${have} of ${cost.amount}`,
+    );
+  }
+  return { characterId: character.id, skill: skill.name, pool: cost.pool, amount: cost.amount };
 }
 
 function awardPayload(command: Extract<Command, { type: 'xp.award' }>) {
@@ -1273,6 +1304,8 @@ function toEvent(
         type: 'note.deleted',
         payload: { noteId: command.noteId, characterId: command.characterId },
       };
+    case 'skill.cast':
+      return { type: 'skill.cast', payload: castPayload(campaign, command) };
     case 'skill.nickname':
       return {
         type: 'skill.nicknamed',
