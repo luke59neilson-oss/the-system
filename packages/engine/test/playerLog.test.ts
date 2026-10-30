@@ -531,6 +531,18 @@ describe('player notice audit (MU.2)', () => {
     });
   });
 
+  it('a no-op set tells nothing; an XP award names only the track that gained (sweep B)', () => {
+    const same = lastNotices({
+      setup: [{ type: 'character.setStats', characterId: 'jake', stats: { strength: 14 } }],
+      act: { type: 'character.setStats', characterId: 'jake', stats: { strength: 14 } },
+    });
+    expect(same.notices.filter((n) => n.kind === 'gmChange')).toEqual([]);
+    const xp = lastNotices(SCENARIOS['xp.awarded']!).notices;
+    expect(xp.filter((n) => n.kind === 'gmChange')).toEqual([
+      { kind: 'gmChange', characterId: 'jake', change: 'xp', subject: 'class', detail: '50' },
+    ]);
+  });
+
   it('an XP award that levels the character is told by its DING alone (review)', () => {
     const { notices } = lastNotices({
       act: {

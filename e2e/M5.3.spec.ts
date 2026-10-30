@@ -3,6 +3,7 @@ import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
 import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
+import { expectToast } from './helpers/toast';
 
 // M5.3 marks review (DESIGN §6–7): after a session the GM sees each
 // character's skills used (repeats flagged), confirms marks (one per skill per
@@ -156,9 +157,11 @@ test('the GM reviews a session, confirms marks and upgrades; the player gets the
   await expect(prompt).toHaveCount(0);
   await expect(rows.nth(0)).toContainText('[Basic Archery (Common)]used 3× · 0/4 marks');
 
-  const toast = player.getByTestId('ding-toast');
-  await expect(toast).toContainText(
+  // Two mark notices (MU.2) queue ahead of the upgrade DING.
+  await expectToast(
+    player,
     "*'DING!' Skill upgraded: [Basic Archery (Inferior)] → [Basic Archery (Common)]*",
+    2,
   );
   await expect(player.getByTestId('skills-class')).toContainText('Basic Archery (Common)');
   await player.screenshot({ path: path.join(shots, 'player-skill-upgrade-390x844.png') });
