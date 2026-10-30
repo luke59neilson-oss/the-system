@@ -308,6 +308,14 @@ describe('suggestion routes with a dismissal mid-call (MC.8 review M2)', () => {
       headers: gm,
     });
     expect(del.statusCode).toBe(200);
+    // QF.35 (a): a second POST while one is asking is refused, never a second
+    // paid call (without the guard it would start a call and wait on the gate).
+    const overlap = await Promise.race([
+      post(),
+      new Promise<'hung'>((r) => setTimeout(() => r('hung'), 2_000)),
+    ]);
+    expect(overlap === 'hung' ? 'hung' : overlap.statusCode).toBe(409);
+    if (overlap !== 'hung') expect(overlap.json().error).toBe('Already suggesting');
     release();
     const second = await pending;
     expect(second.statusCode, second.body).toBe(200);

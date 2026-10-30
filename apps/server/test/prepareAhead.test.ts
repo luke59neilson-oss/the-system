@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { DEFAULT_RULES, execute } from '@the-system/engine';
 import { CoDm } from '../src/ai/coDm';
@@ -109,38 +109,39 @@ function campaign(root: string): CampaignStore {
   return store;
 }
 
+// QF.35 (b): every test gets its own campaign, fake model, settings and
+// clock, so each passes alone and in any order.
 describe('prepare-ahead routes (MC.10)', () => {
   let root: string;
   let store: CampaignStore;
   let app: FastifyInstance;
   let fake: FixtureAiClient;
   let coDm: CoDm;
-  let clock = Date.parse('2026-10-26T19:00:00.000Z');
+  let clock: number;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
+    clock = Date.parse('2026-10-26T19:00:00.000Z');
+    fake = new FixtureAiClient([
+      { role: 'fast', match: 'slowpoke', delayMs: 100, text: '{"heading": null}' },
+      { role: 'fast', match: 'garbled', text: 'not json at all' },
+      {
+        role: 'fast',
+        match: 'herbalist',
+        usage: { inputTokens: 300, outputTokens: 40 },
+        text: JSON.stringify({
+          heading: { line: 2, kind: 'shop', place: 'Herbalist', request: 'The herbalist' },
+        }),
+      },
+      { role: 'fast', match: 'Prepare ahead.', text: '{"heading": null}' },
+      ...GENERATE_FIXTURES,
+    ]);
     root = mkdtempSync(path.join(tmpdir(), 'the-system-prepare-'));
     writeFileSync(path.join(root, 'index.html'), '<!doctype html>');
     store = campaign(root);
     coDm = new CoDm({
       dir: path.join(root, 'app-data'),
       cipher: null,
-      makeClient: () => {
-        fake = new FixtureAiClient([
-          { role: 'fast', match: 'slowpoke', delayMs: 100, text: '{"heading": null}' },
-          { role: 'fast', match: 'garbled', text: 'not json at all' },
-          {
-            role: 'fast',
-            match: 'herbalist',
-            usage: { inputTokens: 300, outputTokens: 40 },
-            text: JSON.stringify({
-              heading: { line: 2, kind: 'shop', place: 'Herbalist', request: 'The herbalist' },
-            }),
-          },
-          { role: 'fast', match: 'Prepare ahead.', text: '{"heading": null}' },
-          ...GENERATE_FIXTURES,
-        ]);
-        return fake;
-      },
+      makeClient: () => fake,
     });
     app = await createServer({
       webRoot: root,
@@ -149,7 +150,7 @@ describe('prepare-ahead routes (MC.10)', () => {
       now: () => clock,
     });
   });
-  afterAll(async () => {
+  afterEach(async () => {
     await app.close();
     rmSync(root, { recursive: true, force: true });
   });
@@ -163,6 +164,17 @@ describe('prepare-ahead routes (MC.10)', () => {
       JSON.stringify({ at: '2026-10-26T19:00:00.000Z', startMs: i, endMs: i, text }),
     );
     writeFileSync(transcriptFile(dir, 0), body.join('\n') + '\n');
+  };
+
+  const enable = async () => {
+    const on = await app.inject({
+      method: 'PUT',
+      url: '/api/gm/ai/prepared/settings',
+      headers: gm,
+      payload: { enabled: true },
+    });
+    expect(on.statusCode, on.body).toBe(200);
+    return on;
   };
 
   it('is GM-only', async () => {
@@ -185,13 +197,9 @@ describe('prepare-ahead routes (MC.10)', () => {
   });
 
   it('when on, drafts content for where the table heads, counts spend, changes nothing', async () => {
+    say(['Nice weather.', "Let's go find that herbalist."]);
     const events = store.campaign.events.length;
-    const on = await app.inject({
-      method: 'PUT',
-      url: '/api/gm/ai/prepared/settings',
-      headers: gm,
-      payload: { enabled: true },
-    });
+    const on = await enable();
     expect(on.json()).toMatchObject({ enabled: true, intervalS: 300 });
     const r = await post();
     expect(r.statusCode, r.body).toBe(200);
@@ -245,6 +253,9 @@ describe('prepare-ahead routes (MC.10)', () => {
   });
 
   it('dismiss of a missing draft is 404; a damaged file is never overwritten', async () => {
+    await enable();
+    say(['Nice weather.', "Let's go find that herbalist."]);
+    expect((await post()).statusCode).toBe(200);
     const del = await app.inject({
       method: 'DELETE',
       url: '/api/gm/ai/prepared/nope',
@@ -268,6 +279,7 @@ describe('prepare-ahead routes (MC.10)', () => {
       'On we go.',
       'That herbalist, yes.',
     ];
+    await enable();
     say([...base, 'Something garbled.']);
     clock += 600_000;
     const n = fake.requests.length;
@@ -295,6 +307,7 @@ describe('prepare-ahead routes (MC.10)', () => {
       'On we go.',
       'That herbalist, yes.',
     ];
+    await enable();
     say([...base, 'Something garbled.', 'A slowpoke line.']);
     clock += 600_000;
     // inject starts on then(); give the first look time to start its slow call.

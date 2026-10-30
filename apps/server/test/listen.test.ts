@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { DEFAULT_RULES, execute } from '@the-system/engine';
 import { LiveHub } from '../src/hub';
@@ -201,17 +201,20 @@ describe('listening mark (MC.5)', () => {
   });
 });
 
+// QF.35 (b): every test gets its own campaign, server and fake embedder
+// queue, so each passes alone and in any order.
 describe('voice enrolment routes (MC.6)', () => {
   let root: string;
   let store: CampaignStore;
   let app: FastifyInstance;
   const gm = { 'x-gm-key': GM, 'content-type': 'application/octet-stream' };
-  const embeds: number[][] = [[1, 0, 0]];
+  let embeds: number[][] = [];
   const embedder = {
     embed: () => Promise.resolve(embeds.shift() ?? null),
   };
 
-  beforeAll(async () => {
+  beforeEach(async () => {
+    embeds = [];
     root = mkdtempSync(path.join(tmpdir(), 'the-system-enrol-'));
     writeFileSync(path.join(root, 'index.html'), '<!doctype html>');
     store = campaign(root);
@@ -223,7 +226,7 @@ describe('voice enrolment routes (MC.6)', () => {
       now: () => Date.parse('2026-10-26T19:00:00.000Z'),
     });
   });
-  afterAll(async () => {
+  afterEach(async () => {
     await app.close();
     rmSync(root, { recursive: true, force: true });
   });
@@ -240,6 +243,7 @@ describe('voice enrolment routes (MC.6)', () => {
   });
 
   it('enrols a 4 s sample, keeps only the embedding, lists names, and deletes it', async () => {
+    embeds.push([1, 0, 0]);
     const r = await app.inject({
       method: 'POST',
       url: '/api/gm/listen/speakers/jake',
@@ -351,8 +355,6 @@ describe('voice enrolment routes (MC.6)', () => {
     });
     expect(del.statusCode).toBe(500);
     expect(readFileSync(file, 'utf8')).toBe('{ damaged');
-    rmSync(file);
-    embeds.length = 0;
   });
 
   it('takes a 15 s sample but not a longer one', async () => {
