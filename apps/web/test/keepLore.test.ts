@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { keepTags, keepText, keepTitle, loreNotes } from '../src/gm/quickModel';
+import { generatedLore, keepTags, keepText, keepTitle, loreNotes } from '../src/gm/quickModel';
 
 // MD.3 (DESIGN §11 "Keep"): the pure helpers behind Keep and the Lore view.
 describe('Keep lore (MD.3)', () => {
@@ -25,6 +25,21 @@ describe('Keep lore (MD.3)', () => {
     expect(keepTitle({ npc: 'Sal', place: 'The Crown' })).toBe('Sal');
     expect(keepTitle({ npc: null, place: 'The Crown' })).toBe('The Crown');
     expect(keepTitle({ npc: null, place: null })).toBe('Lore');
+  });
+
+  it('starts Keep on a generated item from its names and descriptions', () => {
+    const file = {
+      format: 'the-system/content',
+      version: 1,
+      gmNotes: [{ title: 'Mira the herbalist', body: 'Owes the  ferryman.' }],
+      items: [{ name: 'Bitterroot salve', description: 'Heals a little.' }, { name: 'Plain' }],
+      shops: 'not a list',
+    };
+    expect(generatedLore(file)).toEqual({
+      text: 'Mira the herbalist: Owes the ferryman.\nBitterroot salve: Heals a little.\nPlain',
+      names: ['Mira the herbalist', 'Bitterroot salve', 'Plain'],
+    });
+    expect(generatedLore(null)).toEqual({ text: '', names: [] });
   });
 
   it('lists GM lore notes only, newest first', () => {
