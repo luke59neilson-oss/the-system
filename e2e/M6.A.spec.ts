@@ -118,6 +118,7 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
   // Loot roll: a one-entry table always drops the charm.
   const loot = gm.locator('section[aria-labelledby="loot-tables"]');
   const lootForm = loot.locator('form[aria-labelledby="loot-table-form"]');
+  await openWindow(gm, 'loot-tables');
   await lootForm.getByLabel('Table name').fill('Pale hunter drop');
   const entry = lootForm.getByRole('group', { name: 'Entry 1' });
   await entry.getByLabel('Kind').selectOption({ label: 'Item' });
@@ -202,6 +203,7 @@ test('give, trade, loot roll and title award end to end', async ({ browser }) =>
   // Title award: +10% Vitality on top: (10 + 2) × 1.1 = 13.2, rounded to 13 → HP max 130.
   const titles = gm.locator('section[aria-labelledby="title-library"]');
   const titleForm = titles.locator('form[aria-labelledby="title-library-form"]');
+  await openWindow(gm, 'title-library');
   await titleForm.getByLabel('Title name').fill('Rapid Spread');
   await titleForm.getByLabel('System text (the holder sees this)').fill(TITLE_TEXT);
   await titleForm.getByLabel('Vitality percent').fill('10');

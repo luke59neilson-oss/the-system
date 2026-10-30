@@ -69,6 +69,7 @@ test('a sample encounter end to end; stability reaches players only when shown',
   // A quest with World Stability rules, gauge hidden from players.
   const qm = gm.locator('section[aria-labelledby="quest-manager"]');
   const form = qm.locator('form[aria-labelledby="quest-form"]');
+  await openWindow(gm, 'quest-manager');
   await form.getByLabel('Quest title').fill('The world is dying');
   await form.getByLabel('Quest text (players see this)').fill('Find what is killing it.');
   await form.getByLabel(/World Stability rules/).fill('cleanse: -5\nsystem beast: +2');
@@ -94,6 +95,7 @@ test('a sample encounter end to end; stability reaches players only when shown',
   const roller = win.locator('form[aria-labelledby="contest-roller"]');
   const sideA = roller.getByRole('group', { name: 'Side A' });
   const sideB = roller.getByRole('group', { name: 'Side B' });
+  await openWindow(gm, 'encounter');
   await sideA.getByLabel('Who').selectOption({ label: 'Jake' });
   await sideA.getByLabel('Stat').selectOption({ label: 'Agility' });
   await openWindow(gm, 'bestiary');
@@ -120,6 +122,7 @@ test('a sample encounter end to end; stability reaches players only when shown',
 
   // The foe hits back: Jake takes 30 HP.
   const pools = win.locator('form[aria-labelledby="pool-tool"]');
+  await openWindow(gm, 'encounter');
   await pools.getByLabel('Character').selectOption({ label: 'Jake' });
   await pools.getByLabel('Points', { exact: true }).fill('30');
   await pools.getByRole('button', { name: 'Apply' }).click();

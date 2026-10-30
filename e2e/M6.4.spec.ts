@@ -68,6 +68,7 @@ test('the GM defines, awards and edits a title; only the holder sees its text an
   await openWindow(gm, 'title-library');
   await expect(lib).toContainText('No titles yet.');
   const form = lib.locator('form[aria-labelledby="title-library-form"]');
+  await openWindow(gm, 'title-library');
   await form.getByLabel('Title name').fill('Rapid Spread');
   await form.getByLabel('System text (the holder sees this)').fill(TEXT);
   await form.getByLabel('Vitality percent').fill('ten');

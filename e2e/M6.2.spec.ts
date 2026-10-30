@@ -57,6 +57,7 @@ test('the GM defines and rolls a loot table; the player receives the roll live',
   const loot = gm.locator('section[aria-labelledby="loot-tables"]');
   await expect(loot).toContainText('No loot tables yet.');
   const form = loot.locator('form[aria-labelledby="loot-table-form"]');
+  await openWindow(gm, 'loot-tables');
   await form.getByLabel('Table name').fill('Pale hunter drop');
   const entry = (n: number) => form.getByRole('group', { name: `Entry ${n}` });
   // The form opened before any item existed, so its first entry pays currency.

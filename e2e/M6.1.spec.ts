@@ -48,6 +48,7 @@ test('the GM creates, edits, gives and takes an item; the player sees it live', 
   await openWindow(gm, 'item-library');
   await expect(library).toContainText('No items yet.');
   const form = library.locator('form[aria-labelledby="item-library-form"]');
+  await openWindow(gm, 'item-library');
   await form.getByLabel('Item name').fill('Bone Charm');
   await form.getByLabel('Slot').selectOption({ label: 'Necklace' });
   await form.getByLabel('Description (players see this)').fill('A knuckle on a cord.');

@@ -120,6 +120,7 @@ test('upgrades take the next rarity’s text; edits propagate; effects stay with
         { name: 'Archer’s Eye', rarity: 'common' },
       ],
     });
+    await openWindow(gm, 'party');
     await expect(gm.getByRole('heading', { level: 3, name, exact: true })).toBeVisible();
   }
 

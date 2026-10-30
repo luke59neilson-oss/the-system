@@ -59,6 +59,7 @@ test('the GM keeps a bestiary; players see only labels and unlocked tiers', asyn
   await openWindow(gm, 'bestiary');
   await expect(win).toContainText('Nothing in the bestiary yet.');
   const form = win.locator('form[aria-labelledby="bestiary-form"]');
+  await openWindow(gm, 'bestiary');
   await form.getByLabel('Name (GM only)').fill('SECRET Pale hunter');
   await form.getByLabel('Grade').selectOption('F');
   await form.getByLabel('Level').fill('12');

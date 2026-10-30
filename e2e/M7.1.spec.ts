@@ -67,6 +67,7 @@ test('the GM runs quests and World Stability; players see only what is visible',
   await openWindow(gm, 'quest-manager');
   await expect(qm).toContainText('No quests yet.');
   const form = qm.locator('form[aria-labelledby="quest-form"]');
+  await openWindow(gm, 'quest-manager');
   await form.getByLabel('Quest title').fill('The world is dying');
   await form
     .getByLabel('Quest text (players see this)')
