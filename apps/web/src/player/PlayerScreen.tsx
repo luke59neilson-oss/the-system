@@ -57,6 +57,7 @@ import {
   themeClass,
   unassignedPoints,
 } from './sheet';
+import { costText } from './skillDetailModel';
 
 /**
  * Player status screen (MS.2 walking skeleton; the full M3 screens build on it).
@@ -927,6 +928,12 @@ function SkillList({
                   [{s.name} ({rarityName(rules, s.rarity)})]
                 </span>
                 {s.nickname && <span className="nickname"> “{s.nickname}”</span>}
+                {costText(rules, s) !== null && (
+                  <span className="skill-cost" data-testid="skill-cost">
+                    {' '}
+                    · {costText(rules, s)}
+                  </span>
+                )}
               </button>
             </li>
           ))}

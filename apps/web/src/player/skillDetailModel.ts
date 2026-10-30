@@ -52,3 +52,18 @@ export function kindLabel(kind: Skill['kind']): string {
       ? 'Profession skill'
       : 'Race skill';
 }
+
+/** A pool's short label: the part in brackets ("Mana Points (MP)" → "MP"), else its name. */
+export function poolShort(rules: Pick<PlayerRules, 'pools'>, id: string): string {
+  const name = rules.pools.find((p) => p.id === id)?.name ?? id;
+  return /\(([^()]+)\)\s*$/.exec(name)?.[1] ?? name;
+}
+
+/** MU.4: "15 MP" for a skill with a cost, or null. */
+export function costText(
+  rules: Pick<PlayerRules, 'pools'>,
+  skill: Pick<Skill, 'casting'>,
+): string | null {
+  const cost = skill.casting?.cost;
+  return cost ? `${cost.amount.toLocaleString('en-US')} ${poolShort(rules, cost.pool)}` : null;
+}

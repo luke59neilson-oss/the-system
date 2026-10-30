@@ -792,6 +792,31 @@ button.secondary:hover {
   color: var(--muted);
   font-style: italic;
 }
+/* MU.4: a spell's cost beside its name ("· 15 MP"). */
+.skill .skill-cost,
+.library-item .skill-cost {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.skill-casting {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 12px;
+  margin: 0 0 6px;
+}
+.skill-casting dt {
+  color: var(--muted);
+}
+.skill-casting dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.spell-cost {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
 .rarity-inferior .skill-name {
   color: #9a9a9a;
 }

@@ -337,6 +337,8 @@ refusal is raised.
 | `A failure counts once` | packages/engine/src/resolution/model.ts:258 | Fix the input or define the thing first |
 | `A skill has at most … tags` | packages/engine/src/skills/library.ts:56 | Fix the input or define the thing first |
 | `A tag is at most … characters` | packages/engine/src/skills/library.ts:60 | Fix the input or define the thing first |
+| `A cost is a whole number from 1 to …` | packages/engine/src/skills/library.ts:161 | Fix the input or define the thing first |
+| `… is at most … characters` | packages/engine/src/skills/library.ts:167 | Fix the input or define the thing first |
 | `The library already has […]…` | packages/engine/src/skills/library.ts:72 | Fix the input or define the thing first |
 | `[…] already uses the library text` | packages/engine/src/skills/library.ts:191 | Fix the input or define the thing first |
 | `The library has no entry with text for […] at its rarity` | packages/engine/src/skills/library.ts:200 | Fix the input or define the thing first |

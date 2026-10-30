@@ -3,7 +3,7 @@ import { MAX_NICKNAME, type OwnSheet, type PlayerView } from '@the-system/engine
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 import { cssToken, rarityName } from './sheet';
-import { kindLabel, markProgress } from './skillDetailModel';
+import { costText, kindLabel, markProgress } from './skillDetailModel';
 
 type Skill = OwnSheet['skills'][number];
 
@@ -87,6 +87,37 @@ export function SkillDetail({
           <p className="skill-effects" data-testid="skill-detail-effects">
             {skill.effects}
           </p>
+        </section>
+      )}
+      {skill.casting && (
+        <section aria-labelledby="skill-detail-casting" data-testid="skill-detail-casting">
+          <h4 id="skill-detail-casting">Casting</h4>
+          <dl className="skill-casting">
+            {skill.casting.cost && (
+              <>
+                <dt>Cost</dt>
+                <dd data-testid="skill-detail-cost">{costText(rules, skill)} per use</dd>
+              </>
+            )}
+            {skill.casting.cooldown && (
+              <>
+                <dt>Cooldown</dt>
+                <dd data-testid="skill-detail-cooldown">{skill.casting.cooldown}</dd>
+              </>
+            )}
+            {skill.casting.range && (
+              <>
+                <dt>Range</dt>
+                <dd data-testid="skill-detail-range">{skill.casting.range}</dd>
+              </>
+            )}
+            {skill.casting.castingNotes && (
+              <>
+                <dt>Notes</dt>
+                <dd data-testid="skill-detail-notes">{skill.casting.castingNotes}</dd>
+              </>
+            )}
+          </dl>
         </section>
       )}
       <section aria-labelledby="skill-detail-marks">

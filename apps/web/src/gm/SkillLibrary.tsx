@@ -5,6 +5,7 @@ import type { CommandResult, LiveClient } from '../live';
 import { cssToken } from '../player/sheet';
 import {
   draftOf,
+  draftProblem,
   emptyDraft,
   librarySkills,
   saveCommand,
@@ -56,7 +57,11 @@ export function SkillLibrary({ client, state }: { client: LiveClient; state: Cam
     setResult(null);
     nameInput.current?.focus();
   };
-  const set = (field: keyof SkillDraft, value: string) => setDraft({ ...draft, [field]: value });
+  const set = (field: Exclude<keyof SkillDraft, 'spell'>, value: string) =>
+    setDraft({ ...draft, [field]: value });
+  const problem = draftProblem(draft);
+  const pools = state.rules.pools;
+  const poolName = (id: string) => pools.find((p) => p.id === id)?.name ?? id;
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!command) return;
@@ -105,6 +110,12 @@ export function SkillLibrary({ client, state }: { client: LiveClient; state: Cam
               >
                 <span className="skill-name">[{def.name}]</span>{' '}
                 <span className="muted">({rarityName(def.rarity)})</span>
+                {def.cost && (
+                  <span className="muted skill-cost" data-testid="library-cost">
+                    {' '}
+                    · {def.cost.amount} {poolName(def.cost.pool)}
+                  </span>
+                )}
                 {def.tags.length > 0 && (
                   <span className="library-tags">
                     {def.tags.map((t) => (
@@ -177,6 +188,77 @@ export function SkillLibrary({ client, state }: { client: LiveClient; state: Cam
             rows={3}
           />
         </label>
+        <fieldset className="spell-fields" data-testid="spell-fields">
+          <legend>Spell (optional)</legend>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={draft.spell}
+              onChange={(e) => setDraft({ ...draft, spell: e.target.checked })}
+            />{' '}
+            Spell (adds the “spell” tag)
+          </label>
+          <div className="spell-cost">
+            <label>
+              Cost pool
+              <select value={draft.costPool} onChange={(e) => set('costPool', e.target.value)}>
+                <option value="">No cost</option>
+                {pools.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Cost per use
+              <input
+                inputMode="numeric"
+                value={draft.costAmount}
+                onChange={(e) => set('costAmount', e.target.value)}
+                placeholder="15"
+                aria-invalid={problem !== null}
+                aria-describedby={problem !== null ? 'skill-cost-problem' : undefined}
+              />
+            </label>
+          </div>
+          <label>
+            Cooldown (shown, not enforced)
+            <input
+              value={draft.cooldown}
+              onChange={(e) => set('cooldown', e.target.value)}
+              maxLength={80}
+              placeholder="10 seconds"
+            />
+          </label>
+          <label>
+            Range
+            <input
+              value={draft.range}
+              onChange={(e) => set('range', e.target.value)}
+              maxLength={80}
+              placeholder="30 m, Touch"
+            />
+          </label>
+          <label>
+            Casting notes
+            <textarea
+              value={draft.castingNotes}
+              onChange={(e) => set('castingNotes', e.target.value)}
+              maxLength={1000}
+              rows={2}
+            />
+          </label>
+          <p className="muted hint">
+            The skill’s owner sees the cost, cooldown, range and notes on their sheet. Other players
+            never do.
+          </p>
+          {problem !== null && (
+            <p className="err" id="skill-cost-problem" role="alert">
+              {problem}
+            </p>
+          )}
+        </fieldset>
         {state.rules.skills.libraryByRarity ? (
           <p className="muted hint">
             One entry per name and rarity. Every character’s copy at this rarity shows its text,
