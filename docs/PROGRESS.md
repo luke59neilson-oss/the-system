@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-30): MU.2 done and reviewed (player running log). MU.3 (XP context in the award box) built on `wip/MU.3`, review not yet run.
-**Next item:** MU.3 XP context in the award box (resume `wip/MU.3`: merge main, run MU.3 + M4.6 specs, sonnet review)
+**Status:** in progress (2026-10-30): MU.3 done and reviewed (XP context in the award box); sweep B fixed QF.36 (High). MU.4 (spells) built on `wip/MU.4`, review round 1 back with 2 Mediums to fix.
+**Next item:** MU.4 spells (resume `wip/MU.4`: merge main, fix the 2 round-1 Mediums in REVIEW-LOG, sonnet round 2); then QF.37
 **Blockers:** none
 
 ## Run log
@@ -1319,4 +1319,14 @@ next item, blockers. -->
 - Tests: unit 1,618 on wip/MU.3 (1,611 on main). Engine coverage not re-measured this run.
 - Open `wip/*`: `wip/MU.3` (head 9a06dbc0).
 - Next: MU.3. Blockers: none.
+
+### Run · 2026-10-30 21:08–21:58 UTC (close-out at minute 45; end minute 48)
+- Preflight: `add_repo` not offered; repo already cloned and in scope; fetched and fast-forwarded main; lock pushed cleanly; vitest 5.0.5; sonnet, haiku and fable reviewers work (worktree, blocking calls; the MU.4 build ran in a fork beside the sweep). **CI red on main (30ed358b)**: M3.7, the trade DING queued behind two MU.2 pool notices; fixed first (492127d2, `e2e/helpers/toast.ts` `expectToast`). No new answers. Sweep hour (21 UTC), rotation B.
+- Sweep B (bff5db12..492127d2): Boundaries haiku 0/0/2, Tests fable 1/2/3, UX sonnet 0/1/2. High confirmed by mutation (dropping the hidden-quest guard in MU.2 notices failed no test) and fixed this run as QF.36 with both test Mediums and the free-points wording; UX Medium (quick-response labels truncated to "Yes…") queued as QF.37; Lows to the Backlog.
+- MU.3 finished: resumed `wip/MU.3`, merged main; review sonnet, 2 rounds (round 1: 0 High, 2 Medium — untested row formatting, silent "≈" on a blocked preview — fixed with `xpAwardModel.ts` + unit tests and an uneven-share e2e; round 2: 0 High, 0 Medium, 5 Low, two fixed). Merged to main (a208c96b).
+- QF.36 done: sonnet, 1 round, 0 High, 0 Medium, 3 Low.
+- MU.4 on `wip/MU.4` (head ebe1d236, base main 492127d2), built by a fork: engine casting fields (optional cost pool/amount, cooldown, range, casting notes, spell tag) with 7 unit tests, content format and schema, skill library form, owner sees costs, `e2e/MU.4.spec.ts` with screenshots; D269 (on the branch). Review round 1: 0 High, 2 Medium (hand-edited copies still take the library's cost; an upgrade to a rarity with no entry drops the cost silently). Next step: merge main, fix both Mediums, round 2.
+- Tests: unit 1,627+ on main. Engine coverage not re-measured this run.
+- Open `wip/*`: `wip/MU.4` (head ebe1d236).
+- Next: MU.4, then QF.37. Blockers: none.
 

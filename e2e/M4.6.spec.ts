@@ -58,7 +58,9 @@ test('the GM previews and awards XP with a custom split', async ({ browser }) =>
   // The typical-session helper fills the amount for the three G-grade characters:
   // 600 each is typical, but a fresh G character has only 400 XP of room, so it
   // suggests 3 × 400 and nothing is lost.
-  await expect(award.getByTestId('typical-session')).toContainText('G-grade 600 XP each');
+  await expect(award.getByTestId('typical-session')).toContainText(
+    'G: 1 level = 100 XP; a typical session ≈ 6 levels = 600 XP each',
+  );
   await award.getByRole('button', { name: 'Use for 3' }).click();
   await expect(award.getByLabel('Amount')).toHaveValue('1200');
   await expect(award.getByTestId(`levels-${jake}`)).toHaveText(' · class lvl 0 → 4');

@@ -107,7 +107,7 @@ export function gmChangeText(n: GmChange): string {
     case 'xp':
       return `+${d} ${s === 'profession' ? 'profession' : 'class'} XP`;
     case 'freePoints':
-      return with_(`The GM set your race level ${d} free points`);
+      return with_(`The GM assigned your free points for race level ${d}`);
     case 'professionWithdrawn':
       return `Profession offer withdrawn: [${s}]`;
     case 'titleEdited':

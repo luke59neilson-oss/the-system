@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** bff5db12 (2026-10-30, A) · **Next rotation:** B
+**Last sweep:** 492127d2 (2026-10-30, B) · **Next rotation:** C
 
 ## Lenses and rotation
 
@@ -126,6 +126,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-30 15:12 | A, ee438ac1..2b49d88f | Rules · fable | 0 | 2 | 4 | 2 M confirmed (R1 by trace, R2 by node probe): QF.33, QF.34; 4 L to Backlog | 0 | ~160k |
 | 2026-10-30 15:12 | A, ee438ac1..2b49d88f | Boundaries · sonnet | 0 | 0 | 1 | 1 L to Backlog | 0 | ~148k |
 | 2026-10-30 15:12 | A, ee438ac1..2b49d88f | Tests · haiku | 0 | 5 | 5 | 4 M confirmed by mutation / shuffle (QF.35); 1 M lowered to Low (player-frame canaries exist at e2e level: MC.5, MC.7, MC.8, MC.10, MC.A); 5 L to Backlog | 0 | ~147k |
+| 2026-10-30 21:20 | B, bff5db12..492127d2 | Boundaries · haiku | 0 | 0 | 2 | 2 L to Backlog | 0 | ~225k |
+| 2026-10-30 21:20 | B, bff5db12..492127d2 | Tests · fable | 1 | 2 | 3 | 1 H + 2 M confirmed by mutation (QF.36, fixed this run); M5.3 toast wait fixed in QF.36; 3 L to Backlog | 0 | ~155k |
+| 2026-10-30 21:20 | B, bff5db12..492127d2 | UX · sonnet | 0 | 1 | 2 | 1 M confirmed from screenshots (QF.37); freePoints wording fixed in QF.36; 1 L to Backlog | 0 | ~86k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -176,6 +179,13 @@ reviewers ran 15–20 minutes each in the background.
   (10:31 UTC): now QF.14.
 
 ## Backlog (Lows; M11.5 goes through these)
+
+- (Sweep B, Boundaries) No cap on WebSocket connections per address or in total (`apps/server/src/server.ts` WS handler, `hub.ts` clients); a LAN host can open hundreds of sockets that each replay history on join.
+- (Sweep B, Boundaries) The GM key in the GM tab's sessionStorage is readable by same-origin player iframes in View as; latent (no innerHTML anywhere today).
+- (Sweep B, Tests) `gmChangeText` pins only 8 of 26 change kinds' wording (`apps/web/test/runningLog.test.ts`), including the new free-points line.
+- (Sweep B, Tests) `e2e/MD.A.spec.ts:137` proves "no quick POST while viewing as" with a 500 ms sleep.
+- (Sweep B, Tests) `playerLog.test.ts` audit checks only "notice list non-empty" per event; `freePoints` diffs, `evolutionChosen` and `progression` contents unpinned; no-op guards on poolsSet/progressionSet untested.
+- (Sweep B, UX) On a 390 px phone the DING toast covers the bottom running-log lines and "Full history" while notices queue (2.6 s each); the Notifications window opens on "Level-ups and upgrades", so View as shows "No notifications match." beside a full log.
 - MD.A review 2026-10-30 (fable): Richer re-asks the last *pressed* slot even when that press failed (`QuickResponses.tsx` `last`); Keep tags place/session from the current scene poll, not the answer's; a clicked line older than the last 12 has no surrounding context in the prompt (`quickRoutes.ts:106`); the rows of five wrap 3+2 / 2-2-1 in the co-DM column (revisit with MU.1 tabs); duplicate `/api/gm/listen` polling from QuickResponses and ListenPanel.
 - Sweep A 2026-10-30 (Rules): a stream that ends without `message_stop` is not counted in spend (`anthropic.ts` readStream: no `partial`); no golden pins `practice.logged` with `session`; montage-logged uses are not "already logged" for co-DM drafts (`practiceRoutes.ts:79`); a draft confirmed for an earlier session lands in the current session's report.
 - Sweep A 2026-10-30 (Boundaries): the GM window has no `setPermissionCheckHandler` (`apps/desktop/src/main.ts` ~152).

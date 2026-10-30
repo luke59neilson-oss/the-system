@@ -498,6 +498,24 @@ the rest follow in file order. Each gets its own §6 review.
   `if (!poll) return;` fails no test: add a hook test counting fetches with
   and without a key and the seed-over-stale-poll rule. Sweep A 2026-10-30,
   Tests. *Accept:* each mutation now caught; both files pass shuffled.
+- [x] **QF.36 (High) MU.2 notices: tests that can fail.** (a) dropping the
+  hidden-quest guard in `gmChanges.ts` (`if (!now?.visible) break;`) fails
+  no test, so a hidden quest's title could reach every phone with green CI:
+  assert no notice carries a hidden quest while it stays hidden; (b) the
+  `gained > 0` and no-op `statsSet` mutations survive: pin the exact XP
+  notice and a no-op set; (c) `e2e/M5.3.spec.ts` waits 5 s for a DING that
+  now sits behind two mark notices (the M3.7 CI failure's pattern): use
+  `expectToast`; (d) the free-points line read "The GM set your race level
+  3 free points". Sweep B 2026-10-30, Tests and UX. *Accept:* each mutation
+  caught; M5.3 green.
+- [ ] **QF.37 Quick-response buttons show their names.** At 1366×768 the five
+  fixed buttons truncate to "1 Yes…", "2 Yes…", "3 No,…" (`styles.css`
+  ~3095 `nowrap` + ellipsis in a 5-column grid), so the GM cannot tell
+  "Yes, and…" from "Yes, but…" without hovering (DESIGN §11, L22: find them
+  without looking). Let labels wrap to two lines (or shorten the grid) so
+  every default name shows whole. Sweep B 2026-10-30, UX. *Accept:* e2e
+  that each default button's visible text is its full name at 1366×768;
+  screenshot.
 
 ## MR — Luke's answers, batch 2 (2026-10-22)
 
@@ -963,7 +981,7 @@ DESIGN §5, §6, §7, §9a. After MD.
   *Accept:* an engine test that enumerates the character-changing GM events
   and checks each notifies or is listed; e2e: the GM gives an item → a
   pop-up and a log line on the player's screen and in View as.
-- [ ] **MU.3 XP context in the award box.** Per participant: grade, class and
+- [x] **MU.3 XP context in the award box.** Per participant: grade, class and
   profession level, XP now / per level at the grade, XP to next level; for
   the typed award, each share and ≈ levels per player; the grade reference
   line; on both the quick and full Award XP. *Accept:* unit tests for the

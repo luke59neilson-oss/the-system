@@ -4,11 +4,14 @@ import {
   previewXpShares,
   typicalSessionAward,
   typicalSessionXp,
+  xpContext,
+  levelsWorth,
   type CampaignState,
   type XpPreview,
   type XpTrack,
 } from '@the-system/engine';
 import { friendlyError } from '../format';
+import { formatLevels, xpContextText } from './xpAwardModel';
 import type { CommandResult, LiveClient } from '../live';
 
 const WHOLE = /^\d+$/;
@@ -164,11 +167,14 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
       </div>
       {grades.length > 0 && (
         <p className="muted small" data-testid="typical-session">
-          Typical session (≈ {rules.campaign.typicalLevelsPerSession} levels):{' '}
+          Grade reference:{' '}
           {grades.map((g, i) => (
             <span key={g}>
               {i > 0 && ' · '}
-              {g}-grade {typicalSessionXp(rules, g).toLocaleString('en-US')} XP each{' '}
+              {g}: 1 level ={' '}
+              {(rules.grades.find((x) => x.id === g)?.xpPerLevel ?? 0).toLocaleString('en-US')} XP;
+              a typical session ≈ {rules.campaign.typicalLevelsPerSession} levels ={' '}
+              {typicalSessionXp(rules, g).toLocaleString('en-US')} XP each{' '}
               {(() => {
                 const group = chosen
                   .map((id) => state.characters[id])
@@ -228,6 +234,15 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
                 <input type="checkbox" checked={!excluded.has(id)} onChange={() => toggle(id)} />
                 {name}
               </label>
+              {(() => {
+                const c = state.characters[id];
+                if (!c) return null;
+                return (
+                  <span className="muted small xp-context" data-testid={`context-${id}`}>
+                    {xpContextText(xpContext(rules, c))}
+                  </span>
+                );
+              })()}
               <div className="xp-outcome">
                 {i >= 0 && shares && shares[i] !== undefined && (
                   <span className="muted" data-testid={`share-${id}`}>
@@ -235,6 +250,21 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
                     · {shares[i]} XP
                   </span>
                 )}
+                {r && state.characters[id] && (
+                  <span className="muted" data-testid={`worth-${id}`}>
+                    {' '}
+                    · ≈ {formatLevels(levelsWorth(rules, state.characters[id], track, r.gained))}
+                  </span>
+                )}
+                {!r &&
+                  (previewError ?? shareError) !== null &&
+                  i >= 0 &&
+                  shares?.[i] !== undefined && (
+                    <span className="muted" data-testid={`worth-${id}`}>
+                      {' '}
+                      · ≈ levels shown once the error is fixed
+                    </span>
+                  )}
                 {r && r.gained !== r.share && (
                   <span className="muted" data-testid={`gained-${id}`}>
                     {' '}

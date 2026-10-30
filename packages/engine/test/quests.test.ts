@@ -291,6 +291,26 @@ describe('hidden quest notice (MQ.7, DESIGN §7)', () => {
     }
   });
 
+  it('no notice of any kind carries a hidden quest while it stays hidden (MU.2)', () => {
+    let c = ok(party(), secret());
+    c = ok(c, {
+      type: 'quest.edit',
+      questId: 'secret',
+      title: 'SECRET-renamed',
+      text: 'SECRET-more',
+    });
+    c = ok(c, { type: 'quest.setStatus', questId: 'secret', status: 'completed' });
+    c = ok(c, { type: 'quest.setStatus', questId: 'secret', status: 'active' });
+    const notices = notificationHistory(c).map((h) => h.notification);
+    expect(notices.filter((n) => n.kind === 'gmChange')).toEqual([]);
+    expect(JSON.stringify(notices)).not.toMatch(/SECRET|secret-tag/);
+    // Revealing it then tells the table, with the title.
+    c = ok(c, { type: 'quest.edit', questId: 'secret', visible: true });
+    const after = notificationHistory(c).map((h) => h.notification);
+    expect(after.filter((n) => n.kind === 'gmChange')).toHaveLength(2);
+    expect(JSON.stringify(after)).toContain('SECRET-renamed');
+  });
+
   it('tells only the affected players when the GM names them', () => {
     const c = ok(party(), secret({ noticeTo: ['mira'] }));
     expect(told(c)).toEqual(['mira']);
