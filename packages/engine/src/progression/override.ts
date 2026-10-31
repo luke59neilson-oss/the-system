@@ -180,8 +180,20 @@ export function progressionOverrideSummary(
   if (toClass !== fromClass) {
     changes.push(`Class level ${fromClass} → ${toClass}`);
     if (toClass > fromClass) {
-      const spread = sumOver(fromClass, toClass, (l) => gradeOfLevel(rules, l).classSpreadPerLevel);
-      skips.push(`${spread} class spread points (base stats stay as they are)`);
+      // ME.1 (D301): a budgeted grade's class level grants the class budget, plus the
+      // profession's share while there is no profession; an old grade its class spread.
+      let spread = 0;
+      let budgeted = 0;
+      for (let l = fromClass + 1; l <= toClass; l++) {
+        const g = gradeOfLevel(rules, l);
+        if (g.trackBudget === undefined) spread += g.classSpreadPerLevel;
+        else
+          budgeted +=
+            g.trackBudget.class + (character.profession === null ? g.trackBudget.profession : 0);
+      }
+      if (spread > 0) skips.push(`${spread} class spread points (base stats stay as they are)`);
+      if (budgeted > 0)
+        skips.push(`${budgeted} class stat points (base stats and free points stay as they are)`);
       const chosen = new Set(
         character.selections.filter((s) => s.chosen !== null).map((s) => s.level),
       );
@@ -207,6 +219,15 @@ export function progressionOverrideSummary(
   }
   if (character.profession !== null && target.professionLevel !== character.professionLevel) {
     changes.push(`Profession level ${character.professionLevel} → ${target.professionLevel}`);
+    const toProf = Math.max(0, Math.trunc(target.professionLevel) || 0);
+    let profPoints = 0;
+    for (let l = character.professionLevel + 1; l <= toProf; l++) {
+      profPoints += gradeOfLevel(rules, l).trackBudget?.profession ?? 0;
+    }
+    if (profPoints > 0)
+      skips.push(
+        `${profPoints} profession stat points (base stats and free points stay as they are)`,
+      );
   }
 
   const fromRace = raceLevel(rules, character);
@@ -218,11 +239,21 @@ export function progressionOverrideSummary(
   if (toRace !== fromRace) {
     changes.push(`Race level ${fromRace} → ${toRace}`);
     if (toRace > fromRace) {
-      const had = new Set(character.freePointBatches.map((b) => b.raceLevel));
-      const points = sumOver(fromRace, toRace, (r) =>
-        had.has(r) ? 0 : gradeOfLevel(rules, r).freePointsPerRaceLevel,
+      // Only race-level batches mark a race level as had; class and profession
+      // batches (ME.1) carry a track.
+      const had = new Set(
+        character.freePointBatches.filter((b) => b.track === undefined).map((b) => b.raceLevel),
       );
+      const points = sumOver(fromRace, toRace, (r) => {
+        const g = gradeOfLevel(rules, r);
+        return had.has(r) || g.trackBudget !== undefined ? 0 : g.freePointsPerRaceLevel;
+      });
+      const racePoints = sumOver(fromRace, toRace, (r) => {
+        const g = gradeOfLevel(rules, r);
+        return had.has(r) || g.trackBudget === undefined ? 0 : g.trackBudget.race;
+      });
       if (points > 0) skips.push(`${points} free points (no new batches to assign)`);
+      if (racePoints > 0) skips.push(`${racePoints} race stat points (no new batches to assign)`);
     }
   }
 

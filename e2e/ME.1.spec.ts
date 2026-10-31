@@ -96,7 +96,10 @@ test('an old campaign switches to the new stat budgets from the next level-up', 
   const switcher = panel.getByTestId('track-budget-switch');
   await expect(switcher).toContainText('professions from E-grade');
   await switcher.screenshot({ path: path.join(shots, 'gm-switch-1366x768.png') });
+  await expect(switcher).toContainText('offer professions from G-grade (now E-grade)');
   await switcher.getByRole('button', { name: 'Switch to the new stat budgets' }).click();
+  // One more click confirms: the switch is a recorded rules change.
+  await switcher.getByRole('button', { name: 'Confirm switch' }).click();
   await expect(panel.getByRole('status')).toHaveText('Switched to the new stat budgets.');
   await expect(switcher).toHaveCount(0);
   // Points already given stay as they are.

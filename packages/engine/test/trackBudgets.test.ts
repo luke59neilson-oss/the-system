@@ -8,6 +8,7 @@ import {
   gainXp,
   grantProfession,
   parseRulesConfig,
+  progressionOverrideSummary,
   raceLevel,
   scaleDistribution,
   statBudgetTotal,
@@ -404,5 +405,78 @@ describe('campaigns created before ME (D300)', () => {
     odd.grades[2].id = 'X';
     expect(withTrackBudgets(odd).tracks.professionUnlockGrade).toBe('E');
     expect(withTrackBudgets(odd).grades[2].trackBudget).toBeUndefined();
+  });
+});
+
+describe('a profession taken mid-grade (ME.1 review)', () => {
+  it('starts at the class level, so race levels and their points carry on', () => {
+    const f = rules.grades.find((g) => g.id === 'F') as GradeRules;
+    const b = f.trackBudget!;
+    let c: Character = { ...fresh(), grade: 'F', classLevel: 8 };
+    c = grantProfession(rules, c, 'Smith');
+    expect(c.professionLevel).toBe(8);
+    expect(raceLevel(rules, c)).toBe(8);
+    // Class 9 with profession 8: race floor(17 / 2) = 8, so class points only.
+    const cls = gainXp(rules, c, 'class', f.xpPerLevel).character;
+    expect(gained(c, cls)).toBe(b.class);
+    expect(cls.freePointBatches).toEqual([]);
+    // Profession 9: race 9, so the profession's and the race's points.
+    const prof = gainXp(rules, cls, 'profession', f.xpPerLevel).character;
+    expect(gained(cls, prof)).toBe(b.profession + b.race);
+    expect(prof.freePointBatches).toEqual([
+      { raceLevel: 9, points: b.race, allocation: null, locked: false },
+    ]);
+  });
+});
+
+describe('the GM override warning on budgeted grades (ME.1 review)', () => {
+  it('prices skipped levels from the track budgets, not the old spread', () => {
+    const s = progressionOverrideSummary(rules, fresh(), {
+      grade: 'G',
+      classLevel: 4,
+      professionLevel: 0,
+      xp: { class: 0, profession: 0 },
+    });
+    // No profession: each G class level grants class 8 + profession share 5; race 5 each.
+    expect(s.skips).toEqual([
+      `${4 * (8 + 5)} class stat points (base stats and free points stay as they are)`,
+      `${4 * 5} race stat points (no new batches to assign)`,
+    ]);
+  });
+
+  it('prices profession levels, and track batches do not count as race levels had', () => {
+    const c: Character = {
+      ...grantProfession(rules, fresh(), 'Smith'),
+      freePointBatches: [
+        { raceLevel: 0, track: 'class', trackLevel: 1, points: 2, allocation: null, locked: false },
+      ],
+    };
+    const s = progressionOverrideSummary(rules, c, {
+      grade: 'G',
+      classLevel: 2,
+      professionLevel: 2,
+      xp: { class: 0, profession: 0 },
+    });
+    expect(s.skips).toEqual([
+      `${2 * 8} class stat points (base stats and free points stay as they are)`,
+      `${2 * 5} profession stat points (base stats and free points stay as they are)`,
+      `${2 * 5} race stat points (no new batches to assign)`,
+    ]);
+  });
+});
+
+describe('the GM override warning on a campaign from before ME', () => {
+  it('still prices skipped levels by the old spread and free points', () => {
+    const old = parseRulesConfig(preMeRules());
+    if (!old.ok) throw new Error('pre-ME rules must parse');
+    const s = progressionOverrideSummary(old.config, fresh(), {
+      grade: 'F',
+      classLevel: 12,
+      professionLevel: 0,
+      xp: { class: 0, profession: 0 },
+    });
+    // G levels 1–4 spread 4 and 2 free each; F levels 5–12 spread 5 and 3 free each.
+    expect(s.skips).toContain(`${4 * 4 + 8 * 5} class spread points (base stats stay as they are)`);
+    expect(s.skips).toContain(`${4 * 2 + 8 * 3} free points (no new batches to assign)`);
   });
 });
