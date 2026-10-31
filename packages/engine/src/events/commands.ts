@@ -1383,6 +1383,8 @@ function toEvent(
         },
       };
     case 'skill.setRarity':
+      // MV.3 review round 2: Identify is never re-rated either (DESIGN §7).
+      refuseIdentifyChange(campaign, command.characterId, command.skill);
       return {
         type: 'skill.raritySet',
         payload: { characterId: command.characterId, skill: command.skill, rarity: command.rarity },

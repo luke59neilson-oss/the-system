@@ -44,7 +44,14 @@ export function SkillOverrides({
   const [rarityPick, setRarityPick] = useState('');
   const rarity = rarities.some((r) => r.id === rarityPick) ? rarityPick : (skill?.rarity ?? '');
   const rarityNotes: string[] = [];
-  if (skill && rarity !== skill.rarity) {
+  // MV.3 (DESIGN §7): Identify is never re-rated; the engine refuses it.
+  const fixedRace =
+    skill !== undefined &&
+    skill.kind === 'race' &&
+    skill.name.toLowerCase() === rules.skills.startingRaceSkill.name.toLowerCase();
+  if (fixedRace) {
+    rarityNotes.push(`[${skill.name}] never changes: it is never upgraded or re-rated`);
+  } else if (skill && rarity !== skill.rarity) {
     if (ceiling && rank(rarity) > rank(ceiling)) {
       rarityNotes.push(`above the ${c.grade}-grade ceiling (${rarityName(ceiling)})`);
     }
@@ -52,8 +59,6 @@ export function SkillOverrides({
       rarityNotes.push('raised without marks; it starts at 0 marks, as every upgrade does');
     } else {
       rarityNotes.push('lowered; marks, text and effects stay');
-      if (skill.kind === 'race')
-        rarityNotes.push('a race skill such as Identify never drops by rule');
     }
   }
 
@@ -121,7 +126,7 @@ export function SkillOverrides({
           <button
             type="button"
             className="secondary"
-            disabled={busy || rarity === skill.rarity}
+            disabled={busy || fixedRace || rarity === skill.rarity}
             onClick={() =>
               void send(
                 { type: 'skill.setRarity', characterId: c.id, skill: skill.name, rarity },
