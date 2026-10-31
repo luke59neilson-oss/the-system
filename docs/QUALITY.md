@@ -385,6 +385,7 @@ lowered by their verifiers and folded into the Low batches.
 - (Sweep D 2026-10-26, Boundaries · fable) `PUT /api/gm/ai/key` is accepted from any GM console, so a GM console opened in a LAN browser would send the Anthropic key over plain HTTP; refuse it unless the request is loopback (`isLoopback` is unused) and hide the form.
 - (Sweep D 2026-10-26, UX · haiku) Enter in the loading-text field submits Generate; a ticked loading screen with blank text sends nothing and says nothing; Test connection disabled without a reason; Shops: Sell disabled with no characters and no hint, identical aria-labels across shops, "for nothing" vs "for 0 Credits", a shop whose items were removed shows "Nothing for sale." with no hint; on a phone the loading text shows twice (banner and toast).
 - (QF.29/QF.30 review) The panel's "no key" message stays after the GM saves a key until the next Generate; the key pre-check ignores Cancel until it returns.
+- QF.66 review 2026-10-31 (sonnet rounds 1–2, Low): `homeCampaign` is the page's first hello, so a phone reloaded while a copy is open words a later return as "another campaign"; a fresh load straight into a copy lacking the character shows the bare "No such character"; no `LiveClient` unit test for same-campaign reconnect, refused retry and switch back.
 
 ## Final review (M11.5)
 

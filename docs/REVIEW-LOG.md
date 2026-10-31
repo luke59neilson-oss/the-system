@@ -1156,3 +1156,8 @@
 - Found by sweep C (Tests, sonnet); both mutations re-run and confirmed surviving. Fix 03f87c06 (tests only).
 - Round 1 (sonnet, worktree, 03f87c06): 0 High, 0 Medium, 0 Low; each mutation now fails exactly the new test; both files pass shuffled 3×.
 
+
+### 2026-10-31 · QF.66 Opening a restored campaign tells players, in local time
+- Round 1 (sonnet, e75d112a): 0 High, 3 Medium, 4 Low. M1 the notice said "another copy" on switch back too → worded by direction (`campaignSwitch.ts`: earlier copy from a backup / switched back / demo / other), e2e asserts both. M2 notice unstyled → `.system-banner` with [System] mark and 44 px OK. M3 wording lacked "earlier" and the history point → fixed; the wait reason names the open campaign. Lows: D284 judged a reasonable reading (kept); GM guide now mentions the notice; no LiveClient unit test (e2e covers switch and rejoin; noted).
+- Round 2 (sonnet, 0c2e32cb): 0 High, 0 Medium, 2 Low (home campaign is the page's first hello, so a reload while a copy is open words a later return as "another campaign"; a fresh load straight into a copy without the character shows the bare "No such character"). Both to the QUALITY Backlog.
+- Also: MS.4 and MS.A e2e texts updated for the new wait reason (MS.4 was red on the wip before the fix).

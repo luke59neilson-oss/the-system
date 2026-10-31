@@ -618,7 +618,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   LOCK falls to the own-pid branch. *Accept:* a restore test from a campaign
   not named `main`; a reboot test with a foreign live pid, no `started` and an
   old `boot` that is taken over; each mutation now fails a test.
-- [ ] **QF.66 Opening a restored campaign tells players, in local time.** Sweep
+- [x] **QF.66 Opening a restored campaign tells players, in local time.** Sweep
   C (UX, fable): the Open confirm and GM guide (`CampaignBackups.tsx:165`,
   GM-GUIDE.md:347) say players go back to the join screen, but a phone whose
   character is in the copy silently shows the restored sheet (older levels,
