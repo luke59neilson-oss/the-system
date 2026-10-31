@@ -43,7 +43,7 @@ import {
 import { browserStorage, remember } from './join';
 import { Inventory } from './Inventory';
 import { QuestLog } from './QuestLog';
-import { IdentifyPanel } from './IdentifyPanel';
+import { IdentifyNotice, IdentifyPanel } from './IdentifyPanel';
 import { NotesPanel } from './NotesPanel';
 import { PracticePanel } from './PracticePanel';
 import { PartyPanel } from './PartyPanel';
@@ -191,6 +191,7 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
       {/* MU.2: View as shows the same pop-ups, with the sound muted. */}
       {view && <DingQueue key={live.campaign ?? ''} live={live} volume={pane ? 0 : level} />}
       {!pane && view && <ContestPopup key={live.campaign ?? ''} contests={view.contests} />}
+      {view && <IdentifyNotice view={view} client={pane ? null : client} />}
       {live.campaign === 'demo' && (
         <p className="demo-badge" data-testid="demo-badge">
           Demo campaign: for trying the app out

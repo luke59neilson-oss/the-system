@@ -104,7 +104,11 @@ export function marksReview(state: CampaignState, sessionId: string): CharacterM
           source: e.source,
           repeated: repeated.has(e.id),
         }));
-      const needed = marksToUpgrade(rules, skill);
+      // MV.3: Identify (the starting race skill) earns no marks: no upgrade to offer.
+      const fixed =
+        skill.kind === 'race' &&
+        skill.name.toLowerCase() === rules.skills.startingRaceSkill.name.toLowerCase();
+      const needed = fixed ? null : marksToUpgrade(rules, skill);
       const done = skill.markSessions.filter((s) => s === sessionId).length >= max;
       const status: MarkStatus = needed === null ? 'noUpgrade' : done ? 'marked' : 'eligible';
       const candidate: MarkCandidate = {
@@ -126,7 +130,10 @@ export function marksReview(state: CampaignState, sessionId: string): CharacterM
       .map((c) => c.candidate);
     const unused = candidates.filter((c) => c.candidate.uses === 0).map((c) => c.candidate);
     const upgrades: UpgradePrompt[] = character.skills.flatMap((skill) => {
-      if (!canUpgrade(rules, character, skill)) return [];
+      const fixed =
+        skill.kind === 'race' &&
+        skill.name.toLowerCase() === rules.skills.startingRaceSkill.name.toLowerCase();
+      if (fixed || !canUpgrade(rules, character, skill)) return [];
       const at = rules.skills.rarities.findIndex((r) => r.id === skill.rarity);
       const next = rules.skills.rarities[at + 1];
       const needed = marksToUpgrade(rules, skill);

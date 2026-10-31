@@ -52,7 +52,7 @@ const hunter = {
   grade: 'F',
   level: '12',
   stats: { strength: '30', agility: ' ' },
-  tiers: { common: '[Pale Hunter]', rare: ' [Immune cell] ' },
+  text: ' [Pale Hunter] ',
   notes: 'Hunts in pairs.',
 };
 
@@ -63,10 +63,7 @@ describe('bestiary model (M7.2)', () => {
       type: 'entity.define',
       name: 'Pale hunter',
       label: 'Pale stalker',
-      tiers: [
-        { minRarity: 'common', text: '[Pale Hunter]' },
-        { minRarity: 'rare', text: '[Immune cell]' },
-      ],
+      tiers: [{ minRarity: 'common', text: '[Pale Hunter]' }],
       grade: 'F',
       level: 12,
       stats: { strength: 30 },
@@ -80,7 +77,11 @@ describe('bestiary model (M7.2)', () => {
     expect(entityDefineCommand(state, { ...hunter, stats: { strength: 'x' } })).toMatch(
       /Strength must be a whole number/,
     );
-    expect(entityDefineCommand(state, { ...hunter, tiers: {} })).toMatch(/at least one/);
+    expect(entityDefineCommand(state, { ...hunter, text: ' ' })).toMatch(/Identify text/);
+    // MV.3: an unknown category id falls back to Uncategorized.
+    expect(entityDefineCommand(state, { ...hunter, categoryId: 'gone' })).not.toHaveProperty(
+      'categoryId',
+    );
   });
 
   it('edits only what changed', () => {
@@ -96,6 +97,9 @@ describe('bestiary model (M7.2)', () => {
       notes: 'Hunts in pairs.',
       knownBy: [],
       createdAt: '2026-10-24T02:00:00.000Z',
+      categoryId: null,
+      worked: {},
+      notices: [],
     };
     const draft = entityDraftOf(entity);
     expect(entityEditCommand(state, entity, draft)).toBeNull();
@@ -110,6 +114,12 @@ describe('bestiary model (M7.2)', () => {
       type: 'entity.edit',
       entityId: 'h',
       stats: null,
+    });
+    // MV.3: the one text keeps the entity's tier rarity.
+    expect(entityEditCommand(state, entity, { ...draft, text: '[Pale Hunter, adult]' })).toEqual({
+      type: 'entity.edit',
+      entityId: 'h',
+      tiers: [{ minRarity: 'common', text: '[Pale Hunter, adult]' }],
     });
   });
 
