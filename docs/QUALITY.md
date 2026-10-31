@@ -395,6 +395,7 @@ lowered by their verifiers and folded into the Low batches.
 - QF.66 review 2026-10-31 (sonnet rounds 1–2, Low): `homeCampaign` is the page's first hello, so a phone reloaded while a copy is open words a later return as "another campaign"; a fresh load straight into a copy lacking the character shows the bare "No such character"; no `LiveClient` unit test for same-campaign reconnect, refused retry and switch back.
 - (QF.52 review r2, sonnet) A timed, unpinned banner pushed out of the newest 50 messages within its lifetime drops from the phone; after Show older, focus can land on a pinned extra; the probe's "old way" is a projection+stringify simulation and its timing margin depends on load; the in-place canary is JSON-based over the golden logs only.
 - (Sweep D 2026-10-31, UX · haiku) Import content's "Apply N" counts ticked entries with no noun; say "Apply N entries".
+- (QF.53 review, sonnet) Small frames (results, notifications, an undo's whole-history reset) still queue for a backlogged socket until the heartbeat drops it; the drop takes 40–60 s (third tick); a campaign switch clears the heartbeat set before the 1012 close completes; the heartbeat test's raw client never answers pings even when awake.
 
 ## Final review (M11.5)
 

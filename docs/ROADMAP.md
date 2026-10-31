@@ -728,7 +728,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   when it changed and as top-level-key patches; a probe at a 40-session
   campaign (13k events) shows player frames ≤ 150 KB and server CPU per
   command at least halved; replay/projection canaries green.
-- [ ] **QF.53 Sleeping phones don't grow the laptop's memory.** No
+- [x] **QF.53 Sleeping phones don't grow the laptop's memory.** No
   backpressure or heartbeat: a frozen tab keeps its socket and the server
   queues a full view per command for it (RSS 198 → 662 MB in 300 commands
   with two stalled clients; `server.ts:305-307`). *Accept:* when a socket's
