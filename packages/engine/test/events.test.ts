@@ -436,7 +436,9 @@ describe('undo', () => {
 
   it('undoing the latest character.professionGranted removes the profession', () => {
     // No event reaches E-grade until evolutions (M1.10), so start from a state
-    // placed at E-grade; undo then refolds the real log without the grant.
+    // placed at E-grade. Undoing the newest event gives back the state it was
+    // applied to (QF.54), here the placed one; a refold of the real log
+    // without the grant gives the original state.
     const c = base();
     const state = c.state;
     if (!state) throw new Error('no state');
@@ -454,7 +456,8 @@ describe('undo', () => {
     expect(granted.state?.characters['jake']?.profession).toBe('Smith');
     const undone = undoLatest(granted);
     expect(undone.state?.characters['jake']?.profession).toBeNull();
-    expect(undone.state).toEqual(c.state);
+    expect(undone.state).toBe(atE.state);
+    expect(replay(undone.events).state).toEqual(c.state);
   });
 
   it('allows undoing a non-latest event when later events still apply', () => {

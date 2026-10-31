@@ -160,6 +160,17 @@ function hasEventId(events: readonly DomainEvent[], id: string): boolean {
  */
 const STATE_BEFORE_LAST = new WeakMap<readonly DomainEvent[], CampaignState | null>();
 
+/**
+ * QF.54: the state the last event of `events` was applied to, when that
+ * event was appended live (undefined when unknown, e.g. a log read from
+ * disk). It is the fold of every counted event before it.
+ */
+export function stateBeforeLastEvent(
+  events: readonly DomainEvent[],
+): CampaignState | null | undefined {
+  return STATE_BEFORE_LAST.has(events) ? (STATE_BEFORE_LAST.get(events) ?? null) : undefined;
+}
+
 /** A new array with `event` appended; it inherits the id index. */
 function extend(events: readonly DomainEvent[], event: DomainEvent): readonly DomainEvent[] {
   const index = idIndex(events);

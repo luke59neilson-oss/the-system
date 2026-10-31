@@ -42,9 +42,14 @@ export interface HubOptions {
   /**
    * Runs after a command's events are saved, before anyone is told (e.g. the
    * session-end backup and report, M4.3). Returns a warning for the acting
-   * client, or null. Must not throw.
+   * client, or null. Must not throw. QF.54: slow steps return a promise
+   * instead; everyone is told at once and the acting client's result waits
+   * for it, so the work never blocks the table.
    */
-  readonly afterAppend?: (store: CampaignStore, events: readonly DomainEvent[]) => string | null;
+  readonly afterAppend?: (
+    store: CampaignStore,
+    events: readonly DomainEvent[],
+  ) => string | null | Promise<string | null>;
   /**
    * Per-connection message budget for every socket but the GM's (QF.3): a
    * bucket of `burst` messages that refills at `perSecond`. Default
@@ -329,18 +334,25 @@ export class LiveHub {
         error instanceof EventRejectedError ? error.message : 'Could not save the change',
       );
     }
-    let warning: string | null;
+    const followUpFailed = 'The change was saved, but a follow-up step failed';
+    let warning: string | null | Promise<string | null>;
     try {
       warning = this.options.afterAppend?.(this.store, result.events) ?? null;
     } catch {
-      warning = 'The change was saved, but a follow-up step failed';
+      warning = followUpFailed;
     }
-    client.send({
-      type: 'result',
-      requestId: message.requestId,
-      ok: true,
-      ...(warning ? { warning } : {}),
-    });
+    const answer = (w: string | null) =>
+      client.send({
+        type: 'result',
+        requestId: message.requestId,
+        ok: true,
+        ...(w ? { warning: w } : {}),
+      });
+    if (warning instanceof Promise) {
+      warning.then(answer, () => answer(followUpFailed)).catch(() => undefined);
+    } else {
+      answer(warning);
+    }
     // Every command is one event (D44): its notifications share that event's seq.
     const event = result.events[result.events.length - 1];
     const after = this.store.campaign.state;

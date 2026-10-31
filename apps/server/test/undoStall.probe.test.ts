@@ -1,10 +1,12 @@
-// QF.54 probe (first failing test; wip): at a 40-session campaign (about 13k
-// events) undoing the newest event blocks the event loop for under 300 ms
-// and sends players a small frame, not a whole-history reset.
+// QF.54 probe: at a 40-session campaign (about 13k events) undoing the
+// newest event blocks the event loop for under 300 ms, sends players a small
+// frame, not a whole-history reset, and the GM's change log follows it
+// without a rebuild.
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
+import { updateChangeLog } from '@the-system/engine';
 import { BIG_HEROES, bigCampaignLines } from '../../../scripts/big-campaign';
 import { LiveHub } from '../src/hub';
 import { CampaignStore } from '../src/store';
@@ -35,10 +37,14 @@ describe('QF.54 probe (13k events)', () => {
       gm.receive(JSON.stringify({ type: 'command', requestId: `r${++req}`, command: c }));
     command({ type: 'system.broadcast', text: 'to undo', characterIds: null });
     const last = store.campaign.events[store.campaign.events.length - 1]!;
+    const log = updateChangeLog(null, store.campaign);
     sizes.length = 0;
     const start = performance.now();
     command({ type: 'event.undo', eventId: last.id });
+    const after = updateChangeLog(log, store.campaign);
     const took = performance.now() - start;
+    expect(after.rows[0]).toBe(log.rows[0]);
+    expect(after.rows.at(-1)?.undoneBy).not.toBeNull();
     expect(took).toBeLessThan(300);
     expect(Math.max(...sizes)).toBeLessThan(150 * 1024);
   });
