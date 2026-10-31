@@ -3,6 +3,7 @@ import {
   DEFAULT_RULES,
   emptyCampaign,
   execute,
+  projectForPlayer,
   type Campaign,
   type CampaignState,
   type Command,
@@ -101,7 +102,7 @@ describe('practice drafts (MC.7)', () => {
       {
         type: 'practice.log',
         characterId: 'jake',
-        action: 'Contest roll against Pale stalker (Agility)',
+        action: 'Contest roll (Agility)',
         stat: 'agility',
         tags: [CONTEST_TAG],
         source: 'gm',
@@ -129,5 +130,30 @@ describe('practice drafts (MC.7)', () => {
         { source: 'custom', stat: '', label: 'Y' },
       ),
     ).toEqual([]);
+  });
+
+  it('an unshared contest names neither the other side nor its stat to any player (QF.47)', () => {
+    const vsNpc = contestPracticeCommands(
+      state,
+      { source: 'c:jake', stat: 'perception', label: 'Jake' },
+      { source: 'custom', stat: 'strength', label: 'Hooded Ambusher' },
+    );
+    const vsPc = contestPracticeCommands(
+      state,
+      { source: 'c:jake', stat: 'strength', label: 'Jake · Strength' },
+      { source: 'c:kim', stat: 'agility', label: 'Kim · Agility' },
+    );
+    const after = apply(base, [...vsNpc, ...vsPc]).state as CampaignState;
+    const jake = JSON.stringify(projectForPlayer(after, 'jake'));
+    const kim = JSON.stringify(projectForPlayer(after, 'kim'));
+    expect(jake).not.toContain('Hooded Ambusher');
+    expect(jake).not.toContain('Kim · Agility');
+    expect(jake).not.toMatch(/Contest roll[^"]*Agility/);
+    expect(kim).not.toContain('Jake · Strength');
+    expect(kim).not.toMatch(/Contest roll[^"]*Strength/);
+    // Each still sees their own practice, with their own stat.
+    expect(jake).toContain('Contest roll (Perception)');
+    expect(jake).toContain('Contest roll (Strength)');
+    expect(kim).toContain('Contest roll (Agility)');
   });
 });
