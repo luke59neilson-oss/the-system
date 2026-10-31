@@ -30,7 +30,55 @@ export interface Entity {
   /** Character ids that know it, in reveal order. */
   readonly knownBy: readonly string[];
   readonly createdAt: string;
+  /** MV.3: bestiary category id (GM-defined), or null for Uncategorized. */
+  readonly categoryId: string | null;
+  /**
+   * MV.3 (DESIGN §7): per character in `knownBy`, whether Identify worked,
+   * decided by the range rule when the GM marked it and kept until marked again.
+   */
+  readonly worked: Readonly<Record<string, boolean>>;
+  /** MV.3: characters whose Identify notification for it is still open. */
+  readonly notices: readonly string[];
 }
+
+/** MV.3: a GM-made bestiary category. */
+export interface BestiaryCategory {
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
+ * MV.3 (DESIGN §7): an entity has one Identify text. Tiers given as before
+ * (several rarities) keep the lowest rarity's text; the others move to the
+ * GM's notes, so nothing is lost. Unknown rarities sort last.
+ */
+export function singleIdentifyText(
+  rules: RulesConfig,
+  tiers: readonly IdentifyTier[],
+  notes: string,
+): { tiers: IdentifyTier[]; notes: string } {
+  if (tiers.length <= 1) return { tiers: tiers.map((t) => ({ ...t })), notes };
+  const ladder = rules.skills.rarities.map((r) => r.id);
+  const rank = (id: string) => {
+    const i = ladder.indexOf(id);
+    return i === -1 ? ladder.length : i;
+  };
+  const sorted = [...tiers].sort((a, b) => rank(a.minRarity) - rank(b.minRarity));
+  const [first, ...rest] = sorted as [IdentifyTier, ...IdentifyTier[]];
+  const label = (id: string) => rules.skills.rarities.find((r) => r.id === id)?.name ?? id;
+  const tier = [{ minRarity: first.minRarity, text: first.text }];
+  // Lines the notes already hold (an edit repeating a moved tier) are not added twice.
+  const moved = rest
+    .map((t) => `${label(t.minRarity)}: ${t.text}`)
+    .filter((l) => !notes.includes(l));
+  if (moved.length === 0) return { tiers: tier, notes };
+  const block = `Other Identify tiers (before one text per entity):\n${moved.join('\n')}`;
+  return { tiers: tier, notes: notes.trim() === '' ? block : `${notes}\n\n${block}` };
+}
+
+/** MV.3: the entity's one Identify text, or null when it has none. */
+export const identifyText = (entity: Pick<Entity, 'tiers'>): string | null =>
+  entity.tiers[0]?.text ?? null;
 
 /** Why a tier list is invalid for these rules, or null when it is fine. */
 export function tierProblem(rules: RulesConfig, tiers: readonly IdentifyTier[]): string | null {

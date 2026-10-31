@@ -150,9 +150,9 @@ describe('skill library keyed by name and rarity (MQ.12)', () => {
       description: 'Kim’s own words.',
       flavor: null,
     });
-    expect(c.state?.characters['kim']?.skills.find((s) => s.name === 'Archer’s Eye')?.textEdited).toBe(
-      true,
-    );
+    expect(
+      c.state?.characters['kim']?.skills.find((s) => s.name === 'Archer’s Eye')?.textEdited,
+    ).toBe(true);
     c = ok(c, { type: 'skillDef.edit', skillDefId: 'idc', description: 'Rewritten.' });
     expect(skillOf(c)?.description).toBe('Rewritten.');
     expect(skillOf(c, 'mira')?.description).toBe('Rewritten.');

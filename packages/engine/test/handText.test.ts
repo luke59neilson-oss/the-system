@@ -259,7 +259,9 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
     c = upgradeEye(c);
     c = upgradeEye(c); // Rare: no entry
     expect(skillOf(c)).toMatchObject({ rarity: 'rare', description: 'Jake’s own words.' });
-    expect(reject(c, useLibrary())).toMatch(/no entry with text for \[Archer’s Eye\] at its rarity/);
+    expect(reject(c, useLibrary())).toMatch(
+      /no entry with text for \[Archer’s Eye\] at its rarity/,
+    );
     expect(JSON.stringify(projectForPlayer(c.state!, 'kim'))).not.toContain('Jake’s own words');
     expect(projectForGm(c.state!).characters.jake?.skills.length).toBeGreaterThan(0);
   });

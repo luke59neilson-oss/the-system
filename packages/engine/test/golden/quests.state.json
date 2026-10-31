@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 33,
+  "schemaVersion": 34,
   "name": "Golden: quests",
   "rules": {
     "configVersion": 2,
@@ -529,6 +529,8 @@
   "questOrder": ["whale", "secret"],
   "entities": {},
   "entityOrder": [],
+  "bestiaryCategories": {},
+  "bestiaryCategoryOrder": [],
   "montages": {},
   "montageOrder": [],
   "contests": {},

@@ -567,6 +567,8 @@ export type Command =
       stats?: Readonly<Record<string, number>> | null | undefined;
       /** M7.2 bestiary (GM-only) notes. */
       notes?: string | undefined;
+      /** MV.3: bestiary category id, or null/omitted for Uncategorized. */
+      categoryId?: string | null | undefined;
     }
   | {
       type: 'entity.edit';
@@ -578,6 +580,7 @@ export type Command =
       level?: number | null | undefined;
       stats?: Readonly<Record<string, number>> | null | undefined;
       notes?: string | undefined;
+      categoryId?: string | null | undefined;
     }
   | {
       type: 'entity.reveal';
@@ -585,6 +588,13 @@ export type Command =
       /** Omitted or null = every character who does not know it yet. */
       characterIds?: readonly string[] | null | undefined;
     }
+  /** MV.3 (DESIGN §7): Identified by… — decides each result now and notifies each character. */
+  | { type: 'entity.identify'; entityId: string; characterIds: readonly string[] }
+  /** MV.3: the player closes their Identify notification. */
+  | { type: 'entity.closeNotice'; entityId: string; characterId: string }
+  | { type: 'bestiary.categoryDefine'; categoryId?: string | undefined; name: string }
+  | { type: 'bestiary.categoryRename'; categoryId: string; name: string }
+  | { type: 'bestiary.categoryRemove'; categoryId: string }
   | {
       type: 'region.define';
       regionId?: string | undefined;
@@ -789,6 +799,19 @@ const commandSchema = z.discriminatedUnion('type', [
     type: z.literal('entity.reveal'),
     characterIds: z.array(z.string()).nullable().optional(),
   }),
+  z.object({ type: z.literal('entity.identify'), characterIds: z.array(z.string()) }),
+  z.object({
+    type: z.literal('entity.closeNotice'),
+    entityId: z.string(),
+    characterId: z.string(),
+  }),
+  z.object({ type: z.literal('bestiary.categoryDefine'), name: z.string() }),
+  z.object({
+    type: z.literal('bestiary.categoryRename'),
+    categoryId: z.string(),
+    name: z.string(),
+  }),
+  z.object({ type: z.literal('bestiary.categoryRemove'), categoryId: z.string() }),
   z.object({ type: z.literal('region.define') }),
   z.object({ type: z.literal('region.edit') }),
   z.object({ type: z.literal('region.setCurrent') }),
@@ -830,6 +853,7 @@ export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>([
   'trade.cancel',
   'practice.log',
   'scene.answer',
+  'entity.closeNotice',
   'montage.focus',
   'note.create',
   'note.edit',
@@ -1450,6 +1474,15 @@ function toEvent(
           "Approve the skill re-rating first: the GM sets each kept skill's rarity and approves the list (DESIGN §6)",
         );
       }
+      // MV.3: Identify is never raised at an evolution (a lowering keeps MT.1's own refusal;
+      // merges and transforms keep QF.39 and MT.1's refusals and the GM override).
+      for (const [skill, rarity] of Object.entries(command.rerate ?? {})) {
+        const held = pendingOf(campaign, command.characterId)?.skills.find((s) => s.name === skill);
+        const ladder = campaign.state?.rules.skills.rarities.map((r) => r.id) ?? [];
+        if (held && ladder.indexOf(rarity) > ladder.indexOf(held.rarity)) {
+          refuseIdentifyChange(campaign, command.characterId, skill);
+        }
+      }
       return {
         type: 'evolution.released',
         payload: {
@@ -1705,10 +1738,11 @@ function toEvent(
           level: command.level ?? null,
           stats: command.stats ? { ...command.stats } : null,
           notes: command.notes ?? '',
+          categoryId: command.categoryId ?? null,
         },
       };
     case 'entity.edit': {
-      const { entityId, name, label, tiers, grade, level, notes } = command;
+      const { entityId, name, label, tiers, grade, level, notes, categoryId } = command;
       const stats = command.stats ? { ...command.stats } : command.stats;
       // Undefined fields vanish in the event's JSON round trip (= unchanged).
       return {
@@ -1722,9 +1756,34 @@ function toEvent(
           level,
           stats,
           notes,
+          categoryId,
         },
       };
     }
+    case 'entity.identify':
+      if (command.characterIds.length === 0)
+        throw new EventRejectedError('Tick at least one character');
+      return {
+        type: 'entity.identified',
+        payload: { entityId: command.entityId, characterIds: [...command.characterIds] },
+      };
+    case 'entity.closeNotice':
+      return {
+        type: 'entity.noticeClosed',
+        payload: { entityId: command.entityId, characterId: command.characterId },
+      };
+    case 'bestiary.categoryDefine':
+      return {
+        type: 'bestiary.categoryDefined',
+        payload: { categoryId: command.categoryId ?? ctx.newId(), name: command.name },
+      };
+    case 'bestiary.categoryRename':
+      return {
+        type: 'bestiary.categoryRenamed',
+        payload: { categoryId: command.categoryId, name: command.name },
+      };
+    case 'bestiary.categoryRemove':
+      return { type: 'bestiary.categoryRemoved', payload: { categoryId: command.categoryId } };
     case 'entity.reveal': {
       const state = campaign.state;
       const entity =
@@ -2106,7 +2165,7 @@ function refuseIdentifyChange(campaign: Campaign, characterId: string, skill: st
   const owned = character?.skills.find((s) => s.name.toLowerCase() === name);
   if (owned && owned.kind === 'race') {
     throw new EventRejectedError(
-      `${state.rules.skills.startingRaceSkill.name} never changes: it earns no marks and is never upgraded`,
+      `${state.rules.skills.startingRaceSkill.name} never changes: it earns no marks and is never upgraded or raised`,
     );
   }
 }

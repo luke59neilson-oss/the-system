@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 33,
+  "schemaVersion": 34,
   "name": "Rules settings",
   "rules": {
     "configVersion": 2,
@@ -496,6 +496,8 @@
   "questOrder": [],
   "entities": {},
   "entityOrder": [],
+  "bestiaryCategories": {},
+  "bestiaryCategoryOrder": [],
   "montages": {},
   "montageOrder": [],
   "contests": {},

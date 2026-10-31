@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 33,
+  "schemaVersion": 34,
   "name": "Libraries",
   "rules": {
     "configVersion": 2,
@@ -911,6 +911,8 @@
   "questOrder": [],
   "entities": {},
   "entityOrder": [],
+  "bestiaryCategories": {},
+  "bestiaryCategoryOrder": [],
   "montages": {},
   "montageOrder": [],
   "contests": {},

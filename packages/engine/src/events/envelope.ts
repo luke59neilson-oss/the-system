@@ -778,6 +778,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     stats: entityStats.nullable().optional(),
     /** M7.2 bestiary (GM-only) notes; absent (older logs) = "". */
     notes: entityNotes.optional(),
+    /** MV.3 bestiary category id, or null; absent (older logs) = Uncategorized. */
+    categoryId: recordId.nullable().optional(),
   }),
   /** GM edits an entity; omitted fields stay. */
   'entity.edited': z.strictObject({
@@ -789,12 +791,30 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     level: entityLevel.nullable().optional(),
     stats: entityStats.nullable().optional(),
     notes: entityNotes.optional(),
+    /** MV.3: bestiary category id, or null for Uncategorized. */
+    categoryId: recordId.nullable().optional(),
   }),
   /** These characters now know the entity and can Identify it. */
   'entity.revealed': z.strictObject({
     entityId: recordId,
     characterIds: z.array(recordId).min(1).max(200),
   }),
+  /**
+   * MV.3 (DESIGN §7 "Identify"): the GM's Identified by…. Each character's
+   * result (worked or `[??? – lvl ???]`) is decided by the range rule now and
+   * kept; each gets an Identify notification until they close it.
+   */
+  'entity.identified': z.strictObject({
+    entityId: recordId,
+    characterIds: z.array(recordId).min(1).max(200),
+  }),
+  /** MV.3: the player closed their Identify notification for this entity. */
+  'entity.noticeClosed': z.strictObject({ entityId: recordId, characterId: recordId }),
+  /** MV.3: a bestiary category the GM made (names are GM-side until an entry uses one). */
+  'bestiary.categoryDefined': z.strictObject({ categoryId: recordId, name: nonBlank }),
+  'bestiary.categoryRenamed': z.strictObject({ categoryId: recordId, name: nonBlank }),
+  /** MV.3: removing a category sends its entities to Uncategorized. */
+  'bestiary.categoryRemoved': z.strictObject({ categoryId: recordId }),
   /**
    * M7.4 hunger tracker, retired by MT.3 (DESIGN §7: no hunger tracker). Kept
    * so stored logs still parse; no command records it and it replays as a no-op.
@@ -983,6 +1003,11 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'entity.defined': 1,
   'entity.edited': 1,
   'entity.revealed': 1,
+  'entity.identified': 1,
+  'entity.noticeClosed': 1,
+  'bestiary.categoryDefined': 1,
+  'bestiary.categoryRenamed': 1,
+  'bestiary.categoryRemoved': 1,
   'hunger.configured': 1,
   'hunger.levelsSet': 1,
   'region.defined': 1,
@@ -1101,6 +1126,7 @@ export const PLAYER_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   'trade.cancelled',
   'practice.logged',
   'scene.answered',
+  'entity.noticeClosed',
   'montage.focused',
   'note.created',
   'note.edited',

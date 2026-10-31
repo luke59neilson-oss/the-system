@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 33,
+  "schemaVersion": 34,
   "name": "Golden: default rules (QF.12)",
   "rules": {
     "configVersion": 2,
@@ -758,6 +758,8 @@
   "questOrder": [],
   "entities": {},
   "entityOrder": [],
+  "bestiaryCategories": {},
+  "bestiaryCategoryOrder": [],
   "montages": {},
   "montageOrder": [],
   "contests": {},

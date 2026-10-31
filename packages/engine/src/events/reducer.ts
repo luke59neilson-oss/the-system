@@ -74,7 +74,14 @@ import {
 } from '../resolution';
 import { applyAction, checkStabilityRules, nudge, type Quest } from '../quests';
 import { parseRulesConfig, type RulesConfig } from '../rules';
-import { rankProblem, tierProblem, type Entity } from '../entities';
+import {
+  identifyInRange,
+  rankProblem,
+  singleIdentifyText,
+  tierProblem,
+  type BestiaryCategory,
+  type Entity,
+} from '../entities';
 import { type Faction, type Region } from '../trackers';
 import type { Shop } from '../shops/model';
 import {
@@ -87,8 +94,8 @@ import {
 } from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). v30: entity `stats`/`notes` (bestiary; M7.2). v31: shared contests (M7.3). v32: hunger, regions, factions (M7.4). v33: no hunger tracker (MT.3; hunger events replay as no-ops). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 33;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). v30: entity `stats`/`notes` (bestiary; M7.2). v31: shared contests (M7.3). v32: hunger, regions, factions (M7.4). v33: no hunger tracker (MT.3; hunger events replay as no-ops). v34: bestiary categories; entity `categoryId`/`worked`/`notices` and one Identify text (MV.3). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 34;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -183,6 +190,10 @@ export interface CampaignState {
   readonly entities: Readonly<Record<string, Entity>>;
   /** Entity ids in definition order. */
   readonly entityOrder: readonly string[];
+  /** MV.3: bestiary categories by id (GM-made; players see a name only once one of their entries uses it). */
+  readonly bestiaryCategories: Readonly<Record<string, BestiaryCategory>>;
+  /** Category ids in creation order. */
+  readonly bestiaryCategoryOrder: readonly string[];
   /** Contest rolls the GM shared (M7.3). Each player sees the ones they took part in. */
   readonly contests: Readonly<Record<string, SharedContest>>;
   /** Contest ids in share order. */
@@ -864,6 +875,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       questOrder: [],
       entities: {},
       entityOrder: [],
+      bestiaryCategories: {},
+      bestiaryCategoryOrder: [],
       montages: {},
       montageOrder: [],
       contests: {},
@@ -2322,17 +2335,26 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const level = event.payload.level ?? null;
       const rank = rankProblem(state.rules, grade, level);
       if (rank) fail(event, rank);
+      const categoryId = checkCategory(state, event, event.payload.categoryId ?? null);
+      const one = singleIdentifyText(state.rules, tiers, event.payload.notes ?? '');
+      const worked: Record<string, boolean> = {};
+      for (const id of knownBy) {
+        worked[id] = identifyInRange(state.rules, characterOf(state, event, id), { grade, level });
+      }
       const entity: Entity = {
         id: entityId,
         name,
         label,
-        tiers: tiers.map((t) => ({ minRarity: t.minRarity, text: t.text })),
+        tiers: one.tiers,
         grade,
         level,
         stats: checkEntityStats(state, event, event.payload.stats ?? null),
-        notes: event.payload.notes ?? '',
+        notes: one.notes,
         knownBy: [...knownBy],
         createdAt: event.timestamp,
+        categoryId,
+        worked,
+        notices: [],
       };
       return {
         ...state,
@@ -2357,6 +2379,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
             event.payload.level,
             event.payload.stats,
             event.payload.notes,
+            event.payload.categoryId,
           ].every((v) => v === undefined)
         ) {
           fail(event, 'nothing to change');
@@ -2369,6 +2392,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
           const problem = tierProblem(state.rules, tiers);
           if (problem) fail(event, problem);
         }
+        const notes = event.payload.notes ?? entity.notes;
+        const one = tiers === undefined ? null : singleIdentifyText(state.rules, tiers, notes);
         next = {
           ...entity,
           name: name ?? entity.name,
@@ -2379,11 +2404,12 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
             event.payload.stats === undefined
               ? entity.stats
               : checkEntityStats(state, event, event.payload.stats),
-          notes: event.payload.notes ?? entity.notes,
-          tiers:
-            tiers === undefined
-              ? entity.tiers
-              : tiers.map((t) => ({ minRarity: t.minRarity, text: t.text })),
+          notes: one ? one.notes : notes,
+          tiers: one ? one.tiers : entity.tiers,
+          categoryId:
+            event.payload.categoryId === undefined
+              ? entity.categoryId
+              : checkCategory(state, event, event.payload.categoryId),
         };
       } else {
         const ids = event.payload.characterIds;
@@ -2391,9 +2417,83 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         for (const id of ids) {
           if (entity.knownBy.includes(id)) fail(event, `"${id}" already knows ${entity.name}`);
         }
-        next = { ...entity, knownBy: [...entity.knownBy, ...ids] };
+        const worked = { ...entity.worked };
+        for (const id of ids) {
+          worked[id] = identifyInRange(state.rules, characterOf(state, event, id), entity);
+        }
+        next = { ...entity, knownBy: [...entity.knownBy, ...ids], worked };
       }
       return { ...state, entities: { ...state.entities, [entityId]: next } };
+    }
+    case 'entity.identified': {
+      const { entityId, characterIds } = event.payload;
+      const entity = hasOwn(state.entities, entityId) ? state.entities[entityId] : undefined;
+      if (!entity) return fail(event, `unknown entity "${entityId}"`);
+      checkCharacters(state, event, characterIds);
+      const worked = { ...entity.worked };
+      for (const id of characterIds) {
+        worked[id] = identifyInRange(state.rules, characterOf(state, event, id), entity);
+      }
+      const next: Entity = {
+        ...entity,
+        knownBy: [...entity.knownBy, ...characterIds.filter((id) => !entity.knownBy.includes(id))],
+        worked,
+        notices: [...entity.notices, ...characterIds.filter((id) => !entity.notices.includes(id))],
+      };
+      return { ...state, entities: { ...state.entities, [entityId]: next } };
+    }
+    case 'entity.noticeClosed': {
+      const { entityId, characterId } = event.payload;
+      const entity = hasOwn(state.entities, entityId) ? state.entities[entityId] : undefined;
+      if (!entity) return fail(event, `unknown entity "${entityId}"`);
+      if (!entity.notices.includes(characterId))
+        fail(event, 'that Identify notification is closed');
+      const notices = entity.notices.filter((id) => id !== characterId);
+      return { ...state, entities: { ...state.entities, [entityId]: { ...entity, notices } } };
+    }
+    case 'bestiary.categoryDefined':
+    case 'bestiary.categoryRenamed': {
+      const { categoryId, name } = event.payload;
+      const exists = hasOwn(state.bestiaryCategories, categoryId);
+      if (event.type === 'bestiary.categoryDefined' && exists)
+        fail(event, `category "${categoryId}" already exists`);
+      if (event.type === 'bestiary.categoryRenamed' && !exists)
+        fail(event, `unknown category "${categoryId}"`);
+      const wanted = name.trim().toLowerCase();
+      for (const id of state.bestiaryCategoryOrder) {
+        if (id !== categoryId && state.bestiaryCategories[id]?.name.trim().toLowerCase() === wanted)
+          fail(event, `the bestiary already has a category named "${name.trim()}"`);
+      }
+      return {
+        ...state,
+        bestiaryCategories: {
+          ...state.bestiaryCategories,
+          [categoryId]: { id: categoryId, name: name.trim() },
+        },
+        bestiaryCategoryOrder: exists
+          ? state.bestiaryCategoryOrder
+          : [...state.bestiaryCategoryOrder, categoryId],
+      };
+    }
+    case 'bestiary.categoryRemoved': {
+      const { categoryId } = event.payload;
+      if (!hasOwn(state.bestiaryCategories, categoryId))
+        fail(event, `unknown category "${categoryId}"`);
+      const categories: Record<string, BestiaryCategory> = {};
+      for (const id of state.bestiaryCategoryOrder) {
+        const c = state.bestiaryCategories[id];
+        if (c && id !== categoryId) categories[id] = c;
+      }
+      const entities: Record<string, Entity> = {};
+      for (const [id, e] of Object.entries(state.entities)) {
+        entities[id] = e.categoryId === categoryId ? { ...e, categoryId: null } : e;
+      }
+      return {
+        ...state,
+        entities,
+        bestiaryCategories: categories,
+        bestiaryCategoryOrder: state.bestiaryCategoryOrder.filter((id) => id !== categoryId),
+      };
     }
     case 'campaign.dayAdvanced': {
       const day = state.day + event.payload.days;
@@ -2551,6 +2651,13 @@ function checkRegionName(
 }
 
 /** Every id must be a character, listed once. */
+/** MV.3: a bestiary category id the campaign has, or null (Uncategorized). */
+function checkCategory(state: CampaignState, event: DomainEvent, id: string | null): string | null {
+  if (id !== null && !hasOwn(state.bestiaryCategories, id))
+    fail(event, `unknown bestiary category "${id}"`);
+  return id;
+}
+
 function checkCharacters(state: CampaignState, event: DomainEvent, ids: readonly string[]): void {
   if (new Set(ids).size !== ids.length) fail(event, 'a character is listed twice');
   for (const id of ids) characterOf(state, event, id);
