@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.53, QF.59, QF.64–QF.66 done.
-**Next item:** QF.54 on `wip/QF.54` (failing probe committed), then QF.55 onward
+**Next item:** QF.54 on `wip/QF.54` (failing probe committed), then MV.1–MV.A (L25) and ME.1–ME.A (L26), which sit before QF in ROADMAP, then QF.55 onward; MW after MU
 **Blockers:** none
 
 ## Run log
