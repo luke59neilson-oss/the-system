@@ -10,7 +10,13 @@ import type { FastifyInstance } from 'fastify';
 import { setFlagsFromString } from 'node:v8';
 import { runInNewContext } from 'node:vm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { DEFAULT_RULES, projectForGm, projectForPlayer, type PlayerView } from '@the-system/engine';
+import {
+  DEFAULT_RULES,
+  PLAYER_VIEW_LIMITS,
+  projectForGm,
+  projectForPlayer,
+  type PlayerView,
+} from '@the-system/engine';
 import { newGmKey } from '../src/security';
 import { createServer } from '../src/server';
 import { CampaignStore } from '../src/store';
@@ -62,6 +68,16 @@ class Client {
       const message = JSON.parse(text) as Record<string, unknown>;
       if (message.type === 'view') this.lastView = message['view'];
       if (message.type === 'state') this.lastState = message['state'];
+      if (message.type === 'statePatch') {
+        // QF.52: the GM gets the changed top-level keys; applying them must
+        // rebuild exactly the state a whole frame would carry.
+        const next = {
+          ...(this.lastState as Record<string, unknown>),
+          ...(message['set'] as Record<string, unknown>),
+        };
+        for (const key of (message['unset'] as string[] | undefined) ?? []) delete next[key];
+        this.lastState = next;
+      }
       if (message.type === 'error') {
         this.serverError ??= JSON.stringify(message);
         const error = new Error(`server error frame: ${this.serverError}`);
@@ -332,7 +348,8 @@ describe('M11.1 soak', () => {
       for (const p of players) {
         await settled(
           () => p.client.lastView,
-          JSON.stringify(projectForPlayer(now, p.id)),
+          // QF.52: a live view carries the default limits.
+          JSON.stringify(projectForPlayer(now, p.id, { limits: PLAYER_VIEW_LIMITS })),
           `seed ${SOAK_SEED} step ${step}: ${p.id}'s view`,
         );
       }

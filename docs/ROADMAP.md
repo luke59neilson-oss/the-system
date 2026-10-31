@@ -829,7 +829,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   `priceOf` uses exact ids (with the Haiku 5.5 long-prompt tier per call) and
   the family fallback only for unknown ids, at the highest price; tests pin
   each price; GM guide and MC.1 e2e updated.
-- [ ] **QF.52 Views stay small as the campaign grows.** Every command re-sends
+- [x] **QF.52 Views stay small as the campaign grows.** Every command re-sends
   the GM the whole campaign and each player their whole view: at ~40
   sessions about 2 MB and 0.85 MB per frame, ~50 ms server CPU per command
   (`apps/server/src/hub.ts:297,321-336`, `server.ts:306`); the player view
@@ -840,7 +840,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   when it changed and as top-level-key patches; a probe at a 40-session
   campaign (13k events) shows player frames ≤ 150 KB and server CPU per
   command at least halved; replay/projection canaries green.
-- [ ] **QF.53 Sleeping phones don't grow the laptop's memory.** No
+- [x] **QF.53 Sleeping phones don't grow the laptop's memory.** No
   backpressure or heartbeat: a frozen tab keeps its socket and the server
   queues a full view per command for it (RSS 198 → 662 MB in 300 commands
   with two stalled clients; `server.ts:305-307`). *Accept:* when a socket's
