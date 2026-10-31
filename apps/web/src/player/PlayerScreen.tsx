@@ -1030,17 +1030,25 @@ function Track({ testId, name, level }: { testId: string; name: string; level: n
  */
 const HISTORY_PAGE = 50;
 
+function focusEntry(entry: HTMLElement): void {
+  entry.setAttribute('tabindex', '-1');
+  entry.focus();
+}
+
 function ShowOlder({
   hidden,
   shown,
   list,
   onMore,
+  onPending,
   testId,
 }: {
   hidden: number;
   shown: number;
   list: RefObject<HTMLOListElement | null>;
   onMore: () => void;
+  /** QF.52: the next page comes from the server; focus entry `index` when it lands. */
+  onPending?: (index: number) => void;
   testId: string;
 }) {
   if (hidden <= 0) return null;
@@ -1049,10 +1057,8 @@ function ShowOlder({
     // button may be gone (last page), and focus must not fall to the page.
     flushSync(onMore);
     const first = list.current?.children[shown];
-    if (first instanceof HTMLElement) {
-      first.setAttribute('tabindex', '-1');
-      first.focus();
-    }
+    if (first instanceof HTMLElement) focusEntry(first);
+    else onPending?.(shown);
   };
   return (
     <button type="button" className="secondary show-older" onClick={more} data-testid={testId}>
@@ -1077,6 +1083,17 @@ function Feed({
   const [query, setQuery] = useState('');
   const [dingLimit, setDingLimit] = useState(HISTORY_PAGE);
   const [messageLimit, setMessageLimit] = useState(HISTORY_PAGE);
+  // QF.52: older messages arrive from the server after "Show older".
+  const [focusMessage, setFocusMessage] = useState<number | null>(null);
+  const messageCount = view.messages.length;
+  useEffect(() => {
+    if (focusMessage === null) return;
+    const entry = messageList.current?.children[focusMessage];
+    if (entry instanceof HTMLElement) {
+      focusEntry(entry);
+      setFocusMessage(null);
+    }
+  }, [focusMessage, messageCount]);
   const dingList = useRef<HTMLOListElement>(null);
   const messageList = useRef<HTMLOListElement>(null);
   // MU.2: "Full history" in the running log shows every notice, not only the DINGs.
@@ -1176,6 +1193,7 @@ function Feed({
             setMessageLimit(next);
             onLimits({ messages: next });
           }}
+          onPending={setFocusMessage}
           testId="messages-older"
         />
       </section>
