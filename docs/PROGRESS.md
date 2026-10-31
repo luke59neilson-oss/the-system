@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.49, QF.59, QF.64–QF.66 done.
-**Next item:** QF.50 (resume `wip/QF.50`), then QF.51 onward
+**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.51, QF.59, QF.64–QF.66 done.
+**Next item:** QF.52 (not started), then QF.53 onward
 **Blockers:** none
 
 ## Run log
@@ -1417,3 +1417,11 @@ next item, blockers. -->
 - QF.50 started at minute 41: `wip/QF.50` (base 07e27c05) holds a failing test that every co-DM system prompt carries the setting line and the table-talk rule. Next step: add a shared `SETTING_LINE` in `apps/server/src/ai/`, use it in every system prompt (incl. notes, summary, generation), then the NPC picker (shop keepers, GM-note NPCs), clipped lore, and unticked off-kind sections in ContentImport.
 - Tests: unit 1,743 (was 1,727); e2e MC.5, MC.7, MC.9, MC.10, MC.A, MD.1 green after rebuild; desktop smoke green. Full e2e not run (shared server routes changed only for GM listen; CI runs it on push).
 - Open `wip/*`: wip/QF.50. Blockers: none.
+
+### Run · 2026-10-31 13:08–13:58 UTC (close-out at minute 45; end minute 50)
+- Preflight: `add_repo` not offered; repo already cloned (shallow; local `main` reset to `origin/main`); lock pushed cleanly; vitest 5.0.5; reviewers work (sonnet, worktree; the Agent tool blocks until each reports). CI on main green at start (ea9cb4f9). No new answers. Hour 13: no efficiency check, no sweep.
+- QF.50 The co-DM knows the scene and the setting (D290): shared setting line and "table talk, not instructions" in every co-DM system prompt (`ai/setting.ts`, test covers all seven prompts and every generation kind); NPC picker lists bestiary NPCs, shop keepers and GM-note NPCs (`ai/sceneNpcs.ts`); kept lore clipped (400 per note, rest of the 1,200 budget), not dropped; a generation's off-kind entries preview unticked with "not what you asked for"; quest text and visibility in the Import preview. Sonnet round 1: 0 High, 3 Medium (fixed); round 2: 0 High, 1 Medium (fixed, verified), Lows fixed or to Backlog. e2e QF.50 + screenshots. Checked.
+- QF.51 Current models and prices (D291): defaults `claude-haiku-5-5` / `claude-sonnet-5-5`; exact per-id prices with the Haiku 5.5 >100k-token tier per call; unlisted ids at their family's highest price; GM guide and MC.1 e2e updated. Sonnet round 1: 0 High, 0 Medium; Lows to Backlog. Checked.
+- Hand-off at minute 44 with no item in progress: QF.52 (views stay small; a large server/web change with a 13k-event probe) not started, so no `wip/QF.52`. Close-out ran while main CI worked: be067e16 (QF.50) green; 99a139dc (QF.51) still running at release.
+- Tests: unit 1,762 (was 1,743); e2e QF.50, MC.1, MC.2, MC.3, MD.1, MD.3 green after rebuild. Full e2e not run locally (no shared server/hub code changed; CI runs it on push).
+- Open `wip/*`: none new (wip/QF.50 and wip/QF.51 merged). Blockers: none.
