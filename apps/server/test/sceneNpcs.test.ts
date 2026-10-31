@@ -24,9 +24,23 @@ describe('scene NPCs (QF.50)', () => {
       a: note('a', 'Met the ferryman', 'Long session notes.', ['npc']),
       bb: note('bb', 'Session 3 prep', 'Prep.', ['npc']),
       ccc: note('ccc', 'Wren Holloway', 'Wren hides a lantern.', ['npc', 'lore']),
+      dddd: note('dddd', 'Old Tam', 'Tam owes a debt.', ['npc', 'lore', 'npc:Old Tam']),
     };
     const npcs = sceneNpcs({ entities: {}, shops: {}, notes } as unknown as CampaignState);
-    expect(npcs.map((n) => [n.name, n.notes])).toEqual([['Wren Holloway', '']]);
+    // Round 2: a lore note without `npc:<name>` is not matched by loreFor, so
+    // its text stays as notes; one with the tag reaches the prompt as lore.
+    expect(npcs.map((n) => [n.name, n.notes])).toEqual([
+      ['Wren Holloway', 'Wren hides a lantern.'],
+      ['Old Tam', ''],
+    ]);
+  });
+  it('reads more name shapes (round 2 Lows)', () => {
+    expect(keeperName('Tam Jr., smith')).toBe('Tam Jr.');
+    expect(keeperName('Prof. Ash: lecturer')).toBe('Prof. Ash');
+    expect(keeperName('de la Cruz, trader')).toBe('de la Cruz');
+    expect(keeperName("d'Artagnan, duelist")).toBe("d'Artagnan");
+    expect(keeperName('李明: 商人')).toBe('李明');
+    expect(keeperName('brenna')).toBeNull();
   });
 
   const note = (id: string, title: string, body: string, tags: string[], kind = 'gm') => ({

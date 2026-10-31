@@ -22,7 +22,8 @@ const NAME_MAX = 60;
 /** Words a name may hold in lower case ("Tam of the Ferry", "Anna van Dorn"). */
 const CONNECTORS = new Set(['of', 'the', 'de', 'van', 'von', 'da', 'del', 'la', 'le', 'and']);
 /** Title abbreviations whose dot does not end the name ("Dr. Vance"). */
-const ABBREVIATIONS = /\b(?:Dr|Mr|Mrs|Ms|Mx|St|Mt|Capt|Sgt|Lt|Fr|Sr|Jr)\.(?=\s)/gu;
+const ABBREVIATIONS =
+  /\b(?:Dr|Mr|Mrs|Ms|Mx|St|Mt|Capt|Sgt|Lt|Fr|Sr|Jr|Prof|Rev|Gen|Col|Hon)\.(?=[\s,;:)]|$)/gu;
 
 /**
  * Review M1/M2: whether text reads as a name: 1–5 words, each starting with a
@@ -33,10 +34,11 @@ const ABBREVIATIONS = /\b(?:Dr|Mr|Mrs|Ms|Mx|St|Mt|Capt|Sgt|Lt|Fr|Sr|Jr)\.(?=\s)/
 export function looksLikeName(text: string): boolean {
   const words = text.split(' ');
   if (words.length > 5 || text.length < 2 || text.length > NAME_MAX) return false;
-  return words.every(
-    (w, i) =>
-      /^\p{Lu}/u.test(w) || (i > 0 && CONNECTORS.has(w.toLowerCase()) && w === w.toLowerCase()),
-  );
+  // A word counts when it starts with a capital or a letter with no case
+  // (CJK names); lower-case connectors ("de la Cruz") need one such word.
+  const named = (w: string) => /^(?:\p{Lu}|\p{Lo}|\p{Ll}'\p{Lu})/u.test(w);
+  const connector = (w: string) => CONNECTORS.has(w);
+  return words.some(named) && words.every((w) => named(w) || connector(w));
 }
 
 /**
@@ -99,8 +101,10 @@ export function sceneNpcs(state: CampaignState): SceneNpc[] {
     if (tags.some((t) => t.toLowerCase() === 'npc')) {
       const name = note.title.replace(/\s+/gu, ' ').trim();
       if (looksLikeName(name)) {
-        // Review M3: a lore note's text reaches the prompt as lore only.
-        add({ id: `npc:${key(name)}`, name, names: [name], notes: lore ? '' : note.body });
+        // Review M3: a lore note that also names this NPC by `npc:<name>`
+        // reaches the prompt as lore (loreFor); any other keeps its text here.
+        const asLore = lore && tags.some((t) => t.toLowerCase() === `npc:${key(name)}`);
+        add({ id: `npc:${key(name)}`, name, names: [name], notes: asLore ? '' : note.body });
       }
     }
     for (const t of tags) {
