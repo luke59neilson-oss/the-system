@@ -677,7 +677,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   damage/healing lines; End session closes the open scene prompt (an answer
   after it is refused with "the scene is over"); a cast is never drafted
   again by the co-DM; tests for each.
-- [ ] **QF.49 The co-DM copes with long sessions.** Draft from transcript,
+- [x] **QF.49 The co-DM copes with long sessions.** Draft from transcript,
   Take notes and Summarise send every unread line in one call with small
   output caps (`practiceRoutes.ts:70`, `notesRoutes.ts:72-95`;
   `practiceDrafts.ts:230`, `sessionNotes.ts:112`); a reply cut at max_tokens
@@ -793,7 +793,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   test, and a desktop spec that clicks Copy and reads the clipboard); a View
   menu with reload and zoom (no DevTools); `render-process-gone` reloads the
   console.
-- [ ] **QF.59 The desktop smoke tests are reliable.** The splash hand-over
+- [x] **QF.59 The desktop smoke tests are reliable.** The splash hand-over
   test polls 5 s for one window while the app's own fallback reveal is 10 s,
   and the 1,000 ms splash bound includes Electron's first-window cost
   (`apps/desktop/test/launch.spec.ts:56-63,99-102`, `main.ts:197-200`); this

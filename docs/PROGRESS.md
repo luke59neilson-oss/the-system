@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.48, QF.64–QF.66 done.
-**Next item:** QF.49 (the co-DM copes with long sessions), then QF.50 onward
+**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.49, QF.59, QF.64–QF.66 done.
+**Next item:** QF.50 (resume `wip/QF.50`), then QF.51 onward
 **Blockers:** none
 
 ## Run log
@@ -1408,3 +1408,12 @@ next item, blockers. -->
 - Not started: QF.49 (no time left before minute 44). Next run: QF.49 from the start.
 - Open `wip/*`: none in progress (wip/QF.46–48 merged). Blockers: none.
 
+
+### Run · 2026-10-31 12:09–12:51 UTC (close-out at minute 42)
+- Preflight: `add_repo` not offered; repo already cloned; lock pushed cleanly; vitest 5.0.5; reviewers work (sonnet, worktree; the Agent tool blocks until each reports). CI on main **red at start** (fb8f2d4c, desktop-smoke: `launch.spec.ts:102` saw 2 windows after a 5 s poll), so QF.59 went first; pushed early as a red-CI fix and CI went green on f3ad89f8. No new answers. Hour 12: efficiency check (below); no sweep.
+- QF.59 Desktop smoke reliable (D288): reveal reason recorded and asserted after a 15 s poll; `--disable-gpu` on every desktop launch plus `THE_SYSTEM_TEST_NO_GPU` (unpackaged only); splash bound after an unheld warm-up launch. desktop:smoke 8/8, splash test 5/5 repeats and the suite 3× locally. Sonnet round 1: 0 High, 1 Medium (kept by design, D288), Lows: one fixed, rest to Backlog. Checked. Needs 5 green CI runs to confirm (watch Flakes).
+- QF.49 Co-DM copes with long sessions (D289): drafts, notes and summary read the transcript in chunks (≤150 lines, ≤12k chars), saving position per chunk; a `max_tokens` stop splits the chunk and retries, down to one line, then says the stretch was too long; drafts parse errors are co-DM errors; `/api/gm/listen?after=N` returns only new lines (panel merges by `from`; key names campaign and server start). Sonnet round 1: 0 High, 2 Medium (fixed), round 2: 0 High/Medium, Lows to Backlog. Checked.
+- Efficiency check: scorecard row appended (6 runs, end 48.8, 2.3 items/run, round-2 6/10, Highs 0, CI red/day 7). No trials to judge. Sonnet auditor gave two Tier 1 proposals (orient prints checked QF items as titles only, ~16.7k → ~11k words; a `ci-triage` helper); queued in EFFICIENCY.md, none applied this run (no time left to add the filter and its test safely).
+- QF.50 started at minute 41: `wip/QF.50` (base 07e27c05) holds a failing test that every co-DM system prompt carries the setting line and the table-talk rule. Next step: add a shared `SETTING_LINE` in `apps/server/src/ai/`, use it in every system prompt (incl. notes, summary, generation), then the NPC picker (shop keepers, GM-note NPCs), clipped lore, and unticked off-kind sections in ContentImport.
+- Tests: unit 1,743 (was 1,727); e2e MC.5, MC.7, MC.9, MC.10, MC.A, MD.1 green after rebuild; desktop smoke green. Full e2e not run (shared server routes changed only for GM listen; CI runs it on push).
+- Open `wip/*`: wip/QF.50. Blockers: none.
