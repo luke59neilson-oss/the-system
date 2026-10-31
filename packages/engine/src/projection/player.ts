@@ -633,6 +633,8 @@ function ownMergeOffer(state: CampaignState, c: Character): OwnSheet['mergeOffer
       offer.name,
       joint,
       offer.override === true,
+      undefined,
+      offer.legacy === true,
     );
     rarity = merged.skills.find((s) => s.name === offer.name)?.rarity ?? null;
   } catch {

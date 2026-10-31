@@ -592,7 +592,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   backups include `codm/` and `transcripts/` (voice prints in `speakers/`
   left out on purpose, said in the guide); server errors go to
   `<dataDir>/server.log` (size-capped) and the warnings name it.
-- [ ] **QF.44 Back up, download and restore from the console.** No backup,
+- [x] **QF.44 Back up, download and restore from the console.** No backup,
   export or restore control exists (`GET /api/gm/export` has no caller;
   `importCampaign` has none outside tests), although DESIGN §9a and the GM
   guide promise them. Library & settings gets **Back up now**, **Download
@@ -600,6 +600,35 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   folder or an export file; it is imported as a campaign beside the current
   one and never overwrites; the GM switches to it). *Accept:* e2e: back up,
   download, restore → same event count and portraits; GM guide steps match.
+- [x] **QF.64 (High) Merges stored before QF.39 still replay.** Sweep C
+  (Rules, haiku, 2026-10-31): QF.39's race-skill and retired-name refusals
+  ran on replay of old `skill.mergeOffered`/`skill.merged` events, so a log
+  in which a pre-fix build merged Identify away (the Merges window offered
+  that pair) threw on refold, blocking undo and loading without a snapshot
+  (`skills/model.ts` mergeSkills, `reducer.ts` skill.merged/mergeOffered).
+  *Accept:* both events go to schema v2; v1 events upcast to `legacy: true`
+  and replay without those two checks (kept on the offer for its accept);
+  v2 events keep them; engine tests for a v1 Identify offer+accept, a v1
+  `skill.merged`, the v2 refusal and the retired-name skip; goldens replay.
+- [ ] **QF.65 Restore and stale-lock tests that can fail.** Sweep C (Tests,
+  sonnet): `from: active.store.id` → `from: "main"` in the `/api/gm/restore`
+  handler (`server.ts:525`) passes every test (restore is only tested from
+  `main`); and `lockIsHeld`'s boot check (`store.ts:314`) can be replaced by
+  `false` with every store test green, because the reboot test's rewritten
+  LOCK falls to the own-pid branch. *Accept:* a restore test from a campaign
+  not named `main`; a reboot test with a foreign live pid, no `started` and an
+  old `boot` that is taken over; each mutation now fails a test.
+- [ ] **QF.66 Opening a restored campaign tells players, in local time.** Sweep
+  C (UX, fable): the Open confirm and GM guide (`CampaignBackups.tsx:165`,
+  GM-GUIDE.md:347) say players go back to the join screen, but a phone whose
+  character is in the copy silently shows the restored sheet (older levels,
+  history cleared) and one whose character is not waits on "rejoins when they
+  switch back" (`live.ts:323`); backup rows are labelled in UTC while every
+  other console time is local (`campaignsModel.ts:4-9`). *Accept:* a player
+  whose campaign changed under them gets a System notice ("The GM opened an
+  earlier copy of the campaign") and a missing character's phone returns to
+  the join screen with that reason; the confirm and guide say what really
+  happens; backup labels use local time; e2e with a player page.
 - [ ] **QF.45 Installing a new build over a running app quits it cleanly.**
   electron-builder's NSIS "app is running" step uses PowerShell `Stop-Process`
   (TerminateProcess), so the quit backup, final session log and LOCK release

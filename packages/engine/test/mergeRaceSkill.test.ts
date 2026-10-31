@@ -3,6 +3,8 @@ import {
   characterFlags,
   execute,
   marksReview,
+  mergeSkills,
+  replay,
   mergeCandidates,
   type Campaign,
   type Command,
@@ -169,5 +171,69 @@ describe('an overridden race-skill merge (QF.39 review)', () => {
     expect(
       back.state!.characters[ID]!.skills.filter((s) => s.kind === 'race').map((s) => s.name),
     ).toEqual(['Identify']);
+  });
+
+  // Sweep C 2026-10-31 (D283): logs written before QF.39 could hold such a
+  // merge with no override; they must still replay.
+  describe('merges stored before QF.39 replay unchanged', () => {
+    type Raw = { type: string; schemaVersion: number; payload: Record<string, unknown> };
+    const stored = (c: Campaign) => JSON.parse(JSON.stringify(c.events)) as Raw[];
+    const asV1 = (events: Raw[], type: string) =>
+      events.map((e) => {
+        if (e.type !== type) return e;
+        const payload = { ...e.payload };
+        delete payload.override;
+        return { ...e, schemaVersion: 1, payload };
+      });
+    const mergedAway = () =>
+      run(
+        [merge(true), { type: 'skill.answerMerge', characterId: ID, offerId: 'o1', accept: true }],
+        ctx,
+        fresh(start()),
+      );
+
+    it('a v1 offer and accept that merged Identify away replays', () => {
+      const events = asV1(stored(mergedAway()), 'skill.mergeOffered');
+      const c = replay(events);
+      expect(names(c)).not.toContain('Identify');
+      expect(names(c)).toContain('Seeing Eye');
+    });
+
+    it('a current (v2) offer without override still refuses Identify on replay', () => {
+      const events = stored(mergedAway()).map((e) => {
+        if (e.type !== 'skill.mergeOffered') return e;
+        const payload = { ...e.payload };
+        delete payload.override;
+        return { ...e, payload };
+      });
+      expect(events.find((e) => e.type === 'skill.mergeOffered')?.schemaVersion).toBe(2);
+      expect(() => replay(events)).toThrow('race skill and cannot be merged away');
+    });
+
+    it('a v1 skill.merged of Identify (GM-applied, before MT.2) replays', () => {
+      const events = stored(fresh(start()));
+      const last = events[events.length - 1]!;
+      events.push({
+        ...last,
+        id: 'old-merge',
+        type: 'skill.merged',
+        schemaVersion: 1,
+        payload: { characterId: ID, skills: ['Identify', 'Look'], name: 'Seeing Eye' },
+      } as Raw);
+      expect(names(replay(events))).toEqual(expect.arrayContaining(['Seeing Eye']));
+      expect(names(replay(events))).not.toContain('Identify');
+      const v2 = events.map((e) => (e.type === 'skill.merged' ? { ...e, schemaVersion: 2 } : e));
+      expect(() => replay(v2)).toThrow('race skill and cannot be merged away');
+    });
+
+    it('a legacy merge skips the retired-name check; a current one keeps it', () => {
+      const c = fresh(start());
+      const jake = c.state!.characters[ID]!;
+      const retired = new Set(['old eye']);
+      const go = (legacy: boolean) =>
+        mergeSkills(c.state!.rules, jake, 'Cut', 'Step', 'Old Eye', 3, false, retired, legacy);
+      expect(() => go(false)).toThrow('pick a new name');
+      expect(go(true).skills.map((s) => s.name)).toContain('Old Eye');
+    });
   });
 });
