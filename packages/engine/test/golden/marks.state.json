@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 33,
+  "schemaVersion": 34,
   "name": "Golden: marks carry over (MQ.4)",
   "rules": {
     "configVersion": 2,
@@ -496,6 +496,8 @@
   "questOrder": [],
   "entities": {},
   "entityOrder": [],
+  "bestiaryCategories": {},
+  "bestiaryCategoryOrder": [],
   "montages": {},
   "montageOrder": [],
   "contests": {},

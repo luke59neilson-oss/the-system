@@ -39,12 +39,26 @@ describe('GM sets a skill rarity (MT.7)', () => {
     expect(JSON.stringify(projectForPlayer(c.state!, ID).me)).toContain('"legendary"');
   });
 
-  it('lowers Identify too (the GM overrules "never drops"); the text keeps its rarity', () => {
-    const c = run([...start(), set('Identify', 'inferior')]);
-    expect(skill(c, 'Identify')).toMatchObject({ rarity: 'inferior', textRarity: 'common' });
-    const back = run([set('Identify', 'common')], testContext('b'), c);
-    expect(skill(back, 'Identify').rarity).toBe('common');
-    expect(skill(back, 'Identify').textRarity).toBeUndefined();
+  it('refuses to re-rate Identify either way (MV.3, DESIGN §7); stored ones replay', () => {
+    const c = run(start());
+    for (const rarity of ['inferior', 'uncommon']) {
+      const r = execute(c, set('Identify', rarity), testContext('i'));
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.error).toContain('Identify never changes');
+    }
+    // A log stored before MV.3 that lowered Identify still replays as it was.
+    const stored = JSON.parse(JSON.stringify(c.events)) as Record<string, unknown>[];
+    stored.push({
+      ...stored[stored.length - 1],
+      id: 'stored-lower',
+      type: 'skill.raritySet',
+      schemaVersion: 1,
+      payload: { characterId: ID, skill: 'Identify', rarity: 'inferior' },
+    });
+    expect(skill(replay(stored), 'Identify')).toMatchObject({
+      rarity: 'inferior',
+      textRarity: 'common',
+    });
   });
 
   it('refuses no change, a reserved rarity, an unknown skill, and players', () => {

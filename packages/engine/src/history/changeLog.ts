@@ -141,6 +141,11 @@ export const CHANGE_LOG_PHRASES: Readonly<Record<string, string>> = {
   'entity.defined': 'Identify entry added',
   'entity.edited': 'Identify entry edited',
   'entity.revealed': 'Identify entry revealed',
+  'entity.identified': 'Identified by…',
+  'entity.noticeClosed': 'Identify notification closed',
+  'bestiary.categoryDefined': 'bestiary category added',
+  'bestiary.categoryRenamed': 'bestiary category renamed',
+  'bestiary.categoryRemoved': 'bestiary category removed',
 };
 
 const has = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);

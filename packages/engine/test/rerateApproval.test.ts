@@ -99,13 +99,14 @@ describe('evolution re-rating is approved, not automatic (MT.1)', () => {
     ]);
   });
 
-  it('never lowers Identify (a race skill); raising it is fine', () => {
+  it('never lowers Identify (a race skill), and since MV.3 never raises it', () => {
     const c = atGTop();
     expect(reject(c, release({ Identify: 'inferior' }))).toMatch(
       /\[Identify\] is a race skill and never drops a rarity/,
     );
-    const raised = ok(ok(c, release({ Identify: 'uncommon' })), choose, player('jake'));
-    expect(skillOf(raised, 'Identify')?.rarity).toBe('uncommon');
+    expect(reject(c, release({ Identify: 'uncommon' }))).toMatch(/Identify never changes/);
+    const kept = ok(ok(c, release({ Identify: 'common' })), choose, player('jake'));
+    expect(skillOf(kept, 'Identify')?.rarity).toBe('common');
   });
 
   it('raises within the new ceiling, keeps, or lowers with every mark kept', () => {

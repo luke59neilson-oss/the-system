@@ -408,6 +408,17 @@ const SCENARIOS: Partial<Record<EventType, Scenario>> = {
     act: { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' },
   },
   'quest.created': { act: { type: 'quest.create', questId: 'q1', title: 'Find the heart' } },
+  'entity.identified': {
+    setup: [
+      {
+        type: 'entity.define',
+        entityId: 'e1',
+        name: 'Stalker',
+        tiers: [{ minRarity: 'common', text: '[Stalker]' }],
+      },
+    ],
+    act: { type: 'entity.identify', entityId: 'e1', characterIds: ['jake'] },
+  },
   'quest.edited': {
     setup: [{ type: 'quest.create', questId: 'q1', title: 'Find the heart', visible: false }],
     act: { type: 'quest.edit', questId: 'q1', visible: true },

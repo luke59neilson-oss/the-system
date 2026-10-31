@@ -287,6 +287,12 @@ refusal is raised.
 | `scene "…" already exists` | packages/engine/src/events/reducer.ts:2322 | Fix the input or define the thing first |
 | `the scene is over: that scene prompt is closed` | packages/engine/src/events/reducer.ts:2452 | Nothing to answer (the GM ended the scene or the session): end a new scene to ask again |
 | `… has already answered` | packages/engine/src/events/reducer.ts:2332 | Nothing to do: the answer is in; end a new scene to ask again |
+| `Tick at least one character` | packages/engine/src/events/commands.ts | Tick who identified it, then Mark identified |
+| `… never changes: it earns no marks and is never upgraded or raised` | packages/engine/src/events/commands.ts | No way through by design (DESIGN §7, MV.3): Identify stays Common; give a new skill instead |
+| `category "…" already exists` | packages/engine/src/events/reducer.ts | Fix the input or define the thing first |
+| `unknown category "…"` | packages/engine/src/events/reducer.ts | Fix the input or define the thing first |
+| `the bestiary already has a category named "…"` | packages/engine/src/events/reducer.ts | Pick another name, or use the existing category |
+| `unknown bestiary category "…"` | packages/engine/src/events/reducer.ts | Add the category first, or leave it Uncategorized |
 | `undo is applied by the event log, not the reducer` | packages/engine/src/events/reducer.ts:2302 | Fix the input or define the thing first |
 | `a region is already called "…"` | packages/engine/src/events/reducer.ts:2345 | Fix the input or define the thing first |
 | `Unknown character "…"` | packages/engine/src/events/reducer.ts:2400 | Fix the input or define the thing first |

@@ -1002,6 +1002,12 @@ describe('property: replay equals incremental state', () => {
       'scene.answered',
       // MU.5: casting has its own tests (cast.test.ts) and golden log (cast.jsonl).
       'skill.cast',
+      // MV.3: the bestiary has its own tests (bestiary-identify.test.ts) and golden log.
+      'entity.identified',
+      'entity.noticeClosed',
+      'bestiary.categoryDefined',
+      'bestiary.categoryRenamed',
+      'bestiary.categoryRemoved',
     ]);
     expect(
       EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),

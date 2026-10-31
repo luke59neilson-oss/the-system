@@ -8,9 +8,10 @@ import { startBuiltServer, type RunningServer } from './helpers/server';
 // the skill upgrades; the GM's Skill text form has Use library text, which
 // hands the copy back to the library entry for its current name and rarity
 // (disabled when the copy already follows the library or there is no entry).
+// MV.3: Identify never changes, so Archer’s Eye is the skill that upgrades.
 
 const GM_KEY = 'e2e-gm-key-mr4-0123456789abcdefg';
-const HAND = 'Jake’s own words for Identify.';
+const HAND = 'Jake’s own words for Archer’s Eye.';
 const shots = path.resolve(import.meta.dirname, '../docs/screens/MR.4');
 let server: RunningServer;
 
@@ -73,11 +74,11 @@ async function markAndUpgrade(gm: Page, from: number, marks: number) {
     await gmCommand(gm, {
       type: 'skill.awardMark',
       characterId: 'jake',
-      skill: 'Identify',
+      skill: 'Archer’s Eye',
       session: `mr4-s${s}`,
     });
   }
-  await gmCommand(gm, { type: 'skill.upgrade', characterId: 'jake', skill: 'Identify' });
+  await gmCommand(gm, { type: 'skill.upgrade', characterId: 'jake', skill: 'Archer’s Eye' });
 }
 
 test('hand-written text survives an upgrade until the GM presses Use library text', async ({
@@ -96,7 +97,7 @@ test('hand-written text survives an upgrade until the GM presses Use library tex
     await gmCommand(gm, {
       type: 'skillDef.define',
       id,
-      name: 'Identify',
+      name: 'Archer’s Eye',
       rarity,
       tags: [],
       description: text,
@@ -121,7 +122,7 @@ test('hand-written text survives an upgrade until the GM presses Use library tex
   const jakeErrors = watchErrors(jake);
   await jake.goto(server.url);
   await jake.getByRole('link', { name: /Jake/ }).click();
-  await jake.getByRole('button', { name: /\[Identify \(Common\)\]/ }).click();
+  await jake.getByRole('button', { name: /\[Archer’s Eye \(Common\)\]/ }).click();
   const detail = jake.getByTestId('skill-detail');
   await expect(detail.getByTestId('skill-detail-description')).toHaveText('Common: learn a name.');
 
@@ -130,7 +131,7 @@ test('hand-written text survives an upgrade until the GM presses Use library tex
   const useLibrary = form.getByRole('button', { name: 'Use library text' });
   await openWindow(gm, 'skill-text');
   await form.getByLabel('Character').selectOption({ label: 'Jake' });
-  await form.getByLabel('Skill').selectOption('Identify');
+  await form.getByLabel('Skill').selectOption('Archer’s Eye');
   await expect(form.getByTestId('skill-text-source')).toHaveText('Follows the library entry.');
   await expect(useLibrary).toBeDisabled();
 
@@ -146,7 +147,7 @@ test('hand-written text survives an upgrade until the GM presses Use library tex
   // Upgrade to Uncommon: the hand-written text stays (L17), live on Jake's screen.
   await markAndUpgrade(gm, 1, 4);
   await expect(
-    jake.getByTestId('skills-race').getByRole('button', { name: /\[Identify \(Uncommon\)\]/ }),
+    jake.getByTestId('skills-class').getByRole('button', { name: /\[Archer’s Eye \(Uncommon\)\]/ }),
   ).toBeVisible();
   await expect(detail.getByTestId('skill-detail-description')).toHaveText(HAND);
   await expect(form.getByLabel('Description')).toHaveValue(HAND);
@@ -178,7 +179,7 @@ test('hand-written text survives an upgrade until the GM presses Use library tex
   await expect(form.getByRole('status')).toHaveText('Skill text saved');
   await markAndUpgrade(gm, 5, 6);
   await expect(
-    jake.getByTestId('skills-race').getByRole('button', { name: /\[Identify \(Rare\)\]/ }),
+    jake.getByTestId('skills-class').getByRole('button', { name: /\[Archer’s Eye \(Rare\)\]/ }),
   ).toBeVisible();
   await expect(detail.getByTestId('skill-detail-description')).toHaveText(HAND);
   await expect(form.getByTestId('skill-text-source')).toHaveText('Hand-written text.');
@@ -194,8 +195,8 @@ test('hand-written text survives an upgrade until the GM presses Use library tex
   await phone.goto(server.url);
   await phone.getByRole('link', { name: /Jake/ }).click();
   await phone
-    .getByTestId('skills-race')
-    .getByRole('button', { name: /\[Identify \(Rare\)\]/ })
+    .getByTestId('skills-class')
+    .getByRole('button', { name: /\[Archer’s Eye \(Rare\)\]/ })
     .click();
   await expect(phone.getByTestId('skill-detail-description')).toHaveText(HAND);
   await noSidewaysScroll(phone);

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 33,
+  "schemaVersion": 34,
   "name": "Golden: hidden quests",
   "rules": {
     "configVersion": 2,
@@ -627,6 +627,8 @@
   "questOrder": ["heart", "scar"],
   "entities": {},
   "entityOrder": [],
+  "bestiaryCategories": {},
+  "bestiaryCategoryOrder": [],
   "montages": {},
   "montageOrder": [],
   "contests": {},

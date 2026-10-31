@@ -43,7 +43,7 @@ function reject(c: Campaign, command: Command, context: CommandContext = ctx): s
 const define = (id: string, rarity: string, text: string, effects = ''): Command => ({
   type: 'skillDef.define',
   id,
-  name: 'Identify',
+  name: 'Archer’s Eye',
   rarity,
   tags: [],
   description: `${text} description.`,
@@ -53,19 +53,19 @@ const define = (id: string, rarity: string, text: string, effects = ''): Command
 const handWrite = (text: string, id = 'jake'): Command => ({
   type: 'skill.describe',
   characterId: id,
-  skill: 'Identify',
+  skill: 'Archer’s Eye',
   description: text,
   flavor: null,
 });
 const useLibrary = (id = 'jake'): Command => ({
   type: 'skill.useLibraryText',
   characterId: id,
-  skill: 'Identify',
+  skill: 'Archer’s Eye',
 });
 const skillOf = (c: Campaign, id = 'jake') =>
-  c.state?.characters[id]?.skills.find((s) => s.name === 'Identify');
+  c.state?.characters[id]?.skills.find((s) => s.name === 'Archer’s Eye');
 let session = 0;
-function upgradeIdentify(c: Campaign, id = 'jake'): Campaign {
+function upgradeEye(c: Campaign, id = 'jake'): Campaign {
   let next = c;
   const s = skillOf(next, id);
   const needed = next.state && s ? (marksToUpgrade(next.state.rules, s) ?? 0) : 0;
@@ -73,13 +73,13 @@ function upgradeIdentify(c: Campaign, id = 'jake'): Campaign {
     next = ok(next, {
       type: 'skill.awardMark',
       characterId: id,
-      skill: 'Identify',
+      skill: 'Archer’s Eye',
       session: `s${++session}`,
     });
   }
-  return ok(next, { type: 'skill.upgrade', characterId: id, skill: 'Identify' });
+  return ok(next, { type: 'skill.upgrade', characterId: id, skill: 'Archer’s Eye' });
 }
-/** Library text for Common and Uncommon Identify; Jake and Kim hold Common copies. */
+/** Library text for Common and Uncommon Archer’s Eye; Jake and Kim hold Common copies. */
 const base = (): Campaign => {
   let c = ok(run([created], ctx), define('idc', 'common', 'Common', 'Common effects.'));
   c = ok(c, define('idu', 'uncommon', 'Uncommon', 'Uncommon effects.'));
@@ -98,8 +98,8 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
 
   it('an upgrade keeps a hand-written copy’s text and mark; an unedited copy takes the new text', () => {
     let c = ok(base(), handWrite('Jake’s own words.'));
-    c = upgradeIdentify(c, 'jake');
-    c = upgradeIdentify(c, 'kim');
+    c = upgradeEye(c, 'jake');
+    c = upgradeEye(c, 'kim');
     expect(skillOf(c, 'jake')).toMatchObject({
       rarity: 'uncommon',
       description: 'Jake’s own words.',
@@ -132,8 +132,8 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
         rerateApproved: true,
         characterId: id,
         options: [{ className: 'Hunter' }],
-        // Identify is a race skill and never drops (MT.1), so the GM raises it.
-        rerate: { Identify: 'uncommon' },
+        // The GM raises a class skill (Identify never changes, MV.3).
+        rerate: { 'Archer’s Eye': 'uncommon' },
       });
       c = ok(c, { type: 'evolution.choose', characterId: id, optionId: 'o1' }, player(id));
     }
@@ -150,7 +150,7 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
 
   it('Use library text reconnects the copy to its current rarity’s entry', () => {
     let c = ok(base(), handWrite('Jake’s own words.'));
-    c = upgradeIdentify(c);
+    c = upgradeEye(c);
     c = ok(c, useLibrary());
     expect(skillOf(c)).toMatchObject({
       rarity: 'uncommon',
@@ -162,7 +162,7 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
     c = ok(c, { type: 'skillDef.edit', skillDefId: 'idu', description: 'Edited.' });
     expect(skillOf(c)?.description).toBe('Edited.');
     const own = projectForPlayer(c.state!, 'jake');
-    expect(own.me?.skills.find((s) => s.name === 'Identify')).toMatchObject({
+    expect(own.me?.skills.find((s) => s.name === 'Archer’s Eye')).toMatchObject({
       description: 'Edited.',
       effects: 'Uncommon effects.',
     });
@@ -180,7 +180,7 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
     c = ok(c, {
       type: 'skill.describe',
       characterId: 'jake',
-      skill: 'Identify',
+      skill: 'Archer’s Eye',
       description: 'Mine.',
       flavor: 'My flavour.',
     });
@@ -201,7 +201,7 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
       rerateApproved: true,
       characterId: 'jake',
       options: [{ className: 'H' }],
-      rerate: { Identify: 'uncommon' },
+      rerate: { 'Archer’s Eye': 'uncommon' },
     });
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' }, player('jake'));
     expect(skillOf(c)).toMatchObject({ rarity: 'uncommon', textRarity: 'common' });
@@ -230,7 +230,7 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
       rerateApproved: true,
       characterId: 'kim',
       options: [{ className: 'H' }],
-      rerate: { Identify: 'uncommon' },
+      rerate: { 'Archer’s Eye': 'uncommon' },
     });
     c = ok(c, { type: 'evolution.choose', characterId: 'kim', optionId: 'o1' }, player('kim'));
     expect(skillOf(c, 'kim')).toMatchObject({
@@ -256,10 +256,12 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
     expect(reject(c, { type: 'skill.useLibraryText', characterId: 'jake', skill: 'Nope' })).toMatch(
       /has no skill/,
     );
-    c = upgradeIdentify(c);
-    c = upgradeIdentify(c); // Rare: no entry
+    c = upgradeEye(c);
+    c = upgradeEye(c); // Rare: no entry
     expect(skillOf(c)).toMatchObject({ rarity: 'rare', description: 'Jake’s own words.' });
-    expect(reject(c, useLibrary())).toMatch(/no entry with text for \[Identify\] at its rarity/);
+    expect(reject(c, useLibrary())).toMatch(
+      /no entry with text for \[Archer’s Eye\] at its rarity/,
+    );
     expect(JSON.stringify(projectForPlayer(c.state!, 'kim'))).not.toContain('Jake’s own words');
     expect(projectForGm(c.state!).characters.jake?.skills.length).toBeGreaterThan(0);
   });
@@ -290,7 +292,7 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
       options: [
         {
           className: 'Hunter',
-          transforms: [{ skill: 'Identify', name: 'Identify', rarity: 'uncommon' }],
+          transforms: [{ skill: 'Archer’s Eye', name: 'Archer’s Eye', rarity: 'uncommon' }],
         },
       ],
     });
@@ -311,7 +313,7 @@ describe('hand-written skill text survives upgrades (MR.4)', () => {
     c = ok(c, define('idu', 'uncommon', 'Uncommon'));
     c = ok(c, make('jake', 'Jake'));
     c = ok(c, handWrite('Old words.'));
-    c = upgradeIdentify(c);
+    c = upgradeEye(c);
     expect(skillOf(c)).toMatchObject({ description: 'Uncommon description.' });
     expect(skillOf(c)?.textEdited).toBeUndefined();
   });

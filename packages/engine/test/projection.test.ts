@@ -142,12 +142,12 @@ describe('player projection', () => {
     const view = projectForPlayer(tampered, 'casper');
     expect(JSON.stringify(view)).not.toContain('secret');
     expect(Object.keys(view).sort()).toEqual([
+      'bestiary',
       'campaignName',
       'contests',
       'day',
       'factions',
       'hiddenQuests',
-      'identify',
       'inventory',
       'me',
       'messages',
@@ -713,7 +713,15 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         createdAt: '2026-10-21T12:00:00.000Z',
         grade: null,
         level: null,
+        categoryId: 'gm-cat',
+        worked: {},
+        notices: [],
+        notes: `${GM}-entity-notes`,
       },
+    };
+    // MV.3: a category reaches a player only through one of their entries.
+    const categories: Record<string, unknown> = {
+      'gm-cat': { id: 'gm-cat', name: `${GM}-category` },
     };
     for (const id of ids) {
       owner.get(id)?.strings.push(`OWNER-${id}-entity`, `OWNER-${id}-tier`);
@@ -728,9 +736,15 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         knownBy: [id],
         createdAt: '2026-10-21T12:00:00.000Z',
         gmNote: `${GM}-entity`,
+        notes: `${GM}-entity-notes`,
         grade: null,
         level: null,
+        categoryId: `cat-${id}`,
+        worked: { [id]: true },
+        notices: [id],
       };
+      owner.get(id)?.strings.push(`OWNER-${id}-category`);
+      categories[`cat-${id}`] = { id: `cat-${id}`, name: `OWNER-${id}-category` };
       // MQ.8: a known target of the top grade is out of range: label only.
       owner.get(id)?.strings.push(`OWNER-${id}-far`);
       entities[`far-${id}`] = {
@@ -742,9 +756,15 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         createdAt: '2026-10-21T12:00:00.000Z',
         grade: s.rules.grades.at(-1)?.id ?? 'A',
         level: gmNum(),
+        categoryId: null,
+        worked: { [id]: false },
+        notices: [],
+        notes: '',
       };
     }
     econ.entities = entities;
+    econ.bestiaryCategories = categories;
+    econ.bestiaryCategoryOrder = Object.keys(categories);
     econ.entityOrder = [
       'hidden',
       ...ids.flatMap((id) => [`e-${id}`, `far-${id}`]),

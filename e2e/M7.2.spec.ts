@@ -4,12 +4,13 @@ import { expect, test, type Page } from './helpers/test';
 import { openWindow, reveal as revealWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
-// M7.2 bestiary and NPCs (DESIGN §7 "Identify", D84, D123, D181): the GM adds
-// an entry with grade, level, stats, Identify tiers and notes, is warned that
-// its label gives away an out-of-range target, renames the label, reveals it
-// to one character and edits its level. The player sees only the label and
-// `[??? – lvl ???]` while out of range; stats, notes and the GM name never
-// reach them.
+// M7.2 bestiary and NPCs (DESIGN §7 "Identify", D84, D123, D181; MV.3): the
+// GM adds an entry with grade, level, stats, one Identify text and notes, is
+// warned that its label gives away an out-of-range target, renames the
+// label and marks it identified by Jake while out of range: he sees only the
+// label and `[??? – lvl ???]`, and keeps that after the GM edits its level
+// down, until the GM marks it again. Stats, notes and the GM name never
+// reach him.
 
 const GM_KEY = 'e2e-gm-key-m72-0123456789abcdef72';
 const shots = path.resolve(import.meta.dirname, '../docs/screens/M7.2');
@@ -33,7 +34,9 @@ function watchErrors(page: Page) {
   return errors;
 }
 
-test('the GM keeps a bestiary; players see only labels and unlocked tiers', async ({ browser }) => {
+test('the GM keeps a bestiary; players see only labels and what Identify told them', async ({
+  browser,
+}) => {
   test.setTimeout(90_000);
   const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const errors = watchErrors(gm);
@@ -59,14 +62,12 @@ test('the GM keeps a bestiary; players see only labels and unlocked tiers', asyn
   await openWindow(gm, 'bestiary');
   await expect(win).toContainText('Nothing in the bestiary yet.');
   const form = win.locator('form[aria-labelledby="bestiary-form"]');
-  await openWindow(gm, 'bestiary');
   await form.getByLabel('Name (GM only)').fill('SECRET Pale hunter');
   await form.getByLabel('Grade').selectOption('F');
   await form.getByLabel('Level').fill('12');
   await form.getByLabel('Strength').fill('31337');
   await form.getByLabel('Vitality').fill('45');
-  await form.getByLabel('Common', { exact: true }).fill('[A pale shape]');
-  await form.getByLabel('Rare', { exact: true }).fill('SECRET [Immune cell]');
+  await form.getByLabel(/^Identify text/).fill('[A pale shape]');
   await form.getByLabel('Notes (GM only)').fill('SECRET hunts in pairs');
   // The label defaults to the name, which a G-grade player could read.
   await expect(form.getByTestId('bestiary-label-leak')).toContainText('Jake, Kim cannot Identify');
@@ -80,32 +81,46 @@ test('the GM keeps a bestiary; players see only labels and unlocked tiers', asyn
   await expect(win.getByRole('status')).toHaveText('SECRET Pale hunter added to the bestiary');
   const list = win.getByRole('list', { name: 'Bestiary entries' });
   await expect(list).toHaveText(
-    'SECRET Pale hunter players see “Pale stalker” · (F) lvl 12 · known by nobody',
+    'SECRET Pale hunter players see “Pale stalker” · (F) lvl 12 · Uncategorized · identified by nobody',
   );
 
-  // Reveal to Jake: he sees the label out of range, no text.
+  // Jake identifies it out of range: the label and [??? – lvl ???], no text.
   await list.getByRole('button', { name: /Pale hunter/ }).click();
   await expect(form.getByLabel('Strength')).toHaveValue('31337');
-  const reveal = win.getByRole('group', { name: 'Reveal SECRET Pale hunter' });
-  await reveal.getByLabel('Reveal to').selectOption({ label: 'Jake' });
-  await reveal.getByRole('button', { name: 'Reveal' }).click();
+  const by = win.getByRole('group', { name: /Identified by/ });
+  await by.getByLabel('Jake').check();
+  await by.getByRole('button', { name: 'Mark identified' }).click();
   await expect(win.getByRole('status')).toHaveText(
-    'Jake now knows of Pale stalker but is out of Identify range (sees [??? – lvl ???])',
+    'Jake sees [??? – lvl ???] (out of Identify range)',
   );
+  await expect(list).toContainText('identified by Jake (???)');
+  const notice = page.getByTestId('identify-notice');
+  await expect(notice).toContainText('Pale stalker');
+  await expect(notice).toContainText('[??? – lvl ???]');
+  await expect(notice.getByTestId('identify-text')).toHaveCount(0);
+  await notice.getByRole('button', { name: 'Close' }).click();
+  await expect(notice).toHaveCount(0);
   const identify = page.getByTestId('identify');
-  await expect(identify).toContainText('Pale stalker');
-  await identify.getByRole('button', { name: /Pale stalker/ }).click();
-  await expect(identify).toContainText('[??? – lvl ???]');
+  await identify.getByRole('button', { name: 'Pale stalker' }).click();
+  await expect(identify.getByTestId('identify-header')).toHaveText('[??? – lvl ???]');
   await win.evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-bestiary-1366x768.png') });
 
-  // Edit it down to G-grade level 0: in range, Jake reads the Common tier.
+  // Edit it down to G-grade level 0: the kept result does not change...
   await form.getByLabel('Grade').selectOption('G');
   await form.getByLabel('Level').fill('0');
   await form.getByRole('button', { name: 'Save entry' }).click();
   await expect(win.getByRole('status')).toHaveText('SECRET Pale hunter saved');
-  await expect(identify).toContainText('[A pale shape]');
   await expect(form.getByRole('button', { name: 'Save entry' })).toBeDisabled();
+  await expect(identify.getByTestId('identify-header')).toHaveText('[??? – lvl ???]');
+  await expect(identify).not.toContainText('[A pale shape]');
+  // ...until the GM marks it again (Jake looks again): now he reads the text.
+  await by.getByLabel('Jake').check();
+  await by.getByRole('button', { name: 'Mark identified' }).click();
+  await expect(win.getByRole('status')).toHaveText('Jake identified Pale stalker');
+  await expect(notice).toContainText('[A pale shape]');
+  await notice.getByRole('button', { name: 'Close' }).click();
+  await expect(identify.getByTestId('identify-text')).toHaveText('[A pale shape]');
   await identify.scrollIntoViewIfNeeded();
   await page.screenshot({ path: path.join(shots, 'player-identify-390x844.png') });
 

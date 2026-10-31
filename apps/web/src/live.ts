@@ -36,6 +36,8 @@ export type LiveNotification =
       left: number;
     }
   | { kind: 'mergeOffer'; characterId: string; skills: readonly [string, string]; name: string }
+  /** MV.3: the GM marked an entity identified for this character. */
+  | { kind: 'identify'; characterId: string; entityId: string; label: string }
   | {
       kind: 'skillMerge';
       characterId: string;
