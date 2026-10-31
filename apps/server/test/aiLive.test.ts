@@ -123,6 +123,19 @@ describe('AnthropicClient (fake fetch)', () => {
     });
   });
 
+  it('reports the stop reason of a reply cut at its cap (QF.49)', async () => {
+    const client = new AnthropicClient(
+      () => KEY,
+      () => DEFAULT_AI_MODELS,
+      fakeFetch(200, {
+        content: [{ type: 'text', text: '{"drafts":[' }],
+        stop_reason: 'max_tokens',
+        usage: { input_tokens: 12, output_tokens: 50 },
+      }),
+    );
+    expect((await client.complete(req)).stopReason).toBe('max_tokens');
+  });
+
   it('gives up on a stalled network with a network error', async () => {
     const stalled = new AnthropicClient(
       () => KEY,

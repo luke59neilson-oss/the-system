@@ -6,7 +6,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
-import { AiError, type AiClient } from './client';
+import { AiError, requireWhole, type AiClient } from './client';
 import type { TranscriptLine } from '../speech/transcript';
 
 export interface SessionSummary {
@@ -111,7 +111,7 @@ export async function takeNotes(
     messages: [{ role: 'user', content: notesPrompt(lines) }],
     maxTokens: 800,
   });
-  return parseNotes(reply.text);
+  return parseNotes(requireWhole(reply).text);
 }
 
 export async function summarise(
@@ -125,7 +125,7 @@ export async function summarise(
     messages: [{ role: 'user', content: summaryPrompt(notes, characters) }],
     maxTokens: 1500,
   });
-  return parseSummary(reply.text);
+  return parseSummary(requireWhole(reply).text);
 }
 
 /** Markdown for the session log: running notes, then the summary once written. */

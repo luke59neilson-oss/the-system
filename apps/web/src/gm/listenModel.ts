@@ -92,3 +92,35 @@ export function joinBlocks(blocks: readonly Float32Array[], samples: number): Fl
   }
   return at === samples ? out : out.subarray(0, at);
 }
+
+/** The transcript lines the Listening panel holds, and for which campaign (QF.49). */
+export interface HeldLines<L> {
+  readonly campaign: string | null;
+  readonly lines: readonly L[];
+}
+
+/** One `/api/gm/listen` reply's transcript part (QF.49). */
+export interface LinesReply<L> {
+  readonly campaign: string | null;
+  /** Where `lines` start in the laptop's list (0 = replace everything held). */
+  readonly from: number;
+  readonly lines: readonly L[];
+}
+
+/** The query that asks only for lines the panel does not hold yet. */
+export const listenQuery = (held: HeldLines<unknown>): string =>
+  `?after=${held.lines.length}` +
+  (held.campaign === null ? '' : `&campaign=${encodeURIComponent(held.campaign)}`);
+
+/**
+ * QF.49: merges a reply into what the panel holds. Keyed on `from`, so a
+ * reply applied twice or two overlapping polls never duplicate a line; a
+ * reply for another campaign or starting at 0 replaces the list.
+ */
+export function mergeLines<L>(held: HeldLines<L>, reply: LinesReply<L>): HeldLines<L> {
+  if (reply.campaign !== held.campaign || reply.from === 0) {
+    return { campaign: reply.campaign, lines: [...reply.lines] };
+  }
+  if (reply.from > held.lines.length) return held;
+  return { campaign: held.campaign, lines: [...held.lines.slice(0, reply.from), ...reply.lines] };
+}

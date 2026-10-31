@@ -3,6 +3,8 @@ import {
   FAST_RETRIES,
   SLOW_EVERY,
   firstReadDue,
+  listenQuery,
+  mergeLines,
   joinBlocks,
   listenPollNeeded,
   voiceRows,
@@ -74,5 +76,28 @@ describe('voices (MC.6)', () => {
     const b = (v: number) => new Float32Array(4).fill(v);
     expect(Array.from(joinBlocks([b(1), b(2), b(3)], 10))).toEqual([1, 1, 1, 1, 2, 2, 2, 2, 3, 3]);
     expect(Array.from(joinBlocks([b(1)], 10))).toEqual([1, 1, 1, 1]);
+  });
+});
+
+describe('transcript polls fetch only new lines (QF.49)', () => {
+  const held = (campaign: string | null, lines: string[]) => ({ campaign, lines });
+  it('asks after the lines it holds, for its campaign', () => {
+    expect(listenQuery(held(null, []))).toBe('?after=0');
+    expect(listenQuery(held('c 1', ['a', 'b']))).toBe('?after=2&campaign=c%201');
+  });
+  it('appends at `from`, never duplicates, and replaces from 0 or another campaign', () => {
+    const h = held('c', ['a', 'b']);
+    const once = mergeLines(h, { campaign: 'c', from: 2, lines: ['c'] });
+    expect(once.lines).toEqual(['a', 'b', 'c']);
+    // The same reply applied twice (two overlapping polls) adds nothing.
+    expect(mergeLines(once, { campaign: 'c', from: 2, lines: ['c'] }).lines).toEqual([
+      'a',
+      'b',
+      'c',
+    ]);
+    expect(mergeLines(h, { campaign: 'c', from: 0, lines: ['x'] }).lines).toEqual(['x']);
+    expect(mergeLines(h, { campaign: 'd', from: 2, lines: ['y'] })).toEqual(held('d', ['y']));
+    // A reply past what is held (out of order) is ignored; the next poll fills the gap.
+    expect(mergeLines(h, { campaign: 'c', from: 5, lines: ['z'] })).toBe(h);
   });
 });

@@ -147,6 +147,21 @@ describe('listen routes (MC.5)', () => {
       'We want an herbalist.',
       'Jake draws his bow.',
     ]);
+    // QF.49: a poll asks only for lines after those it holds.
+    const campaign = status.campaign as string;
+    const after = (q: string) => app.inject({ url: `/api/gm/listen${q}`, headers: gm });
+    const one = (await after(`?after=1&campaign=${campaign}`)).json();
+    expect(one).toMatchObject({ from: 1, total: 2 });
+    expect(one.lines.map((l: { text: string }) => l.text)).toEqual(['Jake draws his bow.']);
+    expect((await after(`?after=2&campaign=${campaign}`)).json()).toMatchObject({
+      from: 2,
+      lines: [],
+    });
+    // Past the end (a restart) or another campaign: from 0, so the panel replaces.
+    expect((await after('?after=9')).json()).toMatchObject({ from: 0, total: 2 });
+    expect((await after('?after=1&campaign=other')).json().from).toBe(0);
+    expect((await after('?lines=0')).json()).toMatchObject({ lines: [], total: 2 });
+    expect((await after('?after=-1')).statusCode).toBe(400);
     const dir = transcriptsDir(store);
     // Outside a session the file is session-00.
     expect(readdirSync(dir)).toEqual(['session-00.jsonl']);

@@ -83,7 +83,7 @@ export function QuickResponses({
     const read = async () => {
       const [q, l] = await Promise.all([
         fetch('/api/gm/ai/quick', { headers: { 'x-gm-key': gmKey } }).catch(() => null),
-        fetch('/api/gm/listen', { headers: { 'x-gm-key': gmKey } }).catch(() => null),
+        fetch('/api/gm/listen?lines=0', { headers: { 'x-gm-key': gmKey } }).catch(() => null),
       ]);
       if (!live) return;
       if (q?.ok) setScene((await q.json()) as QuickScene);

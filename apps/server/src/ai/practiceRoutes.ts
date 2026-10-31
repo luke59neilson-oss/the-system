@@ -12,6 +12,7 @@ import { DraftStore, draftPractice, type DraftCharacter, type LoggedUse } from '
 import type { CampaignStore } from '../store';
 import { transcriptsDir } from '../speech/routes';
 import { transcriptFile, type TranscriptLine } from '../speech/transcript';
+import { transcriptChunks } from './transcriptChunks';
 
 export const draftsDir = (store: CampaignStore) => path.join(store.dir, 'codm');
 
@@ -67,7 +68,7 @@ export function registerPracticeDraftRoutes(
       const sessionId = target?.id ?? null;
       const session = target?.number ?? 0;
       const all = readTranscript(a.store, session);
-      const lines = all.slice(store.readUpTo(session));
+      const from = store.readUpTo(session);
       const characters: DraftCharacter[] = state.characterOrder
         .filter((id) => Object.hasOwn(state.characters, id))
         .map((id) => {
@@ -77,7 +78,7 @@ export function registerPracticeDraftRoutes(
       // Uses logged in the app this session already count (app action first):
       // the GM's entries and a player's own Cast, which is the app action
       // itself (QF.48), never drafted again from the talk around it.
-      const logged: LoggedUse[] = state.practice
+      let logged: LoggedUse[] = state.practice
         .filter((p) => p.sessionId === sessionId && (p.source === 'gm' || p.tags.includes('cast')))
         .map((p) => ({ characterId: p.characterId, skills: p.skills, at: p.at }))
         // A draft still waiting for the GM is not drafted twice (MC.7 review M3),
@@ -89,16 +90,27 @@ export function registerPracticeDraftRoutes(
             .filter((d) => d.sessionId === sessionId)
             .map((d) => ({ characterId: d.characterId, skills: [d.skill], at: d.at })),
         );
-      const drafts = await draftPractice(
-        options.client,
-        lines,
-        characters,
-        logged,
-        randomUUID,
-        sessionId,
-      );
-      store.add(session, all.length, drafts);
-      return { drafts: store.list(), added: drafts.length, read: lines.length };
+      // QF.49: one bounded piece of talk per request; the read position is
+      // saved after each, so a failure later keeps what was already drafted
+      // and a retry re-sends only the unread rest.
+      let added = 0;
+      for (const chunk of transcriptChunks(all, from)) {
+        const drafts = await draftPractice(
+          options.client,
+          all.slice(chunk.start, chunk.end),
+          characters,
+          logged,
+          randomUUID,
+          sessionId,
+        );
+        store.add(session, chunk.end, drafts);
+        added += drafts.length;
+        // One draft per character and skill across the whole stretch.
+        logged = logged.concat(
+          drafts.map((d) => ({ characterId: d.characterId, skills: [d.skill], at: d.at })),
+        );
+      }
+      return { drafts: store.list(), added, read: Math.max(0, all.length - from) };
     } catch (err) {
       return reply.code(err instanceof AiError ? 502 : 500).send({ error: fail(err) });
     } finally {

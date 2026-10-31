@@ -115,13 +115,34 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
     (_request, body, done) => done(null, body),
   );
 
-  app.get('/api/gm/listen', () => {
+  // QF.49: a poll sends only the lines after `after` (the count the panel
+  // already holds), never the whole session again; `lines=0` sends none (a
+  // status check). `from` is where the returned lines start: 0 when `after`
+  // is past the end or names another campaign (`campaign`), so the panel
+  // replaces what it holds instead of appending.
+  const listenQuery = z.object({
+    after: z.coerce.number().int().min(0).optional(),
+    lines: z.literal('0').optional(),
+    campaign: z.string().max(200).optional(),
+  });
+  app.get('/api/gm/listen', (request, reply) => {
+    const q = listenQuery.safeParse(request.query);
+    if (!q.success) return reply.code(400).send({ error: 'after must be a line count' });
     const a = options.active();
+    const all = a ? (heard.get(a.store.id) ?? []) : [];
+    const after = q.data.after ?? 0;
+    const from =
+      after <= all.length && (q.data.campaign === undefined || q.data.campaign === a?.store.id)
+        ? after
+        : 0;
     return {
       on: current !== null && a !== null && current.store === a.store,
       available: options.stt() !== null,
       model: options.model?.status() ?? null,
-      lines: a ? (heard.get(a.store.id) ?? []) : [],
+      campaign: a?.store.id ?? null,
+      total: all.length,
+      from: q.data.lines === '0' ? all.length : from,
+      lines: q.data.lines === '0' ? [] : all.slice(from),
     };
   });
 

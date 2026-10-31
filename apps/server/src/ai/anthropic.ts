@@ -18,6 +18,7 @@ type Fetch = (url: string, init: RequestInit) => Promise<Response>;
 interface MessagesReply {
   model?: unknown;
   content?: unknown;
+  stop_reason?: unknown;
   usage?: { input_tokens?: unknown; output_tokens?: unknown };
 }
 
@@ -96,6 +97,7 @@ export class AnthropicClient implements AiClient {
       text,
       model: typeof data?.model === 'string' ? data.model : model,
       usage: { inputTokens: input, outputTokens: output },
+      ...(typeof data?.stop_reason === 'string' ? { stopReason: data.stop_reason } : {}),
     };
   }
 }
@@ -118,11 +120,12 @@ export async function readStream(
   let input: number | null = null;
   let output: number | null = null;
   let stopped = false;
+  let stopReason: string | null = null;
   const handle = (data: string) => {
     let event: {
       type?: unknown;
       message?: { model?: unknown; usage?: { input_tokens?: unknown; output_tokens?: unknown } };
-      delta?: { type?: unknown; text?: unknown };
+      delta?: { type?: unknown; text?: unknown; stop_reason?: unknown };
       usage?: { output_tokens?: unknown; input_tokens?: unknown };
       error?: { message?: unknown };
     };
@@ -142,6 +145,7 @@ export async function readStream(
         onText(event.delta.text);
       }
     } else if (event.type === 'message_delta') {
+      if (typeof event.delta?.stop_reason === 'string') stopReason = event.delta.stop_reason;
       if (typeof event.usage?.output_tokens === 'number') output = event.usage.output_tokens;
       if (typeof event.usage?.input_tokens === 'number') input = event.usage.input_tokens;
     } else if (event.type === 'message_stop') {
@@ -193,5 +197,10 @@ export async function readStream(
   if (!stopped || input === null || output === null) {
     throw new AiError('The API answer ended early', 'bad-reply');
   }
-  return { text, model, usage: { inputTokens: input, outputTokens: output } };
+  return {
+    text,
+    model,
+    usage: { inputTokens: input, outputTokens: output },
+    ...(stopReason !== null ? { stopReason } : {}),
+  };
 }

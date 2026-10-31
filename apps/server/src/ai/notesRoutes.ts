@@ -7,7 +7,9 @@ import type { FastifyInstance } from 'fastify';
 import type { CampaignState, SessionRecord } from '@the-system/engine';
 import { AiError, type AiClient } from './client';
 import { draftsDir, readTranscript } from './practiceRoutes';
-import { NotesStore, summarise, takeNotes } from './sessionNotes';
+import { NotesStore, summarise, takeNotes, type SessionNotesFile } from './sessionNotes';
+import { transcriptChunks } from './transcriptChunks';
+import type { TranscriptLine } from '../speech/transcript';
 import type { CampaignStore } from '../store';
 
 /** The running session, else the last one; null before the first. */
@@ -28,6 +30,27 @@ export function registerNotesRoutes(
   const fail = (err: unknown) =>
     err instanceof AiError ? err.message : 'Could not read or save the session notes';
   let running = false;
+
+  /**
+   * QF.49: notes for the unread transcript, one bounded piece per request,
+   * saved after each piece. Lines count as read only when notes came back,
+   * so a piece with no usable notes stops the catch-up there and is read
+   * again next time (D250).
+   */
+  const catchUp = async (
+    notes: NotesStore,
+    all: readonly TranscriptLine[],
+    session: number,
+  ): Promise<SessionNotesFile> => {
+    let file = notes.read(session);
+    for (const chunk of transcriptChunks(all, file.readUpTo)) {
+      const fresh = await takeNotes(options.client, all.slice(chunk.start, chunk.end));
+      if (fresh.length === 0) break;
+      file = { ...file, readUpTo: chunk.end, notes: [...file.notes, ...fresh] };
+      notes.write(session, file);
+    }
+    return file;
+  };
 
   const withSession = async (
     reply: { code: (n: number) => { send: (b: unknown) => unknown } },
@@ -68,20 +91,13 @@ export function registerNotesRoutes(
   app.post('/api/gm/ai/session-notes', (_request, reply) =>
     withSession(reply, async (store, _state, session) => {
       const notes = new NotesStore(draftsDir(store));
-      const file = notes.read(session.number);
-      const all = readTranscript(store, session.number);
-      const fresh = await takeNotes(options.client, all.slice(file.readUpTo));
-      // Lines count as read only when notes came back, so a reply with no
-      // usable notes leaves them to be read again (D250).
-      const next = fresh.length
-        ? { ...file, readUpTo: all.length, notes: [...file.notes, ...fresh] }
-        : file;
-      if (fresh.length) notes.write(session.number, next);
+      const before = notes.read(session.number).notes.length;
+      const next = await catchUp(notes, readTranscript(store, session.number), session.number);
       return {
         session: session.number,
         notes: next.notes,
         summary: next.summary,
-        added: fresh.length,
+        added: next.notes.length - before,
       };
     }),
   );
@@ -89,15 +105,9 @@ export function registerNotesRoutes(
   app.post('/api/gm/ai/session-summary', (_request, reply) =>
     withSession(reply, async (store, state, session) => {
       const notes = new NotesStore(draftsDir(store));
-      let file = notes.read(session.number);
-      // Catch up on lines heard since the last notes first.
-      const all = readTranscript(store, session.number);
-      const fresh = await takeNotes(options.client, all.slice(file.readUpTo));
-      if (fresh.length) {
-        // Saved before the summary call, so a failed summary keeps them (D250).
-        file = { ...file, readUpTo: all.length, notes: [...file.notes, ...fresh] };
-        notes.write(session.number, file);
-      }
+      // Catch up on lines heard since the last notes first; saved before the
+      // summary call, so a failed summary keeps them (D250).
+      const file = await catchUp(notes, readTranscript(store, session.number), session.number);
       if (file.notes.length === 0) {
         throw new AiError('Nothing heard this session to summarise', 'bad-reply');
       }

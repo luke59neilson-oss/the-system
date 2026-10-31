@@ -37,6 +37,11 @@ export interface AiReply {
   /** The model id that answered. */
   readonly model: string;
   readonly usage: AiUsage;
+  /**
+   * QF.49: why the model stopped, as the API reports it (`end_turn`,
+   * `max_tokens`, ...); absent when unknown (recorded fixtures).
+   */
+  readonly stopReason?: string;
 }
 
 export interface AiClient {
@@ -171,4 +176,19 @@ export function redactKey(text: string, key?: string): string {
   let out = text.replace(/sk-ant-[A-Za-z0-9_-]+/g, 'sk-ant-…');
   if (key !== undefined && key.length >= 8) out = out.split(key).join('…');
   return out;
+}
+
+/**
+ * QF.49: a reply cut at its output cap is not an answer (the JSON is torn).
+ * Throws an AiError that says what to do instead of failing as bad JSON.
+ * The call was still made, so the spend counter has already counted it.
+ */
+export function requireWhole(reply: AiReply): AiReply {
+  if (reply.stopReason === 'max_tokens') {
+    throw new AiError(
+      'The co-DM ran out of room answering: that stretch of talk was too long for one go. Try again; it reads in smaller pieces.',
+      'bad-reply',
+    );
+  }
+  return reply;
 }

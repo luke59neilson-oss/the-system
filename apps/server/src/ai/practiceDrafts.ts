@@ -6,7 +6,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
-import type { AiClient } from './client';
+import { AiError, requireWhole, type AiClient } from './client';
 import type { TranscriptLine } from '../speech/transcript';
 
 export interface DraftCharacter {
@@ -229,7 +229,13 @@ export async function draftPractice(
     messages: [{ role: 'user', content: draftPrompt(lines, characters) }],
     maxTokens: 2000,
   });
-  return parseDrafts(reply.text, lines, characters, logged, newId, sessionId);
+  requireWhole(reply);
+  try {
+    return parseDrafts(reply.text, lines, characters, logged, newId, sessionId);
+  } catch {
+    // QF.49: a reply without a drafts list is the model's fault, not the disk's.
+    throw new AiError('The co-DM reply had no drafts list; try again', 'bad-reply');
+  }
 }
 
 interface DraftFile {

@@ -5,6 +5,9 @@ import {
   firstReadDue,
   joinBlocks,
   listenPollNeeded,
+  listenQuery,
+  mergeLines,
+  type HeldLines,
   voiceRows,
   type ModelStatus,
   type VoiceEnrolment,
@@ -49,6 +52,8 @@ export function ListenPanel({
   const [busy, setBusy] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
+  // QF.49: what the panel holds, so each poll asks only for newer lines.
+  const held = useRef<HeldLines<Line>>({ campaign: null, lines: [] });
   const [model, setModel] = useState<ModelStatus | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   // MC.6: a voice sample is being recorded, so the mic is busy (D241).
@@ -74,20 +79,25 @@ export function ListenPanel({
     const poll = async () => {
       const startsAtRead = starts.current;
       try {
-        const res = await fetch('/api/gm/listen', { headers: { 'x-gm-key': gmKey } });
+        const res = await fetch(`/api/gm/listen${listenQuery(held.current)}`, {
+          headers: { 'x-gm-key': gmKey },
+        });
         if (!res.ok) misses += 1;
         if (!res.ok || !live) return;
         const data = (await res.json()) as {
           on: boolean;
           available: boolean;
           model: ModelStatus | null;
+          campaign: string | null;
+          from: number;
           lines: Line[];
         };
         if (!live) return;
         if (starts.current !== startsAtRead || starting.current) return;
         setAvailable(data.available);
         setModel(data.model);
-        setLines(data.lines);
+        held.current = mergeLines(held.current, data);
+        setLines([...held.current.lines]);
         // The server is the truth: it stopped (campaign switched, restart),
         // so stop sending; it still listens with no mic here (a reload), so
         // turn it off rather than leave players' mark up (MC.5 review).

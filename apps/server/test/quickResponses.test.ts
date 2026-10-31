@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { DEFAULT_RULES, execute } from '@the-system/engine';
 import { readStream } from '../src/ai/anthropic';
+import { requireWhole } from '../src/ai/client';
 import { CoDm } from '../src/ai/coDm';
 import { FixtureAiClient, streamPieces } from '../src/ai/fake';
 import { e2eQuickResponse } from '../src/ai/e2eFake';
@@ -159,6 +160,26 @@ describe('streamed Anthropic replies (MD.1)', () => {
       model: 'claude-haiku-x',
       usage: { inputTokens: 12, outputTokens: 9 },
     });
+  });
+
+  it('reports the stop reason, so a reply cut at its cap is caught (QF.49)', async () => {
+    const reply = await readStream(
+      sse([
+        { type: 'message_start', message: { usage: { input_tokens: 5, output_tokens: 1 } } },
+        { type: 'content_block_delta', delta: { type: 'text_delta', text: '{"notes":["ha' } },
+        {
+          type: 'message_delta',
+          delta: { stop_reason: 'max_tokens' },
+          usage: { output_tokens: 8 },
+        },
+        { type: 'message_stop' },
+      ]),
+      'fallback',
+      () => undefined,
+    );
+    expect(reply.stopReason).toBe('max_tokens');
+    expect(() => requireWhole(reply)).toThrow(/too long/);
+    expect(requireWhole({ ...reply, stopReason: 'end_turn' })).toMatchObject({ text: reply.text });
   });
 
   it('a stream that errors or ends early is an AI error, with no key in it', async () => {

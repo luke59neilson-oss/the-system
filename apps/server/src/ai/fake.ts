@@ -16,6 +16,8 @@ export interface AiFixture {
   readonly match: string;
   readonly text: string;
   readonly usage?: { inputTokens: number; outputTokens: number };
+  /** QF.49: the stop reason to report (e.g. `max_tokens` for a reply cut at its cap). */
+  readonly stopReason?: string;
   /** Reply with this error instead of text. */
   readonly error?: { message: string; kind: AiError['kind'] };
   /** Answer only after this long (a slow model), unless the request is aborted first. */
@@ -53,6 +55,7 @@ export class FixtureAiClient implements AiClient {
         inputTokens: Math.ceil((request.system.length + prompt.length) / 4),
         outputTokens: Math.ceil(fixture.text.length / 4),
       },
+      ...(fixture.stopReason !== undefined ? { stopReason: fixture.stopReason } : {}),
     };
     const delay = fixture.delayMs ?? 0;
     // MD.1: a streamed request hears the text in word-sized pieces first.
