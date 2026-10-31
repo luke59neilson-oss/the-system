@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress again (2026-10-31): every milestone done; deep multi-model review queued 26 fix items QF.38–QF.63; QF.38–QF.40 done (both Highs).
-**Next item:** QF.41 A crash-left LOCK never blocks the app, then QF.42 onward in file order
+**Status:** in progress again (2026-10-31): every milestone done; deep multi-model review queued 26 fix items QF.38–QF.63; QF.38–QF.43 done (both Highs).
+**Next item:** QF.44, then onward in file order
 **Blockers:** none
 
 ## Run log
@@ -1365,3 +1365,11 @@ next item, blockers. -->
 - QF.40 A non-latest undo never silently loses XP: undo refused when later awards would lose XP at an old cap, naming the loss; undo confirm previews level changes (`/api/gm/changelog/undo-preview`); `e2e/QF.40.spec.ts`, screenshots `docs/screens/QF.40/`. D277. Sonnet: 0 High, 0 Medium, 4 Low.
 - Tests: unit 1,677 (was 1,666). e2e run: MC.5, MD.1, M5.4, MT.2, MT.7, M4.8, QF.40 green; full suite not run locally (CI runs it). Engine coverage not re-measured.
 - Open `wip/*`: none. Next: QF.41. Blockers: none.
+
+### Run · 2026-10-31 07:08–07:54 UTC (close-out at minute 44; end minute 46, before 48: the full `npm run check` for QF.43 ran until minute 44, so no unblocked item could start and finish its review before the 52 hard stop; QF.44 starts next run)
+- Preflight: `add_repo` not offered; repo already cloned and in scope; lock pushed cleanly; vitest 5.0.5; sonnet reviewers work (background, worktree). CI on main green at start. No new answers. Hour 07: no efficiency check or sweep.
+- QF.41 A crash-left LOCK never blocks the app: the LOCK records the holder's OS start time (`ps lstart` / PowerShell), a lock naming this process that it does not hold or a live pid that started at another time is stale, refusals name the LOCK path; TROUBLESHOOTING "The campaign is already open"; D278. Sonnet round 1: 1 High (uptime-based start drifts across sleep), fixed; round 2: 0 High/Medium, Low 1 fixed.
+- QF.42 A campaign that can't load says what to do: one message format (what, "Nothing was changed.", campaign folder, newest backup with events, guide), "saved by a newer version… Update the app" for unknown types/keys/versions; a log with no events refuses while backups hold events; failed rules migration closes the store; D279. Sonnet round 1: 3 Medium, fixed; round 2: 0 High/Medium, 2 Lows fixed.
+- QF.43 Backups always happen: snapshot failure never stops a backup, snapshot retries back off 4×, backups carry `codm/` and `transcripts/` (not `speakers/`), errors go to `<dataDir>/server.log` (1 MB cap) and warnings name it; D280. Sonnet round 1: 2 Medium, fixed; round 2: 0 High/Medium.
+- Tests: unit 1,698 (was 1,677). e2e not run locally (server-only changes; no UI touched); CI runs the full suite. Engine coverage not re-measured (no engine change).
+- Open `wip/*`: none. Next: QF.44. Blockers: none.

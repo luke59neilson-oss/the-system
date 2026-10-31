@@ -581,7 +581,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   newer-build cases say "saved by a newer version: update the app"; a
   missing/empty log with backups present refuses with the restore hint; a
   new campaign still opens blank; TROUBLESHOOTING has a damaged-line entry.
-- [ ] **QF.43 Backups always happen, and hold everything.** `backup()` writes
+- [x] **QF.43 Backups always happen, and hold everything.** `backup()` writes
   the snapshot first with no try/catch (`store.ts:533`), so a stuck
   `snapshot.json` (antivirus, sync) means no backup at all, and a failing
   snapshot is retried on every append; backups and exports leave out
