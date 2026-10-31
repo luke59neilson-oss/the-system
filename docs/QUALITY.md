@@ -213,6 +213,13 @@ lowered by their verifiers and folded into the Low batches.
   or assert the splash text without a screenshot. It repeated on ab3f114
   (10:31 UTC): now QF.14.
 
+- 2026-10-31, CI on 25e72f05 (main, after the MV.3 merge): `e2e/M8.3.spec.ts:218`
+  "the player screen and GM console work from the keyboard alone" saw Tab
+  never reach the View-as buttons, Back to my campaign and the Session tab.
+  Passes alone and with `--workers=2` here, and in this run's full local
+  suite (148/148). Flake; if it repeats it becomes a QF item (check whether
+  a pane's Identify notice, MV.3, covers the console while Tab is walked).
+
 ## Backlog (Lows; M11.5 goes through these)
 
 - (MV.A review, fable) View as / Table view panes get the Identify notice with no Close, so the GM cannot see the pane until the player closes it; simulation and soak tests still send `freePoints.assign`, not the `freePoints.spend` the phone sends (no randomized spend/override/undo invariants); campaigns from before MV.3 decide Identify range at the old reveal, so an entity read live before may show `[??? – lvl ???]` until re-marked (say so in GM-GUIDE); after a lost connection on confirm the phone says the GM changed the free points; the notice header repeats the GM's own `[Name – lvl N]` line; `entity.closeNotice` answers differently for real and unknown entity ids.
