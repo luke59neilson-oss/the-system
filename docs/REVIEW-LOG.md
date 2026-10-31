@@ -1124,3 +1124,6 @@
 ### 2026-10-31 · QF.39 Identify can never be merged away · sonnet, 1 round
 - Round 1 (469c331a): 0 High, 1 Medium, 3 Low. Medium: an override merge with Identify first gave the merged skill kind race, so a restored Identify sat beside a second race skill.
 - Fixes: the merged skill takes the non-race side's kind (never race), with an engine test that the restored Identify is the only race skill; Low 2: the Merges window's override preview passes retired names like the reducer. Low 3 (a pre-QF.39 offer to a retired name would refuse on replay; none known) and Low 4 (race by kind vs restore by name, consistent once Medium fixed) recorded in D276. No round 2; `npm run check` 1,672 green; MT.2, MT.7, M5.4, MC.5 e2e green.
+
+### 2026-10-31 · QF.40 A non-latest undo never silently loses XP · sonnet, 1 round
+- Round 1 (2462ba8b): 0 High, 0 Medium, 4 Low: two extra folds per non-latest undo with later awards (O(n), undos rare); `undoError` parses the engine message with a regex; Confirm stays enabled when the preview says the undo is refused (the server still refuses); dry-run id naming. No fixes needed; Lows noted for QF.62/QF.63. Box checked.

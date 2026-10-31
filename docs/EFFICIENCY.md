@@ -70,6 +70,8 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 ## Proposals for Luke (Tier 2)
 
+- 2026-10-31 06:07 auditor (sonnet): no trials to judge. Tier 1 not applied this check (close-out time went to reviews): make `npm run orient` print one line per checked box inside a milestone that still has an open box (orient words 10.6k → 16.3k this row, from the 26-item QF deep-review list; target back to ~10k); a later check may apply it. Tier 2 (Q88): reviewers trust the builder's `npm run check` output and re-run only the item's tests and e2e. Default: no change.
+
 - 2026-10-31 00:09 auditor (sonnet): D264 Kept (D274). Tier 1 not applied: read DESIGN.md by section (trims a required full read of the rules; put to Luke as Q87, default no change); a presubmit check rejecting raw toast waits in e2e specs outside the toast helper (needs a spec audit first; may come at a later check). Housekeeping idea: have `orientWords` count the real `npm run orient` output.
 
 - 2026-10-30 18:09 auditor (sonnet): Tier 1 applied: `npm run orient` (D264; orient words 10.6k → ~6k, items/run +0–0.1). Tier 2 (Q83): run CI on `wip/**` pushes with e2e in 2 shards, and accept a green CI run on the pushed wip SHA in place of a full local e2e at close-out and `Mx.A` (local full runs keep getting cut off on 2 CPUs and compete with reviewers; costs Actions minutes). Default: no change. Judged: D248 Kept (D263); the auditor notes the end-minute gain comes mostly from long hand-offs and full-e2e tails, not extra items.

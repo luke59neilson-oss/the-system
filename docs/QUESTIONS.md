@@ -661,3 +661,12 @@ DESIGN/ROADMAP; do not re-apply them.
     whole only for rules changes and sweeps (reviewers still check against
     DESIGN). Saves ~5k tokens and a few minutes per run; risk: a missed rule
     in another section. Default: no change (DESIGN.md read in full).
+
+88. **Reviewers trust the builder's `npm run check` result? (efficiency, 2026-10-31 06:07 auditor).**
+    The Agent tool here blocks while a reviewer runs, and each reviewer
+    re-runs `npm run check` (~2.5 min) that the builder just ran at the same
+    SHA (CI runs it again on main). Proposal: the builder pastes its check and
+    e2e output and the SHA into the reviewer prompt; the reviewer re-runs the
+    item's own tests and e2e and anything it doubts, and says what it re-ran.
+    Saves ~2.5–5 min per item; risk: the reviewer is no longer an independent
+    run of the full gate (Tier 2, LOOP §6.2). Default: no change.

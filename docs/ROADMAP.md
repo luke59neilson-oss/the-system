@@ -550,7 +550,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   starting race skill then succeeds); `skill.grant {name:'Identify',
   kind:'race'}` restores it for any character missing it; a merge to a retired
   name is refused like `skill.grant`; existing merge and MT.1 tests green.
-- [ ] **QF.40 A non-latest undo never silently loses XP.** Undoing an earlier
+- [x] **QF.40 A non-latest undo never silently loses XP.** Undoing an earlier
   `evolution.chosen` (or a progression override or profession choice) makes
   later `xp.awarded` events re-apply at the old cap, where the XP is lost
   (`packages/engine/src/events/log.ts:109-133`): 900 XP, F class 7 → 4, no

@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress again (2026-10-31): every milestone done; deep multi-model review queued 26 fix items QF.38–QF.63 (2 High); `docs/DONE.md` removed.
-**Next item:** QF.38 (High) Listening follows the session, then QF.39 (High), then QF.40 onward in file order
+**Status:** in progress again (2026-10-31): every milestone done; deep multi-model review queued 26 fix items QF.38–QF.63; QF.38–QF.40 done (both Highs).
+**Next item:** QF.41 A crash-left LOCK never blocks the app, then QF.42 onward in file order
 **Blockers:** none
 
 ## Run log
@@ -1356,3 +1356,12 @@ next item, blockers. -->
 - Open `wip/*`: `wip/MU.A` merged to main.
 - Next: none; DONE.md written. Preview ready: Actions → Release → Run workflow (MU). Blockers: none.
 
+
+### Run · 2026-10-31 06:07–06:55 UTC (close-out at minute 47; end minute 48)
+- Preflight: `add_repo` not offered; repo already cloned and in scope; lock pushed cleanly; vitest 5.0.5; sonnet reviewers work (blocking Agent calls, worktree). CI on main green at start. No new answers.
+- Efficiency check (hour 06): scorecard row appended (end 48.8, items 1.5, round-2 7/10, Highs 0, red/day 5, orient words 16.3k). No trials to judge. Auditor (sonnet): Tier 1 (orient summarises checked boxes in open milestones) not applied yet; Tier 2 Q88 (reviewers trust the builder's check), default no change.
+- QF.38 (High) Listening follows the session: the Listener reads the session per utterance (`transcriptSession`: running, else the one just ended, else 0); route test; GM guide; D275. Sonnet: 1 Medium (talk after End session went to session-00), fixed; 3 Lows handled.
+- QF.39 (High) Identify can never be merged away: race skills refused in standalone merges (GM override allowed), never offered by alerts/Merges/home/marks review; `skill.grant` restores the starting race skill; merges refuse retired names. D276. Sonnet: 1 Medium (override merge inherited race kind), fixed; Low 2 fixed.
+- QF.40 A non-latest undo never silently loses XP: undo refused when later awards would lose XP at an old cap, naming the loss; undo confirm previews level changes (`/api/gm/changelog/undo-preview`); `e2e/QF.40.spec.ts`, screenshots `docs/screens/QF.40/`. D277. Sonnet: 0 High, 0 Medium, 4 Low.
+- Tests: unit 1,677 (was 1,666). e2e run: MC.5, MD.1, M5.4, MT.2, MT.7, M4.8, QF.40 green; full suite not run locally (CI runs it). Engine coverage not re-measured.
+- Open `wip/*`: none. Next: QF.41. Blockers: none.
