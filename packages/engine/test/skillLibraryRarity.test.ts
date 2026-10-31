@@ -32,7 +32,7 @@ function reject(c: Campaign, command: Command): string {
 const define = (id: string, rarity: string, text: string, effects = ''): Command => ({
   type: 'skillDef.define',
   id,
-  name: 'Identify',
+  name: 'Archer’s Eye',
   rarity,
   tags: [],
   description: `${text} description.`,
@@ -40,9 +40,9 @@ const define = (id: string, rarity: string, text: string, effects = ''): Command
   effects,
 });
 const skillOf = (c: Campaign, id = 'jake') =>
-  c.state?.characters[id]?.skills.find((s) => s.name === 'Identify');
+  c.state?.characters[id]?.skills.find((s) => s.name === 'Archer’s Eye');
 let session = 0;
-function upgradeIdentify(c: Campaign): Campaign {
+function upgradeEye(c: Campaign): Campaign {
   let next = c;
   const s = skillOf(next);
   const needed = next.state && s ? (marksToUpgrade(next.state.rules, s) ?? 0) : 0;
@@ -50,11 +50,11 @@ function upgradeIdentify(c: Campaign): Campaign {
     next = ok(next, {
       type: 'skill.awardMark',
       characterId: 'jake',
-      skill: 'Identify',
+      skill: 'Archer’s Eye',
       session: `s${++session}`,
     });
   }
-  return ok(next, { type: 'skill.upgrade', characterId: 'jake', skill: 'Identify' });
+  return ok(next, { type: 'skill.upgrade', characterId: 'jake', skill: 'Archer’s Eye' });
 }
 
 describe('skill library keyed by name and rarity (MQ.12)', () => {
@@ -67,8 +67,8 @@ describe('skill library keyed by name and rarity (MQ.12)', () => {
     c = ok(c, define('idu', 'uncommon', 'Uncommon'));
     expect(c.state?.skillLibraryOrder).toEqual(['idc', 'idu']);
     expect(
-      reject(c, { ...define('idx', 'common', 'Again'), name: ' identify ' } as Command),
-    ).toMatch(/already has \[Identify\] \(Common\)/);
+      reject(c, { ...define('idx', 'common', 'Again'), name: ' archer’s eye ' } as Command),
+    ).toMatch(/already has \[Archer’s Eye\] \(Common\)/);
     // Renaming the rarity onto an existing pair is refused too.
     expect(reject(c, { type: 'skillDef.edit', skillDefId: 'idu', rarity: 'common' })).toMatch(
       /already has/,
@@ -84,14 +84,14 @@ describe('skill library keyed by name and rarity (MQ.12)', () => {
       description: 'Common description.',
       flavor: 'Common flavour.',
     });
-    c = upgradeIdentify(c);
+    c = upgradeEye(c);
     expect(skillOf(c)).toMatchObject({
       rarity: 'uncommon',
       description: 'Uncommon description.',
       flavor: 'Uncommon flavour.',
     });
     // No entry for Rare: the copy keeps the text it had.
-    c = upgradeIdentify(c);
+    c = upgradeEye(c);
     expect(skillOf(c)).toMatchObject({ rarity: 'rare', description: 'Uncommon description.' });
   });
 
@@ -108,11 +108,11 @@ describe('skill library keyed by name and rarity (MQ.12)', () => {
     c = ok(c, {
       type: 'skill.describe',
       characterId: 'jake',
-      skill: 'Identify',
+      skill: 'Archer’s Eye',
       description: 'GM hand text.',
       flavor: null,
     });
-    c = upgradeIdentify(c);
+    c = upgradeEye(c);
     expect(skillOf(c)).toMatchObject({
       rarity: 'uncommon',
       description: 'Uncommon description.',
@@ -128,11 +128,11 @@ describe('skill library keyed by name and rarity (MQ.12)', () => {
     c = ok(c, {
       type: 'skill.describe',
       characterId: 'jake',
-      skill: 'Identify',
+      skill: 'Archer’s Eye',
       description: 'GM hand text 2.',
       flavor: null,
     });
-    c = upgradeIdentify(c);
+    c = upgradeEye(c);
     expect(skillOf(c)).toMatchObject({ rarity: 'rare', description: 'GM hand text 2.' });
     expect(skillOf(c)?.textEdited).toBe(true);
   });
@@ -146,11 +146,11 @@ describe('skill library keyed by name and rarity (MQ.12)', () => {
     c = ok(c, {
       type: 'skill.describe',
       characterId: 'kim',
-      skill: 'Identify',
+      skill: 'Archer’s Eye',
       description: 'Kim’s own words.',
       flavor: null,
     });
-    expect(c.state?.characters['kim']?.skills.find((s) => s.name === 'Identify')?.textEdited).toBe(
+    expect(c.state?.characters['kim']?.skills.find((s) => s.name === 'Archer’s Eye')?.textEdited).toBe(
       true,
     );
     c = ok(c, { type: 'skillDef.edit', skillDefId: 'idc', description: 'Rewritten.' });

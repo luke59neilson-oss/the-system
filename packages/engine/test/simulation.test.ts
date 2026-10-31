@@ -504,11 +504,14 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
       // Marks: one per skill per session (DESIGN §6).
       for (const skill of shuffle(char(id).skills).slice(0, int(0, 3))) {
         if (marksToUpgrade(rules, skill) === null) continue;
+        // MV.3: Identify stays Common for good (picked and skipped, so the seed's stream holds).
+        if (skill.kind === 'race' && skill.name === 'Identify') continue;
         if (skill.markSessions.includes(session as string)) continue;
         exec({ type: 'skill.awardMark', characterId: id, skill: skill.name });
         tally.marks++;
       }
       for (const skill of char(id).skills) {
+        if (skill.kind === 'race' && skill.name === 'Identify') continue;
         if (canUpgrade(rules, char(id), skill) && rand() < 0.8) {
           exec({ type: 'skill.upgrade', characterId: id, skill: skill.name });
           tally.upgrades++;
@@ -897,7 +900,8 @@ describe('campaign simulation (ROADMAP M1.14)', () => {
     }
     expect(tally.professionPicks, `seed ${SEED}`).toBe(PARTY.length);
     expect(tally.lostWhileHeld, `seed ${SEED}: XP lost while held`).toBeGreaterThan(5);
-    expect(tally.lostProfession, `seed ${SEED}: profession XP lost`).toBeGreaterThan(1);
+    // MV.3 shifted the seeded run (no Identify marks): it still loses profession XP, once.
+    expect(tally.lostProfession, `seed ${SEED}: profession XP lost`).toBeGreaterThan(0);
   });
 
   it(`the whole run is valid play that exercises the systems (seed ${SEED})`, () => {
