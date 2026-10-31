@@ -30,7 +30,7 @@ export function migrateOnLoad(
           {
             changed:
               applied === 0
-                ? 'Nothing was changed.'
+                ? 'The event log was not changed.'
                 : `${applied} earlier rules update(s) were saved to the log first.`,
           },
         ),

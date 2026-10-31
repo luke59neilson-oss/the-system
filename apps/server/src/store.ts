@@ -409,7 +409,12 @@ export function cannotLoad(
   detail: string,
   how: { newer?: boolean; changed?: string } = {},
 ): string {
-  const backup = newestBackup(dir, true) ?? newestBackup(dir); // One with events first.
+  let backup: string | null = null;
+  try {
+    backup = newestBackup(dir, true) ?? newestBackup(dir); // One with events first.
+  } catch {
+    // An unreadable backups folder must not hide the real problem.
+  }
   return [
     how.newer
       ? `Campaign "${id}" cannot load: it was saved by a newer version of The System. Update the app, then open it again. (${detail})`

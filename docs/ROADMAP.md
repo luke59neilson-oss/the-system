@@ -570,7 +570,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   (start time or a per-launch token) and a LOCK whose identity doesn't match
   opens; any remaining refusal names the LOCK path and says to delete it;
   TROUBLESHOOTING gains an "already open" entry.
-- [ ] **QF.42 A campaign that can't load says what to do.** Damaged lines,
+- [x] **QF.42 A campaign that can't load says what to do.** Damaged lines,
   unknown event types and unknown keys (a newer build's log) show a raw
   message and quit (`store.ts:200,428`, `envelope.ts:1132`); only the
   lost-writes case names backups. And a missing or empty log with no
