@@ -148,7 +148,13 @@ before copying any files.
 - **"its event log (events.jsonl) is missing" or "is empty, but its backups
   hold events"**: the log was moved, quarantined by antivirus, or only half
   copied. Look for it first (antivirus quarantine, the folder you copied
-  from); otherwise restore the newest backup's files as above.
+  from); otherwise restore the newest backup's files as above. If you
+  emptied the log on purpose to start the campaign over, move the `backups`
+  folder somewhere else (keep it) and start again: the campaign then opens
+  blank.
+- **"updating it to the current rules failed"**: a newer app could not bring
+  an older campaign up to its rules. Keep the app as it is and report the
+  message; the newest backup still opens in the version that made it.
 - **"the disk lost writes"**: after a power cut the log is shorter than its
   last snapshot. Either restore the newest backup's files as above, or rename
   `snapshot.json` (keep the file) to open the log as it is, minus the lost

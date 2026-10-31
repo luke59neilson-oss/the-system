@@ -178,7 +178,7 @@ describe('M11.2 power loss on the event log', () => {
           .filter((f) => f !== 'LOCK')
           .sort();
         expect(() => CampaignStore.open('main', options(dataDir)), label).toThrow(
-          /disk lost writes. Nothing was changed/,
+          /disk lost writes\..* Nothing was changed\./,
         );
         expect(readdirSync(dir).sort(), label).toEqual(files);
         expect(readFileSync(path.join(dir, 'snapshot.json')).length, label).toBeGreaterThan(0);

@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -77,6 +77,7 @@ function editLast(dir: string, edit: (event: Record<string, unknown>) => void): 
 }
 
 function refusal(dir: string, before: string): string {
+  const files = readdirSync(dir).sort();
   let message = '';
   try {
     CampaignStore.open('main', dead()).close();
@@ -84,7 +85,8 @@ function refusal(dir: string, before: string): string {
     message = (error as Error).message;
   }
   expect(message).not.toBe('');
-  expect(readFileSync(logOf(dir), 'utf8')).toBe(before); // Nothing was changed.
+  expect(readFileSync(logOf(dir), 'utf8')).toBe(before); // Nothing was changed:
+  expect(readdirSync(dir).sort()).toEqual(files); // no LOCK left, no torn copy, no snapshot.
   expect(message).toContain('Nothing was changed.');
   expect(message).toContain(`Campaign folder: ${dir}.`);
   return message;
@@ -132,6 +134,27 @@ describe('a campaign that cannot load (QF.42)', () => {
     expect(message).toContain('its event log (events.jsonl) is empty, but its backups hold events');
     rmSync(logOf(dir));
     expect(() => CampaignStore.open('main', dead())).toThrow(/is missing, but its backups/);
+  });
+
+  it('a log holding only a torn first line counts as empty', () => {
+    const dir = campaign(1);
+    writeFileSync(logOf(dir), '{"id');
+    expect(refusal(dir, '{"id')).toContain('is without events, but its backups hold events');
+  });
+
+  it('names the newest backup, skipping staging folders; an empty newest backup does not hide an older one', () => {
+    const dir = campaign(1);
+    const backups = path.join(dir, 'backups');
+    const older = readdirSync(backups)[0] ?? '';
+    mkdirSync(path.join(backups, '.tmp-9999-staging'));
+    mkdirSync(path.join(backups, '9999-quit'));
+    writeFileSync(path.join(backups, '9999-quit', 'events.jsonl'), '');
+    writeFileSync(logOf(dir), '');
+    const message = refusal(dir, '');
+    expect(older).toMatch(/-b0$/);
+    expect(message).toContain('backups hold events');
+    // The newest backup that holds events, not the empty one.
+    expect(message).toContain(`Newest backup: ${path.join(backups, older)}.`);
   });
 
   it('a new campaign still opens blank, even after a backup of its empty log', () => {

@@ -403,13 +403,18 @@ function savedByNewer(message: string): boolean {
  * nothing changed, where the campaign and its newest backup are, and, for a
  * newer build's log, to update the app.
  */
-function cannotLoad(id: string, dir: string, detail: string, newer = false): string {
-  const backup = newestBackup(dir);
+export function cannotLoad(
+  id: string,
+  dir: string,
+  detail: string,
+  how: { newer?: boolean; changed?: string } = {},
+): string {
+  const backup = newestBackup(dir, true) ?? newestBackup(dir); // One with events first.
   return [
-    newer
+    how.newer
       ? `Campaign "${id}" cannot load: it was saved by a newer version of The System. Update the app, then open it again. (${detail})`
       : `Campaign "${id}" cannot load: ${detail}.`,
-    'Nothing was changed.',
+    how.changed ?? 'Nothing was changed.',
     `Campaign folder: ${dir}.`,
     backup ? `Newest backup: ${backup}.` : 'No backups yet.',
     'See "Campaign … cannot load" in the troubleshooting guide.',
@@ -492,20 +497,25 @@ export class CampaignStore {
   private static load(id: string, dir: string, options: StoreOptions, lock: string): CampaignStore {
     const logFile = path.join(dir, 'events.jsonl');
     const data = existsSync(logFile) ? readFileSync(logFile) : Buffer.alloc(0);
-    if (data.length === 0 && newestBackup(dir, true) !== null) {
-      // QF.42: antivirus quarantine or a half-copied folder must not look
-      // like a new, blank campaign while its backups hold events.
-      const what = existsSync(logFile) ? 'empty' : 'missing';
-      throw new StoreError(
-        cannotLoad(id, dir, `its event log (events.jsonl) is ${what}, but its backups hold events`),
-      );
-    }
     let parsed: ReturnType<typeof parseLogText>;
     try {
       parsed = parseLogText(data);
     } catch (error) {
       if (error instanceof StoreError) throw new StoreError(cannotLoad(id, dir, error.message));
       throw error;
+    }
+    if (parsed.lines.length === 0 && newestBackup(dir, true) !== null) {
+      // QF.42: antivirus quarantine or a half-copied folder must not look
+      // like a new, blank campaign while its backups hold events. (A log of
+      // only a torn first line counts as empty: it holds no event.)
+      const what = !existsSync(logFile)
+        ? 'missing'
+        : data.length === 0
+          ? 'empty'
+          : 'without events';
+      throw new StoreError(
+        cannotLoad(id, dir, `its event log (events.jsonl) is ${what}, but its backups hold events`),
+      );
     }
     const snapshot = readSnapshot(path.join(dir, 'snapshot.json'));
     const lost = lostWrites(snapshot, parsed.lines);
@@ -515,10 +525,13 @@ export class CampaignStore {
       // Opening would silently drop them and the next snapshot would erase the
       // last trace: refuse and change nothing.
       throw new StoreError(
-        `Campaign "${id}" cannot load: its event log holds ${lost.logEvents} events but its snapshot ` +
-          `recorded ${lost.snapshotEvents}, so the disk lost writes. Nothing was changed. Restore ` +
-          `the campaign from ${path.join(dir, 'backups')}, or rename snapshot.json (keep it: it shows how many events were lost) to open the ` +
-          `log as it is.`,
+        cannotLoad(
+          id,
+          dir,
+          `its event log holds ${lost.logEvents} events but its snapshot recorded ` +
+            `${lost.snapshotEvents}, so the disk lost writes. Restore the newest backup, or rename ` +
+            `snapshot.json (keep it: it shows how many events were lost) to open the log as it is`,
+        ),
       );
     }
     let loaded: { campaign: Campaign; usedSnapshot: boolean };
@@ -526,9 +539,13 @@ export class CampaignStore {
       loaded = resume(snapshot, parsed.lines);
     } catch (error) {
       if (error instanceof EventRejectedError) {
-        throw new StoreError(cannotLoad(id, dir, error.message, savedByNewer(error.message)));
+        throw new StoreError(
+          cannotLoad(id, dir, error.message, { newer: savedByNewer(error.message) }),
+        );
       }
-      throw error;
+      throw new StoreError(
+        cannotLoad(id, dir, error instanceof Error ? error.message : String(error)),
+      );
     }
     let tornCopy: string | null = null;
     const fd = openSync(logFile, existsSync(logFile) ? 'r+' : 'w+');
