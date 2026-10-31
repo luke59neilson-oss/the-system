@@ -135,27 +135,27 @@ is wrong it refuses, changes nothing, and the message names the campaign
 folder and its newest backup (or says there are none yet). Quit The System
 before copying any files.
 
-- **"saved by a newer version of The System"**: the log has changes this
+- "saved by a newer version of The System": the log has changes this
   copy of the app does not know (an event type, field or version from a later
   build). Install the latest version and open it again; nothing needs
   restoring.
-- **"Event log line N is damaged"**: a line in `events.jsonl` is not valid
+- "Event log line N is damaged": a line in `events.jsonl` is not valid
   data (a disk or sync error wrote rubbish over it). Copy the campaign folder
   somewhere safe first. Then copy `events.jsonl` (and `snapshot.json`, and the
   `portraits` folder if there is one) from the newest backup into the campaign
   folder. Changes made after that backup are lost; if you need them, keep the
   damaged copy and ask for help reading it.
-- **"its event log (events.jsonl) is missing" or "is empty, but its backups
-  hold events"**: the log was moved, quarantined by antivirus, or only half
+- "its event log (events.jsonl) is missing" or "is empty, but its backups
+  hold events": the log was moved, quarantined by antivirus, or only half
   copied. Look for it first (antivirus quarantine, the folder you copied
   from); otherwise restore the newest backup's files as above. If you
   emptied the log on purpose to start the campaign over, move the `backups`
   folder somewhere else (keep it) and start again: the campaign then opens
   blank.
-- **"updating it to the current rules failed"**: a newer app could not bring
+- "updating it to the current rules failed": a newer app could not bring
   an older campaign up to its rules. Keep the app as it is and report the
   message; the newest backup still opens in the version that made it.
-- **"the disk lost writes"**: after a power cut the log is shorter than its
+- "the disk lost writes": after a power cut the log is shorter than its
   last snapshot. Either restore the newest backup's files as above, or rename
   `snapshot.json` (keep the file) to open the log as it is, minus the lost
   events.
