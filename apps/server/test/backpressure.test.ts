@@ -81,9 +81,13 @@ function frame(text: string): Buffer {
  * A WebSocket client on a raw TCP socket, so the test can stop it reading
  * (a sleeping phone): `pause()` leaves frames and pings unread.
  */
-async function rawClient(host: string, join: object): Promise<Socket> {
+async function rawClient(
+  host: string,
+  join: object,
+): Promise<{ socket: Socket; frames: FrameReader }> {
   const socket = connect({ host: '127.0.0.1', port: Number(host.split(':')[1]) });
   raws.push(socket);
+  const frames = new FrameReader();
   await new Promise<void>((resolve, reject) => {
     socket.once('error', reject);
     socket.once('connect', () => {
@@ -101,18 +105,22 @@ async function rawClient(host: string, join: object): Promise<Socket> {
         ].join('\r\n'),
       );
     });
-    let head = '';
+    let head = Buffer.alloc(0);
     const onData = (chunk: Buffer) => {
-      head += chunk.toString('latin1');
-      if (!head.includes('\r\n\r\n')) return;
+      head = Buffer.concat([head, chunk]);
+      const end = head.indexOf('\r\n\r\n');
+      if (end < 0) return;
       socket.off('data', onData);
-      if (!head.startsWith('HTTP/1.1 101')) reject(new Error(head.split('\r\n')[0]));
+      // Every byte after the headers is frames: read them from the first one.
+      socket.on('data', (more: Buffer) => frames.push(more));
+      frames.push(head.subarray(end + 4));
+      if (!head.toString('latin1').startsWith('HTTP/1.1 101')) reject(new Error('no upgrade'));
       else resolve();
     };
     socket.on('data', onData);
   });
   socket.write(frame(JSON.stringify({ ...join, lastSeq: 0 })));
-  return socket;
+  return { socket, frames };
 }
 
 /** A reading client (Node's WebSocket) that keeps the newest GM state. */
@@ -143,6 +151,44 @@ function gmReader(host: string) {
     command: (c: object) =>
       ws.send(JSON.stringify({ type: 'command', requestId: `q${++req}`, command: c })),
   };
+}
+
+/** Parses unmasked server frames (text only; pings and closes skipped). */
+class FrameReader {
+  readonly messages: Record<string, unknown>[] = [];
+  private buffer = Buffer.alloc(0);
+  private parts: Buffer[] = [];
+  push(chunk: Buffer): void {
+    this.buffer = Buffer.concat([this.buffer, chunk]);
+    for (;;) {
+      if (this.buffer.length < 2) return;
+      const b0 = this.buffer[0] as number;
+      let len = (this.buffer[1] as number) & 0x7f;
+      let at = 2;
+      if (len === 126) {
+        if (this.buffer.length < 4) return;
+        len = this.buffer.readUInt16BE(2);
+        at = 4;
+      } else if (len === 127) {
+        if (this.buffer.length < 10) return;
+        len = Number(this.buffer.readBigUInt64BE(2));
+        at = 10;
+      }
+      if (this.buffer.length < at + len) return;
+      const payload = this.buffer.subarray(at, at + len);
+      this.buffer = this.buffer.subarray(at + len);
+      const opcode = b0 & 0x0f;
+      if (opcode === 0x1 || opcode === 0x0) {
+        this.parts.push(payload);
+        if (b0 & 0x80) {
+          this.messages.push(
+            JSON.parse(Buffer.concat(this.parts).toString('utf8')) as Record<string, unknown>,
+          );
+          this.parts = [];
+        }
+      }
+    }
+  }
 }
 
 async function until(test: () => boolean, ms = 30_000): Promise<void> {
@@ -245,8 +291,8 @@ describe('QF.53 backpressure', () => {
         role: 'player',
         characterId: BIG_HEROES[0],
       });
-      sleepingGm.pause();
-      sleepingPhone.pause();
+      sleepingGm.socket.pause();
+      sleepingPhone.socket.pause();
       // Let the joins land and the warm-up settle before the baseline.
       for (let i = 0; i < 10; i++) {
         driver.command({ type: 'system.broadcast', text: `warm ${i}`, characterIds: null });
@@ -270,12 +316,25 @@ describe('QF.53 backpressure', () => {
       peak = Math.max(peak, queued() - before);
       expect(peak).toBeLessThan(50 * 1024 * 1024);
 
-      // The phone wakes: it reads everything queued and ends on a whole,
-      // current view (one fresh view after the drain).
-      let text = '';
-      sleepingPhone.on('data', (chunk: Buffer) => (text += chunk.toString('latin1')));
-      sleepingPhone.resume();
-      await until(() => text.includes('Sleep 299'));
+      // Both sleepers wake and read everything queued. The phone's views were
+      // held back, so its last view (with the last broadcast) can only be the
+      // whole one sent after the drain (`resume`).
+      sleepingPhone.socket.resume();
+      sleepingGm.socket.resume();
+      const phone = sleepingPhone.frames;
+      const gm = sleepingGm.frames;
+      const lastOf = (frames: FrameReader, types: string[]) =>
+        [...frames.messages].reverse().find((m) => types.includes(String(m.type)));
+      await until(() => {
+        const view = lastOf(phone, ['view']);
+        return view !== undefined && JSON.stringify(view).includes('Sleep 299');
+      });
+      // The GM's per-command patches are small since QF.52, so its socket may
+      // never pass the limit; either way its newest frame is current.
+      await until(() => {
+        const state = lastOf(gm, ['state', 'statePatch']);
+        return state !== undefined && JSON.stringify(state).includes('Sleep 299');
+      });
       expect(driver.state).toEqual(projectForGm(store.campaign.state!));
     },
   );
@@ -283,7 +342,11 @@ describe('QF.53 backpressure', () => {
   it('drops a socket that misses two pongs', { timeout: 20_000 }, async () => {
     const store = campaignStore(20);
     const host = await serve(store, { wsHeartbeatMs: 100 });
-    const asleep = await rawClient(host, { type: 'join', role: 'player', characterId: 'ana' });
+    const { socket: asleep } = await rawClient(host, {
+      type: 'join',
+      role: 'player',
+      characterId: 'ana',
+    });
     const awake = gmReader(host);
     await until(() => awake.state !== undefined);
     asleep.pause();
@@ -292,7 +355,6 @@ describe('QF.53 backpressure', () => {
     expect(awake.ws.readyState).toBe(WebSocket.OPEN);
     // The sleeping one was dropped: once it reads again it sees the end.
     const ended = new Promise<void>((resolve) => asleep.once('close', () => resolve()));
-    asleep.on('data', () => undefined);
     asleep.resume();
     await ended;
     awake.ws.close();

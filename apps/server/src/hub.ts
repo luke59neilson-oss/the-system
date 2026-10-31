@@ -397,6 +397,14 @@ export class LiveHub {
    * gets only the top-level keys that changed (QF.52).
    */
   private sendSnapshot(client: Client, options: { onlyIfChanged?: boolean } = {}): void {
+    if (client.backlogged()) {
+      // QF.53 (review): no whole view to a socket that is not reading, from
+      // any path (a `view.limits` too); one follows when it drains.
+      client.stale = true;
+      client.gmSent = undefined;
+      client.lastView = null;
+      return;
+    }
     const role = client.role;
     if (role.role === 'gm') {
       const state = this.store.campaign.state;
