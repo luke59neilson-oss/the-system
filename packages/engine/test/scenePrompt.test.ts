@@ -110,4 +110,49 @@ describe('end-of-scene prompt (MT.9)', () => {
     expect(() => replay(forged)).toThrow(/only act on their own character/);
     expect(replay(own.campaign.events).state).toEqual(own.campaign.state);
   });
+
+  // QF.48 (D287): End session closes the open prompt; an answer after it is
+  // refused, so it can never be stored with no session.
+  describe('End session closes the scene prompt (QF.48)', () => {
+    const played = () =>
+      run([
+        ...setup,
+        { type: 'session.start', sessionId: 's1' },
+        { type: 'scene.end', sceneId: 'sc1' },
+        { type: 'session.end' },
+      ]);
+
+    it('closes it and refuses a later answer', () => {
+      const c = played();
+      expect(c.state!.scenePrompt).toBeNull();
+      expect(projectForPlayer(c.state!, 'jake')).toMatchObject({
+        scenePrompt: null,
+        sessionRunning: false,
+      });
+      const late = asPlayer(
+        c,
+        { type: 'scene.answer', sceneId: 'sc1', characterId: 'jake' },
+        'jake',
+      );
+      expect(late.ok).toBe(false);
+      expect(late.ok ? '' : late.error).toMatch(/the scene is over/);
+      expect(c.events.find((e) => e.type === 'session.ended')?.schemaVersion).toBe(2);
+    });
+
+    it('a v1 session.ended (before QF.48) replays with the prompt left open', () => {
+      type Raw = { type: string; schemaVersion: number; payload: Record<string, unknown> };
+      const events = (JSON.parse(JSON.stringify(played().events)) as Raw[]).map((e) =>
+        e.type === 'session.ended' ? { ...e, schemaVersion: 1 } : e,
+      );
+      expect(replay(events).state!.scenePrompt).toMatchObject({ id: 'sc1' });
+      expect(
+        replay(
+          events.map((e) => ({
+            ...e,
+            schemaVersion: e.type === 'session.ended' ? 2 : e.schemaVersion,
+          })),
+        ).state!.scenePrompt,
+      ).toBeNull();
+    });
+  });
 });

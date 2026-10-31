@@ -323,4 +323,42 @@ describe('practice drafts across sessions (QF.33)', () => {
     expect(r3.json()).toMatchObject({ added: 0 });
     expect(fake?.requests.at(-1)?.messages.at(-1)?.content).toContain('Jake uses Archer’s Eye.');
   });
+
+  it("a player's own Cast is not drafted again from the talk around it (QF.48)", async () => {
+    const exec = (command: Record<string, unknown>, at: string, player: boolean) => {
+      const r = execute(store.campaign, command as never, {
+        actor: player ? { role: 'player' as const, characterId: 'jake' } : { role: 'gm' as const },
+        sessionId: store.campaign.state?.currentSession ?? null,
+        now: () => at,
+        newId: () => `${String(command.type)}-${at}`,
+      });
+      if (!r.ok) throw new Error(r.error);
+      store.appendAll(r.events);
+    };
+    exec(
+      {
+        type: 'skillDef.define',
+        id: 'eye',
+        name: "Archer's Eye",
+        rarity: 'common',
+        cost: { pool: 'stamina', amount: 1 },
+      },
+      '2026-10-26T18:00:00.000Z',
+      false,
+    );
+    run('session.start', '2026-10-26T19:00:00.000Z');
+    exec(
+      { type: 'skill.cast', characterId: 'jake', skill: "Archer's Eye" },
+      '2026-10-26T19:01:00.000Z',
+      true,
+    );
+    expect(store.campaign.state!.practice.at(-1)).toMatchObject({
+      source: 'player',
+      tags: ['cast'],
+    });
+    say('2026-10-26T19:01:00.000Z', ['Into the canyon.', 'Jake uses Archer’s Eye.']);
+    const r = await post();
+    expect(r.statusCode, r.body).toBe(200);
+    expect(r.json()).toMatchObject({ added: 0 });
+  });
 });

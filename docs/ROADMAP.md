@@ -665,7 +665,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   player's practice names the other side (PC vs PC: nothing naming the
   other's stat); log on Share, or log neutral text ("Contest roll
   (Perception)").
-- [ ] **QF.48 Sessions keep everything that happened.** The session report
+- [x] **QF.48 Sessions keep everything that happened.** The session report
   and Copy for Claude leave out spell casts, GM-given skills and
   damage/healing (`packages/engine/src/report/sessionLog.ts`, no case for
   `skill.cast`, `skill.granted`, `pools.set`; cast practice entries filtered

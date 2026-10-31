@@ -313,6 +313,31 @@ export function describeEvent(
       add('skill', `${who(id)} upgraded ${line(event.payload.skill)}${change}`);
       break;
     }
+    case 'skill.granted': {
+      // QF.48: a skill the GM gives is part of what happened at the table.
+      const p = event.payload;
+      add(
+        'skill',
+        `The GM gave ${who(p.characterId)} ${line(p.name)} (${rarityName(after, p.rarity)}, ${p.kind} skill)`,
+      );
+      break;
+    }
+    case 'character.poolsSet': {
+      // QF.48: damage and healing, pool by pool.
+      const id = event.payload.characterId;
+      const was = before?.characters[id];
+      const now = after.characters[id];
+      if (!was || !now) break;
+      const changes = after.rules.pools.flatMap((pool) => {
+        const from = was.pools[pool.id];
+        const to = now.pools[pool.id];
+        if (from === undefined || to === undefined || from === to) return [];
+        const delta = to - from;
+        return [`${line(pool.name)} ${from} → ${to} (${delta > 0 ? '+' : '−'}${Math.abs(delta)})`];
+      });
+      if (changes.length > 0) add('character', `${who(id)}: ${changes.join(', ')}`);
+      break;
+    }
     case 'skill.markAwarded':
       add(
         'skill',
@@ -586,7 +611,9 @@ export function buildSessionLog(
       for (const e of describeEvent(state, after, event)) {
         entries.push({ seq, at: event.timestamp, ...e });
       }
-      if (event.type === 'practice.logged') practiceIds.add(event.id);
+      // QF.48: a cast joins the practice log under its own event id.
+      if (event.type === 'practice.logged' || event.type === 'skill.cast')
+        practiceIds.add(event.id);
       if (event.type === 'note.created' || event.type === 'note.edited') {
         noteIds.add(event.payload.noteId);
       }

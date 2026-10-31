@@ -1168,3 +1168,6 @@
 
 ### 2026-10-31 · QF.47 Contest rolls stay private until shared
 - Round 1 (sonnet, 4a9aa57f): 0 High, 0 Medium, 4 Low. Fixed: the entry repeated its stat ("Contest roll (Strength) Strength") → it reads "Contest roll" beside its stat tag; GM guide says an unshared roll tells the player nothing about the other side. To Backlog: the entry still shows a contest happened (accepted, D286); the Side A "Players see" field clips at 1366 (existing).
+
+### 2026-10-31 · QF.48 Sessions keep everything that happened
+- Round 1 (sonnet, 196efea8): 0 High, 0 Medium (two "needs a check": the phone-close e2e, which the builder ran green with MT.9; and a missed true→false update on reconnect, which cannot happen because PracticePanel compares with the last value it saw, not per frame), 3 Low to the QUALITY Backlog. No fixes needed.

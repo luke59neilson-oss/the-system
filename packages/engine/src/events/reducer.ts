@@ -2420,11 +2420,14 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       return { ...state, sessions: [...state.sessions, record], currentSession: sessionId };
     }
     case 'session.ended': {
-      const { sessionId } = event.payload;
+      const { sessionId, legacy } = event.payload;
       if (state.currentSession === null) fail(event, 'no session is running');
       if (state.currentSession !== sessionId) fail(event, `session "${sessionId}" is not running`);
       return {
         ...state,
+        // QF.48: the scene is over with the session; an answer after it could
+        // never earn a mark. Logs before v2 (legacy) left the prompt open.
+        ...(legacy === true || (state.scenePrompt ?? null) === null ? {} : { scenePrompt: null }),
         sessions: state.sessions.map((x) =>
           x.id === sessionId ? { ...x, endedAt: event.timestamp, endDay: state.day } : x,
         ),
@@ -2445,7 +2448,9 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
     case 'scene.answered': {
       const { sceneId, characterId } = event.payload;
       const prompt = state.scenePrompt ?? null;
-      if (prompt === null || prompt.id !== sceneId) fail(event, 'that scene prompt is closed');
+      if (prompt === null || prompt.id !== sceneId) {
+        fail(event, 'the scene is over: that scene prompt is closed');
+      }
       if (!hasOwn(state.characters, characterId)) fail(event, `unknown character "${characterId}"`);
       if (!prompt!.pending.includes(characterId))
         fail(event, `${characterId} has already answered`);

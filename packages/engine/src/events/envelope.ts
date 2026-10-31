@@ -872,8 +872,12 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   }),
   /** GM starts a play session (M4.3); events until its end carry its id. */
   'session.started': z.strictObject({ sessionId: recordId }),
-  /** GM ends the running play session (the server backs up and writes the report). */
-  'session.ended': z.strictObject({ sessionId: recordId }),
+  /**
+   * GM ends the running play session (the server backs up and writes the
+   * report). QF.48: from v2 it also closes an open end-of-scene prompt; v1
+   * events (`legacy`) left it open.
+   */
+  'session.ended': z.strictObject({ sessionId: recordId, legacy: z.literal(true).optional() }),
   /** MT.9 (Q63): the GM ends a scene; these players' screens ask what they practised. */
   'scene.ended': z.strictObject({ sceneId: recordId, characterIds: z.array(recordId).max(200) }),
   /** MT.9: a player answered the end-of-scene prompt (logged practice or nothing). */
@@ -984,7 +988,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'rules.migrated': 1,
   'rules.edited': 1,
   'session.started': 1,
-  'session.ended': 1,
+  'session.ended': 2,
   'scene.ended': 1,
   'scene.answered': 1,
   'event.undone': 1,
@@ -1028,6 +1032,10 @@ export const EVENT_UPCASTERS: EventUpcasters = {
     1: (payload) => ({ ...(payload as object), legacy: true }),
   },
   'skill.mergeOffered': {
+    1: (payload) => ({ ...(payload as object), legacy: true }),
+  },
+  // QF.48 (D287): ending a session before v2 left the scene prompt open.
+  'session.ended': {
     1: (payload) => ({ ...(payload as object), legacy: true }),
   },
 };

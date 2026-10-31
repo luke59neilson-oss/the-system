@@ -159,6 +159,7 @@ describe('player projection', () => {
       'region',
       'rules',
       'scenePrompt',
+      'sessionRunning',
       'viewerId',
     ]);
   });
