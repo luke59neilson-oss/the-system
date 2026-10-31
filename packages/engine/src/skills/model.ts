@@ -282,6 +282,11 @@ export function mergeSkills(
   override = false,
   /** Lower-cased names the practice log still counts but the character no longer has (QF.39). */
   retired: ReadonlySet<string> = new Set(),
+  /**
+   * Sweep C 2026-10-31 (D283): a merge stored before QF.39 replays under the
+   * rules it was made with, so the race-skill and retired-name checks are skipped.
+   */
+  legacy = false,
 ): Character {
   const merge = rules.skills.merge;
   if (first === second) throw new CharacterRuleError('Merge two different skills');
@@ -291,7 +296,7 @@ export function mergeSkills(
   const b = character.skills[ib] as CharacterSkill;
   // QF.39: a race skill (Identify) is never merged away, as at evolution.
   for (const s of [a, b]) {
-    if (!override && s.kind === 'race') {
+    if (!override && !legacy && s.kind === 'race') {
       throw new CharacterRuleError(`[${s.name}] is a race skill and cannot be merged away`);
     }
   }
@@ -340,7 +345,7 @@ export function mergeSkills(
     throw new CharacterRuleError(`${character.name} already has a skill "${trimmed}"`);
   }
   // QF.39: like a grant, a merge cannot take a name the practice log still counts.
-  if (retired.has(trimmed.toLowerCase())) {
+  if (!legacy && retired.has(trimmed.toLowerCase())) {
     throw new CharacterRuleError(
       `"${trimmed}" was a skill of ${character.name}'s; pick a new name`,
     );
@@ -369,8 +374,10 @@ export function offerMerge(
   /** MT.7 GM override, stored on the offer so the player's accept honours it. */
   override = false,
   retired: ReadonlySet<string> = new Set(),
+  /** Stored before QF.39 (D283); kept on the offer so the accept replays the same way. */
+  legacy = false,
 ): Character {
-  mergeSkills(rules, character, first, second, name, jointUses, override, retired);
+  mergeSkills(rules, character, first, second, name, jointUses, override, retired, legacy);
   const rarityOf = (n: string) => character.skills.find((s) => s.name === n)?.rarity ?? '';
   return {
     ...character,
@@ -382,6 +389,7 @@ export function offerMerge(
       ...(text.description?.trim() ? { description: text.description.trim() } : {}),
       ...(text.flavor?.trim() ? { flavor: text.flavor.trim() } : {}),
       ...(override ? { override: true as const } : {}),
+      ...(legacy ? { legacy: true as const } : {}),
     },
   };
 }
@@ -425,6 +433,7 @@ export function answerMerge(
     jointUses,
     offer.override === true,
     retired,
+    offer.legacy === true,
   );
   if (offer.description === undefined && offer.flavor === undefined) return merged;
   return describeSkill(merged, offer.name, offer.description ?? null, offer.flavor ?? null);

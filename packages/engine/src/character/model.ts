@@ -55,6 +55,8 @@ export interface MergeOffer {
   readonly flavor?: string;
   /** MT.7: the GM overrode the merge rules; the accept skips them too (absent = false). */
   readonly override?: true;
+  /** Offered before QF.39 (D283): the accept replays under the old merge rules (absent = false). */
+  readonly legacy?: true;
 }
 
 /** Plain, serializable, immutable character state. */

@@ -600,6 +600,16 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   folder or an export file; it is imported as a campaign beside the current
   one and never overwrites; the GM switches to it). *Accept:* e2e: back up,
   download, restore → same event count and portraits; GM guide steps match.
+- [ ] **QF.64 (High) Merges stored before QF.39 still replay.** Sweep C
+  (Rules, haiku, 2026-10-31): QF.39's race-skill and retired-name refusals
+  ran on replay of old `skill.mergeOffered`/`skill.merged` events, so a log
+  in which a pre-fix build merged Identify away (the Merges window offered
+  that pair) threw on refold, blocking undo and loading without a snapshot
+  (`skills/model.ts` mergeSkills, `reducer.ts` skill.merged/mergeOffered).
+  *Accept:* both events go to schema v2; v1 events upcast to `legacy: true`
+  and replay without those two checks (kept on the offer for its accept);
+  v2 events keep them; engine tests for a v1 Identify offer+accept, a v1
+  `skill.merged`, the v2 refusal and the retired-name skip; goldens replay.
 - [ ] **QF.45 Installing a new build over a running app quits it cleanly.**
   electron-builder's NSIS "app is running" step uses PowerShell `Stop-Process`
   (TerminateProcess), so the quit backup, final session log and LOCK release

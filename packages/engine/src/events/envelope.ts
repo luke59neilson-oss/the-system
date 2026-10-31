@@ -481,6 +481,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     characterId: recordId,
     skills: z.tuple([nonBlank, nonBlank]),
     name: nonBlank,
+    /** Stored before QF.39 (v1): replays without the race-skill and retired-name checks (D283). */
+    legacy: z.literal(true).optional(),
   }),
   /**
    * GM sends a merge as an offer (MT.2, Q62); it waits on the player's answer.
@@ -496,6 +498,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     flavor: skillFlavor.nullable().optional(),
     /** MT.7 GM override: the merge rules are skipped, on offer and accept (absent = false). */
     override: z.literal(true).optional(),
+    /** Stored before QF.39 (v1): replays without the race-skill and retired-name checks (D283). */
+    legacy: z.literal(true).optional(),
   }),
   /** The player accepts (the merge applies) or declines (both originals stay) (MT.2). */
   'skill.mergeAnswered': z.strictObject({
@@ -934,8 +938,8 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'skill.libraryTextUsed': 1,
   'skill.markAwarded': 1,
   'skill.upgraded': 1,
-  'skill.merged': 1,
-  'skill.mergeOffered': 1,
+  'skill.merged': 2,
+  'skill.mergeOffered': 2,
   'skill.mergeAnswered': 1,
   'skillDef.defined': 1,
   'skillDef.edited': 1,
@@ -1016,6 +1020,14 @@ export const EVENT_UPCASTERS: EventUpcasters = {
   },
   // M7.A: v1 removals left the clock's open montages open.
   'clock.removed': {
+    1: (payload) => ({ ...(payload as object), legacy: true }),
+  },
+  // Sweep C 2026-10-31 (D283): merges stored before QF.39 could take a race
+  // skill or a retired name; they replay under those rules.
+  'skill.merged': {
+    1: (payload) => ({ ...(payload as object), legacy: true }),
+  },
+  'skill.mergeOffered': {
     1: (payload) => ({ ...(payload as object), legacy: true }),
   },
 };

@@ -1812,11 +1812,24 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const joint = jointUses(state, characterId, first, second);
       return withCharacter(
         state,
-        rule(event, () => mergeSkills(state.rules, character, first, second, name, joint)),
+        rule(event, () =>
+          mergeSkills(
+            state.rules,
+            character,
+            first,
+            second,
+            name,
+            joint,
+            false,
+            new Set(),
+            event.payload.legacy === true,
+          ),
+        ),
       );
     }
     case 'skill.mergeOffered': {
-      const { characterId, offerId, skills, name, description, flavor, override } = event.payload;
+      const { characterId, offerId, skills, name, description, flavor, override, legacy } =
+        event.payload;
       const [first, second] = skills;
       const character = characterOf(state, event, characterId);
       const joint = jointUses(state, characterId, first, second);
@@ -1834,6 +1847,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
             { description, flavor },
             override === true,
             retiredFor(state, character),
+            legacy === true,
           ),
         ),
       );
