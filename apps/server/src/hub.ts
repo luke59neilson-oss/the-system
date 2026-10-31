@@ -468,11 +468,19 @@ export class LiveHub {
 
   /**
    * QF.54: the seq of `targetId` when the undo just appended targets the
-   * event right before it (the newest), else null (a whole-history rebuild).
+   * newest counted event, else null (a whole-history rebuild).
    */
   private newestUndoneSeq(targetId: string): number | null {
-    const events = this.store.campaign.events;
-    return events.at(-2)?.id === targetId ? events.length - 1 : null;
+    // Only undo markers and undone events may follow it ("undo, undo").
+    const { events, undone } = this.store.campaign;
+    for (let i = events.length - 2; i >= 0; i--) {
+      const e = events[i]!;
+      if (e.id === targetId) return i + 1;
+      if (e.type !== 'event.undone' && !Object.prototype.hasOwnProperty.call(undone, e.id)) {
+        return null;
+      }
+    }
+    return null;
   }
 
   private filter(role: Role, items: readonly SeqNotification[]): SeqNotification[] {

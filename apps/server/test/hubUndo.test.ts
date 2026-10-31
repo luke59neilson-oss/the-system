@@ -95,6 +95,27 @@ describe('undo of the newest event (QF.54)', () => {
     expect(want.some((n) => n.seq === seq)).toBe(false);
   });
 
+  it('undo, undo: the second undo is incremental too (QF.54 review)', () => {
+    const { store, hub, command, phone } = setup();
+    const jake = phone('jake');
+    command({
+      type: 'xp.award',
+      track: 'class',
+      amount: 100,
+      participants: [{ characterId: 'jake' }],
+    });
+    const awardSeq = hub.seq;
+    const awardId = store.campaign.events.at(-1)!.id;
+    command({ type: 'system.broadcast', text: 'later', characterIds: null });
+    command({ type: 'event.undo', eventId: store.campaign.events.at(-1)!.id });
+    jake.length = 0;
+    command({ type: 'event.undo', eventId: awardId });
+    expect(notices(jake)).toEqual([{ type: 'notifications', items: [], undoneSeqs: [awardSeq] }]);
+    expect(notices(phone('jake'))[0]?.items).toEqual(
+      notificationHistory(store.campaign).filter((n) => n.notification.characterId === 'jake'),
+    );
+  });
+
   it('an undo of an older event still replaces every history', () => {
     const { store, gmGot, command, phone } = setup();
     const jake = phone('jake');

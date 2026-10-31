@@ -32,7 +32,22 @@ describe('undo of the newest event (QF.54)', () => {
     expect(u.state).toBe(three.state);
   });
 
-  it('undoes the next newest one too (refold), still matching a replay', () => {
+  it('undo, undo: the second undo reuses its state too (QF.54 review)', () => {
+    const ctx = testContext();
+    const two = run(setup().slice(0, 2), ctx);
+    const three = run(setup().slice(2, 3), ctx, two);
+    const four = run(setup().slice(3), ctx, three);
+    const u1 = run([{ type: 'event.undo', eventId: four.events.at(-1)!.id }], ctx, four);
+    const u2 = run([{ type: 'event.undo', eventId: three.events.at(-1)!.id }], ctx, u1);
+    expect(u2.state).toBe(two.state);
+    expect(u2.state).toEqual(replay(u2.events).state);
+    // A new event after the undos, then undone: back to the same state.
+    const five = run([{ type: 'system.broadcast', text: 'again', characterIds: null }], ctx, u2);
+    const u3 = run([{ type: 'event.undo', eventId: five.events.at(-1)!.id }], ctx, five);
+    expect(u3.state).toBe(two.state);
+  });
+
+  it('undoes the next newest one too, still matching a replay', () => {
     const ctx = testContext();
     const c = run(setup(), ctx);
     const [award, broadcast] = [c.events.at(-2)!, c.events.at(-1)!];

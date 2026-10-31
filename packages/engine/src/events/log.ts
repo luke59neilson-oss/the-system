@@ -171,6 +171,18 @@ export function stateBeforeLastEvent(
   return STATE_BEFORE_LAST.has(events) ? (STATE_BEFORE_LAST.get(events) ?? null) : undefined;
 }
 
+/**
+ * QF.54 (review): the newest counted events appended live, newest last, with
+ * the state each was applied to, so "undo, undo" stays cheap too. A fast
+ * undo pops one; any other undo forgets the stack (the next undo refolds).
+ */
+interface LiveEntry {
+  readonly id: string;
+  readonly before: CampaignState | null;
+}
+const LIVE_STACK = new WeakMap<readonly DomainEvent[], readonly LiveEntry[]>();
+const LIVE_STACK_MAX = 64;
+
 /** A new array with `event` appended; it inherits the id index. */
 function extend(events: readonly DomainEvent[], event: DomainEvent): readonly DomainEvent[] {
   const index = idIndex(events);
@@ -213,14 +225,22 @@ export function appendEvent(campaign: Campaign, event: DomainEvent): Campaign {
     const state = applyEvent(campaign.state, event);
     const events = extend(campaign.events, event);
     STATE_BEFORE_LAST.set(events, campaign.state);
+    const stack = LIVE_STACK.get(campaign.events) ?? [];
+    LIVE_STACK.set(events, [
+      ...stack.slice(-(LIVE_STACK_MAX - 1)),
+      { id: event.id, before: campaign.state },
+    ]);
     return { ...campaign, events, state };
   }
   const target = checkUndoTarget(campaign, event);
   const undone = { ...campaign.undone, [target.id]: event.id };
-  if (campaign.events.at(-1) === target && STATE_BEFORE_LAST.has(campaign.events)) {
-    // QF.54: undoing the newest event: nothing later depends on it.
-    const state = STATE_BEFORE_LAST.get(campaign.events) ?? null;
-    return { events: extend(campaign.events, event), state, undone };
+  const stack = LIVE_STACK.get(campaign.events);
+  const top = stack?.at(-1);
+  if (stack && top?.id === target.id) {
+    // QF.54: undoing the newest counted event: nothing later depends on it.
+    const events = extend(campaign.events, event);
+    LIVE_STACK.set(events, stack.slice(0, -1));
+    return { events, state: top.before, undone };
   }
   let state: CampaignState | null;
   let after: ReturnType<typeof foldCountingLoss> | null = null;
