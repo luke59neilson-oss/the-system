@@ -33,6 +33,9 @@ import {
 // single-instance lock is per userData folder).
 const testUserData = process.env['THE_SYSTEM_USER_DATA_DIR'];
 if (testUserData && !app.isPackaged) app.setPath('userData', testUserData);
+// Tests only (QF.59): no GPU process, so a loaded CI runner's software GL
+// cannot delay the first paint the smoke tests wait for.
+if (process.env['THE_SYSTEM_TEST_NO_GPU'] && !app.isPackaged) app.disableHardwareAcceleration();
 
 function closeSplash(): void {
   const s = splash;
@@ -179,9 +182,13 @@ function openGmWindow(server: RunningApp, notice: string | null = null): void {
     gmWindow = null;
   });
   let shown = false;
-  const reveal = () => {
+  type RevealReason = 'ready-to-show' | 'did-fail-load' | 'timeout';
+  const reveal = (reason: RevealReason) => {
     if (shown || win.isDestroyed()) return;
     shown = true;
+    // QF.59: why the window appeared, so a test can tell a painted console
+    // from the fallback.
+    (globalThis as { theSystemRevealReason?: RevealReason }).theSystemRevealReason = reason;
     win.show();
     win.focus();
     closeSplash();
@@ -195,10 +202,10 @@ function openGmWindow(server: RunningApp, notice: string | null = null): void {
       });
     }
   };
-  win.once('ready-to-show', reveal);
+  win.once('ready-to-show', () => reveal('ready-to-show'));
   // A page that fails to load never fires ready-to-show: show the window anyway.
-  win.webContents.once('did-fail-load', reveal);
-  setTimeout(reveal, 10_000).unref();
+  win.webContents.once('did-fail-load', () => reveal('did-fail-load'));
+  setTimeout(() => reveal('timeout'), 10_000).unref();
   void win.loadURL(gmWindowUrl(server.port, server.gmKey));
 }
 

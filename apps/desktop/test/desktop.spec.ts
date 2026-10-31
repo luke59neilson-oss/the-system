@@ -5,7 +5,7 @@ import path from 'node:path';
 import { _electron as electron, chromium, expect, test } from '@playwright/test';
 import electronPath from 'electron';
 import { holders, killTree } from './process-tree';
-import { gmWindow } from './windows';
+import { gmWindow, TEST_SWITCHES } from './windows';
 
 // MS.5 smoke: the real Electron app starts the server, opens the GM console
 // with the key injected, shows the join URL + QR, and keeps data in the
@@ -27,7 +27,7 @@ test('double-click start: server up, GM window connected with the key', async ()
   const dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-desktop-'));
   const userData = mkdtempSync(path.join(tmpdir(), 'the-system-profile-'));
   const app = await electron.launch({
-    args: [path.join(root, 'dist', 'main.cjs'), '--no-sandbox'],
+    args: [path.join(root, 'dist', 'main.cjs'), ...TEST_SWITCHES],
     env: {
       ...process.env,
       THE_SYSTEM_PORT: '0',
@@ -108,7 +108,7 @@ test('a polite close then a forced kill (an installer upgrading) still leaves th
   const dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-desktop-'));
   const userData = mkdtempSync(path.join(tmpdir(), 'the-system-profile-'));
   const app = await electron.launch({
-    args: [path.join(root, 'dist', 'main.cjs'), '--no-sandbox'],
+    args: [path.join(root, 'dist', 'main.cjs'), ...TEST_SWITCHES],
     env: {
       ...process.env,
       THE_SYSTEM_PORT: '0',
@@ -169,7 +169,7 @@ test('a second launch with --quit-for-update makes the running app quit cleanly'
     THE_SYSTEM_USER_DATA_DIR: userData,
   };
   const app = await electron.launch({
-    args: [path.join(root, 'dist', 'main.cjs'), '--no-sandbox'],
+    args: [path.join(root, 'dist', 'main.cjs'), ...TEST_SWITCHES],
     env,
   });
   const proc = app.process();

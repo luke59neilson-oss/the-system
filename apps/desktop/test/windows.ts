@@ -13,3 +13,11 @@ export async function gmWindow(app: ElectronApplication, timeoutMs = 30_000): Pr
     await new Promise((r) => setTimeout(r, 100));
   }
 }
+
+/**
+ * QF.59: Chromium switches every desktop test launch passes. No GPU process,
+ * so a loaded runner's software GL cannot delay a window's first paint;
+ * `THE_SYSTEM_TEST_NO_GPU` (set in playwright.config.ts) also turns hardware
+ * acceleration off inside the app.
+ */
+export const TEST_SWITCHES = ['--no-sandbox', '--disable-gpu'] as const;

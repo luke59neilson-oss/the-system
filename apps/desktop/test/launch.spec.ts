@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { _electron as electron, expect, test, type ElectronApplication } from '@playwright/test';
-import { gmWindow } from './windows';
+import { gmWindow, TEST_SWITCHES } from './windows';
 
 // MS.7 launch polish: the splash comes up at once, a second launch focuses
 // the first instead of erroring, and a taken port moves to the next free one.
@@ -25,12 +25,27 @@ function profile(): { dataDir: string; userData: string; cleanup: () => void } {
 
 async function launch(env: Record<string, string>): Promise<ElectronApplication> {
   return electron.launch({
-    args: [main, '--no-sandbox'],
+    args: [main, ...TEST_SWITCHES],
     env: { ...(process.env as Record<string, string>), ...env },
   });
 }
 
 test('a splash says "Starting The System…" at once, then hands over to the GM console', async () => {
+  // QF.59: a warm-up launch first, so the splash bound measures our code and
+  // not the first Electron start on a cold runner (disk cache, fonts).
+  const warm = profile();
+  const warmApp = await launch({
+    THE_SYSTEM_PORT: '0',
+    THE_SYSTEM_DATA_DIR: warm.dataDir,
+    THE_SYSTEM_USER_DATA_DIR: warm.userData,
+  });
+  try {
+    // Not held: a held start makes close() wait out the 30 s hold.
+    await gmWindow(warmApp);
+  } finally {
+    await warmApp.close();
+    warm.cleanup();
+  }
   const p = profile();
   const app = await launch({
     THE_SYSTEM_PORT: '0',
@@ -97,9 +112,19 @@ test('a splash says "Starting The System…" at once, then hands over to the GM 
 
     const gm = await gmWindow(app);
     await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    // QF.59: the app's own fallback reveal is 10 s, so wait longer than it;
+    // then check the window appeared because the console painted, not
+    // because the fallback fired.
     await expect
-      .poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length))
+      .poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length), {
+        timeout: 15_000,
+      })
       .toBe(1);
+    expect(
+      await app.evaluate(
+        () => (globalThis as { theSystemRevealReason?: string }).theSystemRevealReason,
+      ),
+    ).toBe('ready-to-show');
     expect(
       await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible()),
     ).toBe(true);
@@ -126,7 +151,7 @@ test('a second launch exits and brings the running window to the front', async (
       ({ app: a }) =>
         new Promise<boolean>((resolve) => a.once('second-instance', () => resolve(true))),
     );
-    const second = spawn(electronBin, [main, '--no-sandbox'], {
+    const second = spawn(electronBin, [main, ...TEST_SWITCHES], {
       env: { ...process.env, ...env },
       stdio: 'ignore',
     });
@@ -235,7 +260,7 @@ test('a second launch while starting exits and brings the splash forward', async
     const splash = await app.firstWindow();
     await expect(splash.getByRole('heading', { name: 'Starting The System…' })).toBeVisible();
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.hide());
-    const second = spawn(electronBin, [main, '--no-sandbox'], {
+    const second = spawn(electronBin, [main, ...TEST_SWITCHES], {
       env: { ...process.env, ...env },
       stdio: 'ignore',
     });
