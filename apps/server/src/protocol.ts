@@ -7,7 +7,8 @@ import {
 } from '@the-system/engine';
 
 /** Live protocol version; bumped on incompatible message changes. */
-export const PROTOCOL_VERSION = 3;
+/** v4 (QF.52): `statePatch` frames for the GM; `view.limits` from players. */
+export const PROTOCOL_VERSION = 4;
 
 /** First frame the server sends on every WebSocket connection. */
 export interface HelloMessage {
@@ -34,6 +35,11 @@ export function helloMessage(campaign?: string): HelloMessage {
 
 const seq = z.number().int().nonnegative();
 
+/** QF.52: the most messages a player can ask one view to carry. */
+export const MAX_VIEW_MESSAGES = 10_000;
+/** QF.52: the most notes a player view sends whole at once. */
+export const MAX_OPEN_NOTES = 20;
+
 /** Messages a client may send. Anything else is refused. */
 export const clientMessageSchema = z.union([
   z.strictObject({
@@ -54,6 +60,16 @@ export const clientMessageSchema = z.union([
     gmKey: z.string().min(1).max(1000),
     lastSeq: seq.optional(),
   }),
+  /**
+   * QF.52: a player view carries the newest messages and cut note bodies;
+   * the player asks for more messages or opens notes (full bodies). Every
+   * field is within what that player may already read.
+   */
+  z.strictObject({
+    type: z.literal('view.limits'),
+    messages: z.number().int().min(0).max(MAX_VIEW_MESSAGES).optional(),
+    openNotes: z.array(z.string().min(1).max(100)).max(MAX_OPEN_NOTES).optional(),
+  }),
   z.strictObject({
     type: z.literal('command'),
     requestId: z.string().min(1).max(100),
@@ -71,6 +87,16 @@ export type ServerMessage =
   | { type: 'joined'; role: 'gm' | 'player'; characterId: string | null; seq: number }
   | { type: 'view'; seq: number; view: PlayerView }
   | { type: 'state'; seq: number; state: CampaignState | null }
+  /**
+   * QF.52: the top-level state keys that changed since the last `state` or
+   * `statePatch` this GM socket got; `unset` keys are gone.
+   */
+  | {
+      type: 'statePatch';
+      seq: number;
+      set: Partial<CampaignState>;
+      unset?: readonly string[];
+    }
   | {
       /** The history is derived from the event log, so it always reaches back to day 1. */
       type: 'notifications';

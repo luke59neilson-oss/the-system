@@ -13,7 +13,11 @@ import {
 
 export const BIG_HEROES = ['ana', 'bo', 'cy', 'di'] as const;
 
-export function bigCampaignLines(count: number): string[] {
+/**
+ * `withNotes` (QF.52): every fifth command is a note instead, up to 240 notes (a party note or
+ * a journal entry with a paragraph of text), as a long campaign's table keeps.
+ */
+export function bigCampaignLines(count: number, options: { withNotes?: boolean } = {}): string[] {
   let tick = 0;
   let id = 0;
   const ctx: CommandContext = {
@@ -29,8 +33,8 @@ export function bigCampaignLines(count: number): string[] {
   ];
   let campaign: Campaign = emptyCampaign();
   const lines: string[] = [];
-  const run = (command: Command) => {
-    const result = execute(campaign, command, ctx);
+  const run = (command: Command, actor: CommandContext['actor'] = ctx.actor) => {
+    const result = execute(campaign, command, { ...ctx, actor });
     if (!result.ok) throw new Error(`${command.type}: ${result.error}`);
     campaign = result.campaign;
     for (const e of result.events) lines.push(JSON.stringify(e));
@@ -39,9 +43,25 @@ export function bigCampaignLines(count: number): string[] {
   for (const who of BIG_HEROES) {
     run({ type: 'character.create', id: who, name: who, className: 'Archer', classSkills: kit });
   }
+  let notes = 0;
   for (let i = 0; lines.length < count; i++) {
     // Each hero gets every kind in turn (hero changes every four commands).
     const who = BIG_HEROES[Math.floor(i / 4) % BIG_HEROES.length] as string;
+    // Under the rules' note limit (300 per character): about 60 each.
+    if (options.withNotes && i % 5 === 4 && notes++ < 240) {
+      run(
+        {
+          type: 'note.create',
+          characterId: who,
+          kind: i % 2 === 0 ? 'party' : 'journal',
+          title: `Day ${i}`,
+          body: `What happened at step ${i}. `.repeat(16),
+          tags: ['camp'],
+        } as Command,
+        { role: 'player', characterId: who },
+      );
+      continue;
+    }
     run(
       i % 4 === 0
         ? { type: 'xp.award', track: 'class', amount: 7, participants: [{ characterId: who }] }

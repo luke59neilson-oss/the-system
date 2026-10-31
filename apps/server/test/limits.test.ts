@@ -153,7 +153,8 @@ describe('QF.3 unchanged views are not re-sent', () => {
     const kim = join('kim');
     const gm = join(null);
     const views = (got: ServerMessage[]) => got.filter((m) => m.type === 'view').length;
-    const states = () => gm.got.filter((m) => m.type === 'state').length;
+    // QF.52: after the first whole state the GM gets patches.
+    const states = () => gm.got.filter((m) => m.type === 'state' || m.type === 'statePatch').length;
     const [kimBefore, jakeBefore, gmBefore] = [views(kim.got), views(jake.got), states()];
     expect(jake.send(journal('jake', 'private thoughts'))).toMatchObject({ ok: true });
     expect(views(kim.got)).toBe(kimBefore); // Kim cannot see it: nothing new for her

@@ -89,6 +89,8 @@ type ServerMessage =
   | { type: 'joined'; role: 'gm' | 'player'; characterId: string | null; seq: number }
   | { type: 'view'; seq: number; view: PlayerView }
   | { type: 'state'; seq: number; state: CampaignState | null }
+  /** QF.52: the top-level keys of the GM's state that changed. */
+  | { type: 'statePatch'; seq: number; set: Partial<CampaignState>; unset?: string[] }
   | { type: 'notifications'; items: SeqNotification[]; reset?: true }
   /** `warning`: the change was saved, but something after it failed (e.g. a session-end backup). */
   | { type: 'result'; requestId: string; ok: true; warning?: string }
@@ -151,6 +153,8 @@ export class LiveClient {
   private nextRequest = 0;
   /** 0 on first join: the server sends the whole history back to day 1 (M3.3). */
   private lastSeq = 0;
+  /** QF.52: what this player's view should carry beyond the defaults. */
+  private limits: { messages?: number | undefined; openNotes?: readonly string[] | undefined } = {};
   /** The campaign changed since this page last joined (MS.4 demo switch). */
   private campaignChanged = false;
   /** QF.66: the first campaign this page joined, so a switch back reads as one. */
@@ -186,6 +190,38 @@ export class LiveClient {
       this.pending.set(requestId, resolve);
       socket.send(JSON.stringify({ type: 'command', requestId, command }));
     });
+  }
+
+  /**
+   * QF.52: a player view carries the newest messages and cut note bodies.
+   * Ask for at least `messages` messages, or for these notes whole. Kept and
+   * sent again after every (re)join, since a join starts from the defaults.
+   */
+  viewLimits(limits: { messages?: number; openNotes?: readonly string[] }): void {
+    const next = {
+      messages: Math.max(this.limits.messages ?? 0, limits.messages ?? 0) || undefined,
+      openNotes: limits.openNotes ? [...limits.openNotes].slice(-20) : this.limits.openNotes,
+    };
+    const same =
+      next.messages === this.limits.messages &&
+      (next.openNotes ?? []).join('\u0000') === (this.limits.openNotes ?? []).join('\u0000');
+    this.limits = next;
+    if (!same) this.sendLimits();
+  }
+
+  private sendLimits(): void {
+    const socket = this.socket;
+    if (this.join.role !== 'player' || !socket || socket.readyState !== WebSocket.OPEN) return;
+    if (this.snapshot.status !== 'joined') return;
+    const { messages, openNotes } = this.limits;
+    if (messages === undefined && openNotes === undefined) return;
+    socket.send(
+      JSON.stringify({
+        type: 'view.limits',
+        ...(messages !== undefined ? { messages: Math.min(messages, 10_000) } : {}),
+        ...(openNotes !== undefined ? { openNotes } : {}),
+      }),
+    );
   }
 
   /** QF.66: the player has read the campaign-switch notice. */
@@ -281,6 +317,7 @@ export class LiveClient {
         this.campaignChanged = false;
         // The server says so again after the join if it is still listening.
         this.update({ status: 'joined', error: null, seq: message.seq, listening: false });
+        this.sendLimits();
         return;
       case 'state':
         this.lastSeq = message.seq;
@@ -290,6 +327,16 @@ export class LiveClient {
           liveSince: this.snapshot.liveSince ?? message.seq,
         });
         return;
+      case 'statePatch': {
+        // A patch only ever follows a whole `state` on this socket.
+        const base = this.snapshot.state;
+        if (!base) return;
+        this.lastSeq = message.seq;
+        const state = { ...base, ...message.set } as Record<string, unknown>;
+        for (const key of message.unset ?? []) delete state[key];
+        this.update({ state: state as unknown as CampaignState, seq: message.seq });
+        return;
+      }
       case 'listening':
         this.update({ listening: message.on });
         return;

@@ -227,7 +227,12 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
             <PartyPanel view={view} />
             <Inventory view={view} client={pane ? null : client} />
           </div>
-          <Feed live={live} view={view} client={pane ? null : client} />
+          <Feed
+            live={live}
+            view={view}
+            client={pane ? null : client}
+            onLimits={(limits) => client.viewLimits(limits)}
+          />
         </div>
       )}
     </main>
@@ -1060,10 +1065,13 @@ function Feed({
   live,
   view,
   client,
+  onLimits,
 }: {
   live: LiveSnapshot;
   view: PlayerView;
   client: LiveClient | null;
+  /** QF.52: asks the server for more of the view (View-as panes too). */
+  onLimits: LiveClient['viewLimits'];
 }) {
   const [filter, setFilter] = useState<HistoryFilter>('dings');
   const [query, setQuery] = useState('');
@@ -1088,7 +1096,7 @@ function Feed({
       <QuestLog view={view} />
       <PracticePanel view={view} client={client} />
       <IdentifyPanel view={view} />
-      <NotesPanel view={view} client={client} />
+      <NotesPanel view={view} client={client} onLimits={onLimits} />
       <section className="window feed" aria-labelledby="dings" data-testid="history">
         <h2 id="dings">Notifications</h2>
         <div className="history-tools">
@@ -1159,10 +1167,15 @@ function Feed({
           </ol>
         )}
         <ShowOlder
-          hidden={view.messages.length - messages.length}
+          hidden={Math.max(0, view.messagesTotal - messages.length)}
           shown={messages.length}
           list={messageList}
-          onMore={() => setMessageLimit((n) => n + HISTORY_PAGE)}
+          onMore={() => {
+            // QF.52: the view carries one page; ask the server for the next.
+            const next = messageLimit + HISTORY_PAGE;
+            setMessageLimit(next);
+            onLimits({ messages: next });
+          }}
           testId="messages-older"
         />
       </section>

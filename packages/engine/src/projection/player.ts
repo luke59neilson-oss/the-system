@@ -377,6 +377,11 @@ export interface PlayerView {
   readonly party: readonly PartyMember[];
   /** System broadcasts addressed to this character (or everyone), oldest first. */
   readonly messages: readonly PlayerMessage[];
+  /**
+   * QF.52: how many messages the viewer has in all; `messages` may carry only
+   * the newest (plus pinned banners) when the projection is limited.
+   */
+  readonly messagesTotal: number;
   /** In-game day counter. */
   readonly day: number;
   /** Visible quests in creation order. */
@@ -394,6 +399,8 @@ export interface PlayerView {
   readonly notes: readonly PlayerNote[];
   /** The viewer's own practice entries, oldest first (M3.11). */
   readonly practice: readonly PlayerPractice[];
+  /** QF.52: how many practice entries the viewer has in all. */
+  readonly practiceTotal: number;
   /** Open montages offered to the viewer, in offer order (M3.11). */
   readonly montages: readonly PlayerMontage[];
   /** The latest shared contests the viewer took part in, oldest first (M7.3). */
@@ -449,6 +456,11 @@ export interface PlayerNote {
   readonly title: string;
   /** Markdown. */
   readonly body: string;
+  /**
+   * QF.52: `body` is only the start of the note; the full text comes once
+   * the player opens it (`openNotes`).
+   */
+  readonly bodyCut?: true;
   readonly tags: readonly string[];
   /** Journal: the GM may read it. Party notes: always true. */
   readonly shareable: boolean;
@@ -463,6 +475,43 @@ export interface PlayerProjectionOptions {
    * journal entries the player has not shared are left out, as for the GM.
    */
   readonly viewAs?: boolean;
+  /**
+   * QF.52: what a live view carries. Absent = everything (tests, exports).
+   * The server sends the newest `practice` entries and `messages` (pinned
+   * banners always ride along), and note bodies cut to `noteBody`
+   * characters except the notes in `openNotes`.
+   */
+  readonly limits?: PlayerViewLimits;
+}
+
+/** QF.52: the size limits of a live player view. */
+export interface PlayerViewLimits {
+  readonly practice: number;
+  readonly messages: number;
+  readonly noteBody: number;
+  readonly openNotes: readonly string[];
+}
+
+/**
+ * QF.52 (D292): what a phone gets by default. Practice matches the 8 entries
+ * the Practice panel shows; messages one page of the message list; note
+ * bodies enough to search titles and openings.
+ */
+export const PLAYER_VIEW_LIMITS: PlayerViewLimits = {
+  practice: 8,
+  messages: 50,
+  noteBody: 200,
+  openNotes: [],
+};
+
+/** The newest `limit` items, plus older ones `keep` still needs (order kept). */
+function newest<T>(
+  items: readonly T[],
+  limit: number,
+  keep: (item: T) => boolean = () => false,
+): T[] {
+  const from = Math.max(0, items.length - Math.max(0, Math.floor(limit)));
+  return items.filter((item, i) => i >= from || keep(item));
 }
 
 /** A known entity as one player sees it (M3.9, DESIGN §7 Identify). */
@@ -858,35 +907,43 @@ export function projectForPlayer(
     const other = state.characters[id];
     if (id !== characterId && other) party.push(partyMember(state, other));
   }
+  const limits = options.limits;
+  const messages = state.broadcasts.filter(
+    (b) => b.characterIds === null || b.characterIds.includes(viewer.id),
+  );
+  const practice = state.practice.filter((p) => p.characterId === viewer.id);
   return {
     viewerId: viewer.id,
     campaignName: state.name,
     rules: projectRules(state.rules),
     me: ownSheet(state, viewer),
     party,
-    messages: state.broadcasts
-      .filter((b) => b.characterIds === null || b.characterIds.includes(viewer.id))
-      .map((b) => ({
-        id: b.id,
-        at: b.at,
-        text: b.text,
-        ...(b.display ? { display: b.display } : {}),
-        ...(b.removed ? { removed: true as const } : {}),
-      })),
+    messages: newest(
+      messages,
+      limits?.messages ?? Infinity,
+      // A pinned banner stays up until the GM removes it, however old.
+      (b) => b.display?.mode === 'pinned' && !b.removed,
+    ).map((b) => ({
+      id: b.id,
+      at: b.at,
+      text: b.text,
+      ...(b.display ? { display: b.display } : {}),
+      ...(b.removed ? { removed: true as const } : {}),
+    })),
     day: state.day,
     inventory: playerInventory(state, viewer.id),
     identify: playerIdentify(state, viewer),
-    notes: playerNotes(state, viewer.id, options.viewAs === true),
-    practice: state.practice
-      .filter((p) => p.characterId === viewer.id)
-      .map((p) => ({
-        id: p.id,
-        at: p.at,
-        action: p.action,
-        skills: [...p.skills],
-        stat: p.stat,
-        source: p.source,
-      })),
+    messagesTotal: messages.length,
+    notes: playerNotes(state, viewer.id, options.viewAs === true, limits),
+    practice: newest(practice, limits?.practice ?? Infinity).map((p) => ({
+      id: p.id,
+      at: p.at,
+      action: p.action,
+      skills: [...p.skills],
+      stat: p.stat,
+      source: p.source,
+    })),
+    practiceTotal: practice.length,
     montages: state.montageOrder.flatMap((id) => {
       const m = hasOwnKey(state.montages, id) ? state.montages[id] : undefined;
       if (!m || m.status !== 'open' || !m.characterIds.includes(viewer.id)) return [];
@@ -934,7 +991,14 @@ export function projectForPlayer(
  * Notes the viewer may read (canReadNote), copied field by field. In a View-as
  * pane the GM also must be able to read it (unshared journal entries vanish).
  */
-function playerNotes(state: CampaignState, viewerId: string, viewAs: boolean): PlayerNote[] {
+function playerNotes(
+  state: CampaignState,
+  viewerId: string,
+  viewAs: boolean,
+  limits: PlayerViewLimits | undefined,
+): PlayerNote[] {
+  const open = new Set(limits?.openNotes ?? []);
+  const cap = limits ? Math.max(0, Math.floor(limits.noteBody)) : Infinity;
   return state.noteOrder.flatMap((id) => {
     const n = hasOwnKey(state.notes, id) ? state.notes[id] : undefined;
     if (!n || n.kind === 'gm' || !canReadNote(n, viewerId)) return [];
@@ -945,7 +1009,9 @@ function playerNotes(state: CampaignState, viewerId: string, viewAs: boolean): P
         kind: n.kind,
         author: n.author,
         title: n.title,
-        body: n.body,
+        ...(n.body.length > cap && !open.has(n.id)
+          ? { body: cutBody(n.body, cap), bodyCut: true as const }
+          : { body: n.body }),
         tags: [...n.tags],
         shareable: n.shareable,
         createdAt: n.createdAt,
@@ -953,6 +1019,13 @@ function playerNotes(state: CampaignState, viewerId: string, viewAs: boolean): P
       },
     ];
   });
+}
+
+/** The first `cap` characters, never splitting a surrogate pair. */
+function cutBody(body: string, cap: number): string {
+  const cut = body.slice(0, cap);
+  const last = cut.charCodeAt(cut.length - 1);
+  return last >= 0xd800 && last <= 0xdbff ? cut.slice(0, -1) : cut;
 }
 
 /** Known entities with the viewer's tier text only (D40: resolved here, never the tier list). */

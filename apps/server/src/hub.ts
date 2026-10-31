@@ -1,14 +1,17 @@
 import { randomInt } from 'node:crypto';
 import {
   EventRejectedError,
+  PLAYER_VIEW_LIMITS,
   ProjectionError,
   execute,
   notificationHistory,
   projectForGm,
   projectForPlayer,
   type Actor,
+  type CampaignState,
   type Command,
   type DomainEvent,
+  type PlayerViewLimits,
 } from '@the-system/engine';
 import { notificationsFor } from './notify';
 import {
@@ -71,14 +74,28 @@ export interface Connection {
   close(): void;
 }
 
+/**
+ * Sends one message. `serialized`, when given, is `JSON.stringify(message)`
+ * already made (QF.52: a view is stringified once per send).
+ */
+export type Send = (message: ServerMessage, serialized?: string) => void;
+
 interface Client {
   role: Role;
-  send: (message: ServerMessage) => void;
+  send: Send;
   /** Messages left in this connection's bucket, and when it was last refilled (ms). */
   tokens: number;
   refilledAt: number;
   /** The last player view sent, serialized: unchanged views are not re-sent (QF.3). */
   lastView: string | null;
+  /** QF.52: what this player's view carries (more messages, opened notes). */
+  limits: PlayerViewLimits;
+  /**
+   * QF.52: the campaign state this GM socket last got, whole or patched; the
+   * next frame carries only the top-level keys that are new objects since.
+   * Undefined until the first `state` frame.
+   */
+  gmSent: CampaignState | null | undefined;
 }
 
 export class LiveHub {
@@ -149,13 +166,15 @@ export class LiveHub {
     }
   }
 
-  connect(send: (message: ServerMessage) => void): Connection {
+  connect(send: Send): Connection {
     const client: Client = {
       role: { role: 'none' },
       send,
       tokens: this.rateLimit.burst,
       refilledAt: this.clock(),
       lastView: null,
+      limits: PLAYER_VIEW_LIMITS,
+      gmSent: undefined,
     };
     this.clients.add(client);
     send(helloMessage(this.store.id));
@@ -175,12 +194,27 @@ export class LiveHub {
     const message = parsed.message;
     if (!this.allow(client)) {
       return client.send(
-        message.type === 'join'
-          ? { type: 'error', error: RATE_LIMITED }
-          : { type: 'result', requestId: message.requestId, ok: false, error: RATE_LIMITED },
+        message.type === 'command'
+          ? { type: 'result', requestId: message.requestId, ok: false, error: RATE_LIMITED }
+          : { type: 'error', error: RATE_LIMITED },
       );
     }
+    if (message.type === 'view.limits') {
+      // QF.52: only a player view has limits; the GM always gets everything.
+      if (client.role.role !== 'player') return;
+      client.limits = {
+        ...client.limits,
+        messages: Math.max(PLAYER_VIEW_LIMITS.messages, message.messages ?? client.limits.messages),
+        openNotes: message.openNotes ? [...new Set(message.openNotes)] : client.limits.openNotes,
+      };
+      this.sendSnapshot(client, { onlyIfChanged: true });
+      return;
+    }
     if (message.type === 'join') {
+      // A (re)join starts from a whole view or state and the default limits.
+      client.lastView = null;
+      client.gmSent = undefined;
+      client.limits = PLAYER_VIEW_LIMITS;
       if (message.role === 'gm') {
         if (!gmKeyMatches(this.options.gmKey, message.gmKey)) {
           client.role = { role: 'none' };
@@ -310,31 +344,49 @@ export class LiveHub {
         // A player whose view did not change and who got no notification
         // needs no new snapshot (QF.3): one player's edits must not push
         // every other client's whole view again.
-        this.sendSnapshot(other, { onlyIfChanged: !undo && mine.length === 0 });
+        this.sendSnapshot(other, {
+          // QF.52: the GM always gets a patch of what changed.
+          onlyIfChanged: other.role.role === 'gm' || (!undo && mine.length === 0),
+        });
       } catch {
         // One failing socket must not stop the others from updating.
       }
     }
   }
 
-  /** The GM projection for a GM, the player projection for a player. */
+  /**
+   * The GM projection for a GM, the player projection for a player. With
+   * `onlyIfChanged`, a player whose view is unchanged gets nothing, and a GM
+   * gets only the top-level keys that changed (QF.52).
+   */
   private sendSnapshot(client: Client, options: { onlyIfChanged?: boolean } = {}): void {
     const role = client.role;
     if (role.role === 'gm') {
       const state = this.store.campaign.state;
-      // The GM never receives journal entries a player has not shared (M1.8).
-      client.send({ type: 'state', seq: this.seq, state: state && projectForGm(state) });
+      const base = client.gmSent;
+      client.gmSent = state;
+      if (!options.onlyIfChanged || !state || !base) {
+        // The GM never receives journal entries a player has not shared (M1.8).
+        client.send({ type: 'state', seq: this.seq, state: state && projectForGm(state) });
+        return;
+      }
+      const patch = gmPatch(base, state);
+      if (patch) client.send({ type: 'statePatch', seq: this.seq, ...patch });
       return;
     }
     if (role.role !== 'player') return;
     const state = this.store.campaign.state;
     try {
       if (!state) throw new ProjectionError('No campaign');
-      const view = projectForPlayer(state, role.characterId, { viewAs: role.viewAs });
+      const view = projectForPlayer(state, role.characterId, {
+        viewAs: role.viewAs,
+        limits: client.limits,
+      });
       const serialized = JSON.stringify(view);
       if (options.onlyIfChanged && serialized === client.lastView) return;
       client.lastView = serialized;
-      client.send({ type: 'view', seq: this.seq, view });
+      const seq = this.seq;
+      client.send({ type: 'view', seq, view }, `{"type":"view","seq":${seq},"view":${serialized}}`);
     } catch (error) {
       if (!(error instanceof ProjectionError)) throw error;
       // The character is gone (e.g. its creation was undone): back to the join screen.
@@ -380,4 +432,36 @@ export class LiveHub {
     );
     client.send({ type: 'notifications', items });
   }
+}
+
+/** Keys the GM projection filters (M1.8): they change together. */
+const GM_FILTERED_KEYS: readonly string[] = ['notes', 'noteOrder'];
+
+/**
+ * QF.52 (D292): the top-level keys of `state` that are new objects since
+ * `base`, projected for the GM, or null when nothing changed. Events never
+ * edit a state in place (canary: engine `statePatches.test.ts`), so an
+ * unchanged reference is an unchanged value.
+ */
+export function gmPatch(
+  base: CampaignState,
+  state: CampaignState,
+): { set: Partial<CampaignState>; unset?: string[] } | null {
+  const before = base as unknown as Record<string, unknown>;
+  const after = state as unknown as Record<string, unknown>;
+  const has = (o: object, k: string) => Object.prototype.hasOwnProperty.call(o, k);
+  const changed = Object.keys(after).filter((k) => !has(before, k) || before[k] !== after[k]);
+  const unset = Object.keys(before).filter((k) => !has(after, k));
+  if (changed.length === 0 && unset.length === 0) return null;
+  const set: Record<string, unknown> = {};
+  let projected: Record<string, unknown> | null = null;
+  for (const key of changed) {
+    if (GM_FILTERED_KEYS.includes(key)) {
+      projected ??= projectForGm(state) as unknown as Record<string, unknown>;
+      for (const k of GM_FILTERED_KEYS) set[k] = projected[k];
+    } else {
+      set[key] = after[key];
+    }
+  }
+  return { set: set as Partial<CampaignState>, ...(unset.length ? { unset } : {}) };
 }

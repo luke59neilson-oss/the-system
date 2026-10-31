@@ -47,7 +47,16 @@ const emptyDraft = (): Draft => ({
  * optionally shared with the GM) and the party's shared notes, live; tags and
  * search. `client` is null in the GM's View-as panes, which are read-only.
  */
-export function NotesPanel({ view, client }: { view: PlayerView; client: LiveClient | null }) {
+export function NotesPanel({
+  view,
+  client,
+  onLimits,
+}: {
+  view: PlayerView;
+  client: LiveClient | null;
+  /** QF.52: asks the server for whole note bodies (absent in tests). */
+  onLimits?: LiveClient['viewLimits'];
+}) {
   const me = view.viewerId;
   const [filter, setFilter] = useState<NoteFilter>('all');
   const [query, setQuery] = useState('');
@@ -59,6 +68,12 @@ export function NotesPanel({ view, client }: { view: PlayerView; client: LiveCli
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const heading = useRef<HTMLHeadingElement | null>(null);
+  // QF.52: the view carries the start of each note; the open one and the one
+  // being edited come whole.
+  const wantedId = draft?.id ?? null;
+  useEffect(() => {
+    onLimits?.({ openNotes: [openId, wantedId].filter((id): id is string => id !== null) });
+  }, [onLimits, openId, wantedId]);
   const names: Record<string, string> = Object.fromEntries(view.party.map((p) => [p.id, p.name]));
   names[me] = view.me.name;
   const byId = new Map(view.notes.map((n) => [n.id, n]));
@@ -337,6 +352,11 @@ export function NotesPanel({ view, client }: { view: PlayerView; client: LiveCli
                 {open && (
                   <div className="note-open">
                     <Markdown source={note.body} />
+                    {note.bodyCut && (
+                      <p className="muted" data-testid="note-loading">
+                        Loading the rest of the note…
+                      </p>
+                    )}
                     {note.tags.length > 0 && (
                       <div className="note-tags" aria-label="Tags">
                         {note.tags.map((t) => (
@@ -357,7 +377,7 @@ export function NotesPanel({ view, client }: { view: PlayerView; client: LiveCli
                       <div className="note-actions">
                         <button
                           type="button"
-                          disabled={busy}
+                          disabled={busy || note.bodyCut === true}
                           data-testid="note-edit"
                           onClick={() => edit(note)}
                         >
