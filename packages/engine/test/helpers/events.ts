@@ -27,6 +27,17 @@ export const kit = [
 
 export const rawRules = () => JSON.parse(JSON.stringify(DEFAULT_RULES)) as unknown;
 /**
+ * Rules as a campaign created before ME stored them (D300): no per-grade track
+ * budgets (class spread plus free points per race level) and professions from
+ * the E-grade evolution. For tests of those campaigns' numbers.
+ */
+export const preMeRules = (): any => {
+  const r = JSON.parse(JSON.stringify(DEFAULT_RULES));
+  for (const g of r.grades) delete g.trackBudget;
+  r.tracks.professionUnlockGrade = 'E';
+  return r;
+};
+/**
  * The M1.6 bonus rules (items may carry percentages, +25% percent cap, no item
  * cap), as stored campaigns read them (MQ.14, D128): for tests of those rules.
  */
@@ -150,6 +161,25 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
       xp: { class: Math.floor(rand() * 400), profession: 0 },
     };
   }
+  if (roll < 0.6 && rand() < 0.15) {
+    // ME.1: per-track distributions, sometimes reset, sometimes refused.
+    return {
+      type: 'character.setDistribution',
+      characterId: someId(),
+      track: pick(['class', 'profession', 'race'] as const),
+      distribution:
+        rand() < 0.25
+          ? null
+          : {
+              stats: {
+                [rand() < 0.05 ? 'luck' : pick(['strength', 'agility', 'perception'])]: Math.floor(
+                  rand() * 9,
+                ),
+              },
+              free: Math.floor(rand() * 4),
+            },
+    };
+  }
   if (roll < 0.6) {
     return {
       type: 'character.setStats',
@@ -170,7 +200,16 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
   if (roll >= 0.8 && roll < 0.92) {
     const character = c.state?.characters[someId()];
     const batches = character?.freePointBatches ?? [];
-    const batch = batches.length ? pick(batches) : { raceLevel: 1, points: 2 };
+    const batch: {
+      raceLevel: number;
+      points: number;
+      track?: 'class' | 'profession';
+      trackLevel?: number;
+    } = batches.length ? pick(batches) : { raceLevel: 1, points: 2 };
+    const key = {
+      raceLevel: batch.raceLevel,
+      ...(batch.track === undefined ? {} : { track: batch.track, trackLevel: batch.trackLevel }),
+    };
     const allocation: Record<string, number> = {};
     const extra = rand() < 0.05 ? 1 : 0;
     allocation[rand() < 0.1 ? 'luck' : pick(['strength', 'agility', 'vitality'])] =
@@ -190,13 +229,13 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
       ? {
           type: 'freePoints.assign',
           characterId: character?.id ?? 'ghost',
-          raceLevel: batch.raceLevel,
+          ...key,
           allocation,
         }
       : {
           type: 'freePoints.override',
           characterId: character?.id ?? 'ghost',
-          raceLevel: batch.raceLevel,
+          ...key,
           allocation: rand() < 0.3 ? null : allocation,
         };
   }

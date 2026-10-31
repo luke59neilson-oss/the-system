@@ -123,7 +123,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
   // (D100); a pool clamped while not full does not count as full (L7).
   character: { defaultRace: 'Human', fullPoolsStayFull: true, clampedPoolsNotFull: true },
   tracks: {
-    professionUnlockGrade: 'E', // §2 (ME.1 moves it to G with the progression change)
+    professionUnlockGrade: 'G', // §2: professions from the start (ME.1, L27)
     evolutionGate: 'race', // §2, QUESTIONS 6
     raceLevelRounding: 'floor',
   },
@@ -203,3 +203,35 @@ export const DEFAULT_RULES: RulesConfigInput = {
   logging: { autosaveMinutes: 5 }, // ROADMAP M2.4
   limits: { ...DEFAULT_LIMITS }, // QF.3, D136
 };
+
+/**
+ * ME.1 (D300, D301): the GM's switch for a campaign created before ME. Returns
+ * the campaign's rules with the DESIGN §4 per-grade track budgets added (by
+ * grade id; a grade the defaults do not have keeps none, and the result then
+ * keeps the old profession grade) and professions offered from the first grade.
+ * The console records it as an ordinary rules change, applying from the next
+ * level-up; points already granted never change.
+ */
+export function withTrackBudgets<
+  T extends {
+    grades: readonly { id: string; trackBudget?: unknown }[];
+    tracks: { professionUnlockGrade: string };
+  },
+>(rules: T): T {
+  const byId = new Map(DEFAULT_RULES.grades.map((g) => [g.id, g.trackBudget]));
+  const grades = rules.grades.map((g) => {
+    const budget = g.trackBudget ?? byId.get(g.id);
+    return budget === undefined ? { ...g } : { ...g, trackBudget: { ...(budget as object) } };
+  });
+  const all = grades.every((g) => g.trackBudget !== undefined);
+  const first = grades[0]?.id;
+  return {
+    ...rules,
+    grades,
+    tracks: {
+      ...rules.tracks,
+      professionUnlockGrade:
+        all && first !== undefined ? first : rules.tracks.professionUnlockGrade,
+    },
+  };
+}

@@ -93,6 +93,9 @@ export const CHARACTER_FIELD_VISIBILITY: Readonly<Record<keyof Character, Visibi
   portrait: 'party',
   // MQ.15: rules bookkeeping; the sheet shows the pool values themselves.
   clampedPools: 'gm',
+  // ME.1: per-track distributions are the GM's builder data; the sheet shows
+  // the stats they grant (ME.5 shows the options a player picks from).
+  distributions: 'gm',
 };
 
 /** Every campaign field, classified (`owner` is not used at this level). */
@@ -770,6 +773,7 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
     })),
     freePointBatches: c.freePointBatches.map((b) => ({
       raceLevel: b.raceLevel,
+      ...(b.track === undefined ? {} : { track: b.track, trackLevel: b.trackLevel ?? 0 }),
       points: b.points,
       allocation: b.allocation === null ? null : copyRecord(b.allocation, statIds),
       locked: b.locked,

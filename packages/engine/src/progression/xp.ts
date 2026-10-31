@@ -9,6 +9,7 @@ import {
   unassignedPointsOf,
 } from '../character';
 import type { GradeRules, RulesConfig } from '../rules';
+import { trackGrant } from './budget';
 
 /** XP tracks the GM awards to (DESIGN §5); race level is derived. */
 export type XpTrack = 'class' | 'profession';
@@ -307,6 +308,7 @@ export function gainXp(
     throw new CharacterRuleError(`${character.name} has no profession`);
   }
   const grade = currentGrade(rules, character);
+  if (grade.trackBudget) return gainXpBudgeted(rules, character, track, amount, grade);
   const statOrder = rules.stats.list.map((s) => s.id);
   let xp = character.xp[track] + amount;
   let classLevel = character.classLevel;
@@ -351,6 +353,95 @@ export function gainXp(
       batches.push({
         raceLevel: r,
         points: grade.freePointsPerRaceLevel,
+        allocation: null,
+        locked: false,
+      });
+    }
+    race = Math.max(race, newRace);
+  }
+
+  return {
+    character: {
+      ...character,
+      classLevel,
+      professionLevel,
+      xp: { ...character.xp, [track]: xp },
+      stats,
+      classSpreadTotals: totals,
+      freePointBatches: batches,
+    },
+    levelUps,
+  };
+}
+
+/**
+ * ME.1 (DESIGN §2 "Every track grants stats", §4): `gainXp` at a grade with
+ * track budgets. Each class level grants the class's points, and before the
+ * character has a profession the profession's share too; each profession level
+ * grants the profession's; each new race level the race's. Free points from one
+ * step join a single unlocked batch: keyed by the new race level when the step
+ * raised one, otherwise by the track and its level (D301).
+ */
+function gainXpBudgeted(
+  rules: RulesConfig,
+  character: Character,
+  track: XpTrack,
+  amount: number,
+  grade: GradeRules,
+): XpResult {
+  const statOrder = rules.stats.list.map((s) => s.id);
+  let xp = character.xp[track] + amount;
+  let classLevel = character.classLevel;
+  let professionLevel = character.professionLevel;
+  const stats = { ...character.stats };
+  let totals: Readonly<Record<string, number>> = { ...character.classSpreadTotals };
+  const levelUps: LevelUp[] = [];
+  const batches: FreePointBatch[] = [...character.freePointBatches];
+  let race = raceLevel(rules, character);
+  const grant = (t: 'class' | 'profession' | 'race'): number => {
+    const g = trackGrant(character, grade, t, statOrder, totals);
+    totals = g.classSpreadTotals;
+    for (const [id, n] of Object.entries(g.stats)) stats[id] = (stats[id] ?? 0) + n;
+    return g.free;
+  };
+
+  for (;;) {
+    const level = track === 'class' ? classLevel : professionLevel;
+    if (isAtCap(rules, character.grade, level) || xp < grade.xpPerLevel) break;
+    xp -= grade.xpPerLevel;
+    let free = 0;
+    if (track === 'class') {
+      classLevel++;
+      levelUps.push({ track, level: classLevel });
+      free += grant('class');
+      // Until a profession exists, the class grants its share too (DESIGN §2).
+      if (character.profession === null) free += grant('profession');
+    } else {
+      professionLevel++;
+      levelUps.push({ track, level: professionLevel });
+      free += grant('profession');
+    }
+    const newRace = raceLevel(rules, {
+      classLevel,
+      professionLevel,
+      profession: character.profession,
+    });
+    let keyed = false;
+    for (let r = race + 1; r <= newRace; r++) {
+      levelUps.push({ track: 'race', level: r });
+      // Levels earned again after a GM override grant nothing twice (D38).
+      if (batches.some((b) => b.raceLevel === r && b.track === undefined)) continue;
+      free += grant('race');
+      batches.push({ raceLevel: r, points: free, allocation: null, locked: false });
+      free = 0;
+      keyed = true;
+    }
+    if (!keyed && free > 0) {
+      batches.push({
+        raceLevel: Math.max(race, newRace),
+        track,
+        trackLevel: track === 'class' ? classLevel : professionLevel,
+        points: free,
         allocation: null,
         locked: false,
       });

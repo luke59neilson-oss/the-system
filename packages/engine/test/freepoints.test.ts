@@ -11,10 +11,10 @@ import {
   type Campaign,
   type Command,
 } from '../src';
-import { kit, rawRules, run, testContext } from './helpers/events';
+import { kit, preMeRules, run, testContext } from './helpers/events';
 
 const setup: Command[] = [
-  { type: 'campaign.create', name: 'W', rules: rawRules() },
+  { type: 'campaign.create', name: 'W', rules: preMeRules() },
   { type: 'character.create', id: 'jake', name: 'Jake', className: 'Archer', classSkills: kit },
   { type: 'character.create', id: 'kim', name: 'Kim', className: 'Mage', classSkills: kit },
   // 2 class levels → race levels 1 and 2, 2 free points each at G-grade.

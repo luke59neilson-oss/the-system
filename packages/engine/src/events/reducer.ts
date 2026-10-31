@@ -10,6 +10,10 @@ import {
   batchRemaining,
   unassignedPointsOf,
   type Character,
+  sameBatch,
+  batchLabel,
+  type StatTrack,
+  type TrackDistribution,
 } from '../character';
 import {
   EMPTY_HOLDINGS,
@@ -53,7 +57,13 @@ import {
   type SkillDef,
   type SkillDefInput,
 } from '../skills';
-import { applyProgressionOverride, awardXp, shareXp } from '../progression';
+import {
+  applyProgressionOverride,
+  awardXp,
+  checkDistribution,
+  distributionTotal,
+  shareXp,
+} from '../progression';
 import {
   chooseEvolution,
   chooseSelection,
@@ -1034,6 +1044,29 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       // Pools are clamped to the new effective maxima after the event (D81).
       return withCharacter(state, { ...character, stats: merged });
     }
+    case 'character.distributionSet': {
+      const character = characterOf(state, event, event.payload.characterId);
+      const { track, distribution } = event.payload;
+      const statIds = state.rules.stats.list.map((s) => s.id);
+      const next: Partial<Record<StatTrack, TrackDistribution>> = {
+        ...(character.distributions ?? {}),
+      };
+      if (distribution === null) {
+        if (!next[track]) fail(event, `${character.name} has no ${track} distribution to reset`);
+        delete next[track];
+      } else {
+        checkKeys(event, Object.keys(distribution.stats), statIds, 'stat');
+        const clean = checkDistribution(distribution, statIds);
+        if (distributionTotal(clean) === 0) fail(event, 'a distribution needs at least one point');
+        next[track] = clean;
+      }
+      const rest: Character = { ...character };
+      delete (rest as { distributions?: unknown }).distributions;
+      return withCharacter(
+        state,
+        Object.keys(next).length === 0 ? rest : { ...rest, distributions: next },
+      );
+    }
     case 'character.progressionSet': {
       const character = characterOf(state, event, event.payload.characterId);
       const { grade, classLevel, professionLevel, xp } = event.payload;
@@ -1106,20 +1139,23 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
     case 'freePoints.assigned':
     case 'freePoints.overridden': {
       const character = characterOf(state, event, event.payload.characterId);
-      const { raceLevel, allocation } = event.payload;
-      const index = character.freePointBatches.findIndex((b) => b.raceLevel === raceLevel);
+      const { allocation } = event.payload;
+      const index = character.freePointBatches.findIndex((b) => sameBatch(b, event.payload));
       const batch = character.freePointBatches[index];
-      if (!batch) return fail(event, `no free-point batch for race level ${raceLevel}`);
+      if (!batch) return fail(event, `no free-point batch for ${batchLabel(event.payload)}`);
       const assigning = event.type === 'freePoints.assigned';
       if (!assigning && allocation === null && batch.allocation === null) {
-        fail(event, `the race level ${raceLevel} points are not assigned`);
+        fail(event, `the ${batchLabel(event.payload)} points are not assigned`);
       }
       if (assigning && batch.locked) {
-        fail(event, `the race level ${raceLevel} points are already assigned and locked`);
+        fail(event, `the ${batchLabel(event.payload)} points are already assigned and locked`);
       }
       if (assigning && batch.allocation !== null) {
         // MV.1 review: a partly used level-up's assigned points are locked too.
-        fail(event, `some race level ${raceLevel} points are already assigned; assign the rest`);
+        fail(
+          event,
+          `some ${batchLabel(event.payload)} points are already assigned; assign the rest`,
+        );
       }
       const statIds = state.rules.stats.list.map((s) => s.id);
       const stats: Record<string, number> = { ...character.stats };

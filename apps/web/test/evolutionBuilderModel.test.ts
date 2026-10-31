@@ -67,7 +67,9 @@ describe('evolution builder model (M5.2)', () => {
     const plan = evolutionPlan(campaign(400).state!, 'jake')!;
     expect(plan.toGrade).toBe('F');
     expect(plan.pendingSelections).toEqual([]);
-    expect(plan.professionOffers).toBe(false);
+    // ME.1 (DESIGN §2): professions from the start, so every evolution of a
+    // character without one has a profession step.
+    expect(plan.professionOffers).toBe(true);
     expect(plan.released).toBeNull();
     const archery = plan.rerate.find((r) => r.skill === 'Basic Archery')!;
     expect([archery.from, archery.byDefault]).toEqual(['inferior', 'inferior']);

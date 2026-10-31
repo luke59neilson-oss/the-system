@@ -60,12 +60,13 @@ describe('demo campaign (MS.4, M1.15)', () => {
     // The evolutions transformed the first class skill at each grade.
     expect(jake.skills[0]).toMatchObject({ name: 'Expert Archery', rarity: 'rare' });
     expect(state.characters['demo-casper']?.skills[0]).toMatchObject({ name: 'Archery' });
-    // DESIGN §4 budget, each level at its grade: base 90, G 4×6 = 24, F 10×8 = 80,
-    // E 35×(8+4), then the class and race levels past each grade top.
+    // DESIGN §4 budgets (ME.1), each level at its grade: base 90; G 4 × 18
+    // (class 8, the profession's share 5 while there is none, race 5); F 10 × 24;
+    // E 35 class × 16, profession levels × 10 and race levels × 10; D 24/15/15.
     const budgets: Record<string, number> = {
-      'demo-jake': 90 + 24 + 80 + 35 * 12 + 3 * 12 + 2 * 6,
-      'demo-miranda': 90 + 24 + 80 + 8 * 8 + 6 * 4,
-      'demo-casper': 90 + 24 + 3 * 5 + 3 * 3,
+      'demo-jake': 90 + 72 + 240 + 35 * 36 + 3 * 24 + 1 * 15 + 2 * 15,
+      'demo-miranda': 90 + 72 + 240 + 8 * 16 + 4 * 10 + 6 * 10,
+      'demo-casper': 90 + 72 + 3 * (11 + 7) + 3 * 6,
       'demo-sultan': 90,
     };
     for (const d of DEMO_CHARACTERS) {

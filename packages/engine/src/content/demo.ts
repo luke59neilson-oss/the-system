@@ -328,7 +328,16 @@ export function buildDemoEvents(ctx: DemoContext): DomainEvent[] {
         chooseOpenMenus(id, false);
         const archery = char(id).skills.find((s) => s.kind === 'class');
         const into = ARCHERY_BY_GRADE[target.id];
-        const unlock = target.id === rules.tracks.professionUnlockGrade;
+        // The demo's characters take their professions at the third grade's
+        // evolution (as the books' Jake did at E), or later if the rules
+        // unlock professions later (ME.1 offers them from the start).
+        const unlock =
+          char(id).profession === null &&
+          rules.grades.findIndex((g) => g.id === target.id) >=
+            Math.max(
+              2,
+              rules.grades.findIndex((g) => g.id === rules.tracks.professionUnlockGrade),
+            );
         run({
           type: 'evolution.release',
           characterId: id,
@@ -384,6 +393,7 @@ export function buildDemoEvents(ctx: DemoContext): DomainEvent[] {
         type: 'freePoints.override',
         characterId: id,
         raceLevel: batch.raceLevel,
+        ...(batch.track === undefined ? {} : { track: batch.track, trackLevel: batch.trackLevel }),
         allocation: spreadByWeights(char(id).classWeights, batch.points),
       });
     }

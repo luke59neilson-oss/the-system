@@ -210,14 +210,14 @@ describe('live protocol and authority', () => {
       type: 'freePoints.assign',
       characterId: 'casper',
       raceLevel: 1,
-      allocation: { strength: 2 },
+      allocation: { strength: 5 },
     });
     expect(cross).toMatchObject({ ok: false, error: expect.stringContaining('own character') });
     const own = await jake.command({
       type: 'freePoints.assign',
       characterId: 'jake',
       raceLevel: 1,
-      allocation: { strength: 2 },
+      allocation: { strength: 5 },
     });
     expect(own.ok).toBe(true);
 

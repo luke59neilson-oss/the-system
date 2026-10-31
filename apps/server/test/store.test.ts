@@ -85,7 +85,7 @@ const script: Command[] = [
     type: 'freePoints.assign',
     characterId: 'jake',
     raceLevel: 1,
-    allocation: { strength: 2 },
+    allocation: { strength: 5 },
   },
 ];
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { changeLog, execute, projectForPlayer, replay, type Campaign, type Command } from '../src';
-import { rawRules, run, testContext } from './helpers/events';
+import { preMeRules, run, testContext } from './helpers/events';
 
 // MT.7 (DESIGN §7 GM authority, Q60): where the engine enforces a rule on a
 // GM action, `override: true` takes the GM through it as a logged, undoable
@@ -8,7 +8,8 @@ import { rawRules, run, testContext } from './helpers/events';
 
 const ID = 'jake';
 const start = (): Command[] => [
-  { type: 'campaign.create', name: 'Whale', rules: rawRules() },
+  // Before ME (D300): professions from E-grade, so granting one at G is refused.
+  { type: 'campaign.create', name: 'Whale', rules: preMeRules() },
   {
     type: 'character.create',
     id: ID,

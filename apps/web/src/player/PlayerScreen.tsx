@@ -35,6 +35,8 @@ import {
 import {
   allocationText,
   assignedBatches,
+  batchKey,
+  batchName,
   remaining,
   spent,
   step,
@@ -702,8 +704,8 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
           <summary>Assigned points (locked)</summary>
           <ul>
             {locked.map((b) => (
-              <li key={b.raceLevel}>
-                Race level {b.raceLevel}: {allocationText(rules, b.allocation ?? {})}
+              <li key={batchKey(b)}>
+                {batchName(b)}: {allocationText(rules, b.allocation ?? {})}
                 {remaining(b) > 0 && ` (${remaining(b)} still to assign)`}
               </li>
             ))}

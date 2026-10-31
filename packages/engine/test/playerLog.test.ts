@@ -149,7 +149,7 @@ const SCENARIOS: Partial<Record<EventType, Scenario>> = {
       type: 'freePoints.assign',
       characterId: 'jake',
       raceLevel: 1,
-      allocation: { strength: 2 },
+      allocation: { strength: 5 },
     },
   },
   'freePoints.spent': {
@@ -161,13 +161,13 @@ const SCENARIOS: Partial<Record<EventType, Scenario>> = {
   'freePoints.overridden': {
     setup: [
       { type: 'xp.award', track: 'class', amount: 100, participants: [{ characterId: 'jake' }] },
-      { type: 'freePoints.assign', characterId: 'jake', raceLevel: 1, allocation: { strength: 2 } },
+      { type: 'freePoints.assign', characterId: 'jake', raceLevel: 1, allocation: { strength: 5 } },
     ],
     act: {
       type: 'freePoints.override',
       characterId: 'jake',
       raceLevel: 1,
-      allocation: { agility: 2 },
+      allocation: { agility: 5 },
     },
   },
   'system.broadcast': { act: { type: 'system.broadcast', text: 'Hi', characterIds: ['jake'] } },
@@ -550,7 +550,7 @@ describe('player notice audit (MU.2)', () => {
     );
     const r = execute(
       campaign,
-      { type: 'freePoints.assign', characterId: 'jake', raceLevel: 1, allocation: { strength: 2 } },
+      { type: 'freePoints.assign', characterId: 'jake', raceLevel: 1, allocation: { strength: 5 } },
       ctx,
     );
     if (!r.ok) throw new Error(r.error);

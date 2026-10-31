@@ -81,6 +81,13 @@ export type Command =
     }
   | { type: 'character.setPools'; characterId: string; pools: Readonly<Record<string, number>> }
   | { type: 'character.setStats'; characterId: string; stats: Readonly<Record<string, number>> }
+  | {
+      /** ME.1: what one level of a track grants this character; null resets it (D301). */
+      type: 'character.setDistribution';
+      characterId: string;
+      track: 'class' | 'profession' | 'race';
+      distribution: { stats: Readonly<Record<string, number>>; free: number } | null;
+    }
   /** GM only (MT.5): set levels, XP and grade directly; see `progressionOverride`. */
   | {
       type: 'character.setProgression';
@@ -113,6 +120,9 @@ export type Command =
       type: 'freePoints.assign';
       characterId: string;
       raceLevel: number;
+      /** ME.1: names a class or profession level's batch. */
+      track?: 'class' | 'profession' | undefined;
+      trackLevel?: number | undefined;
       allocation: Readonly<Record<string, number>>;
     }
   | {
@@ -128,6 +138,9 @@ export type Command =
       type: 'freePoints.override';
       characterId: string;
       raceLevel: number;
+      /** ME.1: names a class or profession level's batch. */
+      track?: 'class' | 'profession' | undefined;
+      trackLevel?: number | undefined;
       /** null unassigns the batch and unlocks it. */
       allocation: Readonly<Record<string, number>> | null;
     }
@@ -695,6 +708,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('titleDef.edit') }),
   z.object({ type: z.literal('character.setPools'), pools: anyRecord }),
   z.object({ type: z.literal('character.setStats'), stats: anyRecord }),
+  z.object({ type: z.literal('character.setDistribution'), track: z.string() }),
   z.object({ type: z.literal('character.setProgression'), xp: anyRecord }),
   z.object({
     type: z.literal('xp.award'),
@@ -1097,6 +1111,18 @@ function toEvent(
         type: 'character.statsSet',
         payload: { characterId: command.characterId, stats: command.stats },
       };
+    case 'character.setDistribution':
+      return {
+        type: 'character.distributionSet',
+        payload: {
+          characterId: command.characterId,
+          track: command.track,
+          distribution:
+            command.distribution === null
+              ? null
+              : { stats: { ...command.distribution.stats }, free: command.distribution.free },
+        },
+      };
     case 'character.setProgression':
       return {
         type: 'character.progressionSet',
@@ -1130,6 +1156,9 @@ function toEvent(
         payload: {
           characterId: command.characterId,
           raceLevel: command.raceLevel,
+          ...(command.track === undefined
+            ? {}
+            : { track: command.track, trackLevel: command.trackLevel }),
           allocation: command.allocation,
         },
       };
@@ -1144,6 +1173,9 @@ function toEvent(
         payload: {
           characterId: command.characterId,
           raceLevel: command.raceLevel,
+          ...(command.track === undefined
+            ? {}
+            : { track: command.track, trackLevel: command.trackLevel }),
           allocation: command.allocation,
         },
       };
