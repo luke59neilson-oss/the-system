@@ -284,7 +284,7 @@ on its `wip/` branch is finished, ahead of the remaining QF items.
 DESIGN §2, §4, §9, §9a. After MV, before QF: the first evolution comes up
 in the first session.
 
-- [ ] **ME.1 Every track grants stats.** Rules config gains per-grade
+- [x] **ME.1 Every track grants stats.** Rules config gains per-grade
   budgets for class, profession and race (DESIGN §4 defaults: G 8/5/5 …
   A 80/50/50) and a per-track distribution (whole points per stat plus free
   points, free points set per option); profession levels grant points;

@@ -232,8 +232,8 @@ export function RulesSettings({ client, state }: { client: LiveClient; state: Ca
             <p className="small" data-testid="track-budget-missing">
               {noDefault.length === 1 ? 'Grade' : 'Grades'} {noDefault.join(', ')}{' '}
               {noDefault.length === 1 ? 'has' : 'have'} no default budget and keep
-              {noDefault.length === 1 ? 's' : ''} the old numbers until you set its track budget
-              under Grades.
+              {noDefault.length === 1 ? 's' : ''} the old numbers until you set{' '}
+              {noDefault.length === 1 ? 'its' : 'their'} track budget under Grades.
             </p>
           )}
           {!switchChanges ? null : confirmSwitch ? (
