@@ -705,3 +705,12 @@ DESIGN/ROADMAP; do not re-apply them.
     settings; the switch applies from the next level-up and never changes
     points already granted. Default: as built (no automatic switch).
     Option: offer the switch once, on opening an old campaign.
+
+93. **What a level grants before the GM sets a distribution (ME.1, D301).**
+    Until ME.2 builds options with distributions, a character without one
+    uses: the class's stat weights for all of the class's points (no free
+    points), the class's shape for the profession's points (and for the
+    profession's share before there is a profession), and all free points for
+    the race (Human). The GM can set any track's points per level on a
+    character. Default: as built. Option: give the class 2 free points of its
+    8 at G (your example's split) when it has only weights.

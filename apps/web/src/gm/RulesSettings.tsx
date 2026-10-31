@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { CampaignState } from '@the-system/engine';
+import { withTrackBudgets, type CampaignState } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 
@@ -207,6 +207,30 @@ export function RulesSettings({ client, state }: { client: LiveClient; state: Ca
             onToggle={onToggle}
           />
         ),
+      )}
+      {state.rules.grades.some((g) => g.trackBudget === undefined) && (
+        <div className="track-budget-switch" data-testid="track-budget-switch">
+          <p className="small">
+            This campaign uses the stat numbers from before every track gave stats: class spread
+            plus free points per race level, and professions from{' '}
+            {state.rules.tracks.professionUnlockGrade}-grade. The new numbers give class, profession
+            and race their own points per level and offer professions from the start. Switching
+            applies from each character&apos;s next level-up; points already given stay as they are.
+          </p>
+          <button
+            type="button"
+            className="secondary"
+            disabled={dirty}
+            onClick={() =>
+              send(
+                { type: 'rules.set', rules: withTrackBudgets(state.rules) },
+                'Switched to the new stat budgets.',
+              )
+            }
+          >
+            Switch to the new stat budgets
+          </button>
+        </div>
       )}
       {badNumber && <p className="err">Every number field needs a number before saving.</p>}
       {error && (

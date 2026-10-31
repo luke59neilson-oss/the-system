@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
 import { openWindow } from './helpers/gmTabs';
+import { usePreMeRules } from './helpers/preMeRules';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M3.4 Free points: a player spreads points, reviews, confirms; assigned
@@ -81,6 +82,9 @@ test('a player assigns a free-point batch, which then locks', async ({ browser }
   await gm.getByLabel('Name', { exact: true }).fill('Jake');
   await gm.getByRole('button', { name: 'Create character' }).click();
   await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
+  // The batch mechanics with the numbers of a campaign created before ME
+  // (2 free points per race level; ME.1.spec covers the new budgets).
+  await usePreMeRules(gm, GM_KEY);
   // Two race levels: two batches of 2 points.
   await award(gm, 200);
 

@@ -125,17 +125,18 @@ test('status screens follow DESIGN §9 and update live', async ({ browser }) => 
   await expect(sultan.locator('dd.flash').filter({ has: sultan.getByTestId('class') })).toHaveCount(
     1,
   );
-  // The level's class spread and free points land too: stats, pool maximum,
-  // pool bar and free points, each glowing.
-  await expect(sultan.getByTestId('stat-endurance')).toContainText('1.1');
+  // The level's class points (with the profession's share, ME.1) and the
+  // race's free points land too: stats, pool maximum, pool bar and free
+  // points, each glowing.
+  await expect(sultan.getByTestId('stat-endurance')).toContainText('1.2');
   await expect(sultan.getByTestId('stat-endurance').locator('strong.flash')).toHaveCount(1);
   // A full pool stays full as the maximum rises (MQ.2, D100).
-  await expect(sultan.getByTestId('pool-stamina')).toHaveText('110/110');
+  await expect(sultan.getByTestId('pool-stamina')).toHaveText('120/120');
   await expect(sultan.getByTestId('pool-bar-stamina')).toHaveAttribute('style', /width: 100%/);
   await expect(
     sultan.locator('dd.flash').filter({ has: sultan.getByTestId('pool-stamina') }),
   ).toHaveCount(1);
-  await expect(sultan.getByTestId('free-points')).toHaveText('2');
+  await expect(sultan.getByTestId('free-points')).toHaveText('5');
   await expect(
     sultan.locator('dd.flash').filter({ has: sultan.getByTestId('free-points') }),
   ).toHaveCount(1);

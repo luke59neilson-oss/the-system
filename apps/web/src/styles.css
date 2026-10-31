@@ -3371,3 +3371,10 @@ ol.change-log li.undone .change-text {
   margin: 2px 0 0;
   white-space: pre-wrap;
 }
+
+/* ME.1: the switch to the new stat budgets for a campaign created before ME. */
+.track-budget-switch {
+  border-left: 3px solid var(--accent);
+  padding: 0.25rem 0 0.25rem 0.75rem;
+  margin: 0.75rem 0;
+}

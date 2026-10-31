@@ -178,9 +178,11 @@ from the next level-up.
     titles +10% and +5% → (100 + 20) × 1.15 = 138.
   - **No cap on title percentages** (Luke, Q42): titles are rare and hard
     to earn. The config may still set one, but the default is none.
-- Check values (all tracks leveling together, starting total 90):
-  total stats = 194 at level 14, 614 at level 49, 1,514 at 99, 2,864 at 149,
-  4,864 at 199, **7,324 at 240**.
+- Check values (all tracks leveling together, starting total 90, the table
+  above): total stats = 162 at level 4, 402 at 14, 1,662 at 49, 4,362 at 99,
+  8,412 at 149, 14,412 at 199, **21,792 at 240** (D301). A campaign on the
+  old numbers: 194 at 14, 614 at 49, 1,514 at 99, 2,864 at 149, 4,864 at 199,
+  7,324 at 240.
 
 ## 5. XP
 
