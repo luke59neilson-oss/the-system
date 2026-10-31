@@ -173,14 +173,17 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   /**
    * Session end (M4.3): back up the campaign and write the session report.
    * The end itself is already saved; a failure here is reported to the GM
-   * who ended it and logged, never undone.
+   * who ended it and logged, never undone. QF.54: the backup and the report
+   * each run in a later turn of the event loop, so phones get the end at
+   * once and no single step blocks the table for long.
    */
   const sessionEnded = (
     store: CampaignStore,
     events: readonly DomainEvent[],
     writer: SessionLogWriter | null,
-  ): string | null => {
+  ): string | null | Promise<string | null> => {
     const ended = events.find((e) => e.type === 'session.ended');
+    if (events.some((e) => e.type === 'session.started')) writer?.sessionStarted();
     if (!ended) {
       // An undo of a session's start or end changes what its file must say: rewrite it now.
       const undo = events.find((e) => e.type === 'event.undone');
@@ -195,24 +198,28 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       }
       return null;
     }
-    const problems: string[] = [];
     const number =
       store.campaign.state?.sessions.find((x) => x.id === ended.payload.sessionId)?.number ?? 0;
-    try {
-      store.backup(`session-${number}-end`);
-    } catch (error) {
-      app.log.error(error);
-      problems.push('the backup');
-    }
-    try {
-      writer?.flush();
-    } catch (error) {
-      app.log.error(error);
-      problems.push('the session report');
-    }
-    return problems.length
-      ? `Session ended, but ${problems.join(' and ')} could not be saved. ${seeLog}`
-      : null;
+    return (async () => {
+      const problems: string[] = [];
+      await nextTurn();
+      try {
+        store.backup(`session-${number}-end`);
+      } catch (error) {
+        app.log.error(error);
+        problems.push('the backup');
+      }
+      await nextTurn();
+      try {
+        writer?.flush();
+      } catch (error) {
+        app.log.error(error);
+        problems.push('the session report');
+      }
+      return problems.length
+        ? `Session ended, but ${problems.join(' and ')} could not be saved. ${seeLog}`
+        : null;
+    })();
   };
   let active = options.live ? openLive(options.live.store, options.live) : null;
   const opened = new Map<string, { store: CampaignStore; hub: LiveHub }>();
@@ -763,4 +770,9 @@ export function parseChangeLogQuery(query: unknown): ChangeLogQuery {
     kind,
     text: typeof q.text === 'string' ? q.text.slice(0, 200) : '',
   };
+}
+
+/** QF.54: resolves in a later turn of the event loop (after pending I/O). */
+function nextTurn(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
 }

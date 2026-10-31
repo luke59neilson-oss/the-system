@@ -147,9 +147,17 @@ describe('updateChangeLog and changeLogPage (QF.13)', () => {
     let undos = 0;
     for (let i = 0; i < 300; i++) {
       const undoable = c.events.filter((e) => e.type !== 'event.undone');
+      const roll = rand();
+      // QF.54: half the undos target the newest event (the incremental path).
       const command: Command =
-        rand() < 0.1 && undoable.length > 2
-          ? { type: 'event.undo', eventId: undoable[Math.floor(rand() * undoable.length)]!.id }
+        roll < 0.1 && undoable.length > 2
+          ? {
+              type: 'event.undo',
+              eventId:
+                roll < 0.05
+                  ? c.events.at(-1)!.id
+                  : undoable[Math.floor(rand() * undoable.length)]!.id,
+            }
           : randomCommand(rand, c);
       const r = execute(c, command, ctx);
       if (!r.ok) continue;
@@ -175,9 +183,26 @@ describe('updateChangeLog and changeLogPage (QF.13)', () => {
     if (!r.ok) throw new Error(r.error);
     const third = updateChangeLog(second, r.campaign);
     expect(third.rows.at(-1)!.undoneBy).toBe(r.campaign.events.at(-1)!.id);
-    expect(third.rows[0]).not.toBe(second.rows[0]);
+    // QF.54: undoing the newest event re-describes nothing else.
+    expect(third.rows[0]).toBe(second.rows[0]);
+    expect(third.rows).toEqual(changeLog(r.campaign));
+    // An older undo rebuilds.
+    c = run(
+      [
+        { type: 'system.broadcast', text: 'Two' },
+        { type: 'system.broadcast', text: 'Three' },
+      ],
+      ctx,
+      r.campaign,
+    );
+    const fourth = updateChangeLog(third, c);
+    const r2 = execute(c, { type: 'event.undo', eventId: c.events.at(-2)!.id }, ctx);
+    if (!r2.ok) throw new Error(r2.error);
+    const fifth = updateChangeLog(fourth, r2.campaign);
+    expect(fifth.rows[0]).not.toBe(fourth.rows[0]);
+    expect(fifth.rows).toEqual(changeLog(r2.campaign));
     const [other] = start();
-    expect(updateChangeLog(third, other).rows).toEqual(changeLog(other));
+    expect(updateChangeLog(fifth, other).rows).toEqual(changeLog(other));
   });
 
   it('serves a 10k-event log a bounded page at a time, newest first, filtered across the whole log', () => {

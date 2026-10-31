@@ -94,7 +94,13 @@ type ServerMessage =
   | { type: 'state'; seq: number; state: CampaignState | null }
   /** QF.52: the top-level keys of the GM's state that changed. */
   | { type: 'statePatch'; seq: number; set: Partial<CampaignState>; unset?: string[] }
-  | { type: 'notifications'; items: SeqNotification[]; reset?: true }
+  | {
+      type: 'notifications';
+      items: SeqNotification[];
+      reset?: true;
+      /** QF.54: an undo of the newest event: drop these seqs' notifications. */
+      undoneSeqs?: number[];
+    }
   /** `warning`: the change was saved, but something after it failed (e.g. a session-end backup). */
   | { type: 'result'; requestId: string; ok: true; warning?: string }
   | { type: 'result'; requestId: string; ok: false; error: string }
@@ -365,6 +371,13 @@ export class LiveClient {
           // An undo: the server's history replaces ours (undone DINGs vanish).
           for (const n of message.items) this.lastSeq = Math.max(this.lastSeq, n.seq);
           this.update({ notifications: message.items });
+          return;
+        }
+        if (message.undoneSeqs) {
+          const gone = new Set(message.undoneSeqs);
+          this.update({
+            notifications: this.snapshot.notifications.filter((n) => !gone.has(n.seq)),
+          });
           return;
         }
         const known = new Set(this.snapshot.notifications.map(keyOf));

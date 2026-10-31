@@ -42,9 +42,14 @@ export interface HubOptions {
   /**
    * Runs after a command's events are saved, before anyone is told (e.g. the
    * session-end backup and report, M4.3). Returns a warning for the acting
-   * client, or null. Must not throw.
+   * client, or null. Must not throw. QF.54: slow steps return a promise
+   * instead; everyone is told at once and the acting client's result waits
+   * for it, so the work never blocks the table.
    */
-  readonly afterAppend?: (store: CampaignStore, events: readonly DomainEvent[]) => string | null;
+  readonly afterAppend?: (
+    store: CampaignStore,
+    events: readonly DomainEvent[],
+  ) => string | null | Promise<string | null>;
   /**
    * Per-connection message budget for every socket but the GM's (QF.3): a
    * bucket of `burst` messages that refills at `perSecond`. Default
@@ -329,18 +334,25 @@ export class LiveHub {
         error instanceof EventRejectedError ? error.message : 'Could not save the change',
       );
     }
-    let warning: string | null;
+    const followUpFailed = 'The change was saved, but a follow-up step failed';
+    let warning: string | null | Promise<string | null>;
     try {
       warning = this.options.afterAppend?.(this.store, result.events) ?? null;
     } catch {
-      warning = 'The change was saved, but a follow-up step failed';
+      warning = followUpFailed;
     }
-    client.send({
-      type: 'result',
-      requestId: message.requestId,
-      ok: true,
-      ...(warning ? { warning } : {}),
-    });
+    const answer = (w: string | null) =>
+      client.send({
+        type: 'result',
+        requestId: message.requestId,
+        ok: true,
+        ...(w ? { warning: w } : {}),
+      });
+    if (warning instanceof Promise) {
+      warning.then(answer, () => answer(followUpFailed)).catch(() => undefined);
+    } else {
+      answer(warning);
+    }
     // Every command is one event (D44): its notifications share that event's seq.
     const event = result.events[result.events.length - 1];
     const after = this.store.campaign.state;
@@ -350,23 +362,35 @@ export class LiveHub {
       day: after?.day ?? 1,
       notification,
     }));
-    if (event?.type === 'event.undone') {
-      // Rebuild: the undone event's notifications must vanish from the history.
+    const undo = event?.type === 'event.undone';
+    // QF.54: undoing the newest event changes no other event's notifications,
+    // so only that event's leave the history, and clients get its seq.
+    const undoneSeq = undo ? this.newestUndoneSeq(event.payload.eventId) : null;
+    let dropped: SeqNotification[] = [];
+    if (undo && undoneSeq !== null) {
+      if (this.historyCache) {
+        dropped = this.historyCache.filter((n) => n.seq === undoneSeq);
+        this.historyCache = this.historyCache.filter((n) => n.seq !== undoneSeq);
+      }
+    } else if (undo) {
+      // Rebuild: the undone event's notifications must vanish from the history,
+      // and later events' notifications may read differently without it.
       this.historyCache = null;
     } else if (this.historyCache) {
       this.historyCache.push(...fresh);
     }
-    const undo = event?.type === 'event.undone';
     for (const other of this.clients) {
       if (other.role.role === 'none') continue;
       try {
-        if (undo) {
+        if (undo && undoneSeq === null) {
           // The undone event's DINGs leave every open history too.
           other.send({
             type: 'notifications',
             items: this.filter(other.role, this.history),
             reset: true,
           });
+        } else if (undo && this.filter(other.role, dropped).length > 0) {
+          other.send({ type: 'notifications', items: [], undoneSeqs: [undoneSeq as number] });
         }
         const mine = undo ? [] : this.filter(other.role, fresh);
         if (mine.length) other.send({ type: 'notifications', items: mine });
@@ -383,7 +407,8 @@ export class LiveHub {
         // every other client's whole view again.
         this.sendSnapshot(other, {
           // QF.52: the GM always gets a patch of what changed.
-          onlyIfChanged: other.role.role === 'gm' || (!undo && mine.length === 0),
+          onlyIfChanged:
+            other.role.role === 'gm' || (!(undo && undoneSeq === null) && mine.length === 0),
         });
       } catch {
         // One failing socket must not stop the others from updating.
@@ -439,6 +464,23 @@ export class LiveHub {
       client.lastView = null;
       client.send({ type: 'error', error: 'Your character no longer exists' });
     }
+  }
+
+  /**
+   * QF.54: the seq of `targetId` when the undo just appended targets the
+   * newest counted event, else null (a whole-history rebuild).
+   */
+  private newestUndoneSeq(targetId: string): number | null {
+    // Only undo markers and undone events may follow it ("undo, undo").
+    const { events, undone } = this.store.campaign;
+    for (let i = events.length - 2; i >= 0; i--) {
+      const e = events[i]!;
+      if (e.id === targetId) return i + 1;
+      if (e.type !== 'event.undone' && !Object.prototype.hasOwnProperty.call(undone, e.id)) {
+        return null;
+      }
+    }
+    return null;
   }
 
   private filter(role: Role, items: readonly SeqNotification[]): SeqNotification[] {
