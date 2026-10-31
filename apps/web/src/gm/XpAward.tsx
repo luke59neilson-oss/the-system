@@ -144,6 +144,7 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
       setAmount('');
       setReason('');
       setTyped({});
+      setResetNote('');
       setExcluded(new Set());
       setBonusOn(false);
       setEnemyLevel('');
@@ -259,6 +260,7 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
               disabled={!byHand}
               onClick={() => {
                 setTyped({});
+                setResetNote('');
                 setResult(null);
               }}
             >
