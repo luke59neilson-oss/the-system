@@ -350,23 +350,35 @@ export class LiveHub {
       day: after?.day ?? 1,
       notification,
     }));
-    if (event?.type === 'event.undone') {
-      // Rebuild: the undone event's notifications must vanish from the history.
+    const undo = event?.type === 'event.undone';
+    // QF.54: undoing the newest event changes no other event's notifications,
+    // so only that event's leave the history, and clients get its seq.
+    const undoneSeq = undo ? this.newestUndoneSeq(event.payload.eventId) : null;
+    let dropped: SeqNotification[] = [];
+    if (undo && undoneSeq !== null) {
+      if (this.historyCache) {
+        dropped = this.historyCache.filter((n) => n.seq === undoneSeq);
+        this.historyCache = this.historyCache.filter((n) => n.seq !== undoneSeq);
+      }
+    } else if (undo) {
+      // Rebuild: the undone event's notifications must vanish from the history,
+      // and later events' notifications may read differently without it.
       this.historyCache = null;
     } else if (this.historyCache) {
       this.historyCache.push(...fresh);
     }
-    const undo = event?.type === 'event.undone';
     for (const other of this.clients) {
       if (other.role.role === 'none') continue;
       try {
-        if (undo) {
+        if (undo && undoneSeq === null) {
           // The undone event's DINGs leave every open history too.
           other.send({
             type: 'notifications',
             items: this.filter(other.role, this.history),
             reset: true,
           });
+        } else if (undo && this.filter(other.role, dropped).length > 0) {
+          other.send({ type: 'notifications', items: [], undoneSeqs: [undoneSeq as number] });
         }
         const mine = undo ? [] : this.filter(other.role, fresh);
         if (mine.length) other.send({ type: 'notifications', items: mine });
@@ -383,7 +395,8 @@ export class LiveHub {
         // every other client's whole view again.
         this.sendSnapshot(other, {
           // QF.52: the GM always gets a patch of what changed.
-          onlyIfChanged: other.role.role === 'gm' || (!undo && mine.length === 0),
+          onlyIfChanged:
+            other.role.role === 'gm' || (!(undo && undoneSeq === null) && mine.length === 0),
         });
       } catch {
         // One failing socket must not stop the others from updating.
@@ -439,6 +452,15 @@ export class LiveHub {
       client.lastView = null;
       client.send({ type: 'error', error: 'Your character no longer exists' });
     }
+  }
+
+  /**
+   * QF.54: the seq of `targetId` when the undo just appended targets the
+   * event right before it (the newest), else null (a whole-history rebuild).
+   */
+  private newestUndoneSeq(targetId: string): number | null {
+    const events = this.store.campaign.events;
+    return events.at(-2)?.id === targetId ? events.length - 1 : null;
   }
 
   private filter(role: Role, items: readonly SeqNotification[]): SeqNotification[] {

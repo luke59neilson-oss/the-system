@@ -152,6 +152,14 @@ function hasEventId(events: readonly DomainEvent[], id: string): boolean {
   return events.some((e) => e.id === id);
 }
 
+/**
+ * QF.54: the state before the last event of an events array, recorded when
+ * that event was appended live. Undoing the newest event then needs no
+ * refold: the fold without it is the state it was applied to (states are
+ * never edited in place). Arrays loaded from disk have no entry and refold.
+ */
+const STATE_BEFORE_LAST = new WeakMap<readonly DomainEvent[], CampaignState | null>();
+
 /** A new array with `event` appended; it inherits the id index. */
 function extend(events: readonly DomainEvent[], event: DomainEvent): readonly DomainEvent[] {
   const index = idIndex(events);
@@ -191,14 +199,18 @@ export function appendEvent(campaign: Campaign, event: DomainEvent): Campaign {
   }
   checkEventAuthority(event);
   if (event.type !== 'event.undone') {
-    return {
-      ...campaign,
-      events: extend(campaign.events, event),
-      state: applyEvent(campaign.state, event),
-    };
+    const state = applyEvent(campaign.state, event);
+    const events = extend(campaign.events, event);
+    STATE_BEFORE_LAST.set(events, campaign.state);
+    return { ...campaign, events, state };
   }
   const target = checkUndoTarget(campaign, event);
   const undone = { ...campaign.undone, [target.id]: event.id };
+  if (campaign.events.at(-1) === target && STATE_BEFORE_LAST.has(campaign.events)) {
+    // QF.54: undoing the newest event: nothing later depends on it.
+    const state = STATE_BEFORE_LAST.get(campaign.events) ?? null;
+    return { events: extend(campaign.events, event), state, undone };
+  }
   let state: CampaignState | null;
   let after: ReturnType<typeof foldCountingLoss> | null = null;
   try {

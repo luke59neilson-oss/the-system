@@ -103,6 +103,11 @@ export type ServerMessage =
       items: readonly SeqNotification[];
       /** After an undo: `items` is the whole history and replaces what the client holds. */
       reset?: true;
+      /**
+       * QF.54: after an undo of the newest event, the client drops its
+       * notifications with these seqs (`items` is empty).
+       */
+      undoneSeqs?: readonly number[];
     }
   /** `warning`: the change was saved, but something after it failed (e.g. a session-end backup). */
   | { type: 'result'; requestId: string; ok: true; warning?: string }
