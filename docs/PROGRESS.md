@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-30): MU.5 (Cast) and MU.6 (reference lists) done and reviewed; milestone MU needs only MU.A.
-**Next item:** MU.A (full e2e suite green, `fable` review, then "Preview ready" per LOOP §8.2)
+**Status:** build complete (2026-10-31): MU.A done and reviewed (fable); every box checked except deferred M9.4; `docs/DONE.md` written. Preview ready: Actions → Release → Run workflow (milestone MU).
+**Next item:** none (DONE.md exists; delete it after adding roadmap items or answers to resume runs)
 **Blockers:** none
 
 ## Run log
@@ -1347,3 +1347,12 @@ next item, blockers. -->
 - Tests: unit 1,665 (was 1,651). e2e run locally: MU.1–MU.6, M8.3, MD.*, MC.2, MC.10 (16 passed); the full suite was not run locally this run (CI runs it on the push); MU.A runs it in full. Engine coverage not re-measured.
 - Open `wip/*`: none in progress (`wip/MU.5`, `wip/MU.6` merged).
 - Next: MU.A. Blockers: none.
+
+### Run · 2026-10-31 00:09–00:54 UTC (close-out at minute 43; end minute 45; reason: `docs/DONE.md` written, no unblocked item left)
+- Preflight: `add_repo` not offered; repo already cloned and in scope; lock pushed cleanly; vitest 5.0.5; sonnet and fable reviewers work (blocking Agent calls, worktree). CI green on main (b17b1d87). No new answers.
+- Efficiency check (hour 00): scorecard row appended (end 48.8, items 1.3, round-2 7/10, Highs 0, red/day 5). Auditor (sonnet): D264 Kept (D274); no Tier 1 applied; Q87 (read DESIGN.md by section) put to Luke, default no change.
+- MU.A finished: `e2e/MU.A.spec.ts` walks one table round across MU.1–MU.6 (home dashboard, spell made in the library, cast from the phone, home "practice to review" link, award box worth, running log and View as, reference search) with a phone and second-player canary; screenshots in `docs/screens/MU.A/`. Fable round 1: 0 High, 2 Medium (M11.3 latency red in the local full run; GM-only quest edits notified players), fixed/explained (D273; M11.3 is a load flake: pre-MU commit flips too, logged in QUALITY Flakes); round 2: 0 High, 0 Medium, 1 Low. Lows to the Backlog.
+- Tests: unit 1,666 (was 1,665). Full local e2e: e2e project 135/135 green; latency project M11.3 1366×768 failed under load (2,158 ms), passes quiet (1,825 / 1,847 ms). Engine coverage not re-measured.
+- Open `wip/*`: `wip/MU.A` merged to main.
+- Next: none; DONE.md written. Preview ready: Actions → Release → Run workflow (MU). Blockers: none.
+

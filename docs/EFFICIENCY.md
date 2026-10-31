@@ -20,10 +20,10 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
-| D264 `npm run orient` prints LOOP §4's targeted reads (PROGRESS header and last entry, ROADMAP global rules and open milestones, unanswered QUESTIONS, L-entries) (Tier 1, helper script) | 2026-10-30 18:09 | orient words 10,629 → ~6,000 | end 48.2, items 1.2 | Highs 3, round-2 share 4/10, red/day 2 | 2026-10-30 18:00 + 6 runs |
 
 ## Kept
 
+- D264 `npm run orient` (2026-10-30 18:09, D274): the word target could not move (the metric already modelled the targeted reads; the script prints ~3.7k words; required full reads floor ~8k); kept for one consistent command instead of several reads. Guards: Highs 3 → 0; round-2 4/10 → 7/10 (item-specific Mediums); red/day 2 → 5 (one M3.7 toast cluster, fixed by 492127d2).
 - D248 measured close-out (2026-10-26 13:00, D263): end minute 43.7 → 48.2, items/run flat at 1.2, guards flat (Highs 3, round-2 share 4/10, red/day 4 → 2).
 - D234 metrics count review rounds per item (2026-10-26 06:58, D257): round-2 share and Highs read per item again (4/10, 3); items/run 1.7 → 1.8, end minute 44.2 → 44.8; guards flat.
 - D211 "nothing small fits" is not a reason to stop (2026-10-25 18:48, D234):
@@ -69,6 +69,8 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   and D132's CI red/day guard too (7 → 10), so §9.2 reverts both.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-10-31 00:09 auditor (sonnet): D264 Kept (D274). Tier 1 not applied: read DESIGN.md by section (trims a required full read of the rules; put to Luke as Q87, default no change); a presubmit check rejecting raw toast waits in e2e specs outside the toast helper (needs a spec audit first; may come at a later check). Housekeeping idea: have `orientWords` count the real `npm run orient` output.
 
 - 2026-10-30 18:09 auditor (sonnet): Tier 1 applied: `npm run orient` (D264; orient words 10.6k → ~6k, items/run +0–0.1). Tier 2 (Q83): run CI on `wip/**` pushes with e2e in 2 shards, and accept a green CI run on the pushed wip SHA in place of a full local e2e at close-out and `Mx.A` (local full runs keep getting cut off on 2 CPUs and compete with reviewers; costs Actions minutes). Default: no change. Judged: D248 Kept (D263); the auditor notes the end-minute gain comes mostly from long hand-offs and full-e2e tails, not extra items.
 

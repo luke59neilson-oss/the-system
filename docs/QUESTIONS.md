@@ -654,3 +654,10 @@ DESIGN/ROADMAP; do not re-apply them.
     editing a CSV, `npm run reference` (or the next build run) brings the app
     up to date. Default: as described. Options: more or fewer examples; let
     the co-DM reuse book names as-is.
+
+87. **Read DESIGN.md by section instead of whole each run? (efficiency, 2026-10-31 auditor).**
+    DESIGN.md is ~4,900 words, 40–45% of what a run reads before building.
+    Proposal: read its headings and the sections the item touches; read it
+    whole only for rules changes and sweeps (reviewers still check against
+    DESIGN). Saves ~5k tokens and a few minutes per run; risk: a missed rule
+    in another section. Default: no change (DESIGN.md read in full).
