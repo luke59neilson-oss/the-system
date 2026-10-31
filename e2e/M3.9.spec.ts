@@ -3,10 +3,11 @@ import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
-// M3.9 Identify: choose a known entity and read the tier text the
-// character's own Identify rarity unlocks. The demo trains Casper's Identify to
-// Uncommon, so he reads "[Fever]" where Miranda (Common) reads
-// "[Malignant Miasma]"; the Drum is known to nobody until the GM reveals it.
+// M3.9 Identify, as the player's Bestiary since MV.3 (DESIGN §7): each
+// entity has one Identify text, and a player sees only what the GM marked
+// identified for them. Casper knows the miasma and the hunter, Miranda only
+// the miasma; the Drum is known to nobody until the GM reveals it. The
+// demo's older deeper tiers sit in the GM's notes and never reach a phone.
 
 const GM_KEY = 'e2e-gm-key-m39-0123456789abcdef';
 const shots = path.resolve(import.meta.dirname, '../docs/screens/M3.9');
@@ -64,11 +65,11 @@ async function gmCommand(gm: Page, command: Record<string, unknown>): Promise<vo
 }
 
 /** GM-only text from the demo: GM names, deeper tiers and the unrevealed Drum. */
-const GM_ONLY = ['immune', 'Immune', 'The Host’s Response', 'whale’s heart'];
+const GM_ONLY = ['immune', 'Immune', 'The Host’s Response', 'whale’s heart', '[Fever]'];
 /** The Drum's tier: nobody may receive it before the GM reveals it. */
 const DRUM_TIER = 'Heart of the World';
 
-test('players Identify known entities at their own tier, live', async ({ browser }) => {
+test('players read the entities they know in their bestiary, live', async ({ browser }) => {
   const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const gmErrors = watchErrors(gm);
   gm.on('dialog', (d) => void d.accept());
@@ -84,7 +85,7 @@ test('players Identify known entities at their own tier, live', async ({ browser
   await laptop.goto(server.url);
   await laptop.getByRole('link', { name: /Casper/ }).click();
   const panel = laptop.getByTestId('identify');
-  const targets = panel.getByRole('group', { name: 'Choose what to Identify' });
+  const targets = panel.getByRole('group', { name: 'Uncategorized' });
   await expect(targets.getByRole('button')).toHaveText(['The black miasma', 'Pale hunter']);
   await expect(panel.getByTestId('identify-text')).toHaveCount(0);
   await targets.getByRole('button', { name: 'The black miasma' }).click();
@@ -92,13 +93,15 @@ test('players Identify known entities at their own tier, live', async ({ browser
     'aria-pressed',
     'true',
   );
-  await expect(panel.getByTestId('identify-text')).toHaveText(/^\[Fever\]\s+The world runs hotter/);
+  await expect(panel.getByTestId('identify-text')).toHaveText(
+    /^\[Malignant Miasma\]\s+A corrupting energy/,
+  );
   await panel.scrollIntoViewIfNeeded();
   await laptop.screenshot({ path: path.join(shots, 'player-identify-1366x768.png') });
   await targets.getByRole('button', { name: 'Pale hunter' }).click();
-  await expect(panel.getByTestId('identify-text')).toContainText('It does not hunt for food.');
+  await expect(panel.getByTestId('identify-text')).toHaveText('[Pale Hunter – lvl 14]');
 
-  // Miranda (Identify Common) knows only the miasma, and reads the first tier.
+  // Miranda knows only the miasma, and reads the same single text.
   const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const phoneErrors = watchErrors(phone);
   const mirandaFrames = watchFrames(phone);
@@ -147,12 +150,11 @@ test('players Identify known entities at their own tier, live', async ({ browser
     type: 'entity.edit',
     entityId: 'demo-curse',
     label: 'Black fog',
-    tiers: [
-      { minRarity: 'common', text: '[Malignant Miasma]' },
-      { minRarity: 'uncommon', text: '[Fever]\nIt is getting warmer.' },
-    ],
+    tiers: [{ minRarity: 'common', text: '[Malignant Miasma]\nIt is getting warmer.' }],
   });
-  await expect(phonePanel.getByTestId('identify-text')).toHaveText('[Malignant Miasma]');
+  await expect(phonePanel.getByTestId('identify-text')).toHaveText(
+    /^\[Malignant Miasma\]\s+It is getting warmer\.$/,
+  );
   await expect(phonePanel.getByRole('button', { name: 'Black fog' })).toHaveAttribute(
     'aria-pressed',
     'true',
@@ -160,14 +162,11 @@ test('players Identify known entities at their own tier, live', async ({ browser
   await targets.getByRole('button', { name: 'Black fog' }).click();
   await expect(panel.getByTestId('identify-text')).toContainText('It is getting warmer.');
 
-  // No player frame ever carried GM-only text; Miranda never got Casper's tier or hunter.
+  // No player frame ever carried GM-only text; Miranda never got the hunter.
   for (const frame of [...casperFrames, ...mirandaFrames]) {
     for (const secret of GM_ONLY) expect(frame).not.toContain(secret);
   }
-  for (const frame of mirandaFrames) {
-    expect(frame).not.toContain('[Fever]');
-    expect(frame).not.toContain('Pale hunter');
-  }
+  for (const frame of mirandaFrames) expect(frame).not.toContain('Pale hunter');
   for (const frame of [...casperFrames, ...mirandaFrames.slice(0, beforeReveal)]) {
     expect(frame).not.toContain(DRUM_TIER);
   }

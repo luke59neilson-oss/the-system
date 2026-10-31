@@ -55,7 +55,7 @@ test('a sample encounter end to end; stability reaches players only when shown',
   await bestiary.getByLabel('Grade').selectOption('G');
   await bestiary.getByLabel('Level').fill('2');
   await bestiary.getByLabel('Agility').fill('17');
-  await bestiary.getByLabel('Common', { exact: true }).fill('[A pale shape]');
+  await bestiary.getByLabel(/^Identify text/).fill('[A pale shape]');
   await bestiary.getByRole('button', { name: 'Add entry' }).click();
 
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });

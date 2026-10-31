@@ -7,7 +7,7 @@ import { startBuiltServer, type RunningServer } from './helpers/server';
 // MQ.12 Skill library rules (DESIGN §6, L4): entries are keyed by name and
 // rarity, so an upgrade picks up the higher rarity's text; a library edit
 // reaches every copy the GM has not edited by hand; a skill's effects reach
-// its owner only.
+// its owner only. (MV.3: Identify never changes, so Archer’s Eye upgrades.)
 
 const GM_KEY = 'e2e-gm-key-mq12-0123456789abcdef';
 const CANARY = 'OWNER-ONLY-EFFECTS-CANARY-MQ12';
@@ -91,17 +91,17 @@ test('upgrades take the next rarity’s text; edits propagate; effects stay with
   const library = gm.locator('section[aria-labelledby="skill-library"]');
   const add = library.getByRole('button', { name: 'Add to library' });
   await openWindow(gm, 'skill-library');
-  await library.getByLabel('Official name').fill('Identify');
+  await library.getByLabel('Official name').fill('Archer’s Eye');
   await library.getByLabel('Rarity').selectOption({ label: 'Common' });
   await library.getByLabel('Description (players see this)').fill('Common: learn a name.');
   await add.click();
-  await expect(library.getByRole('status')).toHaveText('[Identify] added to the library');
-  await library.getByLabel('Official name').fill('Identify');
+  await expect(library.getByRole('status')).toHaveText('[Archer’s Eye] added to the library');
+  await library.getByLabel('Official name').fill('Archer’s Eye');
   await library.getByLabel('Rarity').selectOption({ label: 'Uncommon' });
   await library.getByLabel('Description (players see this)').fill('Uncommon: learn a nature.');
   await library.getByLabel('Effects (only the skill’s owner sees this)').fill(CANARY);
   await add.click();
-  await expect(library.getByRole('status')).toHaveText('[Identify] added to the library');
+  await expect(library.getByRole('status')).toHaveText('[Archer’s Eye] added to the library');
   const list = library.getByRole('list', { name: 'Library skills' });
   await expect(list.getByRole('listitem')).toHaveCount(2);
 
@@ -129,7 +129,7 @@ test('upgrades take the next rarity’s text; edits propagate; effects stay with
   const jakeErrors = watchErrors(jake);
   await jake.goto(server.url);
   await jake.getByRole('link', { name: /Jake/ }).click();
-  await jake.getByRole('button', { name: /\[Identify \(Common\)\]/ }).click();
+  await jake.getByRole('button', { name: /\[Archer’s Eye \(Common\)\]/ }).click();
   const detail = jake.getByTestId('skill-detail');
   await expect(detail.getByTestId('skill-detail-description')).toHaveText('Common: learn a name.');
   await expect(detail.getByTestId('skill-detail-effects')).toHaveCount(0);
@@ -139,7 +139,7 @@ test('upgrades take the next rarity’s text; edits propagate; effects stay with
   const kimFrames = watchFrames(kim);
   await kim.goto(server.url);
   await kim.getByRole('link', { name: /Kim/ }).click();
-  await expect(kim.getByRole('button', { name: /\[Identify \(Common\)\]/ })).toBeVisible();
+  await expect(kim.getByRole('button', { name: /\[Archer’s Eye \(Common\)\]/ })).toBeVisible();
 
   // Jake earns 4 marks and upgrades: his copy takes the Uncommon entry's text
   // and effects, live, while the dialog stays open.
@@ -147,17 +147,17 @@ test('upgrades take the next rarity’s text; edits propagate; effects stay with
     await gmCommand(gm, {
       type: 'skill.awardMark',
       characterId: 'jake',
-      skill: 'Identify',
+      skill: 'Archer’s Eye',
       session: `mq12-s${s}`,
     });
   }
-  await gmCommand(gm, { type: 'skill.upgrade', characterId: 'jake', skill: 'Identify' });
+  await gmCommand(gm, { type: 'skill.upgrade', characterId: 'jake', skill: 'Archer’s Eye' });
   await expect(detail.getByTestId('skill-detail-description')).toHaveText(
     'Uncommon: learn a nature.',
   );
   await expect(detail.getByTestId('skill-detail-effects')).toHaveText(CANARY);
   await expect(
-    jake.getByTestId('skills-race').getByRole('button', { name: /\[Identify \(Uncommon\)\]/ }),
+    jake.getByTestId('skills-class').getByRole('button', { name: /\[Archer’s Eye \(Uncommon\)\]/ }),
   ).toBeVisible();
   await noSidewaysScroll(jake);
   await jake.screenshot({ path: path.join(shots, 'player-upgraded-1366x768.png') });
@@ -165,18 +165,18 @@ test('upgrades take the next rarity’s text; edits propagate; effects stay with
   // The GM edits the Uncommon entry in the library form: Jake's open dialog
   // follows; Kim's Common copy does not change.
   await openWindow(gm, 'skill-library');
-  await list.getByRole('button', { name: /\[Identify\].*\(Uncommon\)/ }).click();
+  await list.getByRole('button', { name: /\[Archer’s Eye\].*\(Uncommon\)/ }).click();
   await library
     .getByLabel('Description (players see this)')
     .fill('Uncommon, revised: learn a nature and a weakness.');
   await library.getByRole('button', { name: 'Save changes' }).click();
-  await expect(library.getByRole('status')).toHaveText('[Identify] saved');
+  await expect(library.getByRole('status')).toHaveText('[Archer’s Eye] saved');
   await expect(detail.getByTestId('skill-detail-description')).toHaveText(
     'Uncommon, revised: learn a nature and a weakness.',
   );
   await gm.screenshot({ path: path.join(shots, 'gm-library-1366x768.png'), fullPage: true });
 
-  await kim.getByRole('button', { name: /\[Identify \(Common\)\]/ }).click();
+  await kim.getByRole('button', { name: /\[Archer’s Eye \(Common\)\]/ }).click();
   await expect(kim.getByTestId('skill-detail-description')).toHaveText('Common: learn a name.');
   await expect(kim.getByTestId('skill-detail-effects')).toHaveCount(0);
 
@@ -186,8 +186,8 @@ test('upgrades take the next rarity’s text; edits propagate; effects stay with
   await phone.goto(server.url);
   await phone.getByRole('link', { name: /Jake/ }).click();
   await phone
-    .getByTestId('skills-race')
-    .getByRole('button', { name: /\[Identify \(Uncommon\)\]/ })
+    .getByTestId('skills-class')
+    .getByRole('button', { name: /\[Archer’s Eye \(Uncommon\)\]/ })
     .click();
   await expect(phone.getByTestId('skill-detail-effects')).toHaveText(CANARY);
   await noSidewaysScroll(phone);
