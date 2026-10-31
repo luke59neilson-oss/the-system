@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
 import { openWindow } from './helpers/gmTabs';
+import { usePreMeRules } from './helpers/preMeRules';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MV.1 Assign any number of free points at once (DESIGN §4, L25): one panel
@@ -55,6 +56,9 @@ test('three waiting level-ups in one confirm; another player keeps points back',
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Points At Once');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  // The free-point numbers of a campaign created before ME (D300; ME.1.spec
+  // covers the new budgets).
+  await usePreMeRules(gm, GM_KEY);
   await addCharacter(gm, 'Jake');
   await addCharacter(gm, 'Kim');
   // 600 XP shared by both: 300 each, three class levels, three level-ups of 2.

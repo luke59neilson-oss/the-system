@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
 import { openWindow } from './helpers/gmTabs';
+import { usePreMeRules } from './helpers/preMeRules';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MT.7 (DESIGN §7 GM authority, Q60): where the app enforces a rule on the GM,
@@ -66,6 +67,9 @@ async function setUp(gm: Page, campaign: string) {
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill(campaign);
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  // Before ME (D300): professions from E-grade, so granting one at G needs the
+  // override this spec exercises.
+  await usePreMeRules(gm, GM_KEY);
   await gmCommand(gm, {
     type: 'character.create',
     id: 'jake',
