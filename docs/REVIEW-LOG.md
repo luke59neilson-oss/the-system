@@ -1204,3 +1204,5 @@
 - Low: the GM's "Assigned free points" list did not mark a partly used level-up. Fixed: "(rest still open)".
 - Low (kept): "Assigned points (locked)" also lists partly used level-ups, each marked "(N still to assign)"; the GM notice wording applies to GM-issued spends only (player events give no GM notice).
 
+
+- 2026-10-31 · MV.2 XP shares by percent · sonnet, 2 rounds (worktree at 68a68c3b, then ac0d0686). Round 1: 0 High, 2 Medium: (1) the exact even split (334/333/333) jumped to 340/330/330 when the GM retyped the shown 34; (2) ticking a participant silently dropped typed percentages. Fixes: the exact split applies whenever the percentages equal the even ones, typed or not, with an "Even split: the XP is divided exactly evenly" note (D296 revised; the literal 34% of "Use for 3" would lose XP); ticking says when typed values were reset; e2e asserts both. Round 2: no High or Medium; Low (the reset note lingered after Even split or an award) fixed. Lows left: "Total ?%" while a box is blank; terse "Jake's %" label; the screenshot is an element crop named 1366x768.
