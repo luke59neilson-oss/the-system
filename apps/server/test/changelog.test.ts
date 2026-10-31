@@ -100,6 +100,48 @@ describe('GET /api/gm/changelog (QF.13)', () => {
   });
 });
 
+describe('GET /api/gm/changelog/undo-preview (QF.40)', () => {
+  it('is GM-only, says what an undo changes, says why one is refused, and saves nothing', async () => {
+    const { app, apply } = await setup();
+    expect((await app.inject({ url: '/api/gm/changelog/undo-preview?id=e1' })).statusCode).toBe(
+      403,
+    );
+    const preview = async (id: string) =>
+      (
+        await app.inject({
+          url: `/api/gm/changelog/undo-preview?id=${id}`,
+          headers: { 'x-gm-key': KEY },
+        })
+      ).json<{ ok: boolean; changes?: string[]; error?: string }>();
+    const award = (amount: number): Command => ({
+      type: 'xp.award',
+      track: 'class',
+      amount,
+      participants: [{ characterId: 'jake' }],
+    });
+    apply(award(200)); // e3: class 2
+    expect(await preview('e3')).toEqual({ ok: true, changes: ['Jake: class 2 → 0, race 2 → 0'] });
+    apply(award(200)); // e4: class 4, top of G
+    apply({
+      type: 'evolution.release',
+      characterId: 'jake',
+      options: [{ className: 'Hunter' }],
+      rerateApproved: true,
+      override: true,
+    });
+    apply({ type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    apply(award(900));
+    const chosen = 'e6';
+    const refused = await preview(chosen);
+    expect(refused.ok).toBe(false);
+    expect(refused.error).toContain('Jake would lose 900 XP (class 7 → 4)');
+    expect(
+      (await app.inject({ url: '/api/gm/changelog/undo-preview', headers: { 'x-gm-key': KEY } }))
+        .statusCode,
+    ).toBe(400);
+  });
+});
+
 describe('parseChangeLogQuery', () => {
   it('keeps valid values and drops anything else', () => {
     expect(

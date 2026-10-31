@@ -202,6 +202,7 @@ refusal is raised.
 | `Event … (event.undone): …` | packages/engine/src/events/log.ts:93 | Fix the input or define the thing first |
 | `Event …: duplicate event id` | packages/engine/src/events/log.ts:111 | Fix the input or define the thing first |
 | `Event … (event.undone): cannot undo … (…) because a later event depends on it: …` | packages/engine/src/events/log.ts:128 | Fix the input or define the thing first |
+| `Cannot undo … (…): later XP awards would be lost at the old level cap: …. Undo those awards first, or set levels with an override` | packages/engine/src/events/log.ts:106 | Undo the later XP awards first (newest first), or set the levels you want with **Review override** (QF.40) |
 | `Event …: a log upcaster dropped it` | packages/engine/src/events/log.ts:169 | Fix the input or define the thing first |
 | `Event …: a log upcaster must keep the original id on the first event` | packages/engine/src/events/log.ts:171 | Fix the input or define the thing first |
 | `Line …: not valid JSON` | packages/engine/src/events/log.ts:330 | Fix the input or define the thing first |

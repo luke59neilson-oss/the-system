@@ -8,6 +8,7 @@ import {
   buildDemoEvents,
   changeLogPage,
   portraitUrl,
+  undoPreview,
   updateChangeLog,
   type ChangeLogCache,
   type ChangeLogQuery,
@@ -427,6 +428,17 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     const cache = updateChangeLog(changeLogs.get(store) ?? null, store.campaign);
     changeLogs.set(store, cache);
     return changeLogPage(cache.rows, parseChangeLogQuery(request.query));
+  });
+
+  // QF.40: what an undo would change in each character's levels, for the
+  // change log's confirm (a dry run on the campaign value; nothing is saved).
+  app.get('/api/gm/changelog/undo-preview', (request, reply) => {
+    if (!active) return reply.code(404).send({ error: 'No campaign open' });
+    const id = (request.query as { id?: unknown }).id;
+    if (typeof id !== 'string' || id === '' || id.length > 200) {
+      return reply.code(400).send({ error: 'Send ?id=<event id>' });
+    }
+    return undoPreview(active.store.campaign, id, options.live?.now() ?? new Date().toISOString());
   });
 
   app.get('/api/gm/export', () => {

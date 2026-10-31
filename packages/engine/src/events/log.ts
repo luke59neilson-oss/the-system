@@ -9,6 +9,7 @@ import {
 } from './envelope';
 import { CAMPAIGN_STATE_SCHEMA_VERSION, applyEvent, type CampaignState } from './reducer';
 import { RULES_CONFIG_VERSION } from '../rules';
+import { awardXp, shareXp } from '../progression';
 
 /**
  * An event log and the state it folds to. Undo is a compensating
@@ -37,6 +38,84 @@ function fold(events: readonly DomainEvent[]): CampaignState | null {
   let state: CampaignState | null = null;
   for (const event of events) state = applyEvent(state, event);
   return state;
+}
+
+/**
+ * QF.40: folds `events`, counting per character the XP that the `xp.awarded`
+ * events in `later` lose to level caps (DESIGN §2: XP nothing can use is lost).
+ */
+function foldCountingLoss(
+  events: readonly DomainEvent[],
+  later: ReadonlySet<string>,
+): { state: CampaignState | null; lost: Map<string, number> } {
+  let state: CampaignState | null = null;
+  const lost = new Map<string, number>();
+  for (const event of events) {
+    if (event.type === 'xp.awarded' && state !== null && later.has(event.id)) {
+      const { track, shares, enemyLevel, enemyGrade } = event.payload;
+      for (const { characterId, share, raceLevel } of shares) {
+        const character = Object.hasOwn(state.characters, characterId)
+          ? state.characters[characterId]
+          : undefined;
+        if (!character) continue;
+        try {
+          const gained = shareXp(state.rules, character, share, enemyLevel, enemyGrade, raceLevel);
+          const r = awardXp(state.rules, character, track, gained).lost;
+          if (r > 0) lost.set(characterId, (lost.get(characterId) ?? 0) + r);
+        } catch {
+          // applyEvent below reports a share that no longer applies.
+        }
+      }
+    }
+    state = applyEvent(state, event);
+  }
+  return { state, lost };
+}
+
+/**
+ * QF.40 (D31): a non-latest undo is refused when later XP awards would lose
+ * more XP to level caps than they do now (an undone evolution or level set
+ * puts the cap back), naming the levels the character would drop to.
+ */
+function checkNoXpLoss(
+  campaign: Campaign,
+  target: DomainEvent,
+  after: { state: CampaignState | null; lost: Map<string, number> },
+): void {
+  if (after.lost.size === 0) return;
+  const later = laterIds(campaign.events, target.id);
+  const before = foldCountingLoss(effectiveEvents(campaign.events, campaign.undone), later);
+  const losses: string[] = [];
+  for (const [id, n] of after.lost) {
+    if (n <= (before.lost.get(id) ?? 0)) continue;
+    const was = campaign.state?.characters[id];
+    const now = after.state?.characters[id];
+    if (!was || !now) continue;
+    const drops = [
+      `class ${was.classLevel} → ${now.classLevel}`,
+      ...(was.professionLevel !== now.professionLevel
+        ? [`profession ${was.professionLevel} → ${now.professionLevel}`]
+        : []),
+    ];
+    losses.push(
+      `${was.name} would lose ${n - (before.lost.get(id) ?? 0)} XP (${drops.join(', ')})`,
+    );
+  }
+  if (losses.length > 0) {
+    throw new EventRejectedError(
+      `Cannot undo ${target.id} (${target.type}): later XP awards would be lost at the old level cap: ${losses.join('; ')}. Undo those awards first, or set levels with an override`,
+    );
+  }
+}
+
+function laterIds(events: readonly DomainEvent[], id: string): Set<string> {
+  const out = new Set<string>();
+  for (let i = events.length - 1; i >= 0; i--) {
+    const e = events[i] as DomainEvent;
+    if (e.id === id) break;
+    out.add(e.id);
+  }
+  return out;
 }
 
 /** Latest-first lookup: undo targets are usually recent. */
@@ -121,14 +200,22 @@ export function appendEvent(campaign: Campaign, event: DomainEvent): Campaign {
   const target = checkUndoTarget(campaign, event);
   const undone = { ...campaign.undone, [target.id]: event.id };
   let state: CampaignState | null;
+  let after: ReturnType<typeof foldCountingLoss> | null = null;
   try {
-    state = fold(effectiveEvents(campaign.events, undone));
+    const later = laterIds(campaign.events, target.id);
+    if (campaign.events.some((e) => e.type === 'xp.awarded' && later.has(e.id))) {
+      after = foldCountingLoss(effectiveEvents(campaign.events, undone), later);
+      state = after.state;
+    } else {
+      state = fold(effectiveEvents(campaign.events, undone));
+    }
   } catch (error) {
     if (!(error instanceof EventRejectedError)) throw error;
     throw new EventRejectedError(
       `Event ${event.id} (event.undone): cannot undo ${target.id} (${target.type}) because a later event depends on it: ${error.message}`,
     );
   }
+  if (after !== null) checkNoXpLoss(campaign, target, after);
   return { events: extend(campaign.events, event), state, undone };
 }
 

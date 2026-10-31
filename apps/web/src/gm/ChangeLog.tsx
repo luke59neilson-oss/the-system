@@ -25,6 +25,11 @@ const KIND_LABELS: Readonly<Record<ChangeLogCategory, string>> = {
 
 /** Undo refusals in the GM's words; never ids or event types. */
 export function undoError(error: string): string {
+  // QF.40: an undo that would lose later XP at an old level cap says whose.
+  const lost = /level cap: (.*?)\. Undo those awards first/.exec(error);
+  if (lost) {
+    return `Can't undo this: ${lost[1]}. Undo the later XP awards first, or set levels with an override.`;
+  }
   if (error.includes('because a later event depends on it')) {
     return "Can't undo this: a later change depends on it. Undo the later changes first.";
   }
@@ -119,6 +124,29 @@ export function ChangeLog({
   const [kind, setKind] = useState<'all' | ChangeLogCategory>('all');
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
+  // QF.40: what the undo being confirmed would change in levels, or why it is refused.
+  const [preview, setPreview] = useState<{
+    id: string;
+    changes: readonly string[];
+    error: string | null;
+  } | null>(null);
+  const startConfirm = (id: string) => {
+    setConfirming(id);
+    setPreview(null);
+    void fetch(`/api/gm/changelog/undo-preview?id=${encodeURIComponent(id)}`, {
+      headers: { 'x-gm-key': gmKey },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p: { ok: boolean; changes?: string[]; error?: string } | null) => {
+        if (p === null) return;
+        setPreview({
+          id,
+          changes: p.ok ? (p.changes ?? []) : [],
+          error: p.ok ? null : undoError(p.error ?? ''),
+        });
+      })
+      .catch(() => undefined);
+  };
   const [loadError, setLoadError] = useState(false);
   const text = filter.trim();
   const filterKey = `${who}|${kind}|${text}`;
@@ -290,10 +318,17 @@ export function ChangeLog({
                 </button>
               </span>
             ) : (
-              <button type="button" className="secondary small" onClick={() => setConfirming(r.id)}>
+              <button type="button" className="secondary small" onClick={() => startConfirm(r.id)}>
                 Undo
               </button>
             )}
+            {confirming === r.id &&
+              preview?.id === r.id &&
+              (preview.error !== null || preview.changes.length > 0) && (
+                <p className="small undo-preview" data-testid="undo-preview" role="status">
+                  {preview.error ?? `This undo changes: ${preview.changes.join('; ')}`}
+                </p>
+              )}
           </li>
         ))}
       </ol>
