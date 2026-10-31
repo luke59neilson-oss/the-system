@@ -189,6 +189,15 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
           Demo campaign: for trying the app out
         </p>
       )}
+      {live.campaignSwitched && live.status === 'joined' && !pane && (
+        // QF.66: a restored copy (or the demo) replaced the sheet under the player.
+        <p className="campaign-switched" data-testid="campaign-switched" role="status">
+          [The GM opened another copy of the campaign. Your sheet now shows that copy.]{' '}
+          <button type="button" onClick={() => client.dismissCampaignSwitched()}>
+            OK
+          </button>
+        </p>
+      )}
       {view && <BroadcastBanners messages={view.messages} />}
       {pane && <PaneLatest live={live} view={view} />}
       {(live.status === 'refused' || live.error) && (

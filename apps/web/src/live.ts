@@ -118,6 +118,11 @@ export interface LiveSnapshot {
   campaign: string | null;
   /** MC.5: the co-DM is listening (DESIGN §11: players see a mark while it is on). */
   listening: boolean;
+  /**
+   * QF.66: the GM opened another campaign (a restored copy, the demo) while
+   * this page was open, so the sheet changed under the player; they are told.
+   */
+  campaignSwitched: boolean;
 }
 
 export type CommandResult = { ok: true; warning?: string } | { ok: false; error: string };
@@ -138,6 +143,7 @@ export class LiveClient {
     liveSince: null,
     campaign: null,
     listening: false,
+    campaignSwitched: false,
   };
   private readonly listeners = new Set<(s: LiveSnapshot) => void>();
   private readonly pending = new Map<string, (r: CommandResult) => void>();
@@ -177,6 +183,11 @@ export class LiveClient {
       this.pending.set(requestId, resolve);
       socket.send(JSON.stringify({ type: 'command', requestId, command }));
     });
+  }
+
+  /** QF.66: the player has read the campaign-switch notice. */
+  dismissCampaignSwitched(): void {
+    this.update({ campaignSwitched: false });
   }
 
   close(): void {
@@ -240,7 +251,14 @@ export class LiveClient {
           // offline: nothing from the other campaign may carry over.
           this.lastSeq = 0;
           this.campaignChanged = true;
-          this.update({ notifications: [], liveSince: null, state: null, view: null, seq: 0 });
+          this.update({
+            notifications: [],
+            liveSince: null,
+            state: null,
+            view: null,
+            seq: 0,
+            campaignSwitched: true,
+          });
         }
         if (campaign !== this.snapshot.campaign) this.update({ campaign });
         const join =
@@ -320,7 +338,7 @@ export class LiveClient {
           this.update({
             status: 'refused',
             error: switched
-              ? 'The GM has switched to another campaign. This screen rejoins when they switch back.'
+              ? 'The GM has opened another campaign, which does not have your character. This screen rejoins when they switch back; or use Switch character.'
               : message.error,
           });
           socket.close();
