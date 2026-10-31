@@ -657,7 +657,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   everyone and the target grade to none, and the result says "Awarded N XP to
   …"; after a broadcast the recipient resets to everyone and the result names
   who got it; status lines clear when the form changes; e2e for both.
-- [ ] **QF.47 Contest rolls stay private until shared.** Rolling a contest
+- [x] **QF.47 Contest rolls stay private until shared.** Rolling a contest
   logs a practice entry naming the opponent ("Contest roll against Hooded
   Ambusher (Perception)") that the player sees at once, shared or not
   (`apps/web/src/gm/practiceDraftsModel.ts:80-86`, `Encounter.tsx:111-125`;

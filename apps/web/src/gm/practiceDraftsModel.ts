@@ -65,12 +65,10 @@ export function contestPracticeCommands(
   a: ContestSideRef,
   b: ContestSideRef,
 ): Command[] {
-  const statName = (id: string) => state.rules.stats.list.find((s) => s.id === id)?.name ?? id;
+  // QF.47: the entry is logged at once but the roll stays private until the
+  // GM shares it (D182), so its text names neither the other side nor its stat.
   const out: Command[] = [];
-  for (const [me, them] of [
-    [a, b],
-    [b, a],
-  ] as const) {
+  for (const me of [a, b]) {
     if (!me.source.startsWith('c:')) continue;
     const characterId = me.source.slice(2);
     // A practice entry names a skill or a stat; a side with no stat logs none.
@@ -79,7 +77,7 @@ export function contestPracticeCommands(
     out.push({
       type: 'practice.log',
       characterId,
-      action: `Contest roll against ${them.label.trim() || 'an opponent'} (${statName(stat)})`,
+      action: 'Contest roll',
       stat,
       tags: [CONTEST_TAG],
       source: 'gm',
