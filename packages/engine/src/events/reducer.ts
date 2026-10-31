@@ -2446,8 +2446,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const { entityId, characterId } = event.payload;
       const entity = hasOwn(state.entities, entityId) ? state.entities[entityId] : undefined;
       if (!entity) return fail(event, `unknown entity "${entityId}"`);
-      if (!entity.notices.includes(characterId))
-        fail(event, 'that Identify notification is closed');
+      // A second close (double tap, a second device) changes nothing (MV.3 review).
+      if (!entity.notices.includes(characterId)) return state;
       const notices = entity.notices.filter((id) => id !== characterId);
       return { ...state, entities: { ...state.entities, [entityId]: { ...entity, notices } } };
     }

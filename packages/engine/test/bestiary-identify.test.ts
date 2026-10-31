@@ -170,13 +170,13 @@ describe('Identified by… and the player bestiary (MV.3)', () => {
     );
     expect(bestiary(c, 'kim').notices).toEqual([]);
     expect(bestiary(c, 'jake').notices.map((n) => n.id)).toEqual(['stalker']);
-    expect(
-      reject(
-        c,
-        { type: 'entity.closeNotice', entityId: 'stalker', characterId: 'kim' },
-        player('kim'),
-      ),
-    ).toMatch(/closed/);
+    // A second close changes nothing.
+    const twice = ok(
+      c,
+      { type: 'entity.closeNotice', entityId: 'stalker', characterId: 'kim' },
+      player('kim'),
+    );
+    expect(twice.state?.entities).toEqual(c.state?.entities);
     // It stays in the bestiary after closing.
     expect(bestiary(c, 'kim').categories[0]?.entries.map((e) => e.id)).toEqual(['stalker']);
     expect(reject(c, { type: 'entity.identify', entityId: 'stalker', characterIds: [] })).toMatch(

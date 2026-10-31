@@ -97,6 +97,8 @@ export function IdentifyPanel({ view }: { view: PlayerView }) {
 export function IdentifyNotice({ view, client }: { view: PlayerView; client: LiveClient | null }) {
   const [closing, setClosing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Once the server drops the closed notice, forget it, so a re-mark shows again (review M2).
+  if (closing !== null && !view.bestiary.notices.some((n) => n.id === closing)) setClosing(null);
   const current = view.bestiary.notices.find((n) => n.id !== closing) ?? null;
   if (current === null) return null;
   const more = view.bestiary.notices.length - 1;
