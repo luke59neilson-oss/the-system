@@ -1369,6 +1369,7 @@ function toEvent(
         payload: { characterId: command.characterId, skill: command.skill, unique: command.unique },
       };
     case 'skill.awardMark': {
+      refuseIdentifyChange(campaign, command.characterId, command.skill);
       const session = command.session ?? campaign.state?.currentSession ?? ctx.sessionId;
       if (session === null) throw new EventRejectedError('A mark needs a play session');
       return {
@@ -1382,6 +1383,7 @@ function toEvent(
       };
     }
     case 'skill.upgrade':
+      refuseIdentifyChange(campaign, command.characterId, command.skill);
       return {
         type: 'skill.upgraded',
         payload: { characterId: command.characterId, skill: command.skill },
@@ -2085,5 +2087,26 @@ export function execute(campaign: Campaign, command: Command, ctx: CommandContex
   } catch (error) {
     if (error instanceof EventRejectedError) return { ok: false, error: error.message };
     throw error;
+  }
+}
+
+/**
+ * MV.3 (DESIGN §7 "Identify"): Identify stays Common for good. It earns no
+ * marks and is never upgraded. Checked at the command, so stored logs that
+ * recorded Identify marks or upgrades still replay unchanged.
+ */
+function refuseIdentifyChange(campaign: Campaign, characterId: string, skill: string): void {
+  const state = campaign.state;
+  if (!state) return;
+  const name = state.rules.skills.startingRaceSkill.name.toLowerCase();
+  if (skill.trim().toLowerCase() !== name) return;
+  const character = Object.prototype.hasOwnProperty.call(state.characters, characterId)
+    ? state.characters[characterId]
+    : undefined;
+  const owned = character?.skills.find((s) => s.name.toLowerCase() === name);
+  if (owned && owned.kind === 'race') {
+    throw new EventRejectedError(
+      `${state.rules.skills.startingRaceSkill.name} never changes: it earns no marks and is never upgraded`,
+    );
   }
 }
