@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.51, QF.59, QF.64–QF.66 done.
-**Next item:** QF.52 on `wip/QF.52` (round-2 review first), then QF.53 onward
+**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.53, QF.59, QF.64–QF.66 done.
+**Next item:** QF.54 on `wip/QF.54` (failing probe committed), then QF.55 onward
 **Blockers:** none
 
 ## Run log
@@ -1433,3 +1433,13 @@ next item, blockers. -->
 - Next run: check out `wip/QF.52`, `git merge origin/main`, launch the round-2 review (sonnet) on 6d8da931, fix, merge to main, check the box; then QF.53.
 - Tests: unit 1,816 (was 1,762) at d1ce2c16; full e2e 145/145 green locally at d1ce2c16; QF.52 + M3.10 e2e green after the round-1 fixes.
 - Open `wip/*`: wip/QF.52. Blockers: none.
+
+### Run · 2026-10-31 15:08–15:54 UTC (close-out at minute 44; end minute 46)
+- Close-out at minute 44 with QF.54 started on `wip/QF.54`.
+- Preflight: `add_repo` not offered; repo already cloned (shallow; local `main` reset to `origin/main`, history deepened); first fetch hit a proxy disconnect, retry worked; lock pushed cleanly; vitest 5.0.5; reviewers work (sonnet, fable, haiku; worktree; the Agent tool blocks, so the QF.52 round 2 and the three sweep reviewers went out together, ~7 min). CI on main green at start (99a139dc). No new answers. Hour 15: quality sweep D (Rules sonnet, Boundaries fable, UX haiku), scope 1815b441..8819c277.
+- Sweep D: Rules clean, Boundaries clean, UX 1 Low (Import "Apply N" has no noun) to the Backlog. Last sweep → 8819c277, next rotation A.
+- QF.52 Views stay small: round 2 (sonnet) 0 High/Medium, both round-1 fixes confirmed; Low fixed (a rejoin's queued view cleared the pending limits flag, so a rate-limited limits frame was never retried; `apps/web/test/liveLimits.test.ts`), 1366×768 screenshot added. Merged (8f84b52f).
+- QF.53 Sleeping phones don't grow the laptop's memory (D293): views and GM states held back from a socket over 2 MiB queued, one whole view when it drains; ping every 20 s, drop after 2 missed pongs. Probe: two paused raw clients, 13k events, 300 commands: < 50 MB growth (136 MB without). Sonnet round 1: 1 Medium (wake-up check passed without `resume()`) fixed and the mutation re-run; Low fixed. Merged (98c93d13).
+- QF.54 (wip): `wip/QF.54` at 162a11bd (base dfaf7cbb, before the QF.53 merge; `git merge origin/main` first). Committed a failing probe `apps/server/test/undoStall.probe.test.ts` (undo of the newest event at 13k events: 367 ms under load, needs < 300 ms, and player frames < 150 KB). Next: make undo of the newest event update the history cache and change log incrementally (no `historyCache = null`, no whole-history reset: send players `{undoneSeqs}`), handle `undoneSeqs` in `apps/web/src/live.ts`, move End session's backup and report off the request path, then a probe for End session < 300 ms.
+- Tests: unit 1,822 (was 1,816) at 7a0dd9c7; full e2e 153/153 green locally at the QF.52 merge build; QF.52 + M3.10 e2e green after the round-2 fix. Engine untouched this run.
+- Open `wip/*`: wip/QF.54. Blockers: none.
