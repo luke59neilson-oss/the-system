@@ -983,3 +983,42 @@ function fullPools(
   for (const pool of rules.pools) out[pool.id] = poolMax(rules, stats, pool.id);
   return out;
 }
+
+/** ME.2 (DESIGN §2): one option in a step of a three-step evolution. */
+export interface EvolutionStepOption {
+  readonly id: string;
+  readonly name: string;
+  readonly distribution: {
+    readonly stats: Readonly<Record<string, number>>;
+    readonly free: number;
+  };
+  readonly statBonus: Readonly<Record<string, number>>;
+}
+
+/**
+ * ME.2 "Equal totals": the reasons a step cannot be released. Every option's
+ * per-level total (stats plus free points) must equal the step's budget at the
+ * new grade, and one-time bonus totals must be equal within the step. Empty
+ * when the step is fine; the GM's Override releases anyway (the caller decides).
+ */
+export function stepBudgetProblems(
+  step: string,
+  budget: number,
+  options: readonly EvolutionStepOption[],
+): string[] {
+  const sum = (r: Readonly<Record<string, number>>) => Object.values(r).reduce((a, b) => a + b, 0);
+  const problems: string[] = [];
+  for (const o of options) {
+    const total = sum(o.distribution.stats) + o.distribution.free;
+    if (total !== budget) {
+      problems.push(`${step} option "${o.name}" gives ${total} points per level, not ${budget}`);
+    }
+  }
+  const bonuses = options.map((o) => sum(o.statBonus));
+  if (new Set(bonuses).size > 1) {
+    problems.push(
+      `${step} options have unequal one-time bonuses (${bonuses.join(', ')}); make them equal or tick Override`,
+    );
+  }
+  return problems;
+}

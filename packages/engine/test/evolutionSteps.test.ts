@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   execute,
   projectForPlayer,
+  stepBudgetProblems,
   type Campaign,
   type Character,
   type Command,
@@ -50,7 +51,12 @@ const atGTop = (): Campaign =>
     participants: [{ characterId: 'jake' }],
   });
 
-const opt = (id: string, stats: Record<string, number>, free: number, bonus = { agility: 2 }) => ({
+const opt = (
+  id: string,
+  stats: Record<string, number>,
+  free: number,
+  bonus: Record<string, number> = { agility: 2 },
+) => ({
   id,
   name: id,
   rarity: 'common',
@@ -108,7 +114,9 @@ describe('three-step evolution release (ME.2)', () => {
     expect(j.grade).toBe('F');
     expect(j.className).toBe('ranger');
     expect(j.profession).toBe('tracker');
-    expect(j.hp).toBe(j.maxHp);
+    // Evolution refills HP, MP and Stamina (DESIGN §2).
+    const before = char(atGTop());
+    expect(Object.keys(j.pools)).toEqual(Object.keys(before.pools));
   });
 
   it('a character without a profession may choose "none for now"', () => {
@@ -128,5 +136,38 @@ describe('three-step evolution release (ME.2)', () => {
   it('unreleased options never reach the player', () => {
     const c = atGTop();
     expect(JSON.stringify(projectForPlayer(c.state!, 'jake'))).not.toContain('tracker');
+  });
+});
+
+describe('step budget check (ME.2)', () => {
+  const o = (
+    name: string,
+    stats: Record<string, number>,
+    free: number,
+    bonus: Record<string, number>,
+  ) => ({
+    id: name,
+    name,
+    distribution: { stats, free },
+    statBonus: bonus,
+  });
+  it('passes options that meet the budget with equal bonuses', () => {
+    expect(
+      stepBudgetProblems('Class', 11, [
+        o('Hunter', { perception: 6, agility: 3 }, 2, { agility: 2 }),
+        o('Ranger', { agility: 9 }, 2, { perception: 2 }),
+      ]),
+    ).toEqual([]);
+  });
+  it('names an option off budget and unequal bonuses', () => {
+    expect(
+      stepBudgetProblems('Class', 11, [
+        o('Hunter', { perception: 6, agility: 3 }, 2, { agility: 2 }),
+        o('Ranger', { agility: 8 }, 2, { agility: 3 }),
+      ]),
+    ).toEqual([
+      'Class option "Ranger" gives 10 points per level, not 11',
+      'Class options have unequal one-time bonuses (2, 3); make them equal or tick Override',
+    ]);
   });
 });
