@@ -206,6 +206,7 @@ export function ContentImport({
   };
 
   const toggle = (path: string, on: boolean) => {
+    setOutcome(null);
     const next = new Set(picked);
     if (on) next.add(path);
     else next.delete(path);
@@ -245,7 +246,12 @@ export function ContentImport({
 
   const blocked = [...picked].some((p) => checks.has(p));
   return (
-    <section className="window import-window" aria-labelledby="import-heading">
+    // QF.46: a new file pick or tick clears the old "Applied N" line.
+    <section
+      className="window import-window"
+      aria-labelledby="import-heading"
+      onChange={() => setOutcome(null)}
+    >
       <h2 id="import-heading">Import content</h2>
       <label>
         Content file (.json)

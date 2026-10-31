@@ -185,7 +185,7 @@ test('a table round uses the whole milestone; the player gets only their own vie
   await award.getByLabel('Reason (GM only)').fill(REASON);
   await gm.screenshot({ path: path.join(shots, 'gm-award-1366x768.png') });
   await award.getByRole('button', { name: 'Award XP' }).click();
-  await expect(award.getByRole('status')).toHaveText('XP awarded');
+  await expect(award.getByRole('status')).toHaveText(/^Awarded [\d,]+ (class|profession) XP to /);
 
   // MU.2: the phone's running log has the level-up, newest first.
   await expect(phone.getByTestId('class')).toHaveText('[Caster – lvl 2]');

@@ -40,7 +40,7 @@ import type { PickedLine } from './QuickResponses';
 import { ListenPanel } from './ListenPanel';
 import { PortraitPicker } from './PortraitControls';
 import { PartyDashboard } from './PartyDashboard';
-import { XpAward } from './XpAward';
+import { XpAward, listNames } from './XpAward';
 import { OfferBuilder, type OfferTarget } from './OfferBuilder';
 import { ChangeLog } from './ChangeLog';
 import { EvolutionBuilder } from './EvolutionBuilder';
@@ -478,7 +478,9 @@ function useCommand(client: LiveClient) {
     setBusy(false);
     return r;
   };
-  return { busy, result, run };
+  /** QF.46: an old status line goes when the form changes. */
+  const clear = () => setResult(null);
+  return { busy, result, run, clear };
 }
 
 function Outcome({ result, okText }: { result: CommandResult | null; okText: string }) {
@@ -553,7 +555,7 @@ function CreateCharacter({
   const raceChoices = races.length > 0 ? races : [state.rules.character.defaultRace];
   const [classId, setClassId] = useState('');
   const [race, setRace] = useState('');
-  const { busy, result, run } = useCommand(client);
+  const { busy, result, run, clear } = useCommand(client);
   const chosen = classes.find((c) => c.id === classId) ?? classes[0];
   const chosenRace = raceChoices.includes(race) ? race : (raceChoices[0] ?? '');
   const rarityName = (id: string) =>
@@ -593,7 +595,12 @@ function CreateCharacter({
     }
   };
   return (
-    <form className="window" onSubmit={(e) => void submit(e)} aria-labelledby="new-character">
+    <form
+      className="window"
+      onSubmit={(e) => void submit(e)}
+      onChange={clear}
+      aria-labelledby="new-character"
+    >
       <h2 id="new-character">New character</h2>
       <label>
         Name
@@ -826,7 +833,7 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
   const [show, setShow] = useState<'list' | 'timed' | 'pinned'>('list');
   const [amount, setAmount] = useState('30');
   const [unit, setUnit] = useState<'seconds' | 'minutes'>('seconds');
-  const { busy, result, run } = useCommand(client);
+  const { busy, result, run, clear } = useCommand(client);
   const cancel = useCommand(client);
   const remove = useCommand(client);
   // MT.6: a timed banner lasts 5 s to 24 h.
@@ -861,14 +868,26 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
         : { type: 'broadcast.schedule', text, characterIds: recipients, day: dayValue },
     );
     if (r.ok) {
-      setOkText(when === 'now' ? 'Broadcast sent' : `Scheduled for day ${dayValue}`);
+      // QF.46: say who got it, then start the next one from everyone.
+      const who = recipients === null ? 'everyone' : listNames(recipients.map(name));
+      setOkText(
+        when === 'now' ? `Broadcast sent to ${who}.` : `Scheduled for day ${dayValue}, to ${who}.`,
+      );
       setText('');
       setShow('list');
+      setTo('all');
+      setSeveral(new Set());
+      // When stays, so the GM can queue several days in a row (M4.7).
     }
   };
   const pending = state.scheduledBroadcasts;
   return (
-    <form className="window" onSubmit={(e) => void submit(e)} aria-labelledby="broadcast">
+    <form
+      className="window"
+      onSubmit={(e) => void submit(e)}
+      onChange={clear}
+      aria-labelledby="broadcast"
+    >
       <h2 id="broadcast">System broadcast</h2>
       <label>
         Message

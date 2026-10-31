@@ -78,7 +78,9 @@ test('power loss mid-session: hard kill, torn log, stale lock; both screens reco
   await gm.getByLabel('Amount').fill('100');
   await gm.getByLabel('Reason (GM only)').fill(REASON);
   await gm.getByRole('button', { name: 'Award XP' }).click();
-  await expect(gm.getByRole('status').filter({ hasText: 'XP awarded' })).toBeVisible();
+  await expect(
+    gm.getByRole('status').filter({ hasText: /^Awarded [\d,]+ (class|profession) XP to / }),
+  ).toBeVisible();
   await expect(jake.getByTestId('class')).toHaveText('[Archer – lvl 1]', { timeout: 2000 });
   // QF.18: let the change log's refetch finish before the server dies, or
   // the kill resets it mid-flight and the console logs a failed load.

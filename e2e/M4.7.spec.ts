@@ -76,7 +76,9 @@ test('the GM sends to several now and schedules messages for later days', async 
   await form.getByRole('checkbox', { name: 'Kim' }).check();
   await form.getByRole('checkbox', { name: 'Ada' }).check();
   await form.getByRole('button', { name: 'Send broadcast' }).click();
-  await expect(form.getByRole('status')).toHaveText('Broadcast sent');
+  await expect(form.getByRole('status')).toHaveText(
+    /^Broadcast sent to (Kim and Ada|Ada and Kim)\.$/,
+  );
   await expect(kim.getByTestId('messages')).toContainText('You hear the Host breathe.');
 
   // Scheduled: Kim on day 2, everyone on day 3, Jake on day 4 (then cancelled).
@@ -89,12 +91,12 @@ test('the GM sends to several now and schedules messages for later days', async 
   await form.getByLabel('Recipients').selectOption({ label: 'Kim' });
   await form.getByRole('spinbutton', { name: 'Send on day' }).fill('2');
   await form.getByRole('button', { name: 'Schedule broadcast' }).click();
-  await expect(form.getByRole('status')).toHaveText('Scheduled for day 2');
+  await expect(form.getByRole('status')).toContainText('Scheduled for day 2, to ');
   await form.getByLabel('Message').fill('Day 3 dawns over the Host.');
   await form.getByLabel('Recipients').selectOption({ label: 'Everyone' });
   await form.getByRole('spinbutton', { name: 'Send on day' }).fill('3');
   await form.getByRole('button', { name: 'Schedule broadcast' }).click();
-  await expect(form.getByRole('status')).toHaveText('Scheduled for day 3');
+  await expect(form.getByRole('status')).toContainText('Scheduled for day 3, to ');
   await form.getByLabel('Message').fill('Never sent.');
   await form.getByLabel('Recipients').selectOption({ label: 'Jake' });
   await form.getByRole('spinbutton', { name: 'Send on day' }).fill('4');

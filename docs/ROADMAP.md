@@ -645,7 +645,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   running and checks the backup and released LOCK, uninstalls `/S` and
   checks the data is kept, and loads the speech engine inside packaged
   Electron.
-- [ ] **QF.46 Forms reset after use, and say who it went to.** Award XP keeps
+- [x] **QF.46 Forms reset after use, and say who it went to.** Award XP keeps
   the participant ticks and the target grade after an award
   (`apps/web/src/gm/XpAward.tsx:114-118`), so the next table-wide award can go
   to one character at ⅓; System broadcast keeps the last recipient
