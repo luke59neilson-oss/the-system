@@ -517,6 +517,317 @@ the rest follow in file order. Each gets its own §6 review.
   that each default button's visible text is its full name at 1366×768;
   screenshot.
 
+### Deep review 2026-10-31 (Luke asked for every model, every angle)
+
+Eleven reviewers (fable, opus, sonnet, haiku) on rules, fuzzing, mutation
+testing, security, co-DM, desktop/installer, persistence, performance, a live
+GM-plus-four-players playtest, UX/accessibility and docs; every High and
+Medium below was reproduced by a second, different model or checked in code
+by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-10-31/` (one file per lens, plus the verifiers'). Highs first
+(LOOP §5.2); the rest in file order.
+
+- [ ] **QF.38 (High) Listening follows the session.** Listening started before
+  Start session, or left on across sessions, keeps writing the transcript to
+  the session it started in (`apps/server/src/speech/routes.ts:137` fixes the
+  file once; `transcript.ts:118`), while quick responses, suggestions,
+  drafts, notes and the summary read the current session's file, so they all
+  see nothing; the Listening panel still shows the lines from memory.
+  *Accept:* with listening on, `session.start` then audio puts the line in
+  `session-01.jsonl` and `GET /api/gm/ai/quick` returns a non-null target;
+  with listening still on, `session.end`, `session.start` and audio puts the
+  line in `session-02.jsonl`; talk before any session may stay in
+  `session-00`; the GM guide no longer depends on click order.
+- [ ] **QF.39 (High) Identify can never be merged away.** A standalone merge
+  (`skill.merge` → player accept) can consume the race skill Identify
+  (`packages/engine/src/skills/model.ts:271-334` has no race-skill check;
+  the evolution path does, `checkRaceSkillsKept`); the Merges window and the
+  home dashboard even recommend the pair; afterwards every Identify tier goes
+  dark and `skill.grant` of Identify is refused (retired name). Found
+  independently by three models. Also (Low, same code): a merge may take a
+  retired skill name (`model.ts:322-327` checks only current skills). *Accept:*
+  merge candidates and dashboard flags never offer a race skill; `skill.merge`
+  naming Identify is refused (GM override allowed only if a re-grant of the
+  starting race skill then succeeds); `skill.grant {name:'Identify',
+  kind:'race'}` restores it for any character missing it; a merge to a retired
+  name is refused like `skill.grant`; existing merge and MT.1 tests green.
+- [ ] **QF.40 A non-latest undo never silently loses XP.** Undoing an earlier
+  `evolution.chosen` (or a progression override or profession choice) makes
+  later `xp.awarded` events re-apply at the old cap, where the XP is lost
+  (`packages/engine/src/events/log.ts:109-133`): 900 XP, F class 7 → 4, no
+  warning. Follow D31: refuse such an undo with a message naming the loss
+  ("Jake would lose class 7 → 4"), and show progression changes in the undo
+  confirm for undos that are allowed. Also (Low): undoing a `skill.cast` after
+  a later maximum rise refills the pool to the new maximum. *Accept:* the
+  sequence G award 400 → evolve to F → award 900 → undo `evolution.chosen` is
+  refused with that message and changes nothing; undos that lose nothing
+  still work; the replay fuzz stays green.
+- [ ] **QF.41 A crash-left LOCK never blocks the app.** The stale-lock check
+  is "same boot minute and the pid is alive" (`apps/server/src/store.ts:263-330`),
+  so a reused PID (even the new process's own) blocks the start, and Windows
+  Fast Startup keeps the boot minute; the desktop then shows a raw message
+  and exits (`apps/desktop/src/main.ts:261-270`). *Accept:* a LOCK naming
+  `process.pid` is stale; the lock records a holder identity beyond the pid
+  (start time or a per-launch token) and a LOCK whose identity doesn't match
+  opens; any remaining refusal names the LOCK path and says to delete it;
+  TROUBLESHOOTING gains an "already open" entry.
+- [ ] **QF.42 A campaign that can't load says what to do.** Damaged lines,
+  unknown event types and unknown keys (a newer build's log) show a raw
+  message and quit (`store.ts:200,428`, `envelope.ts:1132`); only the
+  lost-writes case names backups. And a missing or empty log with no
+  snapshot opens as a blank campaign even when `backups/` holds copies
+  (`store.ts:407-433`). *Accept:* for each of damaged line, unknown type,
+  unknown key, schema ahead, the message names the campaign folder, the
+  newest backup (or "no backups yet") and "Nothing was changed", and the
+  newer-build cases say "saved by a newer version: update the app"; a
+  missing/empty log with backups present refuses with the restore hint; a
+  new campaign still opens blank; TROUBLESHOOTING has a damaged-line entry.
+- [ ] **QF.43 Backups always happen, and hold everything.** `backup()` writes
+  the snapshot first with no try/catch (`store.ts:533`), so a stuck
+  `snapshot.json` (antivirus, sync) means no backup at all, and a failing
+  snapshot is retried on every append; backups and exports leave out
+  `codm/` and `transcripts/`; "See the server log" points at nothing in the
+  desktop app (`server.ts:100,153,174`). *Accept:* with the snapshot write
+  failing, `backup()` still copies the log (and the previous snapshot) and
+  does not throw; snapshot retries back off (≤ 3 attempts in 20 appends);
+  backups include `codm/` and `transcripts/` (voice prints in `speakers/`
+  left out on purpose, said in the guide); server errors go to
+  `<dataDir>/server.log` (size-capped) and the warnings name it.
+- [ ] **QF.44 Back up, download and restore from the console.** No backup,
+  export or restore control exists (`GET /api/gm/export` has no caller;
+  `importCampaign` has none outside tests), although DESIGN §9a and the GM
+  guide promise them. Library & settings gets **Back up now**, **Download
+  campaign** (the export file, with portraits) and **Restore** (pick a backup
+  folder or an export file; it is imported as a campaign beside the current
+  one and never overwrites; the GM switches to it). *Accept:* e2e: back up,
+  download, restore → same event count and portraits; GM guide steps match.
+- [ ] **QF.45 Installing a new build over a running app quits it cleanly.**
+  electron-builder's NSIS "app is running" step uses PowerShell `Stop-Process`
+  (TerminateProcess), so the quit backup, final session log and LOCK release
+  never run (`app-builder-lib/templates/nsis/include/allowOnlyOneInstallerInstance.nsh:85-140`;
+  the comment at `apps/desktop/src/main.ts:136-140` describes the taskkill
+  fallback). Add a `customCheckAppRunning` macro (`nsis.include`) that runs
+  `"$INSTDIR\TheSystem.exe" --quit-for-update` (handled through
+  `second-instance` → a quiet `app.quit()`), waits ~8 s, then falls back.
+  Also set Electron fuses (RunAsNode, NODE_OPTIONS, inspect off). *Accept:*
+  desktop spec: a second launch with `--quit-for-update` makes the first
+  exit within 8 s with a `*-quit` backup and no LOCK; the release workflow's
+  Windows job installs `setup.exe /S`, starts the installed exe without a
+  data-dir override (waits for `/health`), installs again over it while
+  running and checks the backup and released LOCK, uninstalls `/S` and
+  checks the data is kept, and loads the speech engine inside packaged
+  Electron.
+- [ ] **QF.46 Forms reset after use, and say who it went to.** Award XP keeps
+  the participant ticks and the target grade after an award
+  (`apps/web/src/gm/XpAward.tsx:114-118`), so the next table-wide award can go
+  to one character at ⅓; System broadcast keeps the last recipient
+  (`GmScreen.tsx:855-858`), so a table-wide message can go to one player;
+  result lines don't name the recipients; old status lines linger (Import
+  content "Applied 33 entries", Encounter "Shared with the table", New
+  character "Character created", Broadcast "Broadcast sent" after switching
+  to Schedule). *Accept:* after a successful award the participants reset to
+  everyone and the target grade to none, and the result says "Awarded N XP to
+  …"; after a broadcast the recipient resets to everyone and the result names
+  who got it; status lines clear when the form changes; e2e for both.
+- [ ] **QF.47 Contest rolls stay private until shared.** Rolling a contest
+  logs a practice entry naming the opponent ("Contest roll against Hooded
+  Ambusher (Perception)") that the player sees at once, shared or not
+  (`apps/web/src/gm/practiceDraftsModel.ts:80-86`, `Encounter.tsx:111-125`;
+  D182 says the roll stays private). *Accept:* after an unshared roll no
+  player's practice names the other side (PC vs PC: nothing naming the
+  other's stat); log on Share, or log neutral text ("Contest roll
+  (Perception)").
+- [ ] **QF.48 Sessions keep everything that happened.** The session report
+  and Copy for Claude leave out spell casts, GM-given skills and
+  damage/healing (`packages/engine/src/report/sessionLog.ts`, no case for
+  `skill.cast`, `skill.granted`, `pools.set`; cast practice entries filtered
+  out); End session leaves the end-of-scene prompt open, so a later answer is
+  stored with no session and can never earn a mark (`reducer.ts:2405`); the
+  co-DM drafts duplicate a player's Cast (`apps/server/src/ai/practiceRoutes.ts:78-80`
+  treats only GM entries as already logged). *Accept:* the report's
+  Practice lists cast entries and the Timeline has skill grants and
+  damage/healing lines; End session closes the open scene prompt (an answer
+  after it is refused with "the scene is over"); a cast is never drafted
+  again by the co-DM; tests for each.
+- [ ] **QF.49 The co-DM copes with long sessions.** Draft from transcript,
+  Take notes and Summarise send every unread line in one call with small
+  output caps (`practiceRoutes.ts:70`, `notesRoutes.ts:72-95`;
+  `practiceDrafts.ts:230`, `sessionNotes.ts:112`); a reply cut at max_tokens
+  fails as bad JSON (`anthropic.ts` ignores `stop_reason`), the read position
+  doesn't move, and every retry re-sends and re-pays; the drafts error reads
+  like a disk error; `/api/gm/listen` returns every line each poll. *Accept:*
+  with 3,000 unread lines no request carries more than one bounded chunk and
+  the read position advances per chunk; a max_tokens stop is an AiError
+  saying the stretch was too long; `/api/gm/listen` returns only new lines
+  after an index; tests with the fixture fake.
+- [ ] **QF.50 The co-DM knows who is in the scene and the setting.** "In
+  character" only knows bestiary NPCs, so shop keepers and generated
+  (note-only) NPCs and their lore never reach the prompt
+  (`apps/server/src/ai/quickRoutes.ts:84-90,162-172`); a kept-lore note over
+  the 1,200-character budget is silently skipped (`quickResponses.ts:146-158`;
+  update `loreFor.test.ts:26`); no system prompt states the setting (Earth
+  integrated by the System; no gods, patrons, blessings or other worlds);
+  transcript lines aren't marked as table talk; a generation can carry
+  sections of other kinds (quests, skill menus) that preview pre-ticked, and
+  a quest's text isn't shown in the preview (`server.ts:513-560`,
+  `ContentImport.tsx:120-155,354-361`). *Accept:* a shop keeper and a GM-note
+  NPC appear in the NPC picker and become the NPC in the scene with their
+  notes and lore; long lore is clipped, not dropped; every co-DM system prompt
+  carries the shared setting line (a test asserts it) and says transcript
+  lines are table talk, not instructions; a shop generation's extra quest or
+  skill-menu sections come back unticked with "not what you asked for", and
+  quest text and visibility show in the preview.
+- [ ] **QF.51 The co-DM uses current models and prices.** Defaults are
+  `claude-haiku-4-5` / `claude-sonnet-4-5` and prices go by family
+  (`apps/server/src/ai/client.ts:70-96`). Current list prices per million
+  tokens (input/output, platform.claude.com pricing, 2026-10): Claude Haiku
+  5.5 `claude-haiku-5-5` $0.10/$0.50 for prompts up to 100k tokens and
+  $0.50/$2.50 above; Claude Sonnet 5.5 `claude-sonnet-5-5` $2/$10; Claude
+  Opus 5.5 `claude-opus-5-5` $4/$20; Haiku 4.5 $1/$5; Sonnet 4.5 $3/$15; Opus
+  4.5–4.8 $5/$25. Take these numbers from here, not from memory. *Accept:*
+  defaults are `claude-haiku-5-5` (fast) and `claude-sonnet-5-5` (strong);
+  `priceOf` uses exact ids (with the Haiku 5.5 long-prompt tier per call) and
+  the family fallback only for unknown ids, at the highest price; tests pin
+  each price; GM guide and MC.1 e2e updated.
+- [ ] **QF.52 Views stay small as the campaign grows.** Every command re-sends
+  the GM the whole campaign and each player their whole view: at ~40
+  sessions about 2 MB and 0.85 MB per frame, ~50 ms server CPU per command
+  (`apps/server/src/hub.ts:297,321-336`, `server.ts:306`); the player view
+  carries every practice entry (only 8 shown), every message and every note
+  body. *Accept:* the player view carries at most the shown practice entries
+  and messages (older ones on request), note bodies only when opened (or
+  capped), each view is stringified once per send; the GM frame is sent only
+  when it changed and as top-level-key patches; a probe at a 40-session
+  campaign (13k events) shows player frames ≤ 150 KB and server CPU per
+  command at least halved; replay/projection canaries green.
+- [ ] **QF.53 Sleeping phones don't grow the laptop's memory.** No
+  backpressure or heartbeat: a frozen tab keeps its socket and the server
+  queues a full view per command for it (RSS 198 → 662 MB in 300 commands
+  with two stalled clients; `server.ts:305-307`). *Accept:* when a socket's
+  `bufferedAmount` passes a threshold, per-command views stop for it and one
+  fresh view is sent when it drains; a ws ping every 20 s terminates a socket
+  after 2 missed pongs; a probe with two paused clients keeps heap growth
+  under 50 MB over 300 commands.
+- [ ] **QF.54 Undo and End session don't freeze the table.** Undo refolds the
+  whole log, rebuilds the notification history and change log and sends a
+  full reset (≈2 s stall and a 1.4 MB frame at 40 sessions;
+  `events/log.ts`, `history/index.ts:450`, `hub.ts:292`,
+  `history/changeLog.ts:221`); End session does the backup and report on the
+  request path (~1.2 s). *Accept:* undo of the newest event updates the
+  history cache and change log incrementally and sends players a small
+  `{undoneSeqs}` frame; the backup and report run off the request path;
+  probes at 40 sessions show undo < 300 ms and End session < 300 ms of
+  event-loop block.
+- [ ] **QF.55 The GM console and phones render only what they show.** The GM
+  console re-renders every mounted window on each state frame, with
+  `skillPairCounts` (stringify + regex per practice entry) as the top cost
+  (`EvolutionBuilder.tsx:52`, `evolutionBuilderModel.ts:101,159`,
+  `practice/model.ts:111`); the phone renders every note row with a date
+  format per row (`NotesPanel.tsx:65,334`). *Accept:* `skillPairCounts` is
+  memoised by `state.practice` identity; windows on hidden tabs don't render;
+  heavy panels are memoised; the notes list pages; a CDP probe at 40 sessions
+  shows GM main-thread time per command at least halved.
+- [ ] **QF.56 The home dashboard and phones work at the table.** At
+  1366×768 the join QR is below the fold (`GmScreen.tsx:244-267`; DESIGN §9a
+  puts it second); the phone evolution dialog puts the re-rating list before
+  the paths and Evolve below the fold (`EvolutionChoice.tsx:115-130`); phone
+  tap targets are ~22–36 px (`styles.css:200-209,925-932,1052`); field and
+  button borders are 2.2–2.5:1 (`styles.css:181,513`; WCAG 1.4.11 asks 3:1);
+  "Use for 1" hides the XP amount in a tooltip (`XpAward.tsx:182-200`);
+  `role="alert"` wraps whole windows and warnings (`GmScreen.tsx:84,196`,
+  `MergeBuilder.tsx:235`, `ContentImport.tsx:264,284`); the party card shows
+  "XP 0 / 100" at the grade's top; "Remove" (portrait) sits by the name with
+  no confirm. *Accept:* the join address and QR are visible without
+  scrolling at 1366×768; the phone evolution dialog shows the paths first and
+  keeps Evolve on screen; buttons on phones are ≥ 44 px tall; control borders
+  ≥ 3:1 on their backgrounds; the XP button reads "Fill N XP (typical
+  session, M players)"; `role="alert"` only on short error lines; the card
+  says "at the grade's top"; the button reads "Remove portrait" with a
+  confirm; screenshots at 1366×768 and 390×844.
+- [ ] **QF.57 Plain words for players.** The evolution explanation and log use
+  internal terms ("re-rated", "transforms", "mastery marks";
+  `EvolutionChoice.tsx:117-123`, `format.ts:124`); the contest pop-up says
+  "A grade wall decides it: no roll." (`player/contest.ts:26`); the join
+  screen tells players about "the server terminal"; "No Credits has changed
+  hands yet."; the end-of-scene form shows "Say what you did" before typing.
+  *Accept:* plain wording such as "Your skills keep their text and progress;
+  their rarity label changes for F-grade. An upgrade starts that skill's
+  progress at 0." and "[X] is now Rare (was Common)"; "Too far apart in
+  grade: the higher grade wins, no roll."; the GM-console sentence only on the
+  GM's computer; plural-safe currency text; the error appears on submit.
+  (Luke may adjust the words later.)
+- [ ] **QF.58 Copy, zoom and recovery in the desktop window.** The desktop GM
+  window denies clipboard writes, so the GM-link Copy does nothing and Copy
+  for Claude relies on a deprecated fallback (`apps/desktop/src/launch.ts:187-197`,
+  `main.ts:156-166`); packaged builds have no reload or zoom, and a crashed
+  console renderer stays blank (`main.ts:323-331`). *Accept:*
+  `clipboard-sanitized-write` is allowed for the GM window's own page (unit
+  test, and a desktop spec that clicks Copy and reads the clipboard); a View
+  menu with reload and zoom (no DevTools); `render-process-gone` reloads the
+  console.
+- [ ] **QF.59 The desktop smoke tests are reliable.** The splash hand-over
+  test polls 5 s for one window while the app's own fallback reveal is 10 s,
+  and the 1,000 ms splash bound includes Electron's first-window cost
+  (`apps/desktop/test/launch.spec.ts:56-63,99-102`, `main.ts:197-200`); this
+  test has failed CI four different ways. *Accept:* the app records why it
+  revealed the window and the test asserts it with a 15 s poll; desktop specs
+  launch with `--disable-gpu` (or hardware acceleration off under a test
+  flag); the splash bound is measured after a warm-up launch; desktop-smoke
+  green on 5 consecutive CI runs; no retries added.
+- [ ] **QF.60 Tests that can fail (mutation testing).** Surviving mutants with
+  no test: one-field `character.setProgression` notices
+  (`history/gmChanges.ts:295`), equip/unequip falling into a skill notice
+  (`gmChanges.ts:400`), another character's practice hiding a passed-over
+  option (`projection/player.ts:775`), top-rarity `marksToUpgrade`
+  (`skills/model.ts:129`), transform names vs selection menus
+  (`evolution/model.ts:600`), single-stat evolution bonus (`:968`), blank
+  profession guard (`:734`), `CampaignStore.list()` on a missing dir
+  (`store.ts:377`), `isAllowedHost` with 255 octets (`security.ts:65`),
+  unknown rarity (`skills/model.ts:22`), blank transcript target
+  (`ai/quickResponses.ts:82`), replayed cast of a missing skill
+  (`reducer.ts:1711`), `stabilityPercent` with min = max
+  (`projection/player.ts:974`). *Accept:* the `playerLog.test.ts` audit
+  asserts the exact notice list per event with a two-character fixture; one
+  test per mutant above, each failing with that mutation applied
+  (`/home/claude/review/mutation/mutation-runner.mjs` is not in the repo; a
+  small runner in `scripts/` that re-applies these mutations is welcome).
+- [ ] **QF.61 The docs match the app.** GM-GUIDE.md:32 (campaigns and
+  backups "in the header"), :194-195 (import does not apply the 20% item cap
+  or rarity ceilings; the sheet caps items), :117 (Table view shows up to
+  4), :262-274 (Take notes / Summarise sit in the closed Session notes block),
+  quoted labels that differ (Import content, Evolutions, Practice, Send merge
+  offer, "a typical session ≈ 6 levels = N XP each", "Connected (<model>)");
+  CONTENT-FORMAT.md:225 (a shared item name resolves to the newest item),
+  :12 (two examples only parse-checked); GM-OVERRIDES.md:275 (stale row) and
+  "Edit holdings" (lines 39-40, 76, 146-147: the real controls are the Credits
+  ledger Grant/Fine and Item library Give/Take); PLAYER-QUICKSTART lacks
+  spells/Cast; DESIGN §9a tab contents vs `apps/web/src/gm/tabsModel.ts`.
+  *Accept:* each line fixed; `scripts/gm-overrides.test.ts` also checks every
+  doc row against `listRefusals()` (fails on today's doc).
+- [ ] **QF.62 Low fixes, engine and server.** Cast skips the practice-entry
+  cap (`commands.ts:1976-1990`); malformed player commands throw before
+  validation and log as engine bugs (`commands.ts:2050`, `hub.ts:258`); the
+  override warning prices skipped points by level range, not grade
+  (`progression/override.ts:183,222`); a transform that renames a spell
+  loses its cost with no warning (`skills/library.ts:225-238`); co-DM JSON
+  stores lack fsync and a damaged file throws forever (`ai/sessionNotes.ts:194`
+  and siblings); backups copy every portrait ever uploaded; on Windows the
+  failed-write cut-back may not truncate an append handle (`store.ts:454,488`);
+  the join QR can pick a virtual adapter on 10.x home networks
+  (`join.ts:33-42`); the speech model install renames once with no retry and
+  deletes the verified archive on failure (`speech/model.ts:129-135,292,381`);
+  Whisper's non-speech tokens count as talk; trades hide equipped items with
+  no hint and dead offers stay open with a reason-less refusal; an undo
+  refusal doesn't name the blocking change; the capstone check ignores a
+  carried-over Rare option (or should say "new"); revealing a bestiary entry
+  notifies nobody and a Common viewer sees a duplicate Identify line.
+  *Accept:* a test or e2e per item.
+- [ ] **QF.63 Low fixes, screens.** Silver and platinum frames read alike
+  (ring highlight colours); 12 px text on phones (`styles.css:367,888,924,931`);
+  change-log rows with no Undo give no reason (`ChangeLog.tsx:256`); the
+  Sound toggle announces its state twice; many free-point batches after a big
+  award mean many Review rounds (offer "assign all"). *Accept:* screenshots
+  and e2e per item.
+
 ## MR — Luke's answers, batch 2 (2026-10-22)
 
 Answers to Q43–Q52 (DESIGN §2, §6, §7 updated; L14–L18). They change finished

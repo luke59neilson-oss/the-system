@@ -134,6 +134,31 @@ Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
 reviewers ran 15–20 minutes each in the background.
 
+
+## Deep review 2026-10-31
+
+Luke asked for every model and every angle. Eleven reviewers at origin/main
+f656f8c2, then every High and Medium re-checked by a different model (or in
+code by the coordinator). Reports: `docs/reviews/2026-10-31/`.
+
+| Lens · model | High | Medium | Low | Notes |
+|---|---|---|---|---|
+| Rules · fable | 0 | 2 | 3 | rules-1 raised to High by the verifier (haiku) |
+| Fuzzing (14,800 commands) · opus | 0 | 1 | 1 | same Identify bug found independently; no crash, replay, undo or leak failure |
+| Mutation (112 mutants, ≈86% killed) · fable | 0 | 5 | 8 | no surviving mutant leaks GM data or weakens GM authority |
+| Security · sonnet | 0 | 1 | 3 | perimeter, key handling and projections held |
+| Co-DM · opus | 1 | 5 | 2 | verifier (sonnet) kept 1 H + 2 M, lowered the rest |
+| Desktop/installer · opus | 0 | 4 | 4 | Windows-only items checked from source by fable |
+| Persistence · sonnet | 0 | 4 | 6 | older-preview campaigns all load and replay |
+| Performance (10/20/40-session campaigns) · sonnet | 0 | 5 | 3 | everything grows with campaign size |
+| Playtest (GM + 4 phones, 2 crashes) · sonnet | 0 | 4 | 10 | no lost state across SIGTERM and kill -9 |
+| UX/accessibility · haiku | 0 | 7 | 5 | text contrast passes in every metal |
+| Docs · haiku | 0 | 5 | 7 | every DESIGN number matches the rules config |
+| Coordinator · opus | 0 | 1 | 0 | co-DM default models and prices out of date |
+
+Queued as QF.38–QF.63 (2 High). False alarms: none; several Mediums were
+lowered by their verifiers and folded into the Low batches.
+
 ## Flakes
 
 - 2026-10-31 00:40 · Local only, repeated: `e2e/M11.3.spec.ts:39` (latency, 1366×768, under 2 s) failed in the full local run (2,158 ms) and alone once (2,164 ms); the pre-MU commit 6511b291 also flips on this box (1,956 pass, 2,048 fail); quiet HEAD runs 1,825 / 1,847 ms; CI green. The cold first measurement sits near the bound on 2 CPUs. Reviewer suggests a warm-up iteration; if CI ever fails it, it becomes a QF item.

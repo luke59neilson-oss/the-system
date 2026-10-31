@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** build complete (2026-10-31): MU.A done and reviewed (fable); every box checked except deferred M9.4; `docs/DONE.md` written. Preview ready: Actions → Release → Run workflow (milestone MU).
-**Next item:** none (DONE.md exists; delete it after adding roadmap items or answers to resume runs)
+**Status:** in progress again (2026-10-31): every milestone done; deep multi-model review queued 26 fix items QF.38–QF.63 (2 High); `docs/DONE.md` removed.
+**Next item:** QF.38 (High) Listening follows the session, then QF.39 (High), then QF.40 onward in file order
 **Blockers:** none
 
 ## Run log
