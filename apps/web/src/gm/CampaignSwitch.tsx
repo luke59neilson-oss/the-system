@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react';
  */
 export function CampaignSwitch({ gmKey, stateName }: { gmKey: string; stateName: string | null }) {
   const [demo, setDemo] = useState<boolean | null>(null);
+  // QF.44: a restored campaign (neither the main one nor the demo) is open.
+  const [other, setOther] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,9 +16,14 @@ export function CampaignSwitch({ gmKey, stateName }: { gmKey: string; stateName:
   useEffect(() => {
     let cancelled = false;
     fetch('/api/gm/campaign', { headers: { 'x-gm-key': gmKey } })
-      .then((r) => (r.ok ? (r.json() as Promise<{ demo: boolean }>) : null))
+      .then((r) =>
+        r.ok ? (r.json() as Promise<{ id: string; demo: boolean; main?: boolean }>) : null,
+      )
       .then((body) => {
-        if (!cancelled && body) setDemo(body.demo);
+        if (!cancelled && body) {
+          setDemo(body.demo);
+          setOther(!body.demo && body.main === false ? body.id : null);
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -43,6 +50,7 @@ export function CampaignSwitch({ gmKey, stateName }: { gmKey: string; stateName:
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setDemo(((await r.json()) as { demo: boolean }).demo);
+      setOther(null);
     } catch {
       setError('Could not switch campaigns');
     } finally {
@@ -58,8 +66,17 @@ export function CampaignSwitch({ gmKey, stateName }: { gmKey: string; stateName:
           Demo campaign · nothing here touches your real campaign
         </strong>
       )}
-      <button type="button" disabled={busy} onClick={() => void switchTo(!demo)}>
-        {demo ? 'Back to my campaign' : 'Load demo campaign'}
+      {other !== null && (
+        <strong className="demo-badge" data-testid="restored-badge">
+          Restored campaign “{other}”
+        </strong>
+      )}
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => void switchTo(other !== null ? false : !demo)}
+      >
+        {demo || other !== null ? 'Back to my campaign' : 'Load demo campaign'}
       </button>
       {error && (
         <span className="err" role="alert">

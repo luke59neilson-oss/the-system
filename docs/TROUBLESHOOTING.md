@@ -139,6 +139,10 @@ is wrong it refuses, changes nothing, and the message names the campaign
 folder and its newest backup (or says there are none yet). Quit The System
 before copying any files.
 
+While the app runs, **Library & settings → Campaigns and backups → Restore**
+brings back any backup or downloaded campaign file as a new campaign, without
+touching files by hand. The steps below are for when the app will not start.
+
 - "saved by a newer version of The System": the log has changes this
   copy of the app does not know (an event type, field or version from a later
   build). Install the latest version and open it again; nothing needs

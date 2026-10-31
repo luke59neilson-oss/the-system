@@ -23,13 +23,14 @@ waiting, a banner) opens the tab that handles it.
 | Home | Needs you (what waits on the GM, each a link to its window), Party (a card per character, with what needs you), Players join (address and QR), New character |
 | Session | Session (start, end, day), Award XP, Listening, Co-DM (quick responses, picks, generate, lore), Import (approve generated content), Encounter, Quests, Broadcast, Shops, Credits ledger, Trackers, Change log, System feed |
 | Progression | Award XP, Skill offers, Evolution builder, Practice log, Marks review, Merges |
-| Library & settings | Skill text, Skill library, Item library, Loot tables, Title library, Classes, races and professions, Bestiary, Reference (Primal Hunter lists), Rules settings, Co-DM settings |
+| Library & settings | Skill text, Skill library, Item library, Loot tables, Title library, Classes, races and professions, Bestiary, Reference (Primal Hunter lists), Rules settings, Co-DM settings, Campaigns and backups |
 
 Award XP is the one window in two places: the same form on both tabs (a
 half-typed award shows on either). Its participant rows are the Session
 tab's party at a glance. Titles are awarded from the Title library;
 professions are offered in the Evolution builder; factions live in
-Trackers; campaigns and backups sit in the header on every tab. The list
+Trackers; the demo switch sits in the header on every tab, and campaigns
+and backups have their own window in Library & settings. The list
 mirrors `apps/web/src/gm/tabsModel.ts`.
 
 ## Install and start
@@ -328,6 +329,24 @@ range, the grade-gap mode, currency name, …) is in **Rules settings**.
 to DESIGN.md's values.
 
 ## Backups and moving laptops
+
+**Library & settings → Campaigns and backups** holds three buttons:
+
+1. **Back up now** copies the campaign into its `backups` folder at once
+   (besides the automatic copy at every session end and quit) and lists it
+   under **Restore** with its events and portraits.
+2. **Download campaign** saves the campaign export file
+   (`<campaign>-<date>.the-system.json`): the event log and the portraits,
+   one file you can keep anywhere or carry to another laptop.
+3. **Restore** brings back either a backup from the list (press its
+   **Restore**) or a downloaded file (**Restore from a downloaded file**).
+   It never overwrites anything: the copy becomes a new campaign beside the
+   current one (`main-restored`, then `main-restored-2`, …). Press **Open
+   restored campaign** to switch to it; players go back to the join screen
+   and pick their character again. The header then says "Restored campaign
+   …", and **Back to my campaign** returns. When the app starts it opens
+   your main campaign again; open the restored one from **Campaigns on this
+   laptop** in the same window.
 
 Copy the app's `data` folder (TROUBLESHOOTING → "Where the campaign is
 saved"). Each campaign's `backups` folder holds a copy from every session end

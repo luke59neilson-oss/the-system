@@ -670,3 +670,12 @@ DESIGN/ROADMAP; do not re-apply them.
     item's own tests and e2e and anything it doubts, and says what it re-ran.
     Saves ~2.5–5 min per item; risk: the reviewer is no longer an independent
     run of the full gate (Tier 2, LOOP §6.2). Default: no change.
+
+89. **Which campaign opens when the app starts? (QF.44, D281)** Restore adds a
+    backup or a downloaded file as a new campaign (`main-restored`) and you
+    open it from Library & settings → Campaigns and backups. When the app
+    starts it still opens your main campaign, so a restore never changes what
+    opens by surprise; to keep playing the restored copy you open it again
+    from that window each time. Default: always start on the main campaign.
+    Option: remember the last campaign you opened (or a "Make this my main
+    campaign" button).

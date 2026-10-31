@@ -5,7 +5,14 @@ import { joinInfo, type JoinInfo } from './join';
 import { newGmKey } from './security';
 import { createServer } from './server';
 import { exportsDirFor } from './sessionLog';
-import { CampaignStore } from './store';
+import {
+  CampaignStore,
+  backupAsExport,
+  backupDir,
+  importCampaign,
+  listBackups,
+  restoredId,
+} from './store';
 import { cappedLogStream, serverLogFile } from './serverLog';
 import { migrateOnLoad } from './migrate';
 import { CoDm, type CoDmOptions } from './ai/coDm';
@@ -146,6 +153,40 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
       webRoot: options.webRoot,
       // The demo campaign lives in its own directory (MS.4, D53).
       openCampaign: open,
+      // QF.44: Back up now / Restore in Library & settings.
+      campaigns: {
+        list: () => CampaignStore.list(storeOptions.dataDir),
+        backups: (id) => listBackups(storeOptions.dataDir, id),
+        restore: (source) => {
+          const raw =
+            'backup' in source
+              ? backupAsExport(storeOptions.dataDir, source.from, source.backup)
+              : source.export;
+          const base =
+            'backup' in source
+              ? source.from
+              : typeof (raw as { campaignId?: unknown } | null)?.campaignId === 'string'
+                ? (raw as { campaignId: string }).campaignId
+                : 'campaign';
+          const id = restoredId(storeOptions.dataDir, base);
+          const restored = importCampaign(
+            raw,
+            id,
+            storeOptions,
+            'backup' in source
+              ? { foldersFrom: backupDir(storeOptions.dataDir, source.from, source.backup) }
+              : {},
+          );
+          const result = {
+            id,
+            events: restored.campaign.events.length,
+            portraits: Object.keys((raw as { portraits?: object }).portraits ?? {}).length,
+          };
+          // Opened again (with rules migrations) when the GM switches to it.
+          restored.close();
+          return result;
+        },
+      },
       sessionLog: {
         exportsDir,
         now: storeOptions.now,

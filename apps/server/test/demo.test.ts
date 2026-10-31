@@ -85,12 +85,13 @@ describe('demo campaign switch', () => {
   it('is GM-only', async () => {
     expect((await gm('GET', undefined, null)).status).toBe(403);
     expect((await gm('POST', { demo: true }, 'wrong')).status).toBe(403);
-    expect(await (await gm('GET')).json()).toEqual({ id: 'main', demo: false });
+    expect(await (await gm('GET')).json()).toEqual({ id: 'main', demo: false, main: true });
   });
 
   it('rejects a body without a boolean demo flag', async () => {
     expect((await gm('POST', { demo: 'yes' })).status).toBe(400);
-    expect((await gm('POST', { id: 'other' })).status).toBe(400);
+    // QF.44: an id names a campaign folder; one that is not listed is not found.
+    expect((await gm('POST', { id: 'other' })).status).toBe(404);
   });
 
   it('loads the demo in its own directory, drops open sockets, and never touches the real log', async () => {
@@ -102,7 +103,7 @@ describe('demo campaign switch', () => {
     );
 
     const res = await gm('POST', { demo: true });
-    expect(await res.json()).toEqual({ id: DEMO_CAMPAIGN_ID, demo: true });
+    expect(await res.json()).toEqual({ id: DEMO_CAMPAIGN_ID, demo: true, main: false });
     expect(await closed).toBe(1012);
     expect(await names()).toEqual(DEMO_CHARACTERS.map((c) => c.name));
     expect(existsSync(path.join(dataDir, 'campaigns', DEMO_CAMPAIGN_ID, 'events.jsonl'))).toBe(
@@ -114,7 +115,11 @@ describe('demo campaign switch', () => {
     expect(JSON.stringify(store.exportCampaign())).not.toContain('demo-jake');
 
     // Back to the real campaign.
-    expect(await (await gm('POST', { demo: false })).json()).toEqual({ id: 'main', demo: false });
+    expect(await (await gm('POST', { demo: false })).json()).toEqual({
+      id: 'main',
+      demo: false,
+      main: true,
+    });
     expect(await names()).toEqual(['Ada']);
   });
 
@@ -139,7 +144,11 @@ describe('demo campaign switch', () => {
     await gm('POST', { demo: false });
     await gm('POST', { demo: true });
     expect(await names()).toEqual(first);
-    expect(await (await gm('GET')).json()).toEqual({ id: DEMO_CAMPAIGN_ID, demo: true });
+    expect(await (await gm('GET')).json()).toEqual({
+      id: DEMO_CAMPAIGN_ID,
+      demo: true,
+      main: false,
+    });
     await gm('POST', { demo: false });
   });
 });

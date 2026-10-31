@@ -32,7 +32,7 @@ import {
 import { helloMessage } from './protocol';
 import { SessionLogWriter, sessionReport, type SessionLogOptions } from './sessionLog';
 import { authPath, gmKeyMatches, isAllowedHost, isAllowedOrigin } from './security';
-import type { CampaignStore } from './store';
+import { StoreError, type BackupInfo, type CampaignStore } from './store';
 import { registerCoDmRoutes, type CoDm } from './ai/coDm';
 import { draftsDir, registerPracticeDraftRoutes } from './ai/practiceRoutes';
 import { registerNotesRoutes } from './ai/notesRoutes';
@@ -69,6 +69,11 @@ export interface CreateServerOptions {
    */
   openCampaign?: (id: string) => CampaignStore;
   /**
+   * QF.44: the campaigns on disk, their backups and Restore (a backup or an
+   * export imported as a new campaign beside the others). Off when omitted.
+   */
+  campaigns?: CampaignLibrary;
+  /**
    * Running session log autosave (M2.4) for every campaign this server opens;
    * the last write happens when the server closes. Off when omitted.
    */
@@ -89,6 +94,21 @@ export interface CreateServerOptions {
   /** Wall clock for transcript times (injectable for tests). */
   now?: () => number;
 }
+
+/** What Restore reads (QF.44): one of the open campaign's backups, or an export file. */
+export type RestoreSource = { backup: string; from: string } | { export: unknown };
+
+export interface CampaignLibrary {
+  /** Campaign ids with a folder in the data dir. */
+  list(): string[];
+  /** One campaign's backups, newest first. */
+  backups(id: string): BackupInfo[];
+  /** Imports the source as a new campaign (never overwriting one); returns what it holds. */
+  restore(source: RestoreSource): { id: string; events: number; portraits: number };
+}
+
+/** The largest export file Restore accepts (portraits are 2 MB each at most). */
+export const RESTORE_MAX_BYTES = 256 * 1024 * 1024;
 
 /** The demo campaign's id (D53): its own directory, never the real campaign's. */
 export const DEMO_CAMPAIGN_ID = 'demo';
@@ -332,19 +352,43 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   // Which campaign is open, and switching between the real one and the demo.
   app.get('/api/gm/campaign', (_request, reply) => {
     if (!active || realId === null) return reply.code(404).send({ error: 'No campaign open' });
-    return { id: active.store.id, demo: active.store.id === DEMO_CAMPAIGN_ID };
+    const id = active.store.id;
+    return { id, demo: id === DEMO_CAMPAIGN_ID, main: id === realId };
+  });
+  // QF.44: every campaign on disk, for the console's Campaigns and backups window.
+  app.get('/api/gm/campaigns', (_request, reply) => {
+    if (!active || realId === null) return reply.code(404).send({ error: 'No campaign open' });
+    const ids = options.campaigns?.list() ?? [realId];
+    return {
+      active: active.store.id,
+      main: realId,
+      campaigns: ids.filter((id) => id !== DEMO_CAMPAIGN_ID),
+    };
   });
   app.post('/api/gm/campaign', (request, reply) => {
     const live = options.live;
     if (!active || !live || realId === null || !options.openCampaign) {
       return reply.code(404).send({ error: 'Campaign switching is not available' });
     }
-    const body = request.body as { demo?: unknown } | null;
-    if (typeof body?.demo !== 'boolean') {
-      return reply.code(400).send({ error: 'Send { "demo": true } or { "demo": false }' });
+    const body = request.body as { demo?: unknown; id?: unknown } | null;
+    let id: string;
+    if (typeof body?.id === 'string') {
+      // QF.44: any campaign folder on disk (a restored one), by its listed id.
+      const known = options.campaigns?.list() ?? [realId];
+      if (!known.includes(body.id) && body.id !== realId) {
+        return reply.code(404).send({ error: 'No campaign with that id' });
+      }
+      id = body.id;
+    } else if (typeof body?.demo === 'boolean') {
+      id = body.demo ? DEMO_CAMPAIGN_ID : realId;
+    } else {
+      return reply
+        .code(400)
+        .send({ error: 'Send { "demo": true }, { "demo": false } or { "id": "<campaign>" }' });
     }
-    const id = body.demo ? DEMO_CAMPAIGN_ID : realId;
-    if (id === active.store.id) return { id, demo: body.demo };
+    const demo = id === DEMO_CAMPAIGN_ID;
+    const result = () => ({ id, demo, main: id === realId });
+    if (id === active.store.id) return result();
     let next = opened.get(id);
     if (!next) {
       let store: CampaignStore;
@@ -356,7 +400,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
         return reply.code(409).send({ error: 'Could not open that campaign' });
       }
       // A fresh demo directory is seeded once (one write); later loads keep what the GM did.
-      if (body.demo && store.campaign.events.length === 0) {
+      if (demo && store.campaign.events.length === 0) {
         try {
           store.appendAll(buildDemoEvents({ now: live.now, newId: live.newId }));
         } catch (error) {
@@ -373,7 +417,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     active = next;
     for (const socket of [...sockets]) socket.close(1012, 'Campaign changed');
     sockets.clear();
-    return { id, demo: body.demo };
+    return result();
   });
   // preClose runs before Fastify waits for connections to end: write the last
   // session logs now, then drop every socket so a sleeping phone that never
@@ -447,9 +491,53 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     return undoPreview(active.store.campaign, id, options.live?.now() ?? new Date().toISOString());
   });
 
-  app.get('/api/gm/export', () => {
-    if (!active) return { error: 'No campaign open' };
+  app.get('/api/gm/export', (_request, reply) => {
+    if (!active) return reply.code(404).send({ error: 'No campaign open' });
     return active.store.exportCampaign();
+  });
+
+  // QF.44: Back up now, the backups list and Restore (Library & settings).
+  app.post('/api/gm/backup', (_request, reply) => {
+    if (!active) return reply.code(404).send({ error: 'No campaign open' });
+    const store = active.store;
+    try {
+      const folder = store.backup('manual');
+      return { name: path.basename(folder), events: store.campaign.events.length };
+    } catch (error) {
+      if (error instanceof StoreError && /already exists/.test(error.message)) {
+        return reply.code(409).send({ error: 'A backup was made this moment; try again.' });
+      }
+      app.log.error(error);
+      return reply.code(500).send({ error: `The backup could not be written. ${seeLog}` });
+    }
+  });
+  app.get('/api/gm/backups', (_request, reply) => {
+    if (!active) return reply.code(404).send({ error: 'No campaign open' });
+    const id = active.store.id;
+    return { campaign: id, backups: options.campaigns?.backups(id) ?? [] };
+  });
+  app.post('/api/gm/restore', { bodyLimit: RESTORE_MAX_BYTES }, (request, reply) => {
+    const library = options.campaigns;
+    if (!active || !library) return reply.code(404).send({ error: 'Restore is not available' });
+    const body = request.body as { backup?: unknown; export?: unknown } | null;
+    let source: RestoreSource;
+    if (typeof body?.backup === 'string' && body.backup.length <= 200) {
+      source = { backup: body.backup, from: active.store.id };
+    } else if (body !== null && typeof body === 'object' && 'export' in body) {
+      source = { export: body.export };
+    } else {
+      return reply.code(400).send({ error: 'Send { "backup": "<name>" } or { "export": <file> }' });
+    }
+    try {
+      return library.restore(source);
+    } catch (error) {
+      if (error instanceof StoreError) {
+        // The store's messages name what is wrong with the file, never a path.
+        return reply.code(422).send({ error: `Nothing was restored: ${error.message}.` });
+      }
+      app.log.error(error);
+      return reply.code(500).send({ error: `Nothing was restored. ${seeLog}` });
+    }
   });
 
   // M9.1: one play session's report (or running log) as markdown or JSON, for

@@ -53,6 +53,8 @@ export const WINDOWS: Readonly<Record<string, readonly ConsoleTab[]>> = {
   reference: ['library'],
   'rules-settings': ['library'],
   'codm-settings': ['library'],
+  // QF.44: Back up now, Download campaign, Restore (DESIGN §9a "campaigns and backups").
+  'campaign-backups': ['library'],
 };
 
 /** The windows shown on a tab, in table order. */

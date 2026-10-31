@@ -3250,3 +3250,43 @@ ol.change-log li.undone .change-text {
   padding: 0 4px;
   font-size: 0.85em;
 }
+
+/* QF.44: Campaigns and backups (Library & settings). */
+.campaign-backups .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.campaign-backups .restored {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+.campaign-backups .file-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.6rem;
+}
+.campaign-backups .backup-list,
+.campaign-backups .campaign-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+.campaign-backups .backup-list li,
+.campaign-backups .campaign-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  border-top: 1px solid rgba(90, 127, 184, 0.35);
+}
+.campaign-backups li > button,
+.campaign-backups li > strong {
+  flex: none;
+}

@@ -18,6 +18,7 @@ import { activeBanners, useTick } from '../banners';
 import { friendlyError } from '../format';
 import { forgetGmKey, takeGmKey } from '../gmKey';
 import { LiveClient, type CommandResult, type LiveSnapshot } from '../live';
+import { CampaignBackups } from './CampaignBackups';
 import { CampaignSwitch } from './CampaignSwitch';
 import { feedRows } from './feed';
 import { JoinPanel } from './JoinPanel';
@@ -372,6 +373,13 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               </Place>
               <Place id="codm-settings" tab={tab}>
                 <CoDmSettings gmKey={gmKey} />
+              </Place>
+              <Place id="campaign-backups" tab={tab}>
+                <CampaignBackups
+                  gmKey={gmKey}
+                  campaignName={state.name}
+                  refreshKey={`${state.name}|${state.sessions.length}|${state.currentSession ?? ''}`}
+                />
               </Place>
             </div>
           </div>

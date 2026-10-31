@@ -798,7 +798,12 @@ function readSnapshot(file: string): Snapshot | null {
  * and re-checked by append before anything is written; an existing campaign
  * is never overwritten.
  */
-export function importCampaign(raw: unknown, id: string, options: StoreOptions): CampaignStore {
+export function importCampaign(
+  raw: unknown,
+  id: string,
+  options: StoreOptions,
+  extras: { foldersFrom?: string } = {},
+): CampaignStore {
   const data = raw as Partial<CampaignExport> | null;
   if (typeof data !== 'object' || data === null || data.format !== EXPORT_FORMAT) {
     throw new StoreError('Not a campaign export');
@@ -837,7 +842,112 @@ export function importCampaign(raw: unknown, id: string, options: StoreOptions):
     }
     fsyncDir(path.join(staging, 'portraits'));
   }
+  // QF.44: a restored backup brings its co-DM notes and transcripts along.
+  if (extras.foldersFrom !== undefined) {
+    for (const folder of BACKED_UP_FOLDERS) {
+      const from = path.join(extras.foldersFrom, folder);
+      if (existsSync(from) && statSync(from).isDirectory()) {
+        cpSync(from, path.join(staging, folder), { recursive: true });
+      }
+    }
+  }
   renameSync(staging, dir);
   fsyncDir(root);
   return CampaignStore.open(id, options);
+}
+
+/** One backup folder of a campaign, for the console's Restore list (QF.44). */
+export interface BackupInfo {
+  /** Folder name under `backups/` (`<stamp>-<label>`). */
+  readonly name: string;
+  /** Events in its log (whole lines). */
+  readonly events: number;
+  /** Portrait files it holds. */
+  readonly portraits: number;
+}
+
+const BACKUP_NAME = /^[0-9TZ-]{10,40}-[a-z0-9-]{1,40}$/;
+
+/** A campaign's backups, newest first (QF.44). Unreadable folders are skipped. */
+export function listBackups(dataDir: string, id: string): BackupInfo[] {
+  const backups = path.join(CampaignStore.campaignsDir(dataDir), checkCampaignId(id), 'backups');
+  if (!existsSync(backups)) return [];
+  const out: BackupInfo[] = [];
+  for (const d of readdirSync(backups, { withFileTypes: true })) {
+    if (!d.isDirectory() || !BACKUP_NAME.test(d.name)) continue;
+    try {
+      const log = path.join(backups, d.name, 'events.jsonl');
+      const text = existsSync(log) ? readFileSync(log, 'utf8') : '';
+      out.push({
+        name: d.name,
+        events: text.split('\n').filter((line) => line.trim() !== '').length,
+        portraits: portraitNames(path.join(backups, d.name)).length,
+      });
+    } catch {
+      // A folder held open or damaged is simply not offered.
+    }
+  }
+  return out.sort((a, b) => (a.name < b.name ? 1 : a.name > b.name ? -1 : 0));
+}
+
+/**
+ * A backup folder read as an export (QF.44): its log's events and its
+ * portraits. Every line must be whole JSON; the replay in `importCampaign`
+ * checks the rest.
+ */
+export function backupAsExport(dataDir: string, id: string, name: string): CampaignExport {
+  if (!BACKUP_NAME.test(name)) throw new StoreError(`No backup named "${name.slice(0, 80)}"`);
+  const dir = path.join(CampaignStore.campaignsDir(dataDir), checkCampaignId(id), 'backups', name);
+  const log = path.join(dir, 'events.jsonl');
+  if (!existsSync(log)) throw new StoreError(`No backup named "${name}"`);
+  const events: unknown[] = [];
+  const lines = readFileSync(log, 'utf8').split('\n');
+  lines.forEach((line, i) => {
+    if (line.trim() === '') return;
+    try {
+      events.push(JSON.parse(line));
+    } catch {
+      throw new StoreError(`Backup ${name} is damaged at line ${i + 1}`);
+    }
+  });
+  if (events.length === 0) throw new StoreError(`Backup ${name} holds no events`);
+  const portraits: Record<string, string> = {};
+  for (const file of portraitNames(dir)) {
+    portraits[file] = readFileSync(path.join(dir, 'portraits', file)).toString('base64');
+  }
+  return {
+    format: EXPORT_FORMAT,
+    version: EXPORT_VERSION,
+    exportedAt: name,
+    campaignId: id,
+    events,
+    portraits,
+  };
+}
+
+/** The folder of one backup (for copying its co-DM files on restore). */
+export function backupDir(dataDir: string, id: string, name: string): string {
+  if (!BACKUP_NAME.test(name)) throw new StoreError(`No backup named "${name.slice(0, 80)}"`);
+  return path.join(CampaignStore.campaignsDir(dataDir), checkCampaignId(id), 'backups', name);
+}
+
+/**
+ * A new campaign id for a restore of `base` (QF.44): `<base>-restored`, then
+ * `-restored-2`, … , never an existing folder, never the demo's.
+ */
+export function restoredId(dataDir: string, base: string): string {
+  const clean =
+    base
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .replace(/-restored(-\d+)?$/, '')
+      .slice(0, 40) || 'campaign';
+  const taken = new Set(CampaignStore.list(dataDir));
+  const root = CampaignStore.campaignsDir(dataDir);
+  for (let n = 1; n < 1000; n++) {
+    const id = n === 1 ? `${clean}-restored` : `${clean}-restored-${n}`;
+    if (!taken.has(id) && !existsSync(path.join(root, id)) && !RESERVED.test(id)) return id;
+  }
+  throw new StoreError('Too many restored copies of this campaign; remove some first');
 }
