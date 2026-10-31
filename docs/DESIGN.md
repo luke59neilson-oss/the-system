@@ -34,21 +34,26 @@ October 2026.
 - **Tracks:** Class level, Profession level, Race level.
   - Race level = average of class and profession levels (rounded down).
   - Before a character has a profession, race level = class level.
-  - **Professions** become available at the **E-grade evolution**. There is
+  - **Professions** are available **from the start** (Luke, 2026-10-31, as
+    Jake's was in the tutorial; it was the E-grade evolution before). There is
     no standard list: the GM offers each character professions tailored to
     what they have done (practice log). The player picks one or chooses
     "none for now"; offered professions stay listed in a Professions tab and
     can be taken later, until one is chosen and the list locks (greyed out).
-    While a character has none, the GM may add offers at any later evolution
-    (Q46). A profession starts at the character's class level when taken.
+    While a character has none, the GM may add offers at any time, evolutions
+    included (Q46). A profession starts at the character's class level when taken.
   - **Every track grants stats (Luke, 2026-10-31).** Each class,
     profession and race level grants that track's points for the level, by
     its current **distribution** (whole points per stat plus free points)
     and adding up to the track's budget for the grade (§4). Free points from
     any track join the player's unassigned points. Profession levels also add
-    profession skill options. Starting classes keep their stat weights (D35)
-    until their first evolution sets a distribution; a starting race (Human)
-    gives free points only.
+    profession skill options. Starting classes, the starting race and each
+    profession offer come with a distribution too (the GM sets them; a
+    starting class made before this rule turns its stat weights into whole
+    points at the G budget, D35 deciding the remainders); the starting Human
+    race gives free points only unless the GM changes it. How many free
+    points an option gives is the GM's choice, per option (the builder
+    suggests the 2 / 2 / 1 of the §4 example).
   - **Grade** is the highest grade the character has evolved into. Class and
     profession levels cannot pass the top level of the current grade
     (4, 14, 49, 99, 149, 199, 240).
@@ -67,9 +72,9 @@ October 2026.
   - **Class, profession and race evolve together (Luke, 2026-10-31).** The
     player makes three choices in a row, **class, then profession, then
     race**, reviews all three and confirms once; the grade changes on that
-    confirmation. The profession step appears from the E-grade evolution on:
-    a character with a profession evolves it; one without gets profession
-    offers or "none for now". Each option in every step sets a name and
+    confirmation. Every evolution has a profession step: a character with a
+    profession evolves it; one without gets profession offers or "none for
+    now". Each option in every step sets a name and
     rarity, a short System description, that track's **distribution at the
     new grade** (whole points per stat plus free points, adding up to the
     track's budget, §4), a **one-time stat bonus**, and any skill transforms
@@ -114,27 +119,32 @@ blue-white tint and a heavier brushed texture so the change is visible.
 ## 4. Stat budget per level (same for every class)
 
 Points per level of each track (Luke, 2026-10-31: all three tracks give
-stats). Defaults, set in rules settings; they keep the per-level totals the
-campaign had before, with the class giving up about a third of its spread
-to the profession. Until a character has a profession, its class level
-grants the profession's share too, so a character without one is unchanged.
+stats, at three times the old totals so each track has room for a real
+shape; the D&D feel comes from the dice, §7). Defaults, set in rules
+settings. Until a character has a profession, its class level grants the
+profession's share too.
 
 | Grade | Class (per class level) | Profession (per profession level) | Race (per race level) | Total |
 | --- | --- | --- | --- | --- |
-| G | 4 | — | 2 | 6 |
-| F | 5 | — | 3 | 8 |
-| E | 5 | 3 | 4 | 12 |
-| D | 8 | 4 | 6 | 18 |
-| C | 12 | 6 | 9 | 27 |
-| B | 18 | 9 | 13 | 40 |
-| A | 27 | 13 | 20 | 60 |
+| G | 8 | 5 | 5 | 18 |
+| F | 11 | 7 | 6 | 24 |
+| E | 16 | 10 | 10 | 36 |
+| D | 24 | 15 | 15 | 54 |
+| C | 36 | 23 | 22 | 81 |
+| B | 54 | 33 | 33 | 120 |
+| A | 80 | 50 | 50 | 180 |
 
-A campaign created before this table keeps its old numbers (class spread
-plus free points per race level, no profession share) until the GM switches
-to these in rules settings; the switch applies from the next level-up.
+Worked example at G (Luke's): class +1 Str, +2 Agi, +3 Int and 2 free (8);
+profession +1 Int, +1 Wis, +1 Vit and 2 free (5); race +2 Per, +2 Int and 1
+free (5). One level of each gives 18 points; Int, the focus, gets 6 of them
+(+0.6 shown), the rest creep up by tenths, and 5 are the player's to place.
 Each track's distribution decides how its points split between stats and
-free points (a Human race gives free points; an Archer-like class gives
-mostly Perception and Agility).
+free points.
+
+A campaign created before this table keeps its old numbers (class spread 6
+… 60 plus free points per race level, no profession share, professions from
+E) until the GM switches to these in rules settings; the switch applies
+from the next level-up.
 
 
 - Class spread follows the class's stat weights. Each point goes to the stat
@@ -301,6 +311,21 @@ turning point). GM confirms marks in the end-of-session review.
 
 - **Resolution:** ratio odds, chance = yours ÷ (yours + theirs). The app
   rolls and shows results.
+- **Dice (Luke, 2026-10-31: "keep the D&D feel").** A campaign setting,
+  **Rolls: app odds** (above, the default) or **d20 + modifier**. With d20:
+  each side rolls a d20 and adds its **roll modifier**, higher total wins,
+  a tie rolls again. The roll modifier is +3 for every doubling of the stat
+  over 10: round(3 × log2(stat ÷ 10)), using the stat with its bonuses, and
+  a stat below 1 counts as 1. So 10 → +0, 20 → +3, 30 → +5, 80 → +9,
+  5 → −3. Odds stay within about 4 points of app odds (twice the other's
+  stat: 64% against 67%; three times: 73% against 75%), while the numbers
+  stay D&D-sized (a main stat's modifier is about +6 after session 1, +18 at
+  the top of E, +29 at the cap). Grade walls apply as below, with one grade
+  apart meaning **−5** to the lower side's modifier instead of ×⅓. Anyone
+  may roll a real d20 and type the number (1–20) or tap **Roll** on their
+  phone or the console; the GM does the same for NPCs and monsters; results
+  show each die, modifier and total, and whether a die was typed or rolled
+  by the app. With d20 on, each stat on the sheet shows its modifier.
 - **Grade walls (default mode, Luke 2026-10-22).** A higher grade is a
   different order of being.
   - **Same grade:** plain ratio odds.
@@ -449,7 +474,7 @@ Status
 Name: <name>
 Race: [Human (F) – lvl 12]
 Class: [<class name> – lvl 14]
-Profession: [<profession name> – lvl 10]      (row hidden before E-grade)
+Profession: [<profession name> – lvl 10]      (row hidden until they have one)
 Health Points (HP): 340/400
 Mana Points (MP): 210/210
 Stamina: 180/200

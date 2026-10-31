@@ -285,22 +285,23 @@ DESIGN §2, §4, §9, §9a. After MV, before QF: the first evolution comes up
 in the first session.
 
 - [ ] **ME.1 Every track grants stats.** Rules config gains per-grade
-  budgets for class, profession and race (DESIGN §4 defaults) and a
-  per-track distribution (whole points per stat plus free points);
-  profession levels grant points; until a character has a profession its
-  class grants the profession's share too; free points from every track
-  join the unassigned points (MV.1); starting classes keep their weights
-  (D35); a starting Human race gives free points only. A campaign created
-  before ME keeps its old numbers until the GM switches in rules settings
-  (a recorded rules change, applying from the next level-up). Stored logs
-  replay unchanged. *Accept:* engine tests per grade (exact totals with and
+  budgets for class, profession and race (DESIGN §4 defaults: G 8/5/5 …
+  A 80/50/50) and a per-track distribution (whole points per stat plus free
+  points, free points set per option); profession levels grant points;
+  professions are offered from the start (`professionUnlockGrade: "G"`);
+  until a character has a profession its class grants the profession's
+  share too; free points from every track join the unassigned points
+  (MV.1); starting classes made before ME turn their weights into whole
+  points at the G budget (D35 for remainders); the starting Human race gives
+  free points only. A campaign created before ME keeps its old numbers and
+  profession grade until the GM switches in rules settings (a recorded rules
+  change, applying from the next level-up). Stored logs replay unchanged. *Accept:* engine tests per grade (exact totals with and
   without a profession; overflow unchanged; an old campaign unchanged until
   the switch, then new numbers from the next level-up); goldens updated
   only where the manifest allows.
 - [ ] **ME.2 Three-step evolution in the engine.** The GM's release carries
-  options for class, profession (from the E-grade evolution on: an
-  evolution of the current profession, or profession offers plus "none for
-  now") and race; each option has name, rarity, description, distribution
+  options for class, profession (every evolution: an evolution of the
+  current profession, or profession offers plus "none for now") and race; each option has name, rarity, description, distribution
   at the new grade, one-time bonus, and optional transforms and merges.
   Release is refused unless every option's per-level total equals the
   step's budget and one-time bonus totals are equal within each step,
@@ -308,8 +309,8 @@ in the first session.
   player's choice names one option per step and confirms once: the grade
   changes, distributions and bonuses apply, pools refill. An evolution
   released before ME stays a single choice; stored logs replay unchanged.
-  *Accept:* engine tests (each refusal and Override; G→F has no profession
-  step; E-grade with no profession offers professions and "none for now";
+  *Accept:* engine tests (each refusal and Override; a character without a
+  profession gets offers and "none for now", one with a profession evolves it;
   confirm applies all three; old log replay); canary (unreleased options
   never in player frames).
 - [ ] **ME.3 The Evolutions tab (GM).** A fourth console tab (DESIGN §9a)
@@ -342,6 +343,32 @@ in the first session.
   theme); screenshots at 390×844 locked, lit and mid-choice, and with
   reduced motion; canary.
 - [ ] **ME.A Acceptance and review.** Full suite green; `fable` review;
+  "Preview ready" (LOOP §8.2).
+
+## MK — Dice (Luke, 2026-10-31; L27)
+
+DESIGN §7 "Dice", §9. After ME, before QF.
+
+- [ ] **MK.1 d20 + modifier in the engine.** Campaign setting `rolls:
+  "odds" | "d20"` (default odds; existing campaigns unchanged); roll
+  modifier = round(3 × log2(stat ÷ 10)) on the stat with bonuses, a stat
+  below 1 counted as 1; a d20 contest records each side's die (1–20), how it
+  was rolled (typed or app) and the totals, a tie rolls again; grade walls
+  as in odds mode with one grade apart = −5 to the lower side (and ⅓
+  damage), two or more = no roll. Every roll the app makes today goes
+  through the setting. Stored logs replay unchanged. *Accept:* engine tests
+  (modifiers for 1, 5, 10, 20, 30, 80, 2,900; exact d20 odds within 5 points
+  of ratio odds for ratios 1–8; ties; −5 grade rule; no roll at two grades;
+  replay of an odds-mode log).
+- [ ] **MK.2 Rolling at the table.** The setting in rules settings; when a
+  roll is needed, the player's phone asks "Roll d20 for Perception (+14)"
+  with **Roll** and a 1–20 box, and the GM console does the same for NPCs
+  and monsters (and may enter a player's die for them); results show each
+  die, modifier, total and typed/app; with d20 on, the sheet shows each
+  stat's modifier. *Accept:* e2e: a contest with one typed and one
+  app-rolled die, both screens showing the result; a sheet with modifiers;
+  canary; screenshots at 390×844 and 1366×768.
+- [ ] **MK.A Acceptance and review.** Full suite green; `fable` review;
   "Preview ready" (LOOP §8.2).
 
 ## QF — Quality fixes (from sweeps, LOOP §10)
