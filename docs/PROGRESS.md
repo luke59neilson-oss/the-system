@@ -1434,8 +1434,8 @@ next item, blockers. -->
 - Tests: unit 1,816 (was 1,762) at d1ce2c16; full e2e 145/145 green locally at d1ce2c16; QF.52 + M3.10 e2e green after the round-1 fixes.
 - Open `wip/*`: wip/QF.52. Blockers: none.
 
-### Run · 2026-10-31 15:08–15:54 UTC (close-out at minute 44; end minute 46)
-- Close-out at minute 44 with QF.54 started on `wip/QF.54`.
+### Run · 2026-10-31 15:08–15:53 UTC (close-out at minute 44; end minute 44)
+- Close-out at minute 44 with QF.54 started on `wip/QF.54`. Ended at minute 44, before 48, with no §5.5 reason: no review was out, and I closed out at the hand-off instead of working QF.54 on until 48. Next run: keep building to 44, then use 44–50 for close-out.
 - Preflight: `add_repo` not offered; repo already cloned (shallow; local `main` reset to `origin/main`, history deepened); first fetch hit a proxy disconnect, retry worked; lock pushed cleanly; vitest 5.0.5; reviewers work (sonnet, fable, haiku; worktree; the Agent tool blocks, so the QF.52 round 2 and the three sweep reviewers went out together, ~7 min). CI on main green at start (99a139dc). No new answers. Hour 15: quality sweep D (Rules sonnet, Boundaries fable, UX haiku), scope 1815b441..8819c277.
 - Sweep D: Rules clean, Boundaries clean, UX 1 Low (Import "Apply N" has no noun) to the Backlog. Last sweep → 8819c277, next rotation A.
 - QF.52 Views stay small: round 2 (sonnet) 0 High/Medium, both round-1 fixes confirmed; Low fixed (a rejoin's queued view cleared the pending limits flag, so a rate-limited limits frame was never retried; `apps/web/test/liveLimits.test.ts`), 1366×768 screenshot added. Merged (8f84b52f).
