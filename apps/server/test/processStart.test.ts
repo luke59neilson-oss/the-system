@@ -14,7 +14,11 @@ describe('process start times (QF.41)', () => {
   it("reads this process's start time and agrees with the one a LOCK records", () => {
     const read = processStart(process.pid);
     expect(read).not.toBeNull();
-    expect(Math.abs((read ?? 0) - ownProcessStart())).toBeLessThan(START_TOLERANCE_MS);
+    // Read the same way, so equal, not just close (a sleeping laptop stops uptime).
+    expect(ownProcessStart()).toBe(read);
+    expect(Math.abs((read ?? 0) - (Date.now() - process.uptime() * 1000))).toBeLessThan(
+      START_TOLERANCE_MS,
+    );
   });
 
   it('gives null for a pid that cannot be read', () => {
