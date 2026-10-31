@@ -6,8 +6,14 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CoDm } from '../src/ai/coDm';
-import { DEFAULT_AI_MODELS } from '../src/ai/client';
-import { E2E_FAKE_AI_ENV, e2eFakeCipher, e2eFakeClient, e2eFakeFromEnv } from '../src/ai/e2eFake';
+import { DEFAULT_AI_MODELS, costOf } from '../src/ai/client';
+import {
+  E2E_FAKE_AI_ENV,
+  E2E_TEST_USAGE,
+  e2eFakeCipher,
+  e2eFakeClient,
+  e2eFakeFromEnv,
+} from '../src/ai/e2eFake';
 import { KEY_FILE } from '../src/ai/keyStore';
 
 const TEST_KEY = 'sk-ant-e2e-0123456789abcdefghij';
@@ -58,6 +64,8 @@ describe('e2e fake co-DM', () => {
     expect(await coDm.test()).toEqual({ ok: true, model: DEFAULT_AI_MODELS.fast });
     const spend = coDm.status().spend;
     expect(spend.calls).toBe(1);
-    expect(spend.dollars).toBeCloseTo(0.001, 6);
+    // QF.51: 1,000 in + 10 out on Haiku 5.5 is $0.000105, under the counter's tenth of a cent.
+    expect(spend.dollars).toBe(0);
+    expect(costOf(DEFAULT_AI_MODELS.fast, E2E_TEST_USAGE)).toBeCloseTo(0.000105, 8);
   });
 });
