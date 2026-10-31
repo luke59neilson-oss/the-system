@@ -4,8 +4,9 @@ import { expect, test, type Page } from './helpers/test';
 import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
-// M3.4 Free points: a player spreads one batch, reviews, confirms; the batch
-// locks (DESIGN §4, D38) and the stats update live.
+// M3.4 Free points: a player spreads points, reviews, confirms; assigned
+// points lock (DESIGN §4, D38) and the stats update live. Since MV.1 the panel
+// covers every unassigned point (any amount at once; MV.1.spec.ts).
 
 const GM_KEY = 'e2e-gm-key-m34-0123456789abcdef';
 const shots = path.resolve(import.meta.dirname, '../docs/screens/M3.4');
@@ -95,24 +96,25 @@ test('a player assigns a free-point batch, which then locks', async ({ browser }
   await laptop.getByRole('button', { name: '[Assign]' }).focus();
   await laptop.keyboard.press('Enter');
   const panel = laptop.getByTestId('assign');
-  await expect(panel).toContainText('Race level 1: 2 points (1 more batch waiting)');
+  await expect(panel.getByTestId('assign-total')).toHaveText(
+    '4 points to assign from 2 level-ups. Spend any number; the rest wait for later.',
+  );
   await expect.poll(() => focusedText(laptop)).toBe('Assign free points');
-  await expect(laptop.getByTestId('points-left')).toHaveText('Points left: 2');
+  await expect(laptop.getByTestId('points-left')).toHaveText('Points left: 4');
   const review = panel.getByRole('button', { name: 'Review' });
   await expect(review).toBeDisabled();
   await expect(panel.getByRole('button', { name: 'Remove a point from Agility' })).toBeDisabled();
   await panel.getByRole('button', { name: 'Add a point to Agility' }).click();
   await panel.getByRole('button', { name: 'Add a point to Perception' }).click();
-  await expect(laptop.getByTestId('points-left')).toHaveText('Points left: 0');
-  // Nothing left to add; a point can be taken back.
-  await expect(panel.getByRole('button', { name: 'Add a point to Strength' })).toBeDisabled();
+  await expect(laptop.getByTestId('points-left')).toHaveText('Points left: 2');
+  // A point can be taken back.
   await panel.getByRole('button', { name: 'Remove a point from Perception' }).click();
   await panel.getByRole('button', { name: 'Add a point to Agility' }).click();
   await expect(panel.getByTestId('assign-agility')).toContainText('(+2)');
   await laptop.screenshot({ path: path.join(shots, 'player-assign-1366x768.png'), fullPage: true });
   await review.click();
   await expect(laptop.getByTestId('assign-review')).toHaveText(
-    'Assign +2 Agility? Assigned points lock; only the GM can change them.',
+    'Assign +2 Agility? Assigned points lock; only the GM can change them. 2 points stay unassigned for later.',
   );
   await expect.poll(() => focusedText(laptop)).toBe('Confirm');
   await panel.scrollIntoViewIfNeeded();
@@ -132,9 +134,9 @@ test('a player assigns a free-point batch, which then locks', async ({ browser }
   await locked.getByText('Assigned points (locked)').click();
   await expect(locked).toContainText('Race level 1: +2 Agility');
 
-  // Cancel leaves the next batch alone.
+  // Cancel leaves the rest alone.
   await laptop.getByRole('button', { name: '[Assign]' }).click();
-  await expect(panel).toContainText('Race level 2: 2 points');
+  await expect(panel.getByTestId('assign-total')).toContainText('2 points to assign.');
   await panel.getByRole('button', { name: 'Add a point to Willpower' }).click();
   await panel.getByRole('button', { name: 'Cancel' }).click();
   await expect(panel).toHaveCount(0);
@@ -163,15 +165,15 @@ test('a player assigns a free-point batch, which then locks', async ({ browser }
   await expect(pane.getByRole('button', { name: '[Assign]' })).toHaveCount(0);
   await pane.close();
 
-  // Phone: 390 wide, no sideways scroll. The GM overrides the batch while the
-  // panel is open: it closes with a notice instead of switching batches.
+  // Phone: 390 wide, no sideways scroll. The GM assigns the last points while
+  // the panel is open: it closes with a notice.
   const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const phoneErrors = watchErrors(phone);
   await phone.goto(laptop.url());
   await expect(phone.getByTestId('free-points')).toHaveText('2');
   await phone.getByRole('button', { name: '[Assign]' }).click();
   const phonePanel = phone.getByTestId('assign');
-  await expect(phonePanel).toContainText('Race level 3: 2 points');
+  await expect(phonePanel.getByTestId('assign-total')).toContainText('2 points to assign.');
   await phonePanel.getByRole('button', { name: 'Add a point to Strength' }).click();
   await phonePanel.getByRole('button', { name: 'Add a point to Endurance' }).click();
   const width = await phone.locator('html').evaluate((el) => el.scrollWidth);
@@ -186,7 +188,7 @@ test('a player assigns a free-point batch, which then locks', async ({ browser }
   });
   await expect(phonePanel).toHaveCount(0);
   await expect(phone.getByTestId('assign-notice')).toHaveText(
-    'The race level 3 points were changed by the GM; your draft was discarded.',
+    'Your free points were changed by the GM; your draft was discarded.',
   );
   await expect(phone.getByTestId('free-points')).toHaveText('0');
   await expect(laptop.getByTestId('free-points')).toHaveText('0');

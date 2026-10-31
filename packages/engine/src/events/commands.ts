@@ -116,6 +116,15 @@ export type Command =
       allocation: Readonly<Record<string, number>>;
     }
   | {
+      /**
+       * MV.1 (DESIGN §4 "any amount at once"): spend any number of the
+       * character's unassigned points; the oldest waiting level-up's go first.
+       */
+      type: 'freePoints.spend';
+      characterId: string;
+      allocation: Readonly<Record<string, number>>;
+    }
+  | {
       type: 'freePoints.override';
       characterId: string;
       raceLevel: number;
@@ -683,6 +692,7 @@ const commandSchema = z.discriminatedUnion('type', [
     participants: z.array(z.object({ characterId: z.string() })).min(1),
   }),
   z.object({ type: z.literal('freePoints.assign'), allocation: anyRecord }),
+  z.object({ type: z.literal('freePoints.spend'), allocation: anyRecord }),
   z.object({ type: z.literal('freePoints.override'), allocation: anyRecord.nullable() }),
   z.object({
     type: z.literal('system.broadcast'),
@@ -810,6 +820,7 @@ export type CommandType = Command['type'];
  */
 export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>([
   'freePoints.assign',
+  'freePoints.spend',
   'gift.give',
   'item.equip',
   'item.unequip',
@@ -1097,6 +1108,11 @@ function toEvent(
           raceLevel: command.raceLevel,
           allocation: command.allocation,
         },
+      };
+    case 'freePoints.spend':
+      return {
+        type: 'freePoints.spent',
+        payload: { characterId: command.characterId, allocation: command.allocation },
       };
     case 'freePoints.override':
       return {

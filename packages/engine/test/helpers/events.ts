@@ -175,6 +175,17 @@ export function randomCommand(rand: () => number, c: Campaign): Command {
     const extra = rand() < 0.05 ? 1 : 0;
     allocation[rand() < 0.1 ? 'luck' : pick(['strength', 'agility', 'vitality'])] =
       batch.points + extra;
+    if (rand() < 0.3) {
+      return {
+        type: 'freePoints.spend',
+        characterId: character?.id ?? 'ghost',
+        allocation: {
+          [rand() < 0.1 ? 'luck' : pick(['strength', 'agility', 'vitality'])]: Math.floor(
+            rand() * 5,
+          ),
+        },
+      };
+    }
     return rand() < 0.5
       ? {
           type: 'freePoints.assign',

@@ -42,6 +42,21 @@ export interface FreePointBatch {
   readonly locked: boolean;
 }
 
+/**
+ * Points of a level-up still unassigned (MV.1): a batch can be partly used
+ * (allocation set, not locked); a locked batch has none left.
+ */
+export function batchRemaining(batch: FreePointBatch): number {
+  if (batch.locked) return 0;
+  const used = Object.values(batch.allocation ?? {}).reduce((a, b) => a + b, 0);
+  return Math.max(0, batch.points - used);
+}
+
+/** Every unassigned free point of a character, across all waiting level-ups. */
+export function unassignedPointsOf(batches: readonly FreePointBatch[]): number {
+  return batches.reduce((a, b) => a + batchRemaining(b), 0);
+}
+
 /** A merge waiting on the player's answer (MT.2). */
 export interface MergeOffer {
   /** Id of the offer event; the answer names it. */

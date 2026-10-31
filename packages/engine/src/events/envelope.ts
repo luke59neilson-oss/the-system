@@ -252,6 +252,14 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     raceLevel: z.number().int().positive(),
     allocation: statValues,
   }),
+  /**
+   * MV.1: a player spends any number of unassigned points at once; the reducer
+   * fills the oldest waiting level-ups first, so history stays per level-up.
+   */
+  'freePoints.spent': z.strictObject({
+    characterId: recordId,
+    allocation: statValues,
+  }),
   /** GM override of a batch: replace its allocation, or null to unassign and unlock it. */
   'freePoints.overridden': z.strictObject({
     characterId: recordId,
@@ -908,6 +916,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'character.progressionSet': 1,
   'xp.awarded': 1,
   'freePoints.assigned': 1,
+  'freePoints.spent': 1,
   'freePoints.overridden': 1,
   'system.broadcast': 1,
   'broadcast.scheduled': 1,
@@ -1082,6 +1091,7 @@ function issuesText(error: z.ZodError): string {
  */
 export const PLAYER_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   'freePoints.assigned',
+  'freePoints.spent',
   'gift.given',
   'item.equipped',
   'item.unequipped',

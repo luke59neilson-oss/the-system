@@ -104,6 +104,14 @@
       "sha256": "effd59e876db3c1e36015c4ac1b6500a04a9462dcf9062ee7986fb857c16e2e4",
       "schemaVersion": 33
     },
+    "freepoints-spend.jsonl": {
+      "sha256": "41343dcf3ba6d9c3871b02a27c33a735990f638322e302ca32e0cbda69b90a32",
+      "schemaVersion": 33
+    },
+    "freepoints-spend.state.json": {
+      "sha256": "0880d39ad4c22d004aac3f4a9a491458312840a8b2d3404aed8d592e0cc7c8fe",
+      "schemaVersion": 33
+    },
     "freepoints.jsonl": {
       "sha256": "e18d62e4312817aabcb70424b9521015f8cec50bdf385fe596c6a5fbfc012f10",
       "schemaVersion": 21

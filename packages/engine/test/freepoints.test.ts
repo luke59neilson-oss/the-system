@@ -6,6 +6,8 @@ import {
   execute,
   parseEvent,
   replay,
+  characterFlags,
+  statBudgetTotal,
   type Campaign,
   type Command,
 } from '../src';
@@ -237,6 +239,7 @@ describe('free points', () => {
     // Player commands and player events stay in step.
     const past: Record<string, string> = {
       'freePoints.assign': 'freePoints.assigned',
+      'freePoints.spend': 'freePoints.spent',
       'gift.give': 'gift.given',
       'item.equip': 'item.equipped',
       'item.unequip': 'item.unequipped',
@@ -305,5 +308,149 @@ describe('free points', () => {
       ok: false,
       error: expect.stringContaining('are not assigned'),
     });
+  });
+});
+
+describe('free points: any amount at once (MV.1)', () => {
+  // A third class level → three waiting level-ups (race levels 1-3), 2 points each.
+  const three = () =>
+    run(
+      [{ type: 'xp.award', track: 'class', amount: 100, participants: [{ characterId: 'jake' }] }],
+      testContext('t'),
+      base(),
+    );
+  const spend = (allocation: Record<string, number>, characterId = 'jake'): Command => ({
+    type: 'freePoints.spend',
+    characterId,
+    allocation,
+  });
+  let n = 0;
+  const ok = (
+    c: Campaign,
+    command: Command,
+    ctx: ReturnType<typeof testContext> = {
+      ...testContext(`q${++n}x`),
+      actor: { role: 'player', characterId: 'jake' },
+    },
+  ) => {
+    const r = execute(c, command, ctx);
+    if (!r.ok) throw new Error(r.error);
+    return r.campaign;
+  };
+
+  it('one confirm spends three level-ups, oldest first, each batch locking', () => {
+    const before = three();
+    expect(jake(before)?.freePointBatches.map((b) => b.raceLevel)).toEqual([1, 2, 3]);
+    const s0 = jake(before)?.stats ?? {};
+    const after = ok(before, spend({ strength: 1, agility: 3, wisdom: 2 }));
+    const c = jake(after);
+    expect(c?.stats['strength']).toBe((s0['strength'] ?? 0) + 1);
+    expect(c?.stats['agility']).toBe((s0['agility'] ?? 0) + 3);
+    expect(c?.stats['wisdom']).toBe((s0['wisdom'] ?? 0) + 2);
+    expect(c?.freePointBatches).toEqual([
+      { raceLevel: 1, points: 2, allocation: { strength: 1, agility: 1 }, locked: true },
+      { raceLevel: 2, points: 2, allocation: { agility: 2 }, locked: true },
+      { raceLevel: 3, points: 2, allocation: { wisdom: 2 }, locked: true },
+    ]);
+    expect(replay(JSON.parse(JSON.stringify(after.events)) as unknown[])).toEqual(after);
+  });
+
+  it('keeps points back; a partly used level-up keeps the rest open and finishes later', () => {
+    const c1 = ok(three(), spend({ vitality: 3 }));
+    const b1 = jake(c1)?.freePointBatches ?? [];
+    expect(b1[0]).toEqual({ raceLevel: 1, points: 2, allocation: { vitality: 2 }, locked: true });
+    expect(b1[1]).toEqual({ raceLevel: 2, points: 2, allocation: { vitality: 1 }, locked: false });
+    expect(b1[2]).toEqual({ raceLevel: 3, points: 2, allocation: null, locked: false });
+    expect(characterFlags(c1.state!, 'jake')).toContainEqual({ kind: 'freePoints', points: 3 });
+    const c2 = ok(c1, spend({ perception: 1 }));
+    expect(jake(c2)?.freePointBatches[1]).toEqual({
+      raceLevel: 2,
+      points: 2,
+      allocation: { vitality: 1, perception: 1 },
+      locked: true,
+    });
+    expect(jake(c2)?.freePointBatches[2]?.allocation).toBeNull();
+    const c3 = ok(c2, spend({ perception: 2 }));
+    expect(jake(c3)?.freePointBatches.every((b) => b.locked)).toBe(true);
+    expect(statBudgetTotal(jake(c3)!)).toBe(statBudgetTotal(jake(three())!));
+  });
+
+  it('refuses too many, nothing, negative, fractional and unknown amounts, and other players', () => {
+    const c = three();
+    const p = player('jake');
+    expect(execute(c, spend({ strength: 7 }), p)).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('only 6 unassigned points (got 7)'),
+    });
+    expect(execute(c, spend({}), p)).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('at least one point'),
+    });
+    expect(execute(c, spend({ strength: 0 }), p).ok).toBe(false);
+    expect(execute(c, spend({ strength: -1, agility: 2 }), p).ok).toBe(false);
+    expect(execute(c, spend({ strength: 1.5 }), p).ok).toBe(false);
+    expect(execute(c, spend({ luck: 1 }), p)).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('unknown stat "luck"'),
+    });
+    expect(execute(c, spend({ strength: 1 }, 'kim'), p)).toMatchObject({
+      ok: false,
+      error: 'Not allowed: players may only act on their own character',
+    });
+    const all = ok(c, spend({ strength: 6 }));
+    expect(execute(all, spend({ strength: 1 }), p)).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('only 0 unassigned points'),
+    });
+  });
+
+  it('the GM overrides or unassigns a partly used level-up', () => {
+    const c1 = ok(three(), spend({ vitality: 3 }));
+    const s1 = jake(c1)?.stats ?? {};
+    const over = ok(
+      c1,
+      {
+        type: 'freePoints.override',
+        characterId: 'jake',
+        raceLevel: 2,
+        allocation: { toughness: 2 },
+      },
+      testContext('g'),
+    );
+    expect(jake(over)?.freePointBatches[1]).toEqual({
+      raceLevel: 2,
+      points: 2,
+      allocation: { toughness: 2 },
+      locked: true,
+    });
+    expect(jake(over)?.stats['vitality']).toBe((s1['vitality'] ?? 0) - 1);
+    expect(jake(over)?.stats['toughness']).toBe((s1['toughness'] ?? 0) + 2);
+    const back = ok(
+      c1,
+      { type: 'freePoints.override', characterId: 'jake', raceLevel: 2, allocation: null },
+      testContext('h'),
+    );
+    expect(jake(back)?.freePointBatches[1]).toEqual({
+      raceLevel: 2,
+      points: 2,
+      allocation: null,
+      locked: false,
+    });
+    expect(jake(back)?.stats['vitality']).toBe((s1['vitality'] ?? 0) - 1);
+    // The older one-batch command still finishes a partly used level-up whole.
+    const whole = ok(c1, assign(2, { strength: 2 }));
+    expect(jake(whole)?.freePointBatches[1]).toMatchObject({
+      allocation: { strength: 2 },
+      locked: true,
+    });
+    expect(jake(whole)?.stats['vitality']).toBe((s1['vitality'] ?? 0) - 1);
+  });
+
+  it('undo of a spend restores every batch it touched', () => {
+    const before = three();
+    const after = run([spend({ agility: 5 })], testContext('u'), before);
+    const undone = run([{ type: 'event.undo', eventId: 'u1' }], testContext('v'), after);
+    expect(jake(undone)?.freePointBatches).toEqual(jake(before)?.freePointBatches);
+    expect(jake(undone)?.stats).toEqual(jake(before)?.stats);
   });
 });

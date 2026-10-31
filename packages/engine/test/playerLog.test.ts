@@ -152,6 +152,12 @@ const SCENARIOS: Partial<Record<EventType, Scenario>> = {
       allocation: { strength: 2 },
     },
   },
+  'freePoints.spent': {
+    setup: [
+      { type: 'xp.award', track: 'class', amount: 200, participants: [{ characterId: 'jake' }] },
+    ],
+    act: { type: 'freePoints.spend', characterId: 'jake', allocation: { strength: 3 } },
+  },
   'freePoints.overridden': {
     setup: [
       { type: 'xp.award', track: 'class', amount: 100, participants: [{ characterId: 'jake' }] },

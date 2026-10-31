@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { PlayerRules } from '@the-system/engine';
-import { allocationText, assignedBatches, nextBatch, spent, step } from '../src/player/freePoints';
+import {
+  allocationText,
+  assignedBatches,
+  remaining,
+  spent,
+  step,
+  unassignedTotal,
+  waitingCount,
+} from '../src/player/freePoints';
 
 const rules = {
   stats: {
@@ -15,15 +23,17 @@ const rules = {
 } as unknown as PlayerRules;
 
 describe('free points (M3.4)', () => {
-  it('offers the oldest unassigned batch', () => {
+  it('counts every unassigned point, partly used level-ups included (MV.1)', () => {
     const batches = [
       { raceLevel: 3, points: 2, allocation: null, locked: false },
       { raceLevel: 1, points: 2, allocation: { agility: 2 }, locked: true },
-      { raceLevel: 2, points: 2, allocation: null, locked: false },
+      { raceLevel: 2, points: 3, allocation: { agility: 1 }, locked: false },
     ];
-    expect(nextBatch(batches)?.raceLevel).toBe(2);
-    expect(nextBatch([])).toBeNull();
-    expect(assignedBatches(batches).map((b) => b.raceLevel)).toEqual([1]);
+    expect(batches.map(remaining)).toEqual([2, 0, 2]);
+    expect(unassignedTotal(batches)).toBe(4);
+    expect(waitingCount(batches)).toBe(2);
+    expect(unassignedTotal([])).toBe(0);
+    expect(assignedBatches(batches).map((b) => b.raceLevel)).toEqual([1, 2]);
   });
 
   it('steps within 0 and the batch size, dropping zero entries', () => {

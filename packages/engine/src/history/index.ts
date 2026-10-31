@@ -1,4 +1,4 @@
-import { raceLevel, type Character } from '../character';
+import { raceLevel, unassignedPointsOf, type Character } from '../character';
 import type { DomainEvent } from '../events/envelope';
 import type { Campaign } from '../events/log';
 import { applyEvent, type CampaignState } from '../events/reducer';
@@ -159,8 +159,7 @@ export interface HistoryItem {
 }
 
 const granted = (c: Character) => c.freePointBatches.reduce((a, b) => a + b.points, 0);
-const open = (c: Character) =>
-  c.freePointBatches.filter((b) => b.allocation === null).reduce((a, b) => a + b.points, 0);
+const open = (c: Character) => unassignedPointsOf(c.freePointBatches);
 
 const TRADE_ACTION = {
   'trade.proposed': 'proposed',

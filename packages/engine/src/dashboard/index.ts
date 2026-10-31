@@ -1,4 +1,4 @@
-import { CharacterRuleError, type Character } from '../character';
+import { CharacterRuleError, unassignedPointsOf, type Character } from '../character';
 import { dueSelections, evolutionTarget } from '../evolution';
 import type { CampaignState } from '../events/reducer';
 import { skillPairCounts } from '../practice';
@@ -36,9 +36,7 @@ export type CharacterFlag =
 
 /** Free points from level-ups not assigned yet (the player's to spend). */
 export function unassignedFreePoints(character: Character): number {
-  return character.freePointBatches
-    .filter((b) => b.allocation === null)
-    .reduce((a, b) => a + b.points, 0);
+  return unassignedPointsOf(character.freePointBatches);
 }
 
 /**

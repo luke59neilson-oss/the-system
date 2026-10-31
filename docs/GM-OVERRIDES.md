@@ -44,6 +44,8 @@ refusal is raised.
 | `… must be between 0 and …` | packages/engine/src/events/reducer.ts:973 | Not a rule to overrule: a pool is a value within its maximum. Raise the maximum through stats (`character.setStats`), then set the pool |
 | `the race level … points are already assigned and locked` | packages/engine/src/events/reducer.ts:1036 | Free-point override (`freePoints.override`) rewrites or clears any batch |
 | `assign exactly … points (got …)` | packages/engine/src/events/reducer.ts:1047 | Free-point override (`freePoints.override`) rewrites or clears any batch |
+| `choose at least one point to assign` | packages/engine/src/events/reducer.ts:1062 | Not a rule to overrule: an empty assignment changes nothing. To change stats, set them directly (`character.setStats`) |
+| `only … unassigned point… (got …)` | packages/engine/src/events/reducer.ts:1065 | Free-point override (`freePoints.override`) rewrites or clears any level-up's points, or set stats directly (`character.setStats`) |
 | `… would drop below 0` | packages/engine/src/events/reducer.ts:1053 | Set stats directly (`character.setStats`) |
 | `"…" does not qualify for a montage yet` | packages/engine/src/events/reducer.ts:1518 | `montage.offer` with `override: true` (Encounter → clock → "Early montage (override)") skips the half-filled, no-failure check |
 | `Class level … grants no skill selection` | packages/engine/src/evolution/model.ts:268 | `skill.grant` (Edit sheet → "Give a skill") gives a skill outside the selection schedule |

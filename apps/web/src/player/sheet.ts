@@ -1,15 +1,14 @@
 import type { PlayerRules } from '@the-system/engine';
+import { unassignedTotal, type Batch } from './freePoints';
 
 /** Stat in tenths per the rules' display settings (DESIGN §2: 23 → 2.3). */
 export function formatStatValue(rules: PlayerRules, value: number): string {
   return (value / rules.stats.displayDivisor).toFixed(rules.stats.displayDecimals);
 }
 
-/** Free points not yet assigned. */
-export function unassignedPoints(
-  batches: readonly { points: number; allocation: unknown }[],
-): number {
-  return batches.filter((b) => b.allocation === null).reduce((a, b) => a + b.points, 0);
+/** Free points not yet assigned (MV.1: a level-up may be partly used). */
+export function unassignedPoints(batches: readonly Batch[]): number {
+  return unassignedTotal(batches);
 }
 
 export function rarityName(rules: PlayerRules, id: string): string {

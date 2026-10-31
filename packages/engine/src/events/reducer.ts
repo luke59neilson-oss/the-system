@@ -7,6 +7,8 @@ import {
   takeOfferedProfession,
   withdrawProfessionOffer,
   poolMax,
+  batchRemaining,
+  unassignedPointsOf,
   type Character,
 } from '../character';
 import {
@@ -1049,6 +1051,44 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         next = withCharacter(next, leveled);
       }
       return next;
+    }
+    case 'freePoints.spent': {
+      // MV.1 (DESIGN §4): any amount at once, oldest waiting level-up first.
+      const character = characterOf(state, event, event.payload.characterId);
+      const statIds = state.rules.stats.list.map((s) => s.id);
+      const { allocation } = event.payload;
+      checkKeys(event, Object.keys(allocation), statIds, 'stat');
+      const total = Object.values(allocation).reduce((a, b) => a + b, 0);
+      if (total <= 0) fail(event, 'choose at least one point to assign');
+      const open = unassignedPointsOf(character.freePointBatches);
+      if (total > open) {
+        fail(event, `only ${open} unassigned point${open === 1 ? '' : 's'} (got ${total})`);
+      }
+      // Stat order, then batch by race level: deterministic per-level-up split.
+      const left = statIds.map((id) => [id, allocation[id] ?? 0] as [string, number]);
+      const order = character.freePointBatches
+        .map((b, i) => ({ b, i }))
+        .sort((x, y) => x.b.raceLevel - y.b.raceLevel);
+      const batches = [...character.freePointBatches];
+      for (const { b, i } of order) {
+        let room = batchRemaining(b);
+        if (room === 0) continue;
+        const add: Record<string, number> = { ...(b.allocation ?? {}) };
+        for (const entry of left) {
+          if (room === 0) break;
+          const take = Math.min(room, entry[1]);
+          if (take === 0) continue;
+          add[entry[0]] = (add[entry[0]] ?? 0) + take;
+          entry[1] -= take;
+          room -= take;
+        }
+        const used = Object.values(add).reduce((a, v) => a + v, 0);
+        if (used === 0) continue;
+        batches[i] = { ...b, allocation: add, locked: used === b.points };
+      }
+      const stats: Record<string, number> = { ...character.stats };
+      for (const [id, points] of Object.entries(allocation)) stats[id] = (stats[id] ?? 0) + points;
+      return withCharacter(state, { ...character, stats, freePointBatches: batches });
     }
     case 'freePoints.assigned':
     case 'freePoints.overridden': {

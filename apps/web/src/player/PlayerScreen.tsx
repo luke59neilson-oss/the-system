@@ -32,7 +32,14 @@ import {
   writeVolume,
   type HistoryFilter,
 } from './history';
-import { allocationText, assignedBatches, nextBatch, spent, step } from './freePoints';
+import {
+  allocationText,
+  assignedBatches,
+  remaining,
+  spent,
+  step,
+  waitingCount,
+} from './freePoints';
 import { browserStorage, remember } from './join';
 import { Inventory } from './Inventory';
 import { QuestLog } from './QuestLog';
@@ -246,28 +253,18 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
   const metal = themeClass(rules.grades.find((g) => g.id === me.grade)?.theme);
   const skills = (kind: SkillKind) => me.skills.filter((s) => s.kind === kind);
   const free = unassignedPoints(me.freePointBatches);
-  // The batch the player opened (by race level): a live change never swaps it
-  // for another; if it stops being open (GM override, undo), the panel closes.
-  const [openLevel, setOpenLevel] = useState<number | null>(null);
+  // MV.1: one panel over every unassigned point. If the points it was opened
+  // over all go (GM override, undo), it closes with a notice.
+  const [assignOpen, setAssignOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const batch = nextBatch(me.freePointBatches);
-  const open =
-    openLevel === null
-      ? null
-      : (me.freePointBatches.find((b) => b.raceLevel === openLevel && b.allocation === null) ??
-        null);
-  // Set while this screen's own assign is in flight: if the batch closes then,
+  // Set while this screen's own confirm is in flight: if the panel closes then,
   // the result decides what to say (success: nothing; refusal: a notice).
-  const [confirming, setConfirming] = useState<number | null>(null);
+  const [confirming, setConfirming] = useState(false);
   // Bumped to move focus back to [Assign] once the panel has closed.
   const [focusAssign, setFocusAssign] = useState(0);
-  if (openLevel !== null && open === null) {
-    if (confirming !== openLevel) {
-      setNotice(
-        `The race level ${openLevel} points were changed by the GM; your draft was discarded.`,
-      );
-    }
-    setOpenLevel(null);
+  if (assignOpen && free === 0 && !confirming) {
+    setNotice('Your free points were changed by the GM; your draft was discarded.');
+    setAssignOpen(false);
     setFocusAssign(focusAssign + 1);
   }
   const locked = assignedBatches(me.freePointBatches);
@@ -277,21 +274,19 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
     if (focusAssign > 0) assignButton.current?.focus();
   }, [focusAssign]);
   const close = () => {
-    setOpenLevel(null);
+    setAssignOpen(false);
     setFocusAssign((n) => n + 1);
   };
-  const openNow = useRef<number | null>(null);
+  const openNow = useRef(false);
   useEffect(() => {
-    openNow.current = openLevel;
+    openNow.current = assignOpen;
   });
-  /** The result of this screen's own assign, even after the panel closed. */
-  const settled = (level: number, ok: boolean) => {
-    setConfirming(null);
+  /** The result of this screen's own confirm, even after the panel closed. */
+  const settled = (ok: boolean) => {
+    setConfirming(false);
     // Still open: the panel shows its own error.
-    if (!ok && openNow.current !== level)
-      setNotice(
-        `The race level ${level} points were changed by the GM; your choice was not saved.`,
-      );
+    if (!ok && !openNow.current)
+      setNotice('Your free points were changed by the GM; your choice was not saved.');
   };
   // M3.5: the skill whose detail is open, by official name. If it stops
   // existing (merged, transformed by an evolution, undone), the detail closes.
@@ -519,14 +514,14 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
       <dl className="rows">
         <dt>Free points</dt>
         <Live testId="free-points" value={String(free)}>
-          {client && batch && openLevel === null && (
+          {client && free > 0 && !assignOpen && (
             <button
               type="button"
               className="assign-btn"
               ref={assignButton}
               onClick={() => {
                 setNotice(null);
-                setOpenLevel(batch.raceLevel);
+                setAssignOpen(true);
               }}
             >
               [Assign]
@@ -690,16 +685,14 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
           {notice}
         </p>
       )}
-      {client && open && (
+      {client && assignOpen && (
         <AssignPoints
-          key={open.raceLevel}
           client={client}
           view={view}
-          raceLevel={open.raceLevel}
-          points={open.points}
-          more={me.freePointBatches.filter((b) => b.allocation === null).length - 1}
-          onConfirming={() => setConfirming(open.raceLevel)}
-          onSettled={(ok) => settled(open.raceLevel, ok)}
+          points={free}
+          waiting={waitingCount(me.freePointBatches)}
+          onConfirming={() => setConfirming(true)}
+          onSettled={settled}
           onClose={close}
         />
       )}
@@ -710,6 +703,7 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
             {locked.map((b) => (
               <li key={b.raceLevel}>
                 Race level {b.raceLevel}: {allocationText(rules, b.allocation ?? {})}
+                {remaining(b) > 0 && ` (${remaining(b)} still to assign)`}
               </li>
             ))}
           </ul>
@@ -757,24 +751,25 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
 }
 
 /**
- * Assign one free-point batch (M3.4): spread exactly its points, review,
- * confirm. Assigned points lock; only the GM can change them (D38).
+ * Assign free points (M3.4, MV.1): spread any number of the unassigned points
+ * across every waiting level-up, review, confirm once; the rest stay for later.
+ * Assigned points lock; only the GM can change them (D38).
  */
 function AssignPoints({
   client,
   view,
-  raceLevel,
   points,
-  more,
+  waiting,
   onConfirming,
   onSettled,
   onClose,
 }: {
   client: LiveClient;
   view: PlayerView;
-  raceLevel: number;
+  /** Every unassigned point, live. */
   points: number;
-  more: number;
+  /** Level-ups with points waiting. */
+  waiting: number;
   onConfirming: () => void;
   /** Called with the outcome; a refusal after the panel closed becomes a notice. */
   onSettled: (ok: boolean) => void;
@@ -785,6 +780,12 @@ function AssignPoints({
   const [review, setReview] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The points shrank under the draft (GM override, undo): start the draft again.
+  if (!busy && spent(allocation) > points) {
+    setAllocation({});
+    setReview(false);
+    setError('Your free points changed; your draft was reset.');
+  }
   const left = points - spent(allocation);
   // Keyboard and screen-reader users land on each step (M3.4 review).
   const heading = useRef<HTMLHeadingElement | null>(null);
@@ -801,9 +802,8 @@ function AssignPoints({
     setError(null);
     onConfirming();
     const result = await client.command({
-      type: 'freePoints.assign',
+      type: 'freePoints.spend',
       characterId: view.me.id,
-      raceLevel,
       allocation,
     });
     setBusy(false);
@@ -820,9 +820,10 @@ function AssignPoints({
       <h3 id="assign-heading" tabIndex={-1} ref={heading}>
         Assign free points
       </h3>
-      <p className="muted">
-        Race level {raceLevel}: {points} points
-        {more > 0 ? ` (${more} more ${more === 1 ? 'batch' : 'batches'} waiting)` : ''}
+      <p className="muted" data-testid="assign-total">
+        {points} {points === 1 ? 'point' : 'points'} to assign
+        {waiting > 1 ? ` from ${waiting} level-ups` : ''}. Spend any number; the rest wait for
+        later.
       </p>
       {!review ? (
         <>
@@ -864,9 +865,10 @@ function AssignPoints({
             <button
               type="button"
               ref={reviewButton}
-              disabled={left !== 0}
+              disabled={spent(allocation) === 0}
               onClick={() => {
                 setStepped(true);
+                setError(null);
                 setReview(true);
               }}
             >
@@ -882,6 +884,8 @@ function AssignPoints({
           <p id="assign-review" data-testid="assign-review">
             Assign {allocationText(rules, allocation)}? Assigned points lock; only the GM can change
             them.
+            {left > 0 &&
+              ` ${left} ${left === 1 ? 'point stays' : 'points stay'} unassigned for later.`}
           </p>
           <div className="assign-actions">
             <button

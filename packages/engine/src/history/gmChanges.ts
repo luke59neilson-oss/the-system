@@ -93,6 +93,7 @@ export const PLAYER_NOTICE_AUDIT: Readonly<Record<EventType, PlayerNoticeAudit>>
   'character.progressionSet': notifies,
   'xp.awarded': notifies,
   'freePoints.assigned': notifies,
+  'freePoints.spent': notifies,
   'freePoints.overridden': notifies,
   'system.broadcast': notifies,
   'broadcast.scheduled': none,
@@ -327,6 +328,18 @@ export function gmChangeNotices(
           characterId: now.id,
           change: 'freePoints',
           detail: String(event.payload.raceLevel),
+          diffs: statDiffs(was, now, after),
+        });
+      }
+      break;
+    }
+    case 'freePoints.spent': {
+      const was = charOf(before, event.payload.characterId);
+      const now = charOf(after, event.payload.characterId);
+      if (was && now) {
+        push({
+          characterId: now.id,
+          change: 'freePoints',
           diffs: statDiffs(was, now, after),
         });
       }

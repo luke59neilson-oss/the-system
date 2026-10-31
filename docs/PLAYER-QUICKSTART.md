@@ -21,9 +21,10 @@ GM's laptop; nothing to install.
 - **Status**: name, race, class, profession (from E-grade), HP / MP /
   Stamina, the nine stats in tenths (23 → 2.3), titles and skills. Values
   update live as the GM plays.
-- **Free points · [Assign]**: each level-up's free points. Use **−** / **+**,
-  then **Review** and **Confirm**. A batch locks once confirmed; ask the GM if
-  you need a change.
+- **Free points · [Assign]**: all your unassigned free points, from every
+  level-up waiting. Use **−** / **+** on as many as you like, then **Review**
+  and **Confirm**; whatever you don't spend waits for later. Assigned points
+  lock; ask the GM if you need a change.
 - **Skill selection · [Choose]**: when the System offers new skills. New
   options are listed first, passed-over ones below. Pick one, then
   **Confirm** (or **Back**). It can wait for a break in play.

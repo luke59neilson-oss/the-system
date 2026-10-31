@@ -6,6 +6,7 @@ import {
   trackCap,
   type Character,
   type FreePointBatch,
+  unassignedPointsOf,
 } from '../character';
 import type { GradeRules, RulesConfig } from '../rules';
 
@@ -460,10 +461,7 @@ export function xpForLevels(
 /** Sum of base stats plus unassigned free points: the DESIGN §4 check-value total. */
 export function statBudgetTotal(character: Character): number {
   const stats = Object.values(character.stats).reduce((a, b) => a + b, 0);
-  const unassigned = character.freePointBatches
-    .filter((b) => b.allocation === null)
-    .reduce((a, b) => a + b.points, 0);
-  return stats + unassigned;
+  return stats + unassignedPointsOf(character.freePointBatches);
 }
 
 /** An award's input with every share set by hand (shares must sum to the amount). */
