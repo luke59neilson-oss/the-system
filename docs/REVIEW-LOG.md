@@ -1165,3 +1165,6 @@
 ### 2026-10-31 · QF.46 Forms reset after use, and say who it went to
 - Round 1 (sonnet, c57aeac1): 0 High, 2 Medium, 2 Low. M1 clearing incomplete (Import file, Encounter pools and clocks, New character class/race) and no e2e for Import/Encounter → form- or window-level `onChange` clears the line in New character, System broadcast, Award XP, Encounter and Import content; second e2e test covers each. M2 award line not cleared on amount/track/reason → same form-level handler, e2e asserts it. Low: by-hand shares now shown in the line; When/day kept after scheduling (deliberate, M4.7 queues several days).
 - Round 2 (sonnet, f393685c): 0 High, 0 Medium, 4 Low (to the QUALITY Backlog).
+
+### 2026-10-31 · QF.47 Contest rolls stay private until shared
+- Round 1 (sonnet, 4a9aa57f): 0 High, 0 Medium, 4 Low. Fixed: the entry repeated its stat ("Contest roll (Strength) Strength") → it reads "Contest roll" beside its stat tag; GM guide says an unshared roll tells the player nothing about the other side. To Backlog: the entry still shows a contest happened (accepted, D286); the Side A "Players see" field clips at 1366 (existing).

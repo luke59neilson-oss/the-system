@@ -256,7 +256,9 @@ which the co-DM's quick responses, suggestions, drafts and notes do not read.
   confirm it next session; **Dismiss** drops it. Nothing counts until you
   confirm, and marks stay one per skill per session. Contest rolls in the
   Encounter window log practice for their characters on their own, so talk
-  within two minutes of a roll is not drafted again for that character.
+  within two minutes of a roll is not drafted again for that character. The
+  entry reads just "Contest roll" with the character's own stat, so a roll
+  you don't share tells the player nothing about the other side.
   Drafts are kept in the campaign folder under `codm/`.
 - **Suggestions** (needs an API key): the Co-DM panel's Suggestions list
   offers a few ideas from what the table just said, each with the line that

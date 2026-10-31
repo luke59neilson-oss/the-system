@@ -102,7 +102,7 @@ describe('practice drafts (MC.7)', () => {
       {
         type: 'practice.log',
         characterId: 'jake',
-        action: 'Contest roll (Agility)',
+        action: 'Contest roll',
         stat: 'agility',
         tags: [CONTEST_TAG],
         source: 'gm',
@@ -152,8 +152,12 @@ describe('practice drafts (MC.7)', () => {
     expect(kim).not.toContain('Jake · Strength');
     expect(kim).not.toMatch(/Contest roll[^"]*Strength/);
     // Each still sees their own practice, with their own stat.
-    expect(jake).toContain('Contest roll (Perception)');
-    expect(jake).toContain('Contest roll (Strength)');
-    expect(kim).toContain('Contest roll (Agility)');
+    const contests = (v: ReturnType<typeof projectForPlayer>) =>
+      JSON.stringify(v)
+        .match(/"action":"Contest roll"[^}]*"stat":"\w+"/g)
+        ?.map((m) => m.replace(/.*"stat":"(\w+)"/, '$1'))
+        .sort();
+    expect(contests(projectForPlayer(after, 'jake'))).toEqual(['perception', 'strength']);
+    expect(contests(projectForPlayer(after, 'kim'))).toEqual(['agility']);
   });
 });

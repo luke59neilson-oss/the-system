@@ -72,9 +72,9 @@ test('an unshared contest names no opponent on any phone', async ({ browser }) =
 
   // Each phone has its own entries, naming its own stat only.
   const jakeLog = jake.page.getByTestId('practice');
-  await expect(jakeLog).toContainText('Contest roll (Perception)');
-  await expect(jakeLog).toContainText('Contest roll (Strength)');
-  await expect(kim.page.getByTestId('practice')).toContainText('Contest roll (Agility)');
+  await expect(jakeLog).toContainText(/Contest roll\s*Perception/);
+  await expect(jakeLog).toContainText(/Contest roll\s*Strength/);
+  await expect(kim.page.getByTestId('practice')).toContainText(/Contest roll\s*Agility/);
   await jakeLog.scrollIntoViewIfNeeded();
   await jake.page.screenshot({ path: path.join(shots, 'player-practice-390x844.png') });
   await gm.screenshot({ path: path.join(shots, 'gm-encounter-1366x768.png') });

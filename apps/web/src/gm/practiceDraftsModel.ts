@@ -67,7 +67,6 @@ export function contestPracticeCommands(
 ): Command[] {
   // QF.47: the entry is logged at once but the roll stays private until the
   // GM shares it (D182), so its text names neither the other side nor its stat.
-  const statName = (id: string) => state.rules.stats.list.find((s) => s.id === id)?.name ?? id;
   const out: Command[] = [];
   for (const me of [a, b]) {
     if (!me.source.startsWith('c:')) continue;
@@ -78,7 +77,7 @@ export function contestPracticeCommands(
     out.push({
       type: 'practice.log',
       characterId,
-      action: `Contest roll (${statName(stat)})`,
+      action: 'Contest roll',
       stat,
       tags: [CONTEST_TAG],
       source: 'gm',
