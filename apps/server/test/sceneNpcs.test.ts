@@ -12,6 +12,22 @@ describe('scene NPCs (QF.50)', () => {
     expect(keeperName('')).toBeNull();
     expect(keeperName('x'.repeat(80))).toBeNull();
   });
+  it('keeps a title abbreviation and refuses a description (review M1)', () => {
+    expect(keeperName('Dr. Vance, a surgeon')).toBe('Dr. Vance');
+    expect(keeperName('Mr. Hale: pawnbroker')).toBe('Mr. Hale');
+    expect(keeperName('Tam of the Ferry: old')).toBe('Tam of the Ferry');
+    expect(keeperName('A half-blind woman who sells resin')).toBeNull();
+    expect(keeperName('a grumpy dwarf')).toBeNull();
+  });
+  it('a note tagged npc counts only when its title reads as a name (review M2, M3)', () => {
+    const notes = {
+      a: note('a', 'Met the ferryman', 'Long session notes.', ['npc']),
+      bb: note('bb', 'Session 3 prep', 'Prep.', ['npc']),
+      ccc: note('ccc', 'Wren Holloway', 'Wren hides a lantern.', ['npc', 'lore']),
+    };
+    const npcs = sceneNpcs({ entities: {}, shops: {}, notes } as unknown as CampaignState);
+    expect(npcs.map((n) => [n.name, n.notes])).toEqual([['Wren Holloway', '']]);
+  });
 
   const note = (id: string, title: string, body: string, tags: string[], kind = 'gm') => ({
     id,

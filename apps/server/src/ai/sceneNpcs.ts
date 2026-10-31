@@ -19,19 +19,38 @@ export interface SceneNpc {
 
 const NAME_MAX = 60;
 
+/** Words a name may hold in lower case ("Tam of the Ferry", "Anna van Dorn"). */
+const CONNECTORS = new Set(['of', 'the', 'de', 'van', 'von', 'da', 'del', 'la', 'le', 'and']);
+/** Title abbreviations whose dot does not end the name ("Dr. Vance"). */
+const ABBREVIATIONS = /\b(?:Dr|Mr|Mrs|Ms|Mx|St|Mt|Capt|Sgt|Lt|Fr|Sr|Jr)\.(?=\s)/gu;
+
+/**
+ * Review M1/M2: whether text reads as a name: 1–5 words, each starting with a
+ * capital letter (or a digit-free connector such as "of"), so a description
+ * ("A half-blind woman who sells resin") or a note title ("Met the
+ * ferryman", "Session 3 prep") is not taken for one.
+ */
+export function looksLikeName(text: string): boolean {
+  const words = text.split(' ');
+  if (words.length > 5 || text.length < 2 || text.length > NAME_MAX) return false;
+  return words.every(
+    (w, i) =>
+      /^\p{Lu}/u.test(w) || (i > 0 && CONNECTORS.has(w.toLowerCase()) && w === w.toLowerCase()),
+  );
+}
+
 /**
  * The keeper's name from the GM's text ("Old Brenna: half-blind, …" or
  * "Old Brenna, half-blind …"): the words before the first `:`, `,`, `;`,
- * `.`, ` - `, ` — ` or `(`. Null when that is empty or too long to be a name.
+ * `.`, ` - `, ` — ` or `(`, keeping a title's dot ("Dr. Vance"). Null when
+ * that does not read as a name.
  */
 export function keeperName(keeper: string): string | null {
-  const head =
-    keeper
-      .split(/[:,;.(]| [-–—] /u)[0]
-      ?.replace(/\s+/gu, ' ')
-      .trim() ?? '';
-  if (head.length < 2 || head.length > NAME_MAX) return null;
-  return head;
+  const shielded = keeper
+    .replace(/\s+/gu, ' ')
+    .replace(ABBREVIATIONS, (m) => m.slice(0, -1) + '\u0000');
+  const head = (shielded.split(/[:,;.(]| [-–—] /u)[0] ?? '').replace(/\u0000/gu, '.').trim();
+  return looksLikeName(head) ? head : null;
 }
 
 const key = (name: string) => name.trim().toLowerCase();
@@ -79,8 +98,9 @@ export function sceneNpcs(state: CampaignState): SceneNpc[] {
     const lore = tags.some((t) => t.toLowerCase() === 'lore');
     if (tags.some((t) => t.toLowerCase() === 'npc')) {
       const name = note.title.replace(/\s+/gu, ' ').trim();
-      if (name.length >= 2 && name.length <= NAME_MAX) {
-        add({ id: `npc:${key(name)}`, name, names: [name], notes: note.body });
+      if (looksLikeName(name)) {
+        // Review M3: a lore note's text reaches the prompt as lore only.
+        add({ id: `npc:${key(name)}`, name, names: [name], notes: lore ? '' : note.body });
       }
     }
     for (const t of tags) {
