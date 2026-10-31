@@ -32,6 +32,17 @@ export function PracticePanel({ view, client }: { view: PlayerView; client: Live
   const [done, setDone] = useState<string | null>(null);
   const live = view.scenePrompt?.id ?? null;
   if (live !== null && live !== held && live !== done) setHeld(live);
+  // QF.48: End session closes a held prompt too: the scene is over and an
+  // answer could no longer count for that session. (A scene ended with no
+  // session running keeps the MT.9 hold.)
+  const [wasRunning, setWasRunning] = useState(view.sessionRunning);
+  if (wasRunning !== view.sessionRunning) {
+    setWasRunning(view.sessionRunning);
+    if (!view.sessionRunning && live === null && held !== null) {
+      setDone(held);
+      setHeld(null);
+    }
+  }
   const finish = () => {
     setDone(held);
     setHeld(null);

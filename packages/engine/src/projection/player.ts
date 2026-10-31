@@ -405,6 +405,12 @@ export interface PlayerView {
    * null. Never says who else was asked or has answered.
    */
   readonly scenePrompt: { readonly id: string } | null;
+  /**
+   * QF.48: whether a play session is running (the table knows; the
+   * session's ids, dates and numbers stay the GM's). A scene prompt the
+   * player still holds closes when the session ends.
+   */
+  readonly sessionRunning: boolean;
   /** Factions the GM has revealed (MT.8, Q69), in definition order. */
   readonly factions: readonly PlayerFaction[];
 }
@@ -896,6 +902,7 @@ export function projectForPlayer(
       state.scenePrompt != null && state.scenePrompt.pending.includes(viewer.id)
         ? { id: state.scenePrompt.id }
         : null,
+    sessionRunning: state.currentSession !== null,
     hiddenQuests: state.questOrder.filter((id) => {
       const q = hasOwnKey(state.quests, id) ? state.quests[id] : undefined;
       return q !== undefined && hiddenQuestNoticed(q, state.characterOrder).includes(viewer.id);

@@ -74,9 +74,11 @@ export function registerPracticeDraftRoutes(
           const c = state.characters[id]!;
           return { id: c.id, name: c.name, skills: c.skills.map((s) => s.name) };
         });
-      // Uses logged in the app this session already count (app action first).
+      // Uses logged in the app this session already count (app action first):
+      // the GM's entries and a player's own Cast, which is the app action
+      // itself (QF.48), never drafted again from the talk around it.
       const logged: LoggedUse[] = state.practice
-        .filter((p) => p.sessionId === sessionId && p.source === 'gm')
+        .filter((p) => p.sessionId === sessionId && (p.source === 'gm' || p.tags.includes('cast')))
         .map((p) => ({ characterId: p.characterId, skills: p.skills, at: p.at }))
         // A draft still waiting for the GM is not drafted twice (MC.7 review M3),
         // but only this session's: marks are one per skill per session, so a

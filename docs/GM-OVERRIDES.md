@@ -282,7 +282,7 @@ refusal is raised.
 | `session "…" already exists` | packages/engine/src/events/reducer.ts:2277 | Fix the input or define the thing first |
 | `an end-of-scene prompt needs a character` | packages/engine/src/events/reducer.ts:2317 | Fix the input or define the thing first |
 | `scene "…" already exists` | packages/engine/src/events/reducer.ts:2322 | Fix the input or define the thing first |
-| `that scene prompt is closed` | packages/engine/src/events/reducer.ts:2329 | Nothing to answer: end a new scene to ask again |
+| `the scene is over: that scene prompt is closed` | packages/engine/src/events/reducer.ts:2452 | Nothing to answer (the GM ended the scene or the session): end a new scene to ask again |
 | `… has already answered` | packages/engine/src/events/reducer.ts:2332 | Nothing to do: the answer is in; end a new scene to ask again |
 | `undo is applied by the event log, not the reducer` | packages/engine/src/events/reducer.ts:2302 | Fix the input or define the thing first |
 | `a region is already called "…"` | packages/engine/src/events/reducer.ts:2345 | Fix the input or define the thing first |

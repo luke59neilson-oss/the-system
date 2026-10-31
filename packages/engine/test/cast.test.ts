@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildSessionLog,
   execute,
   notificationsBetween,
   projectForPlayer,
@@ -154,5 +155,32 @@ describe('casting a skill with a cost (MU.5)', () => {
     const notes = notificationsBetween(before.state, after.state, after.events.at(-1));
     expect(notes.filter((n) => n.characterId !== 'jake')).toEqual([]);
     expect(JSON.stringify(projectForPlayer(after.state!, 'kim'))).not.toContain('Arcane Bolt');
+  });
+});
+
+// QF.48: the session report keeps casts, GM-given skills and damage/healing.
+describe('the session report keeps everything that happened (QF.48)', () => {
+  it('lists a cast in Practice and grants and pool changes in the timeline', () => {
+    const start = ok(setup(), { type: 'session.start', sessionId: 's1' });
+    const fromSeq = start.events.length;
+    let c = ok(start, cast, as('jake'));
+    c = ok(c, {
+      type: 'skill.grant',
+      characterId: 'kim',
+      name: 'Iron Skin',
+      rarity: 'common',
+      kind: 'class',
+    });
+    const hp = c.state!.characters['kim']!.pools['hp']!;
+    c = ok(c, { type: 'character.setPools', characterId: 'kim', pools: { hp: hp - 30 } });
+    c = ok(c, { type: 'character.setPools', characterId: 'kim', pools: { hp: hp - 10 } });
+    const log = buildSessionLog(c, fromSeq);
+    expect(log.practice).toEqual([
+      expect.objectContaining({ character: 'Jake', action: 'Cast [Arcane Bolt]', tags: ['cast'] }),
+    ]);
+    const lines = log.entries.map((e) => e.text);
+    expect(lines).toContain('The GM gave Kim Iron Skin (Common, class skill)');
+    expect(lines).toContain(`Kim: Health Points (HP) ${hp} → ${hp - 30} (−30)`);
+    expect(lines).toContain(`Kim: Health Points (HP) ${hp - 30} → ${hp - 10} (+20)`);
   });
 });
