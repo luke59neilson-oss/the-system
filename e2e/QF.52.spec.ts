@@ -60,6 +60,10 @@ test('a phone gets small views and fetches older messages and whole notes', asyn
   expect(text.length).toBeGreaterThan(300);
   await expect(note.getByTestId('note-edit')).toBeEnabled();
   await phone.screenshot({ path: path.join(shots, 'note-open-390x844.png') });
+  await phone.setViewportSize({ width: 1366, height: 768 });
+  await note.scrollIntoViewIfNeeded();
+  await phone.screenshot({ path: path.join(shots, 'note-open-1366x768.png') });
+  await phone.setViewportSize({ width: 390, height: 844 });
   await note.getByTestId('note-edit').click();
   await expect(phone.getByTestId('note-body')).toHaveValue(/(What happened at step \d+\. ){16}/);
   await phone.screenshot({ path: path.join(shots, 'note-edit-390x844.png') });

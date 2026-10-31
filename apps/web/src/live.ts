@@ -159,6 +159,8 @@ export class LiveClient {
   /** QF.52: a `view.limits` frame went out and no view has answered it yet. */
   private limitsPending = false;
   private limitsRetry: ReturnType<typeof setTimeout> | null = null;
+  /** When the last `view.limits` went out: a queued `view` can clear `limitsPending` first. */
+  private limitsSentAt = Number.NEGATIVE_INFINITY;
   /** QF.52: what this player's view should carry beyond the defaults. */
   private limits: { messages?: number | undefined; openNotes?: readonly string[] | undefined } = {};
   /** The campaign changed since this page last joined (MS.4 demo switch). */
@@ -222,6 +224,7 @@ export class LiveClient {
     const { messages, openNotes } = this.limits;
     if (messages === undefined && openNotes === undefined) return;
     this.limitsPending = true;
+    this.limitsSentAt = Date.now();
     socket.send(
       JSON.stringify({
         type: 'view.limits',
@@ -400,14 +403,22 @@ export class LiveClient {
             error: switched ? missingCharacterReason(this.snapshot.campaign) : message.error,
           });
           socket.close();
-        } else if (this.limitsPending && /^Too many actions/.test(message.error)) {
+        } else if (
+          /^Too many actions/.test(message.error) &&
+          (this.limitsPending || Date.now() - this.limitsSentAt < LIMITS_RETRY_MS)
+        ) {
           // QF.52 review: a rate-limited `view.limits` is sent again shortly,
-          // so an opened note never stays half-loaded.
+          // so an opened note never stays half-loaded. A `view` already queued
+          // when the limits went out (a rejoin) clears `limitsPending` early,
+          // so a limits frame sent within the last second also counts; the
+          // resend is idempotent. A non-limits refusal still shows its error.
+          const wasLimits = this.limitsPending;
           this.limitsPending = false;
           this.limitsRetry ??= setTimeout(() => {
             this.limitsRetry = null;
             this.sendLimits();
           }, LIMITS_RETRY_MS);
+          if (!wasLimits) this.update({ error: message.error });
         } else {
           this.update({ error: message.error });
         }
