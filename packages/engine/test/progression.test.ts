@@ -9,7 +9,7 @@ import {
   type XpTrack,
   classSpread,
   createCharacter,
-  defaultRules,
+  parseRulesConfig,
   execute,
   gainXp,
   grantProfession,
@@ -26,9 +26,16 @@ import {
   shareXp,
   typicalSessionXp,
 } from '../src';
-import { kit, rawRules, run, seededRandom, testContext } from './helpers/events';
+import { kit, preMeRules, rawRules, run, seededRandom, testContext } from './helpers/events';
 
-const rules = defaultRules();
+// The class-spread and DESIGN §4 check-value tests below are about campaigns
+// created before ME (D300); trackBudgets.test.ts covers the ME numbers.
+const parseRulesConfigOrThrow = (raw: unknown) => {
+  const r = parseRulesConfig(raw);
+  if (!r.ok) throw new Error(r.errors.join('; '));
+  return r.config;
+};
+const rules = parseRulesConfigOrThrow(preMeRules());
 const stats = rules.stats.list.map((s) => s.id);
 const fresh = (weights?: Record<string, number>): Character =>
   createCharacter(rules, {

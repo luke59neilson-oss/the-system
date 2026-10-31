@@ -90,6 +90,9 @@ export const PLAYER_NOTICE_AUDIT: Readonly<Record<EventType, PlayerNoticeAudit>>
   'titleDef.edited': notifies,
   'character.poolsSet': notifies,
   'character.statsSet': notifies,
+  'character.distributionSet': silent(
+    "GM builder data that changes no stat now; the next level-up's DING shows what it grants",
+  ),
   'character.progressionSet': notifies,
   'xp.awarded': notifies,
   'freePoints.assigned': notifies,

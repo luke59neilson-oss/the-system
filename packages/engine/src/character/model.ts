@@ -37,6 +37,13 @@ export interface CharacterSkill {
 /** One level-up's free points (DESIGN §4): assigned once, then locked (M1.5). */
 export interface FreePointBatch {
   readonly raceLevel: number;
+  /**
+   * ME.1: free points from a class or profession level that raised no race
+   * level carry that track and level (the character's race level at the time
+   * stays in raceLevel). Absent on race-level batches (every batch before ME).
+   */
+  readonly track?: 'class' | 'profession';
+  readonly trackLevel?: number;
   readonly points: number;
   readonly allocation: Readonly<Record<string, number>> | null;
   readonly locked: boolean;
@@ -55,6 +62,41 @@ export function batchRemaining(batch: FreePointBatch): number {
 /** Every unassigned free point of a character, across all waiting level-ups. */
 export function unassignedPointsOf(batches: readonly FreePointBatch[]): number {
   return batches.reduce((a, b) => a + batchRemaining(b), 0);
+}
+
+/** ME.1 (DESIGN §2, §4): the three stat-granting tracks. */
+export type StatTrack = 'class' | 'profession' | 'race';
+
+/** ME.1: whole points per stat plus free points that one level of a track grants. */
+export interface TrackDistribution {
+  readonly stats: Readonly<Record<string, number>>;
+  readonly free: number;
+}
+
+/** ME.1: a character's per-track distributions (each optional). */
+export type TrackDistributions = Readonly<Partial<Record<StatTrack, TrackDistribution>>>;
+
+/** Identifies one free-point batch: race-level batches have no track (ME.1). */
+export function sameBatch(
+  b: Pick<FreePointBatch, 'raceLevel' | 'track' | 'trackLevel'>,
+  key: { raceLevel: number; track?: string | undefined; trackLevel?: number | undefined },
+): boolean {
+  return (
+    b.raceLevel === key.raceLevel &&
+    (b.track ?? null) === (key.track ?? null) &&
+    (b.trackLevel ?? null) === (key.trackLevel ?? null)
+  );
+}
+
+/** "race level 3" or "class level 4" for messages about a batch (ME.1). */
+export function batchLabel(key: {
+  raceLevel: number;
+  track?: string | undefined;
+  trackLevel?: number | undefined;
+}): string {
+  return key.track === undefined
+    ? `race level ${key.raceLevel}`
+    : `${key.track} level ${key.trackLevel ?? 0}`;
 }
 
 /** A merge waiting on the player's answer (MT.2). */
@@ -134,6 +176,12 @@ export interface Character {
    * maximum leaves it where it is. Absent when empty (older states unchanged).
    */
   readonly clampedPools?: readonly string[];
+  /**
+   * ME.1 (DESIGN §2): per-track distributions. Absent (older states, and
+   * characters the GM has not set one for) means the class weights, the class
+   * shape for the profession, and all free points for the race (D301).
+   */
+  readonly distributions?: TrackDistributions;
 }
 
 /** A stored portrait: the SHA-256 of the image bytes and its extension (M4.4). */

@@ -16,6 +16,7 @@ import type { LiveClient } from '../live';
 import { PortraitCell } from './PortraitControls';
 import { SkillOverrides } from './SkillOverrides';
 import { draftOf, flagView, sheetPlan, type SheetDraft } from './partyDashboardModel';
+import { batchKey, batchName, batchRef } from '../player/freePoints';
 
 /**
  * Party dashboard (M4.5): a card per character with what waits on the GM or
@@ -406,13 +407,13 @@ function FreePointBatches({
   const assigned = c.freePointBatches.filter((b) => b.allocation !== null);
   if (assigned.length === 0) return null;
   const statName = (id: string) => state.rules.stats.list.find((s) => s.id === id)?.name ?? id;
-  const giveBack = async (raceLevel: number) => {
+  const giveBack = async (batch: (typeof assigned)[number]) => {
     setBusy(true);
     setError(null);
     const r = await client.command({
       type: 'freePoints.override',
       characterId: c.id,
-      raceLevel,
+      ...batchRef(batch),
       allocation: null,
     });
     setBusy(false);
@@ -423,8 +424,8 @@ function FreePointBatches({
       <legend>Assigned free points</legend>
       <ul className="sheet-batches">
         {assigned.map((b) => (
-          <li key={b.raceLevel}>
-            Race lvl {b.raceLevel}:{' '}
+          <li key={batchKey(b)}>
+            {b.track === undefined ? `Race lvl ${b.raceLevel}` : batchName(b)}:{' '}
             {Object.entries(b.allocation ?? {})
               .filter(([, n]) => n > 0)
               .map(([id, n]) => `${statName(id)} +${n}`)
@@ -434,7 +435,7 @@ function FreePointBatches({
               type="button"
               className="secondary small"
               disabled={busy}
-              onClick={() => void giveBack(b.raceLevel)}
+              onClick={() => void giveBack(b)}
             >
               Return to player
             </button>

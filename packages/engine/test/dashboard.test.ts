@@ -44,15 +44,15 @@ describe('characterFlags (M4.5)', () => {
 
   it('free points from a level-up wait on the player until assigned', () => {
     const c = run([...start, award(100)]);
-    expect(flags(c)).toEqual([{ kind: 'freePoints', points: 2 }]);
-    expect(unassignedFreePoints(c.state!.characters[ID]!)).toBe(2);
+    expect(flags(c)).toEqual([{ kind: 'freePoints', points: 5 }]);
+    expect(unassignedFreePoints(c.state!.characters[ID]!)).toBe(5);
     const assigned = run(
       [
         {
           type: 'freePoints.assign',
           characterId: ID,
           raceLevel: 1,
-          allocation: { strength: 2 },
+          allocation: { strength: 5 },
         },
       ],
       testContext('b'),

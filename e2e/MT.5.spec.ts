@@ -73,9 +73,9 @@ test('the GM sets level, XP and grade after a warning, and can undo it', async (
   ]);
   await expect(warning.getByTestId('override-skips').getByRole('listitem')).toHaveText([
     'The evolution to F-grade: no evolution stat bonus, skill re-rating, pool refill or profession offer',
-    '56 class spread points (base stats stay as they are)',
+    '196 class stat points (base stats and free points stay as they are)',
     'No skills are granted: the selections at class level 5 and 10 become due, for you to offer as usual',
-    '32 free points (no new batches to assign)',
+    '68 race stat points (no new batches to assign)',
   ]);
   await warning.scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'gm-override-warning-1366x768.png') });

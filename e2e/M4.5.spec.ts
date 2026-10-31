@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
 import { openWindow, reveal } from './helpers/gmTabs';
+import { usePreMeRules } from './helpers/preMeRules';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // M4.5 Party dashboard: a card per character with what waits on the GM or the
@@ -51,6 +52,9 @@ test('flags show what waits; the sheet editor sends audited edits live', async (
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Dashboard Test');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  // Flags and free points with the numbers of a campaign created before ME
+  // (D300; ME.1.spec covers the new budgets).
+  await usePreMeRules(gm, GM_KEY);
   const create = gm.locator('form[aria-labelledby="new-character"]');
   for (const [name, cls] of [
     ['Jake', 'Archer'],

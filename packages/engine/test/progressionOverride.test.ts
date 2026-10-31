@@ -245,12 +245,13 @@ describe('GM override for level, XP and grade (MT.5)', () => {
       'Race level 0 → 20',
       'Class XP 0 → 10',
     ]);
-    // Levels 1–4 at G (4 each), 5–14 at F (5 each), 15–20 at E (8 each).
+    // ME.1 budgets, no profession: class + profession share per class level
+    // (G 8+5, F 11+7, E 16+10) and the race's points per race level (G 5, F 6, E 10).
     expect(s.skips).toEqual([
       'The evolution to F-grade and E-grade: no evolution stat bonus, skill re-rating, pool refill or profession offer',
-      `${4 * 4 + 10 * 5 + 6 * 8} class spread points (base stats stay as they are)`,
+      `${4 * 13 + 10 * 18 + 6 * 26} class stat points (base stats and free points stay as they are)`,
       'No skills are granted: the selections at class level 5, 10, 15 and 20 become due, for you to offer as usual',
-      `${4 * 2 + 10 * 3 + 6 * 4} free points (no new batches to assign)`,
+      `${4 * 5 + 10 * 6 + 6 * 10} race stat points (no new batches to assign)`,
     ]);
     const down = progressionOverrideSummary(
       c.state!.rules,

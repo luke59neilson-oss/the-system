@@ -255,9 +255,17 @@ describe('invalid configs give readable errors', () => {
       /^campaign\.typicalLevelsPerSession: must be within the range 4-8/,
     ],
     [
-      'profession at first grade',
-      (r: any) => (r.tracks.professionUnlockGrade = 'G'),
+      'profession at first grade without track budgets (pre-ME rules)',
+      (r: any) => {
+        r.tracks.professionUnlockGrade = 'G';
+        delete r.grades[3].trackBudget;
+      },
       /^tracks\.professionUnlockGrade: must be a grade reached by evolving/,
+    ],
+    [
+      'track budget with a negative share',
+      (r: any) => (r.grades[0].trackBudget = { class: 8, profession: -1, race: 5 }),
+      /^grades\[0\] \(G\)\.trackBudget\.profession: Too small/,
     ],
     [
       'inherited-name rarity without a mark cost',

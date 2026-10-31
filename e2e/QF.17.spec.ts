@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
 import { openWindow } from './helpers/gmTabs';
+import { usePreMeRules } from './helpers/preMeRules';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // QF.17: a Table-view pane pins the newest DING of every kind (level-up,
@@ -69,6 +70,8 @@ test('a Table-view pane pins a skill-upgrade DING, not only level-ups', async ({
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Table DINGs');
   await gm.getByRole('button', { name: 'Create campaign' }).click();
+  // The DING below quotes the pre-ME free points (ME.1.spec covers the new budgets).
+  await usePreMeRules(gm, GM_KEY);
   await gmCommand(gm, {
     type: 'character.create',
     id: 'jake',

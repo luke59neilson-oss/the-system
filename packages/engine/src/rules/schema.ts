@@ -54,6 +54,14 @@ export const gradeSchema = z.strictObject({
   classSpreadPerLevel: nonNegativeInt,
   /** Free stat points per race level gained in this grade. */
   freePointsPerRaceLevel: nonNegativeInt,
+  /**
+   * ME.1 (DESIGN §4, L26): points per level of each track in this grade. Absent
+   * in rules stored before ME: those campaigns keep classSpreadPerLevel and
+   * freePointsPerRaceLevel until the GM switches (D300).
+   */
+  trackBudget: z
+    .strictObject({ class: nonNegativeInt, profession: nonNegativeInt, race: nonNegativeInt })
+    .optional(),
   /** XP needed per level while the character is in this grade. */
   xpPerLevel: positiveInt,
   /**
@@ -328,10 +336,13 @@ export const rulesConfigSchema = z
     if (!tops.includes(config.campaign.levelCap)) {
       issue(['campaign', 'levelCap'], `must equal the top level of a grade (${tops.join(', ')})`);
     }
-    if (config.grades[0]?.id === config.tracks.professionUnlockGrade) {
+    // Professions from the first grade need a profession budget in every grade
+    // (ME.1, D300); rules without track budgets keep the old refusal.
+    const allBudgets = config.grades.every((g) => g.trackBudget !== undefined);
+    if (!allBudgets && config.grades[0]?.id === config.tracks.professionUnlockGrade) {
       issue(
         ['tracks', 'professionUnlockGrade'],
-        'must be a grade reached by evolving (not the first)',
+        'must be a grade reached by evolving (not the first) unless every grade has a trackBudget',
       );
     }
     for (const [path, value] of [

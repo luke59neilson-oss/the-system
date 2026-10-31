@@ -3,7 +3,6 @@ import {
   CharacterRuleError,
   clampPools,
   createCharacter,
-  defaultRules,
   formatStat,
   gradeIndexOf,
   grantProfession,
@@ -17,8 +16,15 @@ import {
   type Character,
   type RulesConfig,
 } from '../src';
+import { preMeRules } from './helpers/events';
 
-const rules = defaultRules();
+// Professions before ME unlocked at E-grade (D300); ME.1's G-grade default is
+// tested in trackBudgets.test.ts and events.test.ts.
+const rules = (() => {
+  const r = parseRulesConfig(preMeRules());
+  if (!r.ok) throw new Error(r.errors.join('; '));
+  return r.config;
+})();
 const kit = [
   { name: 'Basic Archery', rarity: 'inferior' },
   { name: 'Basic Stealth', rarity: 'inferior' },

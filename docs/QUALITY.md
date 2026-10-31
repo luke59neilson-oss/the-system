@@ -222,6 +222,7 @@ lowered by their verifiers and folded into the Low batches.
 
 ## Backlog (Lows; M11.5 goes through these)
 
+- (ME.1 review, sonnet) after the GM lowers a class or profession level and it is earned again, a second track batch with the same `track`/`trackLevel` is pushed and only `freePoints.spend` can reach it (add a had-guard like race batches); a custom grade with a zero race budget and zero shares pushes a 0-point race batch.
 - (MV.A review, fable) View as / Table view panes get the Identify notice with no Close, so the GM cannot see the pane until the player closes it; simulation and soak tests still send `freePoints.assign`, not the `freePoints.spend` the phone sends (no randomized spend/override/undo invariants); campaigns from before MV.3 decide Identify range at the old reveal, so an entity read live before may show `[??? – lvl ???]` until re-marked (say so in GM-GUIDE); after a lost connection on confirm the phone says the GM changed the free points; the notice header repeats the GM's own `[Name – lvl N]` line; `entity.closeNotice` answers differently for real and unknown entity ids.
 - (Sweep A, Rules, fable) the GM change log and session report word `freePoints.spent` like a one-batch assign, with no per-level-up split; DESIGN §5 still reads as if typed 34/33/33 gives 340/330/330 (D296 gives the exact even split): add a line.
 - (Sweep A, Tests, haiku) `backpressure.test.ts` "drops a socket that misses two pongs" waits a fixed 600 ms and only checks the socket closed, not why; `cutBody` has no test for an emoji at the cut point.

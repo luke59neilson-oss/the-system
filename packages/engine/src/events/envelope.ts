@@ -201,6 +201,21 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     characterId: recordId,
     pools: z.record(z.string().min(1), z.number().int()),
   }),
+  /**
+   * ME.1 (DESIGN §2, §4): the GM sets what one level of a character's class,
+   * profession or race grants (whole points per stat plus free points), or
+   * null to go back to the default (D301). Applies from the next level-up.
+   */
+  'character.distributionSet': z.strictObject({
+    characterId: recordId,
+    track: z.enum(['class', 'profession', 'race']),
+    distribution: z
+      .strictObject({
+        stats: z.record(z.string().min(1), z.number().int().nonnegative().max(100_000)),
+        free: z.number().int().nonnegative().max(100_000),
+      })
+      .nullable(),
+  }),
   /** GM override of base stats (audited sheet edit, M4.5); pools re-clamp. */
   'character.statsSet': z.strictObject({ characterId: recordId, stats: statValues }),
   /**
@@ -250,6 +265,9 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   'freePoints.assigned': z.strictObject({
     characterId: recordId,
     raceLevel: z.number().int().positive(),
+    /** ME.1: a class or profession level's batch (absent for race-level batches). */
+    track: z.enum(['class', 'profession']).optional(),
+    trackLevel: z.number().int().positive().max(10_000).optional(),
     allocation: statValues,
   }),
   /**
@@ -264,6 +282,9 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   'freePoints.overridden': z.strictObject({
     characterId: recordId,
     raceLevel: z.number().int().positive(),
+    /** ME.1: a class or profession level's batch (absent for race-level batches). */
+    track: z.enum(['class', 'profession']).optional(),
+    trackLevel: z.number().int().positive().max(10_000).optional(),
     allocation: statValues.nullable(),
   }),
   /**
@@ -933,6 +954,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'titleDef.edited': 1,
   'character.poolsSet': 1,
   'character.statsSet': 1,
+  'character.distributionSet': 1,
   'character.progressionSet': 1,
   'xp.awarded': 1,
   'freePoints.assigned': 1,

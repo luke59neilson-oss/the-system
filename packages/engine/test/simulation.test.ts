@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canUpgrade,
-  defaultRules,
+  parseRulesConfig,
   dueSelections,
   emptyCampaign,
   evolutionTarget,
@@ -26,7 +26,7 @@ import {
   type GradeRules,
   type XpTrack,
 } from '../src';
-import { kit, rawRules, seededRandom } from './helpers/events';
+import { kit, preMeRules, seededRandom } from './helpers/events';
 
 /**
  * ROADMAP M1.14 campaign simulation: 40 sessions, 4 characters, about 6 race
@@ -59,7 +59,13 @@ const GM_NOTE = 'GM-SECRET-7f3a';
 const HIDDEN_QUEST = 'HIDDEN-QUEST-91c2';
 const PRIVATE_JOURNAL = 'PRIVATE-JOURNAL-5d0e';
 
-const rules = defaultRules();
+// The simulation checks the DESIGN §4 numbers of campaigns created before ME
+// (D300); trackBudgets.test.ts checks the ME budgets level by level.
+const rules = (() => {
+  const r = parseRulesConfig(preMeRules());
+  if (!r.ok) throw new Error(r.errors.join('; '));
+  return r.config;
+})();
 const gradeById = (id: string): GradeRules => {
   const g = rules.grades.find((x) => x.id === id);
   if (!g) throw new Error(`no grade ${id}`);
@@ -169,7 +175,7 @@ function simulate(seed: number): { c: Campaign; tally: Tally } {
   };
 
   // ---- Campaign set-up (session 0, outside play) ----
-  exec({ type: 'campaign.create', name: 'The Whale', rules: rawRules() });
+  exec({ type: 'campaign.create', name: 'The Whale', rules: preMeRules() });
   for (const id of PARTY) {
     exec({
       type: 'character.create',

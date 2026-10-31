@@ -103,9 +103,9 @@ describe('player projection', () => {
     expect(view.me.raceLevel).toBe(3);
     // Full pools stay full as level-ups raise the maxima (MQ.2, D100).
     expect(view.me.pools).toEqual([
-      { id: 'hp', current: 110, max: 110 },
-      { id: 'mp', current: 110, max: 110 },
-      { id: 'stamina', current: 120, max: 120 },
+      { id: 'hp', current: 140, max: 140 },
+      { id: 'mp', current: 140, max: 140 },
+      { id: 'stamina', current: 150, max: 150 },
     ]);
   });
 
@@ -169,7 +169,7 @@ describe('player projection', () => {
   it('classifies every character and campaign field', () => {
     const state = party();
     // Optional fields appear only when set (MQ.15's clamped-pool marks).
-    const optional = ['clampedPools', 'mergeOffer', 'lastMergeAnswer'];
+    const optional = ['clampedPools', 'mergeOffer', 'lastMergeAnswer', 'distributions'];
     expect(Object.keys(CHARACTER_FIELD_VISIBILITY).sort()).toEqual(
       [...Object.keys(state.characters.jake ?? {}), ...optional].sort(),
     );

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { CampaignState } from '@the-system/engine';
+import { withTrackBudgets, type CampaignState } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 
@@ -158,6 +158,7 @@ export function RulesSettings({ client, state }: { client: LiveClient; state: Ca
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmSwitch, setConfirmSwitch] = useState(false);
   const [opened, setOpened] = useState<ReadonlySet<string>>(new Set());
   const onToggle = (name: string, isOpen: boolean) =>
     setOpened((prev) => {
@@ -170,6 +171,12 @@ export function RulesSettings({ client, state }: { client: LiveClient; state: Ca
   const draft: Json = edits ?? (JSON.parse(current) as Json);
   const badNumber = hasBadNumber(draft);
   const dirty = edits !== null && JSON.stringify(draft) !== current;
+  // ME.1 (D302): the switch only shows while it would change something; grades
+  // with no default budget are named so the GM can set theirs by hand.
+  const switchable = state.rules.grades.some((g) => g.trackBudget === undefined);
+  const switched = withTrackBudgets(state.rules);
+  const switchChanges = JSON.stringify(switched) !== JSON.stringify(state.rules);
+  const noDefault = switched.grades.filter((g) => g.trackBudget === undefined).map((g) => g.id);
   const onChange = (path: Path, value: Json) => {
     setEdits(setAt(draft, path, value));
     setStatus(null);
@@ -207,6 +214,55 @@ export function RulesSettings({ client, state }: { client: LiveClient; state: Ca
             onToggle={onToggle}
           />
         ),
+      )}
+      {switchable && (
+        <div className="track-budget-switch" data-testid="track-budget-switch">
+          <p className="small">
+            This campaign uses the stat numbers from before every track gave stats: class spread
+            plus free points per race level, and professions from{' '}
+            {state.rules.tracks.professionUnlockGrade}-grade. The new numbers give class, profession
+            and race their own points per level
+            {switched.tracks.professionUnlockGrade !== state.rules.tracks.professionUnlockGrade
+              ? ` and offer professions from ${switched.tracks.professionUnlockGrade}-grade (now ${state.rules.tracks.professionUnlockGrade}-grade)`
+              : ''}
+            . Switching applies from each character&apos;s next level-up; points already given stay
+            as they are.
+          </p>
+          {noDefault.length > 0 && (
+            <p className="small" data-testid="track-budget-missing">
+              {noDefault.length === 1 ? 'Grade' : 'Grades'} {noDefault.join(', ')}{' '}
+              {noDefault.length === 1 ? 'has' : 'have'} no default budget and keep
+              {noDefault.length === 1 ? 's' : ''} the old numbers until you set{' '}
+              {noDefault.length === 1 ? 'its' : 'their'} track budget under Grades.
+            </p>
+          )}
+          {!switchChanges ? null : confirmSwitch ? (
+            <div className="row">
+              <button
+                type="button"
+                disabled={dirty}
+                onClick={() => {
+                  setConfirmSwitch(false);
+                  send({ type: 'rules.set', rules: switched }, 'Switched to the new stat budgets.');
+                }}
+              >
+                Confirm switch
+              </button>
+              <button type="button" className="secondary" onClick={() => setConfirmSwitch(false)}>
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="secondary"
+              disabled={dirty}
+              onClick={() => setConfirmSwitch(true)}
+            >
+              Switch to the new stat budgets
+            </button>
+          )}
+        </div>
       )}
       {badNumber && <p className="err">Every number field needs a number before saving.</p>}
       {error && (

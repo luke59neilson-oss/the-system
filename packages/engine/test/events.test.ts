@@ -29,6 +29,7 @@ import {
   run,
   seededRandom,
   testContext,
+  preMeRules,
 } from './helpers/events';
 
 const created: Command = { type: 'campaign.create', name: 'Whale', rules: rawRules() };
@@ -182,15 +183,27 @@ describe('commands and the reducer', () => {
     );
   });
 
-  it('renames, grants professions only from E-grade, sets pools and stats', () => {
+  it('renames, grants professions from the start (pre-ME rules: from E-grade), sets pools and stats', () => {
     const c = run(
       [{ type: 'character.rename', characterId: 'jake', name: 'Jay' }],
       testContext('a'),
       base(),
     );
     expect(c.state?.characters['jake']?.name).toBe('Jay');
+    // ME.1 (DESIGN §2): professions are offered from the start.
+    const offered = run(
+      [{ type: 'character.grantProfession', characterId: 'jake', profession: 'Smith' }],
+      testContext('g'),
+      c,
+    );
+    expect(offered.state?.characters['jake']).toMatchObject({
+      profession: 'Smith',
+      professionLevel: 0,
+    });
+    // A campaign created before ME keeps professions from E-grade (D300).
+    const old = run([{ ...created, rules: preMeRules() }, jake]);
     expect(
-      reject(c, { type: 'character.grantProfession', characterId: 'jake', profession: 'Smith' }),
+      reject(old, { type: 'character.grantProfession', characterId: 'jake', profession: 'Smith' }),
     ).toMatch('Professions unlock at E-grade');
     const pools = run(
       [

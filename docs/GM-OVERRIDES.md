@@ -42,9 +42,9 @@ refusal is raised.
 | `Not enough … to cast […]: … of …` | packages/engine/src/events/commands.ts:889 | Set the pool (Edit sheet → pools, `character.setPools`) first, or log the use as practice without spending (`practice.log`); cooldowns are never enforced |
 | `not enough …: … of …` | packages/engine/src/events/reducer.ts:1721 | The replay check behind the one above (a recorded cast the pool cannot pay); same way through |
 | `… must be between 0 and …` | packages/engine/src/events/reducer.ts:973 | Not a rule to overrule: a pool is a value within its maximum. Raise the maximum through stats (`character.setStats`), then set the pool |
-| `the race level … points are already assigned and locked` | packages/engine/src/events/reducer.ts:1036 | Free-point override (`freePoints.override`) rewrites or clears any batch |
+| `the … points are already assigned and locked` | packages/engine/src/events/reducer.ts:1036 | Free-point override (`freePoints.override`) rewrites or clears any batch |
 | `assign exactly … points (got …)` | packages/engine/src/events/reducer.ts:1047 | Free-point override (`freePoints.override`) rewrites or clears any batch |
-| `some race level … points are already assigned; assign the rest` | packages/engine/src/events/reducer.ts:1109 | Free-point override (`freePoints.override`) rewrites or clears any level-up's points |
+| `some … points are already assigned; assign the rest` | packages/engine/src/events/reducer.ts:1109 | Free-point override (`freePoints.override`) rewrites or clears any level-up's points |
 | `choose at least one point to assign` | packages/engine/src/events/reducer.ts:1062 | Not a rule to overrule: an empty assignment changes nothing. To change stats, set them directly (`character.setStats`) |
 | `only … unassigned point… (got …)` | packages/engine/src/events/reducer.ts:1065 | Free-point override (`freePoints.override`) rewrites or clears any level-up's points, or set stats directly (`character.setStats`) |
 | `… would drop below 0` | packages/engine/src/events/reducer.ts:1053 | Set stats directly (`character.setStats`) |
@@ -102,8 +102,9 @@ refusal is raised.
 | `No session is running` | packages/engine/src/events/commands.ts:1697 | End or start the session first |
 | `trade "…" is already …` | packages/engine/src/events/reducer.ts:328 | The trade is over; propose a new one |
 | `… already holds […]` | packages/engine/src/events/reducer.ts:909 | Titles are held once; award a different title |
-| `no free-point batch for race level …` | packages/engine/src/events/reducer.ts:1030 | No such batch: free points come with race levels; set them with the free-point override |
-| `the race level … points are not assigned` | packages/engine/src/events/reducer.ts:1033 | No such batch: free points come with race levels; set them with the free-point override |
+| `no free-point batch for …` | packages/engine/src/events/reducer.ts:1129 | No such batch: free points come with level-ups (a race level, or a class or profession level that raised none; ME.1); set them with the free-point override |
+| `the … points are not assigned` | packages/engine/src/events/reducer.ts:1132 | Nothing to clear: the level-up's points are unassigned already; assign them with the free-point override |
+| `… has no … distribution to reset` | packages/engine/src/events/reducer.ts:1056 | Nothing to reset: the track already uses its default (ME.1, D301) |
 | `that broadcast has no banner to remove` | packages/engine/src/events/reducer.ts:1094 | Nothing to remove |
 | `that banner was already removed` | packages/engine/src/events/reducer.ts:1095 | Nothing to remove |
 | `day … has already begun; send it now instead` | packages/engine/src/events/reducer.ts:1102 | Send it now instead |
@@ -156,6 +157,12 @@ refusal is raised.
 
 | Refusal | Where | GM way through |
 | --- | --- | --- |
+| `a distribution needs at least one point` | packages/engine/src/events/reducer.ts:1060 | Give at least one stat point or free point, or reset the track to its default (ME.1) |
+| `Unknown stat "…"` | packages/engine/src/progression/budget.ts:37 | Use a stat from the rules' stat list |
+| `Points for … must be a whole number ≥ 0` | packages/engine/src/progression/budget.ts:38 | Whole points only |
+| `Free points must be a whole number ≥ 0` | packages/engine/src/progression/budget.ts:41 | Whole points only |
+| `Budget must be a whole number ≥ 0` | packages/engine/src/progression/budget.ts:56 | Rules budgets are whole numbers (the rules check refuses others first) |
+| `Grade … has no track budget` | packages/engine/src/progression/budget.ts:101 | Internal guard: only called for grades with track budgets; switch the campaign to the ME budgets in Rules |
 | `The skill needs a name` | packages/engine/src/evolution/model.ts:222 | Fix the input or define the thing first |
 | `… is required` | packages/engine/src/character/model.ts:174 | Fix the input or define the thing first |
 | `Unknown grade "…"` | packages/engine/src/character/model.ts:181 | Fix the input or define the thing first |

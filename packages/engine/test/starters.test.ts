@@ -100,11 +100,13 @@ describe('starting classes (MQ.13, DESIGN §10)', () => {
       const gained = Object.fromEntries(
         Object.entries(ch.stats).map(([k, v]) => [k, v - 10] as const),
       );
-      // G-grade spread: 4 per class level, 16 in all, only into the class's stats.
+      // G-grade (ME.1): the class's 8 and, with no profession yet, the
+      // profession's 5 per class level by the class weights (D301), 52 in all,
+      // only into the class's stats; the race's 5 per level are free points.
       expect(
         Object.values(gained).reduce((a, b) => a + b, 0),
         def.name,
-      ).toBe(16);
+      ).toBe(52);
       for (const [stat, g] of Object.entries(gained)) {
         expect(g > 0, `${def.name} ${stat}`).toBe((want.weights[stat] ?? 0) > 0);
       }

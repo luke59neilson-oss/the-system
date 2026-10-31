@@ -288,6 +288,14 @@
       "sha256": "1337765d682e97795e86777f13fe354f991bbde5a071cb16bb7f9398ee16e27b",
       "schemaVersion": 34
     },
+    "rules-switch-me.jsonl": {
+      "sha256": "33be64ac2b80ba99947e6ff6907a2e0c532216e9de5e0c3b71e1a7833667be8f",
+      "schemaVersion": 34
+    },
+    "rules-switch-me.state.json": {
+      "sha256": "5a1761a62749a8330f8f0bf7bfc9902a595ea7660bb4466c2f8a990e81082119",
+      "schemaVersion": 34
+    },
     "scene-prompt.jsonl": {
       "sha256": "32e4ef9a68afe885d36c89591b30954a494cee43df91d25237104b26d1eda59f",
       "schemaVersion": 33
@@ -382,6 +390,14 @@
     },
     "titles.state.json": {
       "sha256": "bc358f21265a72e59bd8f9ce1209c655088e9f1b822b31c24a157ed6862fa34f",
+      "schemaVersion": 34
+    },
+    "track-budgets.jsonl": {
+      "sha256": "4a1d28d4a25849a6518c0c635923a1f41258ba510a9d4ff71e439c89bb93d204",
+      "schemaVersion": 34
+    },
+    "track-budgets.state.json": {
+      "sha256": "04314a9198e3ef568663045cf98b1a8f96fc78ec7a568d07ff4d0301a3513bcb",
       "schemaVersion": 34
     },
     "trackers.jsonl": {

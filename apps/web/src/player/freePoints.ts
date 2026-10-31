@@ -7,6 +7,9 @@ import type { PlayerRules } from '@the-system/engine';
 
 export interface Batch {
   readonly raceLevel: number;
+  /** ME.1: a class or profession level's own points (absent on race-level batches). */
+  readonly track?: 'class' | 'profession';
+  readonly trackLevel?: number;
   readonly points: number;
   readonly allocation: Readonly<Record<string, number>> | null;
   readonly locked: boolean;
@@ -61,4 +64,26 @@ export function allocationText(
 /** Level-ups with points assigned (locked, GM-set or partly used), oldest first. */
 export function assignedBatches(batches: readonly Batch[]): Batch[] {
   return batches.filter((b) => b.allocation !== null).sort((a, b) => a.raceLevel - b.raceLevel);
+}
+
+/** A stable key for one level-up's batch (ME.1: race, class or profession level). */
+export function batchKey(b: Pick<Batch, 'raceLevel' | 'track' | 'trackLevel'>): string {
+  return b.track === undefined ? `race-${b.raceLevel}` : `${b.track}-${b.trackLevel ?? 0}`;
+}
+
+/** "Race level 3", or "Profession level 4" for a track level's own batch (ME.1). */
+export function batchName(b: Pick<Batch, 'raceLevel' | 'track' | 'trackLevel'>): string {
+  if (b.track === undefined) return `Race level ${b.raceLevel}`;
+  return `${b.track === 'class' ? 'Class' : 'Profession'} level ${b.trackLevel ?? 0}`;
+}
+
+/** The fields that name a batch in a free-point command (ME.1). */
+export function batchRef(b: Pick<Batch, 'raceLevel' | 'track' | 'trackLevel'>): {
+  raceLevel: number;
+  track?: 'class' | 'profession';
+  trackLevel?: number;
+} {
+  return b.track === undefined
+    ? { raceLevel: b.raceLevel }
+    : { raceLevel: b.raceLevel, track: b.track, trackLevel: b.trackLevel ?? 0 };
 }
