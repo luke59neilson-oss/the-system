@@ -136,6 +136,7 @@ reviewers ran 15–20 minutes each in the background.
 
 ## Flakes
 
+- 2026-10-31 00:40 · Local only, repeated: `e2e/M11.3.spec.ts:39` (latency, 1366×768, under 2 s) failed in the full local run (2,158 ms) and alone once (2,164 ms); the pre-MU commit 6511b291 also flips on this box (1,956 pass, 2,048 fail); quiet HEAD runs 1,825 / 1,847 ms; CI green. The cold first measurement sits near the bound on 2 CPUs. Reviewer suggests a warm-up iteration; if CI ever fails it, it becomes a QF item.
 - 2026-10-30 17:25 · Local only: `e2e/M11.3.spec.ts:39` (latency, 1366×768, under 2 s) failed while a reviewer ran `npm run check` in parallel (load ~12 on 2 CPUs); passed alone (both viewports). Load, not the app; CI green.
 - 2026-10-26 14:30 · Repeated: CI `desktop-smoke` red on 3bb78ed2 and cb3bb8d9 with the same ENOTEMPTY → QF.32 (the test now freezes, kills and waits for the whole Electron tree; D255). Fixed.
 - 2026-10-26 10:55 · CI `desktop-smoke` red on d3c743c2 (QF.31, web-only change; `test` job green): `apps/desktop/test/desktop.spec.ts:151` cleanup `rmSync(userData)` threw ENOTEMPTY after the forced-kill test (Chromium still writing the profile as it died). Not reproduced (no time this run). Watch for a repeat; a second one becomes a QF item (retry rmSync with `maxRetries`, or wait for the process tree to exit).
@@ -180,6 +181,13 @@ reviewers ran 15–20 minutes each in the background.
 
 ## Backlog (Lows; M11.5 goes through these)
 
+- (MU.A, fable) Library & settings still stacks 10 windows in one scroll; a jump list or two-column packing would match DESIGN §9a better.
+- (MU.A, fable) A cast shows the inline result and a `spellCast` toast for the same event; the toast covers "Full history" on the phone.
+- (MU.A, fable) Running log is a numbered `<ol>`; "1." on the newest line reads as a rank.
+- (MU.A, fable) MU.A spec checks newest-first only before the award (View-as equality covers order after).
+- (MU.A, fable) No Cast button in View as (pane has no client); a disabled-looking one would match the player view.
+- (MU.A, fable) `aria-describedby` on Cast names ids that are often absent.
+- (MU.A round 2, fable) Hiding a visible quest (`quest.edit {visible:false}`) removes it from every sheet with no log line; stability nudges are audited silent.
 - (Sweep B, Boundaries) No cap on WebSocket connections per address or in total (`apps/server/src/server.ts` WS handler, `hub.ts` clients); a LAN host can open hundreds of sockets that each replay history on join.
 - (Sweep B, Boundaries) The GM key in the GM tab's sessionStorage is readable by same-origin player iframes in View as; latent (no innerHTML anywhere today).
 - (Sweep B, Tests) `gmChangeText` pins only 8 of 26 change kinds' wording (`apps/web/test/runningLog.test.ts`), including the new free-points line.

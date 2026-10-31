@@ -1004,5 +1004,5 @@ DESIGN §5, §6, §7, §9a. After MD.
   excluding `god-tied`) in co-DM generation and quick-response prompts as
   naming and tone examples. *Accept:* unit tests (filtering, bounded size),
   canary (never in player frames), e2e search.
-- [ ] **MU.A Acceptance and review.** Full suite green; `fable` review;
+- [x] **MU.A Acceptance and review.** Full suite green; `fable` review;
   "Preview ready" (LOOP §8.2).

@@ -2,6 +2,7 @@ import { raceLevel, type Character } from '../character';
 import type { DomainEvent, EventType } from '../events/envelope';
 import type { CampaignState } from '../events/reducer';
 import { slotKey } from '../economy';
+import { daysLeft } from '../quests';
 
 /**
  * MU.2 (DESIGN §7 "Player log"): every change the GM makes to a character
@@ -185,6 +186,14 @@ export const PLAYER_NOTICE_AUDIT: Readonly<Record<EventType, PlayerNoticeAudit>>
 };
 
 const has = (record: object, key: string) => Object.prototype.hasOwnProperty.call(record, key);
+
+type QuestRecord = CampaignState['quests'][string];
+
+/** What a player sees of a quest (projection/player.ts `quests`), as one comparable string. */
+function questFace(state: CampaignState, q: QuestRecord): string {
+  const stability = q.stability !== null && q.stability.visible ? q.stability.value : null;
+  return JSON.stringify([q.title, q.text, q.status, daysLeft(q, state.day), stability]);
+}
 const charOf = (state: CampaignState | null, id: string): Character | undefined =>
   state && has(state.characters, id) ? state.characters[id] : undefined;
 
@@ -494,6 +503,10 @@ export function gmChangeNotices(
         : event.type === 'quest.statusSet' && was.status !== now.status
           ? 'questStatus'
           : 'questUpdated';
+      // MU.A review: an edit that changes only GM-only fields (stability
+      // rules, who gets the hidden notice, a hidden gauge) tells no one.
+      if (change === 'questUpdated' && was && questFace(before, was) === questFace(after, now))
+        break;
       for (const characterId of after.characterOrder) {
         push({
           characterId,

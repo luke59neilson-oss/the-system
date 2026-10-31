@@ -486,6 +486,32 @@ describe('player notice audit (MU.2)', () => {
     }
   });
 
+  it('a quest edit that changes only GM-only fields tells no one (MU.A review)', () => {
+    const setup: Command[] = [
+      {
+        type: 'quest.create',
+        questId: 'q1',
+        title: 'Find the heart',
+        stability: { initial: 100, visible: false, rules: { cleanse: -5 } },
+      },
+    ];
+    for (const act of [
+      { type: 'quest.edit', questId: 'q1', stabilityRules: { cleanse: -10 } },
+      { type: 'quest.edit', questId: 'q1', noticeTo: ['jake'] },
+      { type: 'quest.edit', questId: 'q1', title: 'Find the heart' },
+    ] as const) {
+      const { event, notices } = lastNotices({ setup, act });
+      expect(event?.type, JSON.stringify(act)).toBe('quest.edited');
+      expect(notices, JSON.stringify(act)).toEqual([]);
+    }
+    // A change players can see still reaches everyone.
+    const { notices } = lastNotices({
+      setup,
+      act: { type: 'quest.edit', questId: 'q1', text: 'Delve deeper.' },
+    });
+    expect(notices.map((n) => n.characterId).sort()).toEqual(['casper', 'jake']);
+  });
+
   it('an accepted merge is a DING, a declined one a log line', () => {
     const ctx = testContext('m');
     const before = run([...base, ...uncommonPair, mergeAcceptedNotice[0]!], ctx);
