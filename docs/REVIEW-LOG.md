@@ -1146,3 +1146,8 @@
 
 ## 2026-10-31 · QF.45 Installing a new build over a running app quits it cleanly (wip, not checked)
 - Round 1 (sonnet, worktree, 416518b1): High 1: the CLI-inspect fuse would break Playwright's packaged smoke tests (fixed: that fuse stays on). Medium: speech engine inside packaged Electron not done (open); uninstall check did not wait for the exe to go (fixed); the custom macro dropped the Retry/Cancel box for an unstoppable app (fixed). Lows noted (old version waits 8 s then falls back; per-user single-instance lock; workflow cleanup). Round 2 due next run on wip/QF.45 263c26df.
+
+## 2026-10-31 · QF.64 (High) Merges stored before QF.39 still replay
+- Found by sweep C (Rules, haiku); confirmed in code and by a failing replay test. Fix 74569e7e: v2 payloads, v1 upcast to `legacy` (D283).
+- Round 1 (sonnet, worktree, 74569e7e): 0 High, 0 Medium; reverting the reducer or the accept's `legacy` fails tests. Lows accepted: retired-name skip tested at `mergeSkills` level only; `skill.merged` never checked retired names (legacy there means the race check only).
+

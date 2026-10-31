@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** 492127d2 (2026-10-30, B) · **Next rotation:** C
+**Last sweep:** 1815b441 (2026-10-31, C) · **Next rotation:** D
 
 ## Lenses and rotation
 
@@ -129,6 +129,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-30 21:20 | B, bff5db12..492127d2 | Boundaries · haiku | 0 | 0 | 2 | 2 L to Backlog | 0 | ~225k |
 | 2026-10-30 21:20 | B, bff5db12..492127d2 | Tests · fable | 1 | 2 | 3 | 1 H + 2 M confirmed by mutation (QF.36, fixed this run); M5.3 toast wait fixed in QF.36; 3 L to Backlog | 0 | ~155k |
 | 2026-10-30 21:20 | B, bff5db12..492127d2 | UX · sonnet | 0 | 1 | 2 | 1 M confirmed from screenshots (QF.37); freePoints wording fixed in QF.36; 1 L to Backlog | 0 | ~86k |
+| 2026-10-31 09:10 | C, 492127d2..1815b441 | Rules · haiku | 1 | 0 | 1 | 1 H confirmed in code and by test (QF.64, fixed this run); the Low (player cast re-drafted) is already QF.48 | 0 | ~179k |
+| 2026-10-31 09:10 | C, 492127d2..1815b441 | Tests · sonnet | 0 | 2 | 7 | 2 M confirmed by re-running the mutations (QF.65); Lows to Backlog | 0 | ~80k |
+| 2026-10-31 09:10 | C, 492127d2..1815b441 | UX · fable | 0 | 2 | 6 | 2 M confirmed in code (QF.66); Lows to Backlog | 0 | ~186k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -206,6 +209,15 @@ lowered by their verifiers and folded into the Low batches.
 
 ## Backlog (Lows; M11.5 goes through these)
 
+- (Sweep C, Tests) `referenceModel.ts:47` `safeSource`: dropping `^` or the `i` flag survives; add `javascript:alert(1)//http://x`, `HTTPS://x`.
+- (Sweep C, Tests) `store.ts` `backupAsExport` "holds no events" check, `/api/gm/backup` 409 mapping, `BACKUP_NAME` length bounds, `restoredId` 1000 bound, `newestBackup` dot-dir filter and `heldLocks.delete` on close: each mutation survives.
+- (Sweep C, Tests) `campaignsModel.ts` `-quit` label and 60-char file-name cap; `xpAwardModel.ts` profession-track condition; `skillDetailModel.ts` `markProgress` banked/reset sentences; `format.ts` freePoints wording and `spellCast` text have no unit test.
+- (Sweep C, UX) Campaigns and backups shows "Backups unavailable." while loading and on any error, with no reason or retry (`CampaignBackups.tsx:42,80,231`).
+- (Sweep C, UX) Restore has no confirm and each click adds another `-restored-N` copy; the campaign list shows no date, source or event count, and copies cannot be removed in the app.
+- (Sweep C, UX) Two backups in the same second get the same label (`campaignsModel.ts:5` drops the millisecond part).
+- (Sweep C, UX) "Downloaded <file>" shows before the save dialog is answered (no `will-download` handler in the desktop).
+- (Sweep C, UX) After Open restored campaign the Library tab re-renders at the top and the status line is gone.
+- (Sweep C, UX) The QF.42 cannot-load message is one run-on paragraph in a native error box; put the newest-backup path on its own line.
 - (MU.A, fable) Library & settings still stacks 10 windows in one scroll; a jump list or two-column packing would match DESIGN §9a better.
 - (MU.A, fable) A cast shows the inline result and a `spellCast` toast for the same event; the toast covers "Full history" on the phone.
 - (MU.A, fable) Running log is a numbered `<ol>`; "1." on the newest line reads as a rank.
