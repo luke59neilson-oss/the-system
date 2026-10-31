@@ -142,6 +142,21 @@ describe('QF.44 backups and restore', () => {
     expect(back.body).toEqual({ id: 'main', demo: false, main: true });
   });
 
+  it('restores a backup of the campaign that is open, not of main (QF.65)', async () => {
+    const exported = await call('GET', '/api/gm/export');
+    await call('POST', '/api/gm/restore', { export: exported.body });
+    await call('POST', '/api/gm/campaign', { id: 'main-restored' });
+    const open = CampaignStore.campaignsDir(dataDir);
+    expect(existsSync(path.join(open, 'main-restored'))).toBe(true);
+    const made = await call('POST', '/api/gm/backup');
+    expect(made.status).toBe(200);
+    expect(readdirSync(path.join(open, 'main-restored', 'backups'))).toContain(made.body.name);
+    expect(existsSync(path.join(open, 'main', 'backups', made.body.name as string))).toBe(false);
+    const restored = await call('POST', '/api/gm/restore', { backup: made.body.name });
+    expect(restored.status).toBe(200);
+    expect(restored.body).toEqual({ id: 'main-restored-2', events: 3, portraits: 1 });
+  });
+
   it('refuses a bad file, an unknown backup and an unknown campaign, changing nothing', async () => {
     const bad = await call('POST', '/api/gm/restore', { export: { format: 'nope' } });
     expect(bad.status).toBe(422);

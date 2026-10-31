@@ -301,6 +301,22 @@ describe('CampaignStore', () => {
     expect(existsSync(lock)).toBe(false);
   });
 
+  it('takes over a foreign live pid from before the last reboot (QF.65)', () => {
+    const store = CampaignStore.open('main', options);
+    const lock = path.join(store.dir, 'LOCK');
+    const info = JSON.parse(readFileSync(lock, 'utf8')) as Record<string, unknown>;
+    store.close();
+    // Another, live process with no start time: only the boot check can call it stale.
+    const foreign: Record<string, unknown> = { ...info, pid: 4242, token: 'other' };
+    delete foreign['started'];
+    const live = { isAlive: () => true, processStart: () => null };
+    writeFileSync(lock, JSON.stringify(foreign));
+    expect(() => CampaignStore.open('main', { ...options, ...live })).toThrow(/process 4242/);
+    writeFileSync(lock, JSON.stringify({ ...foreign, boot: (info['boot'] as number) - 600 }));
+    CampaignStore.open('main', { ...options, ...live }).close();
+    expect(existsSync(lock)).toBe(false);
+  });
+
   it('judges a lock by machine id, not the host name, once the lock has one', () => {
     const withId = { ...options, machineId: 'install-1234abcd' };
     const dir = CampaignStore.open('main', withId).dir;
