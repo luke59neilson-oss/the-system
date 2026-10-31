@@ -41,6 +41,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
       rarityCeiling: 'rare',
       classSpreadPerLevel: 4,
       freePointsPerRaceLevel: 2,
+      trackBudget: { class: 8, profession: 5, race: 5 }, // §4 (ME.1)
       xpPerLevel: 100,
       gradeGapMultiplier: 1,
       theme: 'aluminum',
@@ -52,6 +53,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
       rarityCeiling: 'rare',
       classSpreadPerLevel: 5,
       freePointsPerRaceLevel: 3,
+      trackBudget: { class: 11, profession: 7, race: 6 },
       xpPerLevel: 300,
       gradeGapMultiplier: 3,
       theme: 'bronze',
@@ -63,6 +65,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
       rarityCeiling: 'epic',
       classSpreadPerLevel: 8,
       freePointsPerRaceLevel: 4,
+      trackBudget: { class: 16, profession: 10, race: 10 },
       xpPerLevel: 900,
       gradeGapMultiplier: 5,
       theme: 'copper',
@@ -74,6 +77,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
       rarityCeiling: 'ancient',
       classSpreadPerLevel: 12,
       freePointsPerRaceLevel: 6,
+      trackBudget: { class: 24, profession: 15, race: 15 },
       xpPerLevel: 2700,
       gradeGapMultiplier: 10,
       theme: 'silver',
@@ -85,6 +89,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
       rarityCeiling: 'legendary',
       classSpreadPerLevel: 18,
       freePointsPerRaceLevel: 9,
+      trackBudget: { class: 36, profession: 23, race: 22 },
       xpPerLevel: 8100,
       gradeGapMultiplier: 20,
       theme: 'gold',
@@ -96,6 +101,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
       rarityCeiling: 'legendary',
       classSpreadPerLevel: 27,
       freePointsPerRaceLevel: 13,
+      trackBudget: { class: 54, profession: 33, race: 33 },
       xpPerLevel: 24300,
       gradeGapMultiplier: 40,
       theme: 'platinum',
@@ -107,6 +113,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
       rarityCeiling: 'mythical',
       classSpreadPerLevel: 40,
       freePointsPerRaceLevel: 20,
+      trackBudget: { class: 80, profession: 50, race: 50 },
       xpPerLevel: 72900,
       gradeGapMultiplier: 80,
       theme: 'diamond',
@@ -116,7 +123,7 @@ export const DEFAULT_RULES: RulesConfigInput = {
   // (D100); a pool clamped while not full does not count as full (L7).
   character: { defaultRace: 'Human', fullPoolsStayFull: true, clampedPoolsNotFull: true },
   tracks: {
-    professionUnlockGrade: 'E', // §2
+    professionUnlockGrade: 'E', // §2 (ME.1 moves it to G with the progression change)
     evolutionGate: 'race', // §2, QUESTIONS 6
     raceLevelRounding: 'floor',
   },
