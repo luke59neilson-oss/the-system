@@ -24,6 +24,13 @@
         Sleep 1000
         !insertmacro KILL_PROCESS "${APP_EXECUTABLE_FILENAME}" 1
         Sleep 500
+        ; Cannot be stopped (running elevated): ask, as electron-builder does.
+        theSystemStillRunning:
+        !insertmacro FIND_PROCESS "${APP_EXECUTABLE_FILENAME}" $R0
+        ${if} $R0 == 0
+          MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "$(appCannotBeClosed)" /SD IDCANCEL IDRETRY theSystemStillRunning
+          Quit
+        ${endIf}
       ${endIf}
   ${endIf}
 !macroend

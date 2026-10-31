@@ -27,12 +27,12 @@ extraResources:
         'sherpa-onnx-darwin-*/**/*',
       ]
 asar: true
-# QF.45: the packaged app cannot be turned into a plain Node runtime or
-# debugged through its command line or environment.
+# QF.45: the packaged app cannot be turned into a plain Node runtime or take
+# Node options from the environment. CLI inspect stays on: Playwright's
+# electron.launch passes --inspect, and the packaged smoke tests need it.
 electronFuses:
   runAsNode: false
   enableNodeOptionsEnvironmentVariable: false
-  enableNodeCliInspectArguments: false
 npmRebuild: false
 nodeGypRebuild: false
 buildDependenciesFromSource: false
