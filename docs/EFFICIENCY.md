@@ -68,6 +68,11 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   7/10 → 5/10; items/run 1.3 → 2.0) but the Highs guard rose (1 → 4; 0 → 4),
   and D132's CI red/day guard too (7 → 10), so §9.2 reverts both.
 
+## Tier 1 proposals queued (efficiency check 2026-10-31 12:09, sonnet auditor; none applied this run)
+
+- `npm run orient` prints checked QF items whole (the QF section is ~3k words, the 2026-10-31 deep-review block ~3.5k, ~4.6k under `[x]` bullets): print open/`[~]` bullets in full and checked ones as ID + title; drop QUESTIONS entries marked "Not put to Luke … default kept". Target orient words 16.7k → ~11k; risk low (keep any bullet naming a `wip/`), with a unit test of the filter. Next check may apply it.
+- `npm run ci-triage -- <run id>`: one read-only call that lists failed jobs, prints annotations and the local repro line (alone, `--workers=2`, xvfb for desktop). Target: fewer tool calls per red start; does not itself move red/day.
+
 ## Proposals for Luke (Tier 2)
 
 - 2026-10-31 06:07 auditor (sonnet): no trials to judge. Tier 1 not applied this check (close-out time went to reviews): make `npm run orient` print one line per checked box inside a milestone that still has an open box (orient words 10.6k → 16.3k this row, from the 26-item QF deep-review list; target back to ~10k); a later check may apply it. Tier 2 (Q88): reviewers trust the builder's `npm run check` output and re-run only the item's tests and e2e. Default: no change.
@@ -172,3 +177,4 @@ table last in the file.
 | 2026-10-30 18:09 | 6 | 48.2 | 1.2 | 4/10 | 3 | 6 | 2 | 13.1 | 10629 |
 | 2026-10-31 00:09 | 6 | 48.8 | 1.3 | 7/10 | 0 | 15 | 5 | 12.0 | 10550 |
 | 2026-10-31 06:16 | 6 | 48.8 | 1.5 | 7/10 | 0 | 16 | 5 | 12.0 | 16339 |
+| 2026-10-31 12:09 | 6 | 48.8 | 2.3 | 6/10 | 0 | 29 | 7 | 11.9 | 16756 |

@@ -209,6 +209,8 @@ lowered by their verifiers and folded into the Low batches.
 
 ## Backlog (Lows; M11.5 goes through these)
 
+- (QF.59 review, sonnet) `apps/desktop/src/main.ts:188` sets `theSystemRevealReason` in packaged builds too (harmless, main-process only); `playwright.config.ts` sets `THE_SYSTEM_TEST_NO_GPU` by mutating `process.env`, so another config reusing the helpers would not get it; the warm-up mostly warms the disk cache (+~2 s).
+- (QF.49 review, sonnet) `/api/gm/listen` first poll after a panel opens still sends every held line (later polls are bounded); a middle notes chunk whose items are all unusable stops the catch-up there each time (D250; a retry may succeed); a quiet newest chunk is re-sent on every Take notes until new talk arrives; `takeNotesReply` parses twice when no note survives.
 - (Sweep C, Tests) `referenceModel.ts:47` `safeSource`: dropping `^` or the `i` flag survives; add `javascript:alert(1)//http://x`, `HTTPS://x`.
 - (Sweep C, Tests) `store.ts` `backupAsExport` "holds no events" check, `/api/gm/backup` 409 mapping, `BACKUP_NAME` length bounds, `restoredId` 1000 bound, `newestBackup` dot-dir filter and `heldLocks.delete` on close: each mutation survives.
 - (Sweep C, Tests) `campaignsModel.ts` `-quit` label and 60-char file-name cap; `xpAwardModel.ts` profession-track condition; `skillDetailModel.ts` `markProgress` banked/reset sentences; `format.ts` freePoints wording and `spellCast` text have no unit test.

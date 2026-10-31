@@ -1171,3 +1171,10 @@
 
 ### 2026-10-31 · QF.48 Sessions keep everything that happened
 - Round 1 (sonnet, 196efea8): 0 High, 0 Medium (two "needs a check": the phone-close e2e, which the builder ran green with MT.9; and a missed true→false update on reconnect, which cannot happen because PracticePanel compares with the last value it saw, not per frame), 3 Low to the QUALITY Backlog. No fixes needed.
+
+### 2026-10-31 · QF.59 The desktop smoke tests are reliable
+- Round 1 (sonnet, f3ad89f8): 0 High, 1 Medium, 4 Low. Medium: the reveal-reason assertion turns a >10 s first paint into a deterministic failure; kept on purpose (the acceptance asks the test to tell a painted console from the fallback; D288). Low fixed: the warm-up profile is cleaned up even if its launch throws. Other Lows to Backlog. desktop:smoke 8/8 and 5/5 repeats locally; CI desktop-smoke green on f3ad89f8. Checked.
+
+### 2026-10-31 · QF.49 The co-DM copes with long sessions
+- Round 1 (sonnet, c64c35e3): 0 High, 2 Medium, 3 Low. Fixed: (M1) an empty notes list on a chunk that is not the newest counts as read, so quiet talk never stalls later notes (D250 kept for unusable items and the newest chunk); (M2) a reply cut at its cap splits its chunk in half and retries, down to one line (`eachChunk`, `TooLongError`); (L) the listen key names the server start, so a restart replaces the panel's lines; (L) the drafts parse catch only maps JSON/zod/no-JSON errors. Tests for both Mediums in `longSession.test.ts`.
+- Round 2 (sonnet, 07e27c05): 0 High, 0 Medium, 4 Low (Backlog). Checked.
