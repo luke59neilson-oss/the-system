@@ -185,6 +185,7 @@ describe('listening follows the session (QF.38)', () => {
     const stt = new FixtureSpeechToText([
       'We sit down and get our dice out.',
       'Can I climb the canyon wall?',
+      'Jake practised his archery a lot tonight.',
       'Can I swim across the red river?',
     ]);
     const coDm = new CoDm({
@@ -257,8 +258,10 @@ describe('listening follows the session (QF.38)', () => {
         target: { text: 'Can I climb the canyon wall?' },
         session: 1,
       });
-      // Still listening through End session and the next Start session.
+      // Still listening through End session: talk during the end-of-session
+      // review belongs to the session that just ended (drafts read it there).
       run('session.end');
+      await say('session-01.jsonl', 2);
       run('session.start');
       await say('session-02.jsonl', 1);
       expect(await quick()).toMatchObject({
@@ -266,7 +269,10 @@ describe('listening follows the session (QF.38)', () => {
         session: 2,
       });
       expect(texts('session-00.jsonl')).toEqual(['We sit down and get our dice out.']);
-      expect(texts('session-01.jsonl')).toEqual(['Can I climb the canyon wall?']);
+      expect(texts('session-01.jsonl')).toEqual([
+        'Can I climb the canyon wall?',
+        'Jake practised his archery a lot tonight.',
+      ]);
       expect(readdirSync(dir).sort()).toEqual([
         'session-00.jsonl',
         'session-01.jsonl',
@@ -274,7 +280,7 @@ describe('listening follows the session (QF.38)', () => {
       ]);
       // The GM's live panel still shows every line heard.
       const status = (await app.inject({ url: '/api/gm/listen', headers: gm })).json();
-      expect(status.lines).toHaveLength(3);
+      expect(status.lines).toHaveLength(4);
     } finally {
       await app.close();
       store.close();

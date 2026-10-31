@@ -149,3 +149,25 @@ describe('Identify can never be merged away (QF.39)', () => {
     if (!r.ok) expect(r.error).toContain('pick a new name');
   });
 });
+
+describe('an overridden race-skill merge (QF.39 review)', () => {
+  it('passes on no race kind, so the restored Identify is the only race skill', () => {
+    const base = fresh(start());
+    const merged = run(
+      [merge(true), { type: 'skill.answerMerge', characterId: ID, offerId: 'o1', accept: true }],
+      ctx,
+      base,
+    );
+    expect(merged.state!.characters[ID]!.skills.find((s) => s.name === 'Seeing Eye')?.kind).toBe(
+      'class',
+    );
+    const back = run(
+      [{ type: 'skill.grant', characterId: ID, name: 'Identify', rarity: 'common', kind: 'race' }],
+      ctx,
+      merged,
+    );
+    expect(
+      back.state!.characters[ID]!.skills.filter((s) => s.kind === 'race').map((s) => s.name),
+    ).toEqual(['Identify']);
+  });
+});

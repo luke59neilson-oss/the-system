@@ -345,7 +345,10 @@ export function mergeSkills(
       `"${trimmed}" was a skill of ${character.name}'s; pick a new name`,
     );
   }
-  const merged = newSkill(trimmed, result.id, a.kind);
+  // QF.39 review: a race skill merged under override passes on no race kind,
+  // so the restored race skill stays the only one.
+  const kind = a.kind === 'race' ? b.kind : a.kind;
+  const merged = newSkill(trimmed, result.id, kind === 'race' ? 'class' : kind);
   const skills = character.skills.flatMap((s, i) => (i === ia ? [merged] : i === ib ? [] : [s]));
   return { ...character, skills, merges: { ...character.merges, [character.grade]: done + 1 } };
 }

@@ -216,8 +216,10 @@ show "[The System is listening]".
 
 You can turn the mic on before or after **Start session** and leave it on
 across sessions: each line goes to the session running when it was said.
-Talk before any session starts goes to `session-00.jsonl`, which the co-DM's
-quick responses, suggestions, drafts and notes do not read.
+Talk after **End session** (say, through the end-of-session review) goes to
+the session that just ended, where **Draft from transcript** and the summary
+read it. Talk before the first session starts goes to `session-00.jsonl`,
+which the co-DM's quick responses, suggestions, drafts and notes do not read.
 
 - First time: press **Download speech model** (about 118 MB, English,
   once). It goes into your user folder (`models` beside the app's data), not

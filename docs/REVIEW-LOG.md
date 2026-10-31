@@ -1116,3 +1116,11 @@
 - Round 1 (9b41c3b9, milestone 6511b291..9b41c3b9): 0 High, 2 Medium, 6 Low. Medium: (1) the local full run ended red on M11.3 latency (2,158 ms vs 2,000); (2) `quest.edited` notified every player when only GM-only fields (stability rules, notice recipients) changed. Lows to the QUALITY backlog.
 - Fixes (6af64924): Medium 2 — `questFace` in `history/gmChanges.ts` skips `questUpdated` when nothing player-visible changed, with a unit test (D273). Medium 1 — not an MU regression: the pre-MU commit flips 1,956 / 2,048 ms on this box, HEAD quiet runs 1,825 / 1,847 ms; logged under Flakes.
 - Round 2 (fable, 6af64924): 0 High, 0 Medium, 1 Low (pre-existing: hiding a quest is silent). Box checked.
+
+### 2026-10-31 · QF.38 Listening follows the session · sonnet, 1 round
+- Round 1 (3e6e7937): 0 High, 1 Medium, 3 Low. Medium: talk after End session (with the mic still on) went to `session-00`, where Draft from transcript and the summary (which read the session that just ended) never see it; contradicted the guide and D275.
+- Fixes: `transcriptSession` (running session, else the last one, else 0) feeds the listener; the route test now talks after End session and finds the line in `session-01`; guide and D275 updated. Lows: test gap (closed by the same test), a boundary-spanning utterance is filed by when it ends (documented in D275), guide wording (fixed). No round 2 (one Medium); fixes verified: the test fails with the old getter.
+
+### 2026-10-31 · QF.39 Identify can never be merged away · sonnet, 1 round
+- Round 1 (469c331a): 0 High, 1 Medium, 3 Low. Medium: an override merge with Identify first gave the merged skill kind race, so a restored Identify sat beside a second race skill.
+- Fixes: the merged skill takes the non-race side's kind (never race), with an engine test that the restored Identify is the only race skill; Low 2: the Merges window's override preview passes retired names like the reducer. Low 3 (a pre-QF.39 offer to a retired name would refuse on replay; none known) and Low 4 (race by kind vs restore by name, consistent once Medium fixed) recorded in D276. No round 2; `npm run check` 1,672 green; MT.2, MT.7, M5.4, MC.5 e2e green.

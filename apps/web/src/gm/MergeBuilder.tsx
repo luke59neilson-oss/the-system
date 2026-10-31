@@ -1,5 +1,10 @@
 import { useState, type FormEvent } from 'react';
-import { mergeCandidates, mergeSkills, type CampaignState } from '@the-system/engine';
+import {
+  mergeCandidates,
+  mergeSkills,
+  retiredSkillNames,
+  type CampaignState,
+} from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 
@@ -60,6 +65,11 @@ export function MergeBuilder({ client, state }: { client: LiveClient; state: Cam
         merged === '' ? '\u0000draft' : merged,
         0,
         true,
+        // The reducer refuses a name the practice log still counts (QF.39).
+        retiredSkillNames(
+          character,
+          state.practice.filter((e) => e.characterId === character.id).flatMap((e) => e.skills),
+        ),
       );
       overrideRarity =
         after.skills.find((s) => !character.skills.some((o) => o.name === s.name))?.rarity ?? null;

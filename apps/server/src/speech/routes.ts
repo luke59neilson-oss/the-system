@@ -69,6 +69,17 @@ export function sessionNumber(store: CampaignStore): number {
   return state.sessions.find((s) => s.id === state.currentSession)?.number ?? 0;
 }
 
+/**
+ * QF.38 review: the session a heard line belongs to: the running one, else
+ * the one that just ended (talk through the end-of-session review counts
+ * there, where Draft from transcript and the summary read), else 0.
+ */
+export function transcriptSession(store: CampaignStore): number {
+  const state = store.campaign.state;
+  if (!state) return 0;
+  return sessionNumber(store) || (state.sessions.at(-1)?.number ?? 0);
+}
+
 export function registerListenRoutes(app: FastifyInstance, options: ListenRouteOptions): void {
   let current: { listener: Listener; store: CampaignStore; hub: LiveHub } | null = null;
   // Lines heard this server run, per campaign, for the GM's live panel.
@@ -135,7 +146,7 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
     const listener = new Listener({
       dir: transcriptsDir(a.store),
       // Read per utterance, so the transcript follows Start and End session (QF.38).
-      session: () => sessionNumber(a.store),
+      session: () => transcriptSession(a.store),
       stt,
       now: options.now,
       onLine: (line) => lines.push(line),

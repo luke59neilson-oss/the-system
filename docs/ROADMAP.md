@@ -526,7 +526,7 @@ Medium below was reproduced by a second, different model or checked in code
 by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-10-31/` (one file per lens, plus the verifiers'). Highs first
 (LOOP §5.2); the rest in file order.
 
-- [ ] **QF.38 (High) Listening follows the session.** Listening started before
+- [x] **QF.38 (High) Listening follows the session.** Listening started before
   Start session, or left on across sessions, keeps writing the transcript to
   the session it started in (`apps/server/src/speech/routes.ts:137` fixes the
   file once; `transcript.ts:118`), while quick responses, suggestions,
@@ -537,7 +537,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   with listening still on, `session.end`, `session.start` and audio puts the
   line in `session-02.jsonl`; talk before any session may stay in
   `session-00`; the GM guide no longer depends on click order.
-- [ ] **QF.39 (High) Identify can never be merged away.** A standalone merge
+- [x] **QF.39 (High) Identify can never be merged away.** A standalone merge
   (`skill.merge` → player accept) can consume the race skill Identify
   (`packages/engine/src/skills/model.ts:271-334` has no race-skill check;
   the evolution path does, `checkRaceSkillsKept`); the Merges window and the
