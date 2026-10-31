@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.45, QF.64–QF.66 done; QF.46 on `wip/QF.46` (review round 1 back, fixes pending).
-**Next item:** QF.46 (resume `wip/QF.46`: fix round-1 Mediums, then round-2 review), then QF.47 onward
+**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.48, QF.64–QF.66 done.
+**Next item:** QF.49 (the co-DM copes with long sessions), then QF.50 onward
 **Blockers:** none
 
 ## Run log
@@ -1398,3 +1398,13 @@ next item, blockers. -->
 - QF.46 (wip): Award XP resets to everyone / no target grade / bonus off and says "Awarded N class XP to Jake and Kim."; broadcast resets to Everyone and says "Broadcast sent to …" / "Scheduled for day N, to …"; status lines clear on New character name, broadcast fields, contest change/roll, import tick; `e2e/QF.46.spec.ts`; other specs' "XP awarded"/"Broadcast sent"/"Scheduled for day" texts updated; D285. Sonnet round 1 (c57aeac1): 0 High, 2 Medium: (1) clearing incomplete: Import content source/file/mode changes, Encounter PoolTool and Clocks, New character class/race don't clear the line; no e2e for Import/Encounter clearing; (2) Award line "not rebuilt" (judged: by design, it clears on change; verify amount/track/reason/byHand/bonus clear it). Lows: by-hand award line hides the split; broadcast keeps When/day/show after a scheduled send. Hand-off: `wip/QF.46` at c57aeac1 (base main 657ab736). Next: fix those, add e2e lines for Import and Encounter clearing, round-2 review (required: two Mediums), then check the box.
 - Tests: unit 1,722 on wip/QF.46 (1,721 on main); e2e QF.66, QF.44, MS.4, MS.A, QF.46, M4.7, MS.1, M3.3–3.5, M4.6, MU.A, M11.2, MQ.A, M2.A, MS.2, M7.x, M9.3, MC.7, MU.1 green. Full e2e not run (CI runs it on push). Engine untouched.
 - Open `wip/*`: wip/QF.46 (wip/QF.66 merged). Blockers: none.
+
+### Run · 2026-10-31 11:08–11:53 UTC (close-out at minute 44)
+- Preflight: `add_repo` not offered; repo already cloned; lock pushed cleanly; vitest 5.0.5; reviewers work (sonnet, worktree; the Agent tool blocks until each reports). CI on main green at start (657ab736) and after each push (0a0d5ea9, 7f573f7f). No new answers. Hour 11: no efficiency check or sweep. `npm ci` was needed first (fresh workspace).
+- QF.46 Forms reset after use (resumed `wip/QF.46`): round-1 Mediums fixed with form/window-level `onChange` that clears the status line (New character, System broadcast, Award XP, Encounter, Import content); by-hand shares shown in the award line; second e2e test for Import, Encounter, Award and New character clears; a scheduled broadcast keeps When/day (M4.7 queues several days; reverting that reset kept M4.7 green). Sonnet round 2: 0 High/Medium, 4 Low to Backlog. Checked; merged to main (0a0d5ea9).
+- QF.47 Contest rolls stay private: the entry reads "Contest roll" beside the character's own stat, naming no opponent or other stat (D286); unit test through `projectForPlayer` and e2e reading both phones' frames (PC vs NPC and PC vs PC). Sonnet round 1: 0 High/Medium; Low fixed (stat repeated in the text); GM guide line. Checked; merged (7f573f7f).
+- QF.48 Sessions keep everything: report Practice lists casts; Timeline has GM skill grants and per-pool damage/healing; `session.ended` v2 closes the scene prompt (v1 legacy upcaster keeps old logs replaying), answer after it refused "the scene is over"; player view `sessionRunning` so a held prompt closes at End session; co-DM counts a player's Cast as logged (D287). Engine, server and e2e (`QF.48.spec.ts`, MT.9 green). Sonnet round 1: 0 High/Medium, 3 Low to Backlog. Checked; merged (fb8f2d4c).
+- Tests: unit 1,727 (was 1,722); e2e QF.46, QF.47, QF.48, M4.7, M9.3, M7.3, M7.A, M9.A, MS.1, MC.2, MC.7, MT.9 green. Full e2e not run (CI runs it on push; shared player view gained one field). Engine touched (reducer, envelope, sessionLog, projection): goldens replay.
+- Not started: QF.49 (no time left before minute 44). Next run: QF.49 from the start.
+- Open `wip/*`: none in progress (wip/QF.46–48 merged). Blockers: none.
+
