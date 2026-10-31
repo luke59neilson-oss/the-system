@@ -118,9 +118,13 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
     if (r.ok) {
       // QF.46: the next award starts from the whole table at no target grade,
       // so a table-wide award never goes to last time's subset at ⅓.
+      // Shares typed by hand show beside each name.
       setAwarded(
         `Awarded ${value.toLocaleString('en-US')} ${track} XP to ${listNames(
-          chosen.map((id) => state.characters[id]?.name ?? id),
+          chosen.map((id, i) => {
+            const who = state.characters[id]?.name ?? id;
+            return byHand ? `${who} (${(shares[i] ?? 0).toLocaleString('en-US')})` : who;
+          }),
         )}.`,
       );
       setAmount('');
@@ -149,7 +153,13 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
   };
 
   return (
-    <form className="window xp-award" onSubmit={(e) => void submit(e)} aria-labelledby="award-xp">
+    // QF.46: any change to the form clears the last award's line.
+    <form
+      className="window xp-award"
+      onSubmit={(e) => void submit(e)}
+      onChange={() => setResult(null)}
+      aria-labelledby="award-xp"
+    >
       <h2 id="award-xp">Award {track} XP</h2>
       <div className="xp-row">
         <label>

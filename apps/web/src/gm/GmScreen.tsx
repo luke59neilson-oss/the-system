@@ -595,19 +595,16 @@ function CreateCharacter({
     }
   };
   return (
-    <form className="window" onSubmit={(e) => void submit(e)} aria-labelledby="new-character">
+    <form
+      className="window"
+      onSubmit={(e) => void submit(e)}
+      onChange={clear}
+      aria-labelledby="new-character"
+    >
       <h2 id="new-character">New character</h2>
       <label>
         Name
-        <input
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            clear();
-          }}
-          required
-          maxLength={200}
-        />
+        <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={200} />
       </label>
       <label>
         Starting class
@@ -880,20 +877,23 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
       setShow('list');
       setTo('all');
       setSeveral(new Set());
+      // When stays, so the GM can queue several days in a row (M4.7).
     }
   };
   const pending = state.scheduledBroadcasts;
   return (
-    <form className="window" onSubmit={(e) => void submit(e)} aria-labelledby="broadcast">
+    <form
+      className="window"
+      onSubmit={(e) => void submit(e)}
+      onChange={clear}
+      aria-labelledby="broadcast"
+    >
       <h2 id="broadcast">System broadcast</h2>
       <label>
         Message
         <textarea
           value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            clear();
-          }}
+          onChange={(e) => setText(e.target.value)}
           required
           maxLength={2000}
           rows={3}
@@ -902,14 +902,7 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
       <div className="broadcast-row">
         <label>
           To
-          <select
-            aria-label="Recipients"
-            value={to}
-            onChange={(e) => {
-              setTo(e.target.value);
-              clear();
-            }}
-          >
+          <select aria-label="Recipients" value={to} onChange={(e) => setTo(e.target.value)}>
             <option value="all">Everyone</option>
             {state.characterOrder.map((id) => (
               <option key={id} value={id}>
@@ -924,10 +917,7 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
           <select
             aria-label="When"
             value={when}
-            onChange={(e) => {
-              setWhen(e.target.value as 'now' | 'day');
-              clear();
-            }}
+            onChange={(e) => setWhen(e.target.value as 'now' | 'day')}
           >
             <option value="now">Now</option>
             <option value="day">On a later in-game day</option>

@@ -59,7 +59,12 @@ export function Encounter({ client, state }: { client: LiveClient; state: Campai
     return r.ok;
   };
   return (
-    <section className="window encounter" aria-labelledby="encounter">
+    // QF.46: any change in the contest, pool or clock fields clears the old line.
+    <section
+      className="window encounter"
+      aria-labelledby="encounter"
+      onChange={() => setOutcome(null)}
+    >
       <h2 id="encounter">Encounter</h2>
       <ContestRoller state={state} busy={busy} send={send} clear={() => setOutcome(null)} />
       <PoolTool state={state} busy={busy} send={send} />
