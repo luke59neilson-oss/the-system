@@ -561,7 +561,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   sequence G award 400 → evolve to F → award 900 → undo `evolution.chosen` is
   refused with that message and changes nothing; undos that lose nothing
   still work; the replay fuzz stays green.
-- [ ] **QF.41 A crash-left LOCK never blocks the app.** The stale-lock check
+- [x] **QF.41 A crash-left LOCK never blocks the app.** The stale-lock check
   is "same boot minute and the pid is alive" (`apps/server/src/store.ts:263-330`),
   so a reused PID (even the new process's own) blocks the start, and Windows
   Fast Startup keeps the boot minute; the desktop then shows a raw message

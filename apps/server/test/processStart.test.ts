@@ -21,6 +21,11 @@ describe('process start times (QF.41)', () => {
     );
   });
 
+  it('never caches an unreadable start', () => {
+    // Already cached from a real read in the test above: the reader is not asked again.
+    expect(ownProcessStart(() => null)).toBe(processStart(process.pid));
+  });
+
   it('gives null for a pid that cannot be read', () => {
     expect(processStart(-1)).toBeNull();
     expect(processStart(2 ** 22 + 12_345)).toBeNull();

@@ -1127,3 +1127,7 @@
 
 ### 2026-10-31 · QF.40 A non-latest undo never silently loses XP · sonnet, 1 round
 - Round 1 (2462ba8b): 0 High, 0 Medium, 4 Low: two extra folds per non-latest undo with later awards (O(n), undos rare); `undoError` parses the engine message with a regex; Confirm stays enabled when the preview says the undo is refused (the server still refuses); dry-run id naming. No fixes needed; Lows noted for QF.62/QF.63. Box checked.
+
+## 2026-10-31 · QF.41 A crash-left LOCK never blocks the app
+- Round 1 (sonnet, worktree, 54a7a241): High 1: the recorded start used `Date.now() - process.uptime()`, which stops during sleep, so a live holder could look stale (two writers); fixed: the holder records its start with the same OS probe a later start uses. Medium: DST local-time parse (fixed by the same-source read); Windows PowerShell sync call at launch (accepted, once per launch, D278); same-pid text identity (not a defect). Low: pre-QF.41 locks keep the old rule (by design).
+- Round 2 (sonnet, worktree, f8fca948): High fixed; 0 High, 0 Medium. Low 1 (a failed probe cached the uptime estimate) fixed: never cached, and the LOCK is then written without `started`. Lows 2 (Linux clock steps move `lstart`; not a target platform) and 3 (no fallback-path test, cache not resettable) accepted.

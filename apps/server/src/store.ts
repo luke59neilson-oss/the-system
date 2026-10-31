@@ -330,7 +330,7 @@ function takeLock(file: string, probes: LockProbes): string {
     host: hostname(),
     machine: probes.machine,
     boot: bootMinute(),
-    started: ownProcessStart(),
+    started: ownProcessStart() ?? undefined, // Omitted when unreadable.
     token: randomUUID(),
   });
   for (let attempt = 0; attempt < 3; attempt++) {

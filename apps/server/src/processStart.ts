@@ -3,17 +3,21 @@ import { execFileSync } from 'node:child_process';
 let ownStart: number | undefined;
 
 /**
- * When this process started (epoch ms). Written into the campaign LOCK so a
- * later start can tell the process that wrote it from another one that was
- * given the same pid (QF.41). Read the same way a later start reads it
- * (`processStart`), so the two agree exactly: `process.uptime()` stops while
- * a laptop sleeps, and local-time parsing can shift at a DST change, but the
- * same text parses to the same number. Read once per process (on Windows it
- * costs a PowerShell start); `process.uptime()` only when it cannot be read.
+ * When this process started (epoch ms), or null when it cannot be read.
+ * Written into the campaign LOCK so a later start can tell the process that
+ * wrote it from another one that was given the same pid (QF.41). Read the
+ * same way a later start reads it (`processStart`), so the two agree
+ * exactly: `process.uptime()` stops while a laptop sleeps, and local-time
+ * parsing can shift at a DST change, but the same text parses to the same
+ * number. Cached once read (on Windows it costs a PowerShell start); a
+ * failed read is retried next time, and the LOCK is then written without a
+ * start time, which later starts treat like an older lock (live pid: held).
  */
-export function ownProcessStart(read: (pid: number) => number | null = processStart): number {
-  ownStart ??= read(process.pid) ?? Math.round(Date.now() - process.uptime() * 1000);
-  return ownStart;
+export function ownProcessStart(
+  read: (pid: number) => number | null = processStart,
+): number | null {
+  ownStart ??= read(process.pid) ?? undefined;
+  return ownStart ?? null;
 }
 
 /**
@@ -66,8 +70,7 @@ export function parseStart(text: string): number | null {
 /**
  * How far apart a LOCK's recorded start and the live process's start may be
  * and still be the same process. Both are normally read the same way and
- * equal; the margin covers a lock written with the `process.uptime()`
- * fallback. A reused pid belongs to a process that started after the holder
+ * equal; the margin is only slack. A reused pid belongs to a process that started after the holder
  * died, so it is far outside this.
  */
 export const START_TOLERANCE_MS = 30_000;
