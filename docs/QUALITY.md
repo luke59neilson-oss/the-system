@@ -209,6 +209,7 @@ lowered by their verifiers and folded into the Low batches.
 
 ## Backlog (Lows; M11.5 goes through these)
 
+- (QF.50 review, sonnet) `sceneNpcs.ts`: a merged NPC (bestiary + note of the same name) keeps only the first source's `names` and merges two different people who share a name; a keeper is auto-picked only by the full parsed name ("Wren" never selects "Wren Holloway"); `looksLikeName` still accepts a short capitalised phrase ("Session Notes" tagged `npc`); `coDmSetting.test.ts` lists the prompts by hand, so a new prompt is not caught; the off-kind note and quest preview lack the label's left indent in Import.
 - (QF.59 review, sonnet) `apps/desktop/src/main.ts:188` sets `theSystemRevealReason` in packaged builds too (harmless, main-process only); `playwright.config.ts` sets `THE_SYSTEM_TEST_NO_GPU` by mutating `process.env`, so another config reusing the helpers would not get it; the warm-up mostly warms the disk cache (+~2 s).
 - (QF.49 review, sonnet) `/api/gm/listen` first poll after a panel opens still sends every held line (later polls are bounded); a middle notes chunk whose items are all unusable stops the catch-up there each time (D250; a retry may succeed); a quiet newest chunk is re-sent on every Take notes until new talk arrives; `takeNotesReply` parses twice when no note survives.
 - (Sweep C, Tests) `referenceModel.ts:47` `safeSource`: dropping `^` or the `i` flag survives; add `javascript:alert(1)//http://x`, `HTTPS://x`.

@@ -1178,3 +1178,9 @@
 ### 2026-10-31 · QF.49 The co-DM copes with long sessions
 - Round 1 (sonnet, c64c35e3): 0 High, 2 Medium, 3 Low. Fixed: (M1) an empty notes list on a chunk that is not the newest counts as read, so quiet talk never stalls later notes (D250 kept for unusable items and the newest chunk); (M2) a reply cut at its cap splits its chunk in half and retries, down to one line (`eachChunk`, `TooLongError`); (L) the listen key names the server start, so a restart replaces the panel's lines; (L) the drafts parse catch only maps JSON/zod/no-JSON errors. Tests for both Mediums in `longSession.test.ts`.
 - Round 2 (sonnet, 07e27c05): 0 High, 0 Medium, 4 Low (Backlog). Checked.
+
+## 2026-10-31 · QF.50 The co-DM knows who is in the scene and the setting
+- Round 1 (sonnet, worktree, 0ebe29b8): check 1,757/1,757, e2e QF.50, MC.2, MD.1, MD.3 green; screenshots fine. 0 High, 3 Medium: (1) `keeperName` split "Dr. Vance" at the dot and took a short description for a name; (2) any GM note tagged `npc` became an NPC by its title ("Met the ferryman"); (3) a note tagged `lore` and `npc` sent its text twice. Lows: merged names, keeper first-name match, hand-listed prompts in the setting test, indent/order in Import.
+- Fixes (d27d2241, e022d498): `looksLikeName` (1–5 words, capitalised or connectors), title abbreviations keep their dot, note titles must read as names, lore notes not doubled.
+- Round 2 (sonnet, e022d498): 0 High, 1 Medium: a note tagged `lore` + bare `npc` lost its text entirely (loreFor matches only `npc:<name>`). Fixed: notes are blank only when the note also carries `npc:<name>`; tests pin both. Lows fixed: `Jr.,`, `Prof./Rev./Gen./Col./Hon.`, "de la Cruz", "d'Artagnan", CJK names. Remaining Lows (merged names keep the first source's `names`; first-name auto-match; hand-listed prompts; Import indent) to the QUALITY Backlog.
+- Verified myself after round 2: check 1,760/1,760; e2e QF.50, MC.2, MC.3, MD.1, MD.3 green.
