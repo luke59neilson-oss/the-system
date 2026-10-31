@@ -1,11 +1,31 @@
 // QF.44: words and file names for the Campaigns and backups window.
 
-/** A backup folder name (`2026-10-31T08-09-46-123Z-session-3-end`) in words. */
-export function backupLabel(name: string): string {
-  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})(?:-\d+)?Z-(.+)$/.exec(name);
+/**
+ * A backup folder name (`2026-10-31T08-09-46-123Z-session-3-end`) in words,
+ * in the console's local time like every other time it shows (QF.66).
+ */
+export function backupLabel(name: string, timeZone?: string): string {
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})(?:-(\d+))?Z-(.+)$/.exec(name);
   if (!m) return name;
-  const [, date, h, min, sec, label] = m;
-  return `${date} ${h}:${min}:${sec} UTC · ${labelWords(label!)}`;
+  const [, date, h, min, sec, ms, label] = m;
+  const when = new Date(`${date}T${h}:${min}:${sec}.${(ms ?? '0').padEnd(3, '0')}Z`);
+  if (Number.isNaN(when.getTime())) return name;
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(when)
+      .map((p) => [p.type, p.value]),
+  );
+  const local = `${parts['year']}-${parts['month']}-${parts['day']} ${parts['hour']}:${parts['minute']}:${parts['second']}`;
+  return `${local} · ${labelWords(label!)}`;
 }
 
 function labelWords(label: string): string {

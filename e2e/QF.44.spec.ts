@@ -71,7 +71,7 @@ test('back up, download and restore keep every event and portrait', async ({ bro
   await expect(win.getByText('No backups of this campaign yet.')).toBeVisible();
   await win.getByRole('button', { name: 'Back up now' }).click();
   await expect(win.getByTestId('backups-status')).toHaveText(
-    /^Backed up \d+ events \(\d{4}-\d{2}-\d{2} [\d:]+ UTC · Back up now\)\.$/,
+    /^Backed up \d+ events \(\d{4}-\d{2}-\d{2} [\d:]+ · Back up now\)\.$/,
   );
   const events = Number(
     /Backed up (\d+) events/.exec((await win.getByTestId('backups-status').textContent())!)![1],

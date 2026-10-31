@@ -162,7 +162,7 @@ export function CampaignBackups({
   const open = (id: string) => {
     if (
       !window.confirm(
-        `Open campaign “${id}”? Players are sent back to the join screen and pick their character in it.`,
+        `Open campaign “${id}”? Each phone switches to it: a character in this copy shows this copy's sheet; a character not in it waits until you switch back.`,
       )
     ) {
       return;
