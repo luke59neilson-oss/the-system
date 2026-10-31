@@ -20,6 +20,7 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
+| D297 `npm run orient` collapses checked items in open milestones to one line and hides default-kept questions | 2026-10-31 18:09 | orient words ≤ 11k (printed output 21.0k → 7.5k words) | 21,002 words; end minute 48.8; items/run 1.3 | Highs 0, round-2 4/10, red/day 5 | 2026-11-01 06:00 check |
 
 ## Kept
 
@@ -68,12 +69,14 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   7/10 → 5/10; items/run 1.3 → 2.0) but the Highs guard rose (1 → 4; 0 → 4),
   and D132's CI red/day guard too (7 → 10), so §9.2 reverts both.
 
-## Tier 1 proposals queued (efficiency check 2026-10-31 12:09, sonnet auditor; none applied this run)
+## Tier 1 proposals queued (efficiency check 2026-10-31 12:09, sonnet auditor; the orient one applied 18:09 as D297)
 
 - `npm run orient` prints checked QF items whole (the QF section is ~3k words, the 2026-10-31 deep-review block ~3.5k, ~4.6k under `[x]` bullets): print open/`[~]` bullets in full and checked ones as ID + title; drop QUESTIONS entries marked "Not put to Luke … default kept". Target orient words 16.7k → ~11k; risk low (keep any bullet naming a `wip/`), with a unit test of the filter. Next check may apply it.
 - `npm run ci-triage -- <run id>`: one read-only call that lists failed jobs, prints annotations and the local repro line (alone, `--workers=2`, xvfb for desktop). Target: fewer tool calls per red start; does not itself move red/day.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-10-31 18:09 auditor (sonnet): no trials to judge. Applied Tier 1 (D297): orient collapses checked items in open milestones (5.5k words of checked QF bodies) and hides QUESTIONS kept at their default without Luke. No Tier 2 proposal (e2e wall time and review cost would need selective specs or review changes).
 
 - 2026-10-31 06:07 auditor (sonnet): no trials to judge. Tier 1 not applied this check (close-out time went to reviews): make `npm run orient` print one line per checked box inside a milestone that still has an open box (orient words 10.6k → 16.3k this row, from the 26-item QF deep-review list; target back to ~10k); a later check may apply it. Tier 2 (Q88): reviewers trust the builder's `npm run check` output and re-run only the item's tests and e2e. Default: no change.
 
