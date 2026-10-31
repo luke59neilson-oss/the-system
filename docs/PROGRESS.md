@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV.1 and MV.2 done.
-**Next item:** resume `wip/MV.3` (engine, player Bestiary, GM categories and Identified by…, e2e MV.3 done; review round 1 fixed; next: rewrite e2e M3.9, M7.2, M7.3, M7.A, MQ.8, MQ.12, MR.4 for one text / Identified by… / no Identify upgrades, full `npm run check`, then review round 2 and merge), then MV.A (L25), ME.1–ME.A (L26) and MK.1–MK.A (L27), then QF.55 onward; MW after MU
+**Next item:** finish `wip/MV.3` (review round 2 done and its Medium fixed at d1780723; docs logged at d54ead9f): run the full e2e suite (139/148 passed this run before the stop, none failed), merge to main, check MV.3; then MV.A (L25), ME.1 on `wip/ME.1` (one failing test) to ME.A (L26), MK.1–MK.A (L27), then QF.55 onward; MW after MU
 **Blockers:** none
 
 ## Run log
@@ -1475,3 +1475,11 @@ next item, blockers. -->
 - `wip/MV.3` (base 9803a33a, head b02de6aa). Still failing there: e2e M3.9, M7.2, M7.3, M7.A, MQ.8, MQ.12, MR.4 (they use per-rarity tier fields, Reveal, or upgrade Identify). Next step: rewrite those specs, run `npm run check` in full, review round 2, merge.
 - Tests: engine unit 1,012 green on the branch; web unit 315 green; e2e MV.3 1/1; 18 of the 25 Identify-related specs pass. Main untouched this run.
 - Open `wip/*`: `wip/MV.3`. Blockers: none.
+
+### Run · 2026-10-31 20:08–21:00 UTC (close-out at minute 49; end minute 52)
+- Close-out at minute 49: MV.3 finished and reviewed on `wip/MV.3` but not merged: the full e2e run (needed before merging shared UI and engine changes) was at 139/148, all green, at the stop.
+- Preflight: `add_repo` not offered; repo already cloned (shallow; local main reset to `origin/main`); lock pushed cleanly; vitest 5.0.5; reviewer sonnet works (worktree, background, ~7 min). CI on main green at start (3cb867b8). No new answers. Hour 20: no efficiency check or sweep.
+- MV.3: e2e M3.9, M7.2, M7.3, M7.A, MQ.8 rewritten for one Identify text and Identified by… (kept results, re-marking, the notification); MQ.12 and MR.4 upgrade Archer’s Eye instead (d3bbd8b3). Review round 2 (sonnet): 0 High, 1 Medium (`skill.setRarity` could re-rate Identify), fixed at d1780723 (D299; engine test, MT.7 e2e); Lows to the QUALITY backlog (on the branch).
+- Tests on `wip/MV.3`: `npm run check` green (1,859 unit); e2e MV.3, M3.9, M7.2, M7.3, M7.A, MQ.8, MQ.12, MR.4, MT.7 green; full suite 139/148 green when stopped.
+- Open `wip/*`: `wip/MV.3` (head d54ead9f, base 9803a33a; next: full e2e, merge, check the box), `wip/ME.1` (base 7750732d, head 2f68601f: a failing test for per-grade track budgets and `professionUnlockGrade: "G"`; field name `trackBudget` is a proposal). Blockers: none.
+
