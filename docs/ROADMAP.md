@@ -629,7 +629,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   earlier copy of the campaign") and a missing character's phone returns to
   the join screen with that reason; the confirm and guide say what really
   happens; backup labels use local time; e2e with a player page.
-- [ ] **QF.45 Installing a new build over a running app quits it cleanly.**
+- [x] **QF.45 Installing a new build over a running app quits it cleanly.**
   electron-builder's NSIS "app is running" step uses PowerShell `Stop-Process`
   (TerminateProcess), so the quit backup, final session log and LOCK release
   never run (`app-builder-lib/templates/nsis/include/allowOnlyOneInstallerInstance.nsh:85-140`;

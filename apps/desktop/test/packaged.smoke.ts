@@ -17,12 +17,25 @@ test('packaged app: server up, web build served, GM window connected', async () 
   const app = await electron.launch({
     executablePath: exe,
     args: process.platform === 'linux' ? ['--no-sandbox'] : [],
-    env: { ...process.env, THE_SYSTEM_PORT: '0', THE_SYSTEM_DATA_DIR: dataDir },
+    env: {
+      ...process.env,
+      THE_SYSTEM_PORT: '0',
+      THE_SYSTEM_DATA_DIR: dataDir,
+      THE_SYSTEM_TEST_SPEECH_SELFTEST: '1',
+    },
   });
   try {
     expect(await app.evaluate(({ app: a }) => a.isPackaged)).toBe(true);
     const gm = await gmWindow(app);
     await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    // QF.45: the speech engine loads inside packaged Electron (RunAsNode and
+    // NODE_OPTIONS fuses off), from the app's own resources.
+    const speech = await app.evaluate(
+      () =>
+        (globalThis as { theSystemSpeechSelfTest?: Promise<string> }).theSystemSpeechSelfTest ??
+        'self-test not started',
+    );
+    expect(speech).toBe('ok');
     expect(gm.url()).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/gm$/);
     const port = Number(new URL(gm.url()).port);
     const health = await fetch(`http://127.0.0.1:${port}/health`);

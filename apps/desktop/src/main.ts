@@ -240,6 +240,19 @@ async function start(): Promise<void> {
         platform: (!app.isPackaged && process.env['THE_SYSTEM_TEST_PLATFORM']) || process.platform,
       }),
     );
+    // Tests only (QF.45): the packaged smoke checks that the speech engine's
+    // native addon loads inside packaged Electron (fuses on), not just in Node.
+    if (app.isPackaged && process.env['THE_SYSTEM_TEST_SPEECH_SELFTEST'] === '1') {
+      (globalThis as { theSystemSpeechSelfTest?: Promise<string> }).theSystemSpeechSelfTest =
+        packagedSpeechLoad(process.resourcesPath)().then(
+          (engine) =>
+            typeof (engine as Record<string, unknown> | undefined)?.['OfflineRecognizer'] ===
+            'function'
+              ? 'ok'
+              : 'loaded without its native addon',
+          (error: unknown) => (error instanceof Error ? error.message : String(error)),
+        );
+    }
     // Tests only: a slow start (server and campaign already open), so the
     // splash, and quitting or relaunching while starting, can be tested.
     const hold = Number(process.env['THE_SYSTEM_TEST_START_DELAY_MS'] ?? 0);

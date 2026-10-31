@@ -8,15 +8,24 @@
   !insertmacro IS_POWERSHELL_AVAILABLE
   !insertmacro FIND_PROCESS "${APP_EXECUTABLE_FILENAME}" $R0
   ${if} $R0 == 0
+    ; Ask first, as electron-builder does (a silent install answers OK); an
+    ; auto-update skips the question.
+    ${ifNot} ${isUpdated}
+      MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "$(appRunning)" /SD IDOK IDOK theSystemQuitApp
+      Quit
+    ${endIf}
+    theSystemQuitApp:
     DetailPrint "$(appClosing)"
     Exec '"$INSTDIR\${APP_EXECUTABLE_FILENAME}" --quit-for-update'
-    StrCpy $R1 0
+    ; Wait up to 8 s by the clock (each process check itself takes time).
+    System::Call 'kernel32::GetTickCount()i.r1'
     theSystemWaitQuit:
       Sleep 500
-      IntOp $R1 $R1 + 1
       !insertmacro FIND_PROCESS "${APP_EXECUTABLE_FILENAME}" $R0
       ${if} $R0 == 0
-        ${if} $R1 < 16
+        System::Call 'kernel32::GetTickCount()i.r2'
+        IntOp $2 $2 - $1
+        ${if} $2 < 8000
           Goto theSystemWaitQuit
         ${endIf}
         ; Still running after ~8 s: the old way, polite then forced.
