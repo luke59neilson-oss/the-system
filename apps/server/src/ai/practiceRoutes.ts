@@ -12,7 +12,7 @@ import { DraftStore, draftPractice, type DraftCharacter, type LoggedUse } from '
 import type { CampaignStore } from '../store';
 import { transcriptsDir } from '../speech/routes';
 import { transcriptFile, type TranscriptLine } from '../speech/transcript';
-import { transcriptChunks } from './transcriptChunks';
+import { eachChunk } from './transcriptChunks';
 
 export const draftsDir = (store: CampaignStore) => path.join(store.dir, 'codm');
 
@@ -94,7 +94,7 @@ export function registerPracticeDraftRoutes(
       // saved after each, so a failure later keeps what was already drafted
       // and a retry re-sends only the unread rest.
       let added = 0;
-      for (const chunk of transcriptChunks(all, from)) {
+      await eachChunk(all, from, async (chunk) => {
         const drafts = await draftPractice(
           options.client,
           all.slice(chunk.start, chunk.end),
@@ -109,7 +109,8 @@ export function registerPracticeDraftRoutes(
         logged = logged.concat(
           drafts.map((d) => ({ characterId: d.characterId, skills: [d.skill], at: d.at })),
         );
-      }
+        return true;
+      });
       return { drafts: store.list(), added, read: Math.max(0, all.length - from) };
     } catch (err) {
       return reply.code(err instanceof AiError ? 502 : 500).send({ error: fail(err) });

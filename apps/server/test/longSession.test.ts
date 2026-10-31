@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { DEFAULT_RULES, execute } from '@the-system/engine';
 import { CoDm } from '../src/ai/coDm';
+import type { AiRequest } from '../src/ai/client';
 import { FixtureAiClient } from '../src/ai/fake';
 import { DraftStore } from '../src/ai/practiceDrafts';
 import { draftsDir } from '../src/ai/practiceRoutes';
@@ -245,5 +246,52 @@ describe('a long session (QF.49)', () => {
     expect(file.readUpTo).toBeGreaterThan(0);
     expect(file.readUpTo).toBeLessThanOrEqual(1000);
     expect(file.notes.length).toBeGreaterThan(0);
+  });
+
+  it('a dense stretch cut at its cap is split and read in halves, not retried forever', async () => {
+    // Only a piece holding both lines 300 and 310 is "too dense".
+    const dense = new FixtureAiClient([]);
+    const ok = new FixtureAiClient([
+      { role: 'fast', match: 'Session notes.', text: '{"notes":["Jake looked around"]}' },
+    ]);
+    fake = {
+      requests: ok.requests,
+      complete: (request: AiRequest) => {
+        const p = request.messages.at(-1)!.content;
+        if (p.includes(line(300).text) && p.includes(line(310).text)) {
+          ok.requests.push(request);
+          return dense.complete({ ...request, messages: [] }).catch(() =>
+            Promise.resolve({
+              text: '{"notes":["ha',
+              model: 'm',
+              usage: { inputTokens: 1, outputTokens: 800 },
+              stopReason: 'max_tokens',
+            }),
+          );
+        }
+        return ok.complete(request);
+      },
+    } as unknown as FixtureAiClient;
+    rmSync(draftsDir(store), { recursive: true, force: true });
+    const r = await post('/api/gm/ai/session-notes');
+    expect(r.statusCode, r.body).toBe(200);
+    expect(new NotesStore(draftsDir(store)).read(sessionNumber()).readUpTo).toBe(LINES);
+  });
+
+  it('a quiet stretch with nothing to note is read, so later talk still gets notes', async () => {
+    const quiet = line(10).text;
+    fake = new FixtureAiClient([
+      { role: 'fast', match: quiet, text: '{"notes":[]}' },
+      { role: 'fast', match: 'Session notes.', text: '{"notes":["Jake looked around"]}' },
+    ]);
+    const r = await post('/api/gm/ai/session-notes');
+    expect(r.statusCode, r.body).toBe(200);
+    const file = new NotesStore(draftsDir(store)).read(sessionNumber());
+    expect(file.readUpTo).toBe(LINES);
+    const pieces = transcriptChunks(
+      Array.from({ length: LINES }, (_, i) => line(i)),
+      0,
+    ).length;
+    expect(file.notes).toHaveLength(pieces - 1);
   });
 });

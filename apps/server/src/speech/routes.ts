@@ -3,6 +3,7 @@
 // The GM window sends mono 16 kHz float PCM (little-endian Float32) while the
 // mic is on; it is chunked and transcribed in memory and only text is kept,
 // in `<campaign dir>/transcripts/session-<NN>.jsonl`.
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
@@ -125,6 +126,10 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
     lines: z.literal('0').optional(),
     campaign: z.string().max(200).optional(),
   });
+  // The held lines are in memory: a restart starts them again, so the key
+  // the panel sends back names this start too (QF.49 review).
+  const boot = randomUUID();
+  const heldKey = (id: string) => `${id}:${boot}`;
   app.get('/api/gm/listen', (request, reply) => {
     const q = listenQuery.safeParse(request.query);
     if (!q.success) return reply.code(400).send({ error: 'after must be a line count' });
@@ -132,14 +137,15 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
     const all = a ? (heard.get(a.store.id) ?? []) : [];
     const after = q.data.after ?? 0;
     const from =
-      after <= all.length && (q.data.campaign === undefined || q.data.campaign === a?.store.id)
+      after <= all.length &&
+      (q.data.campaign === undefined || (a !== null && q.data.campaign === heldKey(a.store.id)))
         ? after
         : 0;
     return {
       on: current !== null && a !== null && current.store === a.store,
       available: options.stt() !== null,
       model: options.model?.status() ?? null,
-      campaign: a?.store.id ?? null,
+      campaign: a ? heldKey(a.store.id) : null,
       total: all.length,
       from: q.data.lines === '0' ? all.length : from,
       lines: q.data.lines === '0' ? [] : all.slice(from),

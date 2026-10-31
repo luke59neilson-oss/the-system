@@ -178,6 +178,9 @@ export function redactKey(text: string, key?: string): string {
   return out;
 }
 
+/** QF.49: a reply cut at its output cap; readers split the stretch and retry. */
+export class TooLongError extends AiError {}
+
 /**
  * QF.49: a reply cut at its output cap is not an answer (the JSON is torn).
  * Throws an AiError that says what to do instead of failing as bad JSON.
@@ -185,8 +188,8 @@ export function redactKey(text: string, key?: string): string {
  */
 export function requireWhole(reply: AiReply): AiReply {
   if (reply.stopReason === 'max_tokens') {
-    throw new AiError(
-      'The co-DM ran out of room answering: that stretch of talk was too long for one go. Try again; it reads in smaller pieces.',
+    throw new TooLongError(
+      'The co-DM ran out of room answering: that stretch of talk was too long for one go.',
       'bad-reply',
     );
   }

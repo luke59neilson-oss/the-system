@@ -148,11 +148,13 @@ const draftSchema = z.object({
 // Each item is checked on its own, so one malformed draft does not lose the rest (MC.7 review M6).
 const replySchema = z.object({ drafts: z.array(z.unknown()) });
 
+class NoJsonError extends Error {}
+
 /** The first JSON object in a reply (models sometimes wrap it in a code fence). */
 const jsonIn = (text: string): unknown => {
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
-  if (start === -1 || end <= start) throw new Error('no JSON in the reply');
+  if (start === -1 || end <= start) throw new NoJsonError('no JSON in the reply');
   return JSON.parse(text.slice(start, end + 1));
 };
 
@@ -232,9 +234,12 @@ export async function draftPractice(
   requireWhole(reply);
   try {
     return parseDrafts(reply.text, lines, characters, logged, newId, sessionId);
-  } catch {
+  } catch (err) {
     // QF.49: a reply without a drafts list is the model's fault, not the disk's.
-    throw new AiError('The co-DM reply had no drafts list; try again', 'bad-reply');
+    if (err instanceof SyntaxError || err instanceof z.ZodError || err instanceof NoJsonError) {
+      throw new AiError('The co-DM reply had no drafts list; try again', 'bad-reply');
+    }
+    throw err;
   }
 }
 

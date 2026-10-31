@@ -104,14 +104,25 @@ export async function takeNotes(
   client: AiClient,
   lines: readonly TranscriptLine[],
 ): Promise<string[]> {
-  if (lines.length === 0) return [];
+  return (await takeNotesReply(client, lines)).notes;
+}
+
+/** Notes, and how many items the reply listed before unusable ones were dropped (QF.49). */
+export async function takeNotesReply(
+  client: AiClient,
+  lines: readonly TranscriptLine[],
+): Promise<{ notes: string[]; listed: number }> {
+  if (lines.length === 0) return { notes: [], listed: 0 };
   const reply = await client.complete({
     role: 'fast',
     system: 'You are the co-DM of a LitRPG tabletop game, keeping session notes for the GM.',
     messages: [{ role: 'user', content: notesPrompt(lines) }],
     maxTokens: 800,
   });
-  return parseNotes(requireWhole(reply).text);
+  const text = requireWhole(reply).text;
+  const notes = parseNotes(text);
+  const listed = notes.length > 0 ? notes.length : notesSchema.parse(jsonIn(text)).notes.length;
+  return { notes, listed };
 }
 
 export async function summarise(

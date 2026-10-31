@@ -2,6 +2,7 @@
 // single request carries a whole evening of talk (cost, and replies cut at
 // their output cap), and the read position can move after each piece.
 import type { TranscriptLine } from '../speech/transcript';
+import { TooLongError } from './client';
 
 /** Characters of transcript text one request may carry (about 3k tokens). */
 export const CHUNK_CHARS = 12_000;
@@ -39,4 +40,31 @@ export function transcriptChunks(
     start = end;
   }
   return out;
+}
+
+/**
+ * Runs `work` on each chunk of `lines[from..]` in order. A chunk whose reply
+ * was cut at its output cap (TooLongError) is split in half and the halves
+ * run instead, down to one line, so a dense stretch never blocks the rest.
+ * `work` returns false to stop early.
+ */
+export async function eachChunk(
+  lines: readonly TranscriptLine[],
+  from: number,
+  work: (chunk: Chunk) => Promise<boolean>,
+): Promise<void> {
+  const queue = transcriptChunks(lines, from);
+  while (queue.length > 0) {
+    const chunk = queue.shift()!;
+    let more: boolean;
+    try {
+      more = await work(chunk);
+    } catch (err) {
+      if (!(err instanceof TooLongError) || chunk.end - chunk.start <= 1) throw err;
+      const mid = chunk.start + Math.floor((chunk.end - chunk.start) / 2);
+      queue.unshift({ start: chunk.start, end: mid }, { start: mid, end: chunk.end });
+      continue;
+    }
+    if (!more) return;
+  }
 }

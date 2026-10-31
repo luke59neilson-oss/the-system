@@ -34,16 +34,19 @@ test('a splash says "Starting The System…" at once, then hands over to the GM 
   // QF.59: a warm-up launch first, so the splash bound measures our code and
   // not the first Electron start on a cold runner (disk cache, fonts).
   const warm = profile();
-  const warmApp = await launch({
-    THE_SYSTEM_PORT: '0',
-    THE_SYSTEM_DATA_DIR: warm.dataDir,
-    THE_SYSTEM_USER_DATA_DIR: warm.userData,
-  });
   try {
-    // Not held: a held start makes close() wait out the 30 s hold.
-    await gmWindow(warmApp);
+    const warmApp = await launch({
+      THE_SYSTEM_PORT: '0',
+      THE_SYSTEM_DATA_DIR: warm.dataDir,
+      THE_SYSTEM_USER_DATA_DIR: warm.userData,
+    });
+    try {
+      // Not held: a held start makes close() wait out the 30 s hold.
+      await gmWindow(warmApp);
+    } finally {
+      await warmApp.close();
+    }
   } finally {
-    await warmApp.close();
     warm.cleanup();
   }
   const p = profile();

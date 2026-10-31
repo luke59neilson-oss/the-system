@@ -7,8 +7,8 @@ import type { FastifyInstance } from 'fastify';
 import type { CampaignState, SessionRecord } from '@the-system/engine';
 import { AiError, type AiClient } from './client';
 import { draftsDir, readTranscript } from './practiceRoutes';
-import { NotesStore, summarise, takeNotes, type SessionNotesFile } from './sessionNotes';
-import { transcriptChunks } from './transcriptChunks';
+import { NotesStore, summarise, takeNotesReply, type SessionNotesFile } from './sessionNotes';
+import { eachChunk } from './transcriptChunks';
 import type { TranscriptLine } from '../speech/transcript';
 import type { CampaignStore } from '../store';
 
@@ -33,9 +33,8 @@ export function registerNotesRoutes(
 
   /**
    * QF.49: notes for the unread transcript, one bounded piece per request,
-   * saved after each piece. Lines count as read only when notes came back,
-   * so a piece with no usable notes stops the catch-up there and is read
-   * again next time (D250).
+   * saved after each piece. A piece whose notes all came back unusable stops
+   * the catch-up there and is read again next time (D250).
    */
   const catchUp = async (
     notes: NotesStore,
@@ -43,12 +42,18 @@ export function registerNotesRoutes(
     session: number,
   ): Promise<SessionNotesFile> => {
     let file = notes.read(session);
-    for (const chunk of transcriptChunks(all, file.readUpTo)) {
-      const fresh = await takeNotes(options.client, all.slice(chunk.start, chunk.end));
-      if (fresh.length === 0) break;
-      file = { ...file, readUpTo: chunk.end, notes: [...file.notes, ...fresh] };
+    await eachChunk(all, file.readUpTo, async (chunk) => {
+      const reply = await takeNotesReply(options.client, all.slice(chunk.start, chunk.end));
+      // Items came back but none were usable: read this stretch again (D250).
+      if (reply.notes.length === 0 && reply.listed > 0) return false;
+      // Nothing worth noting in the newest talk: leave it, so it is sent
+      // again with what follows (D250). An earlier quiet stretch is read, so
+      // it never blocks the notes after it (QF.49 review).
+      if (reply.listed === 0 && chunk.end === all.length) return false;
+      file = { ...file, readUpTo: chunk.end, notes: [...file.notes, ...reply.notes] };
       notes.write(session, file);
-    }
+      return true;
+    });
     return file;
   };
 
