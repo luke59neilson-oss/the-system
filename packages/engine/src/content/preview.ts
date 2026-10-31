@@ -121,7 +121,7 @@ function entryNote(campaign: Campaign, command: ContentCommand['command']): stri
     case 'evolution.release': {
       const who = characterOf(state, command.characterId);
       if (!who) return null;
-      const options = command.options.map((o) => `[${o.className}]`).join(', ');
+      const options = (command.options ?? []).map((o) => `[${o.className}]`).join(', ');
       const replaces = who.evolution ? `; replaces the evolution ${who.name} was offered` : '';
       // The re-rating the import approves (MT.1): each changed skill, or none.
       const set = command.rerate ?? {};
