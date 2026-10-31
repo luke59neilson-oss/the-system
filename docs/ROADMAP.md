@@ -592,7 +592,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   backups include `codm/` and `transcripts/` (voice prints in `speakers/`
   left out on purpose, said in the guide); server errors go to
   `<dataDir>/server.log` (size-capped) and the warnings name it.
-- [ ] **QF.44 Back up, download and restore from the console.** No backup,
+- [x] **QF.44 Back up, download and restore from the console.** No backup,
   export or restore control exists (`GET /api/gm/export` has no caller;
   `importCampaign` has none outside tests), although DESIGN §9a and the GM
   guide promise them. Library & settings gets **Back up now**, **Download

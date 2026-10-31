@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress again (2026-10-31): every milestone done; deep multi-model review queued 26 fix items QF.38–QF.63; QF.38–QF.43 done (both Highs).
-**Next item:** QF.44, then onward in file order
+**Status:** in progress again (2026-10-31): every milestone done; deep multi-model review queued 26 fix items QF.38–QF.63; QF.38–QF.44 done; QF.45 on `wip/QF.45`.
+**Next item:** QF.45 (resume `wip/QF.45`: review round 2, then the packaged speech check), then QF.46 onward
 **Blockers:** none
 
 ## Run log
@@ -1373,3 +1373,12 @@ next item, blockers. -->
 - QF.43 Backups always happen: snapshot failure never stops a backup, snapshot retries back off 4×, backups carry `codm/` and `transcripts/` (not `speakers/`), errors go to `<dataDir>/server.log` (1 MB cap) and warnings name it; D280. Sonnet round 1: 2 Medium, fixed; round 2: 0 High/Medium.
 - Tests: unit 1,698 (was 1,677). e2e not run locally (server-only changes; no UI touched); CI runs the full suite. Engine coverage not re-measured (no engine change).
 - Open `wip/*`: none. Next: QF.44. Blockers: none.
+
+### Run · 2026-10-31 08:09–08:55 UTC (close-out at minute 42)
+- Preflight: `add_repo` not offered; repo already cloned; lock pushed cleanly; vitest 5.0.5; sonnet reviewers work (background, worktree). CI on main green at start (d81e0df9). No new answers. Hour 08: no efficiency check or sweep.
+- QF.44 Back up, download and restore from the console: Library & settings → **Campaigns and backups** (Back up now, Download campaign, Restore from a listed backup or a downloaded file as a new `<id>-restored[-N]` campaign, Open, campaign list); `/api/gm/backup`, `/backups`, `/restore`, `/campaigns`, switch by `{ id }`; header shows a restored campaign; GM guide and TROUBLESHOOTING; D281, Q89 (which campaign opens at start). Sonnet round 1: 4 Medium, fixed; round 2: 0 High/Medium.
+- QF.45 (wip): installer `customCheckAppRunning` runs the installed exe with `--quit-for-update` (quiet quit through `second-instance`), waits ~8 s, falls back; fuses RunAsNode and NODE_OPTIONS off; release workflow Windows step installs over the running app and uninstalls; desktop spec passes locally; D282. Sonnet round 1: 1 High (inspect fuse breaks packaged smoke), 3 Medium; High and 2 Medium fixed.
+- Hand-off: `wip/QF.45` at 263c26df (base c1da9979). Next: re-launch its review (round 2, required after a High); then the acceptance's "loads the speech engine inside packaged Electron" (RunAsNode is off now, so it needs an in-app hook, e.g. a test-only flag the packaged smoke uses); the Windows workflow step only runs on a release build.
+- Tests: unit 1,710 (was 1,698); e2e full suite run locally (shared UI changed); desktop spec for quit-for-update passed under xvfb. Engine coverage not re-measured (no engine change).
+- Open `wip/*`: wip/QF.45. Blockers: none.
+
