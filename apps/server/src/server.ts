@@ -329,8 +329,8 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       return;
     }
     sockets.add(socket);
-    const connection = active.hub.connect((message) => {
-      if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(message));
+    const connection = active.hub.connect((message, serialized) => {
+      if (socket.readyState === socket.OPEN) socket.send(serialized ?? JSON.stringify(message));
     });
     socket.on('message', (data: Buffer | ArrayBuffer | Buffer[]) => {
       const raw = Array.isArray(data) ? Buffer.concat(data) : Buffer.from(data as ArrayBuffer);

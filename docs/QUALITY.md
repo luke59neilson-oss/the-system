@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** 1815b441 (2026-10-31, C) · **Next rotation:** D
+**Last sweep:** 8819c277 (2026-10-31, D) · **Next rotation:** A
 
 ## Lenses and rotation
 
@@ -132,6 +132,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-31 09:10 | C, 492127d2..1815b441 | Rules · haiku | 1 | 0 | 1 | 1 H confirmed in code and by test (QF.64, fixed this run); the Low (player cast re-drafted) is already QF.48 | 0 | ~179k |
 | 2026-10-31 09:10 | C, 492127d2..1815b441 | Tests · sonnet | 0 | 2 | 7 | 2 M confirmed by re-running the mutations (QF.65); Lows to Backlog | 0 | ~80k |
 | 2026-10-31 09:10 | C, 492127d2..1815b441 | UX · fable | 0 | 2 | 6 | 2 M confirmed in code (QF.66); Lows to Backlog | 0 | ~186k |
+| 2026-10-31 15:08 | D, 1815b441..8819c277 | Rules · sonnet | 0 | 0 | 0 | clean (engine diff read whole; 943 engine tests green) | 0 | ~70k |
+| 2026-10-31 15:08 | D, 1815b441..8819c277 | Boundaries · fable | 0 | 0 | 0 | clean (59 server/projection tests green) | 0 | ~165k |
+| 2026-10-31 15:08 | D, 1815b441..8819c277 | UX · haiku | 0 | 0 | 1 | 1 L to Backlog | 0 | ~105k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -390,6 +393,8 @@ lowered by their verifiers and folded into the Low batches.
 - (Sweep D 2026-10-26, UX · haiku) Enter in the loading-text field submits Generate; a ticked loading screen with blank text sends nothing and says nothing; Test connection disabled without a reason; Shops: Sell disabled with no characters and no hint, identical aria-labels across shops, "for nothing" vs "for 0 Credits", a shop whose items were removed shows "Nothing for sale." with no hint; on a phone the loading text shows twice (banner and toast).
 - (QF.29/QF.30 review) The panel's "no key" message stays after the GM saves a key until the next Generate; the key pre-check ignores Cancel until it returns.
 - QF.66 review 2026-10-31 (sonnet rounds 1–2, Low): `homeCampaign` is the page's first hello, so a phone reloaded while a copy is open words a later return as "another campaign"; a fresh load straight into a copy lacking the character shows the bare "No such character"; no `LiveClient` unit test for same-campaign reconnect, refused retry and switch back.
+- (QF.52 review r2, sonnet) A timed, unpinned banner pushed out of the newest 50 messages within its lifetime drops from the phone; after Show older, focus can land on a pinned extra; the probe's "old way" is a projection+stringify simulation and its timing margin depends on load; the in-place canary is JSON-based over the golden logs only.
+- (Sweep D 2026-10-31, UX · haiku) Import content's "Apply N" counts ticked entries with no noun; say "Apply N entries".
 
 ## Final review (M11.5)
 

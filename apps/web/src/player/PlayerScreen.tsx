@@ -227,7 +227,12 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
             <PartyPanel view={view} />
             <Inventory view={view} client={pane ? null : client} />
           </div>
-          <Feed live={live} view={view} client={pane ? null : client} />
+          <Feed
+            live={live}
+            view={view}
+            client={pane ? null : client}
+            onLimits={(limits) => client.viewLimits(limits)}
+          />
         </div>
       )}
     </main>
@@ -1025,17 +1030,25 @@ function Track({ testId, name, level }: { testId: string; name: string; level: n
  */
 const HISTORY_PAGE = 50;
 
+function focusEntry(entry: HTMLElement): void {
+  entry.setAttribute('tabindex', '-1');
+  entry.focus();
+}
+
 function ShowOlder({
   hidden,
   shown,
   list,
   onMore,
+  onPending,
   testId,
 }: {
   hidden: number;
   shown: number;
   list: RefObject<HTMLOListElement | null>;
   onMore: () => void;
+  /** QF.52: the next page comes from the server; focus entry `index` when it lands. */
+  onPending?: (index: number) => void;
   testId: string;
 }) {
   if (hidden <= 0) return null;
@@ -1044,10 +1057,8 @@ function ShowOlder({
     // button may be gone (last page), and focus must not fall to the page.
     flushSync(onMore);
     const first = list.current?.children[shown];
-    if (first instanceof HTMLElement) {
-      first.setAttribute('tabindex', '-1');
-      first.focus();
-    }
+    if (first instanceof HTMLElement) focusEntry(first);
+    else onPending?.(shown);
   };
   return (
     <button type="button" className="secondary show-older" onClick={more} data-testid={testId}>
@@ -1060,15 +1071,29 @@ function Feed({
   live,
   view,
   client,
+  onLimits,
 }: {
   live: LiveSnapshot;
   view: PlayerView;
   client: LiveClient | null;
+  /** QF.52: asks the server for more of the view (View-as panes too). */
+  onLimits: LiveClient['viewLimits'];
 }) {
   const [filter, setFilter] = useState<HistoryFilter>('dings');
   const [query, setQuery] = useState('');
   const [dingLimit, setDingLimit] = useState(HISTORY_PAGE);
   const [messageLimit, setMessageLimit] = useState(HISTORY_PAGE);
+  // QF.52: older messages arrive from the server after "Show older".
+  const [focusMessage, setFocusMessage] = useState<number | null>(null);
+  const messageCount = view.messages.length;
+  useEffect(() => {
+    if (focusMessage === null) return;
+    const entry = messageList.current?.children[focusMessage];
+    if (entry instanceof HTMLElement) {
+      focusEntry(entry);
+      setFocusMessage(null);
+    }
+  }, [focusMessage, messageCount]);
   const dingList = useRef<HTMLOListElement>(null);
   const messageList = useRef<HTMLOListElement>(null);
   // MU.2: "Full history" in the running log shows every notice, not only the DINGs.
@@ -1088,7 +1113,7 @@ function Feed({
       <QuestLog view={view} />
       <PracticePanel view={view} client={client} />
       <IdentifyPanel view={view} />
-      <NotesPanel view={view} client={client} />
+      <NotesPanel view={view} client={client} onLimits={onLimits} />
       <section className="window feed" aria-labelledby="dings" data-testid="history">
         <h2 id="dings">Notifications</h2>
         <div className="history-tools">
@@ -1159,10 +1184,16 @@ function Feed({
           </ol>
         )}
         <ShowOlder
-          hidden={view.messages.length - messages.length}
+          hidden={Math.max(0, view.messagesTotal - messages.length)}
           shown={messages.length}
           list={messageList}
-          onMore={() => setMessageLimit((n) => n + HISTORY_PAGE)}
+          onMore={() => {
+            // QF.52: the view carries one page; ask the server for the next.
+            const next = messageLimit + HISTORY_PAGE;
+            setMessageLimit(next);
+            onLimits({ messages: next });
+          }}
+          onPending={setFocusMessage}
           testId="messages-older"
         />
       </section>
