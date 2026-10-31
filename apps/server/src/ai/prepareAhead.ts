@@ -10,6 +10,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import { GENERATE_KINDS, type GenerateKind } from './generate';
 import type { TranscriptLine } from '../speech/transcript';
+import { SHARED_SYSTEM_LINES } from './setting';
 
 /** Where the table is heading, from one transcript line. */
 export interface Heading {
@@ -41,6 +42,7 @@ export const PREPARE_INTERVAL_MAX_S = 1800;
 export const MAX_PREPARED = 3;
 
 export const PREPARE_SYSTEM = [
+  ...SHARED_SYSTEM_LINES,
   'You are the co-DM for a LitRPG tabletop game. You read the latest table talk and decide whether the party has decided to head somewhere specific next (a shop, a person, a place, a fight, a lead).',
   'Only say so when the talk shows they are going there, not when it is only mentioned.',
   'Reply with JSON only:',

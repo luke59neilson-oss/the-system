@@ -8,6 +8,7 @@ import path from 'node:path';
 import { z } from 'zod';
 import { AiError, requireWhole, type AiClient } from './client';
 import type { TranscriptLine } from '../speech/transcript';
+import { SHARED_SYSTEM_LINES } from './setting';
 
 export interface SessionSummary {
   readonly whatHappened: string;
@@ -107,6 +108,16 @@ export async function takeNotes(
   return (await takeNotesReply(client, lines)).notes;
 }
 
+export const NOTES_SYSTEM = [
+  'You are the co-DM of a LitRPG tabletop game, keeping session notes for the GM.',
+  ...SHARED_SYSTEM_LINES,
+].join('\n');
+
+export const SUMMARY_SYSTEM = [
+  'You are the co-DM of a LitRPG tabletop game, summarising a session for the GM.',
+  ...SHARED_SYSTEM_LINES,
+].join('\n');
+
 /** Notes, and how many items the reply listed before unusable ones were dropped (QF.49). */
 export async function takeNotesReply(
   client: AiClient,
@@ -115,7 +126,7 @@ export async function takeNotesReply(
   if (lines.length === 0) return { notes: [], listed: 0 };
   const reply = await client.complete({
     role: 'fast',
-    system: 'You are the co-DM of a LitRPG tabletop game, keeping session notes for the GM.',
+    system: NOTES_SYSTEM,
     messages: [{ role: 'user', content: notesPrompt(lines) }],
     maxTokens: 800,
   });
@@ -132,7 +143,7 @@ export async function summarise(
 ): Promise<SessionSummary> {
   const reply = await client.complete({
     role: 'fast',
-    system: 'You are the co-DM of a LitRPG tabletop game, summarising a session for the GM.',
+    system: SUMMARY_SYSTEM,
     messages: [{ role: 'user', content: summaryPrompt(notes, characters) }],
     maxTokens: 1500,
   });

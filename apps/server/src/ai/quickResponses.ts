@@ -7,6 +7,7 @@
 import { z } from 'zod';
 import type { TranscriptLine } from '../speech/transcript';
 import { referencePromptBlock } from '../reference/reference';
+import { SHARED_SYSTEM_LINES } from './setting';
 
 export const QUICK_SLOT_IDS = ['yes-and', 'yes-but', 'no-but', 'in-character', 'twist'] as const;
 export type QuickSlotId = (typeof QUICK_SLOT_IDS)[number];
@@ -130,6 +131,7 @@ export interface QuickContext {
 }
 
 export const QUICK_SYSTEM = [
+  ...SHARED_SYSTEM_LINES,
   'You are the co-DM for a LitRPG tabletop game in the style of The Primal Hunter. The GM pressed a quick-response button at the table and will read your answer aloud.',
   'Answer in exactly this shape and nothing else:',
   'SAY: <one line the GM can say as-is, under 35 words>',
