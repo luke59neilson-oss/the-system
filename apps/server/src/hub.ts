@@ -72,6 +72,20 @@ type Role =
 export interface Connection {
   receive(raw: string): void;
   close(): void;
+  /**
+   * QF.53: the socket's send queue has drained after a backlog; a client
+   * whose views were held back gets one fresh, whole view now.
+   */
+  resume(): void;
+}
+
+export interface ConnectOptions {
+  /**
+   * QF.53: true while this socket's send queue is over the backlog limit (a
+   * sleeping phone, a frozen tab). Per-command views and GM states are held
+   * back until `resume()`; small frames (results, notifications) still go.
+   */
+  backlogged?: () => boolean;
 }
 
 /**
@@ -96,6 +110,10 @@ interface Client {
    * Undefined until the first `state` frame.
    */
   gmSent: CampaignState | null | undefined;
+  /** QF.53: see `ConnectOptions.backlogged`. */
+  backlogged: () => boolean;
+  /** QF.53: a view or state was held back while backlogged; send a whole one on resume. */
+  stale: boolean;
 }
 
 export class LiveHub {
@@ -166,7 +184,7 @@ export class LiveHub {
     }
   }
 
-  connect(send: Send): Connection {
+  connect(send: Send, options: ConnectOptions = {}): Connection {
     const client: Client = {
       role: { role: 'none' },
       send,
@@ -175,12 +193,23 @@ export class LiveHub {
       lastView: null,
       limits: PLAYER_VIEW_LIMITS,
       gmSent: undefined,
+      backlogged: options.backlogged ?? (() => false),
+      stale: false,
     };
     this.clients.add(client);
     send(helloMessage(this.store.id));
     return {
       receive: (raw) => this.receive(client, raw),
       close: () => this.clients.delete(client),
+      resume: () => {
+        if (!client.stale || client.backlogged() || !this.clients.has(client)) return;
+        client.stale = false;
+        try {
+          this.sendSnapshot(client);
+        } catch {
+          // A failing socket is closed by its own transport.
+        }
+      },
     };
   }
 
@@ -341,6 +370,14 @@ export class LiveHub {
         }
         const mine = undo ? [] : this.filter(other.role, fresh);
         if (mine.length) other.send({ type: 'notifications', items: mine });
+        if (other.backlogged()) {
+          // QF.53: a socket that is not reading (a sleeping phone) gets no
+          // per-command views; one whole view follows when it drains.
+          other.stale = true;
+          other.gmSent = undefined;
+          other.lastView = null;
+          continue;
+        }
         // A player whose view did not change and who got no notification
         // needs no new snapshot (QF.3): one player's edits must not push
         // every other client's whole view again.

@@ -93,7 +93,20 @@ export interface CreateServerOptions {
   speakers?: () => SpeakerEmbedder | null;
   /** Wall clock for transcript times (injectable for tests). */
   now?: () => number;
+  /**
+   * QF.53: bytes a socket may have queued before per-command views stop for
+   * it (a sleeping phone); one whole view follows when it drains.
+   */
+  wsBacklogBytes?: number;
+  /** QF.53: ping interval; a socket that misses 2 pongs in a row is dropped. 0 turns it off. */
+  wsHeartbeatMs?: number;
 }
+
+/** QF.53 defaults: a few whole GM states of headroom; pings every 20 s. */
+export const WS_BACKLOG_BYTES = 2 * 1024 * 1024;
+export const WS_HEARTBEAT_MS = 20_000;
+/** QF.53: pings a socket may leave unanswered before it is dropped. */
+export const WS_MISSED_PONGS = 2;
 
 /** What Restore reads (QF.44): one of the open campaign's backups, or an export file. */
 export type RestoreSource = { backup: string; from: string } | { export: unknown };
@@ -207,7 +220,33 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   const sockets = new Set<{
     close: (code: number, reason: string) => void;
     terminate: () => void;
+    ping: () => void;
   }>();
+  // QF.53: a socket that stops answering pings (a phone that slept or left
+  // the wifi without closing) is dropped, so nothing queues for it forever.
+  const missedPongs = new WeakMap<object, number>();
+  const heartbeatMs = options.wsHeartbeatMs ?? WS_HEARTBEAT_MS;
+  const heartbeat =
+    heartbeatMs > 0
+      ? setInterval(() => {
+          for (const socket of [...sockets]) {
+            const missed = missedPongs.get(socket) ?? 0;
+            if (missed >= WS_MISSED_PONGS) {
+              sockets.delete(socket);
+              socket.terminate();
+              continue;
+            }
+            missedPongs.set(socket, missed + 1);
+            try {
+              socket.ping();
+            } catch {
+              // A socket mid-close: the next tick drops it.
+            }
+          }
+        }, heartbeatMs)
+      : null;
+  heartbeat?.unref();
+  const backlogBytes = options.wsBacklogBytes ?? WS_BACKLOG_BYTES;
 
   // Only /ws may be upgraded, and only from this server's own pages (or a
   // listed origin); refuse anything else before the handshake.
@@ -329,9 +368,18 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       return;
     }
     sockets.add(socket);
-    const connection = active.hub.connect((message, serialized) => {
-      if (socket.readyState === socket.OPEN) socket.send(serialized ?? JSON.stringify(message));
-    });
+    socket.on('pong', () => missedPongs.set(socket, 0));
+    const backlogged = () => socket.bufferedAmount > backlogBytes;
+    const connection = active.hub.connect(
+      (message, serialized) => {
+        if (socket.readyState !== socket.OPEN) return;
+        // QF.53: each write that leaves the queue may end a backlog.
+        socket.send(serialized ?? JSON.stringify(message), () => {
+          if (!backlogged()) connection.resume();
+        });
+      },
+      { backlogged },
+    );
     socket.on('message', (data: Buffer | ArrayBuffer | Buffer[]) => {
       const raw = Array.isArray(data) ? Buffer.concat(data) : Buffer.from(data as ArrayBuffer);
       try {
@@ -434,6 +482,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     done();
   });
   app.addHook('onClose', () => {
+    if (heartbeat) clearInterval(heartbeat);
     // Writers are closed in preClose; closing again is a no-op unless something changed.
     for (const writer of logWriters) writer.close();
     // The caller closes the store it passed in; close the ones opened here.
