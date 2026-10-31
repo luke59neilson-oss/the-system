@@ -80,15 +80,15 @@ test(
       players.push(p);
     }
 
-    // Custom split of 1,000 class XP: Jake 400 (level 4), Miranda 100
-    // (level 1), Casper balances to 500 (level 4, 100 lost past the G top).
+    // Custom split of 1,000 class XP by percent (MV.2): Jake 40% (level 4),
+    // Miranda 10% (level 1), Casper 50% (level 4, 100 lost past the G top).
     const award = gm.getByRole('form', { name: 'Award class XP' });
     await openWindow(gm, 'award-xp');
     await award.getByLabel('Amount').fill('1000');
-    await award.getByRole('checkbox', { name: 'Set shares by hand' }).check();
-    await award.getByLabel('Jake’s share').fill('400');
-    await award.getByLabel('Miranda’s share').fill('100');
-    await expect(award.getByLabel('Casper’s share (balances)')).toHaveValue('500');
+    await award.getByLabel('Jake’s %').fill('40');
+    await award.getByLabel('Miranda’s %').fill('10');
+    await award.getByLabel('Casper’s %').fill('50');
+    await expect(award.getByTestId(`share-${casper}`)).toHaveText(' · 500 XP');
     await expect(award.getByTestId(`levels-${miranda}`)).toHaveText(' · class lvl 0 → 1');
     await expect(award.getByTestId('xp-lost')).toContainText('100 XP will be lost');
     await award.getByLabel('Reason (GM only)').fill(REASON);

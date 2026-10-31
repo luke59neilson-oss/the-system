@@ -1,10 +1,11 @@
 // Prints what LOOP §4 has a run read from the growing logs, and nothing else
 // (D262, in trial): the PROGRESS header and last run entry; ROADMAP's global
 // rules and every milestone section that still has an open (`[ ]`) or
-// provisional (`[~]`) box, in full; QUESTIONS without an Answer line; the
+// provisional (`[~]`) box, checked items there as one line (D297); QUESTIONS without an Answer line; the
 // DECISIONS L-entries. Read-only. CLAUDE.md, DESIGN.md and ANSWERS.md are
 // still read in full by the run itself.
 import { readFileSync } from 'node:fs';
+import { collapseChecked, openQuestion } from './orientFilter.mjs';
 
 const read = (p) => readFileSync(p, 'utf8');
 const out = [];
@@ -30,17 +31,18 @@ head('ROADMAP.md (global rules and open milestones)');
 for (let s = 0; s + 1 < sections.length; s++) {
   const body = roadmap.slice(sections[s], sections[s + 1]);
   const title = body[0] ?? '';
-  if (/Global rules/.test(title) || body.some((l) => /^\s*- \[( |~)\]/.test(l))) {
-    out.push(...body);
-  }
+  if (/Global rules/.test(title)) out.push(...body);
+  else if (body.some((l) => /^\s*- \[( |~)\]/.test(l))) out.push(...collapseChecked(body));
 }
 
 // QUESTIONS: entries with no Answer line yet (a question starts at "- **Q" or "### Q").
 const questions = read('docs/QUESTIONS.md').split('\n');
 head('QUESTIONS.md (no Answer line yet)');
 let block = [];
+let keptDefault = 0;
 const flush = () => {
-  if (block.length && !block.some((l) => /\bAnswer\b|\(applied/.test(l))) out.push(...block);
+  if (block.length && openQuestion(block)) out.push(...block);
+  else if (block.length && !block.some((l) => /\bAnswer\b|\(applied/.test(l))) keptDefault++;
   block = [];
 };
 for (const l of questions) {
@@ -48,6 +50,8 @@ for (const l of questions) {
   if (block.length || /^(\d+\. \*\*|- \*\*Q\d+|### Q\d+)/.test(l)) block.push(l);
 }
 flush();
+if (keptDefault > 0)
+  out.push(`(${keptDefault} questions kept at their default without Luke hidden)`);
 
 // DECISIONS: the L-entries (made with Luke).
 head('DECISIONS.md (L-entries)');

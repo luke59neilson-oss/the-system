@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV.1 done.
-**Next item:** resume `wip/MV.2` (XP shares by percent: built and tested, review not run yet: launch its sonnet review first), then MV.3–MV.A (L25), ME.1–ME.A (L26) and MK.1–MK.A (L27), which sit before QF in ROADMAP, then QF.55 onward; MW after MU
+**Status:** in progress (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV.1 and MV.2 done.
+**Next item:** resume `wip/MV.3` (Identify refuses marks/upgrades done; next: rewrite the tests that upgrade Identify, then bestiary categories, `entity.identify` and the player Bestiary), then MV.A (L25), ME.1–ME.A (L26) and MK.1–MK.A (L27), then QF.55 onward; MW after MU
 **Blockers:** none
 
 ## Run log
@@ -1458,4 +1458,12 @@ next item, blockers. -->
 - `wip/MV.2` (base 6cdb8a50, head 538dc38c): % box per participant, even to start (34/33/33), typed % changes nothing else, total shown, Award only at 100, Even split resets, ticking a participant re-evens; typed % → shares by largest remainder; untouched even split stays exactly even (334/333/333; D296, Q90). M4.6, M4.A, MU.3 specs moved to % boxes; MV.2 spec 1,000 at 40/20/20/20 → 400/200/200/200; all green locally with QF.46. Next step: launch its sonnet review, fix, merge to main.
 - Tests: unit 1,845+ (check at 6cdb8a50); full e2e 146/146 at the MV.1 build; latency 7/8 then M4.A green on the MV.2 build (its spec had been edited for MV.2 while the old build ran). Engine: reducer, envelope, commands, history touched; goldens: one added, none edited.
 - Open `wip/*`: `wip/MV.2`. Blockers: none.
+
+### Run · 2026-10-31 18:08–19:00 UTC (close-out at minute 45; end minute 52)
+- Close-out at minute 45: MV.2 reviewed (2 rounds), fixed and merged to main; MV.3 started and handed off on `wip/MV.3`; efficiency check done (D297 in trial).
+- Preflight: `add_repo` not offered; repo already cloned (stale local `main` with unrelated history, reset to `origin/main`); lock pushed cleanly; vitest 5.0.5; reviewer sonnet works (worktree; blocking, ~6 min). CI on main green at start (554cbcc7). No new answers. Hour 18: efficiency check (no trials to judge; sonnet auditor; applied its Tier 1: orient output 21.0k → 7.5k words, D297).
+- MV.2 XP shares by percent (D296, revised): see REVIEW-LOG. Exact even split now holds whenever the % equal the even ones; ticking a participant says when typed % were reset. Q90 updated.
+- `wip/MV.3` (base dab84c5d, head ed92a077): `skill.awardMark`/`skill.upgrade` refuse Identify at the command ("Identify never changes"; stored logs replay); the demo no longer trains Casper's Identify; new `packages/engine/test/bestiary-identify.test.ts` (Identify refusal passes; the bestiary test fails: needs `bestiary.categoryDefine`, `entity.define.categoryId`, `entity.identify` and a player `bestiary` view). Still failing on that branch: tests that upgrade Identify (entities, handText, skillLibraryRarity, simulation): switch them to another skill or drop the Identify tier-by-rarity cases (DESIGN §7 now has one text per entity). Next step: those tests, then the events and projection, then GM UI and e2e.
+- Tests: unit 1,851 (check green at the merge); full e2e project 147/147 (in two parts: 76 + 71, 1 worker); M4.A latency green. Engine untouched on main this run (web + scripts only); goldens untouched.
+- Open `wip/*`: `wip/MV.3`. Blockers: none.
 

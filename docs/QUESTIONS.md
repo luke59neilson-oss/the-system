@@ -679,3 +679,15 @@ DESIGN/ROADMAP; do not re-apply them.
     from that window each time. Default: always start on the main campaign.
     Option: remember the last campaign you opened (or a "Make this my main
     campaign" button).
+
+90. **Even split under percentages (MV.2, D296).** The award box starts each
+    player at an even whole percentage (34/33/33). Taken literally, 1,000 XP
+    at 34/33/33 is 340/330/330, so the first player gets 10 more. While you
+    have not typed any percentage, the app splits the XP exactly evenly
+    instead (334/333/333); once you type one, each row gets exactly what its
+    percentage gives. Default: as described. Option: always use the shown
+    percentages, even before you type.
+    After review: the exact split also applies when you type the even
+    numbers back in, and the box says "Even split: the XP is divided
+    exactly evenly" (the literal 34% of 1,200 would lose XP past a grade's
+    top on the "typical session" suggestion).

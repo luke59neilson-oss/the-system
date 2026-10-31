@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { XpContext } from '@the-system/engine';
-import { formatLevels, xpContextText } from '../src/gm/xpAwardModel';
+import { evenPercents, formatLevels, percentShares, xpContextText } from '../src/gm/xpAwardModel';
 
 const base: XpContext = {
   grade: 'G',
@@ -52,4 +52,39 @@ describe('formatLevels (MU.3)', () => {
     [0.04, 'under 0.1 levels'],
     [6.04, '6 levels'],
   ])('%s → %s', (v, text) => expect(formatLevels(v)).toBe(text));
+});
+
+describe('XP shares by percent (MV.2)', () => {
+  it('starts even, whole and summing to 100, for 1–8 participants', () => {
+    expect(evenPercents(3)).toEqual([34, 33, 33]);
+    expect(evenPercents(4)).toEqual([25, 25, 25, 25]);
+    expect(evenPercents(0)).toEqual([]);
+    for (let n = 1; n <= 8; n += 1) {
+      const p = evenPercents(n);
+      expect(p).toHaveLength(n);
+      expect(p.reduce((a, b) => a + b, 0)).toBe(100);
+      expect(Math.max(...p) - Math.min(...p)).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('rounds so shares sum to the total exactly', () => {
+    expect(percentShares(1000, [33, 33, 34])).toEqual([330, 330, 340]);
+    expect(percentShares(1000, [40, 20, 20, 20])).toEqual([400, 200, 200, 200]);
+    expect(percentShares(10, [34, 33, 33])).toEqual([4, 3, 3]);
+    expect(percentShares(7, [50, 50])).toEqual([4, 3]);
+    for (const amount of [1, 7, 99, 101, 1000, 12345]) {
+      for (let n = 1; n <= 8; n += 1) {
+        const s = percentShares(amount, evenPercents(n)) ?? [];
+        expect(s.reduce((a, b) => a + b, 0)).toBe(amount);
+      }
+    }
+  });
+
+  it('blocks totals of 99 and 101, fractions and out-of-range values', () => {
+    expect(percentShares(1000, [33, 33, 33])).toBeNull();
+    expect(percentShares(1000, [34, 34, 33])).toBeNull();
+    expect(percentShares(1000, [50.5, 49.5])).toBeNull();
+    expect(percentShares(1000, [-10, 110])).toBeNull();
+    expect(percentShares(1000, [])).toBeNull();
+  });
 });
