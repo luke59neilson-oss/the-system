@@ -121,13 +121,13 @@ test('opening a restored copy tells each phone what happened to its sheet', asyn
   // Jake is in the copy: his phone follows it and says so.
   const notice = jake.getByTestId('campaign-switched');
   await expect(notice).toContainText(
-    '[The GM opened another copy of the campaign. Your sheet now shows that copy.]',
+    '[The GM opened an earlier copy of the campaign, from a backup. Your sheet shows your levels and history as they were then.]',
   );
   await expect(jake.getByTestId('connection')).toHaveText('Connected');
   await jake.screenshot({ path: path.join(shots, 'player-campaign-switched-390x844.png') });
   // Kim is not: her phone says why it waits, with a way out.
   await expect(kim.getByText(/which does not have your character/)).toHaveText(
-    'The GM has opened another campaign, which does not have your character. This screen rejoins when they switch back; or use Switch character.',
+    'The GM has opened another campaign (“main-restored”), which does not have your character. This screen rejoins when they switch back; or use Switch character.',
   );
   await expect(kim.getByRole('link', { name: 'Switch character' })).toBeVisible();
   await kim.screenshot({ path: path.join(shots, 'player-not-in-copy-390x844.png') });
@@ -137,12 +137,14 @@ test('opening a restored copy tells each phone what happened to its sheet', asyn
   await notice.getByRole('button', { name: 'OK' }).click();
   await expect(notice).toHaveCount(0);
 
-  // Back to the main campaign: Kim rejoins on her own; Jake is told again.
+  // Back to the main campaign: Kim rejoins on her own; both are told they are back.
   await gm.getByRole('button', { name: 'Back to my campaign' }).click();
   await expect(gm.getByTestId('restored-badge')).toHaveCount(0);
   await expect(kim.getByTestId('connection')).toHaveText('Connected', { timeout: 15_000 });
   await expect(kim.getByText(/which does not have your character/)).toHaveCount(0);
-  await expect(notice).toBeVisible();
+  const back = '[The GM switched back to the campaign you started in. Your sheet shows it again.]';
+  await expect(notice).toContainText(back);
+  await expect(kim.getByTestId('campaign-switched')).toContainText(back);
 
   expect(gmErrors).toEqual([]);
   expect(jakeErrors).toEqual([]);

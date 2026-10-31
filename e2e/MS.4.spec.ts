@@ -67,7 +67,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   await expect(gm.getByTestId('demo-badge')).toBeVisible();
   expect(confirms).toHaveLength(1);
   // Ada's screen says what happened (and shows nothing of the demo).
-  await expect(ada.getByRole('alert')).toContainText('switched to another campaign');
+  await expect(ada.getByRole('alert')).toContainText('has opened another campaign');
   await expect(ada.getByTestId('status')).toHaveCount(0);
   await openWindow(gm, 'party');
   await expect(gm.getByRole('heading', { name: /Demo: The Whale/ })).toBeVisible();
@@ -107,7 +107,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   const late = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const lateErrors = watchErrors(late);
   await late.goto(adaUrl);
-  await expect(late.getByRole('alert')).toContainText('switched to another campaign');
+  await expect(late.getByRole('alert')).toContainText('has opened another campaign');
 
   // Back to the real campaign: Ada exactly as she was, no demo anywhere.
   await gm.getByRole('button', { name: 'Back to my campaign' }).click();
@@ -136,7 +136,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   await expect(gm.getByRole('listitem').filter({ hasText: 'Ada' }).first()).toBeVisible();
   await expect(gm.getByRole('listitem').filter({ hasText: 'Sultan' })).toHaveCount(0);
   // The demo phone waits with a notice instead of falling back to real data.
-  await expect(phone.getByRole('alert')).toContainText('switched to another campaign');
+  await expect(phone.getByRole('alert')).toContainText('has opened another campaign');
   await expect(phone.getByTestId('status')).toHaveCount(0);
 
   // Loading the demo again keeps what the GM did there; the demo phone rejoins.

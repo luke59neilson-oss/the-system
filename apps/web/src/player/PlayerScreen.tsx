@@ -190,9 +190,16 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
         </p>
       )}
       {live.campaignSwitched && live.status === 'joined' && !pane && (
-        // QF.66: a restored copy (or the demo) replaced the sheet under the player.
-        <p className="campaign-switched" data-testid="campaign-switched" role="status">
-          [The GM opened another copy of the campaign. Your sheet now shows that copy.]{' '}
+        // QF.66: the GM opened another campaign (a restored copy, the demo) under the player.
+        <p
+          className="system-banner campaign-switched"
+          data-testid="campaign-switched"
+          role="status"
+        >
+          <span className="system-banner-mark" aria-hidden="true">
+            [System]
+          </span>{' '}
+          <span>{live.campaignSwitched}</span>
           <button type="button" onClick={() => client.dismissCampaignSwitched()}>
             OK
           </button>

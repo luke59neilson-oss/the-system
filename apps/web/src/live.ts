@@ -1,3 +1,4 @@
+import { campaignSwitchNotice, missingCharacterReason } from './campaignSwitch';
 import {
   DEMO_CHARACTERS,
   type CampaignState,
@@ -122,7 +123,7 @@ export interface LiveSnapshot {
    * QF.66: the GM opened another campaign (a restored copy, the demo) while
    * this page was open, so the sheet changed under the player; they are told.
    */
-  campaignSwitched: boolean;
+  campaignSwitched: string | null;
 }
 
 export type CommandResult = { ok: true; warning?: string } | { ok: false; error: string };
@@ -143,7 +144,7 @@ export class LiveClient {
     liveSince: null,
     campaign: null,
     listening: false,
-    campaignSwitched: false,
+    campaignSwitched: null,
   };
   private readonly listeners = new Set<(s: LiveSnapshot) => void>();
   private readonly pending = new Map<string, (r: CommandResult) => void>();
@@ -152,6 +153,8 @@ export class LiveClient {
   private lastSeq = 0;
   /** The campaign changed since this page last joined (MS.4 demo switch). */
   private campaignChanged = false;
+  /** QF.66: the first campaign this page joined, so a switch back reads as one. */
+  private homeCampaign: string | null = null;
   private closed = false;
   private retry: ReturnType<typeof setTimeout> | null = null;
   private readonly join: JoinAs;
@@ -187,7 +190,7 @@ export class LiveClient {
 
   /** QF.66: the player has read the campaign-switch notice. */
   dismissCampaignSwitched(): void {
-    this.update({ campaignSwitched: false });
+    this.update({ campaignSwitched: null });
   }
 
   close(): void {
@@ -246,6 +249,7 @@ export class LiveClient {
     switch (message.type) {
       case 'hello': {
         const campaign = message.campaign ?? null;
+        this.homeCampaign ??= campaign;
         if (this.snapshot.campaign !== null && campaign !== this.snapshot.campaign) {
           // The GM switched campaigns (real ↔ demo, MS.4), maybe while we were
           // offline: nothing from the other campaign may carry over.
@@ -257,7 +261,7 @@ export class LiveClient {
             state: null,
             view: null,
             seq: 0,
-            campaignSwitched: true,
+            campaignSwitched: campaignSwitchNotice(campaign, this.homeCampaign),
           });
         }
         if (campaign !== this.snapshot.campaign) this.update({ campaign });
@@ -337,9 +341,7 @@ export class LiveClient {
           this.campaignChanged = switched;
           this.update({
             status: 'refused',
-            error: switched
-              ? 'The GM has opened another campaign, which does not have your character. This screen rejoins when they switch back; or use Switch character.'
-              : message.error,
+            error: switched ? missingCharacterReason(this.snapshot.campaign) : message.error,
           });
           socket.close();
         } else {

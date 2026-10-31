@@ -129,7 +129,7 @@ test(
 
     await gm.getByRole('button', { name: 'Load demo campaign' }).click();
     await expect(gm.getByTestId('demo-badge')).toBeVisible();
-    await expect(phone.getByRole('alert')).toContainText('switched to another campaign');
+    await expect(phone.getByRole('alert')).toContainText('has opened another campaign');
     await gm.getByRole('button', { name: 'Back to my campaign' }).click();
     await expect(gm.getByRole('heading', { name: /First Session/ })).toBeVisible();
     await expect(phone.getByTestId('class')).toHaveText('[Archer – lvl 1]', { timeout: 8000 });

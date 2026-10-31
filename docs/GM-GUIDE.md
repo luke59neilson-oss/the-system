@@ -345,8 +345,10 @@ to DESIGN.md's values.
    It never overwrites anything: the copy becomes a new campaign beside the
    current one (`main-restored`, then `main-restored-2`, …). Press **Open
    restored campaign** to switch to it; each phone follows: a character in
-   the copy shows the copy's sheet (its levels and history as they were), and
-   a character the copy does not have waits until you switch back. The header then says "Restored campaign
+   the copy shows the copy's sheet (its levels and history as they were),
+   with a System notice that this is an earlier copy from a backup; a
+   character the copy does not have says so and waits, rejoining on its own
+   when you switch back (and is told it is back). The header then says "Restored campaign
    …", and **Back to my campaign** returns. When the app starts it opens
    your main campaign again; open the restored one from **Campaigns on this
    laptop** in the same window. The backups listed are those of the campaign

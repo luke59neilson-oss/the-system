@@ -968,6 +968,18 @@ button.secondary:hover {
   font-family: var(--mono, ui-monospace, monospace);
   overflow-wrap: anywhere;
 }
+.campaign-switched {
+  margin: 0 0 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.campaign-switched button {
+  min-height: 44px;
+  min-width: 64px;
+  margin-left: auto;
+}
 .system-banner-mark {
   color: var(--accent, #7fb2ff);
   font-weight: 700;
