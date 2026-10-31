@@ -23,6 +23,10 @@ export function cappedLogStream(
           rmSync(`${file}.1`, { force: true });
           renameSync(file, `${file}.1`);
         }
+      } catch {
+        // A rotation that fails (old file held open) must not stop the logging.
+      }
+      try {
         appendFileSync(file, line);
       } catch {
         // Best effort.

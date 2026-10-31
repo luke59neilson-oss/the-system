@@ -619,6 +619,10 @@ describe('session log during a scripted session (M2.4 acceptance)', () => {
       await again.send({ type: 'session.start' });
       const warned = await again.send({ type: 'session.end' });
       expect(warned.warning).toMatch(/the backup could not be saved/);
+      // QF.43: the warning names server.log, which holds the error.
+      const serverLog = path.join(dataDir, 'server.log');
+      expect(warned.warning).toContain(`See ${serverLog}.`);
+      expect(readFileSync(serverLog, 'utf8')).toMatch(/"level":50/);
       const second = path.join(app.exportsDir, 'main', 'session-02.md');
       expect(readFileSync(second, 'utf8')).toMatch(/^# Session 2 report/m);
       // Undoing the end rewrites the file at once, not on the next tick.

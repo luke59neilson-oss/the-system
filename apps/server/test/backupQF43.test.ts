@@ -16,6 +16,21 @@ import { cappedLogStream } from '../src/serverLog';
 
 // QF.43: backups always happen, and hold everything.
 
+/** Set to a folder name to make copying it fail (a file held open by antivirus). */
+const failCopy = vi.hoisted(() => ({ folder: '' }));
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>();
+  return {
+    ...actual,
+    cpSync: (...args: Parameters<typeof actual.cpSync>) => {
+      if (failCopy.folder !== '' && String(args[0]).endsWith(failCopy.folder)) {
+        throw Object.assign(new Error('EBUSY: resource busy or locked'), { code: 'EBUSY' });
+      }
+      actual.cpSync(...args);
+    },
+  };
+});
+
 let dataDir: string;
 let options: StoreOptions;
 
@@ -144,6 +159,23 @@ describe('backups (QF.43)', () => {
       'transcripts!',
     );
     expect(existsSync(path.join(target, 'speakers'))).toBe(false);
+    store.close();
+  });
+});
+
+describe('backups when a folder cannot be copied (QF.43)', () => {
+  it('leaves that folder out and still makes the backup', () => {
+    const store = started();
+    mkdirSync(path.join(store.dir, 'transcripts'));
+    writeFileSync(path.join(store.dir, 'transcripts', 'session-01.jsonl'), 'x');
+    mkdirSync(path.join(store.dir, 'codm'));
+    writeFileSync(path.join(store.dir, 'codm', 'notes-01.json'), '{}');
+    failCopy.folder = 'transcripts';
+    const target = store.backup('quit');
+    expect(existsSync(path.join(target, 'events.jsonl'))).toBe(true);
+    expect(existsSync(path.join(target, 'codm', 'notes-01.json'))).toBe(true);
+    expect(existsSync(path.join(target, 'transcripts'))).toBe(false);
+    failCopy.folder = '';
     store.close();
   });
 });

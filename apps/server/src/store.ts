@@ -700,10 +700,16 @@ export class CampaignStore {
     // QF.43: the co-DM's notes, drafts and summaries and the session
     // transcripts too. Voice prints (`speakers/`) stay out on purpose: they
     // are biometric, and players re-enrol in seconds.
+    // A folder that cannot be copied (a file held open) is left out rather
+    // than costing the whole backup; the log is what counts.
     for (const folder of BACKED_UP_FOLDERS) {
       const from = path.join(this.dir, folder);
-      if (existsSync(from) && statSync(from).isDirectory()) {
-        cpSync(from, path.join(staging, folder), { recursive: true });
+      try {
+        if (existsSync(from) && statSync(from).isDirectory()) {
+          cpSync(from, path.join(staging, folder), { recursive: true });
+        }
+      } catch {
+        rmSync(path.join(staging, folder), { recursive: true, force: true });
       }
     }
     fsyncDir(staging);
