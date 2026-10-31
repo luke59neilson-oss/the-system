@@ -29,10 +29,10 @@ describe('FixtureAiClient', () => {
   it('answers by role and the last user message, first match first', async () => {
     const fast = await fake.complete(ask('they want an herbalist', 'fast'));
     expect(fast.text).toBe('chip: Generate herbalist shop');
-    expect(fast.model).toBe('claude-haiku-4-5');
+    expect(fast.model).toBe('claude-haiku-5-5');
     const strong = await fake.complete(ask('make an herbalist shop'));
     expect(strong.text).toBe('{"shops":[]}');
-    expect(strong.model).toBe('claude-sonnet-4-5');
+    expect(strong.model).toBe('claude-sonnet-5-5');
     expect(strong.usage).toEqual({ inputTokens: 1000, outputTokens: 200 });
     expect(fake.requests.length).toBe(2);
   });
@@ -52,10 +52,37 @@ describe('FixtureAiClient', () => {
 });
 
 describe('spend counter', () => {
-  it('prices by model family, unknown families at the highest price', () => {
+  it('prices each listed model exactly (QF.51)', () => {
+    expect(priceOf('claude-haiku-5-5')).toEqual({ input: 0.1, output: 0.5 });
+    expect(priceOf('claude-sonnet-5-5')).toEqual({ input: 2, output: 10 });
+    expect(priceOf('claude-opus-5-5')).toEqual({ input: 4, output: 20 });
     expect(priceOf('claude-haiku-4-5')).toEqual({ input: 1, output: 5 });
     expect(priceOf('claude-sonnet-4-5')).toEqual({ input: 3, output: 15 });
-    expect(priceOf('some-new-model')).toEqual(priceOf('claude-opus-4'));
+    for (const v of ['5', '6', '7', '8']) {
+      expect(priceOf(`claude-opus-4-${v}`)).toEqual({ input: 5, output: 25 });
+    }
+    expect(priceOf('claude-sonnet-4-5-20250929')).toEqual({ input: 3, output: 15 });
+    expect(priceOf(' Claude-Haiku-5-5 ')).toEqual({ input: 0.1, output: 0.5 });
+  });
+
+  it('Haiku 5.5 prompts over 100k tokens take the long-prompt price for the call (QF.51)', () => {
+    expect(priceOf('claude-haiku-5-5', 100_000)).toEqual({ input: 0.1, output: 0.5 });
+    expect(priceOf('claude-haiku-5-5', 100_001)).toEqual({ input: 0.5, output: 2.5 });
+    expect(costOf('claude-haiku-5-5', { inputTokens: 100_000, outputTokens: 1000 })).toBeCloseTo(
+      0.0105,
+    );
+    expect(costOf('claude-haiku-5-5', { inputTokens: 200_000, outputTokens: 1000 })).toBeCloseTo(
+      0.1025,
+    );
+    // Other models have one price whatever the prompt size.
+    expect(priceOf('claude-sonnet-5-5', 500_000)).toEqual({ input: 2, output: 10 });
+  });
+
+  it('unknown ids take the highest price of their family, unknown families the highest of all', () => {
+    expect(priceOf('claude-haiku-9')).toEqual({ input: 1, output: 5 });
+    expect(priceOf('claude-sonnet-6-0')).toEqual({ input: 3, output: 15 });
+    expect(priceOf('claude-opus-6')).toEqual({ input: 5, output: 25 });
+    expect(priceOf('some-new-model')).toEqual({ input: 5, output: 25 });
     expect(costOf('claude-sonnet-4-5', { inputTokens: 1_000_000, outputTokens: 0 })).toBe(3);
     expect(costOf('claude-haiku-4-5', { inputTokens: 2000, outputTokens: 1000 })).toBeCloseTo(
       0.007,
@@ -77,7 +104,7 @@ describe('spend counter', () => {
       inputTokens: 2_000_000,
       outputTokens: 200_000,
       // sonnet 3 + 1.5, haiku 1 + 0.5
-      dollars: 6,
+      dollars: 3.75 /* sonnet-5-5 $3 + haiku-5-5 long-prompt $0.75 (QF.51) */,
     });
     counter.reset();
     expect(counter.snapshot()).toEqual({ calls: 0, inputTokens: 0, outputTokens: 0, dollars: 0 });

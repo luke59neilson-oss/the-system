@@ -117,7 +117,7 @@ describe('AnthropicClient (fake fetch)', () => {
     expect(headers['x-api-key']).toBe(KEY);
     expect(String(calls[0]!.init.body)).not.toContain(KEY);
     expect(JSON.parse(String(calls[0]!.init.body))).toMatchObject({
-      model: 'claude-sonnet-4-5',
+      model: 'claude-sonnet-5-5',
       max_tokens: 50,
       system: 'sys',
     });

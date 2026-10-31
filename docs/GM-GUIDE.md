@@ -177,8 +177,17 @@ approve it. Everything except listening needs an Anthropic API key.
   or **Remove key** changes it.
 - **Test connection** makes one tiny call to check the key works.
 - **Fast model (suggestions, notes, drafts)** and **Strong model (generation)**
-  can be changed; press **Save models**. The defaults are a Haiku model for
-  quick reads and a Sonnet model for writing content.
+  can be changed; press **Save models**. The defaults are Claude Haiku 5.5
+  (`claude-haiku-5-5`) for quick reads and Claude Sonnet 5.5
+  (`claude-sonnet-5-5`) for writing content. If you saved models before this
+  version, your saved choice stays until you change it.
+- Prices the spend counter uses (US dollars per million tokens, input/output,
+  list prices 2026-10): Haiku 5.5 $0.10/$0.50 (a call whose prompt is over
+  100k tokens: $0.50/$2.50), Sonnet 5.5 $2/$10, Opus 5.5 $4/$20, Haiku 4.5
+  $1/$5, Sonnet 4.5 $3/$15, Opus 4.5–4.8 $5/$25. A model not on this list
+  counts at the highest price of its family (or of all, if the name has no
+  Haiku, Sonnet or Opus in it), so the counter never shows less than you pay.
+  It shows tenths of a cent, so a few quick Haiku calls can still read $0.000.
 - The spend counter ("This session: $… · N calls") adds up every paid call
   this session, from the API's own token counts. It shows in Co-DM settings
   and in the Co-DM panel and catches up on its own every 20 seconds, so

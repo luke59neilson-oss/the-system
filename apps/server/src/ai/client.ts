@@ -70,10 +70,10 @@ export interface AiModelSettings {
   readonly strong: string;
 }
 
-/** Defaults; the GM can change both in settings (D226). */
+/** Defaults; the GM can change both in settings (D226; QF.51 current models). */
 export const DEFAULT_AI_MODELS: AiModelSettings = {
-  fast: 'claude-haiku-4-5',
-  strong: 'claude-sonnet-4-5',
+  fast: 'claude-haiku-5-5',
+  strong: 'claude-sonnet-5-5',
 };
 
 /** US dollars per million tokens, input and output. */
@@ -82,28 +82,72 @@ export interface ModelPrice {
   readonly output: number;
 }
 
+interface ListedPrice extends ModelPrice {
+  /** A higher price for the whole call once its prompt passes `above` input tokens. */
+  readonly long?: ModelPrice & { readonly above: number };
+}
+
 /**
- * Published list prices at the time of writing (D226). A model not listed is
- * priced by its family name (haiku / sonnet / opus); an unknown family counts
- * at the opus price so the spend counter never under-reports.
+ * QF.51: list prices per model id (platform.claude.com pricing, 2026-10,
+ * as recorded in ROADMAP QF.51). A dated id ("claude-sonnet-4-5-20250929")
+ * takes its base id's price.
  */
-export const MODEL_PRICES: Readonly<Record<string, ModelPrice>> = {
-  haiku: { input: 1, output: 5 },
-  sonnet: { input: 3, output: 15 },
-  opus: { input: 15, output: 75 },
+export const MODEL_PRICES: Readonly<Record<string, ListedPrice>> = {
+  'claude-haiku-5-5': {
+    input: 0.1,
+    output: 0.5,
+    long: { above: 100_000, input: 0.5, output: 2.5 },
+  },
+  'claude-sonnet-5-5': { input: 2, output: 10 },
+  'claude-opus-5-5': { input: 4, output: 20 },
+  'claude-haiku-4-5': { input: 1, output: 5 },
+  'claude-sonnet-4-5': { input: 3, output: 15 },
+  'claude-opus-4-5': { input: 5, output: 25 },
+  'claude-opus-4-6': { input: 5, output: 25 },
+  'claude-opus-4-7': { input: 5, output: 25 },
+  'claude-opus-4-8': { input: 5, output: 25 },
 };
 
-export function priceOf(model: string): ModelPrice {
-  const id = model.toLowerCase();
-  for (const family of ['haiku', 'sonnet', 'opus'] as const) {
-    if (id.includes(family)) return MODEL_PRICES[family] as ModelPrice;
+/**
+ * An id not listed is priced at the highest listed price of its family
+ * (haiku / sonnet / opus), and an unknown family at the highest of all, so
+ * the spend counter never under-reports.
+ */
+function highest(prices: readonly ListedPrice[]): ModelPrice {
+  const all = prices.flatMap((p) => (p.long ? [p, p.long] : [p]));
+  return {
+    input: Math.max(...all.map((p) => p.input)),
+    output: Math.max(...all.map((p) => p.output)),
+  };
+}
+
+function listed(id: string): ListedPrice | undefined {
+  const exact = MODEL_PRICES[id];
+  if (exact) return exact;
+  const base = Object.keys(MODEL_PRICES).find((k) => new RegExp(`^${k}-\\d{8}$`).test(id));
+  return base ? MODEL_PRICES[base] : undefined;
+}
+
+/** The price of one call to `model` whose prompt had `inputTokens` tokens. */
+export function priceOf(model: string, inputTokens = 0): ModelPrice {
+  const id = model.trim().toLowerCase();
+  const p = listed(id);
+  if (p) {
+    if (p.long && inputTokens > p.long.above) return { input: p.long.input, output: p.long.output };
+    return { input: p.input, output: p.output };
   }
-  return MODEL_PRICES['opus'] as ModelPrice;
+  const all = Object.entries(MODEL_PRICES);
+  for (const family of ['haiku', 'sonnet', 'opus'] as const) {
+    if (id.includes(family)) {
+      return highest(all.filter(([k]) => k.includes(family)).map(([, v]) => v));
+    }
+  }
+  return highest(all.map(([, v]) => v));
 }
 
 /** Cost of one reply in US dollars. */
 export function costOf(model: string, usage: AiUsage): number {
-  const p = priceOf(model);
+  const p = priceOf(model, usage.inputTokens);
   return (usage.inputTokens * p.input + usage.outputTokens * p.output) / 1_000_000;
 }
 

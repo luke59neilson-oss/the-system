@@ -99,7 +99,7 @@ describe('co-DM settings routes', () => {
       hasKey: false,
       canSave: true,
       saveBlocked: null,
-      models: { fast: 'claude-haiku-4-5', strong: 'claude-sonnet-4-5' },
+      models: { fast: 'claude-haiku-5-5', strong: 'claude-sonnet-5-5' },
       spend: { calls: 0, inputTokens: 0, outputTokens: 0, dollars: 0 },
     });
   });
@@ -115,7 +115,7 @@ describe('co-DM settings routes', () => {
     const res = await gm('POST', '/api/gm/ai/test');
     expect(res.json()).toMatchObject({
       ok: true,
-      model: 'claude-haiku-4-5',
+      model: 'claude-haiku-5-5',
       status: { spend: { calls: 1, inputTokens: 20, outputTokens: 1 } },
     });
     expect(fake.requests[0]?.role).toBe('fast');

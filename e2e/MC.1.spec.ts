@@ -59,8 +59,8 @@ test('co-DM settings without a key: models, spend, and nothing to players', asyn
 
   const fast = win.getByLabel('Fast model (suggestions, notes, drafts)');
   const strong = win.getByLabel('Strong model (generation)');
-  await expect(fast).toHaveValue('claude-haiku-4-5');
-  await expect(strong).toHaveValue('claude-sonnet-4-5');
+  await expect(fast).toHaveValue('claude-haiku-5-5');
+  await expect(strong).toHaveValue('claude-sonnet-5-5');
   await strong.fill('not a model id');
   await win.getByRole('button', { name: 'Save models' }).click();
   await expect(win.getByRole('status')).toContainText('letters, digits');
@@ -146,14 +146,14 @@ test('co-DM key saved: save, test connection, spend, remove', async ({ browser }
 
     await expect(test).toBeEnabled();
     await test.click();
-    await expect(win.getByRole('status')).toHaveText('Connected (claude-haiku-4-5)');
-    await expect(win.getByTestId('codm-spend')).toHaveText('This session: $0.001 · 1 call');
+    await expect(win.getByRole('status')).toHaveText('Connected (claude-haiku-5-5)');
+    await expect(win.getByTestId('codm-spend')).toHaveText('This session: $0.000 · 1 call');
     await win.screenshot({ path: path.join(shots, 'gm-codm-key-saved-1366x768.png') });
 
     // The saved key survives a reload; the spend for this server run too.
     await gm.reload();
     await expect(panel().getByTestId('codm-key-state')).toHaveText('API key: saved on this laptop');
-    await expect(panel().getByTestId('codm-spend')).toHaveText('This session: $0.001 · 1 call');
+    await expect(panel().getByTestId('codm-spend')).toHaveText('This session: $0.000 · 1 call');
 
     await panel().getByRole('button', { name: 'Remove key' }).click();
     await expect(panel().getByRole('status')).toHaveText('Key removed');
