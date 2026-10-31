@@ -9,6 +9,7 @@ import {
   openSync,
   readFileSync,
   readdirSync,
+  statSync,
   renameSync,
   rmSync,
   unlinkSync,
@@ -372,6 +373,49 @@ function takeLock(file: string, probes: LockProbes): string {
   );
 }
 
+/**
+ * The newest folder in `backups/` (by its stamped name), or null. With
+ * `withEvents`, only a backup whose log holds at least one event counts (a
+ * new campaign quit before its first change backs up an empty log).
+ */
+function newestBackup(dir: string, withEvents = false): string | null {
+  const backups = path.join(dir, 'backups');
+  if (!existsSync(backups)) return null;
+  const names = readdirSync(backups, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
+    .map((d) => d.name)
+    .sort()
+    .reverse();
+  for (const name of names) {
+    const log = path.join(backups, name, 'events.jsonl');
+    if (!withEvents || (existsSync(log) && statSync(log).size > 0)) return path.join(backups, name);
+  }
+  return null;
+}
+
+/** A load error from a newer build's log: an event type, field or version this build lacks. */
+function savedByNewer(message: string): boolean {
+  return /unknown type|Unrecognized key|newer than this app supports/.test(message);
+}
+
+/**
+ * The message for a campaign that cannot load (QF.42): what is wrong, that
+ * nothing changed, where the campaign and its newest backup are, and, for a
+ * newer build's log, to update the app.
+ */
+function cannotLoad(id: string, dir: string, detail: string, newer = false): string {
+  const backup = newestBackup(dir);
+  return [
+    newer
+      ? `Campaign "${id}" cannot load: it was saved by a newer version of The System. Update the app, then open it again. (${detail})`
+      : `Campaign "${id}" cannot load: ${detail}.`,
+    'Nothing was changed.',
+    `Campaign folder: ${dir}.`,
+    backup ? `Newest backup: ${backup}.` : 'No backups yet.',
+    'See "Campaign … cannot load" in the troubleshooting guide.',
+  ].join(' ');
+}
+
 /** One open campaign: its state in memory, its log on disk. */
 export class CampaignStore {
   readonly id: string;
@@ -448,7 +492,21 @@ export class CampaignStore {
   private static load(id: string, dir: string, options: StoreOptions, lock: string): CampaignStore {
     const logFile = path.join(dir, 'events.jsonl');
     const data = existsSync(logFile) ? readFileSync(logFile) : Buffer.alloc(0);
-    const parsed = parseLogText(data);
+    if (data.length === 0 && newestBackup(dir, true) !== null) {
+      // QF.42: antivirus quarantine or a half-copied folder must not look
+      // like a new, blank campaign while its backups hold events.
+      const what = existsSync(logFile) ? 'empty' : 'missing';
+      throw new StoreError(
+        cannotLoad(id, dir, `its event log (events.jsonl) is ${what}, but its backups hold events`),
+      );
+    }
+    let parsed: ReturnType<typeof parseLogText>;
+    try {
+      parsed = parseLogText(data);
+    } catch (error) {
+      if (error instanceof StoreError) throw new StoreError(cannotLoad(id, dir, error.message));
+      throw error;
+    }
     const snapshot = readSnapshot(path.join(dir, 'snapshot.json'));
     const lost = lostWrites(snapshot, parsed.lines);
     if (lost) {
@@ -468,7 +526,7 @@ export class CampaignStore {
       loaded = resume(snapshot, parsed.lines);
     } catch (error) {
       if (error instanceof EventRejectedError) {
-        throw new StoreError(`Campaign "${id}" cannot load: ${error.message}`);
+        throw new StoreError(cannotLoad(id, dir, error.message, savedByNewer(error.message)));
       }
       throw error;
     }
