@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV.1 and MV.2 done.
-**Next item:** finish `wip/MV.3` (review round 2 done and its Medium fixed at d1780723; docs logged at d54ead9f): run the full e2e suite (139/148 passed this run before the stop, none failed), merge to main, check MV.3; then MV.A (L25), ME.1 on `wip/ME.1` (one failing test) to ME.A (L26), MK.1–MK.A (L27), then QF.55 onward; MW after MU
+**Status:** in progress (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.67; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV done (MV.A checked). Preview ready: Actions → Release → Run workflow (MV).
+**Next item:** ME.1 on `wip/ME.1` (head df4770da, base 25e72f05; rules config budgets done, D300, Q92): grant track points in `gainXp` (class, profession, class covers profession until one exists, free points to unassigned, old starting-class weights at the G budget with D35, Human race free points only), a recorded rules switch for old campaigns, then default `professionUnlockGrade: 'G'` (15 tests assume E) and per-track distributions; then ME.2–ME.A (L26), MK.1–MK.A (L27), QF.55 onward (QF.67 included); MW after MU
 **Blockers:** none
 
 ## Run log
@@ -1482,4 +1482,14 @@ next item, blockers. -->
 - MV.3: e2e M3.9, M7.2, M7.3, M7.A, MQ.8 rewritten for one Identify text and Identified by… (kept results, re-marking, the notification); MQ.12 and MR.4 upgrade Archer’s Eye instead (d3bbd8b3). Review round 2 (sonnet): 0 High, 1 Medium (`skill.setRarity` could re-rate Identify), fixed at d1780723 (D299; engine test, MT.7 e2e); Lows to the QUALITY backlog (on the branch).
 - Tests on `wip/MV.3`: `npm run check` green (1,859 unit); e2e MV.3, M3.9, M7.2, M7.3, M7.A, MQ.8, MQ.12, MR.4, MT.7 green; full suite 139/148 green when stopped.
 - Open `wip/*`: `wip/MV.3` (head d54ead9f, base 9803a33a; next: full e2e, merge, check the box), `wip/ME.1` (base 7750732d, head 2f68601f: a failing test for per-grade track budgets and `professionUnlockGrade: "G"`; field name `trackBudget` is a proposal). Blockers: none.
+
+### Run · 2026-10-31 21:08–21:47 UTC (close-out at minute 40; lock released after checking CI on the push)
+- Close-out at minute 40: MV.3 merged, MV.A checked, sweep A done; ME.1 worked by a fork in a worktree from minute 15 to 41 and pushed to `wip/ME.1`. The main session spent minutes 14–37 waiting on the full e2e (22 min on 1 worker) and the blocking MV.A review, so the next ME.1 step (progression grants) was not started here.
+- Preflight: `add_repo` not offered; repo already cloned (local main had unrelated history and was reset to `origin/main`); lock pushed cleanly (run id empty: `xxd` missing); vitest 5.0.5; reviewers fable, sonnet, haiku all work (worktree; the Agent tool blocks until each reports, so they ran in parallel batches). CI on main green at start (3cb867b8). No new answers. Hour 21: quality sweep A (Rules fable, Boundaries sonnet, Tests haiku), scope 8819c277..52c9c148.
+- Sweep A: Rules clean (2 L), Boundaries clean, Tests 1 Medium confirmed by re-running the mutation (QF.67: spend split order not pinned) + 1 L. Lows to the backlog; Last sweep 52c9c148, next rotation B.
+- MV.3: `npm run check` green (1,859 unit), MV.3 e2e green after merging main; merged to main (25e72f05), box checked.
+- MV.A: full local e2e 148/148 (22.2 min); fable review 0 High, 0 Medium, 6 Lows to backlog; box checked. Preview ready (MV): Actions → Release → Run workflow.
+- CI on 25e72f05 red: `M8.3.spec.ts:218` (keyboard alone, Tab missed the View-as buttons). Passes alone and with `--workers=2` here and in the full local run: logged as a flake in QUALITY.md. Docs-only pushes do not start CI, so main shows red until the next code push; the next run should treat it as this flake, not re-diagnose.
+- ME.1 (fork): optional `trackBudget` per grade in the rules schema, defaults G 8/5/5 … A 80/50/50, tests (`trackBudgets.test.ts`, one intentionally failing hand-off test); D300; Q92 (switching old campaigns; default no automatic switch).
+- Open `wip/*`: `wip/ME.1` (head df4770da, base 25e72f05). Blockers: none.
 

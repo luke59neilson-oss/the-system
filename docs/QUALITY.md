@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** 8819c277 (2026-10-31, D) · **Next rotation:** A
+**Last sweep:** 52c9c148 (2026-10-31, A) · **Next rotation:** B
 
 ## Lenses and rotation
 
@@ -135,6 +135,9 @@ table action, or the screen shows wrong game data.
 | 2026-10-31 15:08 | D, 1815b441..8819c277 | Rules · sonnet | 0 | 0 | 0 | clean (engine diff read whole; 943 engine tests green) | 0 | ~70k |
 | 2026-10-31 15:08 | D, 1815b441..8819c277 | Boundaries · fable | 0 | 0 | 0 | clean (59 server/projection tests green) | 0 | ~165k |
 | 2026-10-31 15:08 | D, 1815b441..8819c277 | UX · haiku | 0 | 0 | 1 | 1 L to Backlog | 0 | ~105k |
+| 2026-10-31 21:10 | A, 8819c277..52c9c148 | Rules · fable | 0 | 0 | 2 | clean on engine (1,004 engine tests; probes: spend/clear/re-spend, fast undo after resume, 70 undos past the live stack); 2 L to Backlog | 0 | ~166k |
+| 2026-10-31 21:10 | A, 8819c277..52c9c148 | Boundaries · sonnet | 0 | 0 | 0 | clean (view.limits, statePatch, backpressure, freePoints.spend authority) | 0 | ~86k |
+| 2026-10-31 21:10 | A, 8819c277..52c9c148 | Tests · haiku | 0 | 1 | 1 | 1 M confirmed by re-running the mutation (QF.67); 1 L to Backlog | 0 | ~132k |
 
 Pilot notes: every confirmed finding was missed by the per-item reviews
 (QF.1 is in MQ.3, reviewed twice the run before). No false alarms. The
@@ -210,8 +213,18 @@ lowered by their verifiers and folded into the Low batches.
   or assert the splash text without a screenshot. It repeated on ab3f114
   (10:31 UTC): now QF.14.
 
+- 2026-10-31, CI on 25e72f05 (main, after the MV.3 merge): `e2e/M8.3.spec.ts:218`
+  "the player screen and GM console work from the keyboard alone" saw Tab
+  never reach the View-as buttons, Back to my campaign and the Session tab.
+  Passes alone and with `--workers=2` here, and in this run's full local
+  suite (148/148). Flake; if it repeats it becomes a QF item (check whether
+  a pane's Identify notice, MV.3, covers the console while Tab is walked).
+
 ## Backlog (Lows; M11.5 goes through these)
 
+- (MV.A review, fable) View as / Table view panes get the Identify notice with no Close, so the GM cannot see the pane until the player closes it; simulation and soak tests still send `freePoints.assign`, not the `freePoints.spend` the phone sends (no randomized spend/override/undo invariants); campaigns from before MV.3 decide Identify range at the old reveal, so an entity read live before may show `[??? – lvl ???]` until re-marked (say so in GM-GUIDE); after a lost connection on confirm the phone says the GM changed the free points; the notice header repeats the GM's own `[Name – lvl N]` line; `entity.closeNotice` answers differently for real and unknown entity ids.
+- (Sweep A, Rules, fable) the GM change log and session report word `freePoints.spent` like a one-batch assign, with no per-level-up split; DESIGN §5 still reads as if typed 34/33/33 gives 340/330/330 (D296 gives the exact even split): add a line.
+- (Sweep A, Tests, haiku) `backpressure.test.ts` "drops a socket that misses two pongs" waits a fixed 600 ms and only checks the socket closed, not why; `cutBody` has no test for an emoji at the cut point.
 - (MV.3 review r2, sonnet) Bestiary categories: no rename in the UI (engine has `bestiary.categoryRename`), removal has no confirm, and a GM category named "Uncategorized" gives players two groups of that name; Identify notices show in entity order, not the order marked (the comments say oldest first); the notice dialog has no Escape, focus trap or backdrop, and in View as it covers the pane with no Close; Identified by… decides on the saved grade and level, ignoring unsaved form edits, and `labelLeaks` uses the live range while players keep the marked result; `docs/screens/MV.3/gm-identified-by-1366x768.png` misses the category picker; the "Identified" toast overlaps the phone screen bottom.
 - (QF.51 review, sonnet) the Haiku 5.5 long-prompt tier is decided from the API's `input_tokens`, which excludes cache-read/creation tokens; harmless today (no `cache_control` is sent) but would under-report if caching is added; the MC.1 one-call spend now reads $0.000 (counter rounds to $0.001), a weaker assertion.
 - (QF.50 review, sonnet) `sceneNpcs.ts`: a merged NPC (bestiary + note of the same name) keeps only the first source's `names` and merges two different people who share a name; a keeper is auto-picked only by the full parsed name ("Wren" never selects "Wren Holloway"); `looksLikeName` still accepts a short capitalised phrase ("Session Notes" tagged `npc`); `coDmSetting.test.ts` lists the prompts by hand, so a new prompt is not caught; the off-kind note and quest preview lack the label's left indent in Import.
