@@ -875,7 +875,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   fresh view is sent when it drains; a ws ping every 20 s terminates a socket
   after 2 missed pongs; a probe with two paused clients keeps heap growth
   under 50 MB over 300 commands.
-- [ ] **QF.54 Undo and End session don't freeze the table.** Undo refolds the
+- [x] **QF.54 Undo and End session don't freeze the table.** Undo refolds the
   whole log, rebuilds the notification history and change log and sends a
   full reset (≈2 s stall and a 1.4 MB frame at 40 sessions;
   `events/log.ts`, `history/index.ts:450`, `hub.ts:292`,

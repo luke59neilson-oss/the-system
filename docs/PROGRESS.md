@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.53, QF.59, QF.64–QF.66 done.
-**Next item:** QF.54 on `wip/QF.54` (failing probe committed), then MV.1–MV.A (L25), ME.1–ME.A (L26) and MK.1–MK.A (L27), which sit before QF in ROADMAP, then QF.55 onward; MW after MU
+**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.54, QF.59, QF.64–QF.66 done.
+**Next item:** MV.1 (Assign any number of free points at once), then MV.2–MV.A (L25), ME.1–ME.A (L26) and MK.1–MK.A (L27), which sit before QF in ROADMAP, then QF.55 onward; MW after MU
 **Blockers:** none
 
 ## Run log
@@ -1443,3 +1443,10 @@ next item, blockers. -->
 - QF.54 (wip): `wip/QF.54` at 162a11bd (base dfaf7cbb, before the QF.53 merge; `git merge origin/main` first). Committed a failing probe `apps/server/test/undoStall.probe.test.ts` (undo of the newest event at 13k events: 367 ms under load, needs < 300 ms, and player frames < 150 KB). Next: make undo of the newest event update the history cache and change log incrementally (no `historyCache = null`, no whole-history reset: send players `{undoneSeqs}`), handle `undoneSeqs` in `apps/web/src/live.ts`, move End session's backup and report off the request path, then a probe for End session < 300 ms.
 - Tests: unit 1,822 (was 1,816) at 7a0dd9c7; full e2e 153/153 green locally at the QF.52 merge build; QF.52 + M3.10 e2e green after the round-2 fix. Engine untouched this run.
 - Open `wip/*`: wip/QF.54. Blockers: none.
+
+### Run · 2026-10-31 16:09–16:54 UTC (close-out at minute 42; end minute 46)
+- Close-out at minute 42, before 44: QF.54 finished, reviewed and merged; with the full e2e still finishing there was no time left to start MV.1 meaningfully before the 44 hand-off, so it is the next run's first item (no `wip/MV.1` branch).
+- Preflight: `add_repo` not offered; repo already cloned (shallow, stale local `main` reset to `origin/main`); first fetch hit a proxy disconnect, retry worked; lock pushed cleanly; vitest 5.0.5; reviewer sonnet works (worktree; the Agent tool blocks, ~12 min). CI on main green at start (98c93d13). No new answers. Hour 16: no efficiency check or sweep.
+- QF.54 Undo and End session don't freeze the table (D294): undoing the newest event reuses the state it was applied to (engine stack of the last 64 live events, so "undo, undo" is cheap too), the hub drops that event's notifications from its cache and sends `{undoneSeqs}` to the clients that held them (web `live.ts` drops them), the change log marks just that row undone. End session: `afterAppend` may return a promise; the backup and report each run in a later turn, phones are told at once, the GM's result waits for them (warnings kept); a live `session.start` primes the session log's pre-session state, so the report never folds the whole campaign. Probes: undo at 13k events ≈ 4 ms (was ≈ 200–370 ms), End session at 40 sessions longest block ≈ 27 ms (was ≈ 94 ms on this lighter mix). Sonnet round 1: 0 High, 1 Medium (undo, undo) fixed; Lows logged.
+- Tests: unit 1,835 at 16026bba (+ 2 after the review fix); full e2e 145/145 + latency 8/8 green at 16026bba; M3.3 + QF.40 green after the review fix. Engine: events/log.ts and history/changeLog.ts touched; goldens untouched and replaying.
+- Open `wip/*`: none new. Blockers: none.

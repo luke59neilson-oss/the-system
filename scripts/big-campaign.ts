@@ -17,7 +17,14 @@ export const BIG_HEROES = ['ana', 'bo', 'cy', 'di'] as const;
  * `withNotes` (QF.52): every fifth command is a note instead, up to 240 notes (a party note or
  * a journal entry with a paragraph of text), as a long campaign's table keeps.
  */
-export function bigCampaignLines(count: number, options: { withNotes?: boolean } = {}): string[] {
+/**
+ * `sessions` (QF.54): play is split into that many sessions of equal length;
+ * the last one is left running.
+ */
+export function bigCampaignLines(
+  count: number,
+  options: { withNotes?: boolean; sessions?: number } = {},
+): string[] {
   let tick = 0;
   let id = 0;
   const ctx: CommandContext = {
@@ -44,7 +51,16 @@ export function bigCampaignLines(count: number, options: { withNotes?: boolean }
     run({ type: 'character.create', id: who, name: who, className: 'Archer', classSkills: kit });
   }
   let notes = 0;
+  const sessions = options.sessions ?? 0;
+  const perSession = sessions > 0 ? Math.ceil(count / sessions) : 0;
+  let started = 0;
   for (let i = 0; lines.length < count; i++) {
+    if (sessions > 0 && started < sessions && lines.length >= started * perSession) {
+      if (started > 0) run({ type: 'session.end' });
+      run({ type: 'session.start' });
+      started++;
+      continue;
+    }
     // Each hero gets every kind in turn (hero changes every four commands).
     const who = BIG_HEROES[Math.floor(i / 4) % BIG_HEROES.length] as string;
     // Under the rules' note limit (300 per character): about 60 each.

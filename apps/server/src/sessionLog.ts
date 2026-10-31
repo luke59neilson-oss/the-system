@@ -16,6 +16,7 @@ import {
   sessionEventRange,
   sessionLogBase,
   sessionLogBaseIsCurrent,
+  stateBeforeLastEvent,
   type Campaign,
   type CampaignState,
   type SessionLogBase,
@@ -277,6 +278,20 @@ export class SessionLogWriter {
     this.writtenKey = plan.key;
     this.lastWritten = { id: plan.session.id, number: plan.session.number, file: plan.file };
     return true;
+  }
+
+  /**
+   * QF.54: a session was just started live: the state its start was applied
+   * to is the pre-session fold, so later writes (and the End session report)
+   * never fold the whole campaign. Does nothing when that state is unknown.
+   */
+  sessionStarted(): void {
+    const campaign = this.store.campaign;
+    const last = campaign.events.at(-1);
+    if (last?.type !== 'session.started') return;
+    const state = stateBeforeLastEvent(campaign.events);
+    if (state === undefined) return;
+    this.base = { fromSeq: campaign.events.length - 1, state, preUndos: 0 };
   }
 
   /** Writes now if anything changed (MC.9 notes); never throws. */

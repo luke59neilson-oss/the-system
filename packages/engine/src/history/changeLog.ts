@@ -227,10 +227,33 @@ export function updateChangeLog(prev: ChangeLogCache | null, campaign: Campaign)
     (prev.count === 0 ? null : events[prev.count - 1]?.id) === prev.lastId &&
     !events.slice(prev.count).some((e) => e.type === 'event.undone');
   if (!extends_) {
+    const undone = prev && undoOfNewest(prev, campaign);
+    if (undone) return undone;
     return describeFrom(campaign, [], null, 0);
   }
   if (prev.count === events.length) return prev;
   return describeFrom(campaign, [...prev.rows], prev.state, prev.count);
+}
+
+/**
+ * QF.54: the log grew by one undo of the newest event `prev` described.
+ * Nothing later was described against it, so only its row changes (it is
+ * marked undone) and the state is the campaign's (the state before it).
+ */
+function undoOfNewest(prev: ChangeLogCache, campaign: Campaign): ChangeLogCache | null {
+  const events = campaign.events;
+  if (events.length !== prev.count + 1 || prev.count === 0) return null;
+  if ((events[0]?.id ?? null) !== prev.firstId || events[prev.count - 1]?.id !== prev.lastId) {
+    return null;
+  }
+  const undo = events[prev.count]!;
+  const target = events[prev.count - 1]!;
+  if (undo.type !== 'event.undone' || target.type === 'event.undone') return null;
+  if (undo.payload.eventId !== target.id || campaign.undone[target.id] !== undo.id) return null;
+  const last = prev.rows.at(-1);
+  if (last?.id !== target.id) return null;
+  const rows = [...prev.rows.slice(0, -1), { ...last, undoneBy: undo.id }];
+  return cacheOf(campaign, rows, campaign.state);
 }
 
 function describeFrom(
