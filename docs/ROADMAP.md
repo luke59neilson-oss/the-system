@@ -237,7 +237,7 @@ They touch finished engine and player items, so they come before M4.4.
 DESIGN §4, §5, §7. Placed before ME and QF on purpose: taken once the item
 on its `wip/` branch is finished, ahead of the remaining QF items.
 
-- [ ] **MV.1 Assign any number of free points at once.** One assign panel
+- [x] **MV.1 Assign any number of free points at once.** One assign panel
   over every unassigned point (all waiting level-ups): spread any amount,
   review, confirm once; points not spent stay unassigned for later. The
   engine uses the oldest waiting level-up's points first; a level-up whose

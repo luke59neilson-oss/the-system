@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.54, QF.59, QF.64–QF.66 done.
-**Next item:** MV.1 (Assign any number of free points at once), then MV.2–MV.A (L25), ME.1–ME.A (L26) and MK.1–MK.A (L27), which sit before QF in ROADMAP, then QF.55 onward; MW after MU
+**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV.1 done.
+**Next item:** resume `wip/MV.2` (XP shares by percent: built and tested, review not run yet: launch its sonnet review first), then MV.3–MV.A (L25), ME.1–ME.A (L26) and MK.1–MK.A (L27), which sit before QF in ROADMAP, then QF.55 onward; MW after MU
 **Blockers:** none
 
 ## Run log
@@ -1450,3 +1450,12 @@ next item, blockers. -->
 - QF.54 Undo and End session don't freeze the table (D294): undoing the newest event reuses the state it was applied to (engine stack of the last 64 live events, so "undo, undo" is cheap too), the hub drops that event's notifications from its cache and sends `{undoneSeqs}` to the clients that held them (web `live.ts` drops them), the change log marks just that row undone. End session: `afterAppend` may return a promise; the backup and report each run in a later turn, phones are told at once, the GM's result waits for them (warnings kept); a live `session.start` primes the session log's pre-session state, so the report never folds the whole campaign. Probes: undo at 13k events ≈ 4 ms (was ≈ 200–370 ms), End session at 40 sessions longest block ≈ 27 ms (was ≈ 94 ms on this lighter mix). Sonnet round 1: 0 High, 1 Medium (undo, undo) fixed; Lows logged.
 - Tests: unit 1,835 at 16026bba (+ 2 after the review fix); full e2e 145/145 + latency 8/8 green at 16026bba; M3.3 + QF.40 green after the review fix. Engine: events/log.ts and history/changeLog.ts touched; goldens untouched and replaying.
 - Open `wip/*`: none new. Blockers: none.
+
+### Run · 2026-10-31 17:08–17:55 UTC (close-out at minute 44; end minute 47)
+- Close-out at minute 44: MV.1 finished, reviewed and pushed; MV.2 built and its specs green, handed off on `wip/MV.2` for its review (no time left for a ~10-minute blocking review).
+- Preflight: `add_repo` not offered; repo already cloned (stale local `main` with unrelated history, reset to `origin/main`, old one kept locally as `old-local-main`); lock pushed cleanly; vitest 5.0.5; reviewer sonnet works (worktree; the Agent tool blocks, ~10 min). CI on main green at start (985692cf). No new answers. Hour 17: no efficiency check or sweep.
+- MV.1 Assign any number of free points at once (D295): new player event `freePoints.spent` spends 1…all unassigned points; the reducer fills waiting level-ups oldest first (stats in rules order), a partly used level-up stays open (`allocation` set, `locked: false`); unassigned counts everywhere use the remainder (engine `batchRemaining`/`unassignedPointsOf`). Player panel covers every unassigned point, Review needs one point, the review says how many stay for later; points shrinking under the draft reset it, none left closes it with a notice. New golden `freepoints-spend.jsonl`. Sonnet round 1: 0 High, 1 Medium (old `freePoints.assign` could move locked points of a partly used level-up: now refused) fixed; Lows: GM list marks "(rest still open)".
+- `wip/MV.2` (base 6cdb8a50, head 538dc38c): % box per participant, even to start (34/33/33), typed % changes nothing else, total shown, Award only at 100, Even split resets, ticking a participant re-evens; typed % → shares by largest remainder; untouched even split stays exactly even (334/333/333; D296, Q90). M4.6, M4.A, MU.3 specs moved to % boxes; MV.2 spec 1,000 at 40/20/20/20 → 400/200/200/200; all green locally with QF.46. Next step: launch its sonnet review, fix, merge to main.
+- Tests: unit 1,845+ (check at 6cdb8a50); full e2e 146/146 at the MV.1 build; latency 7/8 then M4.A green on the MV.2 build (its spec had been edited for MV.2 while the old build ran). Engine: reducer, envelope, commands, history touched; goldens: one added, none edited.
+- Open `wip/*`: `wip/MV.2`. Blockers: none.
+
