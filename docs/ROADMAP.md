@@ -249,7 +249,7 @@ on its `wip/` branch is finished, ahead of the remaining QF items.
   many refused; old logs replay; GM override of a partly used level-up);
   e2e: a player with three waiting level-ups assigns everything in one
   confirm, another keeps points back; screenshots at 390×844.
-- [ ] **MV.2 XP shares by percent.** DESIGN §5 "Shares are percentages" on
+- [x] **MV.2 XP shares by percent.** DESIGN §5 "Shares are percentages" on
   the quick and full Award XP: total XP typed, even whole-number percentages
   to start (34/33/33), typed percentages change nothing else, running total
   shown, Award disabled until exactly 100, Even split resets, each row's XP
