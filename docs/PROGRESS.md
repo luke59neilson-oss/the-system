@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.67; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV done (MV.A checked). Preview ready: Actions → Release → Run workflow (MV).
-**Next item:** ME.1 on `wip/ME.1` (head 46fe4ddc, base 70f0b7d0): engine done and unit-green (1,890 unit incl. 26 in `trackBudgets.test.ts`, goldens `track-budgets`/`rules-switch-me`, D301, Q93); finish the e2e fallout (re-run M3.2, M3.4, M4.5, MT.7, MV.1, QF.17 and the new ME.1 spec on a fresh build; QF.17 still expects "+2 free points" and needs `usePreMeRules` or the new number), then the full e2e, then the sonnet review; then ME.2–ME.A (L26), MK.1–MK.A (L27), QF.55 onward (QF.67 included); MW after MU
+**Status:** in progress (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.67; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV done (MV.A checked); ME.1 done. Preview ready: Actions → Release → Run workflow (MV).
+**Next item:** ME.2 on `wip/ME.2` (head 421d9985, base 71bac8f3): release side done (command `steps` {class, profession, race}, payload `steps` optional on `evolution.released`, `stepBudgetProblems` refusal unless Override, pending evolution keeps `steps`); next: `evolution.choose` with `choices: {class, profession, race}` (profession null = none for now), apply each option's distribution (`character.distributions`) and one-time bonuses, profession from the chosen option, pool refill; then canary, old-release replay test, golden, DECISIONS entry, sonnet review; then ME.3–ME.A (L26), MK.1–MK.A (L27), QF.55 onward (QF.67 included); MW after MU
 **Blockers:** none
 
 ## Run log
@@ -1499,3 +1499,12 @@ next item, blockers. -->
 - ME.1 (engine): `gainXp` at a grade with track budgets grants class points per class level (plus the profession's share until a profession exists), profession points per profession level and race points per race level; per-track `distributions` on characters (GM event `character.distributionSet`), scaled to each grade's budget; free points of a class or profession level that raises no race level get their own batch (`track`, `trackLevel`, named by the free-point commands). Defaults: `professionUnlockGrade: 'G'`; class weights → whole class budget; profession by the class's shape; race all free. Old campaigns keep their numbers until the GM's switch (`withTrackBudgets`, a button in Rules settings → one `rules.set`). Tests written with the old numbers now run on `preMeRules()` (engine helper and `e2e/helpers/preMeRules.ts`). Demo party takes professions at E as before; demo budgets recomputed. DESIGN §4 check values recomputed (D301). Unit 1,890 green, lint/typecheck/banned clean.
 - Full local e2e on the first ME.1 commit (old build, 1 worker; did not finish by close-out): failures M3.2, M3.4, M4.5, MT.7, MV.1, QF.17 (all ME.1 numbers or the profession grade); M3.2, M3.4, M4.5, MT.7 and MV.1 fixed in later commits but not yet re-run; QF.17 not fixed; ME.1.spec (rules switch) written, not yet run.
 - Open `wip/*`: `wip/ME.1`. Blockers: none.
+
+### Run · 2026-10-31 23:08–23:53 UTC (close-out at minute 44)
+- Close-out at minute 44: ME.1 checked and merged to main (71bac8f3); ME.2 handed off on `wip/ME.2` (head 421d9985, base 71bac8f3).
+- Preflight: `add_repo` not offered; repo already cloned (local main had unrelated history again and was reset to `origin/main`); lock pushed cleanly; vitest 5.0.5. CI on main red on 25e72f05: the known M8.3 keyboard flake (QUALITY.md), annotations checked, not re-diagnosed; this run's main push re-runs CI. No new answers. Hour 23: no sweep or efficiency check.
+- ME.1 finished: QF.17 spec on `usePreMeRules`; the six fallout specs plus ME.1.spec green; full e2e at 1 worker 149 passed (20 min, on 97fd03f2). Review round 1 (sonnet): 0 H, 3 M, 4 L; fixed (D302): override warning priced from track budgets, the rules switch confirms and names the profession-grade change and grades with no default budget; MT.5 e2e updated. Round 2: 0 H/M, 3 L (one fixed, rest logged). Two Lows to QUALITY Backlog.
+- ME.2 (wip): failing acceptance tests in `evolutionSteps.test.ts` (2 still failing by design: the choose side); release with `steps` refuses off-budget options and unequal bonuses unless Override; old single-choice releases unchanged (engine 1,053 of 1,055 green on the wip; the 2 are the ME.2 choose tests).
+- Tests on main: unit 1,894; e2e 149 (full, 1 worker). Engine coverage not re-measured.
+- Open `wip/*`: `wip/ME.2`. Blockers: none.
+
