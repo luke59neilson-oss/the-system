@@ -1,0 +1,9 @@
+name,track,book_grade,stage,str,agi,end,vit,tough,wis,int,per,will,free,total,chosen_by,confidence,source_url
+Archer,class,G,start,1,1,1,0,0,0,0,2,0,1,6,Jake Thayne,verified,https://system-codex.com/series/the-primal-hunter/entries/archer?character_id=3
+Ambitious Hunter,class,G,tutorial upgrade,2,4,3,0,0,0,0,5,0,4,18,Jake Thayne,verified,https://system-codex.com/series/the-primal-hunter/entries/ambitious-hunter?character_id=3
+Avaricious Arcane Hunter,class,E (inferred),evolution,6,12,10,0,0,10,12,20,6,10,86,Jake Thayne,verified,https://system-codex.com/series/the-primal-hunter/entries/avaricious-arcane-hunter?character_id=3
+Arcane Hunter of Horizon's Edge,class,C,evolution,35,40,30,0,0,25,25,60,20,50,285,Jake Thayne,verified,https://system-codex.com/series/the-primal-hunter/entries/arcane-hunter-of-horizon-s-edge?character_id=3
+Alchemist of the Malefic Viper,profession,G,start,0,0,0,2,1,2,0,0,1,2,8,Jake Thayne,verified,https://system-codex.com/series/the-primal-hunter/entries/alchemist-of-the-malefic-viper?character_id=3
+Prodigious Alchemist of the Malefic Viper,profession,G,tutorial upgrade,0,0,0,4,2,4,2,0,3,5,20,Jake Thayne,verified,https://system-codex.com/series/the-primal-hunter/entries/prodigious-alchemist-of-the-malefic-viper?character_id=3
+Heretic-Chosen Alchemist of the Malefic Viper,profession,E,evolution,0,0,0,14,10,15,10,0,15,10,74,Jake Thayne,verified,https://www.goodreads.com/author/quotes/21061019.Zogarth
+Heretic-Chosen Alchemist of the Malefic Viper,profession,C (inferred),evolution,0,0,0,40,25,50,30,0,50,35,230,Jake Thayne,verified,https://system-codex.com/series/the-primal-hunter/entries/heretic-chosen-alchemist-of-the-malefic-viper?character_id=3

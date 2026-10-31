@@ -41,9 +41,14 @@ October 2026.
     can be taken later, until one is chosen and the list locks (greyed out).
     While a character has none, the GM may add offers at any later evolution
     (Q46). A profession starts at the character's class level when taken.
-  - **Class levels** grant the class spread; **race levels** grant free
-    points; **profession levels** grant no stats directly (they raise race
-    level and add profession skill options).
+  - **Every track grants stats (Luke, 2026-10-31).** Each class,
+    profession and race level grants that track's points for the level, by
+    its current **distribution** (whole points per stat plus free points)
+    and adding up to the track's budget for the grade (§4). Free points from
+    any track join the player's unassigned points. Profession levels also add
+    profession skill options. Starting classes keep their stat weights (D35)
+    until their first evolution sets a distribution; a starting race (Human)
+    gives free points only.
   - **Grade** is the highest grade the character has evolved into. Class and
     profession levels cannot pass the top level of the current grade
     (4, 14, 49, 99, 149, 199, 240).
@@ -58,10 +63,26 @@ October 2026.
   - **Evolution becomes available** when race level reaches the top of the
     current grade (config `evolutionGate: "race"`, Luke confirmed) **and no
     skill selection is pending**: every selection a character has earned must
-    be chosen first. The GM releases it and the player chooses.
-  - **Evolution refills HP, MP and Stamina** and grants a **one-time stat
-    bonus** that the GM, as the System, sets for each evolution option (any
-    mix of stats, or +N to all).
+    be chosen first. The GM builds it and releases it.
+  - **Class, profession and race evolve together (Luke, 2026-10-31).** The
+    player makes three choices in a row, **class, then profession, then
+    race**, reviews all three and confirms once; the grade changes on that
+    confirmation. The profession step appears from the E-grade evolution on:
+    a character with a profession evolves it; one without gets profession
+    offers or "none for now". Each option in every step sets a name and
+    rarity, a short System description, that track's **distribution at the
+    new grade** (whole points per stat plus free points, adding up to the
+    track's budget, §4), a **one-time stat bonus**, and any skill transforms
+    or merges the GM adds. Race options trade free points for fixed stats
+    (Human: mostly free points); race skills ride on race options.
+    **Equal totals:** every option in a step has the same per-level total
+    (the budget) and the same one-time bonus total; the builder blocks
+    release until they match, unless the GM ticks **Override** (GM
+    authority). A profession taken later, between evolutions, brings the
+    distribution its offer set.
+  - **Evolution refills HP, MP and Stamina** and applies the chosen options'
+    one-time bonuses. An evolution released before this rule keeps working
+    as one choice, and stored logs replay unchanged.
   - Skill selections trigger from **class level**. XP needed per level uses
     the character's **current grade**. Level 240 is the campaign cap for now.
 - Every character starts with the race skill **Identify (Common)** and 3 class
@@ -92,25 +113,49 @@ blue-white tint and a heavier brushed texture so the change is visible.
 
 ## 4. Stat budget per level (same for every class)
 
-| Grade | Class spread (automatic) per class level | Free points per race level | Total |
-| --- | --- | --- | --- |
-| G | 4 | 2 | 6 |
-| F | 5 | 3 | 8 |
-| E | 8 | 4 | 12 |
-| D | 12 | 6 | 18 |
-| C | 18 | 9 | 27 |
-| B | 27 | 13 | 40 |
-| A | 40 | 20 | 60 |
+Points per level of each track (Luke, 2026-10-31: all three tracks give
+stats). Defaults, set in rules settings; they keep the per-level totals the
+campaign had before, with the class giving up about a third of its spread
+to the profession. Until a character has a profession, its class level
+grants the profession's share too, so a character without one is unchanged.
+
+| Grade | Class (per class level) | Profession (per profession level) | Race (per race level) | Total |
+| --- | --- | --- | --- | --- |
+| G | 4 | — | 2 | 6 |
+| F | 5 | — | 3 | 8 |
+| E | 5 | 3 | 4 | 12 |
+| D | 8 | 4 | 6 | 18 |
+| C | 12 | 6 | 9 | 27 |
+| B | 18 | 9 | 13 | 40 |
+| A | 27 | 13 | 20 | 60 |
+
+A campaign created before this table keeps its old numbers (class spread
+plus free points per race level, no profession share) until the GM switches
+to these in rules settings; the switch applies from the next level-up.
+Each track's distribution decides how its points split between stats and
+free points (a Human race gives free points; an Archer-like class gives
+mostly Perception and Agility).
+
 
 - Class spread follows the class's stat weights. Each point goes to the stat
   furthest below its weighted share of all spread received so far (ties in
   stat order), so totals are exact every level and fair over time (D35,
   Luke approved).
-- Free points: each level-up's free points are assigned **once**, then that
-  batch locks. Later level-ups grant new, unlocked points. The GM can
-  override.
-- Each evolution may reshape the class spread toward stats the character used
-  (GM chooses, guided by the practice log).
+- Free points: assigned points **lock**; later level-ups grant new, unlocked
+  points. The GM can override. **Any amount at once (Luke, 2026-10-31):** the
+  player spreads any number of their unassigned points in one go, across
+  every level-up that is waiting, reviews and confirms once, and may keep
+  the rest for later. The oldest waiting level-up's points are used first,
+  so history still shows each level-up's points.
+- At each evolution the chosen options set every track's distribution for
+  the new grade (§2), which the GM builds guided by the practice log.
+- **Reference while building (Luke, 2026-10-31):** the Evolutions page shows
+  a table of the books' options (`docs/reference/primal-hunter/evolutions.csv`:
+  Jake's class and profession picks with per-level stats, their totals and
+  their shape in percent) and the campaign's own earlier options; **Use
+  this shape** fills an option's distribution with that shape scaled to the
+  step's budget (whole points, exact total). The books' passed-over options
+  and race numbers are not in the table yet (not found, 2026-10-31).
 - **Bonuses (Luke, 2026-10-22):**
   - **Titles** give a set percentage bonus (the GM sets it per title; a title
     may also give flat stats). Characters can earn many.
@@ -144,6 +189,16 @@ blue-white tint and a heavier brushed texture so the change is visible.
   weaker grades). The app shows the GM a "typical session ≈ 6 levels"
   helper.
 
+**Shares are percentages (Luke, 2026-10-31):** the GM types the total XP;
+each chosen participant starts at an even, whole-number percentage (the
+remainder of 100 goes one point each to the first participants: 34/33/33);
+the GM types any participant's percentage and **nothing else changes on its
+own**; the box shows the running total, and the award cannot be confirmed
+until the percentages total exactly 100. **Even split** resets them. Each
+row shows the XP its percentage gives, rounded so the shares add up to the
+total exactly (largest remainder first). This holds wherever shares are
+set by hand (quick and full Award XP).
+
 **XP award box (Luke, 2026-10-30):** each participant's row shows their
 grade, levels, XP now and per level at their grade, and XP to the next
 level; the typed award shows each share and roughly how many levels it is
@@ -157,6 +212,20 @@ per player, with a reference line ("F: 1 level = 300 XP; a typical session
 - **Selections:** at the class levels in §3. Menu of 3–4 options, built by the
   GM (often from imported files Claude drafts) using the practice log. The
   level-up can happen mid-session; the choice can wait for downtime.
+- **Building an offer (Luke, 2026-10-31).** The skill-offer builder shows
+  the chosen character's whole standing beside the menu, so offers build on
+  what they have and what they practise: grade; class, profession and race
+  levels; stats (base, bonuses, total) and unassigned free points; every
+  skill with rarity, marks, cost and kind; titles; equipped items; the
+  profession; and the practice log summary (what they have practised, with
+  counts, the most-used skill pairs, recent entries). The co-DM (§11) drafts
+  options three ways: **from a stat** (one of the nine: a skill built around
+  it), **from a skill** (one of theirs: an option that improves it or adds
+  to it), or **from a direction** the GM types. Drafts stay within the
+  selection's rarity ceiling, meet the capstone rule when it applies, avoid
+  names the character already has, carry a cost when they are spells, and
+  land in the menu as editable drafts; nothing reaches the player until the
+  GM offers the menu.
 - **Passed-over options stay available.** Every later menu lists the new
   options first and older unchosen options below them (scrollable); still
   one pick per selection. An option leaves the list when chosen, withdrawn by
@@ -174,7 +243,7 @@ per player, with a reference line ("F: 1 level = 300 XP; a typical session
   builder lists each skill at the rarity it had going into the evolution, the
   GM sets each one's new rarity (raise within the new grade's ceiling, keep,
   or lower, never below Inferior) and approves the list, and the evolution
-  cannot be released until that approval is given. **Identify never drops.**
+  cannot be released until that approval is given. **Identify never changes** (§7).
   The skill's text and effects do not change (same power, new label), and a
   lowered skill keeps all its marks, so a well-practised skill may climb
   straight back with its next upgrade (after which it starts at 0).
@@ -258,16 +327,33 @@ turning point). GM confirms marks in the end-of-session review.
   confirmed), selection alert (within 5 levels), merge alert.
 - **Titles:** percentage stat bonuses (optionally flat stats too), awarded by
   the GM, shown to the player with System-style text. Rules in §4.
-- **Identify:** entities carry descriptions per minimum Identify rarity; the
-  player sees the best tier their Identify rarity unlocks. **Who can be
+- **Identify (Luke, 2026-10-31): it works or it doesn't, and it stays
+  basic.** Every character keeps **Identify (Common)** for good: it earns no
+  marks and is never upgraded, merged or re-rated. Each entity has **one**
+  Identify text, written by the GM in the bestiary; an entity made earlier
+  with several rarity tiers keeps its lowest tier as that text and the
+  other tiers in the GM's notes (nothing lost). Players never use Identify
+  in the app. When a player identifies something at the table, the GM
+  clicks **Identified by…** on that entity and ticks the characters; each
+  gets an **Identify notification** that puts that entity front and centre
+  until they close it, and it then stays in their **bestiary**, grouped by
+  the categories the GM creates in the bestiary (one category per entity,
+  otherwise Uncategorized). Whether it worked is decided at that moment by
+  the range rule below and kept: an entry that showed `[??? – lvl ???]`
+  stays that way until the GM marks it identified again (they look again
+  later). The text shown is the entity's current Identify text, so the GM's
+  corrections reach it. Skills that shroud a creature from Identify, and
+  skills that pierce a shroud, may come later; they are not part of this.
+  Player screens never receive an entity the GM has not marked identified
+  for that character, nor its GM name, notes or stats. **Who can be
   identified:** anything of a lower grade always; nothing of a higher grade;
   the same grade only if its level is at most 1.5 × the viewer's level.
   Otherwise Identify shows `[??? – lvl ???]`. The viewer's level is their
   race level; targets without a grade and level (a place, an energy) are
-  always in range; a known target out of range keeps its name in the
-  Identify list with `[??? – lvl ???]` instead of its text (Q48). So a
-  level-0 character identifies nothing of its own grade above level 0 until
-  its first level-up (Q52).
+  always in range; an entry out of range keeps its name in the bestiary
+  with `[??? – lvl ???]` instead of its text (Q48). So a level-0 character
+  identifies nothing of its own grade above level 0 until its first
+  level-up (Q52).
 - **Quests:** text, timer/day counter, and an optional **World Stability %**
   (starts at 100) with GM-defined rules (action tags → deltas) and a
   visible/hidden toggle. **Hidden quests:** when one exists, the affected
@@ -325,7 +411,7 @@ No single long page. The console opens on a **home dashboard**: the campaign
 and session (day, session running or not), the join address and QR, one card
 per character (portrait, grade, levels, XP to next level, pool bars), and
 what needs the GM (selections waiting, evolutions to build, practice drafts,
-merge answers, players' requests), each a link to where it is handled. Three
+merge answers, players' requests), each a link to where it is handled. Four
 tabs hold everything else, each a set of panels instead of one scroll:
 
 - **Session:** the party at a glance with a quick **Award XP**; the co-DM
@@ -333,11 +419,25 @@ tabs hold everything else, each a set of panels instead of one scroll:
   encounters and contests; quests and World Stability; broadcasts; loot and
   shops; trackers; notes; View as; the change log with undo.
 - **Progression:** the full XP award; skill offers; marks review; merges;
-  the evolution builder; professions; the practice log review; titles.
+  professions; the practice log review; titles.
+- **Evolutions** (its own tab, Luke 2026-10-31): who is at or near the
+  threshold, and per character the evolution builder: the class,
+  profession and race steps with option cards, a budget meter per option
+  (per-level total and one-time bonus), the skill re-rating list and merge
+  prompts, the character's standing, and the reference table (§4).
 - **Library & settings:** skills and spells, classes, races, professions,
   items, titles, NPCs and the bestiary, factions, loot tables, the reference
   lists, content import, rules settings, co-DM settings, campaigns and
   backups.
+
+**Movable panels (Luke, 2026-10-31):** on the home dashboard and each tab
+the GM can rearrange the panels to try layouts. Panels sit in a snap grid:
+drag one by its header to a new spot, or use its menu (Move earlier, Move
+later, Width) from the keyboard; widths are a third, a half or full. Each
+page's layout is saved on that device; **Reset layout** restores the
+default. A panel added by a later release appears in its default spot, and
+a saved layout naming a panel that no longer exists ignores it. Player
+screens keep their fixed layout.
 
 ## 9. Status screen (player sheet layout)
 
@@ -370,6 +470,18 @@ Race Skills: [Identify (Common)]
 - Supported viewports: 1366×768 and 1920×1080 laptops; 390×844 phones must
   remain usable (single column).
 - Theme check: silver and platinum accent colors differ by at least ΔE 10.
+- **Evolution on the player's screen (Luke, 2026-10-31):** an **Evolution**
+  tab is always there, locked and greyed out, so players know it exists.
+  When the GM releases their evolution it lights up all over, the big
+  exciting thing it is: the tab and the status window glow and pulse in the
+  next grade's metal, a System pop-up announces it (`[Evolution available]`),
+  with a sound unless muted, and it keeps drawing them in until they open
+  it. With reduced motion it is a strong static highlight instead. Inside,
+  the three steps (class, profession, race) show option cards in the books'
+  style: name (rarity), a short description, the per-level stats ending in
+  free points, and the one-time bonus; the player picks one per step,
+  reviews all three, and confirms once. Nothing about an evolution reaches
+  the player before the GM releases it.
 
 ## 10. Starting classes (the books' six; Luke 2026-10-22)
 
@@ -480,6 +592,27 @@ a name, a keeper NPC, wares and a hook.
     the NPC, place and session; the co-DM includes kept lore for the NPC and
     place in later prompts and does not contradict it. Lore stays GM-only
     unless the GM shares the note.
+- **Skill-offer drafts (Luke, 2026-10-31):** from a stat, from one of the
+  character's skills, or from a typed direction (§6 "Building an offer"),
+  with the character's standing and practice summary in the prompt. Every
+  draft is checked against the rules after it is written (rarity ceiling,
+  capstone, duplicate names, a spell without a cost) and flagged until the
+  GM fixes it.
+- **Story ideas (Luke, 2026-10-31):** Luke jots plot hooks and story ideas
+  on his phone anywhere, on a private page outside the app and the repo
+  (the app only runs on the home network). The GM app has a GM-only
+  **Ideas** board (Library & settings): add, edit, tag, pin, mark used,
+  search. **Import** takes that page's export file or pasted text (one idea
+  per paragraph), previews, and skips ideas already imported (same id).
+  The co-DM includes a few relevant unused ideas (by kind, tags, and the
+  current place and NPCs; bounded) in generation, suggestion and
+  quick-response prompts as hooks it may weave in, and says which idea a
+  result used; approving that result marks the idea used (the GM can undo).
+  Export format, version 1:
+  `{ "format": "the-system-ideas", "version": 1, "exported": "<ISO time>",
+  "ideas": [ { "id", "text", "kind", "tags": [], "source", "created",
+  "used" } ] }`, where `kind` is one of hook, npc, place, item, quest,
+  twist, other; `source` is free text (what inspired it) and may be empty.
 - **Shops** are GM-side: the GM narrates, and a purchase is a GM trade that
   the shop's price list fills in.
 - **Loading screen:** a System-styled broadcast ("[The System is
