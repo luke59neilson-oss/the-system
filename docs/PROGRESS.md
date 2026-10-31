@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress again (2026-10-31): every milestone done; deep multi-model review queued 26 fix items QF.38–QF.63; QF.38–QF.44 done; QF.45 on `wip/QF.45`.
-**Next item:** QF.45 (resume `wip/QF.45`: review round 2, then the packaged speech check), then QF.46 onward
+**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.45, QF.64, QF.65 done; QF.66 on `wip/QF.66`.
+**Next item:** QF.66 (resume `wip/QF.66`: the player-side notice), then QF.46 onward
 **Blockers:** none
 
 ## Run log
@@ -1381,4 +1381,14 @@ next item, blockers. -->
 - Hand-off: `wip/QF.45` at 263c26df (base c1da9979). Next: re-launch its review (round 2, required after a High); then the acceptance's "loads the speech engine inside packaged Electron" (RunAsNode is off now, so it needs an in-app hook, e.g. a test-only flag the packaged smoke uses); the Windows workflow step only runs on a release build.
 - Tests: unit 1,710 (was 1,698); e2e full suite run locally (shared UI changed): 141 tests green, none failed, cut off at the 52-minute stop (CI runs it all); desktop spec for quit-for-update passed under xvfb. Engine coverage not re-measured (no engine change).
 - Open `wip/*`: wip/QF.45. Blockers: none.
+
+### Run · 2026-10-31 09:07–09:52 UTC (close-out at minute 44)
+- Preflight: `add_repo` not offered; repo already cloned; lock pushed cleanly; vitest 5.0.5; reviewers work (haiku, sonnet, fable; worktree; the Agent tool blocks until each reports, so they ran in parallel batches). CI on main green at start (d81e0df9). No new answers. Hour 09: quality sweep C (Rules haiku, Tests sonnet, UX fable), scope 492127d2..1815b441.
+- Sweep C: Rules 1 High (pre-QF.39 merges of Identify no longer replayed) confirmed and fixed as QF.64; Tests 2 Medium confirmed by re-running the mutations (QF.65); UX 2 Medium confirmed in code (QF.66); 13 Lows to the QUALITY Backlog; the Rules Low (player cast re-drafted) is already QF.48. Last sweep → 1815b441, next rotation D.
+- QF.64 (High) Merges stored before QF.39 still replay: `skill.merged`/`skill.mergeOffered` payload v2, v1 upcast to `legacy` (D283). Sonnet round 1: 0 High/Medium.
+- QF.45 Installing over a running app quits it cleanly: round 2 (sonnet) 1 Medium (dropped OK/Cancel question) fixed; wait is 8 s by `GetTickCount`; the packaged smoke now checks the speech engine loads inside packaged Electron (test-only hook), green on a fresh local `--linux dir` package with fuses; D282 updated. Checked after the 2-round cap with my own verification.
+- QF.65 Restore and stale-lock tests that can fail: restore from a non-main campaign; reboot takeover of a foreign live pid. Sonnet: 0 findings.
+- QF.66 (wip): backup labels in local time (unit test with two time zones; QF.44 e2e green), the Open confirm and GM guide say what phones really do. Hand-off: `wip/QF.66` at 36d6701e (base main 0e4cbd0f-ish, after QF.65). Next: player side — `live.ts` `hello` already detects a campaign change (`campaignChanged`); show the player a System notice "The GM opened an earlier copy of the campaign" when the new campaign has their character, and for a character it lacks, offer the join screen with that reason instead of only "rejoins when they switch back" (`live.ts:323`); e2e with a player page (QF.66 spec) and screenshots; then review.
+- Tests: unit 1,716 (was 1,710 on main); e2e QF.44 green; packaged smoke green locally. Full e2e not run (no shared server/UI change on main beyond the QF.44 label; CI runs it). Engine coverage not re-measured (engine change is small and fully tested).
+- Open `wip/*`: wip/QF.66 (wip/QF.45 merged). Blockers: none.
 
