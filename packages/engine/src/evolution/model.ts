@@ -121,6 +121,22 @@ export interface PendingEvolution {
    * skips that check too. Absent = false.
    */
   readonly override?: true;
+  /**
+   * ME.2 (DESIGN §2): the class, profession and race steps; absent on releases
+   * stored before ME.2, which stay one choice.
+   */
+  readonly steps?: {
+    readonly class: readonly ReleasedStepOption[];
+    readonly profession: readonly ReleasedStepOption[];
+    readonly race: readonly ReleasedStepOption[];
+  };
+}
+
+/** ME.2: a released step option as stored on the pending evolution. */
+export interface ReleasedStepOption extends EvolutionStepOption {
+  readonly rarity: string;
+  readonly description: string;
+  readonly transforms: readonly SkillTransform[];
 }
 
 /** A class level that grants a selection (DESIGN §3). */

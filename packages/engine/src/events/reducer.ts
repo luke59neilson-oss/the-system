@@ -73,6 +73,7 @@ import {
   releaseEvolution,
   retiredSkillNames,
   grantSkill,
+  type PendingEvolution,
 } from '../evolution';
 import {
   montageAvailable,
@@ -1994,24 +1995,27 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       );
     }
     case 'evolution.released': {
-      const { characterId, options, professions, legacy, rerate, rerateApproved, override } =
+      const { characterId, options, professions, legacy, rerate, rerateApproved, override, steps } =
         event.payload;
       const character = characterOf(state, event, characterId);
       return withCharacter(
         state,
         rule(event, () =>
-          releaseEvolution(
-            state.rules,
-            character,
-            options,
-            professions,
-            retiredFor(state, character),
-            event.id,
-            legacy === true,
-            rerate ?? null,
-            jointUsesOf(state, characterId),
-            rerateApproved === true,
-            override === true,
+          withSteps(
+            steps,
+            releaseEvolution(
+              state.rules,
+              character,
+              options,
+              professions,
+              retiredFor(state, character),
+              event.id,
+              legacy === true,
+              rerate ?? null,
+              jointUsesOf(state, characterId),
+              rerateApproved === true,
+              override === true,
+            ),
           ),
         ),
       );
@@ -2760,4 +2764,10 @@ function jointUsesOf(state: CampaignState, characterId: string) {
     const [a, b] = x < y ? [x, y] : [y, x];
     return counts.find((p) => p.skills[0] === a && p.skills[1] === b)?.count ?? 0;
   };
+}
+
+/** ME.2: keeps a release's three steps on the pending evolution (absent before ME.2). */
+function withSteps(steps: PendingEvolution['steps'], character: Character): Character {
+  if (steps === undefined || character.evolution === null) return character;
+  return { ...character, evolution: { ...character.evolution, steps } };
 }

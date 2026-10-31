@@ -1573,7 +1573,7 @@ function toEvent(
         type: 'selection.optionWithdrawn',
         payload: { characterId: command.characterId, skill: command.skill },
       };
-    case 'evolution.release':
+    case 'evolution.release': {
       if (command.rerateApproved !== true) {
         throw new EventRejectedError(
           "Approve the skill re-rating first: the GM sets each kept skill's rarity and approves the list (DESIGN §6)",
@@ -1618,6 +1618,7 @@ function toEvent(
           ...(command.override === true ? { override: true as const } : {}),
         },
       };
+    }
     case 'evolution.choose':
       return {
         type: 'evolution.chosen',
