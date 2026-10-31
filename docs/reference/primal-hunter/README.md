@@ -11,6 +11,7 @@ never sent to players.
 | `items.csv` | 195 | Weapons, armor, accessories, artifacts, consumables, ingredients, materials |
 | `creatures.csv` | 101 | Races, beast species, monsters, named beasts and bosses |
 | `professions-classes.csv` | 32 | Classes, evolution chains, professions, race tiers |
+| `evolutions.csv` | 8 | Jake's chosen class and profession options with per-level stats (one column per stat plus free points); the options he passed over and the race numbers were not found (2026-10-31) |
 
 Compiled 2026-10-30 by research agents from what could be reached:
 system-codex.com (most items and Jake's skills and chains), Goodreads quote

@@ -232,6 +232,118 @@ They touch finished engine and player items, so they come before M4.4.
   cycles never raise a non-full pool's current value.
 - [x] **MQ.A Batch acceptance and review.**
 
+## MV — Quick changes from play (Luke, 2026-10-31; L25)
+
+DESIGN §4, §5, §7. Placed before ME and QF on purpose: taken once the item
+on its `wip/` branch is finished, ahead of the remaining QF items.
+
+- [ ] **MV.1 Assign any number of free points at once.** One assign panel
+  over every unassigned point (all waiting level-ups): spread any amount,
+  review, confirm once; points not spent stay unassigned for later. The
+  engine uses the oldest waiting level-up's points first; a level-up whose
+  points are partly used keeps the rest open; history and the GM override
+  still show and change points per level-up. Refused: more than is
+  unassigned, nothing at all, negative or fractional amounts. Stored logs
+  replay unchanged. *Accept:* engine tests (one confirm across three
+  level-ups; keeping some back; a partly used level-up finished later; too
+  many refused; old logs replay; GM override of a partly used level-up);
+  e2e: a player with three waiting level-ups assigns everything in one
+  confirm, another keeps points back; screenshots at 390×844.
+- [ ] **MV.2 XP shares by percent.** DESIGN §5 "Shares are percentages" on
+  the quick and full Award XP: total XP typed, even whole-number percentages
+  to start (34/33/33), typed percentages change nothing else, running total
+  shown, Award disabled until exactly 100, Even split resets, each row's XP
+  rounded so shares sum to the total exactly, existing XP context (MU.3)
+  kept. *Accept:* unit tests (even split for 1–8 participants; rounding sums
+  exactly, e.g. 1,000 XP at 33/33/34; 99 and 101 block; excluding a
+  participant re-evens); e2e: 1,000 XP to four at 40/20/20/20 lands
+  400/200/200/200.
+- [ ] **MV.3 Player bestiary and Identify notifications.** DESIGN §7
+  "Identify": the player's Identify window becomes a **Bestiary** of the
+  entities the GM marked identified for them, grouped by GM categories;
+  the GM manages categories in the bestiary and sets one per entity
+  (Uncategorized otherwise); **Identified by…** on each entity ticks
+  characters, decides worked / `[??? – lvl ???]` by the range rule at that
+  moment and keeps it, and sends each an Identify notification that shows
+  the entity front and centre until closed; marking again re-decides and
+  re-notifies. Identify stays Common for good (no marks, upgrades, merges
+  or re-rating; refused with a clear message). Entities have one Identify
+  text; older multi-tier entities keep their lowest tier as it and the
+  rest in GM notes. Stored logs replay unchanged. *Accept:* engine tests
+  (worked vs out of range kept after the character levels; marking again;
+  Identify refuses marks and upgrades; multi-tier entity keeps its text
+  and notes); canary (no unmarked entity, GM name, notes, stats or other
+  tiers in any player frame); e2e: the GM creates a category, marks a
+  creature identified by Kim, Kim's phone shows the notification, closes
+  it, and finds it under that category; screenshots at 390×844.
+- [ ] **MV.A Acceptance and review.** Full suite green; `fable` review;
+  "Preview ready" (LOOP §8.2).
+
+## ME — Evolutions: class, profession and race (Luke, 2026-10-31; L26)
+
+DESIGN §2, §4, §9, §9a. After MV, before QF: the first evolution comes up
+in the first session.
+
+- [ ] **ME.1 Every track grants stats.** Rules config gains per-grade
+  budgets for class, profession and race (DESIGN §4 defaults) and a
+  per-track distribution (whole points per stat plus free points);
+  profession levels grant points; until a character has a profession its
+  class grants the profession's share too; free points from every track
+  join the unassigned points (MV.1); starting classes keep their weights
+  (D35); a starting Human race gives free points only. A campaign created
+  before ME keeps its old numbers until the GM switches in rules settings
+  (a recorded rules change, applying from the next level-up). Stored logs
+  replay unchanged. *Accept:* engine tests per grade (exact totals with and
+  without a profession; overflow unchanged; an old campaign unchanged until
+  the switch, then new numbers from the next level-up); goldens updated
+  only where the manifest allows.
+- [ ] **ME.2 Three-step evolution in the engine.** The GM's release carries
+  options for class, profession (from the E-grade evolution on: an
+  evolution of the current profession, or profession offers plus "none for
+  now") and race; each option has name, rarity, description, distribution
+  at the new grade, one-time bonus, and optional transforms and merges.
+  Release is refused unless every option's per-level total equals the
+  step's budget and one-time bonus totals are equal within each step,
+  unless the release says Override; the re-rating approval gate stays. The
+  player's choice names one option per step and confirms once: the grade
+  changes, distributions and bonuses apply, pools refill. An evolution
+  released before ME stays a single choice; stored logs replay unchanged.
+  *Accept:* engine tests (each refusal and Override; G→F has no profession
+  step; E-grade with no profession offers professions and "none for now";
+  confirm applies all three; old log replay); canary (unreleased options
+  never in player frames).
+- [ ] **ME.3 The Evolutions tab (GM).** A fourth console tab (DESIGN §9a)
+  and the home dashboard's "evolutions to build" link to it: characters at
+  or within 3 race levels of the threshold; per character the builder with
+  the three steps, option cards (add, duplicate, remove), a budget meter per
+  option (per-level total and one-time bonus, mismatches in red with the
+  difference), the re-rating list and merge prompts moved here from
+  Progression, a compact standing panel (stats, skills, practice summary),
+  and Release with the reasons it is blocked and an Override tick.
+  *Accept:* e2e building a full E-grade evolution for Kim (three steps; an
+  unequal bonus blocks release; Override releases); the moved windows'
+  existing specs pass from their new place; screenshots at 1366×768 and
+  1920×1080.
+- [ ] **ME.4 Reference table and shapes.** `npm run reference` embeds
+  `docs/reference/primal-hunter/evolutions.csv`; the Evolutions tab shows
+  it with totals and percent shapes, plus the campaign's own earlier
+  options; **Use this shape** fills an option's distribution scaled to the
+  step's budget (largest remainder, exact total, free points kept as free).
+  GM-only. *Accept:* unit tests (scaling keeps the exact total for every
+  row at every budget; a row of all free points; a zero row refused);
+  canary; e2e applying Archer's shape at the E-grade class budget.
+- [ ] **ME.5 The player's evolution.** DESIGN §9 "Evolution on the player's
+  screen": the locked, greyed Evolution tab; on release it lights up all
+  over (glow and pulse in the next grade's metal, the `[Evolution
+  available]` pop-up, sound unless muted; reduced motion: a strong static
+  highlight) until opened; three steps of book-style option cards, a review
+  of all three, one confirm, then the evolution notice and the new grade's
+  theme. *Accept:* e2e (locked → released → three picks → confirm → new
+  theme); screenshots at 390×844 locked, lit and mid-choice, and with
+  reduced motion; canary.
+- [ ] **ME.A Acceptance and review.** Full suite green; `fable` review;
+  "Preview ready" (LOOP §8.2).
+
 ## QF — Quality fixes (from sweeps, LOOP §10)
 
 Confirmed findings from quality sweeps (`docs/QUALITY.md`). Items marked
@@ -1345,4 +1457,50 @@ DESIGN §5, §6, §7, §9a. After MD.
   naming and tone examples. *Accept:* unit tests (filtering, bounded size),
   canary (never in player frames), e2e search.
 - [x] **MU.A Acceptance and review.** Full suite green; `fable` review;
+  "Preview ready" (LOOP §8.2).
+
+## MW — Skill-offer help, story ideas, movable panels (Luke, 2026-10-31; L25)
+
+DESIGN §6, §9a, §11. After MU. MW.4 covers the Evolutions tab (ME.3) too.
+
+- [ ] **MW.1 The character's standing in the skill-offer builder.** DESIGN
+  §6 "Building an offer": beside the menu, the chosen character's grade,
+  levels, stats (base, bonuses, total), unassigned free points, skills
+  (rarity, marks, cost, kind), titles, equipped items, profession, and the
+  practice summary (counts per skill, top skill pairs, recent entries);
+  readable at 1366×768 without scrolling the menu away. *Accept:* unit test
+  of the standing model (a full character; one without a profession; one
+  with no practice yet); e2e; screenshots at 1366×768 and 1920×1080.
+- [ ] **MW.2 Co-DM skill-offer drafts.** Three buttons in the builder: from a
+  stat, from one of the character's skills, from a typed direction (DESIGN
+  §11 "Skill-offer drafts"); the prompt carries the standing, practice
+  summary, the selection's rarity ceiling and capstone rule, and stays
+  within a fixed size; results land as editable draft options; each draft
+  is checked (rarity above the ceiling, a missed capstone, a name the
+  character already has, a spell with no cost) and flagged, and a flagged
+  draft cannot be offered until fixed. Behind the existing AI interface;
+  runs use recorded fixtures only. *Accept:* unit tests with fixtures (each
+  mode; each flag; the prompt contents and size); e2e with the fake model:
+  draft from Perception, edit, offer, the player sees the menu.
+- [ ] **MW.3 Ideas board and import.** DESIGN §11 "Story ideas": a GM-only
+  Ideas panel in Library & settings (add, edit, tag, pin, mark used,
+  search), stored in the campaign; **Import** of the version 1 export file
+  or pasted text, with a preview, skipping ideas already imported, and a
+  clear message for a file that is not one; the co-DM includes up to a fixed
+  number of relevant unused ideas in generation, suggestion and
+  quick-response prompts and names the idea a result used; approving it
+  marks the idea used (undoable). *Accept:* unit tests (parse version 1;
+  a wrong or newer format refused with a message; repeat import skips;
+  paste splits on blank lines; idea choice by tags and place, bounded);
+  canary (ideas never in player frames); e2e importing a sample file.
+- [ ] **MW.4 Movable panels on the GM console.** DESIGN §9a "Movable
+  panels": snap grid on home and each tab; drag by header; keyboard moves
+  from each panel's menu (Move earlier, Move later, Width: third, half,
+  full); saved per page on the device; **Reset layout**; unknown panels in a
+  saved layout ignored, new panels in their default spot. Player screens
+  unchanged. *Accept:* unit tests of the layout model (move, width, unknown
+  and new panels, reset); e2e: drag a panel and move one by keyboard, both
+  survive a reload, Reset restores; the keyboard-only spec (M8.3) still
+  passes; screenshots at 1366×768.
+- [ ] **MW.A Acceptance and review.** Full suite green; `fable` review;
   "Preview ready" (LOOP §8.2).
