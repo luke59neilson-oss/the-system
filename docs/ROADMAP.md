@@ -276,7 +276,7 @@ on its `wip/` branch is finished, ahead of the remaining QF items.
   tiers in any player frame); e2e: the GM creates a category, marks a
   creature identified by Kim, Kim's phone shows the notification, closes
   it, and finds it under that category; screenshots at 390×844.
-- [ ] **MV.A Acceptance and review.** Full suite green; `fable` review;
+- [x] **MV.A Acceptance and review.** Full suite green; `fable` review;
   "Preview ready" (LOOP §8.2).
 
 ## ME — Evolutions: class, profession and race (Luke, 2026-10-31; L26)
@@ -995,6 +995,13 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   Sound toggle announces its state twice; many free-point batches after a big
   award mean many Review rounds (offer "assign all"). *Accept:* screenshots
   and e2e per item.
+- [ ] **QF.67 Pin the free-point spend split order.** Sweep A (Tests,
+  haiku, 2026-10-31), Medium, confirmed by mutation: `freePoints.spent`
+  splits a spend across open level-ups in stat order
+  (`reducer.ts:1081`), but splitting in payload key order passes every
+  test. *Accept:* an engine test spends `{ agility: 3, strength: 1 }` over
+  two open 2-point level-ups and asserts each batch's allocation; it fails
+  with the key-order mutation applied.
 
 ## MR — Luke's answers, batch 2 (2026-10-22)
 
