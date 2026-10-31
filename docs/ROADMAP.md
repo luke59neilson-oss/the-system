@@ -258,7 +258,7 @@ on its `wip/` branch is finished, ahead of the remaining QF items.
   exactly, e.g. 1,000 XP at 33/33/34; 99 and 101 block; excluding a
   participant re-evens); e2e: 1,000 XP to four at 40/20/20/20 lands
   400/200/200/200.
-- [ ] **MV.3 Player bestiary and Identify notifications.** DESIGN §7
+- [x] **MV.3 Player bestiary and Identify notifications.** DESIGN §7
   "Identify": the player's Identify window becomes a **Bestiary** of the
   entities the GM marked identified for them, grouped by GM categories;
   the GM manages categories in the bestiary and sets one per entity
