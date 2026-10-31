@@ -1184,3 +1184,6 @@
 - Fixes (d27d2241, e022d498): `looksLikeName` (1–5 words, capitalised or connectors), title abbreviations keep their dot, note titles must read as names, lore notes not doubled.
 - Round 2 (sonnet, e022d498): 0 High, 1 Medium: a note tagged `lore` + bare `npc` lost its text entirely (loreFor matches only `npc:<name>`). Fixed: notes are blank only when the note also carries `npc:<name>`; tests pin both. Lows fixed: `Jr.,`, `Prof./Rev./Gen./Col./Hon.`, "de la Cruz", "d'Artagnan", CJK names. Remaining Lows (merged names keep the first source's `names`; first-name auto-match; hand-listed prompts; Import indent) to the QUALITY Backlog.
 - Verified myself after round 2: check 1,760/1,760; e2e QF.50, MC.2, MC.3, MD.1, MD.3 green.
+
+## 2026-10-31 · QF.51 The co-DM uses current models and prices
+- Round 1 (sonnet, worktree, 4eeaee0b): server AI tests 32/32, typecheck clean (builder's check 1,762/1,762 and MC.1 e2e at the same SHA). 0 High, 0 Medium. Every price matches the list; tier boundary `> 100_000`; `costOf` prices each reply with its own input tokens (never summed usage). Lows: tier ignores cache tokens (none sent today), Opus pins (present: opus-5-5 and the 4-5…4-8 loop), MC.1 spend reads $0.000. Lows to the QUALITY Backlog; no code change.

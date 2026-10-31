@@ -705,7 +705,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   lines are table talk, not instructions; a shop generation's extra quest or
   skill-menu sections come back unticked with "not what you asked for", and
   quest text and visibility show in the preview.
-- [ ] **QF.51 The co-DM uses current models and prices.** Defaults are
+- [x] **QF.51 The co-DM uses current models and prices.** Defaults are
   `claude-haiku-4-5` / `claude-sonnet-4-5` and prices go by family
   (`apps/server/src/ai/client.ts:70-96`). Current list prices per million
   tokens (input/output, platform.claude.com pricing, 2026-10): Claude Haiku
