@@ -226,7 +226,11 @@ export function grantSkill(
   if (skill.kind === 'profession' && character.profession === null) {
     throw new CharacterRuleError(`${character.name} has no profession for [${name}]`);
   }
-  checkFreeName(character, name, history);
+  // QF.39: the starting race skill (Identify) can always be given back to a
+  // character missing it, even though the practice log still counts its name.
+  const start = rules.skills.startingRaceSkill;
+  const restoring = skill.kind === 'race' && lower(name) === lower(start.name);
+  checkFreeName(character, name, restoring ? new Set() : history);
   return {
     ...character,
     skills: [

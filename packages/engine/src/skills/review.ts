@@ -145,8 +145,11 @@ export function marksReview(state: CampaignState, sessionId: string): CharacterM
     const min = ladder.indexOf(rules.skills.merge.minRarity);
     const rarityOf = new Map(character.skills.map((k) => [k.name, k.rarity]));
     const mergeable = (name: string) => ladder.indexOf(rarityOf.get(name) ?? '') >= min;
+    // QF.39: pairs with a race skill (Identify) are not merge material.
+    const race = new Set(character.skills.filter((k) => k.kind === 'race').map((k) => k.name));
     const pairs = skillPairCounts(session, id)
       .filter((p) => owned.has(p.skills[0]) && owned.has(p.skills[1]))
+      .filter((p) => !race.has(p.skills[0]) && !race.has(p.skills[1]))
       .map((p) => ({
         skills: p.skills,
         session: p.count,

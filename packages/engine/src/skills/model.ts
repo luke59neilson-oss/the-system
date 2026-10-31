@@ -275,8 +275,13 @@ export function mergeSkills(
   second: string,
   name: string,
   jointUses: number,
-  /** MT.7 GM override: skips the minimum rarity, joint-use count and once-per-grade checks. */
+  /**
+   * MT.7 GM override: skips the minimum rarity, joint-use count, once-per-grade
+   * and race-skill checks (a race skill merged away can be granted again, QF.39).
+   */
   override = false,
+  /** Lower-cased names the practice log still counts but the character no longer has (QF.39). */
+  retired: ReadonlySet<string> = new Set(),
 ): Character {
   const merge = rules.skills.merge;
   if (first === second) throw new CharacterRuleError('Merge two different skills');
@@ -284,6 +289,12 @@ export function mergeSkills(
   const ib = skillIndex(character, second);
   const a = character.skills[ia] as CharacterSkill;
   const b = character.skills[ib] as CharacterSkill;
+  // QF.39: a race skill (Identify) is never merged away, as at evolution.
+  for (const s of [a, b]) {
+    if (!override && s.kind === 'race') {
+      throw new CharacterRuleError(`[${s.name}] is a race skill and cannot be merged away`);
+    }
+  }
   const min = rarityIndex(rules, merge.minRarity);
   for (const s of [a, b]) {
     if (!override && rarityIndex(rules, s.rarity) < min) {
@@ -328,6 +339,12 @@ export function mergeSkills(
   if (character.skills.some((s) => s.name.toLowerCase() === trimmed.toLowerCase())) {
     throw new CharacterRuleError(`${character.name} already has a skill "${trimmed}"`);
   }
+  // QF.39: like a grant, a merge cannot take a name the practice log still counts.
+  if (retired.has(trimmed.toLowerCase())) {
+    throw new CharacterRuleError(
+      `"${trimmed}" was a skill of ${character.name}'s; pick a new name`,
+    );
+  }
   const merged = newSkill(trimmed, result.id, a.kind);
   const skills = character.skills.flatMap((s, i) => (i === ia ? [merged] : i === ib ? [] : [s]));
   return { ...character, skills, merges: { ...character.merges, [character.grade]: done + 1 } };
@@ -348,8 +365,9 @@ export function offerMerge(
   text: { description?: string | null | undefined; flavor?: string | null | undefined } = {},
   /** MT.7 GM override, stored on the offer so the player's accept honours it. */
   override = false,
+  retired: ReadonlySet<string> = new Set(),
 ): Character {
-  mergeSkills(rules, character, first, second, name, jointUses, override);
+  mergeSkills(rules, character, first, second, name, jointUses, override, retired);
   const rarityOf = (n: string) => character.skills.find((s) => s.name === n)?.rarity ?? '';
   return {
     ...character,
@@ -376,6 +394,7 @@ export function answerMerge(
   offerId: string,
   accept: boolean,
   jointUses: number,
+  retired: ReadonlySet<string> = new Set(),
 ): Character {
   const offer = character.mergeOffer ?? null;
   if (offer === null || offer.offerId !== offerId) {
@@ -402,6 +421,7 @@ export function answerMerge(
     offer.name,
     jointUses,
     offer.override === true,
+    retired,
   );
   if (offer.description === undefined && offer.flavor === undefined) return merged;
   return describeSkill(merged, offer.name, offer.description ?? null, offer.flavor ?? null);

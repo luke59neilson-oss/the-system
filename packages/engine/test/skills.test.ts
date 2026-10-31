@@ -324,19 +324,23 @@ describe('merges', () => {
   it('rejects: a second merge in the same grade', () => {
     let c = ok(ok(ready(), merge), accept);
     c = upgrade(c, eye, 1); // Common → Uncommon
-    c = upgrade(c, 'Identify', 1);
     c = run(
       [1, 2, 3].map((i) => ({
         type: 'practice.log',
         characterId: 'jake',
         action: `Scout ${i}`,
-        skills: [eye, 'Identify'],
+        skills: [eye, 'Shadow Shot'],
       })),
       ctx,
       c,
     );
     expect(
-      reject(c, { type: 'skill.merge', characterId: 'jake', skills: [eye, 'Identify'], name: 'X' }),
+      reject(c, {
+        type: 'skill.merge',
+        characterId: 'jake',
+        skills: [eye, 'Shadow Shot'],
+        name: 'X',
+      }),
     ).toContain('Already merged at G-grade');
   });
 
@@ -376,13 +380,16 @@ describe('merges', () => {
     const merged = {
       ...once,
       skills: once.skills.map((s) =>
-        s.name === eye || s.name === 'Identify' ? { ...s, rarity: 'uncommon' } : s,
+        s.name === eye || s.name === 'Shadow Shot' ? { ...s, rarity: 'uncommon' } : s,
       ),
     };
-    expect(() => mergeSkills(rules, merged, eye, 'Identify', 'X', 3)).toThrow('Already merged');
+    expect(() => mergeSkills(rules, merged, eye, 'Shadow Shot', 'X', 3)).toThrow('Already merged');
     // At F-grade (as after an evolution, M1.10) the counter for F is fresh.
     const atF = { ...merged, grade: 'F' };
-    expect(mergeSkills(rules, atF, eye, 'Identify', 'Far Sight', 3).merges).toEqual({ G: 1, F: 1 });
+    expect(mergeSkills(rules, atF, eye, 'Shadow Shot', 'Far Sight', 3).merges).toEqual({
+      G: 1,
+      F: 1,
+    });
   });
 });
 

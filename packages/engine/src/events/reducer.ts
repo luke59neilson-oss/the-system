@@ -1833,6 +1833,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
             offerId,
             { description, flavor },
             override === true,
+            retiredFor(state, character),
           ),
         ),
       );
@@ -1845,7 +1846,9 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         offer === null ? 0 : jointUses(state, characterId, offer.skills[0], offer.skills[1]);
       return withCharacter(
         state,
-        rule(event, () => answerMerge(state.rules, character, offerId, accept, joint)),
+        rule(event, () =>
+          answerMerge(state.rules, character, offerId, accept, joint, retiredFor(state, character)),
+        ),
       );
     }
     case 'selection.optionWithdrawn': {

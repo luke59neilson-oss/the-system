@@ -192,9 +192,12 @@ export function practiceAlerts(
   const ladder = rules.skills.rarities.map((r) => r.id);
   const min = ladder.indexOf(rules.skills.merge.minRarity);
   const rarityOf = new Map(character.skills.map((s) => [s.name, s.rarity]));
+  const race = new Set(character.skills.filter((s) => s.kind === 'race').map((s) => s.name));
   for (const pair of skillPairCounts(entries, character.id)) {
     if (pair.count < rules.skills.merge.requiredJointUses) continue;
     const [a, b] = pair.skills;
+    // QF.39: a race skill (Identify) is never offered for a merge.
+    if (race.has(a) || race.has(b)) continue;
     const ra = rarityOf.get(a);
     const rb = rarityOf.get(b);
     if (ra === undefined || rb === undefined) continue; // a skill is gone (merged, transformed)
