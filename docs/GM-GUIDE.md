@@ -337,7 +337,9 @@ to DESIGN.md's values.
    under **Restore** with its events and portraits.
 2. **Download campaign** saves the campaign export file
    (`<campaign>-<date>.the-system.json`): the event log and the portraits,
-   one file you can keep anywhere or carry to another laptop.
+   one file you can keep anywhere or carry to another laptop. It does not
+   hold the co-DM's notes or the transcripts; to keep those, copy the `data`
+   folder (below).
 3. **Restore** brings back either a backup from the list (press its
    **Restore**) or a downloaded file (**Restore from a downloaded file**).
    It never overwrites anything: the copy becomes a new campaign beside the
@@ -346,7 +348,8 @@ to DESIGN.md's values.
    and pick their character again. The header then says "Restored campaign
    …", and **Back to my campaign** returns. When the app starts it opens
    your main campaign again; open the restored one from **Campaigns on this
-   laptop** in the same window.
+   laptop** in the same window. The backups listed are those of the campaign
+   that is open, so go back to your main campaign to restore one of its.
 
 Copy the app's `data` folder (TROUBLESHOOTING → "Where the campaign is
 saved"). Each campaign's `backups` folder holds a copy from every session end

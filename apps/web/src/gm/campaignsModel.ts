@@ -32,3 +32,9 @@ export function exportFileName(campaignName: string | null, nowIso: string): str
 export function count(n: number, word: string): string {
   return `${n.toLocaleString('en-US')} ${word}${n === 1 ? '' : 's'}`;
 }
+
+/** Window event: the open campaign changed (the header switch re-reads it). */
+export const CAMPAIGN_CHANGED = 'the-system:campaign-changed';
+
+/** The server's limit on a restored file (`RESTORE_MAX_BYTES` in server.ts). */
+export const RESTORE_MAX_BYTES = 256 * 1024 * 1024;

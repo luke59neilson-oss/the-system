@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CAMPAIGN_CHANGED } from './campaignsModel';
 
 /**
  * GM menu entry for the demo campaign (ROADMAP MS.4, D53). The demo is a
@@ -11,6 +12,14 @@ export function CampaignSwitch({ gmKey, stateName }: { gmKey: string; stateName:
   const [other, setOther] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // QF.44: Campaigns and backups announces a switch (a restored copy keeps the name).
+  const [changed, setChanged] = useState(0);
+  useEffect(() => {
+    const bump = () => setChanged((n) => n + 1);
+    window.addEventListener(CAMPAIGN_CHANGED, bump);
+    return () => window.removeEventListener(CAMPAIGN_CHANGED, bump);
+  }, []);
 
   // Re-read after every campaign change (another GM tab may have switched).
   useEffect(() => {
@@ -29,7 +38,7 @@ export function CampaignSwitch({ gmKey, stateName }: { gmKey: string; stateName:
     return () => {
       cancelled = true;
     };
-  }, [gmKey, stateName]);
+  }, [gmKey, stateName, changed]);
 
   const switchTo = async (wantDemo: boolean) => {
     if (

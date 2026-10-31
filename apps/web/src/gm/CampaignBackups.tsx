@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
-import { backupLabel, count, exportFileName } from './campaignsModel';
+import {
+  CAMPAIGN_CHANGED,
+  RESTORE_MAX_BYTES,
+  backupLabel,
+  count,
+  exportFileName,
+} from './campaignsModel';
 
 interface BackupInfo {
   name: string;
@@ -136,6 +142,11 @@ export function CampaignBackups({
     if (!file) return;
     void run(async () => {
       setRestored(null);
+      if (file.size > RESTORE_MAX_BYTES) {
+        throw new Error(
+          `Nothing was restored: ${file.name} is larger than ${RESTORE_MAX_BYTES / (1024 * 1024)} MB, too big for a campaign file.`,
+        );
+      }
       let parsed: unknown;
       try {
         parsed = JSON.parse(await file.text());
@@ -161,6 +172,8 @@ export function CampaignBackups({
       else await call('POST', '/api/gm/campaign', { id });
       setRestored(null);
       setStatus(`Opened campaign “${id}”.`);
+      // The header's campaign switch re-reads which campaign is open.
+      window.dispatchEvent(new Event(CAMPAIGN_CHANGED));
       reload();
     });
   };
@@ -170,7 +183,9 @@ export function CampaignBackups({
       <h2 id="campaign-backups">Campaigns and backups</h2>
       <p className="muted">
         The campaign is saved on every change and backed up at every session end and every quit.
-        Restore never overwrites anything: it adds the copy as a new campaign beside this one.
+        Restore never overwrites anything: it adds the copy as a new campaign beside this one. A
+        downloaded file holds the event log and portraits; backups also keep the co-DM&apos;s notes
+        and the transcripts.
       </p>
       <div className="row">
         <button type="button" disabled={busy} onClick={() => void backUp()}>
@@ -218,24 +233,32 @@ export function CampaignBackups({
       ) : backups.length === 0 ? (
         <p className="muted">No backups of this campaign yet.</p>
       ) : (
-        <ul className="backup-list" aria-label="Backups of this campaign">
-          {backups.map((b) => (
-            <li key={b.name} data-testid="backup-row">
-              <span>
-                {backupLabel(b.name)} · {count(b.events, 'event')}
-                {b.portraits > 0 ? ` · ${count(b.portraits, 'portrait')}` : ''}
-              </span>
-              <button
-                type="button"
-                disabled={busy || b.events === 0}
-                aria-label={`Restore ${backupLabel(b.name)}`}
-                onClick={() => void restore({ backup: b.name })}
-              >
-                Restore
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          {list && list.active !== list.main && (
+            <p className="muted" data-testid="backups-of">
+              These are the backups of “{list.active}”. For your main campaign&apos;s backups, go
+              back to it first.
+            </p>
+          )}
+          <ul className="backup-list" aria-label="Backups of this campaign">
+            {backups.map((b) => (
+              <li key={b.name} data-testid="backup-row">
+                <span>
+                  {backupLabel(b.name)} · {count(b.events, 'event')}
+                  {b.portraits > 0 ? ` · ${count(b.portraits, 'portrait')}` : ''}
+                </span>
+                <button
+                  type="button"
+                  disabled={busy || b.events === 0}
+                  aria-label={`Restore ${backupLabel(b.name)}`}
+                  onClick={() => void restore({ backup: b.name })}
+                >
+                  Restore
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       {list && list.campaigns.length > 1 && (

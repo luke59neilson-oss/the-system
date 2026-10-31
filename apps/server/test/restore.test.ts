@@ -4,7 +4,9 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_RULES, execute, type Command } from '@the-system/engine';
+import { RESTORE_MAX_BYTES as WEB_RESTORE_MAX } from '../../web/src/gm/campaignsModel';
 import { startApp, type RunningApp } from '../src/app';
+import { RESTORE_MAX_BYTES } from '../src/server';
 import { savePortrait } from '../src/portraits';
 import { CampaignStore, backupAsExport, listBackups, restoredId } from '../src/store';
 
@@ -166,6 +168,12 @@ describe('QF.44 backups and restore', () => {
       const res = await fetch(`http://127.0.0.1:${app!.port}${url}`, { method });
       expect(res.status, url).toBe(403);
     }
+  });
+});
+
+describe('restore limit', () => {
+  it('the console checks the same file size the server accepts', () => {
+    expect(WEB_RESTORE_MAX).toBe(RESTORE_MAX_BYTES);
   });
 });
 
