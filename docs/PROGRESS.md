@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV.1 and MV.2 done.
-**Next item:** resume `wip/MV.3` (Identify refuses marks/upgrades done; next: rewrite the tests that upgrade Identify, then bestiary categories, `entity.identify` and the player Bestiary), then MV.A (L25), ME.1–ME.A (L26) and MK.1–MK.A (L27), then QF.55 onward; MW after MU
+**Next item:** resume `wip/MV.3` (engine, player Bestiary, GM categories and Identified by…, e2e MV.3 done; review round 1 fixed; next: rewrite e2e M3.9, M7.2, M7.3, M7.A, MQ.8, MQ.12, MR.4 for one text / Identified by… / no Identify upgrades, full `npm run check`, then review round 2 and merge), then MV.A (L25), ME.1–ME.A (L26) and MK.1–MK.A (L27), then QF.55 onward; MW after MU
 **Blockers:** none
 
 ## Run log
@@ -1467,3 +1467,11 @@ next item, blockers. -->
 - Tests: unit 1,851 (check green at the merge); full e2e project 147/147 (in two parts: 76 + 71, 1 worker); M4.A latency green. Engine untouched on main this run (web + scripts only); goldens untouched.
 - Open `wip/*`: `wip/MV.3`. Blockers: none.
 
+
+### Run · 2026-10-31 19:08–19:56 UTC (close-out at minute 45; end minute 48)
+- Close-out at minute 45: MV.3 built on `wip/MV.3` (not merged; review round 2 and older e2e rewrites remain).
+- Preflight: `add_repo` not offered; repo already cloned, reset to `origin/main`; lock pushed cleanly; vitest 5.0.5; reviewer sonnet works (worktree, background, ~10 min). CI on main green at start (3cb867b8). No new answers. Hour 19: no efficiency check or sweep.
+- MV.3 (D298, Q91): engine (state v34, goldens re-recorded, new golden `bestiary.jsonl`), tests that trained Identify moved to Archer’s Eye, player Bestiary grouped by category plus a front-and-centre Identify notification, GM categories and Identified by… ticks, `e2e/MV.3.spec.ts` green with screenshots in docs/screens/MV.3. Review round 1 (sonnet): 1 High, 2 Medium, all fixed (REVIEW-LOG).
+- `wip/MV.3` (base 9803a33a, head b02de6aa). Still failing there: e2e M3.9, M7.2, M7.3, M7.A, MQ.8, MQ.12, MR.4 (they use per-rarity tier fields, Reveal, or upgrade Identify). Next step: rewrite those specs, run `npm run check` in full, review round 2, merge.
+- Tests: engine unit 1,012 green on the branch; web unit 315 green; e2e MV.3 1/1; 18 of the 25 Identify-related specs pass. Main untouched this run.
+- Open `wip/*`: `wip/MV.3`. Blockers: none.

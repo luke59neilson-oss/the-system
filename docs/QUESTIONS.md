@@ -691,3 +691,11 @@ DESIGN/ROADMAP; do not re-apply them.
     numbers back in, and the box says "Even split: the XP is divided
     exactly evenly" (the literal 34% of 1,200 would lose XP past a grade's
     top on the "typical session" suggestion).
+
+91. **Identify after MV.3 (D298).** Identify is refused marks, upgrades and
+    being raised at an evolution; merging it keeps the older GM override
+    (QF.39) and transforming it keeps the evolution's own refusal. Old
+    multi-tier entities keep their lowest tier as the one text and the rest
+    move to GM notes. A GM edit to an entity's grade or level does not
+    re-decide earlier results (mark it identified again for that). Default:
+    as built. Option: also refuse the GM override for merging Identify.
