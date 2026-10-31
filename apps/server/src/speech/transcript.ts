@@ -29,7 +29,12 @@ export const transcriptFile = (dir: string, session: number) =>
 
 export interface ListenerOptions {
   readonly dir: string;
-  readonly session: number;
+  /**
+   * The session each line belongs to, read when its utterance ends (QF.38):
+   * listening left on through Start or End session follows the session, so
+   * the co-DM, which reads the current session's file, sees every line.
+   */
+  readonly session: number | (() => number);
   readonly stt: SpeechToText;
   /** Wall clock (injectable). */
   readonly now: () => number;
@@ -92,6 +97,11 @@ export class Listener {
   }
 
   private enqueue(seg: { startMs: number; endMs: number; samples: Float32Array }): void {
+    const { session } = this.options;
+    const file = transcriptFile(
+      this.options.dir,
+      typeof session === 'function' ? session() : session,
+    );
     this.queue = this.queue.then(async () => {
       let text: string;
       try {
@@ -114,10 +124,7 @@ export class Listener {
       // (disk full, folder locked); the queue carries on (MC.5 review).
       try {
         mkdirSync(this.options.dir, { recursive: true });
-        appendFileSync(
-          transcriptFile(this.options.dir, this.options.session),
-          JSON.stringify(line) + '\n',
-        );
+        appendFileSync(file, JSON.stringify(line) + '\n');
       } catch (err) {
         this.options.onError?.(err);
       }

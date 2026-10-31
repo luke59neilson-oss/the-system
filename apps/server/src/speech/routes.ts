@@ -134,7 +134,8 @@ export function registerListenRoutes(app: FastifyInstance, options: ListenRouteO
     heard.set(a.store.id, lines);
     const listener = new Listener({
       dir: transcriptsDir(a.store),
-      session: sessionNumber(a.store),
+      // Read per utterance, so the transcript follows Start and End session (QF.38).
+      session: () => sessionNumber(a.store),
       stt,
       now: options.now,
       onLine: (line) => lines.push(line),

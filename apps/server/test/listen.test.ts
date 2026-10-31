@@ -1,9 +1,11 @@
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { DEFAULT_RULES, execute } from '@the-system/engine';
+import { CoDm } from '../src/ai/coDm';
+import { FixtureAiClient } from '../src/ai/fake';
 import { LiveHub } from '../src/hub';
 import type { ServerMessage } from '../src/protocol';
 import { createServer } from '../src/server';
@@ -170,6 +172,114 @@ describe('listen routes (MC.5)', () => {
     );
     await app2.close();
     rmSync(r2, { recursive: true, force: true });
+  });
+});
+
+// QF.38: listening left on through Start or End session follows the session,
+// so the co-DM (which reads the current session's file) hears the table.
+describe('listening follows the session (QF.38)', () => {
+  it('writes each line to the session running when it was heard', async () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'the-system-listen-'));
+    writeFileSync(path.join(root, 'index.html'), '<!doctype html>');
+    const store = campaign(root);
+    const stt = new FixtureSpeechToText([
+      'We sit down and get our dice out.',
+      'Can I climb the canyon wall?',
+      'Can I swim across the red river?',
+    ]);
+    const coDm = new CoDm({
+      dir: path.join(root, 'app-data'),
+      cipher: null,
+      makeClient: (_key, models) => new FixtureAiClient([], models()),
+    });
+    const app = await createServer({
+      webRoot: root,
+      live: { store, ...hubOpts },
+      speech: () => stt,
+      coDm,
+      now: () => Date.parse('2026-10-26T19:00:00.000Z'),
+    });
+    const gm = { 'x-gm-key': GM };
+    let n = 0;
+    const run = (type: string) => {
+      const r = execute(store.campaign, { type } as never, {
+        actor: { role: 'gm' },
+        sessionId: store.campaign.state?.currentSession ?? null,
+        now: () => '2026-10-26T19:00:00.000Z',
+        newId: () => `s${++n}`,
+      });
+      if (!r.ok) throw new Error(r.error);
+      store.appendAll(r.events);
+    };
+    const dir = transcriptsDir(store);
+    const texts = (file: string) => {
+      try {
+        return readFileSync(path.join(dir, file), 'utf8')
+          .trim()
+          .split('\n')
+          .map((l) => (JSON.parse(l) as { text: string }).text);
+      } catch {
+        return [];
+      }
+    };
+    // One utterance: a tone, then a second of silence ends it.
+    const say = async (file: string, count: number) => {
+      const r = await app.inject({
+        method: 'POST',
+        url: '/api/gm/listen/audio',
+        headers: { ...gm, 'content-type': 'application/octet-stream' },
+        payload: pcm(tone(600), new Float32Array(RATE)),
+      });
+      expect(r.statusCode).toBe(200);
+      await vi.waitFor(() => expect(texts(file)).toHaveLength(count));
+    };
+    const quick = async () =>
+      (await app.inject({ url: '/api/gm/ai/quick', headers: gm })).json() as {
+        target: { text: string } | null;
+        session: number | null;
+      };
+    try {
+      expect(
+        (
+          await app.inject({
+            method: 'POST',
+            url: '/api/gm/listen',
+            headers: gm,
+            payload: { on: true },
+          })
+        ).statusCode,
+      ).toBe(200);
+      // Talk before any session stays in session-00.
+      await say('session-00.jsonl', 1);
+      run('session.start');
+      await say('session-01.jsonl', 1);
+      expect(await quick()).toMatchObject({
+        target: { text: 'Can I climb the canyon wall?' },
+        session: 1,
+      });
+      // Still listening through End session and the next Start session.
+      run('session.end');
+      run('session.start');
+      await say('session-02.jsonl', 1);
+      expect(await quick()).toMatchObject({
+        target: { text: 'Can I swim across the red river?' },
+        session: 2,
+      });
+      expect(texts('session-00.jsonl')).toEqual(['We sit down and get our dice out.']);
+      expect(texts('session-01.jsonl')).toEqual(['Can I climb the canyon wall?']);
+      expect(readdirSync(dir).sort()).toEqual([
+        'session-00.jsonl',
+        'session-01.jsonl',
+        'session-02.jsonl',
+      ]);
+      // The GM's live panel still shows every line heard.
+      const status = (await app.inject({ url: '/api/gm/listen', headers: gm })).json();
+      expect(status.lines).toHaveLength(3);
+    } finally {
+      await app.close();
+      store.close();
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 

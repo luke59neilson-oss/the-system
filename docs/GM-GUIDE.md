@@ -214,6 +214,11 @@ is ever saved or sent anywhere, only the text lines, in the campaign folder
 under `transcripts/session-NN.jsonl`. While the mic is on, players' screens
 show "[The System is listening]".
 
+You can turn the mic on before or after **Start session** and leave it on
+across sessions: each line goes to the session running when it was said.
+Talk before any session starts goes to `session-00.jsonl`, which the co-DM's
+quick responses, suggestions, drafts and notes do not read.
+
 - First time: press **Download speech model** (about 118 MB, English,
   once). It goes into your user folder (`models` beside the app's data), not
   the installer, and is checked before use. Then press **Start listening**
