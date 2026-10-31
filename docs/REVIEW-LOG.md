@@ -1152,3 +1152,7 @@
 - Round 1 (sonnet, worktree, 74569e7e): 0 High, 0 Medium; reverting the reducer or the accept's `legacy` fails tests. Lows accepted: retired-name skip tested at `mergeSkills` level only; `skill.merged` never checked retired names (legacy there means the race check only).
 - Round 2 (sonnet, worktree, 263c26df): 0 High, 1 Medium: the custom macro dropped electron-builder's OK/Cancel "app is running" question (fixed: asked unless auto-update; silent answers OK). Lows: the ~8 s wait was really 16 × (0.5 s + a process query) (fixed: `GetTickCount` deadline); first upgrade from a pre-QF.45 build still force-stops (documented in D282); tasklist fallback / other install paths (accepted, same as stock). Round-1 open Medium (speech engine inside packaged Electron) done: packaged smoke asserts it through a test-only hook; passed locally on a fresh `--linux dir` package with fuses applied. Verified by the builder (2-round cap): `npm run check` green, packaged smoke green.
 
+## 2026-10-31 · QF.65 Restore and stale-lock tests that can fail
+- Found by sweep C (Tests, sonnet); both mutations re-run and confirmed surviving. Fix 03f87c06 (tests only).
+- Round 1 (sonnet, worktree, 03f87c06): 0 High, 0 Medium, 0 Low; each mutation now fails exactly the new test; both files pass shuffled 3×.
+

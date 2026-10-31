@@ -610,7 +610,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   and replay without those two checks (kept on the offer for its accept);
   v2 events keep them; engine tests for a v1 Identify offer+accept, a v1
   `skill.merged`, the v2 refusal and the retired-name skip; goldens replay.
-- [ ] **QF.65 Restore and stale-lock tests that can fail.** Sweep C (Tests,
+- [x] **QF.65 Restore and stale-lock tests that can fail.** Sweep C (Tests,
   sonnet): `from: active.store.id` → `from: "main"` in the `/api/gm/restore`
   handler (`server.ts:525`) passes every test (restore is only tested from
   `main`); and `lockIsHeld`'s boot check (`store.ts:314`) can be replaced by
