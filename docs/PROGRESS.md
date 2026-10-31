@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.51, QF.59, QF.64–QF.66 done.
-**Next item:** QF.52 (not started), then QF.53 onward
+**Next item:** QF.52 on `wip/QF.52` (round-2 review first), then QF.53 onward
 **Blockers:** none
 
 ## Run log
@@ -1425,3 +1425,11 @@ next item, blockers. -->
 - Hand-off at minute 44 with no item in progress: QF.52 (views stay small; a large server/web change with a 13k-event probe) not started, so no `wip/QF.52`. Close-out ran while main CI worked: be067e16 (QF.50) green; 99a139dc (QF.51) still running at release.
 - Tests: unit 1,762 (was 1,743); e2e QF.50, MC.1, MC.2, MC.3, MD.1, MD.3 green after rebuild. Full e2e not run locally (no shared server/hub code changed; CI runs it on push).
 - Open `wip/*`: none new (wip/QF.50 and wip/QF.51 merged). Blockers: none.
+
+### Run · 2026-10-31 14:08–14:53 UTC (close-out at minute 44; end minute 45)
+- Close-out at minute 44 with QF.52 handed to `wip/QF.52` (its round-2 review could not report before minute 50).
+- Preflight: `add_repo` not offered; repo already cloned (shallow; deepened, local `main` fast-forwarded to `origin/main`); lock pushed cleanly; vitest 5.0.5; reviewer works (sonnet, worktree; the Agent tool blocks until it reports, ~11 min). CI on main green at start (99a139dc). No new answers. Hour 14: no efficiency check, no sweep.
+- QF.52 Views stay small (D292), on `wip/QF.52` at 6d8da931 (base ab10d1b8): limited live player views (newest 8 practice, newest 50 messages plus pinned banners, totals, note bodies cut to 200 chars unless open; `view.limits` frame asks for more; protocol v4), GM `statePatch` frames by top-level key after one whole state, views stringified once; engine canary (every golden log appended event by event: no state edited in place); soak test applies patches over 2,000 random commands; 13k-event probe: largest player frame 69 KB (407 KB whole), 6 ms vs 22 ms per command; e2e `QF.52.spec.ts`. Sonnet round 1: 0 High, 2 Medium (fixed: rate-limited `view.limits` retried after 1 s; note search says it reaches titles, tags and the start of each note), Lows: screenshot fixed; Show older focus with pinned extras, probe fsync jitter and canary scope (JSON-only) noted for the next run. **Not checked: round 2 is due (2 Mediums).**
+- Next run: check out `wip/QF.52`, `git merge origin/main`, launch the round-2 review (sonnet) on 6d8da931, fix, merge to main, check the box; then QF.53.
+- Tests: unit 1,816 (was 1,762) at d1ce2c16; full e2e 145/145 green locally at d1ce2c16; QF.52 + M3.10 e2e green after the round-1 fixes.
+- Open `wip/*`: wip/QF.52. Blockers: none.

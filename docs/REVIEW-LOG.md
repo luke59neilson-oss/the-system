@@ -1187,3 +1187,6 @@
 
 ## 2026-10-31 · QF.51 The co-DM uses current models and prices
 - Round 1 (sonnet, worktree, 4eeaee0b): server AI tests 32/32, typecheck clean (builder's check 1,762/1,762 and MC.1 e2e at the same SHA). 0 High, 0 Medium. Every price matches the list; tier boundary `> 100_000`; `costOf` prices each reply with its own input tokens (never summed usage). Lows: tier ignores cache tokens (none sent today), Opus pins (present: opus-5-5 and the 4-5…4-8 loop), MC.1 spend reads $0.000. Lows to the QUALITY Backlog; no code change.
+
+## 2026-10-31 · QF.52 Views stay small as the campaign grows
+- Round 1 (sonnet, worktree, d1ce2c16): check 1,816/1,816; e2e QF.52, M3.10, MS.3, MT.6 green. 0 High, 2 Medium: (1) note search no longer finds text past a cut body's 200 characters; (2) a rate-limited `view.limits` frame was never re-sent, leaving an opened note half-loaded. Fixed (ab54af0a): the search shows "Searches titles, tags and the start of each note."; the client re-sends limits 1 s after a rate-limit error. Lows: screenshot showed the edit form (now note-open + note-edit shots); Show older focus can land on a pinned extra; probe timing margin ~3.7x; canary is JSON-based over golden logs only. Round 2 due (2 Mediums), not run this run.
