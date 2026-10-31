@@ -1197,3 +1197,10 @@
 
 ## 2026-10-31 · QF.54 Undo and End session don't freeze the table
 - Round 1 (sonnet, worktree, 16026bba): check 1,835/1,835; both probes green; e2e M3.3, M4.8, QF.13 green; differential script (every golden log, undo newest at each step vs a full refold, state and change-log rows): 416/416 match. 0 High, 1 Medium: only the first undo was fast; "undo, undo" refolded and reset every history. Fixed (4351dacd): the engine keeps a stack of the last 64 live-appended events with their states, and the hub treats an undo as "newest" when only undo markers and undone events follow its target; engine and hub tests for undo, undo. Lows: first undo after a restart refolds (documented in D294); the professionGranted test now asserts the placed state (`toBe`) plus a replay check, intended (the fast path returns the state the grant was applied to); probes use wall-clock bounds (kept, < 300 ms acceptance; End session probe uses a 1 ms ticker); async session-end races within a few ms (a close between turns reports the backup as not saved). No round 2 (one Medium); fix verified by its tests.
+
+### 2026-10-31 · MV.1 Assign any number of free points at once · sonnet · 1 round
+- Range dbd122db..aea20975. Reviewer ran `npm run check` (1,845 passed), build, MV.1/M3.4/M4.5 e2e (3/3), read the 390×844 screenshots.
+- Medium: `freePoints.assign` (still a player command) on a partly used level-up subtracted the points already spent and replaced them, so locked points could move. Fixed (6cdb8a50): refused with "some race level N points are already assigned; assign the rest"; engine test; GM-OVERRIDES row.
+- Low: the GM's "Assigned free points" list did not mark a partly used level-up. Fixed: "(rest still open)".
+- Low (kept): "Assigned points (locked)" also lists partly used level-ups, each marked "(N still to assign)"; the GM notice wording applies to GM-issued spends only (player events give no GM notice).
+
