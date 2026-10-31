@@ -99,6 +99,12 @@ test('sheet overrides, an extra mark and a merge past the rules', async ({ brows
   await card.getByRole('button', { name: 'Edit sheet' }).click();
   const box = card.getByRole('group', { name: 'Skill and profession overrides' });
   const rarity = box.getByRole('group', { name: 'Set a skill’s rarity' });
+  // MV.3: Identify is never re-rated, so the control says so and stays off.
+  await rarity.getByLabel('Skill').selectOption('Identify');
+  await expect(rarity.getByTestId('rarity-override-notes')).toHaveText(
+    'Override: [Identify] never changes: it is never upgraded or re-rated.',
+  );
+  await expect(rarity.getByRole('button', { name: 'Set rarity' })).toBeDisabled();
   await rarity.getByLabel('Skill').selectOption('Keen Eye');
   await rarity.getByLabel('New rarity').selectOption({ label: 'Legendary' });
   await expect(rarity.getByTestId('rarity-override-notes')).toHaveText(

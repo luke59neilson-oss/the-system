@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 33,
+  "schemaVersion": 34,
   "name": "Golden: Identify range",
   "rules": {
     "configVersion": 2,
@@ -517,7 +517,12 @@
       "stats": null,
       "notes": "",
       "knownBy": ["jake"],
-      "createdAt": "2026-12-04T18:00:02.000Z"
+      "createdAt": "2026-12-04T18:00:02.000Z",
+      "categoryId": null,
+      "worked": {
+        "jake": false
+      },
+      "notices": []
     },
     "lord": {
       "id": "lord",
@@ -534,10 +539,17 @@
       "stats": null,
       "notes": "",
       "knownBy": ["jake"],
-      "createdAt": "2026-12-04T18:00:03.000Z"
+      "createdAt": "2026-12-04T18:00:03.000Z",
+      "categoryId": null,
+      "worked": {
+        "jake": false
+      },
+      "notices": []
     }
   },
   "entityOrder": ["rat", "lord"],
+  "bestiaryCategories": {},
+  "bestiaryCategoryOrder": [],
   "montages": {},
   "montageOrder": [],
   "contests": {},

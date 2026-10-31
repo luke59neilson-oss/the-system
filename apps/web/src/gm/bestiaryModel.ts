@@ -9,8 +9,9 @@ import {
 /**
  * GM bestiary and NPC form model (ROADMAP M7.2, DESIGN §7 "Identify", D84,
  * D123, D181): an entity's GM name, player-facing label, grade and level
- * (the Identify range), stats, Identify tiers and notes. Stats and notes are
- * GM-only; players see only the label and the tier their Identify unlocks.
+ * (the Identify range), stats, its one Identify text (MV.3), category and
+ * notes. Stats and notes are GM-only; players see only the label and, once
+ * the GM marks it identified for them and it was in range, the text.
  */
 export interface EntityDraft {
   name: string;
@@ -21,8 +22,10 @@ export interface EntityDraft {
   level: string;
   /** Stat id → whole value as typed; blank = not given. */
   stats: Record<string, string>;
-  /** Rarity id → tier text; blank = no tier at that rarity. */
-  tiers: Record<string, string>;
+  /** MV.3: the one Identify text. */
+  text: string;
+  /** MV.3: bestiary category id, or '' for Uncategorized. */
+  categoryId: string;
   notes: string;
 }
 
@@ -32,7 +35,8 @@ export const emptyEntityDraft = (): EntityDraft => ({
   grade: '',
   level: '',
   stats: {},
-  tiers: {},
+  text: '',
+  categoryId: '',
   notes: '',
 });
 
@@ -43,7 +47,8 @@ export function entityDraftOf(e: Entity): EntityDraft {
     grade: e.grade ?? '',
     level: e.level === null ? '' : String(e.level),
     stats: Object.fromEntries(Object.entries(e.stats ?? {}).map(([k, v]) => [k, String(v)])),
-    tiers: Object.fromEntries(e.tiers.map((t) => [t.minRarity, t.text])),
+    text: e.tiers[0]?.text ?? '',
+    categoryId: e.categoryId ?? '',
     notes: e.notes,
   };
 }
@@ -56,7 +61,8 @@ interface Parsed {
   grade: string | null;
   level: number | null;
   stats: Record<string, number> | null;
-  tiers: { minRarity: string; text: string }[];
+  text: string;
+  categoryId: string | null;
   notes: string;
 }
 
@@ -78,17 +84,21 @@ export function parseEntityDraft(state: CampaignState, draft: EntityDraft): Pars
     if (!/^\d+$/u.test(v)) return `${s.name} must be a whole number`;
     stats[s.id] = Number(v);
   }
-  const tiers = state.rules.skills.rarities
-    .map((r) => ({ minRarity: r.id, text: (draft.tiers[r.id] ?? '').trim() }))
-    .filter((t) => t.text !== '');
-  if (tiers.length === 0) return 'Write at least one Identify tier';
+  const text = draft.text.trim();
+  if (text === '') return 'Write its Identify text';
+  const categoryId =
+    draft.categoryId !== '' &&
+    Object.prototype.hasOwnProperty.call(state.bestiaryCategories, draft.categoryId)
+      ? draft.categoryId
+      : null;
   return {
     name,
     label,
     grade,
     level,
     stats: Object.keys(stats).length === 0 ? null : stats,
-    tiers,
+    text,
+    categoryId,
     notes: draft.notes.trim(),
   };
 }
@@ -100,10 +110,11 @@ export function entityDefineCommand(state: CampaignState, draft: EntityDraft): C
     type: 'entity.define',
     name: p.name,
     label: p.label,
-    tiers: p.tiers,
+    tiers: [{ minRarity: state.rules.skills.startingRaceSkill.rarity, text: p.text }],
     grade: p.grade,
     level: p.level,
     stats: p.stats,
+    ...(p.categoryId === null ? {} : { categoryId: p.categoryId }),
     ...(p.notes === '' ? {} : { notes: p.notes }),
   };
 }
@@ -126,7 +137,11 @@ export function entityEditCommand(
     change['level'] = p.level;
   }
   if (!sameJson(p.stats, entity.stats)) change['stats'] = p.stats;
-  if (!sameJson(p.tiers, entity.tiers)) change['tiers'] = p.tiers;
+  if (p.text !== (entity.tiers[0]?.text ?? '')) {
+    const minRarity = entity.tiers[0]?.minRarity ?? state.rules.skills.startingRaceSkill.rarity;
+    change['tiers'] = [{ minRarity, text: p.text }];
+  }
+  if (p.categoryId !== entity.categoryId) change['categoryId'] = p.categoryId;
   if (p.notes !== entity.notes.trim()) change['notes'] = p.notes;
   if (Object.keys(change).length === 0) return null;
   return { type: 'entity.edit', entityId: entity.id, ...change } as Command;
@@ -157,6 +172,28 @@ export function labelLeaks(
     .map((id) => state.characters[id])
     .filter((c) => c !== undefined && !identifyInRange(state.rules, c, rank))
     .map((c) => c?.name ?? '');
+}
+
+/**
+ * MV.3: the GM's line after Identified by…: who identified it, and who got
+ * `[??? – lvl ???]` because it was out of range when marked (DESIGN §7).
+ */
+export function identifiedOutcome(
+  state: CampaignState,
+  entity: Pick<Entity, 'grade' | 'level' | 'label'>,
+  characterIds: readonly string[],
+): string {
+  const chars = characterIds.map((id) => state.characters[id]).filter((c) => c !== undefined);
+  const worked = chars.filter((c) => identifyInRange(state.rules, c, entity)).map((c) => c.name);
+  const missed = chars.filter((c) => !identifyInRange(state.rules, c, entity)).map((c) => c.name);
+  const parts: string[] = [];
+  if (worked.length > 0) parts.push(`${worked.join(', ')} identified ${entity.label}`);
+  if (missed.length > 0) {
+    parts.push(
+      `${missed.join(', ')} ${missed.length === 1 ? 'sees' : 'see'} [??? – lvl ???] (out of Identify range)`,
+    );
+  }
+  return parts.join('; ');
 }
 
 /**

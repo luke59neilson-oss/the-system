@@ -7,8 +7,8 @@ import {
   entityDefineCommand,
   entityDraftOf,
   entityEditCommand,
+  identifiedOutcome,
   labelLeaks,
-  revealOutcome,
   type EntityDraft,
 } from './bestiaryModel';
 
@@ -17,8 +17,9 @@ type Outcome = { ok: boolean; text: string } | null;
 /**
  * GM bestiary and NPCs (ROADMAP M7.2, DESIGN §7 "Identify", D84, D123, D181):
  * every Identify entity with its GM name, player label, grade and level (the
- * Identify range), GM-only stats and notes, and one Identify text per
- * rarity; reveal it to characters so they can Identify it.
+ * Identify range), GM-only stats and notes, its one Identify text and its
+ * category (MV.3); **Identified by…** ticks the characters who identified it at
+ * the table, decides each result now and sends them an Identify notification.
  */
 export function Bestiary({ client, state }: { client: LiveClient; state: CampaignState }) {
   const { rules } = state;
@@ -33,7 +34,13 @@ export function Bestiary({ client, state }: { client: LiveClient; state: Campaig
   const [draft, setDraft] = useState<EntityDraft>(emptyEntityDraft);
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<Outcome>(null);
-  const [revealTo, setRevealTo] = useState('');
+  const [ticked, setTicked] = useState<readonly string[]>([]);
+  const [newCategory, setNewCategory] = useState('');
+  const categories = state.bestiaryCategoryOrder
+    .map((id) => state.bestiaryCategories[id])
+    .filter((c) => c !== undefined);
+  const categoryName = (id: string | null) =>
+    (id !== null ? state.bestiaryCategories[id]?.name : undefined) ?? 'Uncategorized';
 
   if (entityId !== null && current === null) {
     setEntityId(null);
@@ -57,13 +64,12 @@ export function Bestiary({ client, state }: { client: LiveClient; state: Campaig
         e.label.toLowerCase().includes(q) ||
         e.notes.toLowerCase().includes(q),
     );
-  const unknownTo = current ? ids.filter((id) => !current.knownBy.includes(id)) : [];
-  const pickedReveal = revealTo === '' || unknownTo.includes(revealTo) ? revealTo : '';
+  const tickedNow = ticked.filter((id) => ids.includes(id));
 
   const open = (e: Entity | null) => {
     setEntityId(e?.id ?? null);
     setDraft(e ? entityDraftOf(e) : emptyEntityDraft());
-    setRevealTo('');
+    setTicked([]);
     setOutcome(null);
   };
   const edit = (change: Partial<EntityDraft>) => {
@@ -84,14 +90,31 @@ export function Bestiary({ client, state }: { client: LiveClient; state: Campaig
     const ok = await run(command, current ? `${name} saved` : `${name} added to the bestiary`);
     if (ok && !current) setDraft(emptyEntityDraft());
   };
-  const reveal = () => {
-    if (!current) return;
-    const who = pickedReveal === '' ? unknownTo : [pickedReveal];
-    void run(
-      { type: 'entity.reveal', entityId: current.id, characterIds: who },
-      revealOutcome(state, current, who),
+  const identified = async () => {
+    if (!current || tickedNow.length === 0) return;
+    const ok = await run(
+      { type: 'entity.identify', entityId: current.id, characterIds: tickedNow },
+      identifiedOutcome(state, current, tickedNow),
     );
+    if (ok) setTicked([]);
   };
+  const addCategory = async () => {
+    const name = newCategory.trim();
+    if (name === '') return;
+    if (await run({ type: 'bestiary.categoryDefine', name }, `Category ${name} added`))
+      setNewCategory('');
+  };
+  const removeCategory = (id: string, name: string) =>
+    void run(
+      { type: 'bestiary.categoryRemove', categoryId: id },
+      `Category ${name} removed; its entries are Uncategorized`,
+    );
+  const knownLine = (e: Entity) =>
+    e.knownBy.length === 0
+      ? 'identified by nobody'
+      : `identified by ${e.knownBy
+          .map((id) => (e.worked[id] === true ? nameOf(id) : `${nameOf(id)} (???)`))
+          .join(', ')}`;
   const rank = (e: Entity) =>
     e.grade === null || e.level === null ? 'no grade' : `(${e.grade}) lvl ${e.level}`;
 
@@ -110,6 +133,46 @@ export function Bestiary({ client, state }: { client: LiveClient; state: Campaig
         </label>
         <button type="button" onClick={() => open(null)} aria-pressed={current === null}>
           New entry
+        </button>
+      </div>
+      <div className="bestiary-categories" role="group" aria-label="Bestiary categories">
+        <span className="muted">Categories:</span>
+        {categories.length === 0 && <span className="muted">none yet (all Uncategorized)</span>}
+        {categories.map((c) => (
+          <span key={c.id} className="bestiary-chip" data-testid="gm-bestiary-category">
+            {c.name}{' '}
+            <button
+              type="button"
+              className="bestiary-chip-remove"
+              disabled={busy}
+              aria-label={`Remove category ${c.name}`}
+              onClick={() => removeCategory(c.id, c.name)}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <label>
+          <span className="sr-only">New category</span>
+          <input
+            value={newCategory}
+            onChange={(e) => setNewCategory(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                void addCategory();
+              }
+            }}
+            placeholder="New category"
+            maxLength={60}
+          />
+        </label>
+        <button
+          type="button"
+          disabled={busy || newCategory.trim() === ''}
+          onClick={() => void addCategory()}
+        >
+          Add category
         </button>
       </div>
       {state.entityOrder.length === 0 ? (
@@ -131,9 +194,8 @@ export function Bestiary({ client, state }: { client: LiveClient; state: Campaig
                   {[
                     e.label === e.name ? null : `players see “${e.label}”`,
                     rank(e),
-                    e.knownBy.length === 0
-                      ? 'known by nobody'
-                      : `known by ${e.knownBy.map(nameOf).join(', ')}`,
+                    categoryName(e.categoryId),
+                    knownLine(e),
                   ]
                     .filter(Boolean)
                     .join(' · ')}
@@ -162,6 +224,17 @@ export function Bestiary({ client, state }: { client: LiveClient; state: Campaig
               onChange={(e) => edit({ label: e.target.value })}
               maxLength={120}
             />
+          </label>
+          <label>
+            Category
+            <select value={draft.categoryId} onChange={(e) => edit({ categoryId: e.target.value })}>
+              <option value="">Uncategorized</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </label>
           <div className="bestiary-rank">
             <label>
@@ -200,22 +273,16 @@ export function Bestiary({ client, state }: { client: LiveClient; state: Campaig
             </label>
           ))}
         </fieldset>
-        <fieldset className="bestiary-tiers" disabled={busy}>
-          <legend>Identify text by the viewer’s Identify rarity (blank: none)</legend>
-          {rules.skills.rarities
-            .filter((r) => !r.reserved)
-            .map((r) => (
-              <label key={r.id}>
-                {r.name}
-                <textarea
-                  value={draft.tiers[r.id] ?? ''}
-                  onChange={(e) => edit({ tiers: { ...draft.tiers, [r.id]: e.target.value } })}
-                  rows={1}
-                  maxLength={2000}
-                />
-              </label>
-            ))}
-        </fieldset>
+        <label>
+          Identify text (what the System tells whoever identifies it)
+          <textarea
+            value={draft.text}
+            onChange={(e) => edit({ text: e.target.value })}
+            rows={2}
+            maxLength={1000}
+            disabled={busy}
+          />
+        </label>
         <label>
           Notes (GM only)
           <textarea
@@ -242,28 +309,33 @@ export function Bestiary({ client, state }: { client: LiveClient; state: Campaig
         </button>
       </form>
       {current && ids.length > 0 && (
-        <div className="title-award" role="group" aria-label={`Reveal ${current.name}`}>
-          {unknownTo.length === 0 ? (
-            <span className="muted">Every character can look it up.</span>
-          ) : (
-            <>
-              <label>
-                Reveal to
-                <select value={pickedReveal} onChange={(e) => setRevealTo(e.target.value)}>
-                  <option value="">Everyone who does not know it</option>
-                  {unknownTo.map((id) => (
-                    <option key={id} value={id}>
-                      {nameOf(id)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button type="button" disabled={busy} onClick={reveal}>
-                Reveal
-              </button>
-            </>
-          )}
-        </div>
+        <fieldset
+          className="title-award identified-by"
+          aria-label={`Identified by… ${current.name}`}
+          disabled={busy}
+        >
+          <legend>Identified by…</legend>
+          {ids.map((id) => (
+            <label key={id}>
+              <input
+                type="checkbox"
+                checked={tickedNow.includes(id)}
+                onChange={(e) =>
+                  setTicked(
+                    e.target.checked ? [...tickedNow, id] : tickedNow.filter((t) => t !== id),
+                  )
+                }
+              />{' '}
+              {nameOf(id)}
+            </label>
+          ))}
+          <button type="button" disabled={tickedNow.length === 0} onClick={() => void identified()}>
+            Mark identified
+          </button>
+          <span className="muted">
+            Each result is decided now by the Identify range and kept; each gets a notification.
+          </span>
+        </fieldset>
       )}
       {outcome && (
         <p className={outcome.ok ? 'ok' : 'err'} role={outcome.ok ? 'status' : 'alert'}>

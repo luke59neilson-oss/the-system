@@ -76,11 +76,10 @@ describe('tutorial content pack (M9.5)', () => {
       'The Drum',
     ]);
     const miasma = Object.values(state.entities).find((e) => e.name === 'Curse energy');
-    expect(miasma?.tiers.map((t) => t.text)).toEqual([
-      '[Malignant Miasma]',
-      '[Fever]',
-      "[The Host's Response]",
-    ]);
+    // MV.3: one Identify text; the pack's deeper tiers wait in the GM's notes.
+    expect(miasma?.tiers.map((t) => t.text)).toEqual(['[Malignant Miasma]']);
+    expect(miasma?.notes).toContain('[Fever]');
+    expect(miasma?.notes).toContain("[The Host's Response]");
     const rapid = Object.values(state.titleLibrary).find((t) => t.name === 'Rapid Spread');
     expect(rapid?.text).toBe('You have propagated through the Host faster than any before you.');
     expect('hunger' in state).toBe(false);

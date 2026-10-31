@@ -32,7 +32,9 @@ function reject(c: Campaign, command: Command): string {
 }
 const view = (c: Campaign, id = 'jake') => {
   if (!c.state) throw new Error('no state');
-  return projectForPlayer(c.state, id);
+  const p = projectForPlayer(c.state, id);
+  // MV.3: the bestiary's entries, flattened in category order.
+  return { ...p, identify: p.bestiary.categories.flatMap((g) => g.entries) };
 };
 /** No grade or level: always in range (MQ.8). */
 const open = { inRange: true, grade: null, level: null } as const;
@@ -50,15 +52,6 @@ const curse = (extra: Partial<Extract<Command, { type: 'entity.define' }>> = {})
   knownBy: ['jake'],
   ...extra,
 });
-/** Jake trains Identify from Common to Uncommon (4 marks, one per session). */
-function trainIdentify(c: Campaign): Campaign {
-  let out = c;
-  for (const session of ['s1', 's2', 's3', 's4']) {
-    out = ok(out, { type: 'skill.awardMark', characterId: 'jake', skill: 'Identify', session });
-  }
-  return ok(out, { type: 'skill.upgrade', characterId: 'jake', skill: 'Identify' });
-}
-
 describe('Identify entities (M3.9, DESIGN §7)', () => {
   it('defines an entity; only characters who know it see it, by label, at their tier', () => {
     const c = ok(base(), curse());
@@ -78,15 +71,22 @@ describe('Identify entities (M3.9, DESIGN §7)', () => {
     expect(json).not.toContain('Host');
   });
 
-  it('a higher Identify rarity unlocks the best tier at or below it', () => {
-    let c = ok(base(), curse({ knownBy: ['jake', 'kim'] }));
-    c = trainIdentify(c);
-    expect(view(c).identify[0]?.text).toBe('[Fever]');
+  it('keeps one Identify text: the lowest tier; the others go to the GM notes (MV.3)', () => {
+    const c = ok(base(), curse({ knownBy: ['jake', 'kim'], notes: 'Spreads at night.' }));
+    expect(c.state?.entities.curse?.tiers).toEqual([TIERS[0]]);
+    expect(c.state?.entities.curse?.notes).toBe(
+      'Spreads at night.\n\nOther Identify tiers (before one text per entity):\n' +
+        'Uncommon: [Fever]\nRare: [The Host’s Response]',
+    );
+    expect(view(c).identify[0]?.text).toBe('[Malignant Miasma]');
     expect(view(c, 'kim').identify[0]?.text).toBe('[Malignant Miasma]');
-    expect(JSON.stringify(view(c))).not.toContain('Malignant');
+    expect(JSON.stringify(view(c))).not.toContain('Fever');
+    // An edit repeating a moved tier does not add it to the notes twice.
+    const again = ok(c, { type: 'entity.edit', entityId: 'curse', tiers: TIERS });
+    expect(again.state?.entities.curse?.notes).toBe(c.state?.entities.curse?.notes);
   });
 
-  it('shows no text when no tier is low enough (tiers can be given in any order)', () => {
+  it('tiers in any order keep the lowest rarity’s text, whatever the viewer’s Identify', () => {
     const c = ok(
       base(),
       curse({
@@ -97,9 +97,9 @@ describe('Identify entities (M3.9, DESIGN §7)', () => {
       }),
     );
     expect(view(c).identify).toEqual([
-      { id: 'curse', label: 'The black miasma', ...open, text: null },
+      { id: 'curse', label: 'The black miasma', ...open, text: 'mid' },
     ]);
-    expect(view(trainIdentify(c)).identify[0]?.text).toBe('mid');
+    expect(c.state?.entities.curse?.notes).toContain('Rare: deep');
   });
 
   it('label defaults to the name; knownBy defaults to nobody', () => {
@@ -283,12 +283,12 @@ describe('Identify range (MQ.8, DESIGN §7)', () => {
     });
   });
 
-  it('follows level-ups and GM edits; the ratio comes from the rules', () => {
+  it('decides when marked and keeps it through level-ups and GM edits (MV.3)', () => {
     let c = ok(base(), {
       type: 'entity.define',
       entityId: 'rat',
       name: 'Rat',
-      tiers: TIERS,
+      tiers: [TIERS[0]!],
       knownBy: ['jake'],
       grade: 'G',
       level: 1,
@@ -301,11 +301,19 @@ describe('Identify range (MQ.8, DESIGN §7)', () => {
       participants: [{ characterId: 'jake' }],
     });
     expect(c.state?.characters.jake?.classLevel).toBe(1);
-    expect(view(c).identify[0]).toMatchObject({ inRange: true, grade: 'G', level: 1 });
-    c = ok(c, { type: 'entity.edit', entityId: 'rat', level: 2 });
+    // Still `[??? – lvl ???]` until the GM marks it again.
     expect(view(c).identify[0]?.inRange).toBe(false);
-    c = ok(c, { type: 'entity.edit', entityId: 'rat', grade: null, level: null });
-    expect(view(c).identify[0]).toMatchObject({ inRange: true, grade: null, level: null });
+    c = ok(c, { type: 'entity.identify', entityId: 'rat', characterIds: ['jake'] });
+    expect(view(c).identify[0]).toMatchObject({ inRange: true, grade: 'G', level: 1 });
+    // A GM edit to its level does not re-decide; the text edit reaches the player.
+    c = ok(c, { type: 'entity.edit', entityId: 'rat', level: 2 });
+    expect(view(c).identify[0]?.inRange).toBe(true);
+    c = ok(c, {
+      type: 'entity.edit',
+      entityId: 'rat',
+      tiers: [{ minRarity: 'common', text: '[Rat, corrected]' }],
+    });
+    expect(view(c).identify[0]?.text).toBe('[Rat, corrected]');
     expect(c.state?.rules.identify.sameGradeLevelRatio).toBe(1.5);
   });
 
@@ -330,7 +338,14 @@ describe('Identify range (MQ.8, DESIGN §7)', () => {
 
 describe('bestiary stats and notes (M7.2)', () => {
   it('stores GM-only stats and notes, edits them, and checks stat ids', () => {
-    let c = ok(base(), curse({ stats: { strength: 40, vitality: 55 }, notes: 'Hunts in pairs.' }));
+    let c = ok(
+      base(),
+      curse({
+        tiers: [TIERS[0]!],
+        stats: { strength: 40, vitality: 55 },
+        notes: 'Hunts in pairs.',
+      }),
+    );
     expect(c.state?.entities['curse']).toMatchObject({
       stats: { strength: 40, vitality: 55 },
       notes: 'Hunts in pairs.',
@@ -345,7 +360,7 @@ describe('bestiary stats and notes (M7.2)', () => {
     );
     expect(reject(base(), curse({ stats: { strength: -1 } }))).toBeTruthy();
     // Defaults: none and blank.
-    const plain = ok(base(), curse());
+    const plain = ok(base(), curse({ tiers: [TIERS[0]!] }));
     expect(plain.state?.entities['curse']).toMatchObject({ stats: null, notes: '' });
   });
 

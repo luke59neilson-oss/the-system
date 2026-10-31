@@ -466,21 +466,8 @@ export function buildDemoEvents(ctx: DemoContext): DomainEvent[] {
   run({ type: 'stability.applyAction', questId: DEMO_QUEST_ID, tag: 'cleanse', count: 3 });
   run({ type: 'stability.applyAction', questId: DEMO_QUEST_ID, tag: 'beast', count: 2 });
 
-  // Identify (M3.9): Casper has trained Identify to Uncommon, so he reads a
-  // deeper tier than the others. The Drum is defined but known to nobody yet.
-  for (const session of ['demo-1', 'demo-2', 'demo-3', 'demo-4']) {
-    run({
-      type: 'skill.awardMark',
-      characterId: 'demo-casper',
-      skill: rules.skills.startingRaceSkill.name,
-      session,
-    });
-  }
-  run({
-    type: 'skill.upgrade',
-    characterId: 'demo-casper',
-    skill: rules.skills.startingRaceSkill.name,
-  });
+  // Identify (M3.9; MV.3: Identify stays Common for good). The Drum is defined
+  // but known to nobody yet.
   for (const entity of DEMO_ENTITIES) {
     run({
       type: 'entity.define',

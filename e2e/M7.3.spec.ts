@@ -53,7 +53,7 @@ test('the GM rolls and shares contests, deals damage and runs a clock', async ({
   await bestiary.getByLabel('Grade').selectOption('E');
   await bestiary.getByLabel('Level').fill('20');
   await bestiary.getByLabel('Strength').fill('31337');
-  await bestiary.getByLabel('Common', { exact: true }).fill('[A looming shape]');
+  await bestiary.getByLabel(/^Identify text/).fill('[A looming shape]');
   await bestiary.getByRole('button', { name: 'Add entry' }).click();
 
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });

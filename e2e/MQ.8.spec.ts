@@ -4,7 +4,9 @@ import { expect, test, type Page } from './helpers/test';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // MQ.8 Identify range (DESIGN §7): lower grade always, higher never, same
-// grade up to 1.5 × the viewer's level; otherwise `[??? – lvl ???]`.
+// grade up to 1.5 × the viewer's level; otherwise `[??? – lvl ???]`. Since
+// MV.3 the result is decided when the GM marks it identified and kept: a later
+// edit changes nothing until the GM marks it again.
 
 const GM_KEY = 'e2e-gm-key-mq8-0123456789abcdef';
 const shots = path.resolve(import.meta.dirname, '../docs/screens/MQ.8');
@@ -110,13 +112,37 @@ test('Identify shows only targets within range', async ({ browser }) => {
   await casperId.scrollIntoViewIfNeeded();
   await phone.screenshot({ path: path.join(shots, 'player-identify-out-of-range-390x844.png') });
 
-  // Same grade: Casper (F, race 7) sees an F up to level 10, not 11; live.
+  // A later edit does not change the kept result...
   await gmCommand(gm, { type: 'entity.edit', entityId: 'mq8-lord', grade: 'F', level: 10 });
+  await expect(jakeId.getByTestId('identify-header')).toHaveText(
+    '[Stormlung Beast Lord (F) – lvl 10]',
+  );
+  await expect(casperId.getByTestId('identify-header')).toHaveText('[??? – lvl ???]');
+  // ...marking again re-decides it. Same grade: Casper (F, race 7) sees an F
+  // up to level 10, not 11.
+  const notice = phone.getByTestId('identify-notice');
+  await gmCommand(gm, {
+    type: 'entity.identify',
+    entityId: 'mq8-lord',
+    characterIds: ['demo-casper'],
+  });
+  await expect(notice.getByTestId('identify-header')).toHaveText(
+    '[Stormlung Beast Lord (F) – lvl 10]',
+  );
+  await notice.getByRole('button', { name: 'Close' }).click();
+  await expect(notice).toHaveCount(0);
   await expect(casperId.getByTestId('identify-header')).toHaveText(
     '[Stormlung Beast Lord (F) – lvl 10]',
   );
   await expect(casperId.getByTestId('identify-text')).toBeVisible();
   await gmCommand(gm, { type: 'entity.edit', entityId: 'mq8-lord', level: 11 });
+  await gmCommand(gm, {
+    type: 'entity.identify',
+    entityId: 'mq8-lord',
+    characterIds: ['demo-casper'],
+  });
+  await expect(notice.getByTestId('identify-header')).toHaveText('[??? – lvl ???]');
+  await notice.getByRole('button', { name: 'Close' }).click();
   await expect(casperId.getByTestId('identify-header')).toHaveText('[??? – lvl ???]');
   await expect(casperId.getByTestId('identify-text')).toHaveCount(0);
   await expect(jakeId.getByTestId('identify-header')).toHaveText(

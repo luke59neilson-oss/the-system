@@ -28,10 +28,9 @@ import {
   type SkillOption,
 } from '../evolution';
 import { canReadNote, skillPairCounts } from '../practice';
-import { identifyInRange } from '../entities';
+import { identifyText, type Entity } from '../entities';
 import { daysLeft, hiddenQuestNoticed, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
-import { identifyRarity, resolveIdentify } from './identify';
 import {
   atCeiling,
   entryForSkill,
@@ -158,6 +157,9 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   // tier text their Identify unlocks; never the GM name, other tiers or who
   // else knows it.
   entities: 'owner',
+  // MV.3: a category name reaches a player only once one of their entries uses it.
+  bestiaryCategories: 'owner',
+  bestiaryCategoryOrder: 'owner',
   entityOrder: 'gm',
   // M3.11: each player gets the open montages offered to them, by label, with
   // their own focus; never the clock, the other participants or their focuses.
@@ -393,8 +395,8 @@ export interface PlayerView {
   readonly hiddenQuests: number;
   /** The viewer's own currency, items, equipment and trades (M3.7). */
   readonly inventory: PlayerInventory;
-  /** Entities the viewer knows, in definition order (M3.9). */
-  readonly identify: readonly PlayerIdentify[];
+  /** The entities the GM marked identified for the viewer, by category (MV.3; was `identify`). */
+  readonly bestiary: PlayerBestiary;
   /** The viewer's own journal and the party notes, in creation order (M3.10). */
   readonly notes: readonly PlayerNote[];
   /** The viewer's own practice entries, oldest first (M3.11). */
@@ -527,8 +529,23 @@ export interface PlayerIdentify {
   /** Grade and level shown when in range and the GM gave them, else null. */
   readonly grade: string | null;
   readonly level: number | null;
-  /** The best tier the viewer's Identify rarity unlocks, or null for none (or out of range). */
+  /** The entity's one Identify text (MV.3), or null when out of range or it has none. */
   readonly text: string | null;
+}
+
+/** MV.3 (DESIGN §7): one bestiary group; `id` null is Uncategorized. */
+export interface PlayerBestiaryCategory {
+  readonly id: string | null;
+  readonly name: string;
+  readonly entries: readonly PlayerIdentify[];
+}
+
+/** MV.3: the viewer's bestiary and their open Identify notifications. */
+export interface PlayerBestiary {
+  /** GM category order, Uncategorized last; only groups with entries. */
+  readonly categories: readonly PlayerBestiaryCategory[];
+  /** Open Identify notifications, oldest first, until the player closes each. */
+  readonly notices: readonly PlayerIdentify[];
 }
 
 /** An item definition, sent only for items the viewer holds or sees in an own trade. */
@@ -932,7 +949,7 @@ export function projectForPlayer(
     })),
     day: state.day,
     inventory: playerInventory(state, viewer.id),
-    identify: playerIdentify(state, viewer),
+    bestiary: playerBestiary(state, viewer),
     messagesTotal: messages.length,
     notes: playerNotes(state, viewer.id, options.viewAs === true, limits),
     practice: newest(practice, limits?.practice ?? Infinity).map((p) => ({
@@ -1028,26 +1045,43 @@ function cutBody(body: string, cap: number): string {
   return last >= 0xd800 && last <= 0xdbff ? cut.slice(0, -1) : cut;
 }
 
-/** Known entities with the viewer's tier text only (D40: resolved here, never the tier list). */
-function playerIdentify(state: CampaignState, viewer: Character): PlayerIdentify[] {
-  const rarity = identifyRarity(state.rules, viewer);
-  return state.entityOrder.flatMap((id): PlayerIdentify[] => {
+/**
+ * MV.3 (DESIGN §7 "Identify"): the entities marked identified for the viewer,
+ * with the result decided when the GM marked it (`worked`) and the entity's
+ * current one text. Never the GM name, notes, stats or tiers (D40).
+ */
+function playerBestiary(state: CampaignState, viewer: Character): PlayerBestiary {
+  const entry = (e: Entity): PlayerIdentify =>
+    e.worked[viewer.id] === true
+      ? {
+          id: e.id,
+          label: e.label,
+          inRange: true,
+          grade: e.grade,
+          level: e.level,
+          text: identifyText(e),
+        }
+      : { id: e.id, label: e.label, inRange: false, grade: null, level: null, text: null };
+  const known = state.entityOrder.flatMap((id): Entity[] => {
     const e = hasOwnKey(state.entities, id) ? state.entities[id] : undefined;
-    if (!e || !e.knownBy.includes(viewer.id)) return [];
-    if (!identifyInRange(state.rules, viewer, e)) {
-      return [{ id: e.id, label: e.label, inRange: false, grade: null, level: null, text: null }];
-    }
-    return [
-      {
-        id: e.id,
-        label: e.label,
-        inRange: true,
-        grade: e.grade,
-        level: e.level,
-        text: resolveIdentify(state.rules, e.tiers, rarity),
-      },
-    ];
+    return e && e.knownBy.includes(viewer.id) ? [e] : [];
   });
+  const groups: PlayerBestiaryCategory[] = [];
+  for (const id of state.bestiaryCategoryOrder) {
+    const category = hasOwnKey(state.bestiaryCategories, id)
+      ? state.bestiaryCategories[id]
+      : undefined;
+    const entries = known.filter((e) => e.categoryId === id).map(entry);
+    if (category && entries.length > 0) groups.push({ id, name: category.name, entries });
+  }
+  const loose = known
+    .filter((e) => e.categoryId === null || !hasOwnKey(state.bestiaryCategories, e.categoryId))
+    .map(entry);
+  if (loose.length > 0) groups.push({ id: null, name: 'Uncategorized', entries: loose });
+  return {
+    categories: groups,
+    notices: known.filter((e) => e.notices.includes(viewer.id)).map(entry),
+  };
 }
 
 /** A stability value as a share of the configured range, 0–100 (an empty range shows full). */

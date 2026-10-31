@@ -39,9 +39,29 @@ const start = (): Command[] => [
 ];
 
 let ctx = testContext();
+/**
+ * Runs the commands. Since MV.3 the GM can no longer re-rate Identify, so a
+ * `skill.setRarity` of Identify stands for an older stored log that did: its
+ * event is appended as stored and the log replayed.
+ */
 const fresh = (commands: Command[]) => {
   ctx = testContext();
-  return run(commands, ctx);
+  let c = run([], ctx);
+  for (const command of commands) {
+    if (command.type === 'skill.setRarity' && command.skill === 'Identify') {
+      const events = JSON.parse(JSON.stringify(c.events)) as Record<string, unknown>[];
+      events.push({
+        ...events[events.length - 1],
+        id: 'stored-identify-raise',
+        timestamp: ctx.now(),
+        type: 'skill.raritySet',
+        schemaVersion: 1,
+        payload: { characterId: command.characterId, skill: 'Identify', rarity: command.rarity },
+      });
+      c = replay(events);
+    } else c = run([command], ctx, c);
+  }
+  return c;
 };
 const attempt = (c: Campaign, command: Command) => execute(c, command, ctx);
 const merge = (

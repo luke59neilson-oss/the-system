@@ -144,6 +144,17 @@ export type SystemNotification =
       /** The pool's value after the cast. */
       readonly left: number;
     }
+  | {
+      /**
+       * MV.3 (DESIGN §7): the GM marked an entity identified for this
+       * character; their screen shows it front and centre until closed.
+       */
+      readonly kind: 'identify';
+      readonly characterId: string;
+      readonly entityId: string;
+      /** The player-facing label (never the GM's name). */
+      readonly label: string;
+    }
   /** MU.2: any other change the GM made to this character; only its owner is told. */
   | GmChangeNotice;
 
@@ -187,6 +198,14 @@ export function notificationsBetween(
       amount,
       left: after.characters[characterId]?.pools[pool] ?? 0,
     });
+  }
+  if (event?.type === 'entity.identified') {
+    const entity = has(after.entities, event.payload.entityId)
+      ? after.entities[event.payload.entityId]
+      : undefined;
+    for (const characterId of entity ? event.payload.characterIds : []) {
+      out.push({ kind: 'identify', characterId, entityId: entity!.id, label: entity!.label });
+    }
   }
   if (event?.type === 'system.broadcast') {
     const recipients = event.payload.characterIds ?? after.characterOrder;

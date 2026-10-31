@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 33,
+  "schemaVersion": 34,
   "name": "Golden: entities",
   "rules": {
     "configVersion": 2,
@@ -609,22 +609,20 @@
         {
           "minRarity": "common",
           "text": "[Malignant Miasma]"
-        },
-        {
-          "minRarity": "uncommon",
-          "text": "[Fever]"
-        },
-        {
-          "minRarity": "rare",
-          "text": "[The Host’s Response]"
         }
       ],
       "grade": null,
       "level": null,
       "stats": null,
-      "notes": "",
+      "notes": "Other Identify tiers (before one text per entity):\nRare: [The Host’s Response]\n\nOther Identify tiers (before one text per entity):\nUncommon: [Fever]",
       "knownBy": ["jake", "kim"],
-      "createdAt": "2026-12-03T18:00:03.000Z"
+      "createdAt": "2026-12-03T18:00:03.000Z",
+      "categoryId": null,
+      "worked": {
+        "jake": true,
+        "kim": true
+      },
+      "notices": []
     },
     "drum": {
       "id": "drum",
@@ -641,10 +639,15 @@
       "stats": null,
       "notes": "",
       "knownBy": [],
-      "createdAt": "2026-12-03T18:00:06.000Z"
+      "createdAt": "2026-12-03T18:00:06.000Z",
+      "categoryId": null,
+      "worked": {},
+      "notices": []
     }
   },
   "entityOrder": ["curse", "drum"],
+  "bestiaryCategories": {},
+  "bestiaryCategoryOrder": [],
   "montages": {},
   "montageOrder": [],
   "contests": {},
