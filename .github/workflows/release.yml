@@ -107,6 +107,44 @@ jobs:
           $p.WaitForExit()
           if ($null -eq $p.ExitCode -or $p.ExitCode -eq 0) { throw 'the partial installer did not refuse (exit code 0 or none)' }
           Write-Output "partial installer refused with exit code $($p.ExitCode)"
+      # QF.45: installing over a running app asks it to quit (--quit-for-update)
+      # instead of killing it, so the quit backup is made and the LOCK released;
+      # uninstalling keeps the campaign data.
+      - name: Installing over a running app quits it cleanly
+        if: matrix.target == 'win'
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem apps/desktop/release/*-setup.exe | Select-Object -First 1).FullName
+          $dir = 'C:\TheSystemCI'
+          $p = Start-Process $setup -ArgumentList '/S', "/D=$dir" -PassThru
+          if (-not $p.WaitForExit(180000)) { throw 'the first install hung' }
+          $exe = Join-Path $dir 'TheSystem.exe'
+          if (-not (Test-Path $exe)) { throw "not installed at $exe" }
+          # A campaign with events, so quitting has something to back up.
+          $campaign = Join-Path $env:APPDATA 'The System\data\campaigns\main'
+          New-Item -ItemType Directory -Force $campaign | Out-Null
+          Copy-Item packages/engine/test/golden/basic.jsonl (Join-Path $campaign 'events.jsonl')
+          # The installed app, with no data-dir override, as Luke starts it.
+          Start-Process $exe | Out-Null
+          $up = $false
+          for ($i = 0; $i -lt 60 -and -not $up; $i++) {
+            Start-Sleep -Seconds 1
+            try { $up = (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:30333/health).StatusCode -eq 200 } catch { }
+          }
+          if (-not $up) { throw 'the installed app did not answer /health' }
+          if (-not (Test-Path (Join-Path $campaign 'LOCK'))) { throw 'no campaign LOCK while running' }
+          # Install again over the running app.
+          $p = Start-Process $setup -ArgumentList '/S', "/D=$dir" -PassThru
+          if (-not $p.WaitForExit(180000)) { throw 'the second install hung' }
+          if (Test-Path (Join-Path $campaign 'LOCK')) { throw 'the LOCK was left behind: the app was killed' }
+          $quit = Get-ChildItem (Join-Path $campaign 'backups') -Directory | Where-Object { $_.Name -like '*-quit' }
+          if (-not $quit) { throw 'no quit backup: the app was killed, not asked to quit' }
+          Write-Output "quit backup: $($quit[0].Name)"
+          Get-Process TheSystem -ErrorAction SilentlyContinue | Stop-Process -Force
+          $p = Start-Process (Join-Path $dir 'Uninstall The System.exe') -ArgumentList '/S' -PassThru
+          if (-not $p.WaitForExit(120000)) { throw 'the uninstall hung' }
+          Start-Sleep -Seconds 5
+          if (-not (Test-Path (Join-Path $campaign 'events.jsonl'))) { throw 'uninstalling removed the campaign' }
       - name: Smoke-test the AppImage itself
         if: matrix.target == 'linux'
         run: |

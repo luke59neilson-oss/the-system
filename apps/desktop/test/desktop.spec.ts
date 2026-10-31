@@ -1,7 +1,9 @@
 import { mkdtempSync, existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { _electron as electron, chromium, expect, test } from '@playwright/test';
+import electronPath from 'electron';
 import { holders, killTree } from './process-tree';
 import { gmWindow } from './windows';
 
@@ -147,6 +149,59 @@ test('a polite close then a forced kill (an installer upgrading) still leaves th
     expect(made).toHaveLength(1);
     const copy = readFileSync(path.join(backups, made[0] ?? '', 'events.jsonl'), 'utf8');
     expect(copy).toContain('Upgrade smoke');
+  } finally {
+    if (proc.exitCode === null && proc.signalCode === null) await app.close();
+    rmSync(dataDir, CLEANUP);
+    rmSync(userData, CLEANUP);
+  }
+});
+
+// QF.45: the Windows installer launches the installed app with
+// --quit-for-update before replacing it. The running copy quits the normal
+// way: no question, the quit backup made, the campaign LOCK released.
+test('a second launch with --quit-for-update makes the running app quit cleanly', async () => {
+  const dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-desktop-'));
+  const userData = mkdtempSync(path.join(tmpdir(), 'the-system-profile-'));
+  const env = {
+    ...process.env,
+    THE_SYSTEM_PORT: '0',
+    THE_SYSTEM_DATA_DIR: dataDir,
+    THE_SYSTEM_USER_DATA_DIR: userData,
+  };
+  const app = await electron.launch({
+    args: [path.join(root, 'dist', 'main.cjs'), '--no-sandbox'],
+    env,
+  });
+  const proc = app.process();
+  const campaign = path.join(dataDir, 'campaigns', 'main');
+  const backups = path.join(campaign, 'backups');
+  try {
+    const gm = await gmWindow(app);
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    await gm.getByLabel('Campaign name').fill('Update smoke');
+    await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await expect(gm.getByRole('heading', { name: /Update smoke/ })).toBeVisible();
+    expect(existsSync(path.join(campaign, 'LOCK'))).toBe(true);
+    const exited = new Promise<number | null>((resolve) => proc.once('exit', resolve));
+    const started = Date.now();
+    // What the installer runs: the same app, a second time, with the flag.
+    const second = spawn(
+      electronPath as unknown as string,
+      [path.join(root, 'dist', 'main.cjs'), '--no-sandbox', '--quit-for-update'],
+      { env, stdio: 'ignore' },
+    );
+    await exited;
+    expect(Date.now() - started).toBeLessThan(8_000);
+    await new Promise<void>((resolve) => {
+      if (second.exitCode !== null || second.signalCode !== null) resolve();
+      else second.once('exit', () => resolve());
+    });
+    const made = readdirSync(backups).filter((name) => name.endsWith('-quit'));
+    expect(made).toHaveLength(1);
+    expect(readFileSync(path.join(backups, made[0] ?? '', 'events.jsonl'), 'utf8')).toContain(
+      'Update smoke',
+    );
+    expect(existsSync(path.join(campaign, 'LOCK'))).toBe(false);
   } finally {
     if (proc.exitCode === null && proc.signalCode === null) await app.close();
     rmSync(dataDir, CLEANUP);

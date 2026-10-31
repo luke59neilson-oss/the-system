@@ -16,6 +16,7 @@ import {
   startErrorMessage,
   startOnFreePort,
   webRootFor,
+  isQuitForUpdate,
 } from './launch';
 
 /**
@@ -282,10 +283,21 @@ async function start(): Promise<void> {
   openGmWindow(running, notice);
 }
 
-if (!app.requestSingleInstanceLock()) {
+if (!app.requestSingleInstanceLock() || isQuitForUpdate(process.argv)) {
+  // A second copy, or the installer's quit request with nothing running
+  // (QF.45): never start a server.
   app.quit();
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, argv) => {
+    // QF.45: the installer asks the running app to quit before replacing it,
+    // so the quit backup, the last session log and the LOCK release all run
+    // (its own fallback is a forced kill that skips them).
+    if (isQuitForUpdate(argv)) {
+      // Skip the quit question; before-quit still closes the server first.
+      sessionEnding = true;
+      app.quit();
+      return;
+    }
     if (quitting) return;
     // Still starting: bring the splash forward instead.
     const target = gmWindow?.isVisible() ? gmWindow : (splash ?? gmWindow);

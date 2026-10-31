@@ -21,6 +21,8 @@ import {
   splashUrl,
   startOnFreePort,
   SPLASH_TITLE,
+  QUIT_FOR_UPDATE,
+  isQuitForUpdate,
 } from '../src/launch';
 
 describe('desktop launch helpers', () => {
@@ -217,5 +219,17 @@ describe('packaged speech engine (MC.5, D236)', () => {
     expect(packagedSpeechFiles('res', 'darwin', 'arm64').addon).toBe(
       path.join(dir, 'sherpa-onnx-darwin-arm64', 'sherpa-onnx.node'),
     );
+  });
+});
+
+describe('QF.45 quit for update', () => {
+  it('spots the installer flag anywhere in the arguments', () => {
+    expect(QUIT_FOR_UPDATE).toBe('--quit-for-update');
+    expect(isQuitForUpdate(['TheSystem.exe', '--quit-for-update'])).toBe(true);
+    expect(isQuitForUpdate(['electron', 'main.cjs', '--no-sandbox', '--quit-for-update'])).toBe(
+      true,
+    );
+    expect(isQuitForUpdate(['TheSystem.exe'])).toBe(false);
+    expect(isQuitForUpdate(['TheSystem.exe', '--quit-for-updates'])).toBe(false);
   });
 });

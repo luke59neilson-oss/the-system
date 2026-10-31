@@ -27,6 +27,12 @@ extraResources:
         'sherpa-onnx-darwin-*/**/*',
       ]
 asar: true
+# QF.45: the packaged app cannot be turned into a plain Node runtime or
+# debugged through its command line or environment.
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
 npmRebuild: false
 nodeGypRebuild: false
 buildDependenciesFromSource: false
@@ -42,6 +48,8 @@ win:
     - target: nsis
       arch: [x64]
 nsis:
+  # QF.45: build-resources/installer.nsh asks a running copy to quit cleanly.
+  include: build-resources/installer.nsh
   artifactName: TheSystem-${env.THE_SYSTEM_BUILD_ID}-win-${arch}-setup.${ext}
   oneClick: false
   allowToChangeInstallationDirectory: true

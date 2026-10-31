@@ -195,3 +195,16 @@ export function allowsPermission(
   const types = mediaTypes ?? [];
   return types.length > 0 && types.every((t) => t === 'audio');
 }
+
+/**
+ * QF.45: the flag the Windows installer passes to the installed app before
+ * replacing it. A second launch carrying it makes the running app quit the
+ * normal way (quit backup, last session log, LOCK released) instead of being
+ * killed; a launch with it and nothing running just exits.
+ */
+export const QUIT_FOR_UPDATE = '--quit-for-update';
+
+/** Whether a launch's arguments ask the running app to quit for an update. */
+export function isQuitForUpdate(argv: readonly string[]): boolean {
+  return argv.includes(QUIT_FOR_UPDATE);
+}
