@@ -1357,7 +1357,7 @@ next item, blockers. -->
 - Next: none; DONE.md written. Preview ready: Actions → Release → Run workflow (MU). Blockers: none.
 
 
-### Run · 2026-10-31 06:07–06:55 UTC (close-out at minute 47; end minute 48)
+### Run · 2026-10-31 06:07–06:54 UTC (close-out at minute 46; end minute 47, one short of 48: close-out finished early after the hand-off point; no §5.5 reason)
 - Preflight: `add_repo` not offered; repo already cloned and in scope; lock pushed cleanly; vitest 5.0.5; sonnet reviewers work (blocking Agent calls, worktree). CI on main green at start. No new answers.
 - Efficiency check (hour 06): scorecard row appended (end 48.8, items 1.5, round-2 7/10, Highs 0, red/day 5, orient words 16.3k). No trials to judge. Auditor (sonnet): Tier 1 (orient summarises checked boxes in open milestones) not applied yet; Tier 2 Q88 (reviewers trust the builder's check), default no change.
 - QF.38 (High) Listening follows the session: the Listener reads the session per utterance (`transcriptSession`: running, else the one just ended, else 0); route test; GM guide; D275. Sonnet: 1 Medium (talk after End session went to session-00), fixed; 3 Lows handled.
