@@ -6,6 +6,7 @@ import { newGmKey } from './security';
 import { createServer } from './server';
 import { exportsDirFor } from './sessionLog';
 import { CampaignStore } from './store';
+import { cappedLogStream, serverLogFile } from './serverLog';
 import { migrateOnLoad } from './migrate';
 import { CoDm, type CoDmOptions } from './ai/coDm';
 import type { SpeakerEmbedder } from './speech/speakers';
@@ -126,7 +127,10 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
           })
         : null);
     void speechModel?.init();
+    const logFile = serverLogFile(storeOptions.dataDir);
     const app = await createServer({
+      // QF.43: warnings and errors go to <dataDir>/server.log (size-capped).
+      logger: { stream: cappedLogStream(logFile), level: 'warn', file: logFile },
       ...(options.speech === undefined ? {} : { speech: options.speech }),
       ...(speechModel
         ? { speech: () => speechModel.stt(), speechModel, speakers: () => speechModel.speakers() }
@@ -180,6 +184,7 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
       } catch (error) {
         // A failed copy must never stop the campaign closing cleanly.
         console.error('The System: backup failed:', error);
+        app.log.error(error);
       }
     };
     return {

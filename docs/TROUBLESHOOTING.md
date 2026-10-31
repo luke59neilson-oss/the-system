@@ -121,8 +121,12 @@ The desktop app keeps everything in its app-data folder, in `data/`:
 | Linux | `~/.config/The System/data` |
 
 - `campaigns/<id>/` holds each campaign's event log (`events.jsonl`) and its
-  `portraits/` folder; `backups/` inside it gets a copy of both at every
-  session end and every time the app quits.
+  `portraits/` folder; `backups/` inside it gets a copy of both, plus the
+  co-DM's `codm/` and `transcripts/` folders (not the voice samples in
+  `speakers/`), at every session end and every time the app quits.
+- `server.log` holds the app's warnings and errors (the newest megabyte,
+  plus one older copy as `server.log.1`); a message that says "See …
+  server.log" points here.
 - `exports/` holds the running session log and the end-of-session reports
   (the files to hand to Claude).
 - Copy the whole `data` folder to back up or move to another laptop. Never

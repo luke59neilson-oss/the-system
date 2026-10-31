@@ -1,6 +1,7 @@
 import {
   closeSync,
   copyFileSync,
+  cpSync,
   existsSync,
   fsyncSync,
   ftruncateSync,
@@ -426,6 +427,9 @@ export function cannotLoad(
   ].join(' ');
 }
 
+/** Campaign folders copied into every backup besides the log, snapshot and portraits (QF.43). */
+export const BACKED_UP_FOLDERS = ['codm', 'transcripts'] as const;
+
 /** One open campaign: its state in memory, its log on disk. */
 export class CampaignStore {
   readonly id: string;
@@ -441,6 +445,8 @@ export class CampaignStore {
   /** Set when a failed write could not be undone; the store refuses further writes. */
   private broken: string | null = null;
   private sinceSnapshot = 0;
+  /** Snapshot writes that failed in a row; each one waits 4× longer before the next try (QF.43). */
+  private snapshotFailures = 0;
   private readonly options: StoreOptions;
   private readonly lock: string;
 
@@ -625,11 +631,15 @@ export class CampaignStore {
     this.goodBytes += bytes.length;
     this.campaignValue = next;
     this.sinceSnapshot += events.length;
-    if (this.sinceSnapshot >= (this.options.snapshotEvery ?? 100)) {
+    const every = (this.options.snapshotEvery ?? 100) * 4 ** Math.min(this.snapshotFailures, 5);
+    if (this.sinceSnapshot >= every) {
       try {
         this.writeSnapshot();
       } catch {
-        // The events are committed; a snapshot is only a speed-up and retries next time.
+        // The events are committed; a snapshot is only a speed-up. Back off
+        // so a file held open (antivirus, sync) is not rewritten every append.
+        this.snapshotFailures++;
+        this.sinceSnapshot = 0;
       }
     }
     return next;
@@ -642,6 +652,7 @@ export class CampaignStore {
       JSON.stringify(snapshotOf(this.campaignValue)),
     );
     this.sinceSnapshot = 0;
+    this.snapshotFailures = 0;
   }
 
   /**
@@ -653,7 +664,15 @@ export class CampaignStore {
     if (this.fd === null) throw new StoreError(`Campaign "${this.id}" is closed`);
     // Allowed on a broken store too (that is when a copy matters most); the
     // snapshot is skipped there and the log's whole lines are what counts.
-    if (this.broken === null) this.writeSnapshot();
+    // QF.43: a snapshot that cannot be written (a file held open) never
+    // stops the copy; the log is what counts, and the last snapshot goes too.
+    if (this.broken === null) {
+      try {
+        this.writeSnapshot();
+      } catch {
+        // Copy the previous snapshot, if any, below.
+      }
+    }
     const backups = path.join(this.dir, 'backups');
     const name = `${stamp(this.options.now())}-${label}`;
     const target = path.join(backups, name);
@@ -662,7 +681,8 @@ export class CampaignStore {
     rmSync(staging, { recursive: true, force: true });
     mkdirSync(staging);
     for (const file of ['events.jsonl', 'snapshot.json']) {
-      if (!existsSync(path.join(this.dir, file))) continue;
+      const from = path.join(this.dir, file);
+      if (!existsSync(from) || !statSync(from).isFile()) continue;
       copyFileSync(path.join(this.dir, file), path.join(staging, file));
       fsyncFile(path.join(staging, file));
     }
@@ -676,6 +696,15 @@ export class CampaignStore {
         fsyncFile(path.join(into, name));
       }
       fsyncDir(into);
+    }
+    // QF.43: the co-DM's notes, drafts and summaries and the session
+    // transcripts too. Voice prints (`speakers/`) stay out on purpose: they
+    // are biometric, and players re-enrol in seconds.
+    for (const folder of BACKED_UP_FOLDERS) {
+      const from = path.join(this.dir, folder);
+      if (existsSync(from) && statSync(from).isDirectory()) {
+        cpSync(from, path.join(staging, folder), { recursive: true });
+      }
     }
     fsyncDir(staging);
     renameSync(staging, target);

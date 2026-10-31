@@ -54,7 +54,7 @@ import {
 export interface CreateServerOptions {
   webRoot: string;
   /** Fastify request logging; tests pass a stream to capture the log (MC.1 key canary). */
-  logger?: boolean | { stream: { write(line: string): void } };
+  logger?: boolean | { stream: { write(line: string): void }; level?: string; file?: string };
   /** The open campaign and hub settings; without it the WebSocket only says hello. */
   live?: { store: CampaignStore } & HubOptions;
   /** Extra origins allowed to open the WebSocket (e.g. the Vite dev server). */
@@ -100,8 +100,14 @@ export const PUBLIC_API = new Set(['/api/characters']);
 export async function createServer(options: CreateServerOptions): Promise<FastifyInstance> {
   const logger = options.logger ?? false;
   const app = Fastify({
-    logger: typeof logger === 'boolean' ? logger : { level: 'info', stream: logger.stream },
+    logger:
+      typeof logger === 'boolean'
+        ? logger
+        : { level: logger.level ?? 'info', stream: logger.stream },
   });
+  // QF.43: where "see the server log" points the GM.
+  const seeLog =
+    typeof logger === 'object' && logger.file ? `See ${logger.file}.` : 'See the server log.';
   const webRoot = path.resolve(options.webRoot);
 
   if (!existsSync(path.join(webRoot, 'index.html'))) {
@@ -151,7 +157,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
           writer?.flush();
         } catch (error) {
           app.log.error(error);
-          return 'The change was saved, but the session log could not be rewritten. See the server log.';
+          return `The change was saved, but the session log could not be rewritten. ${seeLog}`;
         }
       }
       return null;
@@ -172,7 +178,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       problems.push('the session report');
     }
     return problems.length
-      ? `Session ended, but ${problems.join(' and ')} could not be saved. See the server log.`
+      ? `Session ended, but ${problems.join(' and ')} could not be saved. ${seeLog}`
       : null;
   };
   let active = options.live ? openLive(options.live.store, options.live) : null;

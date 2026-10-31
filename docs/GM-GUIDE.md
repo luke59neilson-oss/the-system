@@ -331,5 +331,9 @@ to DESIGN.md's values.
 
 Copy the app's `data` folder (TROUBLESHOOTING → "Where the campaign is
 saved"). Each campaign's `backups` folder holds a copy from every session end
-and every quit, portraits included. A campaign export (the GM's export file)
+and every quit, with the portraits, the co-DM's notes, drafts and summaries
+(`codm`) and the session transcripts. Players' voice samples (`speakers`) are
+left out on purpose: they identify a person, and re-enrolling takes seconds.
+Quit The System before copying anything. When the app reports a problem
+saving, the details are in `server.log` in the `data` folder. A campaign export (the GM's export file)
 carries the event log and the portraits, and importing it brings both back.
