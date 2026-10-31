@@ -11,6 +11,7 @@ import { z } from 'zod';
 import type { AiClient } from './client';
 import { GENERATE_KINDS, type GenerateKind } from './generate';
 import type { TranscriptLine } from '../speech/transcript';
+import { SHARED_SYSTEM_LINES } from './setting';
 
 export const CHIP_TYPES = ['generate', 'complication', 'callback'] as const;
 export type ChipType = (typeof CHIP_TYPES)[number];
@@ -53,6 +54,7 @@ export const SUGGEST_INTERVAL_MIN_S = 60;
 export const SUGGEST_INTERVAL_MAX_S = 600;
 
 export const SUGGEST_SYSTEM = [
+  ...SHARED_SYSTEM_LINES,
   'You are the co-DM for a LitRPG tabletop game. You read the latest table talk and offer the GM a few ideas.',
   'Each idea is one of: "generate" (a shop, npc, place, encounter, item or questHook the table just mentioned or needs),',
   '"complication" (chaos to throw in now), "callback" (bring back an earlier NPC or thread from the known list).',

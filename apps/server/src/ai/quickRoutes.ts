@@ -27,6 +27,7 @@ import {
 } from './quickResponses';
 import type { CampaignStore } from '../store';
 import { sessionNumber } from '../speech/routes';
+import { sceneNpcs } from './sceneNpcs';
 
 export const QUICK_SETTINGS_FILE = 'quick-responses.json';
 
@@ -81,14 +82,6 @@ interface NpcChoice {
   readonly name: string;
 }
 
-const npcsOf = (state: CampaignState) =>
-  Object.values(state.entities).map((e) => ({
-    id: e.id,
-    name: e.name,
-    names: [e.name, e.label].filter((n, i, all) => n.trim() !== '' && all.indexOf(n) === i),
-    notes: e.notes,
-  }));
-
 export function registerQuickRoutes(
   app: FastifyInstance,
   options: {
@@ -104,7 +97,7 @@ export function registerQuickRoutes(
     const state = store.campaign.state as CampaignState;
     const all = readTranscript(store, sessionNumber(store));
     const recent = all.slice(-QUICK_RECENT_LINES);
-    const npcs = npcsOf(state);
+    const npcs = sceneNpcs(state);
     return { state, recent, npcs, npcId: sceneNpc(recent, npcs), target: findTarget(recent) };
   };
 

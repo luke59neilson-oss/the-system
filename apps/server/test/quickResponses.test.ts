@@ -12,6 +12,9 @@ import { FixtureAiClient, streamPieces } from '../src/ai/fake';
 import { e2eQuickResponse } from '../src/ai/e2eFake';
 import {
   DEFAULT_QUICK_SLOTS,
+  QUICK_LORE_MAX,
+  QUICK_LORE_NOTE_MAX,
+  QUICK_NPC_NOTES_MAX,
   QUICK_SLOT_IDS,
   findTarget,
   isQuestionOrAttempt,
@@ -91,7 +94,9 @@ describe('quick-response helpers (MD.1)', () => {
     expect(p).toContain('Region: Rake Canyons');
     expect(p).toContain('- Tam owes the Drum a debt');
     expect(p).not.toContain('y'.repeat(2000));
-    expect(p.length).toBeLessThan(2000);
+    // QF.50: the long note is clipped, not dropped; the prompt stays bounded.
+    expect(p).toContain(`- ${'y'.repeat(QUICK_LORE_NOTE_MAX - 1)}…`);
+    expect(p.length).toBeLessThan(QUICK_NPC_NOTES_MAX + QUICK_LORE_MAX + 1000);
   });
 
   it('parses one line plus at most three beats, tolerating drift', () => {
@@ -629,6 +634,67 @@ describe('quick-response routes (MD.1)', () => {
         expect.any(String),
       ],
     });
+  });
+
+  // QF.50: shop keepers and NPCs that live only in GM notes are pickable and
+  // reach the prompt with their notes and lore. Last in this block: it adds
+  // a shop and notes that the earlier tests' exact NPC list does not expect.
+  it('a shop keeper and a GM-note NPC are in the picker and the scene (QF.50)', async () => {
+    const ctx = {
+      actor: { role: 'gm' as const },
+      sessionId: null,
+      now: () => '2026-10-30T08:00:00.000Z',
+      newId: () => `qf50-${++ids}`,
+    };
+    for (const command of [
+      {
+        type: 'shop.define',
+        shopId: 'resin',
+        name: 'The Resin Stall',
+        keeper: 'Old Brenna: half-blind, smells of resin, haggles hard.',
+      },
+      {
+        type: 'note.create',
+        characterId: null,
+        kind: 'gm',
+        title: 'Tamsin Reed',
+        body: 'Survivor scout, wiry, chews bark.',
+        tags: ['npc'],
+      },
+      {
+        type: 'note.create',
+        characterId: null,
+        kind: 'gm',
+        title: 'Brenna',
+        body: 'Brenna once sold resin to a pale hunter.',
+        tags: ['lore', 'npc:Old Brenna'],
+      },
+    ]) {
+      const r = execute(store.campaign, command as never, ctx);
+      if (!r.ok) throw new Error(`${command.type}: ${r.error}`);
+      store.appendAll(r.events);
+    }
+    writeTranscript([
+      line('We walk up to Tamsin Reed by the canyon.'),
+      line('Is it safe?', 'Jake'),
+    ]);
+    const res = await app.inject({ method: 'GET', url: '/api/gm/ai/quick', headers: gm });
+    const body = res.json() as { npc: string; npcs: { id: string; name: string }[] };
+    expect(body.npcs).toEqual(
+      expect.arrayContaining([
+        { id: 'shop:resin', name: 'Old Brenna' },
+        { id: 'npc:tamsin reed', name: 'Tamsin Reed' },
+      ]),
+    );
+    expect(body.npc).toBe('npc:tamsin reed');
+    await ask({ slot: 4 });
+    expect(lastPrompt()).toContain(
+      'NPC in the scene: Tamsin Reed (Survivor scout, wiry, chews bark.)',
+    );
+    const { events: ev } = await ask({ slot: 4, npc: 'shop:resin' });
+    expect(ev[0]).toMatchObject({ npc: { id: 'shop:resin', name: 'Old Brenna' } });
+    expect(lastPrompt()).toContain('NPC in the scene: Old Brenna (Keeper of The Resin Stall.');
+    expect(lastPrompt()).toContain('- Brenna once sold resin to a pale hunter.');
   });
 });
 

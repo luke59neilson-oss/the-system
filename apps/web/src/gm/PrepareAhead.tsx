@@ -31,7 +31,7 @@ export function PrepareAhead({
   onReview,
 }: {
   gmKey: string;
-  onReview: (text: string, name: string) => void;
+  onReview: (text: string, name: string, kind: string) => void;
 }) {
   const [view, setView] = useState<PreparedView | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -106,7 +106,7 @@ export function PrepareAhead({
       body: '{}',
     });
     if (data?.file === undefined) return;
-    onReview(JSON.stringify(data.file, null, 2), `co-DM prepared: ${d.place}`);
+    onReview(JSON.stringify(data.file, null, 2), `co-DM prepared: ${d.place}`, d.kind);
     setNote(
       `${d.place} is in Import content: check it there and approve, then Dismiss it here (it stays listed until then)`,
     );

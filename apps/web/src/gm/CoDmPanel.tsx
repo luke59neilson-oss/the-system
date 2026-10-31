@@ -68,6 +68,8 @@ export function CoDmPanel({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [draft, setDraft] = useState<string | null>(null);
+  // QF.50: the kind the draft was generated as (the picker may change after).
+  const [draftKind, setDraftKind] = useState<Kind>('shop');
   const [seedSpend, setSeedSpend] = useState<Spend | null>(null);
   const [ready, setReady] = useState(false);
   const spend = useLiveSpend(gmKey, ready, seedSpend);
@@ -143,7 +145,8 @@ export function CoDmPanel({
       const text = JSON.stringify(data.file, null, 2);
       setDraft(text);
       setOriginal(text);
-      onGenerated({ text, name: `co-DM ${label.toLowerCase()}`, generated: true });
+      setDraftKind(kind);
+      onGenerated({ text, name: `co-DM ${label.toLowerCase()}`, generated: true, kind });
       setMessage(readiness(label, data.preview));
     } catch {
       if (showing) onLoadingFailed?.();
@@ -195,7 +198,9 @@ export function CoDmPanel({
       />
       <PrepareAhead
         gmKey={gmKey}
-        onReview={(text, name) => onGenerated({ text, name, generated: true })}
+        onReview={(text, name, prepared) =>
+          onGenerated({ text, name, generated: true, kind: prepared })
+        }
       />
       <form onSubmit={(e) => void generate(e)}>
         <label>
@@ -293,6 +298,7 @@ export function CoDmPanel({
                 text: draft,
                 name: `co-DM ${label.toLowerCase()} (edited)`,
                 generated: true,
+                kind: draftKind,
               })
             }
           >

@@ -8,6 +8,7 @@ import path from 'node:path';
 import { z } from 'zod';
 import { AiError, requireWhole, type AiClient } from './client';
 import type { TranscriptLine } from '../speech/transcript';
+import { SHARED_SYSTEM_LINES } from './setting';
 
 export interface DraftCharacter {
   readonly id: string;
@@ -118,6 +119,7 @@ export function attribute(
 }
 
 export const DRAFT_SYSTEM = [
+  ...SHARED_SYSTEM_LINES,
   'You help the GM of a LitRPG tabletop game keep the practice log.',
   'You read numbered transcript lines from the table and list each time a character USED one of their skills in a way that mattered.',
   'Talking about a skill, planning, or asking about it is not a use. GM narration that describes a character doing something is a use.',

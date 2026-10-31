@@ -688,7 +688,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   the read position advances per chunk; a max_tokens stop is an AiError
   saying the stretch was too long; `/api/gm/listen` returns only new lines
   after an index; tests with the fixture fake.
-- [ ] **QF.50 The co-DM knows who is in the scene and the setting.** "In
+- [x] **QF.50 The co-DM knows who is in the scene and the setting.** "In
   character" only knows bestiary NPCs, so shop keepers and generated
   (note-only) NPCs and their lore never reach the prompt
   (`apps/server/src/ai/quickRoutes.ts:84-90,162-172`); a kept-lore note over

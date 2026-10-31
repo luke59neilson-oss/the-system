@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { loreFor, loreForRequest, loreLines, loreTags } from '../src/ai/quickResponses';
+import {
+  QUICK_LORE_MAX,
+  QUICK_LORE_NOTE_MAX,
+  loreFor,
+  loreForRequest,
+  loreLines,
+  loreTags,
+} from '../src/ai/quickResponses';
 
 describe('kept lore for a generation request (MD.3)', () => {
   const at = (h: number) => `2026-10-30T${String(h).padStart(2, '0')}:00:00Z`;
@@ -23,9 +30,24 @@ describe('kept lore for a generation request (MD.3)', () => {
     expect(lines.length).toBeLessThan(50);
     expect(lines[0]).toBe(`- ${'x'.repeat(100)}`);
   });
-  it('skips a note too long for the budget and keeps the rest (review M1)', () => {
+  it('clips a note too long for the budget and keeps the rest (review M1, QF.50)', () => {
     const lines = loreLines(['y'.repeat(4000), 'Tam owes a debt.']);
-    expect(lines).toEqual(['- Tam owes a debt.']);
+    expect(lines).toEqual([`- ${'y'.repeat(QUICK_LORE_NOTE_MAX - 1)}…`, '- Tam owes a debt.']);
+  });
+  it('clips the last note to what is left of the budget (QF.50)', () => {
+    const lines = loreLines(['a'.repeat(350), 'b'.repeat(350), 'c'.repeat(350), 'd'.repeat(350)]);
+    expect(lines).toHaveLength(4);
+    expect(lines[3]).toBe(`- ${'d'.repeat(QUICK_LORE_MAX - 3 * 350 - 1)}…`);
+  });
+  it('skips a note that would be clipped to almost nothing, then keeps a short one (QF.50)', () => {
+    const lines = loreLines([
+      'a'.repeat(390),
+      'b'.repeat(390),
+      'c'.repeat(390),
+      'd'.repeat(390),
+      'Short.',
+    ]);
+    expect(lines.map((l) => l.slice(2, 3))).toEqual(['a', 'b', 'c', 'S']);
   });
   it('matches an NPC name only as a whole word (review M2)', () => {
     const short = [{ kind: 'gm', tags: ['lore', 'npc:Al'], body: 'Al lies.', updatedAt: at(9) }];

@@ -13,6 +13,7 @@ import {
 import { AiError, type AiRequest } from './client';
 import { loreForRequest, loreLines } from './quickResponses';
 import { referencePromptBlock } from '../reference/reference';
+import { SHARED_SYSTEM_LINES } from './setting';
 
 export const GENERATE_KINDS = ['shop', 'npc', 'place', 'encounter', 'item', 'questHook'] as const;
 export type GenerateKind = (typeof GENERATE_KINDS)[number];
@@ -85,6 +86,7 @@ export function buildGenerateRequest(
 ): AiRequest {
   const system = [
     'You are the co-DM for a LitRPG tabletop game run by the GM (style: The Primal Hunter; the System, status screens, skill rarities).',
+    ...SHARED_SYSTEM_LINES,
     `Write content for the GM in The System's content format: one JSON object with "format": "${CONTENT_FORMAT}" and "version": ${CONTENT_FORMAT_VERSION}, using only the sections and keys in this JSON Schema (unknown keys are errors):`,
     JSON.stringify(contentJsonSchema()),
     'Ids (rarities, stats, slots, grades) are lower-case rules ids as in the schema, grades G–A. Items give flat stat bonuses only.',

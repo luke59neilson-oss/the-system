@@ -7,6 +7,7 @@
 import { z } from 'zod';
 import type { TranscriptLine } from '../speech/transcript';
 import { referencePromptBlock } from '../reference/reference';
+import { SHARED_SYSTEM_LINES } from './setting';
 
 export const QUICK_SLOT_IDS = ['yes-and', 'yes-but', 'no-but', 'in-character', 'twist'] as const;
 export type QuickSlotId = (typeof QUICK_SLOT_IDS)[number];
@@ -130,6 +131,7 @@ export interface QuickContext {
 }
 
 export const QUICK_SYSTEM = [
+  ...SHARED_SYSTEM_LINES,
   'You are the co-DM for a LitRPG tabletop game in the style of The Primal Hunter. The GM pressed a quick-response button at the table and will read your answer aloud.',
   'Answer in exactly this shape and nothing else:',
   'SAY: <one line the GM can say as-is, under 35 words>',
@@ -142,17 +144,31 @@ export const QUICK_SYSTEM = [
 const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim();
 const clip = (s: string, n: number) => (s.length <= n ? s : `${s.slice(0, n - 1)}…`);
 
-/** MD.3: kept lore as prompt lines, newest first, bounded by QUICK_LORE_MAX characters. */
+/** QF.50: no one kept-lore note takes more than this share of the budget. */
+export const QUICK_LORE_NOTE_MAX = 400;
+/** QF.50: a clipped note shorter than this says too little to be worth sending. */
+const LORE_MIN_CLIP = 60;
+
+/**
+ * MD.3: kept lore as prompt lines, newest first, bounded by QUICK_LORE_MAX
+ * characters. QF.50: a long note is clipped (to QUICK_LORE_NOTE_MAX, or to
+ * what is left of the budget), never dropped whole, so the newest lore for
+ * the NPC always reaches the prompt; a note that would be clipped below
+ * LORE_MIN_CLIP is skipped and shorter, older notes still get their turn.
+ */
 export function loreLines(notes: readonly string[]): string[] {
   const lore: string[] = [];
   let used = 0;
   for (const note of notes) {
-    const line = oneLine(note);
-    // Review M1: a note too long for what is left is skipped, not the end:
-    // one long note must not drop every shorter note after it.
-    if (used + line.length > QUICK_LORE_MAX) continue;
-    lore.push(`- ${line}`);
-    used += line.length;
+    const line = clip(oneLine(note), QUICK_LORE_NOTE_MAX);
+    const left = QUICK_LORE_MAX - used;
+    if (line.length <= left) {
+      lore.push(`- ${line}`);
+      used += line.length;
+    } else if (left >= LORE_MIN_CLIP) {
+      lore.push(`- ${clip(line, left)}`);
+      used = QUICK_LORE_MAX;
+    }
   }
   return lore;
 }
