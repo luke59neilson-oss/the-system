@@ -428,7 +428,8 @@ function FreePointBatches({
             {Object.entries(b.allocation ?? {})
               .filter(([, n]) => n > 0)
               .map(([id, n]) => `${statName(id)} +${n}`)
-              .join(', ')}{' '}
+              .join(', ')}
+            {!b.locked && ' (rest still open)'}{' '}
             <button
               type="button"
               className="secondary small"

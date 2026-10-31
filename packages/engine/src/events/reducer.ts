@@ -1104,6 +1104,10 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       if (assigning && batch.locked) {
         fail(event, `the race level ${raceLevel} points are already assigned and locked`);
       }
+      if (assigning && batch.allocation !== null) {
+        // MV.1 review: a partly used level-up's assigned points are locked too.
+        fail(event, `some race level ${raceLevel} points are already assigned; assign the rest`);
+      }
       const statIds = state.rules.stats.list.map((s) => s.id);
       const stats: Record<string, number> = { ...character.stats };
       for (const [id, points] of Object.entries(batch.allocation ?? {})) {

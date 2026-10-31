@@ -437,13 +437,11 @@ describe('free points: any amount at once (MV.1)', () => {
       locked: false,
     });
     expect(jake(back)?.stats['vitality']).toBe((s1['vitality'] ?? 0) - 1);
-    // The older one-batch command still finishes a partly used level-up whole.
-    const whole = ok(c1, assign(2, { strength: 2 }));
-    expect(jake(whole)?.freePointBatches[1]).toMatchObject({
-      allocation: { strength: 2 },
-      locked: true,
+    // The older one-batch command cannot rewrite a partly used level-up's locked points.
+    expect(execute(c1, assign(2, { strength: 2 }), player('jake'))).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('some race level 2 points are already assigned'),
     });
-    expect(jake(whole)?.stats['vitality']).toBe((s1['vitality'] ?? 0) - 1);
   });
 
   it('undo of a spend restores every batch it touched', () => {
