@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.45, QF.64, QF.65 done; QF.66 on `wip/QF.66`.
-**Next item:** QF.66 (resume `wip/QF.66`: the player-side notice), then QF.46 onward
+**Status:** in progress again (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweep C added QF.64–QF.66; QF.38–QF.45, QF.64–QF.66 done; QF.46 on `wip/QF.46` (review round 1 back, fixes pending).
+**Next item:** QF.46 (resume `wip/QF.46`: fix round-1 Mediums, then round-2 review), then QF.47 onward
 **Blockers:** none
 
 ## Run log
@@ -1392,3 +1392,9 @@ next item, blockers. -->
 - Tests: unit 1,716 (was 1,710 on main); e2e QF.44 green; packaged smoke green locally. Full e2e not run (no shared server/UI change on main beyond the QF.44 label; CI runs it). Engine coverage not re-measured (engine change is small and fully tested).
 - Open `wip/*`: wip/QF.66 (wip/QF.45 merged). Blockers: none.
 
+### Run · 2026-10-31 10:09–10:55 UTC (close-out at minute 44)
+- Preflight: `add_repo` not offered; repo already cloned; lock pushed cleanly; vitest 5.0.5; reviewers work (sonnet, worktree; the Agent tool blocks until each reports). CI on main green at start (c0b52c1e). No new answers. Hour 10: no efficiency check or sweep.
+- QF.66 Opening a restored campaign tells players: e2e `QF.66.spec.ts` (GM + two phones; restore, open copy, switch back; screenshots 390×844 and 1366×768). Sonnet round 1: 3 Medium (notice wording ignored direction, unstyled, lacked "earlier"/history) fixed via `apps/web/src/campaignSwitch.ts` and a `.system-banner` notice; the wait reason names the campaign; MS.4/MS.A texts updated (MS.4 was red on the wip). Round 2: 0 High/Medium, 2 Low to Backlog. D284. Checked and pushed to main (657ab736).
+- QF.46 (wip): Award XP resets to everyone / no target grade / bonus off and says "Awarded N class XP to Jake and Kim."; broadcast resets to Everyone and says "Broadcast sent to …" / "Scheduled for day N, to …"; status lines clear on New character name, broadcast fields, contest change/roll, import tick; `e2e/QF.46.spec.ts`; other specs' "XP awarded"/"Broadcast sent"/"Scheduled for day" texts updated; D285. Sonnet round 1 (c57aeac1): 0 High, 2 Medium: (1) clearing incomplete: Import content source/file/mode changes, Encounter PoolTool and Clocks, New character class/race don't clear the line; no e2e for Import/Encounter clearing; (2) Award line "not rebuilt" (judged: by design, it clears on change; verify amount/track/reason/byHand/bonus clear it). Lows: by-hand award line hides the split; broadcast keeps When/day/show after a scheduled send. Hand-off: `wip/QF.46` at c57aeac1 (base main 657ab736). Next: fix those, add e2e lines for Import and Encounter clearing, round-2 review (required: two Mediums), then check the box.
+- Tests: unit 1,722 on wip/QF.46 (1,721 on main); e2e QF.66, QF.44, MS.4, MS.A, QF.46, M4.7, MS.1, M3.3–3.5, M4.6, MU.A, M11.2, MQ.A, M2.A, MS.2, M7.x, M9.3, MC.7, MU.1 green. Full e2e not run (CI runs it on push). Engine untouched.
+- Open `wip/*`: wip/QF.46 (wip/QF.66 merged). Blockers: none.
