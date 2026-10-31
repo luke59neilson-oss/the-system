@@ -48,8 +48,8 @@ export function looksLikeName(text: string): boolean {
 export function keeperName(keeper: string): string | null {
   const shielded = keeper
     .replace(/\s+/gu, ' ')
-    .replace(ABBREVIATIONS, (m) => m.slice(0, -1) + '\u0000');
-  const head = (shielded.split(/[:,;.(]| [-–—] /u)[0] ?? '').replace(/\u0000/gu, '.').trim();
+    .replace(ABBREVIATIONS, (m) => m.slice(0, -1) + '\uE000');
+  const head = (shielded.split(/[:,;.(]| [-–—] /u)[0] ?? '').replace(/\uE000/gu, '.').trim();
   return looksLikeName(head) ? head : null;
 }
 
