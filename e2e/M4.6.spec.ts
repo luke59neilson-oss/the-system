@@ -5,8 +5,8 @@ import { expect, test, type Page } from './helpers/test';
 import { openTab } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
-// M4.6 XP award dialog (DESIGN §5): even split with editable shares and a
-// balancing last share, target grade and above-level bonus, a preview of
+// M4.6 XP award dialog (DESIGN §5): even split with editable percentage
+// shares (MV.2), target grade and above-level bonus, a preview of
 // level-ups, overflow and lost XP, the typical-session helper, confirm.
 
 const GM_KEY = 'e2e-gm-key-m46-0123456789abcdef46';
@@ -72,11 +72,12 @@ test('the GM previews and awards XP with a custom split', async ({ browser }) =>
   await expect(award.getByTestId(`share-${ada}`)).toHaveText(' · 333 XP');
   await expect(award.getByTestId(`levels-${jake}`)).toHaveText(' · class lvl 0 → 3');
 
-  // By hand: Jake 500, Kim 100, Ada balances to 400.
-  await award.getByRole('checkbox', { name: 'Set shares by hand' }).check();
-  await award.getByLabel('Jake’s share').fill('500');
-  await award.getByLabel('Kim’s share').fill('100');
-  await expect(award.getByLabel('Ada’s share (balances)')).toHaveValue('400');
+  // By percent (MV.2): Jake 50%, Kim 10%, Ada 40%.
+  await expect(award.getByLabel('Jake’s %')).toHaveValue('34');
+  await award.getByLabel('Jake’s %').fill('50');
+  await award.getByLabel('Kim’s %').fill('10');
+  await award.getByLabel('Ada’s %').fill('40');
+  await expect(award.getByTestId('pct-total')).toContainText('Total 100%');
   await expect(award.getByTestId(`share-${ada}`)).toHaveText(' · 400 XP');
   await expect(award.getByTestId(`lost-${jake}`)).toHaveText(' · 100 lost');
   await expect(award.getByTestId(`levels-${jake}`)).toHaveText(' · class lvl 0 → 4');
@@ -84,10 +85,10 @@ test('the GM previews and awards XP with a custom split', async ({ browser }) =>
   await expect(award.getByTestId('xp-lost')).toContainText('100 XP will be lost');
 
   // Too much typed: refused before sending.
-  await award.getByLabel('Kim’s share').fill('600');
-  await expect(award.getByRole('alert')).toHaveText('The shares add up to more than 1000 XP');
+  await award.getByLabel('Kim’s %').fill('60');
+  await expect(award.getByRole('alert')).toHaveText('The percentages total 150%, not 100%');
   await expect(award.getByRole('button', { name: 'Award XP' })).toBeDisabled();
-  await award.getByLabel('Kim’s share').fill('100');
+  await award.getByLabel('Kim’s %').fill('10');
 
   // A G-grade target is the party's own grade: full XP (the ⅓ and 0 factors are unit-tested).
   await award.getByLabel('Target’s grade').selectOption({ label: 'G-grade' });

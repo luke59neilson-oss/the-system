@@ -86,7 +86,8 @@ send it to a player.
      you (a skill menu to build, an evolution to release, free points). A
      waiting menu opens straight in **Skill offers**.
    - **Award XP**: pick the track (class or profession), the amount and who
-     shares it (even by default; **Set shares by hand** to change). Fill in
+     shares it: each player's **%** starts even; type any to change it (the
+     total must be exactly 100%; **Even split** resets them). Fill in
      the target's grade and level for the grade rules and the above-level
      bonus. The preview shows each character's levels, overflow to the other
      track and any XP that would be *lost* before you press **Award XP**.

@@ -32,3 +32,37 @@ export function formatLevels(levels: number): string {
   if (rounded === 0 && levels > 0) return 'under 0.1 levels';
   return `${rounded.toLocaleString('en-US')} ${rounded === 1 ? 'level' : 'levels'}`;
 }
+
+/**
+ * MV.2 (DESIGN §5 "Shares are percentages"): the even starting percentages
+ * for `count` participants, whole numbers summing to 100, the remainder one
+ * point each to the first participants (34/33/33).
+ */
+export function evenPercents(count: number): number[] {
+  if (count <= 0) return [];
+  const base = Math.floor(100 / count);
+  const extra = 100 - base * count;
+  return Array.from({ length: count }, (_, i) => base + (i < extra ? 1 : 0));
+}
+
+/**
+ * Each participant's XP for typed percentages, rounded so the shares add up
+ * to `amount` exactly (largest remainder first, ties to the earlier row).
+ * Null unless the percentages are whole, 0–100 and total exactly 100.
+ */
+export function percentShares(amount: number, percents: readonly number[]): number[] | null {
+  if (percents.length === 0) return null;
+  if (!percents.every((p) => Number.isInteger(p) && p >= 0 && p <= 100)) return null;
+  if (percents.reduce((a, b) => a + b, 0) !== 100) return null;
+  const parts = percents.map((p) => Math.floor((amount * p) / 100));
+  let left = amount - parts.reduce((a, b) => a + b, 0);
+  const order = percents
+    .map((p, i) => ({ i, r: (amount * p) % 100 }))
+    .sort((a, b) => b.r - a.r || a.i - b.i);
+  for (const { i } of order) {
+    if (left === 0) break;
+    parts[i] = (parts[i] as number) + 1;
+    left -= 1;
+  }
+  return parts;
+}
