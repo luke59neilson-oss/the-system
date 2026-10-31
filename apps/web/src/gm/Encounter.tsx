@@ -61,7 +61,7 @@ export function Encounter({ client, state }: { client: LiveClient; state: Campai
   return (
     <section className="window encounter" aria-labelledby="encounter">
       <h2 id="encounter">Encounter</h2>
-      <ContestRoller state={state} busy={busy} send={send} />
+      <ContestRoller state={state} busy={busy} send={send} clear={() => setOutcome(null)} />
       <PoolTool state={state} busy={busy} send={send} />
       <Clocks state={state} busy={busy} send={send} />
       {outcome && (
@@ -77,9 +77,11 @@ interface ToolProps {
   state: CampaignState;
   busy: boolean;
   send: (command: Command, ok: string) => Promise<boolean>;
+  /** QF.46: an old outcome line goes when the GM starts something new. */
+  clear?: () => void;
 }
 
-function ContestRoller({ state, busy, send }: ToolProps) {
+function ContestRoller({ state, busy, send, clear }: ToolProps) {
   const options = sideOptions(state);
   const firstChar = options.find((o) => o.source.startsWith('c:'))?.source ?? 'custom';
   const firstStat = state.rules.stats.list[0]?.id ?? '';
@@ -105,10 +107,12 @@ function ContestRoller({ state, busy, send }: ToolProps) {
   const change = (side: 'a' | 'b', draft: SideDraft) => {
     (side === 'a' ? setA : setB)(draft);
     setRolled(null);
+    clear?.();
   };
   const roll = (e: FormEvent) => {
     e.preventDefault();
     if (typeof plan === 'string') return;
+    clear?.();
     setRolled(rollPlan(state, plan, cryptoRandom));
     // MC.7: a contest done in the app logs practice for its characters directly,
     // once per contest: re-rolling the same sides does not log it again.

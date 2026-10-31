@@ -65,7 +65,9 @@ async function award(gm: Page, amount: number) {
   await openWindow(gm, 'award-xp');
   await gm.getByLabel('Amount').fill(String(amount));
   await gm.getByRole('button', { name: 'Award XP' }).click();
-  await expect(form.getByRole('status').or(form.getByRole('alert'))).toHaveText('XP awarded');
+  await expect(form.getByRole('status').or(form.getByRole('alert'))).toHaveText(
+    /^Awarded [\d,]+ (class|profession) XP to /,
+  );
 }
 
 test('a player assigns a free-point batch, which then locks', async ({ browser }) => {

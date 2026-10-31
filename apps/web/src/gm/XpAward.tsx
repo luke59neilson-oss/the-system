@@ -36,6 +36,8 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<CommandResult | null>(null);
+  /** QF.46: what the last award did, named, e.g. "Awarded 300 XP to Jake and Kim." */
+  const [awarded, setAwarded] = useState('');
 
   const ids = state.characterOrder.filter((id) => state.characters[id]);
   const chosen = ids.filter((id) => !excluded.has(id));
@@ -87,13 +89,15 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
     (g) => g !== '',
   );
 
-  const toggle = (id: string) =>
+  const toggle = (id: string) => {
+    setResult(null);
     setExcluded((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+  };
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!valid || !shares) return;
@@ -112,9 +116,21 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
     setResult(r.ok ? r : { ok: false, error: friendlyError(r.error) });
     setBusy(false);
     if (r.ok) {
+      // QF.46: the next award starts from the whole table at no target grade,
+      // so a table-wide award never goes to last time's subset at ⅓.
+      setAwarded(
+        `Awarded ${value.toLocaleString('en-US')} ${track} XP to ${listNames(
+          chosen.map((id) => state.characters[id]?.name ?? id),
+        )}.`,
+      );
       setAmount('');
       setReason('');
       setTyped({});
+      setExcluded(new Set());
+      setByHand(false);
+      setBonusOn(false);
+      setEnemyLevel('');
+      setEnemyGrade('');
     }
   };
 
@@ -313,7 +329,13 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
         <legend>Target</legend>
         <label>
           Target’s grade
-          <select value={enemyGrade} onChange={(e) => setEnemyGrade(e.target.value)}>
+          <select
+            value={enemyGrade}
+            onChange={(e) => {
+              setEnemyGrade(e.target.value);
+              setResult(null);
+            }}
+          >
             <option value="">Not set (full XP)</option>
             {rules.grades.map((g) => (
               <option key={g.id} value={g.id}>
@@ -368,7 +390,7 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
       {result &&
         (result.ok ? (
           <p className="ok" role="status">
-            XP awarded
+            {awarded}
           </p>
         ) : (
           <p className="err" role="alert">
@@ -377,4 +399,10 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
         ))}
     </form>
   );
+}
+
+/** "Jake", "Jake and Kim", "Jake, Kim and Ada". */
+export function listNames(names: readonly string[]): string {
+  if (names.length <= 1) return names[0] ?? '';
+  return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
 }

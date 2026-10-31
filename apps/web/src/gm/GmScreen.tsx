@@ -40,7 +40,7 @@ import type { PickedLine } from './QuickResponses';
 import { ListenPanel } from './ListenPanel';
 import { PortraitPicker } from './PortraitControls';
 import { PartyDashboard } from './PartyDashboard';
-import { XpAward } from './XpAward';
+import { XpAward, listNames } from './XpAward';
 import { OfferBuilder, type OfferTarget } from './OfferBuilder';
 import { ChangeLog } from './ChangeLog';
 import { EvolutionBuilder } from './EvolutionBuilder';
@@ -478,7 +478,9 @@ function useCommand(client: LiveClient) {
     setBusy(false);
     return r;
   };
-  return { busy, result, run };
+  /** QF.46: an old status line goes when the form changes. */
+  const clear = () => setResult(null);
+  return { busy, result, run, clear };
 }
 
 function Outcome({ result, okText }: { result: CommandResult | null; okText: string }) {
@@ -553,7 +555,7 @@ function CreateCharacter({
   const raceChoices = races.length > 0 ? races : [state.rules.character.defaultRace];
   const [classId, setClassId] = useState('');
   const [race, setRace] = useState('');
-  const { busy, result, run } = useCommand(client);
+  const { busy, result, run, clear } = useCommand(client);
   const chosen = classes.find((c) => c.id === classId) ?? classes[0];
   const chosenRace = raceChoices.includes(race) ? race : (raceChoices[0] ?? '');
   const rarityName = (id: string) =>
@@ -597,7 +599,15 @@ function CreateCharacter({
       <h2 id="new-character">New character</h2>
       <label>
         Name
-        <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={200} />
+        <input
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            clear();
+          }}
+          required
+          maxLength={200}
+        />
       </label>
       <label>
         Starting class
@@ -826,7 +836,7 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
   const [show, setShow] = useState<'list' | 'timed' | 'pinned'>('list');
   const [amount, setAmount] = useState('30');
   const [unit, setUnit] = useState<'seconds' | 'minutes'>('seconds');
-  const { busy, result, run } = useCommand(client);
+  const { busy, result, run, clear } = useCommand(client);
   const cancel = useCommand(client);
   const remove = useCommand(client);
   // MT.6: a timed banner lasts 5 s to 24 h.
@@ -861,9 +871,15 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
         : { type: 'broadcast.schedule', text, characterIds: recipients, day: dayValue },
     );
     if (r.ok) {
-      setOkText(when === 'now' ? 'Broadcast sent' : `Scheduled for day ${dayValue}`);
+      // QF.46: say who got it, then start the next one from everyone.
+      const who = recipients === null ? 'everyone' : listNames(recipients.map(name));
+      setOkText(
+        when === 'now' ? `Broadcast sent to ${who}.` : `Scheduled for day ${dayValue}, to ${who}.`,
+      );
       setText('');
       setShow('list');
+      setTo('all');
+      setSeveral(new Set());
     }
   };
   const pending = state.scheduledBroadcasts;
@@ -874,7 +890,10 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
         Message
         <textarea
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            clear();
+          }}
           required
           maxLength={2000}
           rows={3}
@@ -883,7 +902,14 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
       <div className="broadcast-row">
         <label>
           To
-          <select aria-label="Recipients" value={to} onChange={(e) => setTo(e.target.value)}>
+          <select
+            aria-label="Recipients"
+            value={to}
+            onChange={(e) => {
+              setTo(e.target.value);
+              clear();
+            }}
+          >
             <option value="all">Everyone</option>
             {state.characterOrder.map((id) => (
               <option key={id} value={id}>
@@ -898,7 +924,10 @@ function Broadcast({ client, state }: { client: LiveClient; state: CampaignState
           <select
             aria-label="When"
             value={when}
-            onChange={(e) => setWhen(e.target.value as 'now' | 'day')}
+            onChange={(e) => {
+              setWhen(e.target.value as 'now' | 'day');
+              clear();
+            }}
           >
             <option value="now">Now</option>
             <option value="day">On a later in-game day</option>

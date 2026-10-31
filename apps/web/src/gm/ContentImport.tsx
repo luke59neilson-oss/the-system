@@ -206,6 +206,7 @@ export function ContentImport({
   };
 
   const toggle = (path: string, on: boolean) => {
+    setOutcome(null);
     const next = new Set(picked);
     if (on) next.add(path);
     else next.delete(path);

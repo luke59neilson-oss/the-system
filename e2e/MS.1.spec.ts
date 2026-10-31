@@ -107,14 +107,14 @@ test('GM creates a campaign and characters, awards XP, and broadcasts', async ({
   await expect(page.getByTestId(/^share-/)).toHaveText([' · 101 XP', ' · 100 XP', ' · 100 XP']);
   await page.getByLabel('Reason (GM only)').fill('Pale hunter pack');
   await page.getByRole('button', { name: 'Award XP' }).click();
-  await expect(page.getByText('XP awarded')).toBeVisible();
+  await expect(page.getByText(/^Awarded [\d,]+ (class|profession) XP to /)).toBeVisible();
   for (const c of characters) await expect(page.getByTestId(`class-level-${c.id}`)).toHaveText('1');
   await expect(page.getByText("*'DING!' Class: [Archer] has reached level 1")).toHaveCount(3);
 
   const all = 'The world is dying. Find what is killing it.';
   await page.getByLabel('Message').fill(all);
   await page.getByRole('button', { name: 'Send broadcast' }).click();
-  await expect(page.getByText('Broadcast sent')).toBeVisible();
+  await expect(page.getByText(/^Broadcast sent to /)).toBeVisible();
   // One feed row for a broadcast to everyone.
   const feed = page.locator('[data-window="feed"]');
   await expect(feed.getByRole('listitem').filter({ hasText: all })).toHaveText(`Everyone ${all}`);
@@ -133,7 +133,7 @@ test('GM creates a campaign and characters, awards XP, and broadcasts', async ({
   await page.getByLabel('Message').fill('Day 2 dawns over the Crown.');
   await page.getByLabel('Recipients').selectOption('all');
   await page.getByRole('button', { name: 'Send broadcast' }).click();
-  await expect(page.getByText('Broadcast sent')).toBeVisible();
+  await expect(page.getByText(/^Broadcast sent to /)).toBeVisible();
   await page.screenshot({ path: path.join(shots, 'gm-1366x768.png') });
   await page.screenshot({ path: path.join(shots, 'gm-1366-full.png'), fullPage: true });
   await player.close();

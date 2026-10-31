@@ -103,7 +103,7 @@ test('the GM previews and awards XP with a custom split', async ({ browser }) =>
   await award.screenshot({ path: path.join(shots, 'xp-award-1366x768.png') });
 
   await award.getByRole('button', { name: 'Award XP' }).click();
-  await expect(award.getByRole('status')).toHaveText('XP awarded');
+  await expect(award.getByRole('status')).toHaveText(/^Awarded [\d,]+ (class|profession) XP to /);
   await expect(gm.getByTestId(`class-level-${jake}`)).toHaveText('4');
   await expect(gm.getByTestId(`class-level-${kim}`)).toHaveText('1');
   await expect(gm.getByTestId(`class-level-${ada}`)).toHaveText('4');

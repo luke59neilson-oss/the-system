@@ -67,7 +67,9 @@ async function award(gm: Page, amount: number, reason = '') {
   await gm.getByLabel('Reason (GM only)').fill(reason);
   const form = gm.locator('form[aria-labelledby="award-xp"]');
   await gm.getByRole('button', { name: 'Award XP' }).click();
-  await expect(form.getByRole('status').or(form.getByRole('alert'))).toHaveText('XP awarded');
+  await expect(form.getByRole('status').or(form.getByRole('alert'))).toHaveText(
+    /^Awarded [\d,]+ (class|profession) XP to /,
+  );
 }
 
 async function openGm(page: Page) {
