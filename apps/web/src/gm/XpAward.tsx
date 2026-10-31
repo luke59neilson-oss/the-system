@@ -31,6 +31,7 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
   // MV.2: percentages typed by the GM, by character id; untyped rows keep
   // their even starting value. Any change of participants re-evens.
   const [typed, setTyped] = useState<Readonly<Record<string, string>>>({});
+  const [resetNote, setResetNote] = useState('');
   const [bonusOn, setBonusOn] = useState(false);
   const [enemyLevel, setEnemyLevel] = useState('');
   const [enemyGrade, setEnemyGrade] = useState('');
@@ -60,12 +61,14 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
   const pctTotal = percents.reduce((a, b) => a + b, 0);
   if (shareError === null && chosen.length > 0 && pctTotal !== 100)
     shareError = `The percentages total ${pctTotal}%, not 100%`;
-  // Untouched even percentages split the XP exactly evenly (D296).
+  // Percentages that equal the even split divide the XP exactly evenly, typed or not, so
+  // retyping a shown value never moves the XP (D296, revised after review).
+  const atEven = percents.every((p, i) => p === even[i]);
   const shares =
     amountOk && chosen.length > 0 && shareError === null
-      ? byHand
-        ? percentShares(value, percents)
-        : balancedShares(value, chosen.length, new Map())
+      ? atEven
+        ? balancedShares(value, chosen.length, new Map())
+        : percentShares(value, percents)
       : null;
   if (amount.trim() !== '' && !amountOk) shareError = 'The amount must be a whole number above 0';
   else if (!levelOk && enemyLevel.trim() !== '')
@@ -95,6 +98,12 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
 
   const toggle = (id: string) => {
     setResult(null);
+    // Changing who takes part re-evens; say so when typed percentages are dropped.
+    setResetNote(
+      Object.keys(typed).length > 0
+        ? 'Participants changed: typed percentages were reset to an even split.'
+        : '',
+    );
     setTyped({});
     setExcluded((prev) => {
       const next = new Set(prev);
@@ -257,6 +266,16 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
             </button>
           </p>
         )}
+        {atEven && chosen.length > 1 && amountOk && (
+          <p className="muted" data-testid="pct-even-note">
+            Even split: the XP is divided exactly evenly.
+          </p>
+        )}
+        {resetNote !== '' && (
+          <p className="muted" data-testid="pct-reset" aria-live="polite">
+            {resetNote}
+          </p>
+        )}
         {ids.length === 0 && <p className="muted">Create a character first.</p>}
         {ids.map((id) => {
           const i = chosen.indexOf(id);
@@ -334,7 +353,10 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
                     step={1}
                     inputMode="numeric"
                     value={typed[id] ?? String(even[i] ?? '')}
-                    onChange={(e) => setTyped((t) => ({ ...t, [id]: e.target.value }))}
+                    onChange={(e) => {
+                      setResetNote('');
+                      setTyped((t) => ({ ...t, [id]: e.target.value }));
+                    }}
                   />
                 </label>
               )}

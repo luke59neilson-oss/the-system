@@ -80,14 +80,26 @@ test('1,000 XP to four at 40/20/20/20 lands 400/200/200/200', async ({ browser }
   await award.getByRole('button', { name: 'Even split' }).click();
   for (const name of names) await expect(pct(name)).toHaveValue('25');
 
-  // Leaving someone out re-evens the rest: 34/33/33.
+  // Leaving someone out re-evens the rest: 34/33/33, and says typed values were reset.
+  await pct('Jake').fill('40');
   await award.getByRole('checkbox', { name: 'Bo', exact: true }).uncheck();
+  await expect(award.getByTestId('pct-reset')).toHaveText(
+    'Participants changed: typed percentages were reset to an even split.',
+  );
   await expect(pct('Jake')).toHaveValue('34');
   await expect(pct('Kim')).toHaveValue('33');
   await expect(pct('Ada')).toHaveValue('33');
+  // At the even percentages the XP splits exactly evenly (334/333/333), and retyping
+  // a shown value does not move it (D296).
+  await expect(award.getByTestId(`share-${jake}`)).toHaveText(' · 334 XP');
+  await expect(award.getByTestId('pct-even-note')).toBeVisible();
+  await pct('Jake').fill('34');
+  await expect(award.getByTestId(`share-${jake}`)).toHaveText(' · 334 XP');
+  await expect(award.getByTestId(`share-${kim}`)).toHaveText(' · 333 XP');
   await award.getByRole('checkbox', { name: 'Bo', exact: true }).check();
 
   await pct('Jake').fill('40');
+  await expect(award.getByTestId('pct-reset')).toHaveCount(0);
   await pct('Kim').fill('20');
   await pct('Ada').fill('20');
   await pct('Bo').fill('20');

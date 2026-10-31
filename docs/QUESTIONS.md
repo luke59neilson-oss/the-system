@@ -687,3 +687,7 @@ DESIGN/ROADMAP; do not re-apply them.
     instead (334/333/333); once you type one, each row gets exactly what its
     percentage gives. Default: as described. Option: always use the shown
     percentages, even before you type.
+    After review: the exact split also applies when you type the even
+    numbers back in, and the box says "Even split: the XP is divided
+    exactly evenly" (the literal 34% of 1,200 would lose XP past a grade's
+    top on the "typical session" suggestion).
