@@ -263,6 +263,44 @@ describe('CampaignStore', () => {
     CampaignStore.open('main', options).close();
   });
 
+  it('judges a same-machine lock by its holder, not just its pid (QF.41)', () => {
+    const store = CampaignStore.open('main', options);
+    const lock = path.join(store.dir, 'LOCK');
+    const info = JSON.parse(readFileSync(lock, 'utf8')) as Record<string, unknown>;
+    expect(info['pid']).toBe(process.pid);
+    expect(typeof info['started']).toBe('number');
+    // Held by this process: refused, naming the LOCK and what to do.
+    expect(() => CampaignStore.open('main', options)).toThrow(
+      `already open in this window. If The System is not running, delete ${lock}`,
+    );
+    store.close();
+    // A crash left a LOCK whose pid is now this process (pid reuse): stale.
+    writeFileSync(lock, JSON.stringify({ ...info, token: 'left-by-a-crash' }));
+    CampaignStore.open('main', options).close();
+    // Another live pid that started when the lock says: still open.
+    const other = { ...info, pid: 4242, token: 'other' };
+    const started = info['started'] as number;
+    const live = { isAlive: () => true, processStart: () => started + 2_000 };
+    writeFileSync(lock, JSON.stringify(other));
+    expect(() => CampaignStore.open('main', { ...options, ...live })).toThrow(
+      `already open (process 4242). If The System is not running, delete ${lock}`,
+    );
+    // The same pid given to a process that started later (reuse, Fast Startup): stale.
+    const reused = { isAlive: () => true, processStart: () => started + 3_600_000 };
+    CampaignStore.open('main', { ...options, ...reused }).close();
+    // Start time unreadable, or a lock from before start times: never two writers.
+    writeFileSync(lock, JSON.stringify(other));
+    const unknown = { isAlive: () => true, processStart: () => null };
+    expect(() => CampaignStore.open('main', { ...options, ...unknown })).toThrow(/process 4242/);
+    const legacy: Record<string, unknown> = { ...other };
+    delete legacy['started'];
+    writeFileSync(lock, JSON.stringify(legacy));
+    expect(() => CampaignStore.open('main', { ...options, ...reused })).toThrow(/process 4242/);
+    // A dead holder is stale whatever its start time.
+    CampaignStore.open('main', { ...options, isAlive: () => false }).close();
+    expect(existsSync(lock)).toBe(false);
+  });
+
   it('judges a lock by machine id, not the host name, once the lock has one', () => {
     const withId = { ...options, machineId: 'install-1234abcd' };
     const dir = CampaignStore.open('main', withId).dir;

@@ -136,6 +136,24 @@ message names the campaign's `backups` folder. Either copy the newest backup's
 files (and its `portraits` folder, if it has one) back into the campaign folder, or rename `snapshot.json` (keep the
 file) to open the log as it is, minus the lost events.
 
+## "The campaign is already open"
+
+Only one copy of The System may write a campaign at a time; the campaign
+folder's `LOCK` file says which one has it. A crash or a forced quit leaves
+the file behind, and the next start checks whether the program that wrote it
+is still running (its process number and the time it started), so a leftover
+`LOCK` normally clears itself.
+
+- "already open (process N)": another copy really is running, often one
+  started from a terminal. Close it (Task Manager on Windows, Activity
+  Monitor on macOS) and start again.
+- If no other copy is running and the message stays, delete the `LOCK` file
+  the message names (inside `campaigns/<id>/`, see "Where the campaign is
+  saved") and start again. Nothing else in the folder needs touching.
+- "open on <computer>": the campaign folder is shared and another computer
+  has it open. Quit The System there first; delete `LOCK` only if that
+  computer is off.
+
 ## Only one window opens
 
 The System runs once per computer. Starting it again brings the open window

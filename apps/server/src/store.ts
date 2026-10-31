@@ -31,6 +31,7 @@ import {
   type Snapshot,
 } from '@the-system/engine';
 import { PORTRAIT_MAX_BYTES, detectPortrait } from './portraitFormat';
+import { START_TOLERANCE_MS, ownProcessStart, processStart } from './processStart';
 
 /**
  * Campaign persistence (ROADMAP M2.1, DECISIONS D2/D42). One directory per
@@ -43,7 +44,7 @@ import { PORTRAIT_MAX_BYTES, detectPortrait } from './portraitFormat';
  * - `snapshot.json`: a cached fold, written atomically (temp file, fsync,
  *   rename) every `snapshotEvery` events and on close. Only a speed-up.
  * - `backups/<stamp>-<label>/`: copies made by `backup()` (session end).
- * - `LOCK`: one writer per campaign; holds the owner's pid.
+ * - `LOCK`: one writer per campaign; holds the owner's pid and start time.
  *
  * Secrets (tokens, M9.4) never live here: they belong in the app's settings,
  * outside every campaign directory, so exports cannot carry them.
@@ -116,6 +117,11 @@ export interface StoreOptions {
   readonly snapshotEvery?: number;
   /** Whether a lock holder's pid is alive (injected for tests). */
   readonly isAlive?: (pid: number) => boolean;
+  /**
+   * When a live lock holder's process started (epoch ms), or null when that
+   * cannot be read (injected for tests; QF.41).
+   */
+  readonly processStart?: (pid: number) => number | null;
   /**
    * Stable id of this computer for the campaign lock (the desktop app keeps
    * one in its settings folder). Defaults to the host name, which can change
@@ -269,8 +275,13 @@ interface LockInfo {
   /** Absent in locks written before machine ids. */
   machine?: string;
   boot: number;
+  /** When the holder's process started (epoch ms); absent before QF.41. */
+  started?: number;
   token: string;
 }
+
+/** Lock contents this process wrote and still holds (QF.41: its pid alone proves nothing). */
+const heldLocks = new Set<string>();
 
 function readLock(file: string): LockInfo | null {
   try {
@@ -283,17 +294,43 @@ function readLock(file: string): LockInfo | null {
   }
 }
 
+interface LockProbes {
+  readonly isAlive: (pid: number) => boolean;
+  readonly processStart: (pid: number) => number | null;
+  readonly machine: string;
+}
+
+/**
+ * Whether a same-machine lock still has a live holder (QF.41). A lock naming
+ * this process is held only if this process wrote it and has not released
+ * it; another pid is held only if that process is alive and, when the lock
+ * recorded a start time and the process's can be read, started then (a pid
+ * reused after a crash, or after Windows Fast Startup kept the boot time,
+ * started later).
+ */
+function lockIsHeld(info: LockInfo, raw: string, probes: LockProbes): boolean {
+  if (Math.abs(info.boot - bootMinute()) > 1) return false; // Before the last reboot.
+  // (`isAlive` false stands for "the holder died", which tests simulate in-process.)
+  if (info.pid === process.pid) return heldLocks.has(raw) && probes.isAlive(info.pid);
+  if (!probes.isAlive(info.pid)) return false;
+  if (typeof info.started !== 'number') return true; // An older lock: the pid is all we have.
+  const started = probes.processStart(info.pid);
+  if (started === null) return true; // Cannot tell: never risk two writers.
+  return Math.abs(started - info.started) <= START_TOLERANCE_MS;
+}
+
 /**
  * Takes the campaign's single-writer lock; returns its contents. A lock from
- * this machine is stale when its pid is gone or it predates the last boot; a
- * lock from another machine (shared drive) is never taken over automatically.
+ * this machine is stale when its holder is gone (see `lockIsHeld`); a lock
+ * from another machine (shared drive) is never taken over automatically.
  */
-function takeLock(file: string, isAlive: (pid: number) => boolean, machine: string): string {
+function takeLock(file: string, probes: LockProbes): string {
   const contents = JSON.stringify({
     pid: process.pid,
     host: hostname(),
-    machine,
+    machine: probes.machine,
     boot: bootMinute(),
+    started: ownProcessStart(),
     token: randomUUID(),
   });
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -305,6 +342,7 @@ function takeLock(file: string, isAlive: (pid: number) => boolean, machine: stri
       } finally {
         closeSync(fd);
       }
+      heldLocks.add(contents);
       return contents;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
@@ -313,21 +351,25 @@ function takeLock(file: string, isAlive: (pid: number) => boolean, machine: stri
       const info = readLock(file);
       const foreign =
         info !== null &&
-        (info.machine !== undefined ? info.machine !== machine : info.host !== hostname());
+        (info.machine !== undefined ? info.machine !== probes.machine : info.host !== hostname());
       if (info && foreign) {
         throw new StoreError(
           `The campaign is open on ${info.host}; if that computer is off, delete ${file}`,
         );
       }
-      const sameBoot = info !== null && Math.abs(info.boot - bootMinute()) <= 1;
-      if (info && sameBoot && isAlive(info.pid)) {
-        throw new StoreError(`The campaign is already open (process ${info.pid})`);
+      if (info && lockIsHeld(info, raw, probes)) {
+        const where = info.pid === process.pid ? 'in this window' : `(process ${info.pid})`;
+        throw new StoreError(
+          `The campaign is already open ${where}. If The System is not running, delete ${file} and start it again.`,
+        );
       }
       // Stale. Remove it only if it is still the lock we judged.
       if (existsSync(file) && readFileSync(file, 'utf8') === raw) unlinkSync(file);
     }
   }
-  throw new StoreError('Could not take the campaign lock');
+  throw new StoreError(
+    `Could not take the campaign lock. If The System is not running, delete ${file} and start it again.`,
+  );
 }
 
 /** One open campaign: its state in memory, its log on disk. */
@@ -389,15 +431,16 @@ export class CampaignStore {
     const dir = path.join(CampaignStore.campaignsDir(options.dataDir), checkCampaignId(id));
     mkdirSync(path.join(dir, 'backups'), { recursive: true });
     const lockFile = path.join(dir, 'LOCK');
-    const lock = takeLock(
-      lockFile,
-      options.isAlive ?? defaultIsAlive,
-      options.machineId ?? hostname(),
-    );
+    const lock = takeLock(lockFile, {
+      isAlive: options.isAlive ?? defaultIsAlive,
+      processStart: options.processStart ?? processStart,
+      machine: options.machineId ?? hostname(),
+    });
     try {
       return CampaignStore.load(id, dir, options, lock);
     } catch (error) {
       rmSync(lockFile, { force: true });
+      heldLocks.delete(lock);
       throw error;
     }
   }
@@ -595,6 +638,7 @@ export class CampaignStore {
       closeSync(this.fd);
       this.fd = null;
       if (owned) rmSync(lockFile, { force: true });
+      heldLocks.delete(this.lock);
     }
   }
 
