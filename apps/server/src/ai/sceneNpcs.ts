@@ -25,7 +25,11 @@ const NAME_MAX = 60;
  * `.`, ` - `, ` — ` or `(`. Null when that is empty or too long to be a name.
  */
 export function keeperName(keeper: string): string | null {
-  const head = keeper.split(/[:,;.(]| [-–—] /u)[0]?.replace(/\s+/gu, ' ').trim() ?? '';
+  const head =
+    keeper
+      .split(/[:,;.(]| [-–—] /u)[0]
+      ?.replace(/\s+/gu, ' ')
+      .trim() ?? '';
   if (head.length < 2 || head.length > NAME_MAX) return null;
   return head;
 }

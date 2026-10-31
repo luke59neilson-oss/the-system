@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
+import { OFF_KIND_NOTE, offKind } from './generationKinds';
 
 /**
  * Import with approval (ROADMAP M9.3). The GM picks a content file
@@ -48,6 +49,18 @@ export interface IncomingContent {
   readonly seq: number;
   /** Written by the co-DM: the window says to check it before applying. */
   readonly generated?: boolean;
+  /** QF.50: the generation kind asked for; entries of other kinds start unticked. */
+  readonly kind?: string;
+}
+
+/** The entries ticked when a preview opens: every one that can apply and was asked for. */
+export function initialPicks(
+  entries: readonly { path: string; command: { type: string }; error: string | null }[],
+  kind: string | undefined,
+): Set<string> {
+  return new Set(
+    entries.filter((e) => e.error === null && !offKind(kind, e.command.type)).map((e) => e.path),
+  );
 }
 
 /**
@@ -78,6 +91,7 @@ export function ContentImport({
   const [fileText, setFileText] = useState('');
   const [fileName, setFileName] = useState('');
   const [generated, setGenerated] = useState(false);
+  const [genKind, setGenKind] = useState<string | undefined>(undefined);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
   // Errors from re-checking only the ticked entries (an entry that needs one
@@ -114,10 +128,11 @@ export function ContentImport({
       setFileText(text);
       setFileName(name);
       setGenerated(isGenerated);
+      setGenKind(undefined);
       setPreview(p);
       setChecks(new Map());
       setChecking(false);
-      setPicked(new Set(p.ok ? p.entries.filter((e) => e.error === null).map((e) => e.path) : []));
+      setPicked(p.ok ? initialPicks(p.entries, undefined) : new Set());
     } catch {
       if (run === checkRun.current) {
         setPreview(null);
@@ -139,6 +154,7 @@ export function ContentImport({
     lastSeq.current = incoming.seq;
     const { text, name } = incoming;
     const isGenerated = incoming.generated === true;
+    const kind = isGenerated ? incoming.kind : undefined;
     const run = ++checkRun.current;
     setBusy(true);
     // An "Applied N" from the apply this hand-over waited for stays visible.
@@ -149,12 +165,11 @@ export function ContentImport({
         setFileText(text);
         setFileName(name);
         setGenerated(isGenerated);
+        setGenKind(kind);
         setPreview(p);
         setChecks(new Map());
         setChecking(false);
-        setPicked(
-          new Set(p.ok ? p.entries.filter((e) => e.error === null).map((e) => e.path) : []),
-        );
+        setPicked(p.ok ? initialPicks(p.entries, kind) : new Set());
       })
       .catch(() => {
         if (run !== checkRun.current) return;
@@ -317,6 +332,13 @@ export function ContentImport({
                   <span>{entryLabel(e)}</span> <code>{e.path}</code>
                 </label>
                 {e.note && !e.error && <span className="small muted"> {e.note}</span>}
+                {!e.error && offKind(genKind, e.command.type) && (
+                  <span className="small warn" data-testid="import-off-kind">
+                    {' '}
+                    {OFF_KIND_NOTE}
+                  </span>
+                )}
+                {e.command.type === 'quest.create' && <QuestPreview command={e.command} />}
                 {(e.error ?? (picked.has(e.path) ? checks.get(e.path) : undefined)) && (
                   <span className="err small">
                     {' '}
@@ -364,4 +386,17 @@ function entryLabel(e: PreviewEntry): string {
   if (typeof c.title === 'string') return `${kind}: ${c.title}`;
   if (typeof c.level === 'number') return `${kind}: level ${c.level}`;
   return kind;
+}
+
+/** QF.50: a quest's text and who sees it, so the GM reads it before approving. */
+function QuestPreview({ command }: { command: Record<string, unknown> }) {
+  const text = typeof command.text === 'string' ? command.text.trim() : '';
+  const hidden = command.visible === false;
+  return (
+    <div className="small import-quest" data-testid="import-quest-preview">
+      <strong>{hidden ? 'Hidden from players' : 'Visible to players'}</strong>
+      {typeof command.days === 'number' && ` · ${command.days} days`}
+      {text ? <p className="import-quest-text">{text}</p> : <p className="muted">No quest text.</p>}
+    </div>
+  );
 }

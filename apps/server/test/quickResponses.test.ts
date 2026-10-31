@@ -674,7 +674,10 @@ describe('quick-response routes (MD.1)', () => {
       if (!r.ok) throw new Error(`${command.type}: ${r.error}`);
       store.appendAll(r.events);
     }
-    writeTranscript([line('We walk up to Tamsin Reed by the canyon.'), line('Is it safe?', 'Jake')]);
+    writeTranscript([
+      line('We walk up to Tamsin Reed by the canyon.'),
+      line('Is it safe?', 'Jake'),
+    ]);
     const res = await app.inject({ method: 'GET', url: '/api/gm/ai/quick', headers: gm });
     const body = res.json() as { npc: string; npcs: { id: string; name: string }[] };
     expect(body.npcs).toEqual(
@@ -685,7 +688,9 @@ describe('quick-response routes (MD.1)', () => {
     );
     expect(body.npc).toBe('npc:tamsin reed');
     await ask({ slot: 4 });
-    expect(lastPrompt()).toContain('NPC in the scene: Tamsin Reed (Survivor scout, wiry, chews bark.)');
+    expect(lastPrompt()).toContain(
+      'NPC in the scene: Tamsin Reed (Survivor scout, wiry, chews bark.)',
+    );
     const { events: ev } = await ask({ slot: 4, npc: 'shop:resin' });
     expect(ev[0]).toMatchObject({ npc: { id: 'shop:resin', name: 'Old Brenna' } });
     expect(lastPrompt()).toContain('NPC in the scene: Old Brenna (Keeper of The Resin Stall.');

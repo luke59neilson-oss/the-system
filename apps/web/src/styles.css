@@ -3302,3 +3302,11 @@ ol.change-log li.undone .change-text {
 .campaign-backups li > strong {
   flex: none;
 }
+/* QF.50: a quest in the import preview shows its text and who sees it. */
+.import-quest {
+  margin: 4px 0 0 26px;
+}
+.import-quest-text {
+  margin: 2px 0 0;
+  white-space: pre-wrap;
+}

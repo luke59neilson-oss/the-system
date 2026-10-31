@@ -40,7 +40,13 @@ describe('kept lore for a generation request (MD.3)', () => {
     expect(lines[3]).toBe(`- ${'d'.repeat(QUICK_LORE_MAX - 3 * 350 - 1)}…`);
   });
   it('skips a note that would be clipped to almost nothing, then keeps a short one (QF.50)', () => {
-    const lines = loreLines(['a'.repeat(390), 'b'.repeat(390), 'c'.repeat(390), 'd'.repeat(390), 'Short.']);
+    const lines = loreLines([
+      'a'.repeat(390),
+      'b'.repeat(390),
+      'c'.repeat(390),
+      'd'.repeat(390),
+      'Short.',
+    ]);
     expect(lines.map((l) => l.slice(2, 3))).toEqual(['a', 'b', 'c', 'S']);
   });
   it('matches an NPC name only as a whole word (review M2)', () => {

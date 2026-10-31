@@ -51,6 +51,32 @@ export const GENERATE_FIXTURES: readonly AiFixture[] = [
     delayMs: 4_000,
     text: file({ regions: [{ name: 'Late' }] }),
   },
+  // QF.50: a shop reply that also carries a quest and a skill the GM did not
+  // ask for; the Import window leaves those unticked.
+  {
+    role: 'strong',
+    match: 'tinker with extras',
+    text: file({
+      title: 'The Gut Tinker',
+      shops: [
+        {
+          name: 'The Gut Tinker',
+          keeper: 'Wren Holloway: soot-black hands, talks to her tools.',
+          wares: [{ item: 'Ribcage Lantern', price: 30 }],
+        },
+      ],
+      items: [{ name: 'Ribcage Lantern', rarity: 'common', description: 'Glows near the pulse.' }],
+      quests: [
+        {
+          title: "The Tinker's Debt",
+          text: 'Wren owes the pale hunters a lantern. Deliver it, or break it.',
+          visible: false,
+          notice: false,
+        },
+      ],
+      skills: [{ name: 'Lantern Craft', rarity: 'common', description: 'Make light from bone.' }],
+    }),
+  },
   { role: 'strong', match: 'say hello', text: 'Hello! What would you like me to make?' },
   {
     role: 'strong',
