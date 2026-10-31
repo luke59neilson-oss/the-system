@@ -59,9 +59,16 @@ test('a phone gets small views and fetches older messages and whole notes', asyn
   const text = (await body.textContent()) ?? '';
   expect(text.length).toBeGreaterThan(300);
   await expect(note.getByTestId('note-edit')).toBeEnabled();
+  await phone.screenshot({ path: path.join(shots, 'note-open-390x844.png') });
   await note.getByTestId('note-edit').click();
   await expect(phone.getByTestId('note-body')).toHaveValue(/(What happened at step \d+\. ){16}/);
-  await phone.screenshot({ path: path.join(shots, 'note-open-390x844.png') });
+  await phone.screenshot({ path: path.join(shots, 'note-edit-390x844.png') });
+
+  // Search says how far it reaches.
+  await phone.getByLabel('Search notes').fill('step');
+  await expect(phone.getByTestId('notes-search-scope')).toHaveText(
+    'Searches titles, tags and the start of each note.',
+  );
 
   // Every view frame stays small, and none carries more than one page of practice.
   const views = frames.filter((f) => f.startsWith('{"type":"view"'));

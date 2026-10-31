@@ -308,6 +308,12 @@ export function NotesPanel({
           onChange={(e) => setQuery(e.target.value)}
         />
       </div>
+      {query.trim() !== '' && (
+        // QF.52 (D292): closed notes arrive cut, so search reaches their start.
+        <p className="muted notes-search-scope" data-testid="notes-search-scope">
+          Searches titles, tags and the start of each note.
+        </p>
+      )}
       {tag !== null && (
         <p className="notes-tag-filter">
           Tagged <span className="note-tag">{tag}</span>{' '}

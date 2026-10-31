@@ -84,6 +84,9 @@ export interface SeqNotification {
   notification: LiveNotification;
 }
 
+/** QF.52: how long a rate-limited `view.limits` waits before it is sent again. */
+const LIMITS_RETRY_MS = 1000;
+
 type ServerMessage =
   | { type: 'hello'; protocol: number; campaign?: string }
   | { type: 'joined'; role: 'gm' | 'player'; characterId: string | null; seq: number }
@@ -153,6 +156,9 @@ export class LiveClient {
   private nextRequest = 0;
   /** 0 on first join: the server sends the whole history back to day 1 (M3.3). */
   private lastSeq = 0;
+  /** QF.52: a `view.limits` frame went out and no view has answered it yet. */
+  private limitsPending = false;
+  private limitsRetry: ReturnType<typeof setTimeout> | null = null;
   /** QF.52: what this player's view should carry beyond the defaults. */
   private limits: { messages?: number | undefined; openNotes?: readonly string[] | undefined } = {};
   /** The campaign changed since this page last joined (MS.4 demo switch). */
@@ -215,6 +221,7 @@ export class LiveClient {
     if (this.snapshot.status !== 'joined') return;
     const { messages, openNotes } = this.limits;
     if (messages === undefined && openNotes === undefined) return;
+    this.limitsPending = true;
     socket.send(
       JSON.stringify({
         type: 'view.limits',
@@ -232,6 +239,7 @@ export class LiveClient {
   close(): void {
     this.closed = true;
     if (this.retry) clearTimeout(this.retry);
+    if (this.limitsRetry) clearTimeout(this.limitsRetry);
     this.socket?.close();
   }
 
@@ -341,6 +349,7 @@ export class LiveClient {
         this.update({ listening: message.on });
         return;
       case 'view':
+        this.limitsPending = false;
         this.lastSeq = message.seq;
         this.update({
           view: message.view,
@@ -391,6 +400,14 @@ export class LiveClient {
             error: switched ? missingCharacterReason(this.snapshot.campaign) : message.error,
           });
           socket.close();
+        } else if (this.limitsPending && /^Too many actions/.test(message.error)) {
+          // QF.52 review: a rate-limited `view.limits` is sent again shortly,
+          // so an opened note never stays half-loaded.
+          this.limitsPending = false;
+          this.limitsRetry ??= setTimeout(() => {
+            this.limitsRetry = null;
+            this.sendLimits();
+          }, LIMITS_RETRY_MS);
         } else {
           this.update({ error: message.error });
         }
