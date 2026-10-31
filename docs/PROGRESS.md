@@ -1459,7 +1459,7 @@ next item, blockers. -->
 - Tests: unit 1,845+ (check at 6cdb8a50); full e2e 146/146 at the MV.1 build; latency 7/8 then M4.A green on the MV.2 build (its spec had been edited for MV.2 while the old build ran). Engine: reducer, envelope, commands, history touched; goldens: one added, none edited.
 - Open `wip/*`: `wip/MV.2`. Blockers: none.
 
-### Run · 2026-10-31 18:08–19:00 UTC (close-out at minute 45; end minute 52)
+### Run · 2026-10-31 18:08–18:54 UTC (close-out at minute 45; end minute 46: lock released early by mistake after the MV.3 hand-off; no §5.5 reason)
 - Close-out at minute 45: MV.2 reviewed (2 rounds), fixed and merged to main; MV.3 started and handed off on `wip/MV.3`; efficiency check done (D297 in trial).
 - Preflight: `add_repo` not offered; repo already cloned (stale local `main` with unrelated history, reset to `origin/main`); lock pushed cleanly; vitest 5.0.5; reviewer sonnet works (worktree; blocking, ~6 min). CI on main green at start (554cbcc7). No new answers. Hour 18: efficiency check (no trials to judge; sonnet auditor; applied its Tier 1: orient output 21.0k → 7.5k words, D297).
 - MV.2 XP shares by percent (D296, revised): see REVIEW-LOG. Exact even split now holds whenever the % equal the even ones; ticking a participant says when typed % were reset. Q90 updated.
