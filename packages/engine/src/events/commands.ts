@@ -8,7 +8,15 @@ import {
   type EventType,
 } from './envelope';
 import { CharacterRuleError, raceLevel } from '../character';
-import { settleContest, type ContestSideRecord, type GradeGapMode } from '../resolution';
+import {
+  rollsModeOf,
+  settleContest,
+  settleD20Contest,
+  type ContestSideRecord,
+  type DieRoll,
+  type GradeGapMode,
+  type RollsMode,
+} from '../resolution';
 import { titleDefByName } from '../titles';
 import { evolutionTarget, keptRerate, stepBudgetProblems } from '../evolution';
 import { castingForSkill, normalizeTags, poolLabel } from '../skills/library';
@@ -455,8 +463,12 @@ export type Command =
       b: ContestSideRecord;
       /** Default: the campaign's grade-gap mode. */
       mode?: GradeGapMode | undefined;
-      /** The roll drawn, or null when a grade wall settled it. */
+      /** The roll drawn, or null when a grade wall settled it (or the contest is d20). */
       roll: number | null;
+      /** MK.1: odds or d20 (default: the campaign's `resolution.rolls`). */
+      rolls?: RollsMode | undefined;
+      /** MK.1: a d20 contest's dice per round, all but the last tied (none when walled). */
+      dice?: readonly { a: DieRoll; b: DieRoll }[] | undefined;
     }
   | {
       type: 'montage.offer';
@@ -1718,9 +1730,23 @@ function toEvent(
       const rules = campaign.state?.rules;
       if (!rules) throw new EventRejectedError('No campaign yet');
       const mode = command.mode ?? rules.resolution.gradeGapMode;
+      const rolls = command.rolls ?? rollsModeOf(rules);
+      if (rolls === 'd20' && command.roll !== null) {
+        throw new EventRejectedError('A d20 contest takes dice, not an odds roll');
+      }
+      if (rolls === 'odds' && command.dice !== undefined && command.dice.length > 0) {
+        throw new EventRejectedError('An odds contest takes a roll, not dice');
+      }
       let result;
+      let d20 = null;
       try {
-        result = settleContest(rules, command.a, command.b, mode, command.roll);
+        if (rolls === 'd20') {
+          const settled = settleD20Contest(rules, command.a, command.b, mode, command.dice ?? []);
+          d20 = settled.d20;
+          result = settled;
+        } else {
+          result = settleContest(rules, command.a, command.b, mode, command.roll);
+        }
       } catch (error) {
         if (error instanceof CharacterRuleError) throw new EventRejectedError(error.message);
         throw error;
@@ -1733,12 +1759,15 @@ function toEvent(
           a: command.a,
           b: command.b,
           mode,
-          roll: command.roll,
+          roll: rolls === 'd20' ? null : command.roll,
           yours,
           theirs,
           chance,
           walled,
           success,
+          // Odds contests keep the pre-MK payload exactly.
+          ...(rolls === 'd20' ? { rolls } : {}),
+          ...(d20 ? { d20 } : {}),
         },
       };
     }

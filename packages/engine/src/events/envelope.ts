@@ -57,6 +57,12 @@ const contestSide = z.strictObject({
   characterIds: z.array(z.string().min(1).max(100)).max(20),
   stat: z.string().min(1).max(100).nullable(),
 });
+/** One side's die in one round of a d20 contest (MK.1). */
+const d20Die = z.strictObject({
+  die: z.number().int().min(1).max(20),
+  how: z.enum(['typed', 'app']),
+  total: z.number().int().min(-2000).max(2000),
+});
 /** A party in a gift or trade: a character id, or null for the GM. */
 const party = recordId.nullable();
 const itemCount = z.number().int().positive().max(1_000_000);
@@ -772,6 +778,19 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     chance: z.number().min(0).max(1),
     walled: z.boolean(),
     success: z.boolean(),
+    /** MK.1: how it was rolled; absent = app odds (every contest shared before MK). */
+    rolls: z.enum(['odds', 'd20']).optional(),
+    /** MK.1: a d20 contest's modifiers and dice (absent when odds or walled). */
+    d20: z
+      .strictObject({
+        modA: z.number().int().min(-1000).max(1000),
+        modB: z.number().int().min(-1000).max(1000),
+        rounds: z
+          .array(z.strictObject({ a: d20Die, b: d20Die }))
+          .min(1)
+          .max(50),
+      })
+      .optional(),
   }),
   /** GM creates a quest (M1.12, DESIGN §7), optionally with a day timer and World Stability. */
   'quest.created': z.strictObject({

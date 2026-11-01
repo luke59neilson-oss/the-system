@@ -121,7 +121,9 @@ export function d20WinChance(modA: number, modB: number): number {
 
 function checkDie(roll: DieRoll, label: string): void {
   if (!Number.isInteger(roll.die) || roll.die < 1 || roll.die > D20_SIDES) {
-    throw new CharacterRuleError(`${label} must be a whole number 1–${D20_SIDES} (got ${roll.die})`);
+    throw new CharacterRuleError(
+      `${label} must be a whole number 1–${D20_SIDES} (got ${roll.die})`,
+    );
   }
   if (roll.how !== 'typed' && roll.how !== 'app') {
     throw new CharacterRuleError(`${label}: say whether it was typed or rolled by the app`);
@@ -141,10 +143,19 @@ export function settleD20Contest(
 ): D20ContestResult {
   const mods = d20Modifiers(rules, a, b, mode);
   if (mods === null) {
-    if (dice.length > 0) throw new CharacterRuleError('A grade wall settles this contest; it has no roll');
+    if (dice.length > 0)
+      throw new CharacterRuleError('A grade wall settles this contest; it has no roll');
     const [yours, theirs] = adjustedValues(rules, a, b, mode);
     const win = gradeGap(rules, a.grade, b.grade) < 0;
-    return { yours, theirs, chance: win ? 1 : 0, roll: null, walled: true, success: win, d20: null };
+    return {
+      yours,
+      theirs,
+      chance: win ? 1 : 0,
+      roll: null,
+      walled: true,
+      success: win,
+      d20: null,
+    };
   }
   if (dice.length === 0) throw new CharacterRuleError('This contest needs each side’s d20');
   if (dice.length > MAX_D20_ROUNDS) throw new CharacterRuleError('Too many tied rounds');
