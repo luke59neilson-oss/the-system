@@ -88,6 +88,7 @@ export interface DraftRow {
   readonly spell: boolean;
   /** Amount typed for a spell's cost; a whole number above 0 is a cost. */
   readonly costAmount: string;
+  readonly costPool: string;
 }
 
 /** A spell's typed cost, or null when it is not a whole number above 0. */
@@ -102,6 +103,13 @@ export function parseCost(amount: string): number | null {
  * a rarity above the ceiling, a missed capstone, a name the character has or
  * another row has, a spell with no cost. A flagged menu cannot be sent.
  */
+/** The library entry a menu row would follow (keyed by name and rarity, L4). */
+export function libraryEntry(state: CampaignState, name: string, rarity: string) {
+  return Object.values(state.skillLibrary).find(
+    (d) => d.name === name.trim() && d.rarity === rarity,
+  );
+}
+
 export function draftFlags(
   state: CampaignState,
   characterId: string,
@@ -127,7 +135,18 @@ export function draftFlags(
     if (name !== '' && rows.some((o, j) => j < i && key(o.name) === name)) {
       flags.push('Another option has this name');
     }
-    if (r.spell && parseCost(r.costAmount) === null) flags.push('A spell needs a cost');
+    if (name !== '' && r.spell) {
+      const amount = parseCost(r.costAmount);
+      const known = libraryEntry(state, r.name, r.rarity);
+      if (amount === null) flags.push('A spell needs a cost');
+      // Sending never changes a library entry other characters may follow.
+      else if (known && (known.cost?.amount !== amount || known.cost.pool !== r.costPool)) {
+        const has = known.cost
+          ? `costs ${known.cost.amount} ${rules.pools.find((p) => p.id === known.cost?.pool)?.name ?? known.cost.pool}`
+          : 'has no cost';
+        flags.push(`The library's ${known.name} ${has}: match it or rename this option`);
+      }
+    }
     return flags;
   });
   const named = rows.filter((r) => key(r.name) !== '');

@@ -2557,6 +2557,11 @@ ol.change-log li.undone .change-text {
 }
 .offer-drafts .row {
   margin-bottom: 6px;
+  align-items: flex-end;
+}
+.offer-drafts .row button {
+  flex: none;
+  width: 11em;
 }
 .offer-flags {
   margin: 6px 0 0;

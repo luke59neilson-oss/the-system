@@ -90,7 +90,7 @@ test('draft from Perception, fix the flag, edit, offer; the player sees the menu
   // The spell has no cost: flagged, and the menu cannot go.
   await expect(menu.getByTestId('draft-flags-2')).toContainText('A spell needs a cost');
   await expect(send).toBeDisabled();
-  await builder.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await menu.getByTestId('draft-flags-2').evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await gm.screenshot({ path: path.join(shots, 'gm-drafts-flagged-1366x768.png') });
 
   await row(3).getByRole('textbox', { name: 'Option 3 cost' }).fill('5');

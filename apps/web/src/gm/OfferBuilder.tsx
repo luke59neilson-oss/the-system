@@ -7,6 +7,7 @@ import {
   builderSlots,
   characterStanding,
   draftFlags,
+  libraryEntry,
   offerProblem,
   parseCost,
   practiceSkillCounts,
@@ -434,6 +435,11 @@ function MenuForm({
     kind: hasProfession ? r.kind : 'class',
     description: r.description.trim(),
   }));
+  // A reply can arrive long after its click: merge into the rows as they are then.
+  const latestRows = useRef(rows);
+  useEffect(() => {
+    latestRows.current = rows;
+  }, [rows]);
   const flags = draftFlags(state, characterId, level, rows);
   const flagged = flags.menu.length > 0 || flags.rows.some((f) => f.length > 0);
   const problem = offerProblem(state, characterId, level, options);
@@ -465,7 +471,9 @@ function MenuForm({
         costPool: d.cost?.pool ?? firstPool,
         costAmount: d.cost === null ? '' : String(d.cost.amount),
       }));
-      const merged = rows.filter((r) => r.name.trim() !== '');
+      const merged = latestRows.current.filter(
+        (r) => r.name.trim() !== '' || r.description.trim() !== '',
+      );
       const room = rules.skills.menuSize.max - merged.length;
       const taken = incoming.slice(0, Math.max(0, room));
       const next = [...merged, ...taken];
@@ -492,31 +500,6 @@ function MenuForm({
     // first one still needing a menu).
     onSent();
     setBusy(true);
-    // MW.2: a spell's cost lives on its library entry, which the chosen skill follows.
-    for (const row of rows) {
-      const amount = row.spell ? parseCost(row.costAmount) : null;
-      if (amount === null) continue;
-      const cost = { pool: row.costPool, amount };
-      const known = Object.values(state.skillLibrary).find(
-        (d) => d.name === row.name.trim() && d.rarity === row.rarity,
-      );
-      const saved = await client.command(
-        known
-          ? { type: 'skillDef.edit', skillDefId: known.id, cost }
-          : {
-              type: 'skillDef.define',
-              name: row.name.trim(),
-              rarity: row.rarity,
-              description: row.description.trim(),
-              cost,
-            },
-      );
-      if (!saved.ok) {
-        setBusy(false);
-        report(saved, '');
-        return;
-      }
-    }
     const r = await client.command({
       type: 'selection.offer',
       characterId,
@@ -528,8 +511,38 @@ function MenuForm({
         ...(o.description ? { description: o.description } : {}),
       })),
     });
+    if (!r.ok) {
+      setBusy(false);
+      report(r, '');
+      return;
+    }
+    // MW.2: a new spell's cost lives on a new library entry, which the chosen
+    // skill follows. Only after the menu is accepted, so a refused menu leaves
+    // nothing behind. An existing entry is never changed here (draftFlags).
+    const unsaved: string[] = [];
+    for (const row of rows) {
+      const amount = row.spell ? parseCost(row.costAmount) : null;
+      if (amount === null || libraryEntry(state, row.name, row.rarity)) continue;
+      const saved = await client.command({
+        type: 'skillDef.define',
+        name: row.name.trim(),
+        rarity: row.rarity,
+        description: row.description.trim(),
+        cost: { pool: row.costPool, amount },
+      });
+      if (!saved.ok) unsaved.push(row.name.trim());
+    }
     setBusy(false);
-    report(r, `Menu sent to ${character?.name ?? 'the player'} (lvl ${level})`);
+    const sent = `Menu sent to ${character?.name ?? 'the player'} (lvl ${level})`;
+    report(
+      unsaved.length === 0
+        ? r
+        : {
+            ok: false,
+            error: `${sent}, but the cost of ${unsaved.join(', ')} was not saved: add it in the skill library`,
+          },
+      sent,
+    );
     if (r.ok) setRows(fresh());
   };
   const setRow = (i: number, patch: Partial<Row>) =>

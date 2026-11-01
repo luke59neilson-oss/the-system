@@ -297,6 +297,7 @@ describe('skill-offer draft flags (MW.2)', () => {
     rarity,
     spell,
     costAmount,
+    costPool: 'mana',
   });
   const state = campaign().state!;
 
@@ -323,8 +324,50 @@ describe('skill-offer draft flags (MW.2)', () => {
   it('flags a spell with no cost, and parses costs', () => {
     expect(draftFlags(state, 'jake', 2, [row('A', 'common', true)]).rows[0]?.[0]).toMatch(/cost/);
     expect(draftFlags(state, 'jake', 2, [row('A', 'common', true, '0')]).rows[0]).toHaveLength(1);
+    expect(draftFlags(state, 'jake', 2, [row('', 'common', true)]).rows[0]).toEqual([]);
     expect(parseCost(' 5 ')).toBe(5);
     expect(parseCost('1.5')).toBeNull();
     expect(parseCost('')).toBeNull();
+  });
+});
+
+describe('a spell row and the library (MW.2 review)', () => {
+  const base = campaign().state!;
+  const pool = base.rules.pools[0]!.id;
+  const withEntry = (cost: { pool: string; amount: number } | null) =>
+    ({
+      ...base,
+      skillLibrary: {
+        bolt: {
+          ...Object.values(base.skillLibrary)[0],
+          id: 'bolt',
+          name: 'Bolt',
+          rarity: 'common',
+          cost,
+        },
+      },
+    }) as unknown as typeof base;
+  const spell = (costAmount: string) => ({
+    name: 'Bolt',
+    rarity: 'common',
+    kind: 'class',
+    description: '',
+    spell: true,
+    costPool: pool,
+    costAmount,
+  });
+  it('flags a cost that differs from the entry, so sending cannot change it', () => {
+    const flags = draftFlags(withEntry({ pool, amount: 3 }), 'jake', 2, [spell('5')]).rows[0]!;
+    expect(flags).toHaveLength(1);
+    expect(flags[0]).toMatch(/library's Bolt costs 3 .*match it or rename/);
+  });
+  it('accepts the matching cost', () => {
+    expect(draftFlags(withEntry({ pool, amount: 3 }), 'jake', 2, [spell('3')]).rows[0]).toEqual([]);
+  });
+  it('flags a cost on an entry that has none', () => {
+    expect(draftFlags(withEntry(null), 'jake', 2, [spell('3')]).rows[0]![0]).toMatch(/has no cost/);
+  });
+  it('a new name is free to define its cost', () => {
+    expect(draftFlags(base, 'jake', 2, [spell('3')]).rows[0]).toEqual([]);
   });
 });
