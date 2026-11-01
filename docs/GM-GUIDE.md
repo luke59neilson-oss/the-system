@@ -92,7 +92,8 @@ send it to a player.
      the target's grade and level for the grade rules and the above-level
      bonus. The preview shows each character's levels, overflow to the other
      track and any XP that would be *lost* before you press **Award XP**.
-     The "Typical session" line suggests an award for ≈ 6 levels per grade.
+     The grade reference line reads "a typical session ≈ 6 levels = N XP
+     each", and **Fill N XP** puts that award in.
    - **Encounter**: **Contest roll** (pick each side's stat; the grade-wall
      rules apply; **Share with the table** shows the result to players),
      **Damage and healing** on HP / MP / Stamina, and **Progress clocks**
@@ -131,7 +132,7 @@ send it to a player.
 - **Marks review**: confirm at most one mastery mark per skill per session
   (**Confirm mark**); when a skill has enough, **Upgrade** it.
 - **Merges**: when two skills have worked together often enough, name the
-  result and **Send merge**.
+  result and **Send merge offer**.
 - **Professions**: offer a character a profession at any time before they
   have one (**Offer profession**), optionally with its per-level stats and a
   one-time bonus, which it brings when the player takes it. **Withdraw**
@@ -336,7 +337,7 @@ default.
 The build never calls the paid API; tests use recorded replies. The first
 time you use your own key, check the live path once (a few cents):
 
-1. Co-DM settings: save the key, press **Test connection** (expect "Connected"),
+1. Co-DM settings: save the key, press **Test connection** (expect "Connected (<model>)"),
    and see the spend counter show 1 call.
 2. Generate a Shop from a one-line request; it opens in Import content with
    no errors, and the spend counter goes up.
