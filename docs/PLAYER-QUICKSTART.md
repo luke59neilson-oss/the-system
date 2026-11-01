@@ -34,7 +34,7 @@ GM's laptop; nothing to install.
   all three and confirm once.
 - Tap any skill (shown as `[Name (Rarity)]`) to read its description, effects and mastery
   marks, and to give it a **Nickname**.
-- **Spells** are skills with a cost: the skill's page shows its cost,
+- Spells are skills with a cost: the skill's page shows its cost,
   cooldown, range and notes, and **Cast** pays the cost from your pool (it is
   refused when the pool is too low). The GM sees each cast as practice and
   can undo it. Cooldowns are shown, not enforced: keep track at the table.

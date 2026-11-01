@@ -93,7 +93,7 @@ send it to a player.
      bonus. The preview shows each character's levels, overflow to the other
      track and any XP that would be *lost* before you press **Award XP**.
      The grade reference line reads "a typical session ≈ 6 levels = N XP
-     each", and **Fill N XP** puts that award in.
+     each", and its Fill button puts that award in.
    - **Encounter**: **Contest roll** (pick each side's stat; the grade-wall
      rules apply; **Share with the table** shows the result to players),
      **Damage and healing** on HP / MP / Stamina, and **Progress clocks**
