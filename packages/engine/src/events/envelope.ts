@@ -738,6 +738,12 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     releaseId: recordId.optional(),
     /** Upcast from v1: chosen under the old rules (no gate, no refill, D99). */
     legacy: z.literal(true).optional(),
+    /**
+     * Upcast from v2 (ME.6, D311): chosen before ME.6, so a three-step choice
+     * replays under the ME.2 profession rules (skipped options become name-only
+     * offers; no "no longer apply" refusal).
+     */
+    stepsV1: z.literal(true).optional(),
   }),
   /** GM starts a progress clock with N segments (M1.11, DESIGN §7). */
   'clock.created': z.strictObject({
@@ -1086,7 +1092,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'selection.chosen': 1,
   'selection.optionWithdrawn': 1,
   'evolution.released': 2,
-  'evolution.chosen': 2,
+  'evolution.chosen': 3,
   'clock.created': 1,
   'clock.ticked': 1,
   'clock.removed': 2,
@@ -1154,6 +1160,8 @@ export const EVENT_UPCASTERS: EventUpcasters = {
   },
   'evolution.chosen': {
     1: (payload) => ({ ...(payload as object), legacy: true }),
+    // ME.6 (D311): three-step choices stored before ME.6 keep the ME.2 rules.
+    2: (payload) => ({ ...(payload as object), stepsV1: true }),
   },
   // M7.A: v1 removals left the clock's open montages open.
   'clock.removed': {

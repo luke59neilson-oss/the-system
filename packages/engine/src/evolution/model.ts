@@ -805,6 +805,7 @@ export function chooseEvolution(
   legacy = false,
   joint: JointUses = () => 0,
   choices: StepChoices | null = null,
+  stepsV1 = false,
 ): EvolutionResult {
   const pending = character.evolution;
   if (!pending) throw new CharacterRuleError(`No evolution is released for ${character.name}`);
@@ -812,7 +813,7 @@ export function chooseEvolution(
   if (releaseId !== null && releaseId !== pending.releaseId) {
     throw new CharacterRuleError('The evolution was released again; choose from the new options');
   }
-  const picked = pickSteps(character, pending, choices);
+  const picked = pickSteps(character, pending, choices, stepsV1);
   const single = pending.options.find((o) => o.id === optionId);
   if (!single) throw new CharacterRuleError(`No evolution option "${optionId}"`);
   // ME.2: the three chosen options' transforms and one-time bonuses apply together.
@@ -914,7 +915,7 @@ export function chooseEvolution(
   if (option.classWeights !== null) next = reshapeClassWeights(rules, next, option.classWeights);
   if (!legacy) next = applyStatBonus(next, option.statBonus ?? {});
   if (profession !== null) next = grantProfession(rules, next, profession);
-  if (picked !== null) next = applySteps(rules, next, pending, picked);
+  if (picked !== null) next = applySteps(rules, next, pending, picked, stepsV1);
   const levelUps: LevelUp[] = [];
   // Spends XP banked at the old top (banking rules only); with `xp.overflow`
   // on, capped tracks hold 0 XP, so these are no-ops (MQ.11).
@@ -1075,6 +1076,7 @@ function pickSteps(
   character: Character,
   pending: PendingEvolution,
   choices: StepChoices | null,
+  stepsV1: boolean,
 ): PickedSteps | null {
   const steps = pending.steps;
   if (steps === undefined) {
@@ -1093,10 +1095,11 @@ function pickSteps(
   };
   let profession: ReleasedStepOption | null = null;
   // ME.6 (a): a profession gained after a release that offered professions
-  // makes those offers void; the profession then stays as it is.
+  // makes those offers void; the profession then stays as it is. A choice
+  // stored before ME.6 (`stepsV1`) replays under the ME.2 rules.
+  const offered = !stepsV1 && pending.professionOffered === true;
   const keepsProfession =
-    character.profession !== null &&
-    (pending.professionOffered === true || steps.profession.length === 0);
+    !stepsV1 && character.profession !== null && (offered || steps.profession.length === 0);
   if (choices.profession === null) {
     if (character.profession !== null && !keepsProfession) {
       throw new CharacterRuleError(
@@ -1104,7 +1107,7 @@ function pickSteps(
       );
     }
   } else {
-    if (character.profession !== null && pending.professionOffered === true) {
+    if (character.profession !== null && offered) {
       throw new CharacterRuleError(
         `${character.name} now has the profession [${character.profession}]: the professions offered with this evolution no longer apply, so it stays as it is`,
       );
@@ -1137,6 +1140,7 @@ function applySteps(
   character: Character,
   pending: PendingEvolution,
   picked: PickedSteps,
+  stepsV1: boolean,
 ): Character {
   const dist = (o: ReleasedStepOption): TrackDistribution => ({
     stats: { ...o.distribution.stats },
@@ -1147,11 +1151,16 @@ function applySteps(
     race: dist(picked.race),
   };
   if (picked.profession !== null) distributions.profession = dist(picked.profession);
-  else if (character.profession !== null && character.distributions?.profession) {
+  else if (!stepsV1 && character.profession !== null && character.distributions?.profession) {
     // ME.6 (a): the held profession stays unchanged, its distribution too.
     distributions.profession = character.distributions.profession;
   }
   let next: Character = { ...character, race: picked.race.name.trim(), distributions };
+  if (picked.profession === null && stepsV1) {
+    // Stored before ME.6: the option names alone become offers (ME.2).
+    const offeredNames = pending.steps?.profession.map((o) => o.name.trim()) ?? [];
+    return { ...next, professionOffers: mergeOffers(next.professionOffers, offeredNames) };
+  }
   if (picked.profession === null) {
     if (character.profession !== null) return next;
     const options = pending.steps?.profession ?? [];

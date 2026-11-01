@@ -535,19 +535,6 @@
           "stats": {},
           "free": 6
         }
-      },
-      "professionOfferCards": {
-        "Tracker": {
-          "distribution": {
-            "stats": {
-              "perception": 5
-            },
-            "free": 2
-          },
-          "statBonus": {
-            "perception": 1
-          }
-        }
       }
     },
     "kim": {

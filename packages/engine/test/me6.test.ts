@@ -225,3 +225,49 @@ describe('ME.6 (d): a profession taken later brings its offer distribution', () 
     expect(replay(c.events).state).toEqual(c.state);
   });
 });
+
+describe('ME.6 review: choices stored before ME.6 replay under the ME.2 rules (D311)', () => {
+  // A raw `evolution.chosen` as an older app stored it (v2) or as ME.6 stores it (v3).
+  const chosenRaw = (c: Campaign, schemaVersion: number, profession: string | null) => {
+    const last = c.events[c.events.length - 1]!;
+    return {
+      ...JSON.parse(JSON.stringify(last)),
+      id: `chosen-v${schemaVersion}`,
+      type: 'evolution.chosen',
+      actor: { role: 'player', characterId: 'jake' },
+      schemaVersion,
+      payload: {
+        characterId: 'jake',
+        optionId: 'hunter',
+        profession: null,
+        choices: { class: 'hunter', profession, race: 'human-f' },
+        releaseId: char(c).evolution!.releaseId,
+      },
+    };
+  };
+  const gained = (): Campaign =>
+    ok(ok(atGTop(), threeStep()), {
+      type: 'character.grantProfession',
+      characterId: 'jake',
+      profession: 'Cook',
+    });
+
+  it('an old choice of a release profession after one was gained still replays (renamed, as before)', () => {
+    const c = gained();
+    const old = replay([...c.events, chosenRaw(c, 2, 'tracker')]);
+    expect(char(old).grade).toBe('F');
+    expect(char(old).profession).toBe('tracker');
+    // The same choice made today is refused (ME.6 a).
+    expect(() => replay([...c.events, chosenRaw(c, 3, 'tracker')])).toThrow(/no longer apply/);
+  });
+
+  it('an old "none for now" keeps name-only offers; a new one keeps the cards', () => {
+    const c = ok(atGTop(), threeStep());
+    const old = char(replay([...c.events, chosenRaw(c, 2, null)]));
+    expect(old.professionOffers).toEqual(expect.arrayContaining(['tracker', 'skinner']));
+    expect(old.professionOfferCards ?? {}).toEqual({});
+    const now = char(replay([...c.events, chosenRaw(c, 3, null)]));
+    expect(now.professionOffers).toEqual(expect.arrayContaining(['tracker', 'skinner']));
+    expect(Object.keys(now.professionOfferCards ?? {}).sort()).toEqual(['skinner', 'tracker']);
+  });
+});

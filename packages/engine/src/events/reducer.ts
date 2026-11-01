@@ -2064,6 +2064,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
           event.payload.legacy === true,
           jointUsesOf(state, characterId),
           event.payload.choices ?? null,
+          event.payload.stepsV1 === true,
         ),
       );
       // Practice entries follow transformed skills, so pair counts carry over.
