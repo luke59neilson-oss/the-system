@@ -325,7 +325,7 @@ in the first session.
   unequal bonus blocks release; Override releases); the moved windows'
   existing specs pass from their new place; screenshots at 1366×768 and
   1920×1080.
-- [ ] **ME.4 Reference table and shapes.** `npm run reference` embeds
+- [x] **ME.4 Reference table and shapes.** `npm run reference` embeds
   `docs/reference/primal-hunter/evolutions.csv`; the Evolutions tab shows
   it with totals and percent shapes, plus the campaign's own earlier
   options; **Use this shape** fills an option's distribution scaled to the

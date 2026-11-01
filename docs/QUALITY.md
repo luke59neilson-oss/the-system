@@ -222,6 +222,7 @@ lowered by their verifiers and folded into the Low batches.
 
 ## Backlog (Lows; M11.5 goes through these)
 
+- (ME.4 review, sonnet) Evolutions reference: campaign rows name the character as now (a rename shows the new name; refetch keyed on grade and release only); every released option is listed, replaced and unchosen ones too, with no chosen mark; the shape picker keeps the first row when rows change; the table sits below the release form and wraps at 1366×768; the Use this shape failure path has no test.
 - ME.3 (2026-11-01, sonnet): switching the Evolutions builder between Three steps and Class only drops the draft, and the shape resets on a tab change (`EvolutionBuilder.tsx`); a steps draft does not re-seed when the character gains a profession or its distributions change while open (`EvolutionSteps.tsx`); option cards are labelled by position, so Remove/Duplicate names shift after a removal.
 - (ME.2 review round 2, sonnet) with `steps`, `releaseEvolution` still runs `checkOption` on the class-only `options`, so rules with `evolutionTransforms.min` ≥ 1 refuse a class option whose transform would come from the profession or race step; combination refusals name options by display name, which can repeat across steps.
 

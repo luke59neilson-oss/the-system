@@ -305,10 +305,11 @@ export function StepsForm({
                           const scaled = scaleShape(row, budgets[step], statOrder);
                           if (scaled !== null) {
                             setCard(step, i, { stats: scaled.stats, free: scaled.free });
+                            setResult(null);
                           } else {
                             setResult({
                               ok: false,
-                              text: `Could not use [${row.name}]: it has no points to scale to ${budgets[step]}`,
+                              text: `Could not use [${row.name}] at a budget of ${budgets[step]}`,
                             });
                           }
                         }}
