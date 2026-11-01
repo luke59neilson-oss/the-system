@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** 52c9c148 (2026-10-31, A) · **Next rotation:** B
+**Last sweep:** bc1b26b7 (2026-11-01, B) · **Next rotation:** C
 
 ## Lenses and rotation
 
@@ -219,8 +219,14 @@ lowered by their verifiers and folded into the Low batches.
   Passes alone and with `--workers=2` here, and in this run's full local
   suite (148/148). Flake; if it repeats it becomes a QF item (check whether
   a pane's Identify notice, MV.3, covers the console while Tab is walked).
+| 2026-11-01 03:10 | B, 52c9c148..bc1b26b7 | Boundaries · haiku | 0 | 0 | 0 | clean (read only; projections, ME commands, reference route, hub) | 0 | ~190k |
+| 2026-11-01 03:10 | B, 52c9c148..bc1b26b7 | Tests · fable | 0 | 3 | 7 | 3 M by the reviewer's mutations, queued as QF.68 to verify first (no time left this run); 7 L to Backlog | 0 | ~243k |
+| 2026-11-01 03:10 | B, 52c9c148..bc1b26b7 | UX · sonnet | 0 | 2 | 2 | 2 M confirmed from `ME.5/player-review-390x844.png` and code (into ME.6e); 2 L as QF.69 | 0 | ~88k |
 
 ## Backlog (Lows; M11.5 goes through these)
+
+- 2026-11-01 sweep B Tests (fable): `scaleDistribution` tie order unpinned (`budget.ts:57-68`); profession-unlock boundary `<` vs `<=` for three-step releases (`evolution/model.ts:1181`); D38 guard `b.track === undefined` untested (`xp.ts:437`); `trackGrant` usable guard untested (`budget.ts:110`); `batchRef`/`batchName` untested (`player/freePoints.ts:82-103`, GM override `PartyDashboard.tsx:416`); tautological canary `evolutionSteps.test.ts:385`, `ME.5.spec.ts:251` fixed wait, `ME.1.spec.ts:103` passes at once; no rejected-input test for negative/fractional step values.
+- 2026-11-01 ME.A review (fable) Lows: DING hides class/profession free points (`format.ts:16-21`, `history/index.ts:413-446`); step rarity not validated, `'common'` hard-coded (`envelope.ts`, `commands.ts`); stale GM-GUIDE lines 139, 148-149 and `SkillOverrides.tsx:89-90`; pending steps offers cannot be withdrawn (`evolutionBuilderModel.ts:171-180`); new cards not scaled to the new budget, builder only for ready characters, drafts lost on reload; two largest-remainder scalers (with QF.68).
 
 - (ME.5 review, sonnet) Player evolution: View-as panes never read the player's opened memory (always lit) and the memory is per browser; the `[Evolution available]` pop-up does not take focus; the reduced-motion ring is modest; a release replaced while the dialog is open drops focus to the body; saved picks naming an option the GM removed from the same release enable Evolve and the server refuses; saved picks live in Status state; profession-holder and skipped-profession paths are only unit-tested.
 - (ME.4 review, sonnet) Evolutions reference: campaign rows name the character as now (a rename shows the new name; refetch keyed on grade and release only); every released option is listed, replaced and unchosen ones too, with no chosen mark; the shape picker keeps the first row when rows change; the table sits below the release form and wraps at 1366×768; the Use this shape failure path has no test.

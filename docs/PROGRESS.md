@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.67; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV done (MV.A checked); ME.1–ME.5 done. Preview ready: Actions → Release → Run workflow (MV).
-**Next item:** ME.A (full `npm run e2e`, `fable` review, Preview ready), then MK.1–MK.A, QF.55 onward; MW after MU
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.67; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV done (MV.A checked); ME.1–ME.5 done; ME.A review found 4 Mediums, queued as ME.6; MK.1 built on `wip/MK.1` (not reviewed). Preview ready: Actions → Release → Run workflow (MV).
+**Next item:** ME.6 (ME.A review fixes), then ME.A (full e2e, `fable` re-review, Preview ready); review `wip/MK.1` (head 4122fc0e) and merge; MK.2, MK.A; QF.55 onward (QF.68, QF.69 new); MW after MU
 **Blockers:** none
 
 ## Run log
@@ -1532,4 +1532,12 @@ next item, blockers. -->
 - ME.5 finished (D306): an always-present Evolution window (locked, greyed; lit in the next metal with a pulsing glow on it and on Status, `[Evolution available]` pop-up with Open/Later, evolution sound on arrival; static highlight with reduced motion); three-step dialog (class, profession or none for now, race; book-style cards; review; one Evolve; Close keeps picks); GM builder defaults to Three steps (M5.2, M5.A, MT.1, MT.7 specs tick Class only). Review: round 1 1 H (typecheck), 3 M; round 2 1 M (lint); all fixed.
 - Tests: unit about 1,946 (`npm run check` green on the merge); e2e touched: ME.3, ME.4, ME.5, M3.13, M5.2, M5.A, MT.1, MT.7 (all passed). Full `npm run e2e` not run this run (no time left after the round-2 fixes); ME.A runs it first. Engine changed (earlierOptions, shape): covered by unit tests; coverage not re-measured.
 - Open `wip/*`: none new (wip/ME.4 and wip/ME.5 merged). Blockers: none.
+
+### Run · 2026-11-01 03:08–03:58 UTC (close-out at minute 46)
+- Close-out at minute 46: ME.A not checked (its review found 4 Mediums, queued as ME.6); MK.1 built by a fork on `wip/MK.1`, unreviewed; MT.7 CI fix pushed to main.
+- Preflight: `add_repo` not offered; repo already cloned (local main had unrelated history; kept as local branch `old-local-main`, main reset to `origin/main`); lock pushed cleanly; vitest 5.0.5; reviewers fable, haiku, sonnet all work (worktree; the Agent tool blocks until each reports, so all five agents ran as one parallel batch, minutes 3–43). CI on main red on 9a75cffd (MT.7, found by the local full e2e and fixed in 027c7d32). No new answers. Hour 03: quality sweep B (Boundaries haiku, Tests fable, UX sonnet), scope 52c9c148..bc1b26b7.
+- ME.A: full local e2e 152/153 in 27 min (1 worker, under load), MT.7 failed alone too (spec ticked a "Class only" radio that pre-ME rules never show): fixed and re-run green; latency project not run (the e2e script stops at the first project's failure). Fable review: 0 High, 4 Medium (pending-release profession; no profession offers before the first evolution; no distribution UI; later profession's distribution), 8 Low. Queued as ME.6 (with the phone review layout from the sweep); box stays open.
+- Sweep B: Boundaries clean; Tests 3 M (by the reviewer's mutations; queued as QF.68 to verify first, no time left) + 7 L; UX 2 M (review layout and missing one-time bonus, confirmed from the screenshot; into ME.6e) + 2 L (QF.69). Last sweep bc1b26b7, next rotation C.
+- MK.1 (fork, `wip/MK.1` head 4122fc0e, base bc1b26b7): `resolution.rolls` odds|d20 with config numbers, `resolution/dice.ts` (modifier, exact d20 odds, −5 one grade apart, no roll at two), contest share carries dice (typed/app) and totals, player view; engine+server 1,542 and web+scripts 414 unit tests pass, check parts clean; D307. Next: §6 sonnet review, then merge.
+- Open `wip/*`: `wip/MK.1`. Blockers: none.
 
