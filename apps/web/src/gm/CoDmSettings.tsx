@@ -16,7 +16,7 @@ interface CoDmStatus {
  * strong models, a connection test and the session's spend. GM-only: every
  * call goes to /api/gm/ai with the GM key, and the key never comes back.
  */
-export function CoDmSettings({ gmKey }: { gmKey: string }) {
+export function CoDmSettings({ gmKey, campaignName }: { gmKey: string; campaignName: string }) {
   const [status, setStatus] = useState<CoDmStatus | null>(null);
   const [key, setKey] = useState('');
   const [fast, setFast] = useState('');
@@ -183,7 +183,8 @@ export function CoDmSettings({ gmKey }: { gmKey: string }) {
             Test connection
           </button>
           <p data-testid="codm-spend">{spendLine(spend ?? status.spend)}</p>
-          <QuickResponseSettings gmKey={gmKey} />
+          {/* ML.4: keyed, so a campaign switch reloads the form, never saving one campaign's setup over another's. */}
+          <QuickResponseSettings key={campaignName} gmKey={gmKey} />
           {message && (
             <p role="status" className="muted">
               {message}

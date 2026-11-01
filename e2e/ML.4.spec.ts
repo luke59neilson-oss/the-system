@@ -117,4 +117,10 @@ test('each campaign keeps its own buttons; sharing lore makes a party copy', asy
   await expect(notes.getByTestId('note-body-view')).toContainText('LORE-ML4 Tam owes a toll.');
   await notes.scrollIntoViewIfNeeded();
   await phone.screenshot({ path: path.join(shots, 'player-shared-lore-390x844.png') });
+
+  // Review: a switch without leaving the console reloads the settings form.
+  await gm.getByRole('button', { name: 'Load demo campaign' }).click();
+  await expect(gm.getByTestId('demo-badge')).toBeVisible();
+  await openTab(gm, 'library');
+  await expect(settings.getByLabel('Button 5 name')).toHaveValue('Twist');
 });

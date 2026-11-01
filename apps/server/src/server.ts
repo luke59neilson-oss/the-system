@@ -532,6 +532,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     if (!first.ok)
       throw new Error(`Could not open campaign "${options.openAtStart}": ${first.error}`);
     active = first.entry;
+    if (options.coDm) campaignQuickSettings(active.store, options.coDm.dir);
     options.onActiveChange?.(active.store);
   }
 

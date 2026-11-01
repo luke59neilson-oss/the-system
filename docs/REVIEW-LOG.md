@@ -1354,3 +1354,6 @@
 
 ## 2026-11-01 · ML.3 · sonnet (1 round)
 0 High, 0 Medium, 2 Low. Fixed: the three-step evolution hid Luke's re-rating words inside a collapsed `<details>`; they now sit above it. Backlog: the contest form's attacker choice stays on B when the GM changes sides (QUALITY.md).
+
+## 2026-11-01 · ML.4 · sonnet (1 round)
+0 High, 1 Medium, 3 Low. Fixed the Medium (the settings form kept the old campaign's slots after Load demo, and Save wrote them over the new campaign: keyed by campaign name, e2e added) and one Low (a campaign opened at start now takes its setup at open). Two Lows to the Backlog (setup not in backups or exports; the demo copies the laptop setup). Verified by the author; no round 2 needed.
