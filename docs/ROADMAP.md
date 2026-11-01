@@ -1098,7 +1098,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   *Accept:* a request raises a toast/notice for its owner only (canary green)
   and the prompt is reachable from it; e2e at 390×844 scrolled to Notes.
   Also fix the Low: `RollPrompt` resets its typed die when `req.id` changes.
-- [ ] **QF.73 Dice tests that can fail.** Sweep C (Tests, sonnet), two
+- [x] **QF.73 Dice tests that can fail.** Sweep C (Tests, sonnet), two
   Mediums confirmed by re-running the mutations: `encounterModel.ts:445`
   dropping `characterIds.length !== 1` (16/16 green) and `contest.ts:60`
   `?? 0` (4/4 green). *Accept:* a two-character side offers no phone roll;
