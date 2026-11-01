@@ -705,6 +705,13 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     characterId: recordId,
     optionId: recordId,
     profession: nonBlank.nullable(),
+    /**
+     * ME.2: the option chosen in each step of a three-step release (`optionId`
+     * repeats the class choice); absent for single-choice releases.
+     */
+    choices: z
+      .strictObject({ class: recordId, profession: recordId.nullable(), race: recordId })
+      .optional(),
     /** The release chosen from (its event id); absent only in logs from before it existed. */
     releaseId: recordId.optional(),
     /** Upcast from v1: chosen under the old rules (no gate, no refill, D99). */

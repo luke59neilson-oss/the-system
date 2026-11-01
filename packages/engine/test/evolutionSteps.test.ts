@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildSessionLog,
   execute,
   projectForPlayer,
   stepBudgetProblems,
@@ -131,6 +132,141 @@ describe('three-step evolution release (ME.2)', () => {
       player('jake'),
     );
     expect(char(c).profession).toBeNull();
+  });
+
+  const choose = (choices: object): Command =>
+    ({ type: 'evolution.choose', characterId: 'jake', choices }) as unknown as Command;
+
+  it('confirming applies all three: distributions, bonuses, race, profession, full pools', () => {
+    const before = char(atGTop());
+    let c = ok(atGTop(), threeStep());
+    c = ok(c, choose({ class: 'hunter', profession: 'tracker', race: 'human-f' }), player('jake'));
+    const j = char(c);
+    expect(j.distributions).toEqual({
+      class: { stats: { perception: 6, agility: 3 }, free: 2 },
+      profession: { stats: { perception: 5 }, free: 2 },
+      race: { stats: {}, free: 6 },
+    });
+    // One-time bonuses of all three steps: class +2 agility, profession +2
+    // agility, race +2 vitality.
+    expect(j.stats['agility']).toBe(before.stats['agility']! + 4);
+    expect(j.stats['vitality']).toBe(before.stats['vitality']! + 2);
+    expect(j.stats['perception']).toBe(before.stats['perception']);
+    expect(j.race).toBe('human-f');
+    expect(j.professionLevel).toBe(j.classLevel);
+    expect(j.evolution).toBeNull();
+    // Pools refill to the new maxima (DESIGN §2).
+    for (const [id, value] of Object.entries(j.pools)) expect(value, id).toBeGreaterThan(0);
+  });
+
+  it('pools refill even when the character was hurt before choosing', () => {
+    let c = ok(atGTop(), threeStep());
+    const hurt = Object.fromEntries(Object.keys(char(c).pools).map((id) => [id, 1]));
+    c = ok(c, { type: 'character.setPools', characterId: 'jake', pools: hurt });
+    c = ok(c, choose({ class: 'ranger', profession: null, race: 'human-f' }), player('jake'));
+    for (const [id, value] of Object.entries(char(c).pools)) expect(value, id).toBeGreaterThan(1);
+  });
+
+  it('"none for now" keeps the profession options as offers for later', () => {
+    let c = ok(atGTop(), threeStep());
+    c = ok(c, choose({ class: 'ranger', profession: null, race: 'human-f' }), player('jake'));
+    expect(char(c).profession).toBeNull();
+    expect(char(c).professionOffers).toContain('tracker');
+    expect(char(c).distributions?.profession).toBeUndefined();
+  });
+
+  it('a character with a profession evolves it, keeping its level', () => {
+    let c = ok(atGTop(), {
+      type: 'character.grantProfession',
+      characterId: 'jake',
+      profession: 'Hunter of Beasts',
+    });
+    const level = char(c).professionLevel;
+    // Its profession step needs an option.
+    const empty = threeStep();
+    (empty as any).steps.profession = [];
+    expect(reject(c, empty)).toMatch(/profession option/i);
+    c = ok(c, threeStep());
+    // It cannot choose "none for now".
+    expect(
+      reject(c, choose({ class: 'hunter', profession: null, race: 'human-f' }), player('jake')),
+    ).toMatch(/choose how it evolves/);
+    c = ok(c, choose({ class: 'hunter', profession: 'tracker', race: 'human-f' }), player('jake'));
+    expect(char(c).profession).toBe('tracker');
+    expect(char(c).professionLevel).toBe(level);
+  });
+
+  it('a three-step release needs every choice; a single-choice release takes none', () => {
+    const c = ok(atGTop(), threeStep());
+    expect(
+      reject(
+        c,
+        { type: 'evolution.choose', characterId: 'jake', optionId: 'hunter' },
+        player('jake'),
+      ),
+    ).toMatch(/class, a profession/);
+    expect(
+      reject(c, choose({ class: 'hunter', profession: 'nope', race: 'human-f' }), player('jake')),
+    ).toMatch(/No profession option "nope"/);
+    expect(
+      reject(c, choose({ class: 'hunter', profession: null, race: 'elf' }), player('jake')),
+    ).toMatch(/No race option "elf"/);
+    const single = ok(atGTop(), {
+      type: 'evolution.release',
+      characterId: 'jake',
+      rerateApproved: true,
+      options: [{ className: 'Ranger' }],
+    } as unknown as Command);
+    expect(
+      reject(single, choose({ class: 'o1', profession: null, race: 'r1' }), player('jake')),
+    ).toMatch(/single choice/);
+    // The old single choice still works and leaves distributions alone.
+    const done = ok(
+      single,
+      { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' },
+      player('jake'),
+    );
+    expect(char(done).grade).toBe('F');
+    expect(char(done).distributions).toBeUndefined();
+  });
+
+  it('refuses an unknown stat in an option distribution', () => {
+    const bad = threeStep();
+    (bad as any).steps.race[0].distribution = { stats: { luck: 6 }, free: 0 };
+    expect(reject(atGTop(), { ...(bad as object), override: true } as unknown as Command)).toMatch(
+      /luck/,
+    );
+  });
+
+  it('the owner sees the released steps; other players do not', () => {
+    let c = ok(atGTop(), {
+      type: 'character.create',
+      id: 'miranda',
+      name: 'Miranda',
+      className: 'Archer',
+      classSkills: kit,
+    });
+    c = ok(c, threeStep());
+    const own = JSON.stringify(projectForPlayer(c.state!, 'jake'));
+    expect(own).toContain('tracker');
+    expect(own).toContain('"free":6');
+    expect(JSON.stringify(projectForPlayer(c.state!, 'miranda'))).not.toContain('tracker');
+  });
+
+  it('the session log names the class, profession and race', () => {
+    let c = ok(atGTop(), threeStep());
+    const from = c.events.length;
+    c = ok(c, choose({ class: 'hunter', profession: 'tracker', race: 'human-f' }), player('jake'));
+    let text = buildSessionLog(c, from).entries.map((e) => e.text);
+    expect(text).toContain(
+      'Jake evolved into hunter, grade G → F, profession tracker, race human-f',
+    );
+    c = ok(atGTop(), threeStep());
+    c = ok(c, choose({ class: 'ranger', profession: null, race: 'human-f' }), player('jake'));
+    text = buildSessionLog(c, from).entries.map((e) => e.text);
+    expect(text).toContain(
+      'Jake evolved into ranger, grade G → F, no profession for now, race human-f',
+    );
   });
 
   it('unreleased options never reach the player', () => {

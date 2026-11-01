@@ -1998,6 +1998,13 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const { characterId, options, professions, legacy, rerate, rerateApproved, override, steps } =
         event.payload;
       const character = characterOf(state, event, characterId);
+      if (steps !== undefined) {
+        const statIds = state.rules.stats.list.map((s) => s.id);
+        for (const o of [...steps.class, ...steps.profession, ...steps.race]) {
+          checkKeys(event, Object.keys(o.distribution.stats), statIds, 'stat');
+          checkKeys(event, Object.keys(o.statBonus), statIds, 'stat');
+        }
+      }
       return withCharacter(
         state,
         rule(event, () =>
@@ -2033,6 +2040,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
           event.payload.releaseId ?? null,
           event.payload.legacy === true,
           jointUsesOf(state, characterId),
+          event.payload.choices ?? null,
         ),
       );
       // Practice entries follow transformed skills, so pair counts carry over.

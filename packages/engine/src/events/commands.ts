@@ -421,8 +421,14 @@ export type Command =
   | {
       type: 'evolution.choose';
       characterId: string;
-      optionId: string;
+      /** The class option of a single-choice release (before ME.2). */
+      optionId?: string | undefined;
       profession?: string | null | undefined;
+      /**
+       * ME.2: one option per step of a three-step release (profession null =
+       * "none for now", only for a character without a profession).
+       */
+      choices?: { class: string; profession?: string | null | undefined; race: string } | undefined;
       /** The release being answered; defaults to the one pending now. */
       releaseId?: string | undefined;
     }
@@ -1054,6 +1060,18 @@ function releaseSteps(
     profession: norm(steps.profession ?? [], 'p'),
     race: norm(steps.race, 'r'),
   };
+  // Every evolution has a profession step: a character with a profession
+  // evolves it, so its step needs at least one option (DESIGN §2).
+  if (character && character.profession !== null && out.profession.length === 0) {
+    throw new EventRejectedError(
+      `${character.name} has the profession [${character.profession}]: add at least one profession option to evolve it`,
+    );
+  }
+  const ids = (list: readonly { id: string }[]) =>
+    new Set(list.map((o) => o.id)).size === list.length;
+  if (!ids(out.class) || !ids(out.profession) || !ids(out.race)) {
+    throw new EventRejectedError('Two options in a step share an id');
+  }
   if (state && character && command.override !== true) {
     const target = evolutionTarget(state.rules, character);
     const budget = target?.trackBudget;
@@ -1612,24 +1630,40 @@ function toEvent(
             classWeights: o.classWeights ?? null,
             statBonus: o.statBonus ?? {},
           })),
-          professions: command.professions ?? [],
+          // With steps, the profession step carries the offers (ME.2).
+          professions: steps === undefined ? (command.professions ?? []) : [],
           rerate: rerateFor(campaign, command.characterId, command.rerate ?? {}),
           rerateApproved: true,
           ...(command.override === true ? { override: true as const } : {}),
         },
       };
     }
-    case 'evolution.choose':
+    case 'evolution.choose': {
+      const choices = command.choices;
+      const optionId = choices?.class ?? command.optionId;
+      if (optionId === undefined) {
+        throw new EventRejectedError('Choose an evolution option');
+      }
       return {
         type: 'evolution.chosen',
         payload: {
           characterId: command.characterId,
-          optionId: command.optionId,
-          profession: command.profession ?? null,
+          optionId,
+          profession: choices === undefined ? (command.profession ?? null) : null,
+          ...(choices === undefined
+            ? {}
+            : {
+                choices: {
+                  class: choices.class,
+                  profession: choices.profession ?? null,
+                  race: choices.race,
+                },
+              }),
           releaseId:
             command.releaseId ?? pendingOf(campaign, command.characterId)?.evolution?.releaseId,
         },
       };
+    }
     case 'clock.create':
       return {
         type: 'clock.created',

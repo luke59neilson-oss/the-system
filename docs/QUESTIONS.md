@@ -714,3 +714,11 @@ DESIGN/ROADMAP; do not re-apply them.
     the race (Human). The GM can set any track's points per level on a
     character. Default: as built. Option: give the class 2 free points of its
     8 at G (your example's split) when it has only weights.
+
+94. **A profession option skipped with "none for now" (ME.2, D303).** When
+    a player picks "none for now" at an evolution, the profession options stay
+    as offers they can take later from the Professions tab. Today an offer is
+    just a name, so a profession taken later from that list starts with the
+    default points per level (the class's shape), not the distribution its
+    option card showed. Default: as built (keeps old offers working). Option:
+    keep each skipped option's distribution and bonus with its offer.

@@ -24,6 +24,7 @@ import {
   passedOverOptions,
   retiredSkillNames,
   type PendingEvolution,
+  type ReleasedStepOption,
   type SelectionRecord,
   type SkillOption,
 } from '../evolution';
@@ -836,6 +837,17 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
               statBonus: copyRecord(o.statBonus, statIds),
             })),
             professions: [...c.evolution.professions],
+            // ME.2: the three steps' option cards (DESIGN §9: per-level stats
+            // ending in free points, and the one-time bonus), owner only.
+            ...(c.evolution.steps === undefined
+              ? {}
+              : {
+                  steps: {
+                    class: c.evolution.steps.class.map((o) => stepCard(o, statIds)),
+                    profession: c.evolution.steps.profession.map((o) => stepCard(o, statIds)),
+                    race: c.evolution.steps.race.map((o) => stepCard(o, statIds)),
+                  },
+                }),
             ...(c.evolution.rerate === undefined
               ? {}
               : { rerate: c.evolution.rerate.map((r) => ({ skill: r.skill, rarity: r.rarity })) }),
@@ -1226,4 +1238,22 @@ function currentRegionName(state: CampaignState): string | null {
   const id = state.currentRegion;
   if (id === null || !hasOwnKey(state.regions, id)) return null;
   return state.regions[id]?.name ?? null;
+}
+
+/** ME.2: one released step option as its owner sees it (whitelisted fields). */
+function stepCard(o: ReleasedStepOption, statIds: readonly string[]): ReleasedStepOption {
+  return {
+    id: o.id,
+    name: o.name,
+    rarity: o.rarity,
+    description: o.description,
+    distribution: { stats: copyRecord(o.distribution.stats, statIds), free: o.distribution.free },
+    statBonus: copyRecord(o.statBonus, statIds),
+    transforms: o.transforms.map((t) => ({
+      skill: t.skill,
+      name: t.name,
+      rarity: t.rarity,
+      ...(t.merge === undefined ? {} : { merge: t.merge }),
+    })),
+  };
 }

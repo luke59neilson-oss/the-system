@@ -8,6 +8,8 @@ import {
   trackCap,
   type Character,
   type CharacterSkill,
+  type StatTrack,
+  type TrackDistribution,
 } from '../character';
 import { gainXp, reshapeClassWeights, type LevelUp } from '../progression';
 import type { GradeRules, RulesConfig } from '../rules';
@@ -795,6 +797,7 @@ export function chooseEvolution(
   releaseId: string | null = null,
   legacy = false,
   joint: JointUses = () => 0,
+  choices: StepChoices | null = null,
 ): EvolutionResult {
   const pending = character.evolution;
   if (!pending) throw new CharacterRuleError(`No evolution is released for ${character.name}`);
@@ -802,8 +805,26 @@ export function chooseEvolution(
   if (releaseId !== null && releaseId !== pending.releaseId) {
     throw new CharacterRuleError('The evolution was released again; choose from the new options');
   }
-  const option = pending.options.find((o) => o.id === optionId);
-  if (!option) throw new CharacterRuleError(`No evolution option "${optionId}"`);
+  const picked = pickSteps(character, pending, choices);
+  const single = pending.options.find((o) => o.id === optionId);
+  if (!single) throw new CharacterRuleError(`No evolution option "${optionId}"`);
+  // ME.2: the three chosen options' transforms and one-time bonuses apply together.
+  const option: EvolutionOption =
+    picked === null
+      ? single
+      : {
+          ...single,
+          transforms: [
+            ...picked.class.transforms,
+            ...(picked.profession?.transforms ?? []),
+            ...picked.race.transforms,
+          ],
+          statBonus: sumBonuses([
+            picked.class.statBonus,
+            picked.profession?.statBonus ?? {},
+            picked.race.statBonus,
+          ]),
+        };
   const target = evolutionTarget(rules, character);
   if (!target || target.id !== pending.toGrade) {
     throw new CharacterRuleError(
@@ -901,6 +922,7 @@ export function chooseEvolution(
   if (option.classWeights !== null) next = reshapeClassWeights(rules, next, option.classWeights);
   if (!legacy) next = applyStatBonus(next, option.statBonus ?? {});
   if (profession !== null) next = grantProfession(rules, next, profession);
+  if (picked !== null) next = applySteps(rules, next, pending, picked);
   const levelUps: LevelUp[] = [];
   // Spends XP banked at the old top (banking rules only); with `xp.overflow`
   // on, capped tracks hold 0 XP, so these are no-ops (MQ.11).
@@ -1037,4 +1059,101 @@ export function stepBudgetProblems(
     );
   }
   return problems;
+}
+
+/** ME.2: the option chosen in each step (profession null = "none for now"). */
+export interface StepChoices {
+  readonly class: string;
+  readonly profession: string | null;
+  readonly race: string;
+}
+
+interface PickedSteps {
+  readonly class: ReleasedStepOption;
+  readonly profession: ReleasedStepOption | null;
+  readonly race: ReleasedStepOption;
+}
+
+/**
+ * ME.2: finds the chosen option of each step, or null for a single-choice
+ * release. A three-step release needs all three choices and a single-choice
+ * one takes none; a character with a profession must evolve it.
+ */
+function pickSteps(
+  character: Character,
+  pending: PendingEvolution,
+  choices: StepChoices | null,
+): PickedSteps | null {
+  const steps = pending.steps;
+  if (steps === undefined) {
+    if (choices !== null) {
+      throw new CharacterRuleError('This evolution is a single choice; choose one option');
+    }
+    return null;
+  }
+  if (choices === null) {
+    throw new CharacterRuleError('Choose a class, a profession (or none for now) and a race');
+  }
+  const find = (list: readonly ReleasedStepOption[], id: string, step: string) => {
+    const found = list.find((o) => o.id === id);
+    if (!found) throw new CharacterRuleError(`No ${step} option "${id}"`);
+    return found;
+  };
+  let profession: ReleasedStepOption | null = null;
+  if (choices.profession === null) {
+    if (character.profession !== null) {
+      throw new CharacterRuleError(
+        `${character.name} has the profession [${character.profession}]: choose how it evolves`,
+      );
+    }
+  } else {
+    profession = find(steps.profession, choices.profession, 'profession');
+  }
+  return {
+    class: find(steps.class, choices.class, 'class'),
+    profession,
+    race: find(steps.race, choices.race, 'race'),
+  };
+}
+
+function sumBonuses(list: readonly Readonly<Record<string, number>>[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const bonus of list) {
+    for (const [stat, value] of Object.entries(bonus)) out[stat] = (out[stat] ?? 0) + value;
+  }
+  return out;
+}
+
+/**
+ * ME.2 (DESIGN §2): the chosen steps take effect: each track's distribution at
+ * the new grade, the race's new name, the profession taken or evolved (a new
+ * one starts at the class level), and, with "none for now", the profession
+ * options stay as offers for later.
+ */
+function applySteps(
+  rules: RulesConfig,
+  character: Character,
+  pending: PendingEvolution,
+  picked: PickedSteps,
+): Character {
+  const dist = (o: ReleasedStepOption): TrackDistribution => ({
+    stats: { ...o.distribution.stats },
+    free: o.distribution.free,
+  });
+  const distributions: Partial<Record<StatTrack, TrackDistribution>> = {
+    class: dist(picked.class),
+    race: dist(picked.race),
+  };
+  if (picked.profession !== null) distributions.profession = dist(picked.profession);
+  let next: Character = { ...character, race: picked.race.name.trim(), distributions };
+  if (picked.profession === null) {
+    const offered = pending.steps?.profession.map((o) => o.name.trim()) ?? [];
+    return { ...next, professionOffers: mergeOffers(next.professionOffers, offered) };
+  }
+  const name = picked.profession.name.trim();
+  next =
+    next.profession === null
+      ? grantProfession(rules, next, name, true)
+      : { ...next, profession: name };
+  return next;
 }

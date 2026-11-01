@@ -291,11 +291,18 @@ export function describeEvent(
       if (!now) break;
       const grade = was && was.grade !== now.grade ? `, grade ${was.grade} → ${now.grade}` : '';
       const offered = (was?.evolution?.professions.length ?? 0) > 0;
-      const prof = event.payload.profession
-        ? `, profession ${line(event.payload.profession)}`
-        : offered
-          ? ', no profession for now'
-          : '';
+      const steps = event.payload.choices;
+      // ME.2: a three-step evolution names the profession taken or evolved, and the race.
+      const prof =
+        steps !== undefined
+          ? (steps.profession === null || now.profession === null
+              ? ', no profession for now'
+              : `, profession ${line(now.profession)}`) + `, race ${line(now.race)}`
+          : event.payload.profession
+            ? `, profession ${line(event.payload.profession)}`
+            : offered
+              ? ', no profession for now'
+              : '';
       // A merge offered as part of the evolution (M5.2) is a notable event too.
       const chosen = was?.evolution?.options.find((o) => o.id === event.payload.optionId);
       const merged = (chosen?.transforms ?? [])
