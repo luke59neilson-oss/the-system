@@ -20,8 +20,8 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
+| D315 `scripts/metrics.mjs` reads run headings with no id (end minute from "close-out at minute N" when the end time is `5x`) and counts the real `npm run orient` output plus the full reads | 2026-11-01 06:50 | end minute and orient words measure the current runs (end minute was frozen at 48.8 since 2026-10-30; orient words 21.0k scored vs 7.2k printed); series break at this row | end minute 47.0 (re-measured); orient words 22,973; items/run 1.0 | Highs 0, round-2 5/10, red/day 6 | 2026-11-01 18:00 check |
 | D304 LOOP §5.6 names the `latency` project as part of the full e2e; rules-number items run it alone; PROGRESS reports "e2e N + latency M" | 2026-11-01 00:45 | main CI red/day 4 → ≤ 3 (red from latency specs a run's full e2e skipped: 71bac8f3) | red/day 4; items/run 0.7; end minute 48.8 | Highs 0, round-2 4/10 | 2026-11-01 12:00 check |
-| D297 `npm run orient` collapses checked items in open milestones to one line and hides default-kept questions | 2026-10-31 18:09 | orient words ≤ 11k (printed output 21.0k → 7.5k words) | 21,002 words; end minute 48.8; items/run 1.3 | Highs 0, round-2 4/10, red/day 5 | 2026-11-01 06:00 check |
 
 ## Kept
 
@@ -42,6 +42,8 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   Chromium cache (2026-10-23 00:08, D131).
 
 ## Reverted
+
+- D297 orient collapses checked items and default-kept questions (2026-10-31 18:09, D313): the target was met when measured directly (the printed orient output fell from 21.0k to about 7.1k words; the scorecard's `orientWords` does not measure it, as the 00:45 auditor noted), but two guards rose by one (round-2 share 4/10 → 5/10, main CI red/day 5 → 6; the red runs were latency specs and an M8.3 keyboard flake, unrelated), so the strict §9.2 rule reverts it, as at D205 and D194 (Q71 still open). `scripts/orient.mjs` prints checked items and default-kept questions again (12.9k words).
 
 - D206 blocking reviews never idle (2026-10-26 00:09, D220): half the target
   went the wrong way (items/run 1.8 → 1.5; end minute 44.2 → 46.0), guards
@@ -76,6 +78,8 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 - `npm run ci-triage -- <run id>`: one read-only call that lists failed jobs, prints annotations and the local repro line (alone, `--workers=2`, xvfb for desktop). Target: fewer tool calls per red start; does not itself move red/day.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-11-01 06:09 auditor (sonnet): Tier 1 applied: repair the scorecard parsers (D315; end minute had been frozen since 2026-10-30 because id-less `### Run ·` headings did not match). Tier 1 queued for the next check: start an `Mx.A` full e2e in the background in the first minutes on a pinned SHA, keep a per-SHA ledger of passed spec files so a rerun on an identical tree skips them (final full pass still at the last SHA), and run the latency project even when the e2e project fails. No Tier 2.
 
 - 2026-11-01 00:45 auditor (sonnet): D297 not judgeable yet (judge at 06:00). Tier 1 applied: name the `latency` project in LOOP §5.6 (D304; ME.1's full local e2e ran only the `e2e` project and main went red on three MS.* latency specs). Tier 1 queued: `orientWords` in `scripts/metrics.mjs` does not measure the real `npm run orient` output (7,226 words printed vs 20,561 scored; it never applies `collapseChecked` and skips QUESTIONS), so D297's saving cannot show: count orient.mjs's output plus the required full reads, noting the break in the scorecard. No Tier 2.
 
@@ -186,3 +190,5 @@ table last in the file.
 | 2026-10-31 12:09 | 6 | 48.8 | 2.3 | 6/10 | 0 | 29 | 7 | 11.9 | 16756 |
 | 2026-10-31 18:09 | 6 | 48.8 | 1.3 | 4/10 | 0 | 31 | 5 | 11.8 | 21002 |
 | 2026-11-01 00:15 | 6 | 48.8 | 0.7 | 4/10 | 0 | 25 | 4 | 12.1 | 20561 |
+| 2026-11-01 06:09 | 6 | 48.8 | 1.0 | 5/10 | 0 | 33 | 6 | 12.2 | 21027 |
+| 2026-11-01 06:46 (D315: parsers fixed, series break) | 6 | 47.0 | 1.0 | 5/10 | 0 | 32 | 6 | 12.3 | 22973 |

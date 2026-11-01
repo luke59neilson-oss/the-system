@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.69; MV done; ME.1–ME.6 done; ME.A on `wip/ME.A` (fable round 1: 1 Medium fixed, full e2e not finished); MK.1 done; MK.2 part 1 on `wip/MK.2`. Preview ready: Actions → Release → Run workflow (MV).
-**Next item:** ME.A on `wip/ME.A` (head 5713e07c): run the full e2e (`npm run e2e`), verify the Medium fix (round 2 not required: one Medium), merge, check the box, Preview ready (ME); then MK.2 on `wip/MK.2` (head 30e0a723, base 8eef0b87; merge main first): the phone's "Roll d20 for <Stat> (+N)" prompt (GM roll-request and answer events, optional state field, projection, phone and console UI, answered die feeds the contest roller as typed), then its sonnet review; MK.A; QF.55 onward; MW after MU
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.69; MV done; ME done (ME.A checked 06:50); MK.1 done; MK.2 built on `wip/MK.2` (round 1 review: 3 Mediums to fix). Preview ready: Actions → Release → Run workflow (ME).
+**Next item:** MK.2 on `wip/MK.2` (head e3846472, review range 8eef0b87..e3846472; merge main first): fix the three round-1 Mediums in REVIEW-LOG (stale phone die reused across contests: match the request to the contest and add Clear; console-typed die and Roll without a phone die must clear the open request; prompt modifier fallback and requests left open on a rules change, and say whether the −5 grade gap shows), then sonnet round 2; MK.A; QF.55 onward; MW after MU
 **Blockers:** none
 
 ## Run log
@@ -1559,3 +1559,13 @@ next item, blockers. -->
 - MK.2 (fork, `wip/MK.2` head 30e0a723, base 8eef0b87): part 1 done (Rolls setting in rules settings; GM contest roller with modifiers, d20 chance, typed die per side for the first round; sheet `[+N]` modifiers with d20 on; player pop-up dice lines; e2e + screenshots; D312, Q95). `npm run check` and MK.2 e2e green on the branch. Left: the phone's own roll prompt (see Next item). Not reviewed yet.
 - Tests: unit 1,997 (main) + 1 on `wip/ME.A`; e2e ME.6/ME.5/ME.3 green; full e2e partial (74/74 so far).
 - Open `wip/*`: `wip/ME.A`, `wip/MK.2`. Blockers: none.
+
+### Run · 2026-11-01 06:08–06:53 UTC (close-out at minute 43)
+- Close-out at minute 43: the MK.2 review returned at minute 41 with three Mediums that need code, a round-2 review and e2e; that does not fit before the 44 hand-off, and the branch is already pushed with its state described (Next item). Lock released before 52.
+- Preflight: `add_repo` not offered; repo already cloned (local main had unrelated shallow history again; kept as `backup/stale-local-main`, worked from `origin/main`); lock pushed cleanly; vitest 5.0.5; reviewer model sonnet works (Agent blocks, so reviewers ran batched with forks). CI on main green (ee15de66). No new answers.
+- Efficiency check (hour 06): scorecard row; D297 (orient collapse) reverted under the strict §9.2 rule (round-2 4→5/10, red/day 5→6; D313). Auditor (sonnet): the scorecard's end minute had been frozen since 2026-10-30 (id-less run headings) and orient words never measured the real orient output; fixed as Tier 1 in trial (D315). Queued Tier 1: start an Mx.A full e2e early in the background with a per-SHA ledger.
+- ME.A: full e2e on wip/ME.A merged with main (d4ed0be6): e2e 155 + latency 8 passed; `npm run check` green. Round 1's one Medium needs no round 2. Merged; box checked. Preview ready (ME).
+- MK.2 (fork): part 2 built and pushed to `wip/MK.2` (e3846472): `roll.requested/answered/cleared` events, `rollRequests` state, own-request projection, phone RollPrompt, console Ask/Withdraw, golden `roll-requests.jsonl`, D314, Q96; check green (2,009 unit), MK.2 e2e 2/2. Sonnet round 1: 0 H, 3 M, 5 L (REVIEW-LOG). Box not checked.
+- Tests: unit 2,009 on wip/MK.2; main check green; e2e 155 + latency 8 (ME.A).
+- Open `wip/*`: `wip/MK.2`. Blockers: none.
+

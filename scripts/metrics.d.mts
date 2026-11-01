@@ -1,9 +1,10 @@
 export declare const HEADER: string;
 
 export interface RunEntry {
-  id: string;
+  id: string | null;
   date: string;
-  minutes: number;
+  /** Null when the run's end time is unknown. */
+  minutes: number | null;
 }
 export declare function parseRuns(progress: string): RunEntry[];
 
@@ -38,9 +39,8 @@ export declare function orientWords(files: {
   loop: string;
   design: string;
   answers: string;
-  progress: string;
-  roadmap: string;
-  decisions: string;
+  /** What `npm run orient` prints. */
+  orient: string;
 }): number;
 
 export declare function scorecardRow(input: {
