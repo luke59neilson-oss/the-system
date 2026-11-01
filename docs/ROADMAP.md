@@ -383,7 +383,7 @@ DESIGN §7 "Dice", §9. After ME, before QF.
   stat's modifier. *Accept:* e2e: a contest with one typed and one
   app-rolled die, both screens showing the result; a sheet with modifiers;
   canary; screenshots at 390×844 and 1366×768.
-- [ ] **MK.A Acceptance and review.** Full suite green; `fable` review;
+- [x] **MK.A Acceptance and review.** Full suite green; `fable` review;
   "Preview ready" (LOOP §8.2).
 
 ## QF — Quality fixes (from sweeps, LOOP §10)
@@ -900,6 +900,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   `{undoneSeqs}` frame; the backup and report run off the request path;
   probes at 40 sessions show undo < 300 ms and End session < 300 ms of
   event-loop block.
+- [ ] **QF.70 The keyboard sweep test waits for focus.** `e2e/M8.3.spec.ts` (keyboard alone) failed again in a full local run on 2026-11-01 and passed alone (QUALITY Flakes, second occurrence after 2026-10-25). *Accept:* the Tab walk waits for focus to settle after each press (no fixed sleeps, no retries); the spec passes 10/10 with `--repeat-each=10` under `--workers=2`.
 - [ ] **QF.55 The GM console and phones render only what they show.** The GM
   console re-renders every mounted window on each state frame, with
   `skillPairCounts` (stringify + regex per practice entry) as the top cost

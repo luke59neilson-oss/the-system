@@ -164,7 +164,14 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
   const change = (side: 'a' | 'b', draft: SideDraft) => {
     (side === 'a' ? setA : setB)(draft);
     setRolled(null);
-    // MK.A review M3: the side's open request ends with it, so no phone keeps asking.
+    // MK.A review M3: when the side's player or stat changes, its open request
+    // ends with it, so no phone keeps asking; a label or value edit keeps the
+    // die (round 2 M1).
+    const was = side === 'a' ? a : b;
+    if (was.source === draft.source && was.stat === draft.stat) {
+      clear?.();
+      return;
+    }
     const clears = rollClears([side === 'a' ? [rollerA, phoneA] : [rollerB, phoneB]]);
     setAsked((prev) => ({ ...prev, [side]: new Set() }));
     for (const command of clears) void send(command, 'Roll request closed');
