@@ -444,7 +444,9 @@ tabs hold everything else, each a set of panels instead of one scroll:
 - **Session:** the party at a glance with a quick **Award XP**; the co-DM
   (quick responses, suggestions, listening, generation, loading screen);
   encounters and contests; quests and World Stability; broadcasts; loot and
-  shops; trackers; notes; View as; the change log with undo.
+  shops; the Credits ledger; trackers (regions and factions); content import
+  (co-DM generations are previewed and approved here, mid-narration); notes;
+  View as; the change log with undo.
 - **Progression:** the full XP award; skill offers; marks review; merges;
   professions; the practice log review; titles.
 - **Evolutions** (its own tab, Luke 2026-10-31): who is at or near the
@@ -453,9 +455,8 @@ tabs hold everything else, each a set of panels instead of one scroll:
   (per-level total and one-time bonus), the skill re-rating list and merge
   prompts, the character's standing, and the reference table (§4).
 - **Library & settings:** skills and spells, classes, races, professions,
-  items, titles, NPCs and the bestiary, factions, loot tables, the reference
-  lists, content import, rules settings, co-DM settings, campaigns and
-  backups.
+  items, titles, NPCs and the bestiary, loot tables, the reference lists,
+  rules settings, co-DM settings, campaigns and backups.
 
 **Movable panels (Luke, 2026-10-31):** on the home dashboard and each tab
 the GM can rearrange the panels to try layouts. Panels sit in a snap grid:
