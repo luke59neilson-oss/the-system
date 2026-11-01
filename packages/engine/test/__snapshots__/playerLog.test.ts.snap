@@ -120,6 +120,17 @@ exports[`player notice audit (MU.2) > entity.identified from the GM tells the ch
 ]
 `;
 
+exports[`player notice audit (MU.2) > entity.revealed from the GM tells the character it changes 1`] = `
+[
+  {
+    "change": "entityRevealed",
+    "characterId": "jake",
+    "kind": "gmChange",
+    "subject": "Stalker",
+  },
+]
+`;
+
 exports[`player notice audit (MU.2) > evolution.chosen from the GM tells the character it changes 1`] = `
 [
   {
