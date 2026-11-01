@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from './helpers/test';
-import { openTab, openWindow } from './helpers/gmTabs';
+import { openTab, openWindow, reveal } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // ML.2 (DESIGN §2 "The GM lays these out in the library", Q93): the GM lays
@@ -89,6 +89,7 @@ test('the GM lays out Archer’s points at G; a new Archer levels up by them', a
 
   // A new Archer takes the entry's points.
   const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
   await create.getByLabel('Name', { exact: true }).fill('Jake');
   await create.getByLabel('Starting class').selectOption({ label: 'Archer' });
   await create.getByRole('button', { name: 'Create character' }).click();
