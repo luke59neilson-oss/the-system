@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** b686eb9 (2026-11-01, D) · **Next rotation:** A
+**Last sweep:** 9f6fe02 (2026-11-01, A) · **Next rotation:** B
 
 ## Lenses and rotation
 
@@ -230,9 +230,13 @@ lowered by their verifiers and folded into the Low batches.
 | 2026-11-01 15:10 | D, 2b21061..b686eb9 | Rules · sonnet | 0 | 0 | 1 | 1 L/M "likely" to Backlog and Q100 (a level lowered by override and earned again grants class and profession stats again; D214 says lowering takes nothing back; D326 default) | 0 | ~128k |
 | 2026-11-01 15:10 | D, 2b21061..b686eb9 | Boundaries · fable | 0 | 0 | 1 | 1 L to Backlog (static serves dotfiles; nothing in dist today); live probe of every player path clean | 0 | ~202k |
 | 2026-11-01 15:10 | D, 2b21061..b686eb9 | UX · haiku | 0 | 0 | 1 | 1 L to Backlog | 0 | ~104k |
+| 2026-11-01 21:09 | A, b686eb9..9f6fe02 | Rules · fable | 0 | 0 | 3 | 3 L to Backlog | 0 | ~100k |
+| 2026-11-01 21:09 | A, b686eb9..9f6fe02 | Boundaries · sonnet | 0 | 0 | 2 | 2 L to Backlog; read only | 0 | ~90k |
+| 2026-11-01 21:09 | A, b686eb9..9f6fe02 | Tests · haiku | 0 | 3 | 2 | No M stands. `d20MeetsTarget` unused is recorded in D333 (no set-target roll yet). MD.1's 1.5 s sleep: `innerText()` waits for a line, so the stated failure does not occur; lowered to L. Silence checks after a sleep: lowered to L (M8.4, M4.7). All to Backlog | 3 M lowered | ~84k |
 - 2026-11-01 07:4x · local full e2e (1 worker) on wip/MK.2: `e2e/M8.3.spec.ts:221` keyboard test failed (43.7 s); passed alone with MK.2 (6/6). Repeat of the 2026-10-25 mode: now a QF item (QF.70).
 
 ## Backlog (Lows; M11.5 goes through these)
+- 2026-11-01 sweep A Lows: (Rules, fable) `classDef.define`, `raceDef.define` and `professionDef.define` store an all-zero `points` that the edit path clears, and a character then gets all free points (`reducer.ts:583-606`; the form never sends it); Use library text with no library text keeps `textEdited` (`skills/library.ts:343`); `undoPreview.ts:36` parses `blockedBy` from an error string. (Boundaries, sonnet) `POST /api/gm/restore` falls back to the active campaign on an unknown `from` (`server.ts:819`); `restoredId` ignores ids in the Deleted list, which can strand a restore (`store.ts:1085`). (Tests, haiku) MD.1 reads the last transcript line after a 1.5 s sleep (`MD.1.spec.ts:93`); silence checks rest on a 300 or 500 ms sleep (M8.4:262, 359; M4.7:112); `CopyCasting.tsx` and `CampaignsHome.tsx` have no unit test, e2e only.
 - 2026-11-01 sweep D Lows: (Rules, sonnet) a class or profession level lowered by `character.progressionSet` and earned again grants its class spread and profession stats a second time, and in `gainXpBudgeted` (`progression/xp.ts` ~413-439) a track-keyed free-point batch has no dedupe on a re-earn (race batches are deduped by race level, D38); question Q100, default D326. (Boundaries, fable) `apps/server/src/server.ts:153` `@fastify/static` uses the default `dotfiles: 'allow'`, so a dotfile in the web dist would be served to the LAN (none today); set `dotfiles: 'ignore'` with a test. (UX, haiku) the evolution option title is an unstyled `h5` (`EvolutionStepsChoice.tsx` ~183, OptionCard ~314), smaller than its own description on the phone (`docs/screens/ME.5/player-mid-choice-390x844.png`).
 - 2026-11-01 QF.60 review (sonnet) Lows: `evolution/model.ts` checkOption's keep-own-name exemption from the pending-menu check is unpinned (unreachable today); `skills/model.ts` skillIndex's `index === -1` has no mutant test; the playerLog snapshots have no player-to-player trade (`other: null` throughout); `npm run mutants` killed mid-run leaves a mutated file (git checkout recovers).
 - 2026-11-01 QF.58 review (sonnet) Lows: `apps/desktop/test/desktop.spec.ts` rewrites tracked screenshots (MS.5, MS.7) on every run, leaving a dirty tree; `render-process-gone` with `killed`/`oom` uses the crash-reload budget, with no backoff on load-time crashes; the single crash-notice guard (`main.ts`) has no test; `releaseMenuTemplate` roles are plain strings cast to Electron types.
