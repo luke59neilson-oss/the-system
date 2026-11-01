@@ -5,6 +5,7 @@ import type { LiveClient } from '../live';
 import {
   evolutionPlan,
   releaseProblem,
+  transformCostHint,
   withdrawableOffers,
   type EvolutionPlan,
 } from './evolutionBuilderModel';
@@ -668,6 +669,11 @@ export function TransformRows({
           >
             Remove
           </button>
+          {transformCostHint(plan, t) && (
+            <p className="muted transform-cost-hint" data-testid="transform-cost-hint">
+              {transformCostHint(plan, t)}
+            </p>
+          )}
         </div>
       ))}
       <div className="row">

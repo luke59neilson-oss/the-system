@@ -1,4 +1,6 @@
 import {
+  castingForSkill,
+  castingOf,
   dueSelections,
   evolutionTarget,
   releaseEvolution,
@@ -53,6 +55,30 @@ export interface EvolutionPlan {
   readonly professionOffers: boolean;
   /** Class names of a release the player has not chosen from yet; re-releasing replaces it. */
   readonly released: readonly string[] | null;
+  /**
+   * QF.62: the character's skills with a cost to cast, and every library name
+   * that has one, so a transform that renames a spell can say it loses Cast.
+   */
+  readonly castable: readonly string[];
+  readonly libraryCastable: readonly string[];
+}
+
+/**
+ * QF.62 (DESIGN §6, a renamed skill is a new skill): a transform that renames
+ * a skill with a cost gives the new name none until the Skill library has an
+ * entry for it, so the player's Cast is refused. Null when nothing is lost.
+ */
+export function transformCostHint(
+  plan: Pick<EvolutionPlan, 'castable' | 'libraryCastable'>,
+  transform: { readonly skill: string; readonly name: string; readonly merge?: string },
+): string | null {
+  const name = transform.name.trim();
+  if (name === '' || plan.libraryCastable.includes(name)) return null;
+  const lost = [transform.skill, ...(transform.merge ? [transform.merge] : [])].filter(
+    (k) => k !== name && plan.castable.includes(k),
+  );
+  if (lost.length === 0) return null;
+  return `${lost.map((k) => `[${k}]`).join(' and ')} ${lost.length === 1 ? 'has' : 'have'} a cost to cast; [${name}] has none until you give it a Skill library entry, so the player cannot Cast it.`;
 }
 
 const retiredOf = (state: CampaignState, characterId: string) =>
@@ -114,6 +140,16 @@ export function evolutionPlan(state: CampaignState, characterId: string): Evolut
     professionOffers:
       c.profession === null && gi(target.id) >= gi(rules.tracks.professionUnlockGrade),
     released: c.evolution ? c.evolution.options.map((o) => o.className) : null,
+    castable: c.skills
+      .filter((s) => castingForSkill(rules, state.skillLibrary, s)?.cost)
+      .map((s) => s.name),
+    libraryCastable: [
+      ...new Set(
+        Object.values(state.skillLibrary)
+          .filter((d) => castingOf(d)?.cost)
+          .map((d) => d.name),
+      ),
+    ],
     stale: (c.evolution?.options ?? []).flatMap((o) => {
       // A waiting selection already shows as "Waits on…" and blocks a re-release
       // too, so it is not this option's problem (round-2 review).
