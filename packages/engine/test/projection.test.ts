@@ -159,6 +159,7 @@ describe('player projection', () => {
       'practiceTotal',
       'quests',
       'region',
+      'rollRequest',
       'rules',
       'scenePrompt',
       'sessionRunning',
@@ -180,9 +181,9 @@ describe('player projection', () => {
       [...Object.keys(state.characters.jake ?? {}), ...optional].sort(),
     );
     // MT.9's scene prompt is absent until the GM first ends a scene; MC.3's
-    // shops until the first shop (D231).
+    // shops until the first shop (D231); MK.2's roll requests until the first ask.
     expect(Object.keys(CAMPAIGN_FIELD_VISIBILITY).sort()).toEqual(
-      [...Object.keys(state), 'scenePrompt', 'shops', 'shopOrder'].sort(),
+      [...Object.keys(state), 'scenePrompt', 'shops', 'shopOrder', 'rollRequests'].sort(),
     );
     const view = projectForPlayer(state, 'jake');
     const partyFields = Object.entries(CHARACTER_FIELD_VISIBILITY)
