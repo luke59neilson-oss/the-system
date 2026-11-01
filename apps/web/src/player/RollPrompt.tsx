@@ -68,3 +68,32 @@ export function RollPrompt({ client, view }: { client: LiveClient | null; view: 
     </section>
   );
 }
+
+/**
+ * QF.72: a request is easy to miss from Quests or Notes, so it announces itself
+ * wherever the player has scrolled to, and the tap goes to the prompt. It leaves
+ * once tapped or answered. The view only holds the viewer's own request.
+ */
+export function RollCall({ view }: { view: PlayerView }) {
+  const [went, setWent] = useState<string | null>(null);
+  const req = view.rollRequest;
+  if (req === null || req.answer !== null || went === req.id) return null;
+  const { title } = rollPromptText(view, req);
+  return (
+    <div className="roll-call-layer" aria-live="polite">
+      <button
+        type="button"
+        className="roll-call"
+        data-testid="roll-call"
+        onClick={() => {
+          setWent(req.id);
+          document
+            .querySelector('[data-testid="roll-prompt"]')
+            ?.scrollIntoView({ block: 'center' });
+        }}
+      >
+        The GM asks: {title}
+      </button>
+    </div>
+  );
+}
