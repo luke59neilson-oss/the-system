@@ -1240,3 +1240,11 @@
 
 ## 2026-11-01 · ME.4 · round 2 (sonnet)
 - No High, no Medium; fixes verified. Low: the failure message lingered after a later successful use (fixed: cleared on success; wording names the budget); failure path untested (Backlog).
+
+## 2026-11-01 · ME.5 · round 1 (sonnet)
+- High: `npm run check` failed typecheck in the new unit test (fixed: a `marks` literal).
+- Medium: the Evolution window sat far below Status on phones (fixed: `order: 1` in the phone layout); Close lost the picks (fixed: Status keeps them per release; e2e closes and reopens on the profession step); the release sound was untested (fixed: pure `releaseArrived` helper with unit tests).
+- Low: View-as opened memory, per-browser memory, pop-up focus, reduced-motion strength, focus after a replaced release, untested profession paths (Backlog).
+
+## 2026-11-01 · ME.5 · round 2 (sonnet)
+- Fixes verified. Medium: an unused setter failed lint (fixed). Low: saved picks naming a removed option; picks in Status state (Backlog).

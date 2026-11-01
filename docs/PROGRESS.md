@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.67; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV done (MV.A checked); ME.1, ME.2 and ME.3 done. Preview ready: Actions → Release → Run workflow (MV).
-**Next item:** ME.4 on `wip/ME.4` (head 565bd0aa, base 46f7adb9): done so far: `apps/web/src/gm/shapeModel.ts` `scaleShape` (largest remainder, exact total, free kept free, zero row refused) with unit tests. Next: `npm run reference` embeds `docs/reference/primal-hunter/evolutions.csv`; the Evolutions tab shows the table (totals, percent shapes) plus the campaign's earlier options; a **Use this shape** button per row on each step card (EvolutionSteps.tsx); canary; e2e applying Archer's shape at the E-grade class budget. Then ME.5 (make Three steps the builder default, D305), ME.A, MK.1–MK.A, QF.55 onward; MW after MU
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.67; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV done (MV.A checked); ME.1–ME.5 done. Preview ready: Actions → Release → Run workflow (MV).
+**Next item:** ME.A (full `npm run e2e`, `fable` review, Preview ready), then MK.1–MK.A, QF.55 onward; MW after MU
 **Blockers:** none
 
 ## Run log
@@ -1524,4 +1524,12 @@ next item, blockers. -->
 - ME.3 finished (D305): Evolutions tab builder with Three steps (class, profession, race option cards: name, rarity, description, points per level, one-time bonus, transforms; add, duplicate, remove; budget meters in red with the difference; standing panel; re-rating list and merge prompts; release blockers in a sticky bar with Override) or Class only, which stays the default until ME.5; the tab dry-runs the release on the engine; near-threshold list. Home "to build" link opens the tab. Review round 1 (sonnet): 0 H, 2 M (near list ignored the evolution gate; Release below the fold), 6 L; fixed or backlogged. Round 2: 0 H, 1 M (result outside the sticky bar), 1 L; fixed.
 - Tests: unit 1,926; e2e touched: ME.3, M5.2, M5.A, MT.1, MT.7, MU.1 (all passed). Full `npm run e2e` started at 01:49 but could not finish before the hard stop (57 passed, 0 failed by 01:55); CI runs both projects on this push. Engine unchanged (coverage not re-measured).
 - Open `wip/*`: `wip/ME.4`. Blockers: none.
+
+### Run · 2026-11-01 02:09–02:59 UTC (close-out at minute 45; ended at 49)
+- Close-out at minute 45: ME.4 and ME.5 checked and merged to main.
+- Preflight: `add_repo` not offered; repo already cloned (local `main` had unrelated history; reset to `origin/main`; `git fetch` of all branches hung, so single branches are fetched); lock pushed cleanly; vitest 5.0.5; CI green on d7620499. No new answers. Hour 02: no efficiency check or sweep.
+- ME.4 finished: `npm run reference` embeds `evolutions.csv`; GM route `/api/gm/evolution-reference` serves the books' rows and the campaign's own earlier three-step options (engine `campaignEvolutionOptions`, undone releases skipped); the Evolutions tab shows them (per level, total, percent shape, track filter); each option card has a shape picker and **Use this shape** (`scaleShape` moved to the engine; rows cut to the campaign's stats). Review: round 1 0 H, 2 M (unknown stats distorted shapes; silent failure), round 2 0 H, 0 M; fixed.
+- ME.5 finished (D306): an always-present Evolution window (locked, greyed; lit in the next metal with a pulsing glow on it and on Status, `[Evolution available]` pop-up with Open/Later, evolution sound on arrival; static highlight with reduced motion); three-step dialog (class, profession or none for now, race; book-style cards; review; one Evolve; Close keeps picks); GM builder defaults to Three steps (M5.2, M5.A, MT.1, MT.7 specs tick Class only). Review: round 1 1 H (typecheck), 3 M; round 2 1 M (lint); all fixed.
+- Tests: unit about 1,946 (`npm run check` green on the merge); e2e touched: ME.3, ME.4, ME.5, M3.13, M5.2, M5.A, MT.1, MT.7 (all passed). Full `npm run e2e` not run this run (no time left after the round-2 fixes); ME.A runs it first. Engine changed (earlierOptions, shape): covered by unit tests; coverage not re-measured.
+- Open `wip/*`: none new (wip/ME.4 and wip/ME.5 merged). Blockers: none.
 
