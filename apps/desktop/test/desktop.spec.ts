@@ -84,9 +84,8 @@ test('double-click start: server up, GM window connected with the key', async ()
     const session = gm.locator('section[aria-labelledby="session-heading"]');
     await session.getByRole('button', { name: 'Start session 1' }).click();
     await expect(session.getByRole('status')).toHaveText('Session 1 started');
-    await gm.evaluate(() => {
-      document.execCommand = () => false;
-    });
+    // A string: this package's tsconfig has no DOM types.
+    await gm.evaluate('document.execCommand = () => false');
     await session.getByRole('button', { name: 'Copy log for Claude' }).click();
     await expect(session.getByRole('status')).toHaveText(
       'Session 1 report copied: paste it into Claude',
