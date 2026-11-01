@@ -52,7 +52,7 @@ refusal is raised.
 | `Class level … grants no skill selection` | packages/engine/src/evolution/model.ts:268 | `skill.grant` (Edit sheet → "Give a skill") gives a skill outside the selection schedule |
 | `… has not reached class level … (is …)` | packages/engine/src/evolution/model.ts:270 | `skill.grant` (Edit sheet → "Give a skill") gives a skill outside the selection schedule |
 | `[…] is above the …-grade ceiling (…)` | packages/engine/src/evolution/model.ts:302 | `skill.setRarity` (Edit sheet → "Set rarity") sets any rarity after the fact; or raise the ceiling in Rules |
-| `Level … is the …-grade capstone: offer at least one … option` | packages/engine/src/evolution/model.ts:312 | `skill.grant` (Edit sheet → "Give a skill") gives any skill without a capstone menu; the menu rule itself stays (DESIGN §6) |
+| `Level … is the …-grade capstone: add at least one new … option (options passed over earlier do not count)` | packages/engine/src/evolution/model.ts:312 | `skill.grant` (Edit sheet → "Give a skill") gives any skill without a capstone menu; the menu rule itself stays (DESIGN §6) |
 | `No selection is offered at level …` | packages/engine/src/evolution/model.ts:410 | `skill.grant` (Edit sheet → "Give a skill") gives a skill outside the selection schedule |
 | `[…] is a race skill and never drops a rarity` | packages/engine/src/evolution/model.ts:521 | `skill.setRarity` (Edit sheet → "Set rarity") (and `skill.grant`) change race skills too, with a warning that Identify never drops by default |
 | `[…] cannot be raised above the …-grade ceiling (…)` | packages/engine/src/evolution/model.ts:524 | `skill.setRarity` (Edit sheet → "Set rarity") sets any rarity after the fact; or raise the ceiling in Rules |
@@ -156,7 +156,8 @@ refusal is raised.
 | `a walled contest has no roll` | packages/engine/src/events/reducer.ts:1923 | A malformed stored contest; share it again from the roller |
 | `this contest needs a roll` | packages/engine/src/events/reducer.ts:1923 | A malformed stored contest; share it again from the roller |
 | `That item is not available` | packages/engine/src/events/commands.ts:1773 | Players see one message that names nothing (QF.9); the GM gives items with the Item library's Give (`holdings.adjust`) |
-| `That trade can no longer go through` | packages/engine/src/events/commands.ts:1801 | A side no longer holds its part; the GM moves items with the Item library's Give/Take and currency with the Credits ledger's Grant/Fine |
+| `That trade can no longer go through: the other side no longer has everything it offered. Decline it to clear it.` | packages/engine/src/events/commands.ts:1801 | A side no longer holds its part; the GM moves items with the Item library's Give/Take and currency with the Credits ledger's Grant/Fine |
+| `That trade can no longer go through: you no longer hold what it asks of you (an equipped item does not count until you unequip it)` | packages/engine/src/events/commands.ts (overLimit… trade.accept) | The accepter unequips the item, or the GM moves items with the Item library's Give/Take and currency with the Credits ledger's Grant/Fine (QF.62) |
 | `A grade wall settles this contest; it has no roll` | packages/engine/src/resolution/model.ts:328 | Fix the input (the roller fills it in) |
 | `This contest needs a roll` | packages/engine/src/resolution/model.ts:328 | Fix the input (the roller fills it in) |
 | `A d20 contest takes dice, not an odds roll` | packages/engine/src/events/commands.ts | Fix the input (the roller fills it in); or share with `rolls: "odds"` |
@@ -409,6 +410,7 @@ refusal is raised.
 | `Bonus source "…" given twice` | packages/engine/src/bonuses/effective.ts:106 | Fix the input |
 | `Stat "…" is missing or not a whole number` | packages/engine/src/bonuses/effective.ts:115 | Set stats directly (`character.setStats`) |
 | `Bad command…` | packages/engine/src/events/commands.ts:1895 | A malformed command (the app never sends one); fix the input |
+| `Bad command "…"` | packages/engine/src/events/commands.ts (execute) | A command with a missing or mistyped field (the app never sends one); fix the input (QF.62) |
 | `Two options in a step share an id` | packages/engine/src/events/commands.ts:1073 | Give each option in a step its own id |
 | `Choose an evolution option` | packages/engine/src/events/commands.ts:1645 | Name an option (`optionId`) or one per step (`choices`) |
 | `No … option "…"` | packages/engine/src/evolution/model.ts:1099 | Choose an option the release offers in that step |

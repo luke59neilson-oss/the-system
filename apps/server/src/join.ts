@@ -42,10 +42,47 @@ export function addressRank(address: string): number {
   return 3;
 }
 
+/** MAC prefixes of common virtual adapters (VirtualBox, VMware, Hyper-V, Parallels). */
+const VIRTUAL_MACS = [
+  '0a:00:27',
+  '08:00:27',
+  '00:50:56',
+  '00:0c:29',
+  '00:05:69',
+  '00:1c:14',
+  '00:15:5d',
+  '00:1c:42',
+];
+const VIRTUAL_NAMES = /virtualbox|vmware|vmnet|vethernet|hyper-v|docker|wsl|vbox|parallels/i;
+
+/**
+ * QF.62 (deep review desktop-6): a virtual adapter (a VM host network, Hyper-V
+ * or WSL switch, Windows Mobile Hotspot on 192.168.137.x, VirtualBox's
+ * 192.168.56.x) is never the wifi a phone is on, so it ranks below every real
+ * home range, even on a 10.x home network.
+ */
+export function isVirtualAdapter(name: string, info: NetworkInterfaceInfo): boolean {
+  const mac = info.mac.toLowerCase();
+  return (
+    VIRTUAL_NAMES.test(name) ||
+    VIRTUAL_MACS.some((p) => mac.startsWith(p)) ||
+    /^192\.168\.(137|56)\./.test(info.address)
+  );
+}
+
 /** LAN IPv4 addresses ordered by `addressRank`, interface order within a rank. */
 export function rankedLanAddresses(interfaces: Interfaces): string[] {
+  const virtual = new Set<string>();
+  for (const [name, infos] of Object.entries(interfaces)) {
+    for (const info of infos ?? []) if (isVirtualAdapter(name, info)) virtual.add(info.address);
+  }
   return lanIPv4Addresses(interfaces)
-    .map((address, index) => ({ address, index, rank: addressRank(address) }))
+    .map((address, index) => ({
+      address,
+      index,
+      // Below "other addresses" (3), beside VPN overlays (4), above link-local (5).
+      rank: virtual.has(address) ? 4 : addressRank(address),
+    }))
     .sort((x, y) => x.rank - y.rank || x.index - y.index)
     .map((entry) => entry.address);
 }

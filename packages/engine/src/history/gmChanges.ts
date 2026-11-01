@@ -39,7 +39,8 @@ export type GmChangeKind =
   | 'evolutionChosen'
   | 'questNew'
   | 'questUpdated'
-  | 'questStatus';
+  | 'questStatus'
+  | 'entityRevealed';
 
 /** One changed value, already in display form ("2.3", "85/100"). */
 export interface GmChangeDiff {
@@ -166,7 +167,7 @@ export const PLAYER_NOTICE_AUDIT: Readonly<Record<EventType, PlayerNoticeAudit>>
   'stability.nudged': none,
   'entity.defined': none,
   'entity.edited': none,
-  'entity.revealed': none,
+  'entity.revealed': notifies,
   'entity.identified': notifies,
   'entity.noticeClosed': none,
   'bestiary.categoryDefined': none,
@@ -547,6 +548,18 @@ export function gmChangeNotices(
           subject: now.title,
           ...(change === 'questStatus' ? { detail: now.status } : {}),
         });
+      }
+      break;
+    }
+    case 'entity.revealed': {
+      // QF.62 (deep review playtest-11): each character the GM reveals an
+      // Identify entry to hears of it, by the label they now see.
+      const id = event.payload.entityId;
+      const entity = has(after.entities, id) ? after.entities[id] : undefined;
+      for (const characterId of entity ? event.payload.characterIds : []) {
+        // Out of Identify range, the player sees "[??? – lvl ???]": no name.
+        const seen = entity!.worked[characterId] === true;
+        push({ characterId, change: 'entityRevealed', subject: seen ? entity!.label : '???' });
       }
       break;
     }

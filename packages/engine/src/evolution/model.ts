@@ -339,7 +339,7 @@ export function offerSelection(
   }
   if (slot.capstone && !reachesCeiling) {
     throw new CharacterRuleError(
-      `Level ${level} is the ${grade.id}-grade capstone: offer at least one ${grade.rarityCeiling} option`,
+      `Level ${level} is the ${grade.id}-grade capstone: add at least one new ${grade.rarityCeiling} option (options passed over earlier do not count)`,
     );
   }
   const record: SelectionRecord = {

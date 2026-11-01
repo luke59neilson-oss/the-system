@@ -100,8 +100,11 @@ test('the undo confirm shows level changes and refuses an undo that would lose X
   await openWindow(page, 'change-log');
   const log = page.locator('section[aria-labelledby="change-log"]');
   const awards = log.getByRole('listitem').filter({ hasText: /XP/ });
-  // The newest award: the confirm says Jake drops from class 7 to 5.
-  const newest = awards.first();
+  // The newest award: the confirm says Jake drops from class 7 to 5. Wait for
+  // its row first: the window can open on a list fetched before the last
+  // award landed, and the Undo click would then hit the 300 XP row.
+  await expect(awards.first()).toContainText('600 class XP');
+  const newest = awards.filter({ hasText: '600 class XP' });
   await newest.getByRole('button', { name: 'Undo' }).click();
   await expect(newest.getByTestId('undo-preview')).toHaveText(
     'This undo changes: Jake: class 7 → 5, race 7 → 5',

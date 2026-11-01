@@ -1039,7 +1039,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   spells/Cast; DESIGN §9a tab contents vs `apps/web/src/gm/tabsModel.ts`.
   *Accept:* each line fixed; `scripts/gm-overrides.test.ts` also checks every
   doc row against `listRefusals()` (fails on today's doc).
-- [ ] **QF.62 Low fixes, engine and server.** Cast skips the practice-entry
+- [x] **QF.62 Low fixes, engine and server.** Cast skips the practice-entry
   cap (`commands.ts:1976-1990`); malformed player commands throw before
   validation and log as engine bugs (`commands.ts:2050`, `hub.ts:258`); the
   override warning prices skipped points by level range, not grade

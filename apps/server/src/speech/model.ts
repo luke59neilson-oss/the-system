@@ -111,6 +111,40 @@ export function installedFiles(dir: string, spec: SpeechModelSpec): WhisperModel
 }
 
 /** Extracts the named members of a .tar.bz2 into `to`, flattening paths. */
+/** The sha256 of a file, hex. */
+export async function sha256Of(file: string): Promise<string> {
+  const hash = createHash('sha256');
+  await pipeline(createReadStream(file), hash);
+  return hash.digest('hex');
+}
+
+/**
+ * QF.62: renames, retrying a few times on the errors Windows gives while
+ * antivirus or a just-closed handle still holds a file (EPERM, EACCES, EBUSY).
+ */
+export async function renameWithRetry(
+  from: string,
+  to: string,
+  options: {
+    readonly attempts?: number;
+    readonly delayMs?: number;
+    readonly renameImpl?: (from: string, to: string) => Promise<void>;
+  } = {},
+): Promise<void> {
+  const attempts = options.attempts ?? 8;
+  const renameImpl = options.renameImpl ?? rename;
+  for (let i = 1; ; i++) {
+    try {
+      return await renameImpl(from, to);
+    } catch (err) {
+      const code = (err as { code?: unknown }).code;
+      const busy = code === 'EPERM' || code === 'EACCES' || code === 'EBUSY';
+      if (!busy || i >= attempts) throw err;
+      await new Promise((r) => setTimeout(r, (options.delayMs ?? 250) * i));
+    }
+  }
+}
+
 export async function extractMembers(
   archive: string,
   to: string,
@@ -129,7 +163,9 @@ export async function extractMembers(
     }
     const out = createWriteStream(path.join(to, base));
     stream.pipe(out);
-    out.on('finish', () => {
+    // QF.62: 'close', not 'finish': the handle must be shut before the
+    // staging folder is renamed (Windows refuses to rename an open file).
+    out.on('close', () => {
       written.push(base);
       next();
     });
@@ -232,8 +268,42 @@ export class SpeechModel {
     if (ready) return this.loadFiles(ready);
     await mkdir(dir, { recursive: true });
     const part = path.join(dir, `${spec.name}.tar.bz2.part`);
+    // QF.62: a verified archive is kept until the install succeeds, so a failed
+    // last step does not cost the whole download again.
+    const verified = path.join(dir, `${spec.name}.tar.bz2`);
     const staging = path.join(dir, `${spec.name}.staging`);
     try {
+      if (!(existsSync(verified) && (await sha256Of(verified)) === spec.sha256)) {
+        await rm(verified, { force: true });
+        await this.fetchArchive(part, verified);
+      }
+      this.current = { state: 'loading' };
+      await rm(staging, { recursive: true, force: true });
+      const keep = Object.values(spec.files);
+      const written = await extractMembers(verified, staging, keep);
+      const missing = keep.filter((f) => !written.includes(f));
+      if (missing.length > 0) {
+        await rm(verified, { force: true });
+        throw new Error(`The model archive lacks ${missing.join(', ')}`);
+      }
+      await rm(path.join(dir, spec.name), { recursive: true, force: true });
+      await renameWithRetry(staging, path.join(dir, spec.name));
+      await rm(verified, { force: true });
+    } finally {
+      await rm(part, { force: true });
+      await rm(staging, { recursive: true, force: true });
+    }
+    const files = installedFiles(dir, spec);
+    if (!files) throw new Error('The model files are missing after the download');
+    await this.loadFiles(files);
+    // Speaker labels are extra: their failure never stops listening.
+    await this.prepareSpeaker(true);
+  }
+
+  /** Downloads the archive to `part`, checks its size and sha256, then moves it to `dest`. */
+  private async fetchArchive(part: string, dest: string): Promise<void> {
+    const spec = this.spec;
+    {
       this.current = { state: 'downloading', received: 0, bytes: spec.bytes };
       // A stalled connection is aborted, so the GM can try again.
       const abort = new AbortController();
@@ -283,23 +353,8 @@ export class SpeechModel {
       if (hash.digest('hex') !== spec.sha256) {
         throw new Error('The downloaded model did not match its checksum; try again');
       }
-      this.current = { state: 'loading' };
-      await rm(staging, { recursive: true, force: true });
-      const keep = Object.values(spec.files);
-      const written = await extractMembers(part, staging, keep);
-      const missing = keep.filter((f) => !written.includes(f));
-      if (missing.length > 0) throw new Error(`The model archive lacks ${missing.join(', ')}`);
-      await rm(path.join(dir, spec.name), { recursive: true, force: true });
-      await rename(staging, path.join(dir, spec.name));
-    } finally {
-      await rm(part, { force: true });
-      await rm(staging, { recursive: true, force: true });
+      await rename(part, dest);
     }
-    const files = installedFiles(dir, spec);
-    if (!files) throw new Error('The model files are missing after the download');
-    await this.loadFiles(files);
-    // Speaker labels are extra: their failure never stops listening.
-    await this.prepareSpeaker(true);
   }
 
   /**

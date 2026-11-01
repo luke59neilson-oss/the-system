@@ -772,6 +772,14 @@ DESIGN/ROADMAP; do not re-apply them.
     panel between tabs).
     Answer (Luke, 2026-11-01, chat): Session, as built. (default kept, L28)
 
+99. **Does a Rare option passed over earlier satisfy the capstone (QF.62,
+    D323)?** DESIGN §6: the last selection before an evolution must include
+    an option at the grade's ceiling. The engine counts only the options the
+    GM adds to that menu, not options passed over at earlier levels that the
+    player's menu also lists. The refusal now says so ("add at least one new
+    rare option (options passed over earlier do not count)"). Default: only
+    new options count. Option: a passed-over option at the ceiling counts.
+
 100. **A level lowered by the GM and earned again (sweep D, D326).** The GM's
     "Level, XP and grade" override takes nothing back when it lowers a level
     (D214). Earning that class or profession level again grants its stats

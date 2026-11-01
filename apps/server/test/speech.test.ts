@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { FixtureSpeechToText } from '../src/speech/stt';
-import { Listener, transcriptFile } from '../src/speech/transcript';
+import { isNonSpeech, Listener, transcriptFile } from '../src/speech/transcript';
 import { DEFAULT_VAD, VoiceChunker, rms } from '../src/speech/vad';
 
 // MC.5 (DESIGN §11 "Listening"): chunking, the fixture recognizer and the
@@ -114,6 +114,35 @@ describe('transcript (MC.5)', () => {
     ]);
     // Only the text file exists: no audio is written.
     expect(readdirSync(dir)).toEqual(['session-03.jsonl']);
+  });
+
+  it("keeps Whisper's non-speech output out of the transcript (QF.62)", async () => {
+    for (const t of [
+      '[BLANK_AUDIO]',
+      '(laughs)',
+      ' [Music] (applause) ',
+      '♪',
+      'you',
+      'Thank you.',
+      '...',
+      '*sigh*',
+    ])
+      expect(isNonSpeech(t), t).toBe(true);
+    for (const t of ['Thank you, Miranda.', 'You roll it.', '[Jake] draws', 'No.'])
+      expect(isNonSpeech(t), t).toBe(false);
+    dir = mkdtempSync(path.join(os.tmpdir(), 'transcript-'));
+    const seen: string[] = [];
+    const l = new Listener({
+      dir,
+      session: 1,
+      stt: new FixtureSpeechToText(['[BLANK_AUDIO]', 'Jake draws his bow.', '(laughs)']),
+      now: () => 0,
+      onLine: (x) => seen.push(x.text),
+    });
+    await l.push(join(tone(600), quiet(800), tone(600), quiet(800), tone(600), quiet(800)));
+    await l.stop();
+    expect(seen).toEqual(['Jake draws his bow.']);
+    expect(readFileSync(transcriptFile(dir, 1), 'utf8').trim().split('\n')).toHaveLength(1);
   });
 
   it('skips a segment the recognizer fails on and carries on', async () => {

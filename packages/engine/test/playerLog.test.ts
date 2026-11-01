@@ -427,6 +427,18 @@ const SCENARIOS: Partial<Record<EventType, Scenario>> = {
     ],
     act: { type: 'entity.identify', entityId: 'e1', characterIds: ['jake'] },
   },
+  // QF.62: a revealed Identify entry tells the character it is revealed to.
+  'entity.revealed': {
+    setup: [
+      {
+        type: 'entity.define',
+        entityId: 'e1',
+        name: 'Stalker',
+        tiers: [{ minRarity: 'common', text: '[Stalker]' }],
+      },
+    ],
+    act: { type: 'entity.reveal', entityId: 'e1', characterIds: ['jake'] },
+  },
   'quest.edited': {
     setup: [{ type: 'quest.create', questId: 'q1', title: 'Find the heart', visible: false }],
     act: { type: 'quest.edit', questId: 'q1', visible: true },
@@ -513,6 +525,26 @@ describe('player notice audit (MU.2)', () => {
         type,
       ).toEqual([]);
     }
+  });
+
+  it('a reveal to a character out of Identify range names nothing (QF.62)', () => {
+    const { notices } = lastNotices({
+      setup: [
+        {
+          type: 'entity.define',
+          entityId: 'e1',
+          name: 'Elder Wyrm',
+          grade: 'A',
+          level: 230,
+          tiers: [{ minRarity: 'common', text: '[Elder Wyrm]' }],
+        },
+      ],
+      act: { type: 'entity.reveal', entityId: 'e1', characterIds: ['jake'] },
+    });
+    expect(notices).toEqual([
+      { kind: 'gmChange', characterId: 'jake', change: 'entityRevealed', subject: '???' },
+    ]);
+    expect(JSON.stringify(notices)).not.toContain('Wyrm');
   });
 
   it('a quest edit that changes only GM-only fields tells no one (MU.A review)', () => {

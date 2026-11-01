@@ -156,6 +156,8 @@ export function gmChangeText(n: GmChange): string {
       return `Quest updated: ${s}`;
     case 'questStatus':
       return `Quest ${d}: ${s}`;
+    case 'entityRevealed':
+      return `New Identify entry: ${s}`;
   }
 }
 

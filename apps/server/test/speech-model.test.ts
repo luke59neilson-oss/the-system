@@ -11,6 +11,7 @@ import {
   WHISPER_TINY_EN,
   extractMembers,
   installedFiles,
+  renameWithRetry,
   type SpeechModelSpec,
 } from '../src/speech/model';
 import { registerListenRoutes } from '../src/speech/routes';
@@ -436,5 +437,56 @@ describe('speaker model download (MC.6, D238)', () => {
   it('a server without a speaker model reports none', () => {
     const model = new SpeechModel({ dir: tempDir(), spec, fetch: serve(bytes).fetchImpl });
     expect(model.speakerStatus()).toBeNull();
+  });
+});
+
+describe('the model install survives a busy rename (QF.62)', () => {
+  it('retries a rename Windows refuses while a file is held, and gives up on other errors', async () => {
+    const busy = (code: string) => Object.assign(new Error(code), { code });
+    let tries = 0;
+    await renameWithRetry('a', 'b', {
+      delayMs: 1,
+      renameImpl: () => (++tries < 3 ? Promise.reject(busy('EPERM')) : Promise.resolve()),
+    });
+    expect(tries).toBe(3);
+    tries = 0;
+    await expect(
+      renameWithRetry('a', 'b', {
+        delayMs: 1,
+        renameImpl: () => (++tries, Promise.reject(busy('ENOENT'))),
+      }),
+    ).rejects.toThrow('ENOENT');
+    expect(tries).toBe(1);
+    tries = 0;
+    await expect(
+      renameWithRetry('a', 'b', {
+        attempts: 2,
+        delayMs: 1,
+        renameImpl: () => (++tries, Promise.reject(busy('EBUSY'))),
+      }),
+    ).rejects.toThrow('EBUSY');
+    expect(tries).toBe(2);
+  });
+
+  it('installs from an archive kept from a failed attempt without downloading again', async () => {
+    const dir = tempDir();
+    writeFileSync(path.join(dir, `${spec.name}.tar.bz2`), bytes);
+    const { calls, fetchImpl } = serve(bytes);
+    const rec = recorder();
+    const model = new SpeechModel({ dir, spec, fetch: fetchImpl, load: rec.load });
+    await model.download();
+    expect(calls).toEqual([]);
+    expect(rec.loaded).toHaveLength(1);
+    // The kept archive goes once the install succeeds.
+    expect(existsSync(path.join(dir, `${spec.name}.tar.bz2`))).toBe(false);
+  });
+
+  it('a kept archive that fails its checksum is downloaded again', async () => {
+    const dir = tempDir();
+    writeFileSync(path.join(dir, `${spec.name}.tar.bz2`), 'not the model');
+    const { calls, fetchImpl } = serve(bytes);
+    const model = new SpeechModel({ dir, spec, fetch: fetchImpl, load: recorder().load });
+    await model.download();
+    expect(calls).toEqual([spec.url]);
   });
 });

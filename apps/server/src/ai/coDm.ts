@@ -2,7 +2,8 @@
 // spend counter and the GM-only settings routes. Every route sits under
 // /api/gm/, which the server's onRequest hook keeps behind the GM key; no
 // reply body ever carries the API key.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { writeJsonFile } from './jsonFile';
 import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -114,8 +115,7 @@ export class CoDm {
   }
 
   setModels(models: AiModelSettings): void {
-    mkdirSync(path.dirname(this.settingsFile), { recursive: true });
-    writeFileSync(this.settingsFile, JSON.stringify({ models }, null, 2));
+    writeJsonFile(this.settingsFile, { models });
     this.models = models;
   }
 
