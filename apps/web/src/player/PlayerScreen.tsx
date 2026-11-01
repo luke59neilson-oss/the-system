@@ -569,7 +569,7 @@ function Status({
         ))}
       </dl>
       <h3>Stats</h3>
-      <ul className="stats">
+      <ul className={me.rollModifiers ? 'stats stats-d20' : 'stats'}>
         {rules.stats.list.map((s) => {
           // M3.7 (D81): the effective value, with what gear adds beside it.
           const base = me.stats[s.id] ?? 0;

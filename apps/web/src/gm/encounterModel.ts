@@ -402,6 +402,29 @@ export function montageProgress(state: CampaignState, montage: Montage) {
   return { done, waiting };
 }
 
+/**
+ * MK.A review M1: the bracket text of a shared roll in the GM's list: the
+ * grade wall, the d20 totals (last round), or the odds and the roll.
+ */
+export function sharedRollText(c: {
+  readonly walled: boolean;
+  readonly chance: number;
+  readonly roll: number | null;
+  readonly a: { readonly label: string };
+  readonly b: { readonly label: string };
+  readonly d20?: {
+    readonly rounds: readonly { readonly a: { total: number }; readonly b: { total: number } }[];
+  };
+}): string {
+  if (c.walled) return 'grade wall';
+  const last = c.d20?.rounds[c.d20.rounds.length - 1];
+  if (last !== undefined) {
+    const ties = (c.d20?.rounds.length ?? 1) - 1;
+    return `d20: ${c.a.label} ${last.a.total} vs ${c.b.label} ${last.b.total}${ties > 0 ? `, after ${ties} tie${ties === 1 ? '' : 's'}` : ''}`;
+  }
+  return `${Math.round(c.chance * 100)}% for ${c.a.label}, rolled ${Math.round((c.roll ?? 0) * 100)}`;
+}
+
 /** Recent shared contests, newest first (GM view). */
 export function recentContests(state: CampaignState, limit = 5) {
   return state.contestOrder

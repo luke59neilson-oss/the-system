@@ -23,6 +23,7 @@ import {
   phoneDie,
   phoneDieUsed,
   rollClears,
+  sharedRollText,
   phoneRoller,
   signedModifier,
   typedDie,
@@ -470,5 +471,18 @@ describe('encounter model: clocks and montages (M7.3)', () => {
       { type: 'montage.close', montageId: 'm' },
     ]);
     expect(clockRows(stateOf(c))[0]).toMatchObject({ complete: true, montageReady: false });
+  });
+
+  it('describes a shared roll in the GM list (MK.A review M1)', () => {
+    const base = { chance: 0.36, roll: null, a: { label: 'Jake' }, b: { label: 'Stalker' } };
+    expect(sharedRollText({ ...base, walled: true })).toBe('grade wall');
+    expect(sharedRollText({ ...base, walled: false, roll: 0.71 })).toBe('36% for Jake, rolled 71');
+    const t = (a: number, b: number) => ({ a: { total: a }, b: { total: b } });
+    expect(sharedRollText({ ...base, walled: false, d20: { rounds: [t(9, 9), t(14, 11)] } })).toBe(
+      'd20: Jake 14 vs Stalker 11, after 1 tie',
+    );
+    expect(sharedRollText({ ...base, walled: false, d20: { rounds: [t(3, 12)] } })).toBe(
+      'd20: Jake 3 vs Stalker 12',
+    );
   });
 });

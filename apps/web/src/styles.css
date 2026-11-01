@@ -3610,6 +3610,17 @@ ol.change-log li.undone .change-text {
   color: var(--muted, inherit);
   white-space: nowrap;
 }
+/* MK.A review M2: with modifiers a stat row needs more room; phones get one
+   column, so "Intelligence 1.0 [+14]" stays on one line. */
+.stats-d20 {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+.stats-d20 li {
+  gap: 8px;
+}
+.stats-d20 li > :first-child {
+  margin-right: auto;
+}
 
 /* MK.2: the phone's "Roll d20 for <Stat>" prompt. */
 .roll-prompt {
