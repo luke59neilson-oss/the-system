@@ -157,6 +157,22 @@ refusal is raised.
 | `That trade can no longer go through` | packages/engine/src/events/commands.ts:1801 | A side no longer holds its part; the GM moves items and currency with Edit holdings |
 | `A grade wall settles this contest; it has no roll` | packages/engine/src/resolution/model.ts:328 | Fix the input (the roller fills it in) |
 | `This contest needs a roll` | packages/engine/src/resolution/model.ts:328 | Fix the input (the roller fills it in) |
+| `A d20 contest takes dice, not an odds roll` | packages/engine/src/events/commands.ts | Fix the input (the roller fills it in); or share with `rolls: "odds"` |
+| `An odds contest takes a roll, not dice` | packages/engine/src/events/commands.ts | Fix the input (the roller fills it in); or share with `rolls: "d20"` |
+| `a d20 contest has no odds roll` | packages/engine/src/events/reducer.ts | A malformed stored contest; share it again from the roller |
+| `a total does not match its die and modifier` | packages/engine/src/events/reducer.ts | A malformed stored contest; share it again from the roller |
+| `only a tie rolls again` | packages/engine/src/events/reducer.ts | A malformed stored contest; share it again from the roller |
+| `the outcome does not match the dice` | packages/engine/src/events/reducer.ts | A malformed stored contest; share it again from the roller |
+| `an odds contest has no dice` | packages/engine/src/events/reducer.ts | A malformed stored contest; share it again from the roller |
+| `a walled contest has no dice` | packages/engine/src/events/reducer.ts | A malformed stored contest; share it again from the roller |
+| `this contest needs dice` | packages/engine/src/events/reducer.ts | A malformed stored contest; share it again from the roller |
+| `A stat must be a number (got …)` | packages/engine/src/resolution/dice.ts | Fix the input (the roller fills it in) |
+| `… must be a whole number 1–… (got …)` | packages/engine/src/resolution/dice.ts | Type a d20 result from 1 to 20, or tap Roll |
+| `…: say whether it was typed or rolled by the app` | packages/engine/src/resolution/dice.ts | Fix the input (the roller fills it in) |
+| `This contest needs each side’s d20` | packages/engine/src/resolution/dice.ts | Roll or type both dice |
+| `Too many tied rounds` | packages/engine/src/resolution/dice.ts | Share it again (50 tied rounds in a row is a broken die source) |
+| `A tie rolls again` | packages/engine/src/resolution/dice.ts | Roll both dice again; the tied round is kept |
+| `Only a tie rolls again` | packages/engine/src/resolution/dice.ts | Fix the input (the roller fills it in) |
 | `This evolution is a single choice; choose one option` | packages/engine/src/evolution/model.ts:1090 | The release was made before three steps (or with one choice): choose one option, or release again with steps |
 | `Choose a class, a profession (or none for now) and a race` | packages/engine/src/evolution/model.ts:1095 | The release has three steps: send one choice per step (the GM may choose for the player) |
 
