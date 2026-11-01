@@ -64,6 +64,9 @@ test('every window opens from its tab; the tab is remembered', async ({ browser 
   // Keyboard: arrows move between tabs and focus follows.
   await gm.getByRole('tab', { name: 'Progression' }).focus();
   await gm.keyboard.press('ArrowRight');
+  // ME.3: Evolutions sits between Progression and Library & settings.
+  await expect(gm.getByRole('tab', { name: 'Evolutions' })).toBeFocused();
+  await gm.keyboard.press('ArrowRight');
   await expect(gm.getByRole('tab', { name: 'Library & settings' })).toBeFocused();
   await expect(gm.getByRole('tab', { name: 'Library & settings' })).toHaveAttribute(
     'aria-selected',

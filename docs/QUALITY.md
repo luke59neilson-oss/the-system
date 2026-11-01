@@ -221,6 +221,8 @@ lowered by their verifiers and folded into the Low batches.
   a pane's Identify notice, MV.3, covers the console while Tab is walked).
 
 ## Backlog (Lows; M11.5 goes through these)
+
+- ME.3 (2026-11-01, sonnet): switching the Evolutions builder between Three steps and Class only drops the draft, and the shape resets on a tab change (`EvolutionBuilder.tsx`); a steps draft does not re-seed when the character gains a profession or its distributions change while open (`EvolutionSteps.tsx`); option cards are labelled by position, so Remove/Duplicate names shift after a removal.
 - (ME.2 review round 2, sonnet) with `steps`, `releaseEvolution` still runs `checkOption` on the class-only `options`, so rules with `evolutionTransforms.min` ≥ 1 refuse a class option whose transform would come from the profession or race step; combination refusals name options by display name, which can repeat across steps.
 
 - (ME.1 review, sonnet) after the GM lowers a class or profession level and it is earned again, a second track batch with the same `track`/`trackLevel` is pushed and only `freePoints.spend` can reach it (add a had-guard like race batches); a custom grade with a zero race budget and zero shares pushes a 0-point race batch.

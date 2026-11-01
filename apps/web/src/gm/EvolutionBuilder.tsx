@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import type { CampaignState, EvolutionOption } from '@the-system/engine';
+import { evolutionTarget, type CampaignState, type EvolutionOption } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 import {
@@ -8,8 +8,10 @@ import {
   withdrawableOffers,
   type EvolutionPlan,
 } from './evolutionBuilderModel';
+import { nearThreshold } from './evolutionStepsModel';
+import { StepsForm } from './EvolutionSteps';
 
-interface TransformDraft {
+export interface TransformDraft {
   skill: string;
   /** A second skill merged in (M5.2), from a merge prompt. */
   merge?: string;
@@ -52,15 +54,37 @@ export function EvolutionBuilder({ client, state }: { client: LiveClient; state:
     const plan = evolutionPlan(state, id);
     return plan ? [{ id, plan }] : [];
   });
+  // ME.3 (DESIGN §9a): who is at or near the threshold (within 3 race levels).
+  const near = nearThreshold(
+    state.rules,
+    state.characterOrder.flatMap((id) => state.characters[id] ?? []),
+  ).filter((n) => !ready.some((r) => r.id === n.id));
   const [picked, setPicked] = useState('');
   const current = ready.find((r) => r.id === picked) ?? ready[0];
   // Pin the shown character, so another character becoming ready earlier in
   // the party order does not swap the form and lose the GM's draft (M5.A review).
   // (Adjusting state while rendering, React's pattern for derived state.)
   if (current !== undefined && current.id !== picked) setPicked(current.id);
+  const character = current === undefined ? undefined : state.characters[current.id];
+  const stepsPossible =
+    character !== undefined && evolutionTarget(state.rules, character)?.trackBudget !== undefined;
+  // D305: one choice stays the default until the player's screen can pick three steps (ME.5).
+  const [shape, setShape] = useState<'single' | 'steps'>('single');
   return (
     <section className="window evolution-builder" aria-labelledby="evolution-builder">
       <h2 id="evolution-builder">Evolutions</h2>
+      {near.length > 0 && (
+        <ul className="evolution-near" aria-label="Near the threshold">
+          {near.map((n) => (
+            <li key={n.id}>
+              {state.characters[n.id]?.name}:{' '}
+              {n.levelsToGo === 0
+                ? 'at the threshold'
+                : `${n.levelsToGo} ${state.rules.tracks.evolutionGate === 'class' ? 'class' : 'race'} level${n.levelsToGo === 1 ? '' : 's'} to go`}
+            </li>
+          ))}
+        </ul>
+      )}
       {current === undefined ? (
         <p className="muted" data-testid="no-evolution">
           No evolution available: none of the party is at the top of their grade.
@@ -77,13 +101,46 @@ export function EvolutionBuilder({ client, state }: { client: LiveClient; state:
               ))}
             </select>
           </label>
-          <ReleaseForm
-            key={current.id}
-            client={client}
-            state={state}
-            characterId={current.id}
-            plan={current.plan}
-          />
+          {stepsPossible && (
+            <fieldset className="evolution-shape">
+              <legend>Evolution</legend>
+              <label className="check">
+                <input
+                  type="radio"
+                  name="evolution-shape"
+                  checked={shape === 'steps'}
+                  onChange={() => setShape('steps')}
+                />
+                Three steps: class, profession, race
+              </label>
+              <label className="check">
+                <input
+                  type="radio"
+                  name="evolution-shape"
+                  checked={shape === 'single'}
+                  onChange={() => setShape('single')}
+                />
+                Class only (one choice)
+              </label>
+            </fieldset>
+          )}
+          {stepsPossible && shape === 'steps' ? (
+            <StepsForm
+              key={`steps:${current.id}`}
+              client={client}
+              state={state}
+              characterId={current.id}
+              plan={current.plan}
+            />
+          ) : (
+            <ReleaseForm
+              key={current.id}
+              client={client}
+              state={state}
+              characterId={current.id}
+              plan={current.plan}
+            />
+          )}
         </>
       )}
       <ProfessionOffers client={client} state={state} />
@@ -375,42 +432,15 @@ function ReleaseForm({
           <textarea value={professions} onChange={(e) => setProfessions(e.target.value)} />
         </label>
       )}
-      <h3>Skills after the evolution</h3>
-      <ul className="rerate" aria-label="Re-rating">
-        {plan.rerate.map((r) => (
-          <li key={r.skill}>
-            {merged.has(r.skill) && (
-              <span className="muted">
-                (merged by an option: ignored if that option is chosen){' '}
-              </span>
-            )}
-            <label>
-              [{r.skill}] {rarityName(r.from)}
-              {r.race && <span className="muted"> (race skill: never drops)</span>} →{' '}
-              <select
-                value={picked(r)}
-                onChange={(e) =>
-                  setRerate({ ...rerate, [r.skill]: { from: r.from, rarity: e.target.value } })
-                }
-              >
-                {r.choices.map((x) => (
-                  <option key={x} value={x}>
-                    {rarityName(x)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </li>
-        ))}
-      </ul>
-      <label className="check">
-        <input
-          type="checkbox"
-          checked={approved}
-          onChange={(e) => setApprovedList(e.target.checked ? listKey : null)}
-        />
-        Approve this re-rating (each skill keeps its rarity unless you change it)
-      </label>
+      <RerateList
+        plan={plan}
+        rarityName={rarityName}
+        picked={picked}
+        merged={merged}
+        onPick={(skill, from, rarity) => setRerate({ ...rerate, [skill]: { from, rarity } })}
+        approved={approved}
+        onApprove={(on) => setApprovedList(on ? listKey : null)}
+      />
       {plan.mergePrompts.length > 0 && (
         <p className="muted" data-testid="merge-prompts">
           Merge ready:{' '}
@@ -436,11 +466,65 @@ function ReleaseForm({
 }
 
 /**
+ * The re-rating list (MR.1, MT.1, DESIGN §6): every kept skill with its
+ * rarity after the evolution, and the approval the release needs.
+ */
+export function RerateList({
+  plan,
+  rarityName,
+  picked,
+  merged,
+  onPick,
+  approved,
+  onApprove,
+}: {
+  plan: EvolutionPlan;
+  rarityName: (id: string) => string;
+  picked: (r: { skill: string; from: string; byDefault: string }) => string;
+  merged: ReadonlySet<string>;
+  onPick: (skill: string, from: string, rarity: string) => void;
+  approved: boolean;
+  onApprove: (on: boolean) => void;
+}) {
+  return (
+    <>
+      <h3>Skills after the evolution</h3>
+      <ul className="rerate" aria-label="Re-rating">
+        {plan.rerate.map((r) => (
+          <li key={r.skill}>
+            {merged.has(r.skill) && (
+              <span className="muted">
+                (merged by an option: ignored if that option is chosen){' '}
+              </span>
+            )}
+            <label>
+              [{r.skill}] {rarityName(r.from)}
+              {r.race && <span className="muted"> (race skill: never drops)</span>} →{' '}
+              <select value={picked(r)} onChange={(e) => onPick(r.skill, r.from, e.target.value)}>
+                {r.choices.map((x) => (
+                  <option key={x} value={x}>
+                    {rarityName(x)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </li>
+        ))}
+      </ul>
+      <label className="check">
+        <input type="checkbox" checked={approved} onChange={(e) => onApprove(e.target.checked)} />
+        Approve this re-rating (each skill keeps its rarity unless you change it)
+      </label>
+    </>
+  );
+}
+
+/**
  * An option's transforms (DESIGN §6): existing skill → new name and rarity,
  * up to `skills.evolutionTransforms.max`; a merge prompt adds a row that
  * merges the pair (the second skill is consumed).
  */
-function TransformRows({
+export function TransformRows({
   plan,
   skills,
   rarityName,
@@ -450,7 +534,7 @@ function TransformRows({
   plan: EvolutionPlan;
   skills: readonly string[];
   rarityName: (id: string) => string;
-  transforms: TransformDraft[];
+  transforms: readonly TransformDraft[];
   onChange: (next: TransformDraft[]) => void;
 }) {
   const full = transforms.length >= plan.transforms.max;

@@ -4,12 +4,14 @@
 // in docs/GM-GUIDE.md mirrors it (MU.1). Award XP is the only window in two places
 // (quick on Session, full on Progression).
 
-export type ConsoleTab = 'home' | 'session' | 'progression' | 'library';
+export type ConsoleTab = 'home' | 'session' | 'progression' | 'evolutions' | 'library';
 
 export const TABS: readonly { readonly id: ConsoleTab; readonly label: string }[] = [
   { id: 'home', label: 'Home' },
   { id: 'session', label: 'Session' },
   { id: 'progression', label: 'Progression' },
+  // ME.3 (DESIGN §9a, Luke 2026-10-31): evolutions get their own tab.
+  { id: 'evolutions', label: 'Evolutions' },
   { id: 'library', label: 'Library & settings' },
 ];
 
@@ -39,8 +41,9 @@ export const WINDOWS: Readonly<Record<string, readonly ConsoleTab[]>> = {
   'offer-builder': ['progression'],
   'marks-review': ['progression'],
   'merge-builder': ['progression'],
-  'evolution-builder': ['progression'],
   'practice-capture': ['progression'],
+  // Evolutions: who is at or near the threshold and the three-step builder (ME.3).
+  'evolution-builder': ['evolutions'],
   // Library & settings: the campaign's reference data and configuration.
   'skill-text': ['library'],
   'skill-library': ['library'],

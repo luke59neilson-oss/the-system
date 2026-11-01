@@ -3,11 +3,12 @@ import { TABS, WINDOWS, parseTab, tabAfterKey, tabOf, windowsOn } from '../src/g
 
 // MU.1: where every GM window lives (DESIGN §9a).
 describe('console tabs (MU.1)', () => {
-  it('has Home and the three tabs, in order', () => {
+  it('has Home and the four tabs, in order (ME.3 adds Evolutions)', () => {
     expect(TABS.map((t) => t.label)).toEqual([
       'Home',
       'Session',
       'Progression',
+      'Evolutions',
       'Library & settings',
     ]);
   });
@@ -27,8 +28,9 @@ describe('console tabs (MU.1)', () => {
       expect.arrayContaining(['codm', 'listen', 'encounter', 'quest-manager', 'change-log']),
     );
     expect(windowsOn('progression')).toEqual(
-      expect.arrayContaining(['award-xp', 'offer-builder', 'evolution-builder', 'marks-review']),
+      expect.arrayContaining(['award-xp', 'offer-builder', 'marks-review']),
     );
+    expect(windowsOn('evolutions')).toEqual(expect.arrayContaining(['evolution-builder']));
     expect(windowsOn('library')).toEqual(
       expect.arrayContaining(['skill-library', 'rules-settings', 'codm-settings', 'bestiary']),
     );
@@ -36,7 +38,7 @@ describe('console tabs (MU.1)', () => {
 
   it('opens a window on its first tab', () => {
     expect(tabOf('award-xp')).toBe('session');
-    expect(tabOf('evolution-builder')).toBe('progression');
+    expect(tabOf('evolution-builder')).toBe('evolutions');
     expect(tabOf('nope')).toBeNull();
   });
 
