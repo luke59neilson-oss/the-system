@@ -1,11 +1,18 @@
 import { useState } from 'react';
 import type { PlayerIdentify, PlayerView } from '@the-system/engine';
 import type { LiveClient } from '../live';
-import { NOTHING_REVEALED, bestiaryEntries, identifyHeader, identifyResult } from './identify';
+import {
+  NOTHING_REVEALED,
+  bestiaryEntries,
+  identifyBody,
+  identifyHeader,
+  identifyResult,
+} from './identify';
 
 /** The System's lines for one entry: the header and the text (or why there is none). */
 function IdentifyLines({ entry }: { entry: PlayerIdentify }) {
   const header = identifyHeader(entry);
+  const body = identifyBody(entry);
   return (
     <>
       {header !== null && (
@@ -13,13 +20,13 @@ function IdentifyLines({ entry }: { entry: PlayerIdentify }) {
           {header}
         </p>
       )}
-      {!entry.inRange ? null : entry.text === null ? (
+      {!entry.inRange ? null : body === null ? (
         <p className="muted" data-testid="identify-text">
           {NOTHING_REVEALED}
         </p>
       ) : (
         <p className="identify-text" data-testid="identify-text">
-          {entry.text}
+          {body}
         </p>
       )}
     </>

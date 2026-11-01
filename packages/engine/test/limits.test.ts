@@ -207,3 +207,18 @@ describe('rules.limits', () => {
     step(campaign, note('after'), as('jake'));
   });
 });
+
+describe('malformed limited commands (QF.62)', () => {
+  it('are refused as bad commands instead of throwing', () => {
+    const c = base();
+    const bad = [
+      { type: 'practice.log', characterId: 'jake' },
+      { type: 'practice.log', characterId: 'jake', action: 'x', skills: 5 },
+      { type: 'note.create', characterId: 'jake', kind: 'journal', title: 5, body: '' },
+    ];
+    for (const command of bad) {
+      const r = execute(c, command as unknown as Command, as('jake'));
+      expect(r.ok ? '' : r.error).toBe(`Bad command "${command.type}"`);
+    }
+  });
+});

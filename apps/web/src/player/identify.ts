@@ -42,3 +42,27 @@ export function identifyHeader(e: PlayerIdentify): string | null {
   if (e.grade === null || e.level === null) return null;
   return `[${e.label} (${e.grade}) – lvl ${e.level}]`;
 }
+
+/** A status line's name and level with any grade dropped: `[Canyon Stalker – lvl 7]` → `canyon stalker–lvl 7`. */
+const statusKey = (line: string, grade: string | null): string =>
+  (grade === null ? line : line.split(`(${grade})`).join(''))
+    .replace(/\s+/gu, ' ')
+    .replace(/\s*[–-]\s*/gu, '–')
+    .trim()
+    .toLowerCase();
+
+/**
+ * The text under the header, without a first line that only restates it
+ * (QF.62): tier texts written before MV.3 open with `[Canyon Stalker – lvl 7]`,
+ * which repeated the header `[Canyon Stalker (F) – lvl 7]`. Null when nothing
+ * is left (the screen then says it reveals nothing more).
+ */
+export function identifyBody(e: PlayerIdentify): string | null {
+  if (e.text === null) return null;
+  const header = identifyHeader(e);
+  if (header === null) return e.text;
+  const match = /^\s*(\[[^\]\n]*\])[ \t]*\n?/u.exec(e.text);
+  if (!match?.[1] || statusKey(match[1], e.grade) !== statusKey(header, e.grade)) return e.text;
+  const rest = e.text.slice(match[0].length).trim();
+  return rest === '' ? null : rest;
+}

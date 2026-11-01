@@ -198,3 +198,15 @@ describe('the session report keeps everything that happened (QF.48)', () => {
     expect(lines).toContain(`Kim: Health Points (HP) ${hp - 30} → ${hp - 10} (+20)`);
   });
 });
+
+describe('a cast counts toward the practice-entry cap (QF.62)', () => {
+  it("a player's cast is refused once the practice log is full; the GM's is not", () => {
+    const rules = rawRules() as { limits: Record<string, number> };
+    rules.limits = { ...rules.limits, practiceEntriesPerCharacter: 1 };
+    let c = run([{ ...created, rules }, bolt, jake, kim], gm);
+    c = ok(c, cast, as('jake'));
+    expect(refused(c, cast, as('jake'))).toBe('Practice log is full (1 entries); ask the GM');
+    c = ok(c, cast);
+    expect(c.state!.practice.filter((p) => p.characterId === 'jake')).toHaveLength(2);
+  });
+});

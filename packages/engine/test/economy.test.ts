@@ -3,6 +3,7 @@ import {
   DEFAULT_RULES,
   ITEM_NOT_AVAILABLE,
   TRADE_NOT_POSSIBLE,
+  TRADE_YOU_LACK,
   characterEffectiveStats,
   effectiveStats,
   execute,
@@ -528,7 +529,7 @@ describe('trades', () => {
     // Kim gives the bow away before answering.
     c = ok(c, { type: 'gift.give', characterId: 'kim', to: null, items: { bow: 1 } });
     expect(reject(c, { type: 'trade.accept', tradeId: 'tr1', characterId: 'kim' })).toBe(
-      TRADE_NOT_POSSIBLE,
+      TRADE_YOU_LACK,
     );
     expect(held(c, 'jake')).toMatchObject({ currency: 100, inventory: { ring: 2, potion: 3 } });
     expect(c.state?.trades['tr1']?.status).toBe('open');
@@ -553,7 +554,7 @@ describe('trades', () => {
       get: { items: { bow: 1 } },
     });
     expect(reject(loop, { type: 'trade.accept', tradeId: 'loop', characterId: 'jake' })).toBe(
-      TRADE_NOT_POSSIBLE,
+      TRADE_YOU_LACK,
     );
     expect(loop.state?.trades['loop']?.status).toBe('open');
     // An item the proposer has never seen cannot be asked for at all.
@@ -579,7 +580,7 @@ describe('trades', () => {
       get: { items: { potion: 3 } },
     });
     expect(reject(c, { type: 'trade.accept', tradeId: 'loop', characterId: 'jake' })).toBe(
-      TRADE_NOT_POSSIBLE,
+      TRADE_YOU_LACK,
     );
   });
 
@@ -971,7 +972,7 @@ describe('trade proposals reveal nothing (QF.9)', () => {
     const c = ok(seen(), { ...ask(4), tradeId: 'many' }, player('jake'));
     expect(
       reject(c, { type: 'trade.accept', tradeId: 'many', characterId: 'kim' }, player('kim')),
-    ).toBe(TRADE_NOT_POSSIBLE);
+    ).toBe(TRADE_YOU_LACK);
   });
 
   it('an item the proposer has never seen is refused alike, held or not, known or not', () => {

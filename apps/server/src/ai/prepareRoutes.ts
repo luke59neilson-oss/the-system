@@ -6,7 +6,8 @@
 // spend counter counts them. Drafts live in `codm/prepared.json`; taking one
 // hands its file to the GM's Import window, where the usual preview and
 // approval apply. Nothing here changes the campaign (D249).
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
+import { damagedFile, readJsonFile, writeJsonFile } from './jsonFile';
 import path from 'node:path';
 import type { CampaignState } from '@the-system/engine';
 import type { FastifyInstance } from 'fastify';
@@ -65,9 +66,9 @@ export class PreparedStore {
   read(): PreparedFile {
     if (!existsSync(this.file)) return EMPTY;
     // A damaged file throws, so it is never overwritten (as D241).
-    const data = JSON.parse(readFileSync(this.file, 'utf8')) as Partial<PreparedFile> | null;
+    const data = readJsonFile(this.file, 'prepared-drafts') as Partial<PreparedFile> | null;
     if (!data || !Array.isArray(data.drafts) || !Array.isArray(data.seen)) {
-      throw new Error('The prepared-drafts file is damaged; move it aside to start over');
+      throw new Error(damagedFile('prepared-drafts', this.file));
     }
     return {
       version: 1,
@@ -82,10 +83,7 @@ export class PreparedStore {
   }
 
   write(body: PreparedFile): void {
-    mkdirSync(this.dir, { recursive: true });
-    const tmp = `${this.file}.tmp`;
-    writeFileSync(tmp, JSON.stringify(body, null, 2) + '\n');
-    renameSync(tmp, this.file);
+    writeJsonFile(this.file, body);
   }
 }
 

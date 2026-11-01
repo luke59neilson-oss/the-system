@@ -96,7 +96,8 @@ test('Identified by… notifies Kim and files the creature in her bestiary', asy
   const notice = kim.getByTestId('identify-notice');
   await expect(notice).toBeVisible();
   await expect(notice).toContainText('Pale stalker');
-  await expect(notice).toContainText('[Pale Stalker – lvl 0] A blind hunter of the warm.');
+  // The tier's own "[Pale Stalker – lvl 0]" repeats the header, so it shows once (QF.62).
+  await expect(notice).toContainText('[Pale stalker (G) – lvl 0]A blind hunter of the warm.');
   await kim.screenshot({ path: path.join(shots, 'player-identify-notice-390x844.png') });
   await notice.getByRole('button', { name: 'Close' }).click();
   await expect(notice).toHaveCount(0);
@@ -104,9 +105,7 @@ test('Identified by… notifies Kim and files the creature in her bestiary', asy
   await expect(bestiary.getByRole('heading', { name: 'Bestiary' })).toBeVisible();
   const beasts = bestiary.getByRole('group', { name: 'Beasts' });
   await beasts.getByRole('button', { name: 'Pale stalker' }).click();
-  await expect(bestiary.getByTestId('identify-text')).toHaveText(
-    '[Pale Stalker – lvl 0] A blind hunter of the warm.',
-  );
+  await expect(bestiary.getByTestId('identify-text')).toHaveText('A blind hunter of the warm.');
   await bestiary.scrollIntoViewIfNeeded();
   await kim.screenshot({ path: path.join(shots, 'player-bestiary-390x844.png') });
   // A reload keeps it closed (closing is recorded, not a local dismissal).

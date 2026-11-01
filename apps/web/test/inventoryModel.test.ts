@@ -12,6 +12,7 @@ import {
   equipTarget,
   itemLabel,
   openTrades,
+  ownSideShort,
   parties,
   partyName,
   slotRows,
@@ -109,6 +110,23 @@ describe('inventory helpers (M3.7)', () => {
     expect(split.incoming.map((x) => x.id)).toEqual(['a']);
     expect(split.outgoing.map((x) => x.id)).toEqual(['b']);
     expect(split.closed.map((x) => x.id)).toEqual(['c']);
+  });
+
+  it('says why the viewer can no longer pay their own side of a trade (QF.62)', () => {
+    const name = (id: string) => `[${id}]`;
+    const mine = inv({ items: { potion: 3 }, equipped: { 'hand:0': 'ring' } });
+    expect(ownSideShort(mine, { currency: 0, items: { potion: 2 } }, name, 'decline it')).toBe(
+      null,
+    );
+    expect(
+      ownSideShort(mine, { currency: 0, items: { ring: 1 } }, name, 'withdraw the offer'),
+    ).toBe('[ring] is equipped; unequip it or withdraw the offer.');
+    expect(ownSideShort(mine, { currency: 0, items: { potion: 4 } }, name, 'decline it')).toBe(
+      'You no longer hold [potion]; decline it.',
+    );
+    expect(ownSideShort(mine, { currency: 41, items: {} }, name, 'decline it')).toBe(
+      'You no longer have the currency it needs; decline it.',
+    );
   });
 
   it('names parties and parses whole numbers', () => {

@@ -1332,3 +1332,13 @@
 - Round 1: check green, QF.62/MV.3/M3.9/M3.7 e2e green. 0 High, 0 Medium, 4 Low: `/proc` test fails off Linux (fixed: guarded, and every append's position checked); Identify stripped only one-letter grades (fixed: strips the entity's own grade id); a stale-level tier line is kept (by design); when both trade sides are short the accepter hears only about the other (kept). Nits: the accepter's error sits above the Trades list.
 - Fixes in 033e8f6; no second round (no High, under two Mediums).
 
+
+## 2026-11-01 · QF.62 (QF.40 e2e at hand-off) · no review needed
+- The QF.40 e2e failure at the last hand-off also failed on main (b686eb9): the change-log window can open on a list fetched before the last award lands, so the Undo click hit the 300 XP row. Fixed in the test (8c206fa: wait for the 600 XP row, then use it); 3/3 green with `--repeat-each=3`. Test-only, so no review round.
+
+## 2026-11-01 · QF.63 (8c206fa..ce1c681) · sonnet (2 rounds)
+- Round 1: vitest, build, QF.63 e2e green. 0 High, 2 Medium, 4 Low. M1 the 14 px phone floor covered only the 9 listed selectors and the e2e measured only those (fixed: the block covers every rule the demo phone screens show, and the e2e scans every visible element with its own text on all four demo characters). M2 the platinum check faked the theme with no silver comparison (fixed: silver/platinum screenshot pair, highlight bluer at #c4e0ff, asserted different from silver). Lows kept: the Sound button's aria-label "Sound" vs visible "Sound: on" (label-in-name holds, the state is in aria-pressed); the no-undo catch-all wording; "assign all" verified covered by MV.1's one-Review spend (no +5 stepper); the floor block relies on source order.
+- Round 2 (c02df53): 0 High, 1 Medium, 3 Low. M the scan never opens dialogs, so `.skill-detail h4` (13.6 px) and other unopened states stayed small (fixed in ce1c681: `.small`, skill-detail headings, nickname form, evolution stat labels, bonus preview and tag flags join the floor; the e2e opens a skill's detail dialog and scans it). Lows kept: placeholders and `<select>` text not scanned; no minimum-count sanity check; the change-log screenshot churns. Fix verified by the QF.63 e2e (2/2).
+
+## 2026-11-01 · QF.62 merged (full e2e at the merge) · no new review
+- Full e2e on the merge of origin/main into `wip/QF.62`: e2e 169/169 green; latency 7/8 (M11.3 1366×768 at 2,382 ms under load, 2,227 / 2,087 ms alone: the local-only cold-measurement flake in QUALITY "Flakes"; CI judges it). `npm run check` green. Box checked.

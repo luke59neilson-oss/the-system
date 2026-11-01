@@ -4,7 +4,8 @@
 // the answer back as NDJSON while it is written; PUT and DELETE save or
 // reset the GM's names, instructions and order. Nothing here changes the
 // campaign, and nothing is sent to players.
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { writeJsonFile } from './jsonFile';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import type { FastifyInstance } from 'fastify';
@@ -55,10 +56,7 @@ export class QuickSettingsStore {
   }
 
   write(slots: readonly QuickSlot[]): void {
-    mkdirSync(this.dir, { recursive: true });
-    const tmp = `${this.file}.tmp`;
-    writeFileSync(tmp, JSON.stringify({ slots }, null, 2) + '\n');
-    renameSync(tmp, this.file);
+    writeJsonFile(this.file, { slots });
   }
 
   reset(): void {

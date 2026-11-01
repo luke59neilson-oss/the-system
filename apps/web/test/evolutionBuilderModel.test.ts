@@ -7,7 +7,12 @@ import {
   type Command,
   type CommandContext,
 } from '@the-system/engine';
-import { evolutionPlan, releaseProblem, withdrawableOffers } from '../src/gm/evolutionBuilderModel';
+import {
+  evolutionPlan,
+  releaseProblem,
+  transformCostHint,
+  withdrawableOffers,
+} from '../src/gm/evolutionBuilderModel';
 
 // M5.2: the evolution builder's model agrees with the engine.
 function campaign(
@@ -169,5 +174,40 @@ describe('evolution builder model (M5.2)', () => {
     expect(after.stale.map((x) => x.className)).toEqual(['Shade']);
     expect(after.mergesLeft).toBe(0);
     expect(after.mergePrompts).toEqual([]);
+  });
+});
+
+describe('a transform that renames a spell says it loses Cast (QF.62)', () => {
+  const bolt: Command = {
+    type: 'skillDef.define',
+    id: 'stealth-def',
+    name: 'Basic Stealth',
+    rarity: 'inferior',
+    tags: ['spell'],
+    cost: { pool: 'mp', amount: 10 },
+  };
+  it('lists castable skills and library names, and hints only for a lost cost', () => {
+    const plan = evolutionPlan(campaign(400, [bolt]).state!, 'jake')!;
+    expect(plan.castable).toEqual(['Basic Stealth']);
+    expect(plan.libraryCastable).toEqual(['Basic Stealth']);
+    expect(transformCostHint(plan, { skill: 'Basic Stealth', name: 'Shadow Step' })).toBe(
+      '[Basic Stealth] has a cost to cast; [Shadow Step] has none until you give it a Skill library entry, so the player cannot Cast it.',
+    );
+    // Same name, a skill with no cost, or a new name the library already prices: no hint.
+    expect(transformCostHint(plan, { skill: 'Basic Stealth', name: 'Basic Stealth' })).toBeNull();
+    expect(transformCostHint(plan, { skill: 'Basic Archery', name: 'Long Shot' })).toBeNull();
+    expect(
+      transformCostHint(
+        { ...plan, libraryCastable: ['Shadow Step'] },
+        { skill: 'Basic Stealth', name: 'Shadow Step' },
+      ),
+    ).toBeNull();
+    expect(
+      transformCostHint(plan, {
+        skill: 'Basic Archery',
+        merge: 'Basic Stealth',
+        name: 'Shadow Shot',
+      }),
+    ).toContain('[Basic Stealth] has a cost');
   });
 });

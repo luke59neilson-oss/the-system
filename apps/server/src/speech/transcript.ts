@@ -24,6 +24,24 @@ export interface TranscriptLine {
   readonly speakerId?: string;
 }
 
+/** Whisper's usual output for non-speech audio (dice, laughter, a chair, music). */
+const HALLUCINATIONS = new Set(['you', 'thank you', 'thanks for watching', 'bye']);
+
+/**
+ * QF.62 (deep review codm-7): true for a segment that is not talk: only
+ * bracketed or parenthesised tags ("[BLANK_AUDIO]", "(laughs)"), music marks,
+ * punctuation, or one of Whisper tiny's known fillers on its own. Such lines
+ * stay out of the transcript, so they never count as new talk.
+ */
+export function isNonSpeech(text: string): boolean {
+  const rest = text
+    .replace(/\[[^\]]*\]|\([^)]*\)|\*[^*]*\*|[♪♫]/g, ' ')
+    .replace(/[\s.,!?;:'"…-]+/g, ' ')
+    .trim()
+    .toLowerCase();
+  return rest === '' || HALLUCINATIONS.has(rest);
+}
+
 export const transcriptFile = (dir: string, session: number) =>
   path.join(dir, `session-${String(session).padStart(2, '0')}.jsonl`);
 
@@ -111,7 +129,7 @@ export class Listener {
         this.options.onError?.(err);
         return;
       }
-      if (text === '') return;
+      if (isNonSpeech(text)) return;
       const speaker = await this.label(seg.samples);
       const line: TranscriptLine = {
         at: new Date(this.startedAt + seg.startMs).toISOString(),

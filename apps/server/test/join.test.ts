@@ -3,7 +3,7 @@ import { tmpdir, type NetworkInterfaceInfo } from 'node:os';
 import path from 'node:path';
 import jsQR from 'jsqr';
 import { describe, expect, it } from 'vitest';
-import { addressRank, joinInfo, qrSvg, rankedLanAddresses } from '../src/join';
+import { addressRank, isVirtualAdapter, joinInfo, qrSvg, rankedLanAddresses } from '../src/join';
 import { newGmKey } from '../src/security';
 import { createServer } from '../src/server';
 import { CampaignStore } from '../src/store';
@@ -96,10 +96,28 @@ describe('rankedLanAddresses', () => {
     expect(rankedLanAddresses(interfaces)).toEqual([
       '192.168.0.20',
       '192.168.1.9',
-      '172.17.0.1',
+      // QF.62: docker0 is a virtual adapter, so it ranks with the VPN overlay.
       '100.101.1.2',
+      '172.17.0.1',
       '169.254.10.10',
     ]);
+  });
+});
+
+describe('virtual adapters rank below the home network (QF.62)', () => {
+  it('puts a 10.x wifi above VirtualBox, VMware, Hyper-V and the Mobile Hotspot', () => {
+    const mac = (info: NetworkInterfaceInfo, m: string) => ({ ...info, mac: m });
+    const interfaces = {
+      'VirtualBox Host-Only Network': [v4('192.168.56.1')],
+      VMnet8: [mac(v4('192.168.80.1'), '00:50:56:c0:00:08')],
+      'Local Area Connection* 10': [v4('192.168.137.1')],
+      'vEthernet (WSL)': [v4('172.20.0.1')],
+      'Wi-Fi': [v4('10.0.0.23')],
+    };
+    expect(rankedLanAddresses(interfaces)[0]).toBe('10.0.0.23');
+    expect(joinInfo('0.0.0.0', 4000, interfaces).url).toBe('http://10.0.0.23:4000');
+    expect(isVirtualAdapter('Wi-Fi', v4('192.168.1.20'))).toBe(false);
+    expect(isVirtualAdapter('Ethernet 3', mac(v4('192.168.1.9'), '00:15:5D:01:02:03'))).toBe(true);
   });
 });
 

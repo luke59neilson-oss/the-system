@@ -24,14 +24,17 @@ const KIND_LABELS: Readonly<Record<ChangeLogCategory, string>> = {
 };
 
 /** Undo refusals in the GM's words; never ids or event types. */
-export function undoError(error: string): string {
+export function undoError(error: string, blockedBy?: string): string {
   // QF.40: an undo that would lose later XP at an old level cap says whose.
   const lost = /level cap: (.*?)\. Undo those awards first/.exec(error);
   if (lost) {
     return `Can't undo this: ${lost[1]}. Undo the later XP awards first, or set levels with an override.`;
   }
   if (error.includes('because a later event depends on it')) {
-    return "Can't undo this: a later change depends on it. Undo the later changes first.";
+    // QF.62: name the later change when the preview found it.
+    return blockedBy
+      ? `Can't undo this: a later change depends on it: “${blockedBy}”. Undo that change first.`
+      : "Can't undo this: a later change depends on it. Undo the later changes first.";
   }
   if (error.includes('already undone')) return 'That change is already undone.';
   if (error.includes('cannot be undone')) return "That change can't be undone.";
@@ -137,12 +140,12 @@ export function ChangeLog({
       headers: { 'x-gm-key': gmKey },
     })
       .then((r) => (r.ok ? r.json() : null))
-      .then((p: { ok: boolean; changes?: string[]; error?: string } | null) => {
+      .then((p: { ok: boolean; changes?: string[]; error?: string; blockedBy?: string } | null) => {
         if (p === null) return;
         setPreview({
           id,
           changes: p.ok ? (p.changes ?? []) : [],
-          error: p.ok ? null : undoError(p.error ?? ''),
+          error: p.ok ? null : undoError(p.error ?? '', p.blockedBy),
         });
       })
       .catch(() => undefined);

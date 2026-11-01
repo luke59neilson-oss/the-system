@@ -373,7 +373,9 @@ describe('selections', () => {
     ];
     expect(
       reject(c, { type: 'selection.offer', characterId: 'jake', level: 10, options: plain }),
-    ).toMatch(/capstone: offer at least one rare/);
+    ).toMatch(
+      /capstone: add at least one new rare option \(options passed over earlier do not count\)/,
+    );
     ok(c, { type: 'selection.offer', characterId: 'jake', level: 10, options: menu(10, 'rare') });
     // Not a capstone: no ceiling needed.
     ok(c, { type: 'selection.offer', characterId: 'jake', level: 5, options: plain });

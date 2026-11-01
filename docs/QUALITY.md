@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** 2b21061 (2026-11-01, C) · **Next rotation:** D
+**Last sweep:** b686eb9 (2026-11-01, D) · **Next rotation:** A
 
 ## Lenses and rotation
 
@@ -171,6 +171,7 @@ lowered by their verifiers and folded into the Low batches.
 ## Flakes
 
 - 2026-11-01 05:15 · CI `test` red on 81247c49: `e2e/M8.3.spec.ts` keyboard sweep missed the six View-as buttons again (second time; first 2026-10-25). Passed here alone and with `--workers=2`. Cause: Tab starts from the last click (the console tab), so the walk had to wrap through the browser chrome to reach the first stops, and `stops + 5` presses left no room. Fixed in the test: up to two laps, stopping once every stop is reached (same assertions).
+- 2026-11-01 16:40 · Local only, again: `e2e/M11.3.spec.ts:39` (latency, 1366×768) 2,382 ms in the full local run of `wip/QF.62` (ML.1 tests running beside it), then 2,227 and 2,087 ms alone on a quiet box; 390×844 passes (1,694 / 1,832 ms). Same cold-first-measurement pattern as below; CI decides (a red CI makes it a QF item).
 - 2026-10-31 00:40 · Local only, repeated: `e2e/M11.3.spec.ts:39` (latency, 1366×768, under 2 s) failed in the full local run (2,158 ms) and alone once (2,164 ms); the pre-MU commit 6511b291 also flips on this box (1,956 pass, 2,048 fail); quiet HEAD runs 1,825 / 1,847 ms; CI green. The cold first measurement sits near the bound on 2 CPUs. Reviewer suggests a warm-up iteration; if CI ever fails it, it becomes a QF item.
 - 2026-10-30 17:25 · Local only: `e2e/M11.3.spec.ts:39` (latency, 1366×768, under 2 s) failed while a reviewer ran `npm run check` in parallel (load ~12 on 2 CPUs); passed alone (both viewports). Load, not the app; CI green.
 - 2026-10-26 14:30 · Repeated: CI `desktop-smoke` red on 3bb78ed2 and cb3bb8d9 with the same ENOTEMPTY → QF.32 (the test now freezes, kills and waits for the whole Electron tree; D255). Fixed.
@@ -226,9 +227,13 @@ lowered by their verifiers and folded into the Low batches.
 | 2026-11-01 09:10 | C, bc1b26b7..2b21061 | Rules · haiku | 0 | 0 | 1 | clean by reading (no vitest: no node_modules in worktree); 1 L to Backlog | 0 | ~100k |
 | 2026-11-01 09:10 | C, bc1b26b7..2b21061 | Tests · sonnet | 0 | 2 | 3 | 2 M confirmed by re-running the mutations (QF.73); 3 L to Backlog (1 a repeat) | 0 | ~150k |
 | 2026-11-01 09:10 | C, bc1b26b7..2b21061 | UX · fable | 0 | 3 | 7 | 2 M confirmed in code (QF.71, QF.72); 1 M likely, verify first (QF.74); 7 L to Backlog | 0 | ~100k |
+| 2026-11-01 15:10 | D, 2b21061..b686eb9 | Rules · sonnet | 0 | 0 | 1 | 1 L/M "likely" to Backlog and Q100 (a level lowered by override and earned again grants class and profession stats again; D214 says lowering takes nothing back; D326 default) | 0 | ~128k |
+| 2026-11-01 15:10 | D, 2b21061..b686eb9 | Boundaries · fable | 0 | 0 | 1 | 1 L to Backlog (static serves dotfiles; nothing in dist today); live probe of every player path clean | 0 | ~202k |
+| 2026-11-01 15:10 | D, 2b21061..b686eb9 | UX · haiku | 0 | 0 | 1 | 1 L to Backlog | 0 | ~104k |
 - 2026-11-01 07:4x · local full e2e (1 worker) on wip/MK.2: `e2e/M8.3.spec.ts:221` keyboard test failed (43.7 s); passed alone with MK.2 (6/6). Repeat of the 2026-10-25 mode: now a QF item (QF.70).
 
 ## Backlog (Lows; M11.5 goes through these)
+- 2026-11-01 sweep D Lows: (Rules, sonnet) a class or profession level lowered by `character.progressionSet` and earned again grants its class spread and profession stats a second time, and in `gainXpBudgeted` (`progression/xp.ts` ~413-439) a track-keyed free-point batch has no dedupe on a re-earn (race batches are deduped by race level, D38); question Q100, default D326. (Boundaries, fable) `apps/server/src/server.ts:153` `@fastify/static` uses the default `dotfiles: 'allow'`, so a dotfile in the web dist would be served to the LAN (none today); set `dotfiles: 'ignore'` with a test. (UX, haiku) the evolution option title is an unstyled `h5` (`EvolutionStepsChoice.tsx` ~183, OptionCard ~314), smaller than its own description on the phone (`docs/screens/ME.5/player-mid-choice-390x844.png`).
 - 2026-11-01 QF.60 review (sonnet) Lows: `evolution/model.ts` checkOption's keep-own-name exemption from the pending-menu check is unpinned (unreachable today); `skills/model.ts` skillIndex's `index === -1` has no mutant test; the playerLog snapshots have no player-to-player trade (`other: null` throughout); `npm run mutants` killed mid-run leaves a mutated file (git checkout recovers).
 - 2026-11-01 QF.58 review (sonnet) Lows: `apps/desktop/test/desktop.spec.ts` rewrites tracked screenshots (MS.5, MS.7) on every run, leaving a dirty tree; `render-process-gone` with `killed`/`oom` uses the crash-reload budget, with no backoff on load-time crashes; the single crash-notice guard (`main.ts`) has no test; `releaseMenuTemplate` roles are plain strings cast to Electron types.
 - 2026-11-01 QF.70 round 2 (sonnet): M8.3 waits for the "Speech-to-text is not installed" line, so it would time out if a speech env reached e2e (wait on the Start listening button's final state instead); SETTLED uses rAF, which never fires in a hidden page.
