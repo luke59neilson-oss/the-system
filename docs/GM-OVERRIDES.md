@@ -165,6 +165,7 @@ refusal is raised.
 | `a d20 contest has no odds roll` | packages/engine/src/events/reducer.ts | A malformed stored contest; share it again from the roller |
 | `a total does not match its die and modifier` | packages/engine/src/events/reducer.ts | A malformed stored contest; share it again from the roller |
 | `only a tie rolls again` | packages/engine/src/events/reducer.ts | A malformed stored contest; share it again from the roller |
+| `a d20 contest has one roll per side` | packages/engine/src/events/reducer.ts | A malformed stored contest; share it again from the roller |
 | `the outcome does not match the dice` | packages/engine/src/events/reducer.ts | A malformed stored contest; share it again from the roller |
 | `an odds contest has no dice` | packages/engine/src/events/reducer.ts | A malformed stored contest; share it again from the roller |
 | `a walled contest has no dice` | packages/engine/src/events/reducer.ts | A malformed stored contest; share it again from the roller |
@@ -173,9 +174,8 @@ refusal is raised.
 | `… must be a whole number 1–… (got …)` | packages/engine/src/resolution/dice.ts | Type a d20 result from 1 to 20, or tap Roll |
 | `…: say whether it was typed or rolled by the app` | packages/engine/src/resolution/dice.ts | Fix the input (the roller fills it in) |
 | `This contest needs each side’s d20` | packages/engine/src/resolution/dice.ts | Roll or type both dice |
-| `Too many tied rounds` | packages/engine/src/resolution/dice.ts | Share it again (50 tied rounds in a row is a broken die source) |
-| `A tie rolls again` | packages/engine/src/resolution/dice.ts | Roll both dice again; the tied round is kept |
-| `Only a tie rolls again` | packages/engine/src/resolution/dice.ts | Fix the input (the roller fills it in) |
+| `One d20 each: a tie goes to the attacker, with no re-roll` | packages/engine/src/resolution/dice.ts | Send one die per side (meets beats, ML.3); the roller fills it in |
+| `The attacker is side A or side B` | packages/engine/src/resolution/dice.ts | Fix the input (the roller names the side that acts) |
 | `This evolution is a single choice; choose one option` | packages/engine/src/evolution/model.ts:1090 | The release was made before three steps (or with one choice): choose one option, or release again with steps |
 | `Choose a class, a profession (or none for now) and a race` | packages/engine/src/evolution/model.ts:1095 | The release has three steps: send one choice per step (the GM may choose for the player) |
 

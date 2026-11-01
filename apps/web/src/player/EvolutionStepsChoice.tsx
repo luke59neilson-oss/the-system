@@ -20,6 +20,7 @@ import {
 } from './evolutionSteps';
 import { rarityName } from './sheet';
 import { isConnectionError } from './selection';
+import { RERATE_MESSAGE } from './rerateMessage';
 
 type Steps = NonNullable<PendingEvolution['steps']>;
 
@@ -253,6 +254,7 @@ export function EvolutionStepsChoice({
               );
             })}
           </dl>
+          {rerate.length > 0 && <p data-testid="rerate-message">{RERATE_MESSAGE}</p>}
           {rerate.length > 0 && (
             <details className="evolution-rerate" data-testid="evolution-rerate">
               <summary>Your skills&rsquo; rarity labels at {evolution.toGrade}-grade</summary>

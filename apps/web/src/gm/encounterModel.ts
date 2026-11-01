@@ -159,6 +159,8 @@ export interface ContestPlan {
   readonly chance: number;
   /** A grade wall settles it with no roll. */
   readonly walled: boolean;
+  /** ML.3: the side that acts; a tied d20 contest goes to it (default side A). */
+  readonly attacker: 'a' | 'b';
 }
 
 /** Both sides checked, with side A's chance; or the first problem. */
@@ -167,6 +169,7 @@ export function contestPlan(
   a: SideDraft,
   b: SideDraft,
   mode: GradeGapMode,
+  attacker: 'a' | 'b' = 'a',
 ): ContestPlan | string {
   const ra = sideRecord(state, a, 'Side A');
   if (typeof ra === 'string') return ra;
@@ -180,6 +183,7 @@ export function contestPlan(
     mode,
     chance: contestChance(state.rules, ra, rb, mode),
     walled: walled(state.rules, ra, rb, mode),
+    attacker,
   };
 }
 
@@ -218,7 +222,8 @@ export function signedModifier(n: number): string {
 /**
  * Rolls a planned contest with the given random source (no draw when walled).
  * Follows the campaign's `rolls` setting (MK.1): in d20 mode the app rolls
- * each side's d20, again while tied; typed dice come with MK.2.
+ * each side's d20 once, a tie going to the attacker (ML.3); typed dice
+ * come with MK.2.
  */
 export function rollPlan(
   state: CampaignState,
@@ -227,13 +232,13 @@ export function rollPlan(
   typed: TypedDice = NO_TYPED_DICE,
 ): RolledContest {
   if (state.rules.resolution.rolls === 'd20') {
-    // MK.2: a die typed at the table counts for the first round; a tie rolls again in the app.
-    const die = (side: 'a' | 'b', round: number) => {
+    // MK.2: a die typed at the table counts; blank, the app rolls it.
+    const die = (side: 'a' | 'b') => {
       const t = typed[side];
-      if (round !== 0 || t === null) return appDie(random);
+      if (t === null) return appDie(random);
       return typeof t === 'number' ? { die: t, how: 'typed' as const } : { die: t.die, how: t.how };
     };
-    const result = rollD20Contest(state.rules, plan.a, plan.b, die, plan.mode);
+    const result = rollD20Contest(state.rules, plan.a, plan.b, die, plan.mode, plan.attacker);
     return { plan, roll: null, result, d20: result.d20 };
   }
   const roll = plan.walled ? null : random();
@@ -251,7 +256,10 @@ export function shareCommand(rolled: RolledContest): Command {
     roll: rolled.roll,
     ...(rolled.d20 === undefined
       ? {}
-      : { dice: (rolled.d20?.rounds ?? []).map((r) => ({ a: dieOf(r.a), b: dieOf(r.b) })) }),
+      : {
+          dice: (rolled.d20?.rounds ?? []).map((r) => ({ a: dieOf(r.a), b: dieOf(r.b) })),
+          attacker: rolled.plan.attacker,
+        }),
   };
 }
 
@@ -276,7 +284,8 @@ export function outcomeText(rolled: RolledContest): string {
     const last = d20.rounds[d20.rounds.length - 1];
     const signed = signedModifier;
     const how = (d: { how: 'typed' | 'app' }) => (d.how === 'typed' ? ' typed' : ' app');
-    const ties = d20.rounds.length > 1 ? `, after ${d20.rounds.length - 1} tie(s)` : '';
+    // ML.3: one round; a tie goes to the attacker (it wins on meets beats).
+    const ties = last && last.a.total === last.b.total ? ', a tie: the attacker wins' : '';
     return last
       ? `${winner} wins (d20: ${plan.a.label} ${last.a.die}${how(last.a)} ${signed(d20.modA)} = ${last.a.total}, ${plan.b.label} ${last.b.die}${how(last.b)} ${signed(d20.modB)} = ${last.b.total}${ties})`
       : `${winner} wins`;

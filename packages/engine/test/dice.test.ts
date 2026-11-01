@@ -3,6 +3,7 @@ import {
   appDie,
   contestChance,
   d20Modifiers,
+  d20MeetsTarget,
   d20WinChance,
   damageFactor,
   defaultRules,
@@ -66,16 +67,33 @@ describe('d20 odds stay near the ratio odds (MK.1)', () => {
     for (const base of [10, 30, 100]) {
       const mods = d20Modifiers(rules, side(base * ratio), side(base), 'gradeWalls');
       expect(mods).not.toBeNull();
-      const d20 = d20WinChance(mods!.modA, mods!.modB);
+      const d20 = d20WinChance(mods!.modA, mods!.modB, 'a');
       const odds = contestChance(rules, side(base * ratio), side(base), 'gradeWalls');
       expect(Math.abs(d20 - odds)).toBeLessThanOrEqual(0.05);
     }
   });
 
-  it('equal modifiers are even; the chances of both sides add to 1', () => {
+  it('meets beats: an even match gives the attacker 52.5% (ML.3, DESIGN §7)', () => {
+    expect(d20WinChance(4, 4, 'a')).toBe(0.525);
+    expect(d20WinChance(4, 4, 'b')).toBe(0.475);
+    // A attacking at +9 against B defending, and B attacking the other way round, add to 1.
+    expect(d20WinChance(9, 0, 'a') + d20WinChance(0, 9, 'b')).toBeCloseTo(1, 12);
+    expect(d20WinChance(25, 0, 'a')).toBe(1);
+    expect(d20WinChance(0, 19, 'a')).toBe(1 / 400);
+    // DESIGN §7: twice the stat (+3) ≈ 66% against app odds' 67%; three times (+5) ≈ 74% vs 75%.
+    expect(d20WinChance(3, 0, 'a')).toBe(0.66);
+    expect(d20WinChance(5, 0, 'a')).toBe(0.7375);
+  });
+
+  it('contests shared before ML.3 rolled ties again: their odds keep that rule', () => {
     expect(d20WinChance(4, 4)).toBe(0.5);
     expect(d20WinChance(9, 0) + d20WinChance(0, 9)).toBeCloseTo(1, 12);
-    expect(d20WinChance(25, 0)).toBe(1);
+  });
+
+  it('against a set target, meeting it succeeds', () => {
+    expect(d20MeetsTarget(15, 15)).toBe(true);
+    expect(d20MeetsTarget(16, 15)).toBe(true);
+    expect(d20MeetsTarget(14, 15)).toBe(false);
   });
 });
 
@@ -88,34 +106,56 @@ describe('d20 contests (MK.1)', () => {
       modA: 3,
       modB: 0,
       rounds: [{ a: { die: 8, how: 'typed', total: 11 }, b: { die: 12, how: 'app', total: 12 } }],
+      attacker: 'a',
     });
     expect(r).toMatchObject({ success: false, walled: false, roll: null, yours: 20, theirs: 10 });
-    expect(r.chance).toBeCloseTo(d20WinChance(3, 0), 12);
+    expect(r.chance).toBe(d20WinChance(3, 0, 'a'));
   });
 
-  it('a tie rolls again', () => {
-    const dice = [
-      [10, 13],
-      [15, 2],
-    ];
-    const r = rollD20Contest(rules, side(20), side(10), (s, i) =>
-      typed(dice[i]![s === 'a' ? 0 : 1]!),
-    );
-    expect(r.d20?.rounds).toHaveLength(2);
-    expect(r.d20?.rounds[0]).toMatchObject({ a: { total: 13 }, b: { total: 13 } });
-    expect(r.success).toBe(true);
+  it('a tie goes to the attacker, on either side, with no re-roll (ML.3)', () => {
+    let drawn = 0;
+    const tie = (attacker: 'a' | 'b') =>
+      rollD20Contest(
+        rules,
+        side(20),
+        side(10),
+        (s) => {
+          drawn++;
+          return typed(s === 'a' ? 10 : 13);
+        },
+        'gradeWalls',
+        attacker,
+      );
+    const a = tie('a');
+    expect(a.d20?.rounds).toEqual([
+      { a: { die: 10, how: 'typed', total: 13 }, b: { die: 13, how: 'typed', total: 13 } },
+    ]);
+    expect(a.success).toBe(true);
+    expect(tie('b').success).toBe(false);
+    expect(drawn).toBe(4);
+    expect(tie('b').d20?.attacker).toBe('b');
   });
 
-  it('refuses a tie as the last round, a decided round before the last, and bad dice', () => {
+  it('refuses a second round, an unknown attacker and bad dice', () => {
     const go = (dice: { a: DieRoll; b: DieRoll }[]) => () =>
       settleD20Contest(rules, side(10), side(10), 'gradeWalls', dice);
-    expect(go([{ a: typed(5), b: typed(5) }])).toThrow(/tie rolls again/);
+    expect(go([{ a: typed(5), b: typed(5) }])()).toMatchObject({ success: true });
     expect(
       go([
-        { a: typed(6), b: typed(5) },
+        { a: typed(5), b: typed(5) },
         { a: typed(7), b: typed(5) },
       ]),
-    ).toThrow(/Only a tie/);
+    ).toThrow(/no re-roll/);
+    expect(() =>
+      settleD20Contest(
+        rules,
+        side(10),
+        side(10),
+        'gradeWalls',
+        [{ a: typed(5), b: typed(5) }],
+        'c' as 'a',
+      ),
+    ).toThrow(/side A or side B/);
     expect(go([{ a: typed(0), b: typed(5) }])).toThrow(/1–20/);
     expect(go([{ a: typed(21), b: typed(5) }])).toThrow(/1–20/);
     expect(go([{ a: typed(2.5), b: typed(5) }])).toThrow(/1–20/);

@@ -11,6 +11,7 @@ import {
   weightsText,
 } from './evolution';
 import { isConnectionError } from './selection';
+import { RERATE_MESSAGE } from './rerateMessage';
 
 /**
  * The evolution screen (ROADMAP M3.13, DESIGN §2, D64): the released options
@@ -219,6 +220,8 @@ export function EvolutionChoice({
       {/* QF.56: the paths and Evolve come first on a phone; the re-rating list follows. */}
       {rerate.length > 0 && (
         <section className="evolution-rerate" data-testid="evolution-rerate">
+          {/* ML.3: Luke's words, word for word (DESIGN §6, Q97). */}
+          <p data-testid="rerate-message">{RERATE_MESSAGE}</p>
           <p className="muted">
             {/* QF.57: plain words, no "re-rated", "transforms" or "mastery marks". */}
             Your skills keep their text and progress; their rarity label changes for{' '}
