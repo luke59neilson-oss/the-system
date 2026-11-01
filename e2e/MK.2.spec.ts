@@ -226,6 +226,9 @@ test('the phone shows the modifier of a contest one grade apart (QF.71)', async 
   await call.click();
   await expect(phone.getByTestId('roll-prompt')).toBeInViewport();
   await expect(call).toHaveCount(0);
+  await expect(
+    phone.getByTestId('roll-prompt').getByRole('button', { name: 'Roll', exact: true }),
+  ).toBeFocused();
   // Review M1: a mode that moves the modifier ends the request; none goes stale.
   await roller.getByLabel('Grade-gap mode').selectOption('none');
   await expect(phone.getByTestId('roll-prompt')).toHaveCount(0);
@@ -233,6 +236,24 @@ test('the phone shows the modifier of a contest one grade apart (QF.71)', async 
   await roller.getByLabel('Grade-gap mode').selectOption('gradeWalls');
   await roller.getByRole('button', { name: "Ask Jake's phone for a d20" }).click();
   await expect(phone.getByTestId('roll-prompt')).toContainText('(−5)');
+  // QF.72 round 2: the notice and a pinned banner share one stack, neither covers
+  // the other; Later clears the notice and leaves the prompt.
+  await openWindow(gm, 'broadcast');
+  const cast = gm.locator('form[aria-labelledby="broadcast"]');
+  await cast.getByLabel('Message').fill('A storm gathers over the Crown.');
+  await cast.getByLabel('Show').selectOption('pinned');
+  await cast.getByRole('button', { name: 'Send broadcast' }).click();
+  await phone.getByRole('heading', { name: 'Notes' }).first().scrollIntoViewIfNeeded();
+  const banner = phone.getByTestId('broadcast-banner');
+  await expect(banner).toBeInViewport();
+  await expect(call).toBeInViewport();
+  const callBox = await call.boundingBox();
+  const bannerBox = await banner.boundingBox();
+  expect(callBox!.y + callBox!.height).toBeLessThanOrEqual(bannerBox!.y);
+  await phone.getByTestId('roll-call-later').click();
+  await expect(call).toHaveCount(0);
+  await expect(phone.getByTestId('roll-prompt')).toHaveCount(1);
+  await openWindow(gm, 'encounter');
   const value = sideB.getByRole('textbox', { name: 'Value', exact: true });
   await value.fill('');
   await roller.getByLabel('Grade-gap mode').selectOption('none');

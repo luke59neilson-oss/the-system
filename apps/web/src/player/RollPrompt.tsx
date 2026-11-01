@@ -72,29 +72,36 @@ export function RollPrompt({ client, view }: { client: LiveClient | null; view: 
 /**
  * QF.72: a request is easy to miss from Quests or Notes, so it announces itself
  * wherever the player has scrolled to, and the tap goes to the prompt. It leaves
- * once tapped or answered. The view only holds the viewer's own request.
+ * once tapped, dismissed or answered; the prompt itself stays in the Status
+ * window. The view only holds the viewer's own request.
  */
 export function RollCall({ view }: { view: PlayerView }) {
-  const [went, setWent] = useState<string | null>(null);
+  const [gone, setGone] = useState<string | null>(null);
   const req = view.rollRequest;
-  const open = req !== null && req.answer === null && went !== req.id;
+  const open = req !== null && req.answer === null && gone !== req.id;
   // The live region is always there, so screen readers announce what appears in it.
   return (
     <div className="roll-call-layer" role="status" data-testid="roll-call-layer">
       {open && (
-        <button
-          type="button"
-          className="roll-call"
-          data-testid="roll-call"
-          onClick={() => {
-            setWent(req.id);
-            document
-              .querySelector('[data-testid="roll-prompt"]')
-              ?.scrollIntoView({ block: 'center' });
-          }}
-        >
-          The GM asks: {rollPromptText(view, req).title}
-        </button>
+        <div className="roll-call">
+          <button
+            type="button"
+            className="roll-call-go"
+            data-testid="roll-call"
+            onClick={() => {
+              const prompt = document.querySelector('[data-testid="roll-prompt"]');
+              if (prompt === null) return;
+              setGone(req.id);
+              prompt.scrollIntoView({ block: 'center' });
+              prompt.querySelector('button')?.focus({ preventScroll: true });
+            }}
+          >
+            The GM asks: {rollPromptText(view, req).title}
+          </button>
+          <button type="button" data-testid="roll-call-later" onClick={() => setGone(req.id)}>
+            Later
+          </button>
+        </div>
       )}
     </div>
   );

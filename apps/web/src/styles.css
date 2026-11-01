@@ -1036,10 +1036,13 @@ button.secondary:hover {
   border-color: var(--accent);
 }
 /* MT.6 broadcast banners. */
-.banner-stack {
+.top-notices {
   position: sticky;
   top: 0;
-  z-index: 9;
+  /* Below the modal pop-ups (z 11 and up); DINGs hold the bottom. */
+  z-index: 10;
+}
+.banner-stack {
   display: grid;
   gap: 6px;
   background: var(--bg);
@@ -1122,27 +1125,21 @@ button.secondary:hover {
 }
 
 /* QF.72: a roll request, wherever the player has scrolled to. */
-.roll-call-layer {
-  position: fixed;
-  left: 0;
-  right: 0;
-  /* The top: DINGs hold the bottom; below the modal pop-ups (z 11 and up). */
-  top: 8px;
-  z-index: 10;
-  display: flex;
-  justify-content: center;
-  padding: 0 12px;
-  pointer-events: none;
-}
 .roll-call {
-  pointer-events: auto;
-  max-width: min(560px, 100%);
-  overflow-wrap: anywhere;
-  color: #fff;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 8px;
   background: rgba(14, 21, 36, 0.96);
   border: 1px solid var(--accent);
   box-shadow: 0 0 18px var(--glow);
-  padding: 12px 18px;
+}
+.roll-call-go {
+  flex: 1 1 200px;
+  overflow-wrap: anywhere;
+  padding: 10px 12px;
 }
 
 /* Free-point assignment (M3.4). */

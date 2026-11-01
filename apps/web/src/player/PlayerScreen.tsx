@@ -236,7 +236,6 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
       {view && <DingQueue key={live.campaign ?? ''} live={live} volume={pane ? 0 : level} />}
       {!pane && view && <ContestPopup key={live.campaign ?? ''} contests={view.contests} />}
       {view && <IdentifyNotice view={view} client={pane ? null : client} />}
-      {!pane && view && <RollCall view={view} />}
       {live.campaign === 'demo' && (
         <p className="demo-badge" data-testid="demo-badge">
           Demo campaign: for trying the app out
@@ -258,7 +257,11 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
           </button>
         </p>
       )}
-      {view && <BroadcastBanners messages={view.messages} />}
+      {/* QF.72: one sticky stack, so a roll notice and a banner never cover each other. */}
+      <div className="top-notices">
+        {!pane && view && <RollCall view={view} />}
+        {view && <BroadcastBanners messages={view.messages} />}
+      </div>
       {view && view.me.evolution !== null && evoState === 'lit' && evoLater !== releaseId && (
         <div className="contest-layer">
           <section
@@ -757,10 +760,8 @@ function Status({
             className="assign-btn"
             onClick={() => {
               const el = document.querySelector<HTMLElement>('[data-testid="player-scene-prompt"]');
-              // QF.27: land below the sticky banner stack, not under it.
-              const stack = document.querySelector<HTMLElement>(
-                '[data-testid="broadcast-banners"]',
-              );
+              // QF.27: land below the sticky notices and banners, not under them.
+              const stack = document.querySelector<HTMLElement>('.top-notices');
               if (el) {
                 const h = stack ? stack.getBoundingClientRect().height : 0;
                 el.style.scrollMarginTop = `${Math.ceil(h) + 8}px`;
