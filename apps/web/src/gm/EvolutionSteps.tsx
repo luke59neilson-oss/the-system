@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { evolutionTarget, type CampaignState, type ShapeReferenceRow } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
@@ -90,7 +90,10 @@ export function StepsForm({
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   // QF.69: "released" describes the draft that went out; an edit makes it a new draft.
-  const [released, setReleased] = useState<string | null>(null);
+  const [releasedDraft, setReleasedDraft] = useState<{
+    draft: typeof draft;
+    rerate: typeof rerate;
+  } | null>(null);
   // ME.4: the reference row each card's shape picker points at (card id → row id).
   const [shapePick, setShapePick] = useState<Record<string, string>>({});
 
@@ -174,10 +177,13 @@ export function StepsForm({
     const r = await client.command(command);
     setBusy(false);
     if (r.ok) setOverride(false);
-    setReleased(r.ok ? `Evolution released to ${character.name}` : null);
+    setReleasedDraft(r.ok ? { draft, rerate } : null);
     setResult(r.ok ? null : { ok: false, text: friendlyError(r.error) });
   };
-  useEffect(() => setReleased(null), [draft, rerate]);
+  const released =
+    releasedDraft?.draft === draft && releasedDraft.rerate === rerate
+      ? `Evolution released to ${character.name}`
+      : null;
   const merged = new Set(
     STEPS.flatMap((step) =>
       draft[step].flatMap((o) => o.transforms.flatMap((t) => (t.merge ? [t.skill, t.merge] : []))),
