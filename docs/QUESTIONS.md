@@ -722,3 +722,9 @@ DESIGN/ROADMAP; do not re-apply them.
     default points per level (the class's shape), not the distribution its
     option card showed. Default: as built (keeps old offers working). Option:
     keep each skipped option's distribution and bonus with its offer.
+
+95. **Ties after a typed die (MK.2, D312).** When a d20 contest ties, both
+    sides roll again. A die typed from the table counts only for the first
+    round; any re-roll after a tie is rolled by the app, so the table does
+    not wait for a second throw. Default: as built. Option: ask for a
+    second typed die on a tie.

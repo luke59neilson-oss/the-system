@@ -1,6 +1,12 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { contestPracticeCommands } from './practiceDraftsModel';
-import { d20Modifiers, type CampaignState, type Command, type GradeGapMode } from '@the-system/engine';
+import {
+  d20Modifiers,
+  d20WinChance,
+  type CampaignState,
+  type Command,
+  type GradeGapMode,
+} from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 import {
@@ -81,12 +87,13 @@ export function Encounter({ client, state }: { client: LiveClient; state: Campai
   );
 }
 
-/** MK.2: " · modifiers +3 / +0" in a d20 campaign (empty otherwise or when walled). */
-function modifiersText(state: CampaignState, plan: ContestPlan): string {
-  if (state.rules.resolution.rolls !== 'd20') return '';
+/** MK.2: in a d20 campaign, each side's modifier and its d20 chance (null otherwise). */
+function d20Text(state: CampaignState, plan: ContestPlan): string | null {
+  if (state.rules.resolution.rolls !== 'd20') return null;
   const mods = d20Modifiers(state.rules, plan.a, plan.b, plan.mode);
-  if (!mods) return '';
-  return ` · d20 ${plan.a.label} ${signedModifier(mods.modA)}, ${plan.b.label} ${signedModifier(mods.modB)}`;
+  if (!mods) return null;
+  const chance = d20WinChance(mods.modA, mods.modB);
+  return `d20: ${plan.a.label} ${signedModifier(mods.modA)} (${percent(chance)}) · ${plan.b.label} ${signedModifier(mods.modB)} (${percent(1 - chance)})`;
 }
 
 interface ToolProps {
@@ -188,7 +195,8 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
           ? plan
           : plan.walled
             ? `Grade wall: ${plan.chance === 1 ? plan.a.label : plan.b.label} succeeds, no roll`
-            : `${plan.a.label}: ${percent(plan.chance)} · ${plan.b.label}: ${percent(1 - plan.chance)}${modifiersText(state, plan)}`}
+            : (d20Text(state, plan) ??
+              `${plan.a.label}: ${percent(plan.chance)} · ${plan.b.label}: ${percent(1 - plan.chance)}`)}
       </p>
       {d20 && (
         <div className="contest-dice row" data-testid="contest-dice">

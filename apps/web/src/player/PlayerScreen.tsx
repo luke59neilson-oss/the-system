@@ -17,7 +17,7 @@ import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
 import { playSound, unlockSound } from './sounds';
 import { RunningLog } from './RunningLog';
-import { contestLines, newContests } from './contest';
+import { contestLines, diceLines, newContests } from './contest';
 import {
   FULL_HISTORY_EVENT,
   HISTORY_FILTERS,
@@ -1373,6 +1373,11 @@ function ContestPopup({ contests }: { contests: PlayerView['contests'] }) {
         <h2 id={`contest-${current.id}`}>Contest</h2>
         <p className="contest-title">{lines.title}</p>
         <p className="muted">{lines.odds}</p>
+        {diceLines(current).map((line, i) => (
+          <p key={i} className="contest-dice" data-testid="contest-dice-line">
+            {line}
+          </p>
+        ))}
         <p className="contest-outcome">{lines.result}</p>
         <button type="button" onClick={() => setKnown((k) => new Set(k).add(current.id))}>
           {fresh.length > 1 ? `Next (${fresh.length - 1} more)` : 'OK'}
