@@ -413,7 +413,7 @@ the campaigns home and the library layouts come before the real campaign.
   its card's points; old weights load); e2e: lay out Archer at G (+1 Str,
   +2 Agi… with the warning until it totals 8), create a character with it,
   level up; screenshots.
-- [ ] **ML.3 Meets beats; wording.** d20 contests: no re-roll, a tie goes to
+- [x] **ML.3 Meets beats; wording.** d20 contests: no re-roll, a tie goes to
   the attacker (the side that acts; the contest form names it, defaulting
   to the first side), meeting a set target succeeds; the re-rating message
   in Luke's words (DESIGN §6, Q97); a contest two or more grades apart shows
