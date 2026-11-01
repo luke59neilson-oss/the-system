@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CHANGE_LOG_DEFAULT_PAGE, type ChangeLogRow } from '@the-system/engine';
-import { mergeHead } from '../src/gm/ChangeLog';
+import { mergeHead, noUndoReason } from '../src/gm/ChangeLog';
 
 // QF.13: the newest page merged over what the GM console shows.
 const row = (seq: number): ChangeLogRow => ({
@@ -50,5 +50,14 @@ describe('mergeHead (QF.13)', () => {
     const head = { rows: range(2 * P - 1, P), older: P, matching: 2 * P, undone: 1 };
     expect(mergeHead(shown, 0, head)).toEqual({ rows: head.rows, keptOlder: false });
     expect(mergeHead(shown, 1, head).keptOlder).toBe(true);
+  });
+});
+
+describe('noUndoReason (QF.63)', () => {
+  it('gives a reason for each row with no Undo, and none for the rest', () => {
+    expect(noUndoReason('campaign.created')).toBe('No undo: it starts the campaign');
+    expect(noUndoReason('rules.migrated')).toBe('No undo: a rules update');
+    expect(noUndoReason('hunger.configured')).toBe('No undo: retired, changes nothing');
+    expect(noUndoReason('xp.awarded')).toBeNull();
   });
 });

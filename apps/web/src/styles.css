@@ -3668,3 +3668,19 @@ ol.change-log li.undone .change-text {
     box-sizing: border-box;
   }
 }
+
+/* QF.63 (deep review ux-10): no text under 14 px on a phone; timestamps, tags
+   and bonuses are read at arm's length in a dim room. */
+@media (max-width: 700px) {
+  .choices .tag,
+  .pane-mode .skills,
+  .feed .when,
+  .sound-toggle,
+  .ding-more,
+  .stats .stat-bonus,
+  .library-tags .tag,
+  .flag-owner,
+  .faction-revealed {
+    font-size: 0.875rem;
+  }
+}
