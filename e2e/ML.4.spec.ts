@@ -133,6 +133,8 @@ test('each campaign keeps its own buttons; sharing lore makes a party copy', asy
   await expect(settings.getByLabel('Button 5 name')).toHaveValue('Twist');
   await gm.getByRole('button', { name: 'Back to my campaign' }).click();
   await expect(gm.getByTestId('restored-badge')).toHaveCount(0);
+  // Back on the original, its own setup returns, though the name is the same.
+  await expect(settings.getByLabel('Button 5 name')).toHaveValue('Chaos');
 
   // Review: a switch without leaving the console reloads the settings form.
   await gm.getByRole('button', { name: 'Load demo campaign' }).click();

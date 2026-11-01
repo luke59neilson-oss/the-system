@@ -60,6 +60,8 @@ export function CampaignSwitch({ gmKey, stateName }: { gmKey: string; stateName:
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setDemo(((await r.json()) as { demo: boolean }).demo);
       setOther(null);
+      // ML.A review: the same name can be another campaign; the settings form re-reads its id.
+      window.dispatchEvent(new Event(CAMPAIGN_CHANGED));
     } catch {
       setError('Could not switch campaigns');
     } finally {
