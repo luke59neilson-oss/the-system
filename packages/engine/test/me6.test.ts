@@ -271,3 +271,15 @@ describe('ME.6 review: choices stored before ME.6 replay under the ME.2 rules (D
     expect(Object.keys(now.professionOfferCards ?? {}).sort()).toEqual(['skinner', 'tracker']);
   });
 });
+
+describe('ME.A review: no profession offer the player could not take', () => {
+  it('refuses an offer below the campaign profession unlock grade', () => {
+    const rules = rawRules() as unknown as { tracks: { professionUnlockGrade: string } };
+    rules.tracks.professionUnlockGrade = 'E';
+    const c = run(
+      [{ type: 'campaign.create', name: 'Late', rules } as unknown as Command, make],
+      testContext('late-offer'),
+    );
+    expect(reject(c, offer('Herbalist'))).toMatch(/Professions unlock at E-grade/);
+  });
+});
