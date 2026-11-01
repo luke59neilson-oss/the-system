@@ -75,6 +75,8 @@ test('the GM builds and releases an evolution with re-rating', async ({ browser 
     participants: [{ characterId: 'demo-sultan' }],
   });
   await expect(builder.getByLabel('Character')).toHaveValue('demo-sultan');
+  // ME.5: Three steps is the default; this spec covers the one-choice form.
+  await builder.getByLabel('Class only (one choice)').check();
   const form = builder.getByRole('form', { name: 'Evolution release' });
   const option = form.getByRole('group', { name: 'Option 1' });
   await option.getByLabel('Class name').fill('Storm Hunter');
@@ -160,6 +162,8 @@ test('the release waits on a selection; transforms, profession offers and withdr
   });
   await openWindow(gm, 'evolution-builder');
   await builder.getByLabel('Character').selectOption('demo-casper');
+  // ME.5: Three steps is the default; this spec covers the one-choice form.
+  await builder.getByLabel('Class only (one choice)').check();
   const form = builder.getByRole('form', { name: 'Evolution release' });
   await expect(form.getByTestId('evolution-waits')).toHaveText(
     'Waits on the capstone selection at lvl 10: the player must choose first.',

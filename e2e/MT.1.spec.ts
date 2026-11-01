@@ -72,6 +72,8 @@ test('the GM sets and approves the re-rating; the player sees it', async ({ brow
   const builder = gm.locator('section[aria-labelledby="evolution-builder"]');
   await openWindow(gm, 'evolution-builder');
   await expect(builder.getByLabel('Character')).toHaveValue('demo-sultan');
+  // ME.5: Three steps is the default; this spec covers the one-choice form.
+  await builder.getByLabel('Class only (one choice)').check();
   const form = builder.getByRole('form', { name: 'Evolution release' });
   await form.getByRole('group', { name: 'Option 1' }).getByLabel('Class name').fill('Far Shot');
 
