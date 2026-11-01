@@ -8,9 +8,11 @@ import {
 import {
   classRarities,
   draftOf,
+  draftPoints,
   draftProblem,
   emptyDraft,
   missingDefaults,
+  pointsCheck,
   saveCommand,
   searchEntries,
   unsavedChanges,
@@ -74,6 +76,8 @@ describe('GM class, race and profession libraries (M4.2)', () => {
       description: '',
       skills: [],
       weights: {},
+      points: Object.fromEntries(DEFAULT_RULES.stats.list.map((st) => [st.id, ''])),
+      free: '',
     });
   });
 
@@ -179,5 +183,69 @@ describe('GM class, race and profession libraries (M4.2)', () => {
 
   it('summarises weights biggest first', () => {
     expect(weightSummary(DEFAULT_RULES, warrior.weights)).toBe('Strength 3 · Toughness 2');
+  });
+});
+
+describe('ML.2 points per level in the library form', () => {
+  const blank = (kind: 'class' | 'race' | 'profession') => emptyDraft(kind, DEFAULT_RULES);
+  it('reminds of the G budget and warns until the points total it', () => {
+    const d = blank('class');
+    d.points = { ...d.points, strength: '1', agility: '2' };
+    let check = pointsCheck('class', d, DEFAULT_RULES);
+    expect(check).toMatchObject({ grade: 'G', budget: 8, total: 3 });
+    expect(check.warning).toMatch(/total 3; the G-grade budget for a class level is 8/);
+    d.points = { ...d.points, intelligence: '3' };
+    d.free = '2';
+    check = pointsCheck('class', d, DEFAULT_RULES);
+    expect(check).toMatchObject({ total: 8, warning: null });
+    expect(pointsCheck('race', blank('race'), DEFAULT_RULES)).toMatchObject({
+      budget: 5,
+      total: 0,
+    });
+    expect(pointsCheck('race', blank('race'), DEFAULT_RULES).warning).toMatch(/all free points/);
+    expect(pointsCheck('profession', blank('profession'), DEFAULT_RULES).budget).toBe(5);
+  });
+  it('refuses points that are not whole numbers', () => {
+    const d = blank('race');
+    d.name = 'Elf';
+    d.free = '1.5';
+    expect(draftPoints(d)).toBeNull();
+    expect(draftProblem('race', d)).toMatch(/whole numbers from 0 to 999/);
+    expect(saveCommand('race', d, null, DEFAULT_RULES)).toBeNull();
+  });
+  it('saves points with the entry, and only once any are set', () => {
+    const d = blank('race');
+    d.name = 'Elf';
+    expect(saveCommand('race', d, null, DEFAULT_RULES)).not.toHaveProperty('points');
+    d.points = { ...d.points, perception: '2', intelligence: '2' };
+    d.free = '1';
+    expect(saveCommand('race', d, null, DEFAULT_RULES)).toMatchObject({
+      type: 'raceDef.define',
+      points: { stats: { perception: 2, intelligence: 2 }, free: 1 },
+    });
+  });
+  it('shows an old class’s weights as converted points and leaves them alone on other edits', () => {
+    const d = draftOf('class', warrior, DEFAULT_RULES);
+    // Strength 3 : Toughness 2 at the G class budget of 8.
+    expect(d.points['strength']).not.toBe('');
+    expect(Number(d.points['strength']) + Number(d.points['toughness'])).toBe(8);
+    expect(saveCommand('class', { ...d, name: 'Fighter' }, warrior, DEFAULT_RULES)).toEqual({
+      type: 'classDef.edit',
+      classDefId: 'w',
+      name: 'Fighter',
+    });
+    const edited = saveCommand(
+      'class',
+      { ...d, points: { ...d.points, strength: '6' }, free: '0' },
+      warrior,
+      DEFAULT_RULES,
+    );
+    expect(edited).toMatchObject({ type: 'classDef.edit', points: { stats: { strength: 6 } } });
+  });
+  it('reads a class’s own points back unchanged', () => {
+    const own = { ...warrior, points: { stats: { strength: 1, agility: 2 }, free: 5 } };
+    const d = draftOf('class', own, DEFAULT_RULES);
+    expect(draftPoints(d)).toEqual(own.points);
+    expect(unsavedChanges('class', d, own, DEFAULT_RULES)).toBe(false);
   });
 });

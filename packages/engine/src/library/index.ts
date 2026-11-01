@@ -139,7 +139,11 @@ export type EntryTrack = 'class' | 'race' | 'profession';
  * ML.2 (DESIGN §2): one level's budget for a library entry's track at a grade
  * (G: class 8, race 5, profession 5), or null when the grade has no budgets.
  */
-export function entryBudget(rules: RulesConfig, gradeId: string, track: EntryTrack): number | null {
+export function entryBudget(
+  rules: Pick<RulesConfig, 'grades'>,
+  gradeId: string,
+  track: EntryTrack,
+): number | null {
   return rules.grades.find((g) => g.id === gradeId)?.trackBudget?.[track] ?? null;
 }
 
@@ -150,7 +154,7 @@ export function entryBudget(rules: RulesConfig, gradeId: string, track: EntryTra
  * remainders, D301). A race or profession with none has no points to show.
  */
 export function entryPoints(
-  rules: RulesConfig,
+  rules: Pick<RulesConfig, 'grades' | 'stats'>,
   gradeId: string,
   entry: {
     readonly points?: TrackDistribution | undefined;

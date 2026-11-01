@@ -18,6 +18,7 @@ import {
   type OriginDef,
   type OriginDraft,
   type OriginKind,
+  pointsCheck,
 } from './originLibraryModel';
 
 const KINDS: readonly OriginKind[] = ['class', 'race', 'profession'];
@@ -59,6 +60,7 @@ export function OriginLibrary({ client, state }: { client: LiveClient; state: Ca
   const total = entriesOf(state, kind).length;
   const command = saveCommand(kind, draft, base, rules);
   const problem = draftProblem(kind, draft);
+  const budget = pointsCheck(kind, draft, rules);
   const missing = missingDefaults(state);
   const rarities =
     kind === 'class' ? classRarities(rules) : rules.skills.rarities.filter((r) => !r.reserved);
@@ -292,6 +294,46 @@ export function OriginLibrary({ client, state }: { client: LiveClient; state: Ca
             )}
           </fieldset>
         )}
+        <fieldset className="library-weights library-points" data-testid="entry-points">
+          <legend>Points per {label.one} level (whole points per stat, plus free points)</legend>
+          {rules.stats.list.map((stat) => (
+            <label key={stat.id}>
+              {stat.name}
+              <input
+                inputMode="numeric"
+                value={draft.points[stat.id] ?? ''}
+                placeholder="0"
+                onChange={(e) =>
+                  setDraft({ ...draft, points: { ...draft.points, [stat.id]: e.target.value } })
+                }
+                maxLength={3}
+                data-testid={`points-${stat.id}`}
+              />
+            </label>
+          ))}
+          <label>
+            Free
+            <input
+              inputMode="numeric"
+              value={draft.free}
+              placeholder="0"
+              onChange={(e) => setDraft({ ...draft, free: e.target.value })}
+              maxLength={3}
+              data-testid="points-free"
+            />
+          </label>
+          {budget.budget !== null && (
+            <p className="muted hint budget-reminder" data-testid="points-budget">
+              {budget.grade}-grade budget for a {label.one} level: {budget.budget} · these total{' '}
+              {budget.total ?? '?'}
+            </p>
+          )}
+          {budget.warning && (
+            <p className="warn" role="note" data-testid="points-warning">
+              {budget.warning}
+            </p>
+          )}
+        </fieldset>
         {kind === 'class' && (
           <fieldset className="library-weights">
             <legend>Stat weights (share of each level’s class spread)</legend>
@@ -312,7 +354,7 @@ export function OriginLibrary({ client, state }: { client: LiveClient; state: Ca
         )}
         <p className="muted hint">
           {kind === 'profession'
-            ? 'Professions are offered at the evolution into the E-grade.'
+            ? 'A profession offered from the library brings these points per level.'
             : `New characters copy the ${label.one} when they are created; editing it later does not change them.`}
         </p>
         {changedElsewhere && stored && (
