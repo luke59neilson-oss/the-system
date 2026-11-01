@@ -1383,7 +1383,7 @@ function ContestPopup({ contests }: { contests: PlayerView['contests'] }) {
       >
         <h2 id={`contest-${current.id}`}>Contest</h2>
         <p className="contest-title">{lines.title}</p>
-        <p className="muted">{lines.odds}</p>
+        {lines.odds !== null && <p className="muted">{lines.odds}</p>}
         {diceLines(current).map((line, i) => (
           <p key={i} className="contest-dice" data-testid="contest-dice-line">
             {line}

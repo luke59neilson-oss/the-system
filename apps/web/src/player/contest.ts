@@ -19,13 +19,19 @@ export function chanceText(chance: number): string {
   return `${Math.round(chance * 100)}%`;
 }
 
-/** The pop-up's lines: the contest, the odds, and the outcome in System words. */
-export function contestLines(c: PlayerContest): { title: string; odds: string; result: string } {
+/**
+ * The pop-up's lines: the contest, the odds, and the outcome in System words.
+ * Two or more grades apart there are no odds and no explanation line, only
+ * the result (ML.3, Luke Q97: the effect says enough).
+ */
+export function contestLines(c: PlayerContest): {
+  title: string;
+  odds: string | null;
+  result: string;
+} {
   return {
     title: `[${c.yours.label}] vs [${c.theirs}]`,
-    odds: c.walled
-      ? 'Too far apart in grade: the higher grade wins, no roll.'
-      : `Your chance: ${chanceText(c.chance)}`,
+    odds: c.walled ? null : `Your chance: ${chanceText(c.chance)}`,
     result: c.won ? 'Success.' : 'Failure.',
   };
 }

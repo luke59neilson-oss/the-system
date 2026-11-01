@@ -33,7 +33,7 @@ describe('contest pop-up (M7.3)', () => {
     });
     expect(contestLines(contest('b', { walled: true, won: false, chance: 0 }))).toEqual({
       title: '[Jake · Perception] vs [Pale stalker]',
-      odds: 'Too far apart in grade: the higher grade wins, no roll.',
+      odds: null,
       result: 'Failure.',
     });
     expect(chanceText(0.004)).toBe('<1%');
