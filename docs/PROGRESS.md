@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.67; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV done (MV.A checked); ME.1 done. Preview ready: Actions → Release → Run workflow (MV).
-**Next item:** ME.2 on `wip/ME.2` (head 421d9985, base 71bac8f3): release side done (command `steps` {class, profession, race}, payload `steps` optional on `evolution.released`, `stepBudgetProblems` refusal unless Override, pending evolution keeps `steps`); next: `evolution.choose` with `choices: {class, profession, race}` (profession null = none for now), apply each option's distribution (`character.distributions`) and one-time bonuses, profession from the chosen option, pool refill; then canary, old-release replay test, golden, DECISIONS entry, sonnet review; then ME.3–ME.A (L26), MK.1–MK.A (L27), QF.55 onward (QF.67 included); MW after MU
+**Status:** in progress (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.67; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV done (MV.A checked); ME.1 and ME.2 done. Preview ready: Actions → Release → Run workflow (MV).
+**Next item:** ME.3 on `wip/ME.3` (head 1f77293c, base 920cf1b5): done so far: `apps/web/src/gm/evolutionStepsModel.ts` (budget meters per option, release blockers split hard/overridable via the engine's `stepBudgetProblems`, `nearThreshold` within 3 race levels) with unit tests; the Evolutions tab added to `tabsModel.ts` (Session, Progression, Evolutions, Library) with the evolution builder moved there; GM-GUIDE table. Next: the tab's UI (character list, three-step builder with option cards add/duplicate/remove, meters in red with the difference, re-rating list and merge prompts moved here, standing panel, Release with reasons and Override tick sending `evolution.release` `steps`), home dashboard link, e2e `ME.3.spec.ts` (Kim's E-grade evolution) and screenshots at 1366×768 and 1920×1080; full `npm run e2e` (both projects) since it moves a window; then ME.4–ME.A (L26), MK.1–MK.A (L27), QF.55 onward (QF.67 included); MW after MU
 **Blockers:** none
 
 ## Run log
@@ -1507,4 +1507,14 @@ next item, blockers. -->
 - ME.2 (wip): failing acceptance tests in `evolutionSteps.test.ts` (2 still failing by design: the choose side); release with `steps` refuses off-budget options and unequal bonuses unless Override; old single-choice releases unchanged (engine 1,053 of 1,055 green on the wip; the 2 are the ME.2 choose tests).
 - Tests on main: unit 1,894; e2e 149 (full, 1 worker). Engine coverage not re-measured.
 - Open `wip/*`: `wip/ME.2`. Blockers: none.
+
+### Run · 2026-11-01 00:08–00:53 UTC (close-out at minute 44)
+- Close-out at minute 44: CI red fixed; ME.2 checked and merged to main; ME.3 handed off on `wip/ME.3` (head 1f77293c, base 920cf1b5).
+- Preflight: `add_repo` not offered; repo already cloned (detached HEAD reset to `origin/main`); lock pushed cleanly; vitest 5.0.5. No new answers. Hour 00: efficiency check.
+- CI red on 71bac8f3 (not a flake): ME.1 raised the G-grade race budget to 5, and the `latency` project's MS.2/MS.3/MS.A still expected +2 free points (the last run's full e2e ran only the `e2e` project). Fixed in 68dbafa7 (+ refreshed screenshots); the three latency specs green here (MS.A failed once in the first batched run, then passed 3× alone; not reproduced).
+- Efficiency check: scorecard row added; D297 not judgeable until 06:00. Sonnet auditor: (1) `orientWords` in metrics.mjs is not the real `npm run orient` output (7.2k printed vs 20.6k scored), queued as Tier 1; (2) LOOP never names the `latency` project as part of the full e2e: applied as D304 (in trial; baseline red/day 4).
+- ME.2 finished (D303): `evolution.choose` with `choices {class, profession|null, race}` applies all three options (transforms, summed bonuses, distributions, race name, profession granted or evolved, pools refilled); owner view carries the step cards (canary seeds them, unknown keys GM-only); session log names profession and race; golden `evolution-steps`; GM-OVERRIDES rows. Review round 1 (sonnet): 1 H (release did not check profession/race transforms per combination), 4 M, 3 L; fixed (every combination checked at release, unlock grade, budgets required, options beside steps refused; Override coupling documented). Round 2: 0 H/M, 3 L (one to QUALITY Backlog).
+- ME.3 (wip): builder model and the Evolutions tab in the console table (see Next item).
+- Tests: unit 1,921 (check green on wip/ME.3 a029cf8e); engine 1,072; e2e touched: M3.13, MQ.6, MR.1, MT.1 (6 passed) + latency MS.2/MS.3/MS.A (3 passed). Full e2e not run this run (engine-only item; CI runs both projects). Engine coverage not re-measured.
+- Open `wip/*`: `wip/ME.3`. Blockers: none.
 
