@@ -2339,6 +2339,14 @@ function overLimit(
     }
     return null;
   }
+  // QF.62: a player's cast joins the practice log, so it counts toward the same cap.
+  if (command.type === 'skill.cast' && actor.role === 'player') {
+    const logged = state.practice.filter((p) => p.characterId === command.characterId).length;
+    if (logged >= limits.practiceEntriesPerCharacter) {
+      return `Practice log is full (${limits.practiceEntriesPerCharacter.toLocaleString('en-US')} entries); ask the GM`;
+    }
+    return null;
+  }
   if (command.type === 'note.create' || command.type === 'note.edit') {
     const author = command.characterId;
     if (author === null) return null;
