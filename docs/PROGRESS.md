@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; MV, ME, MK and QF.55 done. Preview ready: Actions → Release → Run workflow (MK).
-**Next item:** QF.70 on `wip/QF.70` (head a980b24, base bc8d434): 10/10 green, sonnet round 1 found 2 Medium (settle-wait should wait for focus to change from the pre-press `data-kb`, then two stable frames; fail instead of returning silently at the 10-frame cap). Fix both, re-run `--repeat-each=10 --workers=2`, round-2 review, merge. Then QF.56 onward (QF.71–QF.74 from sweep C in file order); MW after MU.
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; MV, ME, MK, QF.55 and QF.70 done. Preview ready: Actions → Release → Run workflow (MK).
+**Next item:** QF.56 on `wip/QF.56` (head 1fa6be4, base f789b6e): portrait confirm, "at the grade's top", Fill N XP button, short alert lines, phone evolution paths first, 3:1 control borders, 44 px phone buttons, join QR second on Home all done; next: e2e for the XP button, card text and evolution order + screenshots (evolution dialog 390×844, XP award 1366×768), a contrast check on control borders, the full e2e suite (shared CSS changed), sonnet review, merge. Then QF.57 onward (QF.71–QF.74 in file order); MW after.
 **Blockers:** none
 
 ## Run log
@@ -1598,3 +1598,12 @@ next item, blockers. -->
 - Sweep C: Rules clean (1 L); Tests 2 M confirmed by re-running the mutations myself (QF.73) + 3 L; UX 2 M confirmed in code (QF.71 contest modifier on the roll prompt, QF.72 roll request has no cue on the phone), 1 M likely (QF.74, verify by screenshot first), 7 L. Lows to the QUALITY backlog. Last sweep 2b21061, next rotation D.
 - Tests: check green (unit 2,015); e2e: full suite covered across this and the last run on QF.55's code; latency 8.
 - Open `wip/*`: `wip/QF.70`. Blockers: none.
+
+### Run · 2026-11-01 10:10–10:5x UTC (close-out at minute 43)
+- Close-out at minute 43 (D211 hand-off; QF.56 continues on its wip branch).
+- Preflight: `add_repo` not offered; repo already cloned (local main again unrelated history; reset to `origin/main`; plain `git fetch` hung, `git fetch origin <branch>` works); lock pushed cleanly; vitest 5.0.5; reviewer sonnet works (worktree; Agent blocks). CI on main green (bc8d434). No new answers. Hour 10: no efficiency check or sweep.
+- QF.70 done: SETTLED now waits for focus to leave the pre-press stop, then two equal frames, and fails at a 30-frame cap (round-1 Mediums). A first 10× file run went 29/30: the GM walk marked stops while the demo load was still reconnecting and before the Listening panel disabled Start listening; the walk now waits for both. Keyboard spec 10/10 here, sonnet round 2 30/30 (whole file) with 0 H / 0 M / 4 L (one to the backlog). Merged (11b937a), box checked (f789b6e).
+- QF.56 started on `wip/QF.56` (see Next item); M3.*, M8.3, M4.4, M4.6, M9.3, MC.2, MT.5, MS.1, MS.3, M11.2, M5.2, M5.A, MR.1, MR.2, MT.1 and QF.56 green on it.
+- Tests: check green (unit 2,015); e2e: the specs above; full suite not run this run (QF.56 must run it before merging).
+- Open `wip/*`: `wip/QF.56`. Blockers: none.
+
