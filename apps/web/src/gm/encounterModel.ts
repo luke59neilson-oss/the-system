@@ -191,6 +191,30 @@ export interface RolledContest {
   readonly d20?: D20Record | null;
 }
 
+/** MK.2: dice typed at the table (a real d20 thrown), per side; null = the app rolls. */
+/** A die from the table: a typed number, or a phone's answer with how it was rolled (MK.2). */
+export type TableDie = number | { readonly die: number; readonly how: 'typed' | 'app' };
+
+export interface TypedDice {
+  readonly a: TableDie | null;
+  readonly b: TableDie | null;
+}
+export const NO_TYPED_DICE: TypedDice = { a: null, b: null };
+
+/** A typed die: blank = the app rolls (null); a whole number 1–20; anything else is an error string. */
+export function typedDie(text: string): number | null | string {
+  const t = text.trim();
+  if (t === '') return null;
+  if (!/^\d+$/.test(t)) return 'A die is a whole number from 1 to 20';
+  const n = Number(t);
+  return n >= 1 && n <= 20 ? n : 'A die is a whole number from 1 to 20';
+}
+
+/** "+3" / "−3" for a roll modifier. */
+export function signedModifier(n: number): string {
+  return n < 0 ? `−${-n}` : `+${n}`;
+}
+
 /**
  * Rolls a planned contest with the given random source (no draw when walled).
  * Follows the campaign's `rolls` setting (MK.1): in d20 mode the app rolls
@@ -200,9 +224,16 @@ export function rollPlan(
   state: CampaignState,
   plan: ContestPlan,
   random: () => number,
+  typed: TypedDice = NO_TYPED_DICE,
 ): RolledContest {
   if (state.rules.resolution.rolls === 'd20') {
-    const result = rollD20Contest(state.rules, plan.a, plan.b, () => appDie(random), plan.mode);
+    // MK.2: a die typed at the table counts for the first round; a tie rolls again in the app.
+    const die = (side: 'a' | 'b', round: number) => {
+      const t = typed[side];
+      if (round !== 0 || t === null) return appDie(random);
+      return typeof t === 'number' ? { die: t, how: 'typed' as const } : { die: t.die, how: t.how };
+    };
+    const result = rollD20Contest(state.rules, plan.a, plan.b, die, plan.mode);
     return { plan, roll: null, result, d20: result.d20 };
   }
   const roll = plan.walled ? null : random();
@@ -243,10 +274,11 @@ export function outcomeText(rolled: RolledContest): string {
   const d20 = rolled.d20;
   if (d20) {
     const last = d20.rounds[d20.rounds.length - 1];
-    const signed = (n: number) => (n < 0 ? `−${-n}` : `+${n}`);
+    const signed = signedModifier;
+    const how = (d: { how: 'typed' | 'app' }) => (d.how === 'typed' ? ' typed' : ' app');
     const ties = d20.rounds.length > 1 ? `, after ${d20.rounds.length - 1} tie(s)` : '';
     return last
-      ? `${winner} wins (d20: ${plan.a.label} ${last.a.die}${signed(d20.modA)} = ${last.a.total}, ${plan.b.label} ${last.b.die}${signed(d20.modB)} = ${last.b.total}${ties})`
+      ? `${winner} wins (d20: ${plan.a.label} ${last.a.die}${how(last.a)} ${signed(d20.modA)} = ${last.a.total}, ${plan.b.label} ${last.b.die}${how(last.b)} ${signed(d20.modB)} = ${last.b.total}${ties})`
       : `${winner} wins`;
   }
   const roll = Math.round((result.roll ?? 0) * 100);
@@ -376,4 +408,69 @@ export function recentContests(state: CampaignState, limit = 5) {
     .slice(-limit)
     .reverse()
     .flatMap((id) => (own(state.contests, id) && state.contests[id] ? [state.contests[id]] : []));
+}
+
+/**
+ * MK.2: the player whose phone can roll for this side: a side with exactly one
+ * character and a stat, in a d20 campaign. Null for NPC sides and free values.
+ */
+export function phoneRoller(
+  state: CampaignState,
+  side: { readonly characterIds: readonly string[]; readonly stat: string | null },
+): { characterId: string; name: string; stat: string } | null {
+  if (state.rules.resolution.rolls !== 'd20') return null;
+  if (side.characterIds.length !== 1 || side.stat === null) return null;
+  const id = side.characterIds[0] as string;
+  const c = Object.prototype.hasOwnProperty.call(state.characters, id)
+    ? state.characters[id]
+    : undefined;
+  if (!c) return null;
+  return { characterId: id, name: c.name, stat: side.stat };
+}
+
+/**
+ * MK.2: the player's open roll request, as the console shows it: waiting, or
+ * the die the phone sent. `current` only when this contest asked for it (its
+ * id is in `asked`, which the console resets when the sides change) and for
+ * this side's stat; any other open request is shown but never used, so a die
+ * left from an earlier contest cannot decide this one (review M1).
+ */
+export function phoneDie(
+  state: CampaignState,
+  roller: { characterId: string; stat: string } | null,
+  asked: ReadonlySet<string>,
+): PhoneDie | null {
+  if (roller === null) return null;
+  const open = state.rollRequests ?? {};
+  const r = Object.prototype.hasOwnProperty.call(open, roller.characterId)
+    ? open[roller.characterId]
+    : undefined;
+  if (!r) return null;
+  return { requestId: r.id, answer: r.answer, current: r.stat === roller.stat && asked.has(r.id) };
+}
+
+export interface PhoneDie {
+  readonly requestId: string;
+  readonly answer: { die: number; how: 'typed' | 'app' } | null;
+  readonly current: boolean;
+}
+
+/** The phone's die Roll uses: only a current request's answer. */
+export function phoneDieUsed(p: PhoneDie | null): { die: number; how: 'typed' | 'app' } | null {
+  return p !== null && p.current ? p.answer : null;
+}
+
+/**
+ * Review M1/M2: Roll closes every request this contest asked for, answered or
+ * still waiting (a die typed on the console replaces the phone's), so no phone
+ * keeps asking after the contest; an earlier contest's request is left alone.
+ */
+export function rollClears(
+  sides: readonly (readonly [{ characterId: string } | null, PhoneDie | null])[],
+): Command[] {
+  return sides.flatMap(([r, p]) =>
+    r !== null && p !== null && p.current
+      ? [{ type: 'roll.clear' as const, characterId: r.characterId, requestId: p.requestId }]
+      : [],
+  );
 }

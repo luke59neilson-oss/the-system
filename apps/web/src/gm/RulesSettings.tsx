@@ -200,6 +200,28 @@ export function RulesSettings({ client, state }: { client: LiveClient; state: Ca
         Every number the game uses. Changes apply from now on and show in the change log, where they
         can be undone. Ids stay fixed in a running campaign.
       </p>
+      <label className="rules-field" data-testid="rules-rolls">
+        Rolls
+        <select
+          value={state.rules.resolution.rolls ?? 'odds'}
+          disabled={dirty}
+          onChange={(e) =>
+            send(
+              {
+                type: 'rules.set',
+                rules: {
+                  ...state.rules,
+                  resolution: { ...state.rules.resolution, rolls: e.target.value },
+                },
+              },
+              e.target.value === 'd20' ? 'Rolls: d20 + modifier.' : 'Rolls: app odds.',
+            )
+          }
+        >
+          <option value="odds">App odds (yours ÷ yours + theirs)</option>
+          <option value="d20">d20 + modifier</option>
+        </select>
+      </label>
       {Object.entries(sections).map(([k, v]) =>
         k === 'configVersion' ? null : (
           <Field

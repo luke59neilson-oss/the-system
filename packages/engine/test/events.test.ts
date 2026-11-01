@@ -1014,6 +1014,10 @@ describe('property: replay equals incremental state', () => {
       // MT.9: scene prompts have their own tests (scenePrompt.test.ts) and golden log.
       'scene.ended',
       'scene.answered',
+      // MK.2: roll requests have their own tests (rollRequest.test.ts).
+      'roll.requested',
+      'roll.answered',
+      'roll.cleared',
       // MU.5: casting has its own tests (cast.test.ts) and golden log (cast.jsonl).
       'skill.cast',
       // MV.3: the bestiary has its own tests (bestiary-identify.test.ts) and golden log.

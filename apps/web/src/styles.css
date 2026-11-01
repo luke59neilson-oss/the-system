@@ -3595,3 +3595,42 @@ ol.change-log li.undone .change-text {
   width: 100%;
   min-width: 0;
 }
+
+/* MK.2: dice thrown at the table, typed in beside each other. */
+.contest-dice.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+.contest-dice input {
+  width: 5em;
+  display: block;
+}
+.stat-mod {
+  color: var(--muted, inherit);
+  white-space: nowrap;
+}
+
+/* MK.2: the phone's "Roll d20 for <Stat>" prompt. */
+.roll-prompt {
+  border: 1px solid var(--accent, currentColor);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin: 0.5rem 0;
+}
+.roll-prompt h3 {
+  margin: 0 0 0.4rem;
+}
+.roll-prompt-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem 1rem;
+}
+.roll-prompt-form button {
+  min-height: 44px;
+}
+.roll-prompt-form input {
+  width: 5em;
+  display: block;
+}

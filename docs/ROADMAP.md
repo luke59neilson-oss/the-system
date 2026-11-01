@@ -375,7 +375,7 @@ DESIGN §7 "Dice", §9. After ME, before QF.
   (modifiers for 1, 5, 10, 20, 30, 80, 2,900; exact d20 odds within 5 points
   of ratio odds for ratios 1–8; ties; −5 grade rule; no roll at two grades;
   replay of an odds-mode log).
-- [ ] **MK.2 Rolling at the table.** The setting in rules settings; when a
+- [x] **MK.2 Rolling at the table.** The setting in rules settings; when a
   roll is needed, the player's phone asks "Roll d20 for Perception (+14)"
   with **Roll** and a 1–20 box, and the GM console does the same for NPCs
   and monsters (and may enter a player's die for them); results show each

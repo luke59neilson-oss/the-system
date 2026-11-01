@@ -17,7 +17,7 @@ import { isPaneMode } from '../gm/perspective';
 import { LiveClient, type LiveSnapshot } from '../live';
 import { playSound, unlockSound } from './sounds';
 import { RunningLog } from './RunningLog';
-import { contestLines, newContests } from './contest';
+import { contestLines, diceLines, newContests } from './contest';
 import {
   FULL_HISTORY_EVENT,
   HISTORY_FILTERS,
@@ -48,6 +48,7 @@ import { QuestLog } from './QuestLog';
 import { IdentifyNotice, IdentifyPanel } from './IdentifyPanel';
 import { NotesPanel } from './NotesPanel';
 import { PracticePanel } from './PracticePanel';
+import { RollPrompt } from './RollPrompt';
 import { PartyPanel } from './PartyPanel';
 import { useChangeCount } from './changeCount';
 import { SkillDetail } from './SkillDetail';
@@ -614,6 +615,17 @@ function Status({
                   {')'}
                 </span>
               )}
+              {me.rollModifiers?.[s.id] !== undefined && (
+                <span
+                  className="stat-mod"
+                  data-testid={`mod-${s.id}`}
+                  title="d20 roll modifier"
+                  aria-label={`d20 modifier ${rollMod(me.rollModifiers[s.id] ?? 0)}`}
+                >
+                  {' '}
+                  [{rollMod(me.rollModifiers[s.id] ?? 0)}]
+                </span>
+              )}
             </li>
           );
         })}
@@ -716,6 +728,7 @@ function Status({
           )}
         </p>
       )}
+      {view.rollRequest !== null && <RollPrompt client={client} view={view} />}
       {client && view.scenePrompt !== null && (
         // MT.9 review (M3): the prompt sits low in the Practice window, so the
         // status window flags it where a phone player looks first.
@@ -1362,6 +1375,11 @@ function ContestPopup({ contests }: { contests: PlayerView['contests'] }) {
         <h2 id={`contest-${current.id}`}>Contest</h2>
         <p className="contest-title">{lines.title}</p>
         <p className="muted">{lines.odds}</p>
+        {diceLines(current).map((line, i) => (
+          <p key={i} className="contest-dice" data-testid="contest-dice-line">
+            {line}
+          </p>
+        ))}
         <p className="contest-outcome">{lines.result}</p>
         <button type="button" onClick={() => setKnown((k) => new Set(k).add(current.id))}>
           {fresh.length > 1 ? `Next (${fresh.length - 1} more)` : 'OK'}
@@ -1436,4 +1454,9 @@ function PaneLatest({ live, view }: { live: LiveSnapshot; view: PlayerView | nul
       )}
     </div>
   );
+}
+
+/** MK.2: a d20 roll modifier as "+3" or "−3". */
+function rollMod(n: number): string {
+  return n < 0 ? `−${-n}` : `+${n}`;
 }
