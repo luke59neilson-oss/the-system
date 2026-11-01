@@ -881,8 +881,10 @@ export function chooseEvolution(
     void textRarity;
     const kept: CharacterSkill = { ...plain, name, rarity: t.rarity, marks };
     if (name === s.name) return kept;
-    const { textEdited, ...fresh } = kept;
+    // ML.5: a new name is a new skill: its casting follows the library too.
+    const { textEdited, casting, ...fresh } = kept;
     void textEdited;
+    void casting;
     return { ...fresh, description: null, flavor: null };
   };
   const skills: CharacterSkill[] = character.skills.flatMap((s) => {

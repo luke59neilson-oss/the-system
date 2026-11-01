@@ -1090,6 +1090,37 @@ describe('banked marks through an evolution (M1.A review)', () => {
 });
 
 /** Jake evolved to F with every pool at 1 (to see that the old rules never refill). */
+describe("a renamed transform and a copy's own casting (ML.5)", () => {
+  const setup = () => {
+    let c = pickAll(ok(base(), award(100_000)));
+    const skill = char(c).skills[0]?.name ?? '';
+    c = ok(c, {
+      type: 'skill.setCasting',
+      characterId: 'jake',
+      skill,
+      cost: { pool: 'mp', amount: 5 },
+      cooldown: null,
+      range: null,
+      castingNotes: null,
+    });
+    return { c, skill };
+  };
+  const choose: Command = { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' };
+
+  it('a new name drops the casting; the same name keeps it', () => {
+    const renamed = setup();
+    const a = ok(
+      ok(renamed.c, release(renamed.skill, `${renamed.skill}+`, 'common')),
+      choose,
+      player('jake'),
+    );
+    expect(char(a).skills.find((s) => s.name === `${renamed.skill}+`)?.casting).toBeUndefined();
+    const same = setup();
+    const b = ok(ok(same.c, release(same.skill, same.skill, 'common')), choose, player('jake'));
+    expect(char(b).skills.find((s) => s.name === same.skill)?.casting?.cost?.amount).toBe(5);
+  });
+});
+
 function toFLegacy(): Campaign {
   let c = ok(ok(atGTop(), release(archery, 'Volley', 'common')), {
     type: 'evolution.choose',

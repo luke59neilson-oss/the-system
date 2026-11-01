@@ -1357,3 +1357,6 @@
 
 ## 2026-11-01 · ML.4 · sonnet (1 round)
 0 High, 1 Medium, 3 Low. Fixed the Medium (the settings form kept the old campaign's slots after Load demo, and Save wrote them over the new campaign: keyed by campaign name, e2e added) and one Low (a campaign opened at start now takes its setup at open). Two Lows to the Backlog (setup not in backups or exports; the demo copies the laptop setup). Verified by the author; no round 2 needed.
+
+## 2026-11-01 · ML.5 · sonnet (1 round)
+0 High, 1 Medium, 4 Low. Fixed the Medium (a transform to a new name kept the old casting with no way to clear it: now dropped, unit test added) and the misplaced envelope comment. Two Lows to the Backlog (a removed pool in the form; the outcome wording when only the casting returned); the cropped screenshot stays, the form's other parts are in MR.4's.

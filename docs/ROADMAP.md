@@ -430,7 +430,7 @@ the campaigns home and the library layouts come before the real campaign.
   rows, still invented names). *Accept:* unit tests (per-campaign settings;
   first-open copy; 16-row bound); canary (lore stays GM-only until shared);
   e2e sharing a lore note.
-- [ ] **ML.5 A hand-written copy's own spell cost.** DESIGN §6: a copy the
+- [x] **ML.5 A hand-written copy's own spell cost.** DESIGN §6: a copy the
   GM has hand-written can carry its own cost, cooldown, range and casting
   notes for that character; **Use library text** returns them to the
   library's; Cast uses the copy's cost. *Accept:* engine tests (override,
