@@ -105,6 +105,8 @@ test('the GM reviews a session, confirms marks and upgrades; the player gets the
 
   const jake = review.locator('section[aria-labelledby="marks-jake"]');
   const rows = jake.getByTestId('mark-candidate');
+  // QF.55: a window on a hidden tab no longer renders; look at it where the GM would.
+  await openWindow(gm, 'marks-review');
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(0)).toContainText('[Basic Archery (Inferior)]used 3× · 2/3 marks');
   await expect(rows.nth(0)).toContainText('shot the rope from 80 m. · repeat');

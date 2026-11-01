@@ -66,15 +66,24 @@ export function EvolutionBuilder({
     () => (fetched === null ? null : fitReference(fetched, statIds.split(','))),
     [fetched, statIds],
   );
-  const ready = state.characterOrder.flatMap((id) => {
-    const plan = evolutionPlan(state, id);
-    return plan ? [{ id, plan }] : [];
-  });
+  // QF.55: planned once per state, not on every keystroke in the builder.
+  const ready = useMemo(
+    () =>
+      state.characterOrder.flatMap((id) => {
+        const plan = evolutionPlan(state, id);
+        return plan ? [{ id, plan }] : [];
+      }),
+    [state],
+  );
   // ME.3 (DESIGN §9a): who is at or near the threshold (within 3 race levels).
-  const near = nearThreshold(
-    state.rules,
-    state.characterOrder.flatMap((id) => state.characters[id] ?? []),
-  ).filter((n) => !ready.some((r) => r.id === n.id));
+  const near = useMemo(
+    () =>
+      nearThreshold(
+        state.rules,
+        state.characterOrder.flatMap((id) => state.characters[id] ?? []),
+      ).filter((n) => !ready.some((r) => r.id === n.id)),
+    [state, ready],
+  );
   const [picked, setPicked] = useState('');
   const current = ready.find((r) => r.id === picked) ?? ready[0];
   // Pin the shown character, so another character becoming ready earlier in

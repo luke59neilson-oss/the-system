@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { TABS, WINDOWS, parseTab, tabAfterKey, tabOf, type ConsoleTab } from './tabsModel';
 
 // MU.1 (DESIGN §9a): the console's tab bar and the wrapper that shows each
@@ -84,7 +84,19 @@ export function Place({ id, tab, children }: { id: string; tab: ConsoleTab; chil
   const shown = WINDOWS[id]?.includes(tab) ?? false;
   return (
     <div className="place" data-window={id} hidden={!shown}>
-      {children}
+      <Frozen shown={shown}>{children}</Frozen>
     </div>
   );
 }
+
+/**
+ * QF.55: a window on a hidden tab stays mounted (half-filled forms survive)
+ * but does not re-render on each state frame; it renders again, with the
+ * current state, when its tab is shown.
+ */
+const Frozen = memo(
+  function Frozen({ children }: { shown: boolean; children: ReactNode }) {
+    return <>{children}</>;
+  },
+  (_prev, next) => !next.shown,
+);

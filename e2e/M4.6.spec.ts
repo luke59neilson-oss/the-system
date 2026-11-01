@@ -105,6 +105,8 @@ test('the GM previews and awards XP with a custom split', async ({ browser }) =>
 
   await award.getByRole('button', { name: 'Award XP' }).click();
   await expect(award.getByRole('status')).toHaveText(/^Awarded [\d,]+ (class|profession) XP to /);
+  // QF.55: a window on a hidden tab no longer renders; look at it where the GM would.
+  await openTab(gm, 'home');
   await expect(gm.getByTestId(`class-level-${jake}`)).toHaveText('4');
   await expect(gm.getByTestId(`class-level-${kim}`)).toHaveText('1');
   await expect(gm.getByTestId(`class-level-${ada}`)).toHaveText('4');
@@ -129,6 +131,7 @@ test('the GM previews and awards XP with a custom split', async ({ browser }) =>
   });
 
   // The profession track: nobody has a profession yet, so the award is refused before sending.
+  await openTab(gm, 'session');
   await award.getByLabel('Track').selectOption('profession');
   const prof = gm.getByRole('form', { name: 'Award profession XP' });
   await expect(prof.getByRole('status')).toHaveCount(0);

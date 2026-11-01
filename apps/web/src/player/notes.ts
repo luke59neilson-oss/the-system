@@ -95,8 +95,28 @@ export function editedLabel(iso: string, now: Date = new Date()): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
   return date.toDateString() === now.toDateString()
-    ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    ? timeFormat().format(date)
+    : dayFormat().format(date);
+}
+
+// QF.55: one formatter each, made once (a per-row toLocale… call builds one per note).
+let timeFmt: Intl.DateTimeFormat | null = null;
+let dayFmt: Intl.DateTimeFormat | null = null;
+const timeFormat = () =>
+  (timeFmt ??= new Intl.DateTimeFormat([], { hour: '2-digit', minute: '2-digit' }));
+const dayFormat = () =>
+  (dayFmt ??= new Intl.DateTimeFormat([], { month: 'short', day: 'numeric' }));
+
+/** QF.55: notes shown per page on the phone; "Show more" adds a page. */
+export const NOTES_PAGE = 30;
+
+/** The first `shown` rows, and how many more there are. */
+export function notesPage<T>(
+  rows: readonly T[],
+  shown: number,
+): { rows: readonly T[]; more: number } {
+  const n = Math.max(0, Math.floor(shown));
+  return { rows: rows.slice(0, n), more: Math.max(0, rows.length - n) };
 }
 
 // --- Markdown subset -------------------------------------------------------

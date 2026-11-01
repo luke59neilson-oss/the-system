@@ -104,16 +104,19 @@ test(
     await expect(players[0]!.getByTestId('class')).toHaveText(/lvl 4\]/);
     await expect(players[1]!.getByTestId('class')).toHaveText(/lvl 1\]/);
     await expect(players[2]!.getByTestId('class')).toHaveText(/lvl 4\]/);
+    await openWindow(gm, 'party');
     await expect(gm.getByTestId(`class-level-${miranda}`)).toHaveText('1');
     await players[2]!.screenshot({ path: path.join(shots, 'player-ding-390x844.png') });
     await players[0]!.screenshot({ path: path.join(shots, 'player-ding-1366x768.png') });
 
     // Undo from the change log reverts the award on the GM and every player screen.
+    await openWindow(gm, 'change-log');
     const log = gm.locator('section[aria-labelledby="change-log"]');
     const row = log.getByRole('listitem').filter({ hasText: /XP/ }).last();
     await row.getByRole('button', { name: 'Undo' }).click();
     await row.getByRole('button', { name: 'Confirm undo' }).click();
     await expect(row).toContainText('(undone)');
+    await openWindow(gm, 'party');
     for (const id of [jake, miranda, casper]) {
       await expect(gm.getByTestId(`class-level-${id}`)).toHaveText('0');
     }

@@ -107,6 +107,8 @@ test('the GM sells a shop ware to a player as a GM trade', async ({ browser }) =
   await shop.getByRole('button', { name: 'Remove shop' }).click();
   await expect(shops.getByRole('status')).toHaveText('[Sap & Sinew] removed');
   await expect(shops).toContainText('No shops yet.');
+  // QF.55: a window on a hidden tab no longer renders; look at it where the GM would.
+  await openTab(gm, 'library');
   await expect(gm.locator('section[aria-labelledby="item-library"]')).toContainText(
     'Bracers of the Grove',
   );

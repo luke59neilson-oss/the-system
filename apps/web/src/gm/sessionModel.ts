@@ -38,11 +38,14 @@ export function daySpan(s: SessionRecord, today: number): string {
 export function shortTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return `${d.toLocaleDateString([], { day: 'numeric', month: 'short' })}, ${d.toLocaleTimeString(
-    [],
-    { hour: '2-digit', minute: '2-digit' },
-  )}`;
+  // QF.55: one formatter each, made once; a toLocale… call per row built two
+  // per row on every state frame (the change log, ledger and past sessions).
+  dayFmt ??= new Intl.DateTimeFormat([], { day: 'numeric', month: 'short' });
+  timeFmt ??= new Intl.DateTimeFormat([], { hour: '2-digit', minute: '2-digit' });
+  return `${dayFmt.format(d)}, ${timeFmt.format(d)}`;
 }
+let dayFmt: Intl.DateTimeFormat | undefined;
+let timeFmt: Intl.DateTimeFormat | undefined;
 
 /** How long a session ran, in whole minutes ("2 h 05 min", "45 min"). */
 export function duration(fromIso: string, toIso: string): string {

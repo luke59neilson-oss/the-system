@@ -51,9 +51,11 @@ test('the XP form warns when an award passes the grade top and would be lost', a
     .screenshot({ path: path.join(shots, 'xp-lost-1366.png') });
   await page.getByRole('button', { name: 'Award XP' }).click();
   await expect(page.getByText(/^Awarded [\d,]+ (class|profession) XP to /)).toBeVisible();
+  await openWindow(page, 'party');
   await expect(page.getByTestId(`class-level-${id}`)).toHaveText('4');
 
   // At the top, every further award is lost in full.
+  await openWindow(page, 'award-xp');
   await page.getByLabel('Amount').fill('10');
   await expect(page.getByTestId(`lost-${id}`)).toHaveText(' · 10 lost');
 });

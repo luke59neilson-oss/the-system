@@ -43,5 +43,10 @@ describe('session summary', () => {
       expect(parseDays(bad)).toBeNull();
     expect(shortTime('nope')).toBe('nope');
     expect(shortTime('2026-10-22T19:00:00.000Z')).toMatch(/\d/);
+    // QF.55: cached formatters give what the per-call toLocale… did.
+    const d = new Date('2026-10-22T19:05:00.000Z');
+    expect(shortTime(d.toISOString())).toBe(
+      `${d.toLocaleDateString([], { day: 'numeric', month: 'short' })}, ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+    );
   });
 });

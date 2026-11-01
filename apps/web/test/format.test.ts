@@ -143,6 +143,36 @@ describe('feedRows', () => {
     ]);
     expect(new Set(rows.map((r) => r.key)).size).toBe(rows.length);
   });
+
+  it('builds only the newest rows, and a broadcast run at the cut stays whole (QF.55)', () => {
+    // 3 broadcasts of 3, 2 and 1 entries, then 120 single rows: limit 2 and 4
+    // cut inside the broadcasts; the oldest kept row keeps all its names.
+    const list = [
+      b(1, 'j', 'Old'),
+      b(2, 'j', 'All'),
+      b(2, 'm', 'All'),
+      b(2, 'c', 'All'),
+      b(3, 'j', 'Two'),
+      b(3, 'm', 'Two'),
+      b(4, 'c', 'One'),
+    ];
+    expect(feedRows(list, state, 2).map((r) => [r.who, r.text])).toEqual([
+      ['Casper', 'One'],
+      ['Jake, Miranda', 'Two'],
+    ]);
+    expect(feedRows(list, state, 3).map((r) => r.who)).toEqual([
+      'Casper',
+      'Jake, Miranda',
+      'Everyone',
+    ]);
+    const long = [...list, ...Array.from({ length: 120 }, (_, i) => b(10 + i, 'm', `n${i}`))];
+    const rows = feedRows(long, state);
+    expect(rows).toHaveLength(50);
+    expect(rows[0]?.text).toBe('n119');
+    expect(rows[49]?.text).toBe('n70');
+    expect(feedRows(long, state, 125).at(-1)).toMatchObject({ who: 'Jake', text: 'Old' });
+    expect(feedRows(long, state, 123).at(-1)).toMatchObject({ who: 'Everyone', text: 'All' });
+  });
 });
 
 describe('skill upgrade DING (M5.3)', () => {

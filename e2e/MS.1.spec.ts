@@ -108,7 +108,9 @@ test('GM creates a campaign and characters, awards XP, and broadcasts', async ({
   await page.getByLabel('Reason (GM only)').fill('Pale hunter pack');
   await page.getByRole('button', { name: 'Award XP' }).click();
   await expect(page.getByText(/^Awarded [\d,]+ (class|profession) XP to /)).toBeVisible();
+  await openWindow(page, 'party');
   for (const c of characters) await expect(page.getByTestId(`class-level-${c.id}`)).toHaveText('1');
+  await openWindow(page, 'feed');
   await expect(page.getByText("*'DING!' Class: [Archer] has reached level 1")).toHaveCount(3);
 
   const all = 'The world is dying. Find what is killing it.';

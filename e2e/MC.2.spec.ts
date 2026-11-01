@@ -92,11 +92,14 @@ test('a generated shop opens in the import preview and is approved', async ({ br
 
   await imp.getByRole('button', { name: 'Apply 4' }).click();
   await expect(imp.getByRole('status')).toHaveText('Applied 4 entries');
+  // QF.55: a window on a hidden tab no longer renders; look at it where the GM would.
+  await openTab(gm, 'library');
   await expect(items).toContainText('Bracers of the Grove');
   await expect(items).toContainText('Lungmoss Brew');
 
   // Regenerate asks again for the same kind, but first asks before it
   // throws away the GM's edits.
+  await openTab(gm, 'session');
   gm.once('dialog', (d) => void d.dismiss());
   await codm.getByRole('button', { name: 'Regenerate' }).click();
   await expect(codm.getByRole('button', { name: 'Regenerate' })).toBeEnabled();

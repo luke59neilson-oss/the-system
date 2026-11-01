@@ -101,6 +101,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
   await gm.getByRole('checkbox', { name: 'Casper' }).uncheck();
   await gm.getByLabel('Amount').fill('100');
   await gm.getByRole('button', { name: 'Award XP' }).click();
+  await openWindow(gm, 'party');
   await expect(gm.getByTestId('class-level-demo-sultan')).toHaveText('1');
 
   // A player who (re)loads while the demo is open gets the notice too, and rejoins.
@@ -141,6 +142,7 @@ test('the GM loads the demo campaign and returns to the real one untouched', asy
 
   // Loading the demo again keeps what the GM did there; the demo phone rejoins.
   await gm.getByRole('button', { name: 'Load demo campaign' }).click();
+  await openWindow(gm, 'party');
   await expect(gm.getByTestId('class-level-demo-sultan')).toHaveText('1');
   await expect(phone.getByTestId('class')).toHaveText('[Tempest Warden – lvl 52]', {
     timeout: 8000,

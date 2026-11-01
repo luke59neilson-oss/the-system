@@ -1114,7 +1114,8 @@ function LiveBanners({
 }
 
 function Feed({ live, state }: { live: LiveSnapshot; state: CampaignState }) {
-  const rows = feedRows(live.notifications, state);
+  // QF.55: rebuilt only when the notifications or the state change.
+  const rows = useMemo(() => feedRows(live.notifications, state), [live.notifications, state]);
   return (
     <section className="window feed" aria-labelledby="feed">
       <h2 id="feed">System feed</h2>
