@@ -2496,9 +2496,38 @@ ol.change-log li.undone .change-text {
   padding-left: 12px;
   min-width: 0;
   overflow-wrap: anywhere;
+  /* MW.1: the standing stays beside the menu while the menu scrolls. */
+  position: sticky;
+  top: 8px;
+  align-self: start;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
 }
 .offer-side h3 {
   margin-top: 0;
+}
+.offer-side h4 {
+  margin: 8px 0 2px;
+}
+.offer-standing-stats {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: var(--mono);
+  margin-bottom: 6px;
+}
+.offer-standing-stats th {
+  font-weight: normal;
+  text-align: left;
+  color: var(--muted);
+}
+.offer-standing-stats td,
+.offer-standing-stats thead th:not(:first-child) {
+  text-align: right;
+}
+.offer-standing-skills {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
 }
 @media (max-width: 700px) {
   .offer-layout {
@@ -2507,6 +2536,8 @@ ol.change-log li.undone .change-text {
   .offer-side {
     border-left: none;
     padding-left: 0;
+    position: static;
+    max-height: none;
   }
 }
 .flag-link {

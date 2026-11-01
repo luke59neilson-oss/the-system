@@ -25,6 +25,7 @@ export * from './library';
 export * from './report';
 export * from './history';
 export * from './dashboard';
+export * from './standing';
 export * from './titles';
 export * from './trackers';
 export * from './shops';

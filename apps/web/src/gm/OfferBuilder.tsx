@@ -5,11 +5,13 @@ import type { CommandResult, LiveClient } from '../live';
 import { cssToken } from '../player/sheet';
 import {
   builderSlots,
+  characterStanding,
   offerProblem,
   practiceSkillCounts,
   practiceStatCounts,
   recentPractice,
   type BuilderSlot,
+  type CharacterStanding,
 } from './offerBuilderModel';
 
 /** A request (from a dashboard chip) to open one character's selection; `n` makes repeats count. */
@@ -36,7 +38,7 @@ const visibleRarities = (rules: RulesConfig) => rules.skills.rarities.filter((r)
  * GM offer builder (ROADMAP M5.1, DESIGN §6): per character, the due
  * selections (capstone and ceiling marked), a menu form checked against the
  * engine's own rules before sending, the passed-over options with Withdraw,
- * and the character's practice log beside them to build the menu from.
+ * and the character's standing and practice log beside them to build from.
  */
 export function OfferBuilder({
   client,
@@ -95,6 +97,7 @@ export function OfferBuilder({
     report(r, `[${skill}] withdrawn`);
   };
 
+  const standing = characterStanding(state, characterId);
   const practice = recentPractice(state, characterId);
   const counts = [
     ...practiceSkillCounts(state, characterId).map((c) => `[${c.skill}] ×${c.count}`),
@@ -223,32 +226,107 @@ export function OfferBuilder({
                 </p>
               )}
             </div>
-            <aside className="offer-side" aria-labelledby="offer-practice">
-              <h3 id="offer-practice">Practice log</h3>
-              {practice.length === 0 ? (
-                <p className="muted">Nothing logged yet.</p>
-              ) : (
-                <>
-                  {counts.length > 0 && (
-                    <p className="small" data-testid="practice-counts">
-                      Used (whole log): {counts.join(' · ')}
-                    </p>
-                  )}
-                  <p className="muted small">Latest {practice.length} entries, newest first:</p>
-                  <ul className="offer-practice">
-                    {practice.map((p) => (
-                      <li key={p.id}>
-                        <span className="muted small">{p.at.slice(0, 10)}</span> {p.action}
-                        {p.skills.length > 0 && ` · ${p.skills.map((s) => `[${s}]`).join(' + ')}`}
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </aside>
+            <div className="offer-side" tabIndex={0} aria-label="Character's standing and practice">
+              {standing && <Standing rules={rules} standing={standing} />}
+              <aside aria-labelledby="offer-practice">
+                <h3 id="offer-practice">Practice log</h3>
+                {practice.length === 0 ? (
+                  <p className="muted">Nothing logged yet.</p>
+                ) : (
+                  <>
+                    {counts.length > 0 && (
+                      <p className="small" data-testid="practice-counts">
+                        Used (whole log): {counts.join(' · ')}
+                      </p>
+                    )}
+                    {standing && standing.pairs.length > 0 && (
+                      <p className="small" data-testid="practice-pairs">
+                        Used together:{' '}
+                        {standing.pairs
+                          .map((p) => `[${p.skills[0]}] + [${p.skills[1]}] ×${p.count}`)
+                          .join(' · ')}
+                      </p>
+                    )}
+                    <p className="muted small">Latest {practice.length} entries, newest first:</p>
+                    <ul className="offer-practice">
+                      {practice.map((p) => (
+                        <li key={p.id}>
+                          <span className="muted small">{p.at.slice(0, 10)}</span> {p.action}
+                          {p.skills.length > 0 && ` · ${p.skills.map((s) => `[${s}]`).join(' + ')}`}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </aside>
+            </div>
           </div>
         </>
       )}
+    </section>
+  );
+}
+
+/** MW.1 (DESIGN §6): what the character already has, beside the menu. */
+function Standing({ rules, standing }: { rules: RulesConfig; standing: CharacterStanding }) {
+  const show = (n: number) => (n / rules.stats.displayDivisor).toFixed(rules.stats.displayDecimals);
+  return (
+    <section aria-labelledby="offer-standing" data-testid="offer-standing">
+      <h3 id="offer-standing">Standing</h3>
+      <p className="small" data-testid="standing-summary">
+        Grade {standing.grade} · {standing.className} {standing.classLevel}
+        {standing.profession === null
+          ? ' · no profession'
+          : ` · ${standing.profession} ${standing.professionLevel ?? 0}`}
+        {` · ${standing.race} ${standing.raceLevel}`}
+      </p>
+      <table className="offer-standing-stats small">
+        <thead>
+          <tr>
+            <th scope="col">Stat</th>
+            <th scope="col">Base</th>
+            <th scope="col">Bonus</th>
+            <th scope="col">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {standing.stats.map((s) => (
+            <tr key={s.id} data-testid={`standing-${s.id}`}>
+              <th scope="row">{s.name}</th>
+              <td>{show(s.base)}</td>
+              <td>
+                {s.bonus === 0 ? '–' : `${s.bonus > 0 ? '+' : '−'}${show(Math.abs(s.bonus))}`}
+              </td>
+              <td>{show(s.total)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="small" data-testid="standing-free">
+        Free points unassigned: {standing.freePoints}
+      </p>
+      <h4>Skills</h4>
+      {standing.skills.length === 0 ? (
+        <p className="muted small">None yet.</p>
+      ) : (
+        <ul className="offer-standing-skills small" data-testid="standing-skills">
+          {standing.skills.map((s) => (
+            <li key={s.name}>
+              [{s.name}] {s.rarity} · {s.kind} · {s.marks} {s.marks === 1 ? 'mark' : 'marks'}
+              {s.cost !== null && ` · costs ${s.cost}`}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="small" data-testid="standing-titles">
+        Titles: {standing.titles.length === 0 ? 'none' : standing.titles.join(', ')}
+      </p>
+      <p className="small" data-testid="standing-equipped">
+        Equipped:{' '}
+        {standing.equipped.length === 0
+          ? 'nothing'
+          : standing.equipped.map((e) => `${e.item} (${e.slot})`).join(', ')}
+      </p>
     </section>
   );
 }

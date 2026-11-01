@@ -7,6 +7,17 @@ import {
   type SkillOption,
 } from '@the-system/engine';
 
+// MW.1: the standing and practice summary live in the engine; the server's
+// skill-offer drafts (MW.2) put the same facts in their prompt.
+export {
+  characterStanding,
+  practiceSkillCounts,
+  practiceSkillPairs,
+  practiceStatCounts,
+  recentPractice,
+  type CharacterStanding,
+} from '@the-system/engine';
+
 // M5.1 offer builder: what the GM needs per character to
 // build a selection menu, derived only from the engine's own rules so the
 // builder and the engine never disagree.
@@ -68,42 +79,4 @@ export function offerProblem(
   } catch (error) {
     return error instanceof Error ? error.message : String(error);
   }
-}
-
-/** The character's newest practice entries first (what the menu is built from). */
-export function recentPractice(state: CampaignState, characterId: string, limit = 12) {
-  return state.practice
-    .filter((e) => e.characterId === characterId)
-    .slice(-limit)
-    .reverse();
-}
-
-/** How often each skill appears in the character's practice log, most used first. */
-export function practiceSkillCounts(
-  state: CampaignState,
-  characterId: string,
-): { skill: string; count: number }[] {
-  const counts = new Map<string, number>();
-  for (const e of state.practice) {
-    if (e.characterId !== characterId) continue;
-    for (const s of new Set(e.skills)) counts.set(s, (counts.get(s) ?? 0) + 1);
-  }
-  return [...counts]
-    .map(([skill, count]) => ({ skill, count }))
-    .sort((a, b) => b.count - a.count || a.skill.localeCompare(b.skill));
-}
-
-/** How often each stat was exercised in the character's practice log, most first. */
-export function practiceStatCounts(
-  state: CampaignState,
-  characterId: string,
-): { stat: string; count: number }[] {
-  const counts = new Map<string, number>();
-  for (const e of state.practice) {
-    if (e.characterId === characterId && e.stat !== null)
-      counts.set(e.stat, (counts.get(e.stat) ?? 0) + 1);
-  }
-  return [...counts]
-    .map(([stat, count]) => ({ stat, count }))
-    .sort((a, b) => b.count - a.count || a.stat.localeCompare(b.stat));
 }

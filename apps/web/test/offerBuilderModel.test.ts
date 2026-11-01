@@ -9,6 +9,7 @@ import {
 } from '@the-system/engine';
 import {
   builderSlots,
+  characterStanding,
   offerProblem,
   practiceSkillCounts,
   practiceStatCounts,
@@ -167,3 +168,106 @@ describe('offer builder model (M5.1)', () => {
     ]);
   });
 });
+
+describe('the character standing (MW.1)', () => {
+  const ctx: CommandContext = {
+    actor: { role: 'gm' },
+    sessionId: null,
+    now: () => '2026-10-23T12:00:00.000Z',
+    newId: (() => {
+      let n = 1000;
+      return () => `s${++n}`;
+    })(),
+  };
+  const run = (c: Campaign, commands: Command[]) =>
+    commands.reduce((acc, command) => {
+      const r = execute(acc, command, ctx);
+      if (!r.ok) throw new Error(r.error);
+      return r.campaign;
+    }, c);
+  const log = (skills: string[], action = 'Shot'): Command => ({
+    type: 'practice.log',
+    characterId: 'jake',
+    action,
+    skills,
+  });
+
+  it('a full character: stats split, skills, titles, equipment, practice pairs', () => {
+    const state = run(campaign(), [
+      {
+        type: 'item.define',
+        id: 'ring',
+        name: 'Ring of Haste',
+        rarity: 'uncommon',
+        slot: 'ring',
+        bonuses: [{ stat: 'agility', flat: 1 }],
+      },
+      { type: 'holdings.adjust', characterId: 'jake', items: { ring: 1 } },
+      { type: 'item.equip', characterId: 'jake', itemId: 'ring', slot: 'ring' },
+      { type: 'title.award', characterId: 'jake', title: 'Pathfinder' },
+      log(['Basic Archery', 'Basic Stealth']),
+      log(['Basic Stealth', 'Basic Archery', 'Archer’s Eye']),
+    ]).state!;
+    const s = characterStanding(state, 'jake')!;
+    expect(s.grade).toBe(state.characters['jake']!.grade);
+    expect(s.className).toBe('Archer');
+    expect(s.classLevel).toBe(state.characters['jake']!.classLevel);
+    expect(s.professionLevel).toBeNull();
+    const agility = s.stats.find((x) => x.id === 'agility')!;
+    expect(agility.bonus).toBeGreaterThan(0);
+    expect(agility.total).toBe(agility.base + agility.bonus);
+    expect(s.stats.map((x) => x.id)).toEqual(state.rules.stats.list.map((x) => x.id));
+    expect(s.skills.map((x) => x.name)).toContain('Basic Archery');
+    expect(s.skills.find((x) => x.name === 'Basic Archery')).toMatchObject({
+      kind: 'class',
+      marks: 0,
+      cost: null,
+    });
+    expect(s.titles).toEqual(['Pathfinder']);
+    expect(s.equipped).toEqual([{ slot: 'Ring', item: 'Ring of Haste' }]);
+    expect(s.pairs[0]).toEqual({ skills: ['Basic Archery', 'Basic Stealth'], count: 2 });
+    expect(s.pairs).toHaveLength(3);
+  });
+
+  it('counts unassigned free points and shows a spell cost', () => {
+    const c = campaign();
+    const state = run(c, [
+      {
+        type: 'skill.setCasting',
+        characterId: 'jake',
+        skill: 'Basic Archery',
+        cost: { pool: state0Pool(c), amount: 5 },
+        cooldown: null,
+        range: null,
+        castingNotes: null,
+      },
+    ]).state!;
+    const s = characterStanding(state, 'jake')!;
+    expect(s.skills.find((x) => x.name === 'Basic Archery')?.cost).toMatch(/^5 /);
+    const batches = state.characters['jake']!.freePointBatches;
+    expect(s.freePoints).toBe(
+      batches.reduce(
+        (a, b) =>
+          a +
+          (b.locked ? 0 : b.points - Object.values(b.allocation ?? {}).reduce((x, y) => x + y, 0)),
+        0,
+      ),
+    );
+    expect(s.freePoints).toBeGreaterThan(0);
+  });
+
+  it('a character with no profession and no practice yet', () => {
+    const state = campaign().state!;
+    const s = characterStanding(state, 'jake')!;
+    expect(s.profession).toBeNull();
+    expect(s.raceLevel).toBe(state.characters['jake']!.classLevel);
+    expect(s.pairs).toEqual([]);
+    expect(s.titles).toEqual([]);
+    expect(s.equipped).toEqual([]);
+    expect(characterStanding(state, 'ghost')).toBeNull();
+  });
+});
+
+function state0Pool(c: Campaign): string {
+  return c.state!.rules.pools[0]!.id;
+}
