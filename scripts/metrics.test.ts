@@ -25,6 +25,46 @@ describe('parseRuns', () => {
   });
 });
 
+describe('parseRuns without a run id (2026-10-30 on)', () => {
+  it('reads id-less headings and takes an unknown end from the stated minute', () => {
+    const progress = [
+      '### Run · 2026-11-01 02:09–02:59 UTC (close-out at minute 45; ended at 49)',
+      '- work',
+      '### Run · 2026-11-01 04:08–04:5x UTC (close-out at minute 42)',
+      '- work',
+      '### Run · 2026-11-01 05:08–05:5x UTC',
+      '- Close-out at minute 44 (hand-off time)',
+      '### Run · 2026-11-01 06:08–06:5x UTC',
+      '- nothing stated',
+    ].join('\n');
+    expect(parseRuns(progress)).toEqual([
+      { id: null, date: '2026-11-01', minutes: 50 },
+      { id: null, date: '2026-11-01', minutes: 42 },
+      { id: null, date: '2026-11-01', minutes: 44 },
+      { id: null, date: '2026-11-01', minutes: null },
+    ]);
+  });
+});
+
+describe('scorecardRow with an unknown end minute', () => {
+  it('leaves runs with no end minute out of the mean', () => {
+    const row = scorecardRow({
+      date: 'd',
+      runs: [
+        { id: null, date: 'd', minutes: 40 },
+        { id: null, date: 'd', minutes: null },
+        { id: null, date: 'd', minutes: 50 },
+      ],
+      deltas: [1],
+      reviews: [],
+      ci: null,
+      orient: 1,
+      window: 6,
+    });
+    expect(row.split(' | ')[2]).toBe('45.0');
+  });
+});
+
 describe('parseReviews', () => {
   it('one item across headings written per round (D234)', () => {
     const log = [
@@ -99,19 +139,15 @@ describe('ciSummary', () => {
 });
 
 describe('orientWords', () => {
-  it('counts only what LOOP §4 reads: full files, the progress header and last entry, open milestones, L-decisions', () => {
+  it('counts the full reads plus the printed orient output', () => {
     const n = orientWords({
       claude: 'one two',
       loop: 'three',
       design: 'four five',
       answers: 'six',
-      progress: 'h1\nh2\nh3\nh4\nh5\nh6\nold old old\n### Run x\nlast entry',
-      roadmap: '# Roadmap\n## Global rules\nrule\n## M1 done\n- [x] a\n## M2 open\n- [ ] b',
-      decisions: '# Decisions\n- D1 · x\n- L1 · y z',
+      orient: '===== PROGRESS.md =====\nlast entry',
     });
-    // 2+1+2+1 full files, 6 header lines, "### Run x last entry" (5),
-    // "## Global rules rule" (4), "## M2 open - [ ] b" (7), "- L1 · y z" (5).
-    expect(n).toBe(6 + 6 + 5 + 4 + 7 + 5);
+    expect(n).toBe(2 + 1 + 2 + 1 + 5);
   });
 });
 
