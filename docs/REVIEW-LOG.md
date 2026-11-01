@@ -1248,3 +1248,7 @@
 
 ## 2026-11-01 · ME.5 · round 2 (sonnet)
 - Fixes verified. Medium: an unused setter failed lint (fixed). Low: saved picks naming a removed option; picks in Status state (Backlog).
+
+## 2026-11-01 · ME.A · round 1 (fable)
+- 0 High, 4 Medium, 8 Low. Medium: a profession gained during a pending three-step release is renamed or the player is stuck; no way to offer professions before the first evolution; no console UI for distributions; a later profession ignores its offer's distribution (Q94). Not fixed this run (found at minute 43): queued as ME.6 before ME.A; Lows to the QUALITY Backlog. ME specs 5/5 green; perf.test.ts slow only under load.
+- Full local e2e: 152/153; MT.7 failed alone too (ME.5 made it tick "Class only", which pre-ME rules never show): fixed (027c7d32). Also the cause of red CI on 9a75cffd.

@@ -342,6 +342,21 @@ in the first session.
   theme. The GM builder's default becomes Three steps (D305). *Accept:* e2e
   (locked → released → three picks → confirm → new theme); screenshots at 390×844 locked, lit and mid-choice, and with
   reduced motion; canary.
+- [ ] **ME.6 Fixes from the ME.A review (fable, 2026-11-01).** (a) A
+  profession gained while a three-step release is pending: the steps path
+  must refuse offers to a character who now has a profession, and an empty
+  profession step means "unchanged" (today the profession is silently
+  renamed, or the player is stuck; `evolution/model.ts:1088-1096,1133-1141`,
+  `player/evolutionSteps.ts:84-92`). (b) The GM can offer professions at any
+  time before the first evolution (DESIGN §2): an offer command and a
+  console window (today `professionOffers` is written only by evolutions).
+  (c) The console sets a character's class, profession and race
+  distributions (`character.setDistribution` has no UI; Luke's 2/2/1 free
+  points are unreachable before the first evolution). (d) A profession
+  taken later brings the distribution its offer set (DESIGN §2; Q94).
+  (e) Phone review step: one column, with each pick's one-time bonus
+  (`EvolutionStepsChoice.tsx:217-250`, `styles.css:277`; also sweep B UX).
+  *Accept:* engine tests per part; e2e for (b), (c), (e); screenshots.
 - [ ] **ME.A Acceptance and review.** Full suite green; `fable` review;
   "Preview ready" (LOOP §8.2).
 
@@ -995,6 +1010,19 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   Sound toggle announces its state twice; many free-point batches after a big
   award mean many Review rounds (offer "assign all"). *Accept:* screenshots
   and e2e per item.
+- [ ] **QF.68 Evolution tests that can fail.** Sweep B (Tests, fable,
+  2026-11-01), three Mediums by mutation, to verify first (LOOP §10.3):
+  `scaleShape` breaks remainder ties by float noise, not stat order, and
+  differs from the engine's `scaleDistribution` (`evolution/shape.ts:24-26`;
+  make one call the other and pin a tie); "evolves the profession, keeping
+  its level" cannot catch a level reset (`evolutionSteps.test.ts:179-198`,
+  mutation at `model.ts:1140`); the seeded simulation runs only on pre-ME
+  rules (add a seed on default rules with three-step releases). *Accept:*
+  each mutation named in `docs/QUALITY.md` sweep B fails a test.
+- [ ] **QF.69 The status-window [Evolve] marks the release opened; the GM's
+  "released" line clears on edit.** Sweep B (UX, sonnet), Lows raised with
+  the review layout to one item: `PlayerScreen.tsx:705-713` bypasses
+  `openEvolution`; `EvolutionSteps.tsx:172-182,456-458`. *Accept:* e2e.
 - [ ] **QF.67 Pin the free-point spend split order.** Sweep A (Tests,
   haiku, 2026-10-31), Medium, confirmed by mutation: `freePoints.spent`
   splits a spend across open level-ups in stat order
