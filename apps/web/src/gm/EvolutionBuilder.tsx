@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { evolutionTarget, type CampaignState, type EvolutionOption } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
@@ -10,6 +10,8 @@ import {
 } from './evolutionBuilderModel';
 import { nearThreshold } from './evolutionStepsModel';
 import { StepsForm } from './EvolutionSteps';
+import { EvolutionReferenceTable } from './EvolutionReference';
+import { EVOLUTION_REFERENCE_URL, fitReference, type EvolutionReference } from './shapeModel';
 
 export interface TransformDraft {
   skill: string;
@@ -49,7 +51,21 @@ const wholeNumber = (v: string) => Math.max(0, Math.floor(Number(v) || 0));
  * bonus, tailored profession offers, per-skill re-rating and the merge
  * prompts, checked against the engine before release.
  */
-export function EvolutionBuilder({ client, state }: { client: LiveClient; state: CampaignState }) {
+export function EvolutionBuilder({
+  client,
+  gmKey,
+  state,
+}: {
+  client: LiveClient;
+  gmKey: string;
+  state: CampaignState;
+}) {
+  const fetched = useEvolutionReference(gmKey, state);
+  const statIds = state.rules.stats.list.map((s) => s.id).join(',');
+  const reference = useMemo(
+    () => (fetched === null ? null : fitReference(fetched, statIds.split(','))),
+    [fetched, statIds],
+  );
   const ready = state.characterOrder.flatMap((id) => {
     const plan = evolutionPlan(state, id);
     return plan ? [{ id, plan }] : [];
@@ -131,6 +147,7 @@ export function EvolutionBuilder({ client, state }: { client: LiveClient; state:
               state={state}
               characterId={current.id}
               plan={current.plan}
+              reference={reference}
             />
           ) : (
             <ReleaseForm
@@ -144,8 +161,37 @@ export function EvolutionBuilder({ client, state }: { client: LiveClient; state:
         </>
       )}
       <ProfessionOffers client={client} state={state} />
+      <EvolutionReferenceTable reference={reference} stats={state.rules.stats.list} />
     </section>
   );
+}
+
+/**
+ * ME.4: the reference table's rows, fetched from the GM route and again when
+ * a release is made, chosen or undone (each changes someone's pending
+ * evolution or grade), so the campaign's own options stay current.
+ */
+function useEvolutionReference(gmKey: string, state: CampaignState): EvolutionReference | null {
+  const [reference, setReference] = useState<EvolutionReference | null>(null);
+  const key = state.characterOrder
+    .map((id) => {
+      const c = state.characters[id];
+      return c === undefined ? '' : `${id}:${c.grade}:${c.evolution?.releaseId ?? ''}`;
+    })
+    .join(',');
+  useEffect(() => {
+    let live = true;
+    fetch(EVOLUTION_REFERENCE_URL, { headers: { 'x-gm-key': gmKey } })
+      .then(async (res) => (res.ok ? ((await res.json()) as EvolutionReference) : null))
+      .then((r) => {
+        if (live && r !== null) setReference(r);
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [gmKey, key]);
+  return reference;
 }
 
 /**

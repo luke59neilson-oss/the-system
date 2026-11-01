@@ -11,6 +11,8 @@ export const LISTS = {
   items: 'items.csv',
   creatures: 'creatures.csv',
   classes: 'professions-classes.csv',
+  // ME.4 (DESIGN §4): the books' evolution options, for the Evolutions tab.
+  evolutions: 'evolutions.csv',
 };
 export const OUT = path.join(root, 'apps/server/src/reference/lists.generated.ts');
 

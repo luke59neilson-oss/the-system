@@ -1232,3 +1232,11 @@
 ## 2026-11-01 · ME.3 · round 2 (sonnet)
 - No High. Medium: the release result sat outside the sticky bar, off screen after Release (fixed: result inside the bar, e2e asserts it in viewport; Override unticks after a release so a second click needs a fresh decision).
 - Low: the bar had no max height (fixed: 40vh with scrolling, scroll padding for focused inputs).
+
+## 2026-11-01 · ME.4 · round 1 (sonnet)
+- No High; no GM-only leak (route 403 without the key; canary clean).
+- Medium: shapes silently dropped stats the campaign's rules lack while totals and percentages still counted them (fixed: `fitReference` cuts rows to the campaign's stats, recounts totals, drops empty rows; unit test); Use this shape did nothing when scaling failed (fixed: a message).
+- Low: non-whole budgets (fixed: `scaleShape` refuses them; test); weak free-points test (fixed: floor/ceil bounds on every row at every budget); campaign names, replaced options listed, picker default, layout, duplicated tests (Backlog).
+
+## 2026-11-01 · ME.4 · round 2 (sonnet)
+- No High, no Medium; fixes verified. Low: the failure message lingered after a later successful use (fixed: cleared on success; wording names the budget); failure path untested (Backlog).

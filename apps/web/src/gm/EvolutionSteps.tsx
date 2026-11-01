@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { evolutionTarget, type CampaignState } from '@the-system/engine';
+import { evolutionTarget, type CampaignState, type ShapeReferenceRow } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 import type { EvolutionPlan } from './evolutionBuilderModel';
@@ -14,6 +14,7 @@ import {
   type StepId,
 } from './evolutionStepsModel';
 import { RerateList, TransformRows, type TransformDraft } from './EvolutionBuilder';
+import { rowLabel, rowsForStep, scaleShape, type EvolutionReference } from './shapeModel';
 
 interface Card extends DraftOption {
   readonly transforms: readonly TransformDraft[];
@@ -42,11 +43,14 @@ export function StepsForm({
   state,
   characterId,
   plan,
+  reference = null,
 }: {
   client: LiveClient;
   state: CampaignState;
   characterId: string;
   plan: EvolutionPlan;
+  /** ME.4: the reference table's rows, for each card's Use this shape. */
+  reference?: EvolutionReference | null;
 }) {
   const { rules } = state;
   const character = state.characters[characterId]!;
@@ -55,6 +59,7 @@ export function StepsForm({
     profession: 0,
     race: 0,
   };
+  const statOrder = rules.stats.list.map((st) => st.id);
   const rarityName = (id: string) => rules.skills.rarities.find((r) => r.id === id)?.name ?? id;
   // Ids are unique within a step: the step's letter and one past the highest in use.
   const newId = (step: StepId, cards: readonly Card[] = []) =>
@@ -84,6 +89,8 @@ export function StepsForm({
   const [override, setOverride] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  // ME.4: the reference row each card's shape picker points at (card id → row id).
+  const [shapePick, setShapePick] = useState<Record<string, string>>({});
 
   const picked = (r: { skill: string; from: string; byDefault: string }) => {
     const pick = Object.prototype.hasOwnProperty.call(rerate, r.skill)
@@ -288,6 +295,26 @@ export function StepsForm({
                         />
                       </label>
                     </fieldset>
+                    {reference !== null && (
+                      <ShapePicker
+                        label={label}
+                        rows={rowsForStep(reference, step)}
+                        value={shapePick[`${step}:${o.id}`] ?? ''}
+                        onPick={(id) => setShapePick({ ...shapePick, [`${step}:${o.id}`]: id })}
+                        onUse={(row) => {
+                          const scaled = scaleShape(row, budgets[step], statOrder);
+                          if (scaled !== null) {
+                            setCard(step, i, { stats: scaled.stats, free: scaled.free });
+                            setResult(null);
+                          } else {
+                            setResult({
+                              ok: false,
+                              text: `Could not use [${row.name}] at a budget of ${budgets[step]}`,
+                            });
+                          }
+                        }}
+                      />
+                    )}
                     <details className="stat-bonus">
                       <summary>One-time bonus ({m.bonus})</summary>
                       <div className="stat-grid">
@@ -433,5 +460,53 @@ export function StepsForm({
         )}
       </div>
     </form>
+  );
+}
+
+/**
+ * ME.4 (DESIGN §4): pick a reference row (the step's own track first) and
+ * **Use this shape** to fill the card's per-level stats and free points with
+ * that shape scaled to the step's budget (exact total, free kept free).
+ */
+function ShapePicker({
+  label,
+  rows,
+  value,
+  onPick,
+  onUse,
+}: {
+  label: string;
+  rows: readonly ShapeReferenceRow[];
+  value: string;
+  onPick: (id: string) => void;
+  onUse: (row: ShapeReferenceRow) => void;
+}) {
+  if (rows.length === 0) return null;
+  const row = rows.find((r) => r.id === value) ?? rows[0]!;
+  return (
+    <div className="row shape-picker">
+      <label>
+        Shape{' '}
+        <select
+          aria-label={`Shape for ${label.toLowerCase()}`}
+          value={row.id}
+          onChange={(e) => onPick(e.target.value)}
+        >
+          {rows.map((r) => (
+            <option key={r.id} value={r.id}>
+              {rowLabel(r)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        type="button"
+        className="secondary"
+        aria-label={`Use this shape for ${label.toLowerCase()}`}
+        onClick={() => onUse(row)}
+      >
+        Use this shape
+      </button>
+    </div>
   );
 }
