@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.69; MV done; ME done (ME.A checked 06:50); MK.1 done; MK.2 built on `wip/MK.2` (round 1 review: 3 Mediums to fix). Preview ready: Actions → Release → Run workflow (ME).
-**Next item:** MK.2 on `wip/MK.2` (head e3846472, review range 8eef0b87..e3846472; merge main first): fix the three round-1 Mediums in REVIEW-LOG (stale phone die reused across contests: match the request to the contest and add Clear; console-typed die and Roll without a phone die must clear the open request; prompt modifier fallback and requests left open on a rules change, and say whether the −5 grade gap shows), then sonnet round 2; MK.A; QF.55 onward; MW after MU
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.69; MV, ME and MK done (MK.A checked 07:55). Preview ready: Actions → Release → Run workflow (MK).
+**Next item:** QF.55 on `wip/QF.55` (head 0692cd02, base 700d35c1; merge main first): done so far: `skillPairCounts`/`repeatedEntryIds` memoised by log identity (tests), hidden-tab windows skip re-renders (`Place` → memo `Frozen`), phone notes list pages (30, Show more) with one date formatter, evolution plans and feed memoised, `scripts/gm-probe.ts` (CDP probe). Next: e2e for notes paging and a hidden-tab form surviving a switch; run the probe at 40 sessions on origin/main and on the branch (`npm run build`, `npx tsx scripts/gm-probe.ts 40`) and record both (accept: per-command main thread at least halved); review. Then QF.56 onward (QF.70 is new); MW after MU.
 **Blockers:** none
 
 ## Run log
@@ -1569,3 +1569,13 @@ next item, blockers. -->
 - Tests: unit 2,009 on wip/MK.2; main check green; e2e 155 + latency 8 (ME.A).
 - Open `wip/*`: `wip/MK.2`. Blockers: none.
 
+
+
+### Run · 2026-11-01 07:08–07:55 UTC (close-out at minute 47)
+- Close-out at minute 47: MK.A round 2 returned at minute 43 and its fix, check and e2e ran to minute 46; QF.55 is handed off on `wip/QF.55`. Lock released before 52.
+- Preflight: `add_repo` not offered; repo already cloned (local main again had stale shallow history: reset to `origin/main`); lock pushed cleanly; vitest 5.0.5; reviewer models sonnet and fable work (Agent runs in the background with worktrees). CI on main green (700d35c1). No new answers.
+- MK.2: fixed the three round-1 Mediums (D316: phone dice belong to the contest that asked; Roll closes the contest's requests; no requests outside d20, none left open when rules leave d20); sonnet round 2: 0 H, 2 M fixed (per-side asked requests; a clear refusal that says why). Merged (1821790e); box checked.
+- MK.A: fable round 1 on 1821790e: 0 H, 3 M (Shared rolls said "rolled 0"; stat rows wrapped at 390×844; requests left open after a side moved away), fixed (D317); fable round 2: 0 H, 1 M (label/value keystrokes closed the request), fixed. Full e2e on c125a80e: 157 passed + 1 flake (M8.3, passes alone; second occurrence → QF.70); latency 8 passed. Merged (7a9ea96b); box checked. Preview ready (MK).
+- QF.55 started on `wip/QF.55` (see Next item).
+- Tests: unit 2,011+ (check green on wip/MK.A); e2e 157/158 + latency 8 (M8.3 flake green alone).
+- Open `wip/*`: `wip/QF.55`. Blockers: none.
