@@ -435,7 +435,7 @@ the campaigns home and the library layouts come before the real campaign.
   notes for that character; **Use library text** returns them to the
   library's; Cast uses the copy's cost. *Accept:* engine tests (override,
   reset, Cast spends the copy's cost, replay); e2e.
-- [ ] **ML.A Acceptance and review.** Full suite green; `fable` review;
+- [x] **ML.A Acceptance and review.** Full suite green; `fable` review;
   "Preview ready" (LOOP §8.2).
 
 ## QF — Quality fixes (from sweeps, LOOP §10)
@@ -1063,7 +1063,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   Sound toggle announces its state twice; many free-point batches after a big
   award mean many Review rounds (offer "assign all"). *Accept:* screenshots
   and e2e per item.
-- [ ] **QF.68 Evolution tests that can fail.** Sweep B (Tests, fable,
+- [x] **QF.68 Evolution tests that can fail.** Sweep B (Tests, fable,
   2026-11-01), three Mediums by mutation, to verify first (LOOP §10.3):
   `scaleShape` breaks remainder ties by float noise, not stat order, and
   differs from the engine's `scaleDistribution` (`evolution/shape.ts:24-26`;
@@ -1076,7 +1076,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   "released" line clears on edit.** Sweep B (UX, sonnet), Lows raised with
   the review layout to one item: `PlayerScreen.tsx:705-713` bypasses
   `openEvolution`; `EvolutionSteps.tsx:172-182,456-458`. *Accept:* e2e.
-- [ ] **QF.67 Pin the free-point spend split order.** Sweep A (Tests,
+- [x] **QF.67 Pin the free-point spend split order.** Sweep A (Tests,
   haiku, 2026-10-31), Medium, confirmed by mutation: `freePoints.spent`
   splits a spend across open level-ups in stat order
   (`reducer.ts:1081`), but splitting in payload key order passes every
