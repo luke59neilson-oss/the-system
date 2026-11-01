@@ -117,8 +117,9 @@ send it to a player.
      **Ledger** (**Grant** / **Fine** currency), **Title library**
      (**Award title**), **Trackers** (regions, survivor factions; hunger is narrated, not tracked).
 3. **View as**: the header switches between **GM**, any character (exactly
-   what that player sees) and **Table view** (every player's screen side by
-   side). Your half-filled GM forms survive the switch.
+   what that player sees) and **Table view** (up to 4 players' screens side
+   by side; with more characters, tick which 4 to show). Your half-filled GM
+   forms survive the switch.
 
 ## Level-ups, skills and evolutions
 
@@ -221,7 +222,8 @@ In the **Co-DM** panel pick a kind (Shop, NPC, Place, Encounter, Item, Quest
 hook), type **What the table needs** ("an herbalist near the canyon gate"),
 and press **Generate**. The strong model writes it in the content format and
 it opens in **Import content**, where the usual checks apply (flat item
-bonuses, the 20% item cap, rarity ceilings, grades). Edit it in **Edit the
+bonuses, grades; the 20% item cap and rarity ceilings apply on the sheet,
+not at import: an item over the cap shows as capped). Edit it in **Edit the
 generated content**, **Regenerate**, or tick and apply it. **Cancel** stops a
 slow request. A **shop** goes into the library with its keeper, wares and
 prices; **Sell** on a ware fills in a GM trade to the chosen character.
