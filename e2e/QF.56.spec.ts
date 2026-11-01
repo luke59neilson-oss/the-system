@@ -38,3 +38,24 @@ test('the join address and QR show without scrolling at 1366x768', async ({ brow
   await expect(gm.getByTestId('join-url').first()).toBeInViewport();
   await gm.screenshot({ path: path.join(shots, 'home-1366x768.png') });
 });
+
+test('phone buttons are 44 px tap targets', async ({ browser }) => {
+  const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  gm.on('dialog', (d) => void d.accept());
+  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
+  await gm.getByLabel('Campaign name').fill('Table');
+  await gm.getByRole('button', { name: 'Create campaign' }).click();
+  await gm.getByRole('button', { name: 'Load demo campaign' }).click();
+  await expect(gm.getByTestId('demo-badge')).toBeVisible();
+  const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await phone.goto(`${server.url}/play/demo-jake`);
+  await expect(phone.getByTestId('connection')).toHaveText('Connected');
+  await expect(phone.getByTestId('status')).toBeVisible();
+  const small = await phone.evaluate<string[]>(
+    `[...document.querySelectorAll('button')]
+      .filter((b) => b.checkVisibility() && b.getBoundingClientRect().height < 44)
+      .map((b) => (b.textContent || '').trim().slice(0, 30) + ' ' + b.getBoundingClientRect().height)`,
+  );
+  expect(small, 'buttons under 44 px tall').toEqual([]);
+  await phone.screenshot({ path: path.join(shots, 'player-390x844.png'), fullPage: true });
+});
