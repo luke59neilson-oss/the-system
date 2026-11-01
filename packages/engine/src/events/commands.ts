@@ -1619,8 +1619,12 @@ function toEvent(
         },
       };
     case 'idea.edit': {
-      const { type: _type, ...payload } = command;
-      return { type: 'idea.edited', payload };
+      const { ideaId, text, kind, tags, source, pinned, used } = command;
+      // Undefined fields vanish in the event's JSON round trip (= unchanged).
+      return {
+        type: 'idea.edited',
+        payload: { ideaId, text, kind, tags: tags && [...tags], source, pinned, used },
+      };
     }
     case 'idea.import': {
       // A repeat import skips ideas already held (DESIGN §11).
