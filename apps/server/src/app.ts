@@ -3,7 +3,7 @@ import { networkInterfaces } from 'node:os';
 import path from 'node:path';
 import { joinInfo, type JoinInfo } from './join';
 import { newGmKey } from './security';
-import { createServer } from './server';
+import { DEMO_CAMPAIGN_ID, createServer } from './server';
 import { exportsDirFor } from './sessionLog';
 import {
   CampaignStore,
@@ -66,6 +66,12 @@ export interface StartOptions {
   speakers?: (() => SpeakerEmbedder | null) | undefined;
   /** MC.5: loads the sherpa-onnx package (the packaged app's copy sits in resources). */
   speechLoad?: (() => Promise<unknown>) | undefined;
+  /**
+   * ML.1: a campaign to open before listening. Omitted, the GM console starts
+   * on the Campaigns home and nothing is open until the GM opens one (DESIGN
+   * §9a). The CLI's `--open <id>` sets it (the e2e suite uses 'main').
+   */
+  openAtStart?: string | undefined;
 }
 
 /**
@@ -102,9 +108,31 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
     ...(options.machineId === undefined ? {} : { machineId: options.machineId }),
   };
   // Stored campaigns pick up rules migrations as they load (MR.3).
-  const open = (id: string) =>
-    migrateOnLoad(CampaignStore.open(id, storeOptions), storeOptions.now, () => randomUUID());
-  const store = open('main');
+  // ML.1: every campaign the GM opens; this app backs them up and closes them.
+  const stores = new Map<string, CampaignStore>();
+  let current: CampaignStore | null = null;
+  const open = (id: string) => {
+    const store = migrateOnLoad(CampaignStore.open(id, storeOptions), storeOptions.now, () =>
+      randomUUID(),
+    );
+    // ML.1: the Campaigns home shows when each campaign was last opened.
+    store.writeHome(storeOptions.now());
+    stores.set(id, store);
+    return store;
+  };
+  const release = (store: CampaignStore) => {
+    stores.delete(store.id);
+    store.close();
+  };
+  const closeAll = () => {
+    for (const store of [...stores.values()]) {
+      try {
+        release(store);
+      } catch (error) {
+        console.error('The System: closing a campaign failed:', error);
+      }
+    }
+  };
   const exportsDir = exportsDirFor(storeOptions.dataDir);
   const gmKey = options.gmKey ?? newGmKey();
   const platform = options.platform ?? process.platform;
@@ -153,6 +181,11 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
       webRoot: options.webRoot,
       // The demo campaign lives in its own directory (MS.4, D53).
       openCampaign: open,
+      releaseCampaign: release,
+      onActiveChange: (store) => {
+        current = store;
+      },
+      ...(options.openAtStart === undefined ? {} : { openAtStart: options.openAtStart }),
       // QF.44: Back up now / Restore in Library & settings.
       campaigns: {
         list: () => CampaignStore.list(storeOptions.dataDir),
@@ -160,6 +193,7 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
         remove: (id) => CampaignStore.softDelete(storeOptions.dataDir, id),
         deleted: () => CampaignStore.listDeleted(storeOptions.dataDir),
         undelete: (id) => CampaignStore.restoreDeleted(storeOptions.dataDir, id),
+        summaries: () => CampaignStore.summaries(storeOptions.dataDir),
         backups: (id) => listBackups(storeOptions.dataDir, id),
         restore: (source) => {
           const raw =
@@ -198,13 +232,13 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
           ? {}
           : { intervalMs: options.sessionLogIntervalMs }),
       },
-      live: { store, gmKey, now: () => new Date().toISOString(), newId: () => randomUUID() },
+      live: { gmKey, now: () => new Date().toISOString(), newId: () => randomUUID() },
       // The key and model settings live in their own folder, never in a campaign.
       coDm: new CoDm({
         dir: path.join(storeOptions.dataDir, 'co-dm'),
         cipher: options.aiCipher ?? null,
         ...(options.aiClient === undefined ? {} : { makeClient: options.aiClient }),
-        sessionId: () => store.campaign.state?.currentSession ?? null,
+        sessionId: () => current?.campaign.state?.currentSession ?? null,
       }),
     });
     listening = app.server;
@@ -217,19 +251,24 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
     const address = app.server.address();
     const port = typeof address === 'object' && address ? address.port : options.port;
     let closing: Promise<void> | null = null;
-    // Event count at the last backup this app made, so asking to quit and
-    // then quitting leaves one copy, not two.
-    let backedUpAt = -1;
+    // Event count at the last backup this app made of each campaign, so
+    // asking to quit and then quitting leaves one copy, not two.
+    const backedUpAt = new Map<string, number>();
     const backup = () => {
-      const count = store.campaign.events.length;
-      if (options.backupOnClose === undefined || count === 0 || count === backedUpAt) return;
-      try {
-        store.backup(options.backupOnClose);
-        backedUpAt = count;
-      } catch (error) {
-        // A failed copy must never stop the campaign closing cleanly.
-        console.error('The System: backup failed:', error);
-        app.log.error(error);
+      if (options.backupOnClose === undefined) return;
+      for (const store of stores.values()) {
+        // The demo is never backed up (M10.1).
+        if (store.id === DEMO_CAMPAIGN_ID) continue;
+        const count = store.campaign.events.length;
+        if (count === 0 || count === backedUpAt.get(store.id)) continue;
+        try {
+          store.backup(options.backupOnClose);
+          backedUpAt.set(store.id, count);
+        } catch (error) {
+          // A failed copy must never stop the campaign closing cleanly.
+          console.error('The System: backup failed:', error);
+          app.log.error(error);
+        }
       }
     };
     return {
@@ -250,13 +289,13 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
         ]).finally(() => {
           // The listener is closed (or the grace ran out): take the last copy.
           backup();
-          store.close();
+          closeAll();
         });
         return closing;
       },
     };
   } catch (error) {
-    store.close();
+    closeAll();
     throw error;
   }
 }

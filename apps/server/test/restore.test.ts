@@ -77,7 +77,14 @@ describe('QF.44 backups and restore', () => {
     dataDir = mkdtempSync(path.join(tmpdir(), 'the-system-restore-data-'));
     writeFileSync(path.join(webRoot, 'index.html'), '<!doctype html><title>shell</title>');
     seed();
-    app = await startApp({ port: 0, host: '127.0.0.1', webRoot, dataDir, gmKey: KEY });
+    app = await startApp({
+      openAtStart: 'main',
+      port: 0,
+      host: '127.0.0.1',
+      webRoot,
+      dataDir,
+      gmKey: KEY,
+    });
   });
 
   afterEach(async () => {

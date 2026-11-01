@@ -17,6 +17,11 @@ export interface ServerOptions {
   dataDir?: string;
   /** Listen on this port (e.g. to restart on the same address); default: a random free port. */
   port?: number;
+  /**
+   * ML.1: start on the Campaigns home (nothing open) like the desktop app;
+   * default: campaign 'main' is opened at start, as every spec before ML.1 expects.
+   */
+  home?: boolean;
 }
 
 /** Starts the built server bundle on a random free port (127.0.0.1). */
@@ -30,7 +35,16 @@ export async function startBuiltServer(
   const port = String(options.port ?? 0);
   const child: ChildProcess = spawn(
     process.execPath,
-    ['apps/server/dist/main.js', '--port', port, '--host', '127.0.0.1', '--data-dir', dataDir],
+    [
+      'apps/server/dist/main.js',
+      '--port',
+      port,
+      '--host',
+      '127.0.0.1',
+      '--data-dir',
+      dataDir,
+      ...(options.home ? [] : ['--open', 'main']),
+    ],
     { cwd: repoRoot, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ...env } },
   );
 

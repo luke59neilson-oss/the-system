@@ -483,6 +483,17 @@ export class CampaignStore {
       .sort();
   }
 
+  /**
+   * ML.1 (DESIGN §9a "Campaigns home"): each campaign's name, characters and
+   * when it was last opened, from the `home.json` the store keeps beside its
+   * log. A folder without one (made before ML.1) lists by its id alone.
+   */
+  static summaries(dataDir: string): CampaignSummary[] {
+    return CampaignStore.list(dataDir).map((id) =>
+      readHome(path.join(CampaignStore.campaignsDir(dataDir), id), id),
+    );
+  }
+
   /** Where deleted campaigns wait, restorable (ML.1). */
   static deletedDir(dataDir: string): string {
     return path.join(dataDir, 'deleted');
@@ -636,11 +647,12 @@ export class CampaignStore {
     }
     closeSync(fd);
     const appendFd = openSync(logFile, 'a');
-    return new CampaignStore(id, dir, loaded.campaign, appendFd, options, {
+    const store = new CampaignStore(id, dir, loaded.campaign, appendFd, options, {
       tornCopy,
       fromSnapshot: loaded.usedSnapshot,
       lock,
     });
+    return store;
   }
 
   get campaign(): Campaign {
@@ -804,11 +816,42 @@ export class CampaignStore {
       if (owned && this.broken === null) this.writeSnapshot();
     } catch {
       // Only a speed-up: the next open replays the log instead.
+    }
+    try {
+      if (owned) this.writeHome(null);
+    } catch {
+      // Only the home list's summary: the campaign itself is safe.
     } finally {
       closeSync(this.fd);
       this.fd = null;
       if (owned) rmSync(lockFile, { force: true });
       heldLocks.delete(this.lock);
+    }
+  }
+
+  /**
+   * ML.1: refreshes `home.json` (name, characters; `openedAt` when given,
+   * else the last value kept). The app marks each open with it; closing
+   * refreshes the rest. Best effort: a failure never touches the log.
+   */
+  writeHome(openedAt: string | null): void {
+    const state = this.campaignValue.state;
+    const before = readHome(this.dir, this.id);
+    const summary: CampaignSummary = {
+      id: this.id,
+      name: state?.name ?? before.name,
+      characters: state
+        ? state.characterOrder.flatMap((c) => {
+            const name = state.characters[c]?.name;
+            return name === undefined ? [] : [name];
+          })
+        : before.characters,
+      lastOpened: openedAt ?? before.lastOpened,
+    };
+    try {
+      writeFileDurable(path.join(this.dir, 'home.json'), JSON.stringify(summary));
+    } catch {
+      // The list falls back to the id; nothing else depends on this file.
     }
   }
 
@@ -837,6 +880,36 @@ function lostWrites(
       typeof line === 'object' && line !== null && (line as { id?: unknown }).id === lastEventId,
   );
   return inLog ? null : { logEvents: lines.length, snapshotEvents: eventCount };
+}
+
+/** ML.1: one row of the Campaigns home. */
+export interface CampaignSummary {
+  readonly id: string;
+  /** The campaign's own name; null for a folder with no `campaign.created` yet. */
+  readonly name: string | null;
+  readonly characters: readonly string[];
+  /** ISO time it was last opened; null when unknown (a folder from before ML.1). */
+  readonly lastOpened: string | null;
+}
+
+function readHome(dir: string, id: string): CampaignSummary {
+  try {
+    const raw = JSON.parse(readFileSync(path.join(dir, 'home.json'), 'utf8')) as Record<
+      string,
+      unknown
+    >;
+    const characters = Array.isArray(raw['characters'])
+      ? raw['characters'].filter((c): c is string => typeof c === 'string')
+      : [];
+    return {
+      id,
+      name: typeof raw['name'] === 'string' ? raw['name'] : null,
+      characters,
+      lastOpened: typeof raw['lastOpened'] === 'string' ? raw['lastOpened'] : null,
+    };
+  } catch {
+    return { id, name: null, characters: [], lastOpened: null };
+  }
 }
 
 function readSnapshot(file: string): Snapshot | null {
