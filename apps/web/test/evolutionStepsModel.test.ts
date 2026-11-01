@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { releaseBlockers, stepMeters, type DraftOption } from '../src/gm/evolutionStepsModel';
+import { DEFAULT_RULES, type Character, type RulesConfig } from '@the-system/engine';
+import {
+  nearThreshold,
+  releaseBlockers,
+  stepMeters,
+  type DraftOption,
+} from '../src/gm/evolutionStepsModel';
 
 const o = (
   id: string,
@@ -53,5 +59,24 @@ describe('Evolutions tab model (ME.3)', () => {
     expect(
       releaseBlockers({ ...draft, race: [o('Human', {}, 6, {})] }, budgets, false).hard,
     ).toEqual([]);
+  });
+
+  it('lists characters at or within 3 race levels of the threshold', () => {
+    const at = (id: string, grade: string, classLevel: number) =>
+      ({ id, grade, classLevel, professionLevel: 0, profession: null }) as unknown as Character;
+    const rules = DEFAULT_RULES as unknown as RulesConfig;
+    const last = rules.grades.at(-1)!.id;
+    expect(
+      nearThreshold(rules, [
+        at('a', 'G', 0),
+        at('b', 'G', 1),
+        at('c', 'G', 4),
+        at('d', 'F', 10),
+        at('e', last, 999),
+      ]),
+    ).toEqual([
+      { id: 'b', levelsToGo: 3 },
+      { id: 'c', levelsToGo: 0 },
+    ]);
   });
 });

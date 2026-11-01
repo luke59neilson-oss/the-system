@@ -1,7 +1,13 @@
 // ME.3 (DESIGN §9a, §2): the Evolutions tab's builder model. A draft holds
 // the three steps' option cards; the meters and the release blockers come
 // from the engine's own budget check, so the tab and the engine agree.
-import { stepBudgetProblems } from '@the-system/engine';
+import {
+  raceLevel,
+  stepBudgetProblems,
+  trackCap,
+  type Character,
+  type RulesConfig,
+} from '@the-system/engine';
 
 export type StepId = 'class' | 'profession' | 'race';
 export const STEPS: readonly StepId[] = ['class', 'profession', 'race'];
@@ -76,4 +82,22 @@ export function releaseBlockers(
     ),
   );
   return { hard, overridable };
+}
+
+/**
+ * DESIGN §9a: the characters the Evolutions tab lists, at or within `within`
+ * race levels of their grade's top (the threshold), in party order, with how
+ * far each one is. A character at the last grade is never listed.
+ */
+export function nearThreshold(
+  rules: RulesConfig,
+  characters: readonly Character[],
+  within = 3,
+): { readonly id: string; readonly levelsToGo: number }[] {
+  const last = rules.grades[rules.grades.length - 1]?.id;
+  return characters.flatMap((c) => {
+    if (c.grade === last) return [];
+    const levelsToGo = Math.max(0, trackCap(rules, c.grade) - raceLevel(rules, c));
+    return levelsToGo <= within ? [{ id: c.id, levelsToGo }] : [];
+  });
 }
