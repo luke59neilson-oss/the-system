@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; MV, ME, MK, QF.55, QF.70, QF.56 and QF.57 done. Preview ready: Actions → Release → Run workflow (MK).
-**Next item:** QF.58 on `wip/QF.58` (base: QF.57 head 578ab0f; note it still carries the stray `node_modules` symlink from eb9e821: merge main, which removes it, first): clipboard-sanitized-write allowed for the GM window's own page (unit test), release View menu with reload and zoom, no DevTools (unit test), `render-process-gone` reloads the console — all done; next: a desktop spec that clicks Copy and reads the clipboard (needs the Electron binary: `npm run desktop:smoke`), then sonnet review, merge. Then QF.60 onward (QF.71–QF.74 in file order); MW after.
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; MV, ME, MK, QF.55, QF.70, QF.56, QF.57, QF.58 and QF.60 done. Preview ready: Actions → Release → Run workflow (MK).
+**Next item:** QF.61 on `wip/QF.61` (head 37fb975; merge main first): every listed doc line is fixed (GM-OVERRIDES stale row and Edit holdings, GM-GUIDE Table view / import checks / Session notes / quoted labels, CONTENT-FORMAT examples and shared item names, PLAYER-QUICKSTART spells and Cast, DESIGN §9a placement per D322) and `scripts/gm-overrides.test.ts` checks every row; check green at 37fb975. Next: sonnet review, merge (D322/Q98 already on main). Then QF.62, QF.63, QF.68, QF.69, QF.67, QF.71–QF.74 in file order; MW after.
 **Blockers:** none
 
 ## Run log
@@ -1616,4 +1616,14 @@ next item, blockers. -->
 - QF.58 started on `wip/QF.58` (see Next item).
 - Tests: static checks green; web + desktop unit 363 (full unit 2,017 at QF.56); e2e 164 + latency 8 (QF.56); QF.57 specs above.
 - Open `wip/*`: `wip/QF.58`. Blockers: none.
+
+### Run · 2026-11-01 12:10–12:5x UTC (close-out at minute 45)
+- Close-out at minute 45 (QF.61 handed off on `wip/QF.61` at 44; its review is next run's first step).
+- Preflight: `add_repo` not offered; repo attached. Local `main` stale and shallow again: plain `git fetch` hung, single-ref fetch worked, reset to `origin/main` (now LOOP §1.2, D319). Lock pushed cleanly; vitest 5.0.5; reviewer sonnet works (worktree; Agent blocks). CI on main green (f789b6e). No new answers.
+- Efficiency check (hour 12): scorecard row added (end minute 45.0, items/run 1.2, round-2 5/10, Highs 0, red/day 5). D304 reverted (D320: red/day 4 → 5 vs ≤ 3, round-2 4/10 → 5/10). Sonnet auditor: 2 Tier 1 proposals; applied the LOOP §1.2 single-ref fetch wording as D319 (in trial); `npm run sync` and `ci-triage` queued.
+- QF.58 done: clipboard-sanitized-write for the GM window's own page; release View menu (reload, zoom, no DevTools); a crashed console reloads (at most 3 a minute, then one notice, D321). Desktop spec clicks the GM-link Copy and Copy log for Claude (legacy copy stubbed) and reads the clipboard, and force-crashes the renderer and checks it reloads Connected with the same key (both fail with the fix removed). Sonnet 2 rounds (round 1: 3 M; round 2: 1 H, desktop typecheck, fixed). Merged.
+- QF.60 done: one test per surviving mutant (13), the playerLog audit asserts each event's exact notice list (snapshot, both characters), `npm run mutants` re-applies the mutations (13/13 killed). Sonnet round 1: 0 H / 0 M / 3 L. Merged.
+- QF.61 started on `wip/QF.61` (see Next item).
+- Tests: check green (unit 2,028 on main); desktop 8/8; QF.58 and QF.60 touch no e2e specs (no shared server or UI code), so no full e2e this run.
+- Open `wip/*`: `wip/QF.61`. Blockers: none.
 
