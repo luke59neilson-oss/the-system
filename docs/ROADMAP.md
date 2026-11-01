@@ -939,7 +939,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   grade: the higher grade wins, no roll."; the GM-console sentence only on the
   GM's computer; plural-safe currency text; the error appears on submit.
   (Luke may adjust the words later.)
-- [ ] **QF.58 Copy, zoom and recovery in the desktop window.** The desktop GM
+- [x] **QF.58 Copy, zoom and recovery in the desktop window.** The desktop GM
   window denies clipboard writes, so the GM-link Copy does nothing and Copy
   for Claude relies on a deprecated fallback (`apps/desktop/src/launch.ts:187-197`,
   `main.ts:156-166`); packaged builds have no reload or zoom, and a crashed
