@@ -170,6 +170,7 @@ lowered by their verifiers and folded into the Low batches.
 
 ## Flakes
 
+- 2026-11-01 05:15 · CI `test` red on 81247c49: `e2e/M8.3.spec.ts` keyboard sweep missed the six View-as buttons again (second time; first 2026-10-25). Passed here alone and with `--workers=2`. Cause: Tab starts from the last click (the console tab), so the walk had to wrap through the browser chrome to reach the first stops, and `stops + 5` presses left no room. Fixed in the test: up to two laps, stopping once every stop is reached (same assertions).
 - 2026-10-31 00:40 · Local only, repeated: `e2e/M11.3.spec.ts:39` (latency, 1366×768, under 2 s) failed in the full local run (2,158 ms) and alone once (2,164 ms); the pre-MU commit 6511b291 also flips on this box (1,956 pass, 2,048 fail); quiet HEAD runs 1,825 / 1,847 ms; CI green. The cold first measurement sits near the bound on 2 CPUs. Reviewer suggests a warm-up iteration; if CI ever fails it, it becomes a QF item.
 - 2026-10-30 17:25 · Local only: `e2e/M11.3.spec.ts:39` (latency, 1366×768, under 2 s) failed while a reviewer ran `npm run check` in parallel (load ~12 on 2 CPUs); passed alone (both viewports). Load, not the app; CI green.
 - 2026-10-26 14:30 · Repeated: CI `desktop-smoke` red on 3bb78ed2 and cb3bb8d9 with the same ENOTEMPTY → QF.32 (the test now freezes, kills and waits for the whole Electron tree; D255). Fixed.

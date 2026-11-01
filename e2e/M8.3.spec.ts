@@ -196,7 +196,10 @@ async function tabThrough(page: Page) {
   expect(marked.unreachable, 'pointer cursor without a keyboard stop').toEqual([]);
   const reached = new Set<string>();
   const noRing: string[] = [];
-  for (let i = 0; i < marked.stops + 5; i++) {
+  // Tab starts from the last click (a console tab), not the top, so the walk
+  // wraps through the browser chrome back to the first stops; allow two laps
+  // and stop once every stop has been reached (CI flake 2026-10-25, 2026-11-01).
+  for (let i = 0; i < 2 * marked.stops + 10 && reached.size < marked.stops; i++) {
     await page.keyboard.press('Tab');
     const f = await page.evaluate<{ kb: string | null; ring: boolean; label: string } | null>(
       FOCUSED,
