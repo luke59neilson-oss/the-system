@@ -301,7 +301,6 @@ export function missingDefaults(state: DefaultTarget): number {
   );
 }
 
-/** One line describing a class's weights, biggest first ("Agility 3 · Perception 3 · …"). */
 /**
  * ML.2 review: whether the class's weights are set aside by points per level
  * (the entry has its own, or the draft lays out new ones). An old class's
@@ -335,6 +334,7 @@ export function pointsSummary(
   return parts.length === 0 ? '' : `Per level: ${parts.join(' · ')}`;
 }
 
+/** One line describing a class's weights, biggest first ("Agility 3 · Perception 3 · …"). */
 export function weightSummary(rules: Rules, weights: Readonly<Record<string, number>>): string {
   return rules.stats.list
     .map((s, i) => ({ name: s.name, w: weights[s.id] ?? 0, i }))
