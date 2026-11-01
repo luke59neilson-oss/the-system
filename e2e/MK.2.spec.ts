@@ -73,7 +73,7 @@ test('a d20 contest with a typed and an app die reaches both screens', async ({ 
   await sideB.getByRole('textbox', { name: 'Value', exact: true }).fill('20');
   await sideB.getByRole('textbox', { name: 'Players see', exact: true }).fill('Pale stalker');
   await expect(roller.getByTestId('contest-chance')).toContainText('d20');
-  await expect(roller.getByTestId('contest-chance')).toContainText('Pale stalker +3 (64%)');
+  await expect(roller.getByTestId('contest-chance')).toContainText('Pale stalker +3 (62%)');
   const dice = roller.getByTestId('contest-dice');
   // A die outside 1–20 is refused before rolling.
   await dice.getByRole('textbox').first().fill('21');

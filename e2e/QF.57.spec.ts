@@ -72,6 +72,10 @@ test('the evolution says what happens to skills in plain words', async ({ browse
   await expect(phone.getByTestId('connection')).toHaveText('Connected');
   await phone.getByTestId('evolution-pending').getByRole('button', { name: '[Evolve]' }).click();
   const rerate = phone.getByTestId('evolution').getByTestId('evolution-rerate');
+  // ML.3: Luke's re-rating words, word for word (DESIGN §6, Q97).
+  await expect(rerate.getByTestId('rerate-message')).toHaveText(
+    'While once powerful and rare for your previous grade, the power and rarity of your skills are less in comparison to your current grade. Some skill rarities have been adjusted to amend this.',
+  );
   await expect(rerate).toContainText(
     'Your skills keep their text and progress; their rarity label changes for F-grade.',
   );
