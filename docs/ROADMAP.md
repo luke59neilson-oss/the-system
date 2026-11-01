@@ -299,7 +299,7 @@ in the first session.
   without a profession; overflow unchanged; an old campaign unchanged until
   the switch, then new numbers from the next level-up); goldens updated
   only where the manifest allows.
-- [ ] **ME.2 Three-step evolution in the engine.** The GM's release carries
+- [x] **ME.2 Three-step evolution in the engine.** The GM's release carries
   options for class, profession (every evolution: an evolution of the
   current profession, or profession offers plus "none for now") and race; each option has name, rarity, description, distribution
   at the new grade, one-time bonus, and optional transforms and merges.
