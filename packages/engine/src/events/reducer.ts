@@ -1,6 +1,7 @@
 import { TitleRuleError, titleKey, titleSources, validateTitleDef, type TitleDef } from '../titles';
 import {
   CharacterRuleError,
+  gradeIndexOf,
   clampPools,
   createCharacter,
   grantProfession,
@@ -954,6 +955,12 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
     }
     case 'profession.offered': {
       const character = characterOf(state, event, event.payload.characterId);
+      // ME.A review: an offer the player could not take is refused (an old
+      // campaign keeps its later profession unlock grade, ME.1).
+      const unlock = state.rules.tracks.professionUnlockGrade;
+      if (gradeIndexOf(state.rules, character.grade) < gradeIndexOf(state.rules, unlock)) {
+        return fail(event, `Professions unlock at ${unlock}-grade`);
+      }
       const { distribution, statBonus } = event.payload;
       const statIds = state.rules.stats.list.map((s) => s.id);
       let card = null;
