@@ -1327,3 +1327,8 @@
 
 ## 2026-11-01 · QF.62 (partial, ba89330..14ae90e) · sonnet (1 round)
 - Round 1: 124 targeted tests green. 0 High, 2 Medium, 6 Low. M1 (a re-reveal sends a second notice): not reproduced, the reducer refuses a reveal to a character who already knows the entry. M2 (the TypeError catch around `itemOutOfReach`/`overLimit` would turn a real engine bug into "Bad command"): fixed (4aa1e09) with a typed-field check and no catch. Lows noted for the hand-off: the out-of-range notice says "???" while the Identify list shows the label; there is no test for a `character.created` portrait in backups; the undo-preview test is thin; the reveal toast covers a heading on the phone screenshot.
+
+## 2026-11-01 · QF.62 (rest, 4aa1e09..4810574) · sonnet (1 round)
+- Round 1: check green, QF.62/MV.3/M3.9/M3.7 e2e green. 0 High, 0 Medium, 4 Low: `/proc` test fails off Linux (fixed: guarded, and every append's position checked); Identify stripped only one-letter grades (fixed: strips the entity's own grade id); a stale-level tier line is kept (by design); when both trade sides are short the accepter hears only about the other (kept). Nits: the accepter's error sits above the Trades list.
+- Fixes in 033e8f6; no second round (no High, under two Mediums).
+

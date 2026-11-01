@@ -386,6 +386,58 @@ DESIGN §7 "Dice", §9. After ME, before QF.
 - [x] **MK.A Acceptance and review.** Full suite green; `fable` review;
   "Preview ready" (LOOP §8.2).
 
+## ML — Luke's answers, batch 4 (2026-11-01; L28)
+
+Q79–Q98 answered in chat. DESIGN §6, §7, §9a, §11. After MK, before QF:
+the campaigns home and the library layouts come before the real campaign.
+
+- [ ] **ML.1 Campaigns home and Delete.** DESIGN §9a "Campaigns home": the
+  GM app starts on a list of campaigns (name, last opened, characters) with
+  Open, New campaign, Restore and Delete; no campaign opens by itself.
+  Delete asks for the name and moves the campaign to a Deleted list (files
+  kept, Restore puts it back; nothing is erased); an open campaign cannot be
+  deleted. Players' phones say "Waiting for the GM to open a campaign" until
+  one is open, then join as today. *Accept:* server tests (no campaign at
+  start; delete moves, restore returns, the lock is respected); desktop
+  launch specs updated (splash → home → open); e2e: create two, delete one,
+  restore it, open the other, a phone joins; screenshots at 1366×768.
+- [ ] **ML.2 Per-level points in the library.** DESIGN §2 "The GM lays these
+  out in the library": class, race and profession entries get whole points
+  per stat plus free points per level (class weights from before ME still
+  load and show as converted points); a budget reminder for the entry's
+  grade (G: class 8, race 5, profession 5) and a warning while the total
+  differs; new characters and offers take the entry's points; a profession
+  option skipped with "none for now" keeps its points and bonus with the
+  offer (Q94). Stored logs replay unchanged. *Accept:* engine tests (an
+  entry's points reach a new character; a skipped option taken later gives
+  its card's points; old weights load); e2e: lay out Archer at G (+1 Str,
+  +2 Agi… with the warning until it totals 8), create a character with it,
+  level up; screenshots.
+- [ ] **ML.3 Meets beats; wording.** d20 contests: no re-roll, a tie goes to
+  the attacker (the side that acts; the contest form names it, defaulting
+  to the first side), meeting a set target succeeds; the re-rating message
+  in Luke's words (DESIGN §6, Q97); a contest two or more grades apart shows
+  players only the result, no explanation line. *Accept:* engine tests
+  (ties to the attacker on both sides; meeting a target; exact odds updated
+  in the tests from MK.1/QF.73); e2e: a tie lands for the attacker; the
+  player's re-rating text matches DESIGN word for word.
+- [ ] **ML.4 Co-DM settings per campaign; sharing lore; more examples.**
+  Quick-response button names, instructions and order are kept per
+  campaign (a new campaign starts from the defaults; the laptop's current
+  setup is copied into each existing campaign the first time it opens);
+  **Share with the party** on a lore note makes a party copy; generations
+  and quick responses get up to 16 reference rows (was 8; still no god-tied
+  rows, still invented names). *Accept:* unit tests (per-campaign settings;
+  first-open copy; 16-row bound); canary (lore stays GM-only until shared);
+  e2e sharing a lore note.
+- [ ] **ML.5 A hand-written copy's own spell cost.** DESIGN §6: a copy the
+  GM has hand-written can carry its own cost, cooldown, range and casting
+  notes for that character; **Use library text** returns them to the
+  library's; Cast uses the copy's cost. *Accept:* engine tests (override,
+  reset, Cast spends the copy's cost, replay); e2e.
+- [ ] **ML.A Acceptance and review.** Full suite green; `fable` review;
+  "Preview ready" (LOOP §8.2).
+
 ## QF — Quality fixes (from sweeps, LOOP §10)
 
 Confirmed findings from quality sweeps (`docs/QUALITY.md`). Items marked

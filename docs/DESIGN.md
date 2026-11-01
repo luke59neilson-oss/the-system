@@ -53,7 +53,14 @@ October 2026.
     points at the G budget, D35 deciding the remainders); the starting Human
     race gives free points only unless the GM changes it. How many free
     points an option gives is the GM's choice, per option (the builder
-    suggests the 2 / 2 / 1 of the §4 example).
+    suggests the 2 / 2 / 1 of the §4 example). **The GM lays these out in
+    the library (Luke, Q93, Q94):** each class, race and profession entry has
+    whole points per stat plus free points per level, with a reminder of the
+    track's budget at the entry's grade (G: class 8, race 5, profession 5)
+    and a warning while it differs; offers and new characters take the
+    entry's points. A profession option skipped with "none for now" at an
+    evolution keeps its points and bonus with the offer, so taking it later
+    gives what its card showed.
   - **Grade** is the highest grade the character has evolved into. Class and
     profession levels cannot pass the top level of the current grade
     (4, 14, 49, 99, 149, 199, 240).
@@ -258,14 +265,20 @@ per player, with a reference line ("F: 1 level = 300 XP; a typical session
   cannot be released until that approval is given. **Identify never changes** (§7).
   The skill's text and effects do not change (same power, new label), and a
   lowered skill keeps all its marks, so a well-practised skill may climb
-  straight back with its next upgrade (after which it starts at 0).
+  straight back with its next upgrade (after which it starts at 0). The
+  player reads, in these words (Luke, Q97): "While once powerful and rare
+  for your previous grade, the power and rarity of your skills are less in
+  comparison to your current grade. Some skill rarities have been adjusted
+  to amend this."
 - **Spells are skills with costs (Luke, 2026-10-30).** Any skill (per name
   and rarity in the library) can carry a cost (mana, stamina or health, an
   amount), a cooldown, range and casting notes, and a "spell" tag; the GM
   creates them in the skill library. A player taps **Cast** on their phone:
   the pool goes down (refused when it is too low), and the use is logged as
   practice for the GM's review; the GM can undo or adjust. Cooldowns are
-  shown, not enforced.
+  shown, not enforced. A copy the GM has hand-written can also carry its own
+  cost, cooldown, range and casting notes for that character (Luke, Q85);
+  **Use library text** returns it to the library's.
 - **Skill names:** the System gives the official name; the player may add a
   nickname ("Jake Juice"). Show both.
 - **Skill library (Luke, Q37):** one entry per skill name **and rarity**, so an
@@ -315,12 +328,14 @@ turning point). GM confirms marks in the end-of-session review.
   rolls and shows results.
 - **Dice (Luke, 2026-10-31: "keep the D&D feel").** A campaign setting,
   **Rolls: app odds** (above, the default) or **d20 + modifier**. With d20:
-  each side rolls a d20 and adds its **roll modifier**, higher total wins,
-  a tie rolls again. The roll modifier is +3 for every doubling of the stat
+  each side rolls a d20 and adds its **roll modifier**, higher total wins.
+  **Meets beats (Luke, 2026-11-01): a tie goes to the attacker** (the side
+  that acts), with no re-roll; against a set target, meeting it succeeds. The roll modifier is +3 for every doubling of the stat
   over 10: round(3 × log2(stat ÷ 10)), using the stat with its bonuses, and
   a stat below 1 counts as 1. So 10 → +0, 20 → +3, 30 → +5, 80 → +9,
-  5 → −3. Odds stay within about 4 points of app odds (twice the other's
-  stat: 64% against 67%; three times: 73% against 75%), while the numbers
+  5 → −3. Odds stay within about 3 points of app odds for an attacker
+  with the higher stat (twice the other's: 66% against 67%; three times: 74%
+  against 75%), an even match gives the attacker 52.5%, while the numbers
   stay D&D-sized (a main stat's modifier is about +6 after session 1, +18 at
   the top of E, +29 at the cap). Grade walls apply as below, with one grade
   apart meaning **−5** to the lower side's modifier instead of ×⅓. Anyone
@@ -335,7 +350,8 @@ turning point). GM confirms marks in the end-of-session review.
     hits deal ⅓ damage. Only a strong late-stage lower grade against a weak,
     barely evolved higher grade has a real chance.
   - **Two or more grades apart:** no roll. The higher grade succeeds, and the
-    lower grade's attacks deal no damage.
+    lower grade's attacks deal no damage. Players see only the result, with
+    no explanation line (Luke, Q97: the effect says enough).
   - **No strength in numbers across grades:** lower-grade characters cannot
     pool their power against a higher grade; each acts alone, and anything
     two or more grades below cannot touch it at all. A thousand G-grades are
@@ -434,7 +450,16 @@ turning point). GM confirms marks in the end-of-session review.
 
 ## 9a. GM console layout (Luke, 2026-10-30)
 
-No single long page. The console opens on a **home dashboard**: the campaign
+**Campaigns home (Luke, 2026-11-01).** The GM app starts on a Campaigns
+home, not inside a campaign: every campaign with its name, when it was last
+opened and its characters; **Open**, **New campaign**, **Restore** from a
+backup or a downloaded file, and **Delete**. Delete asks for the campaign's
+name, then moves it to a Deleted list (its files kept, restorable) instead
+of erasing it. Until a campaign is open, players' phones show "Waiting for
+the GM to open a campaign". Test and demo campaigns are deleted this way
+before the real campaign starts, so there is no switch-over for old ones.
+
+No single long page. Once a campaign is open the console shows its **home dashboard**: the campaign
 and session (day, session running or not), the join address and QR, one card
 per character (portrait, grade, levels, XP to next level, pool bars), and
 what needs the GM (selections waiting, evolutions to build, practice drafts,
@@ -606,7 +631,9 @@ a name, a keeper NPC, wares and a hook.
     another way), 4 **In character** (a few lines in the voice of the NPC
     being spoken to, with a legend, rumour or hook where it fits), 5
     **Twist** (something unexpected happens). Names and the instruction
-    behind each can be edited in settings; these are the defaults.
+    behind each can be edited in settings; these are the defaults. The
+    setup is kept **per campaign** (Luke, Q79): a new campaign starts from
+    these defaults.
   - **Slots 6–10** are the co-DM's picks (the suggestion chips), in stable
     positions: a new pick fills an empty or dismissed slot and never
     reshuffles the others.
@@ -620,7 +647,8 @@ a name, a keeper NPC, wares and a hook.
   - **Keep** saves an answer (or any part of it) as a GM lore note tagged to
     the NPC, place and session; the co-DM includes kept lore for the NPC and
     place in later prompts and does not contradict it. Lore stays GM-only
-    unless the GM shares the note.
+    until the GM presses **Share with the party** on the note, which makes
+    a party copy (Luke, Q81).
 - **Skill-offer drafts (Luke, 2026-10-31):** from a stat, from one of the
   character's skills, or from a typed direction (§6 "Building an offer"),
   with the character's standing and practice summary in the prompt. Every
