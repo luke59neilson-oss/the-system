@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): milestone ML done (ML.5, ML.A); QF.67 and QF.68 done; QF.69, QF.71 and QF.73 built on `wip/QF.69`, not reviewed. Preview ready: Actions → Release → Run workflow (ML).
-**Next item:** `wip/QF.69` (`npm run sync -- wip/QF.69`, check it out, `git merge origin/main`): §6 reviews of QF.69, QF.71 and QF.73 (one sonnet each; commits 69e50be and 102bed7), then check their boxes and merge. Then QF.72, QF.74; MW after.
+**Status:** in progress (2026-11-01): sweep A done, no High or Medium stands. On `wip/QF.69`: QF.69, QF.71 and QF.73 reviewed (boxes checked there), QF.72 awaits review round 2. Preview ready: Actions → Release → Run workflow (ML).
+**Next item:** `wip/QF.69` (`npm run sync -- wip/QF.69`, check it out, `git merge origin/main`): QF.72 review round 2 (commits 116ad23, fa343f0), full e2e, then check its box and merge to main. Then QF.74; MW after.
 **Blockers:** none
 
 ## Run log
@@ -1698,3 +1698,12 @@ next item, blockers. -->
 - Tests: full e2e ran on 4e9ddb6 (ML.5 merged), before the ML.A, QF.67 and QF.68 commits: e2e 176 passed + latency 7 of 8; MS.3 failed under load and passed alone. After the fixes: ML.4, MS.4, QF.44 and MS.3 green. `npm run check` on the pushed commit: see the line below. Engine coverage not read this run.
 - Open `wip/*`: `wip/QF.69` (next). Blockers: none.
 - `npm run check` on e4ca932, the code pushed to main: exit 0, unit 2114. Lock released at minute 52.
+
+### Run · 2026-11-01 21:09–22:00 UTC (close-out at minute 46)
+- Close-out at minute 46, after the hand-off at 44.
+- Preflight: no `add_repo` tool, repo at /home/claude/the-system; local `main` stale (unrelated histories), reset to `origin/main` (D319). Lock pushed; vitest 5.0.5. CI on main green (4e9ddb6 was the latest completed). No new answers. Hour 21: sweep, no efficiency check.
+- Sweep A on b686eb9..9f6fe02 (Rules fable, Boundaries sonnet, Tests haiku): 0 High; 3 Tests Mediums checked by me and lowered (see the sweep log); 8 Lows to the Backlog.
+- `wip/QF.69` at 85832b28: main merged in; a lint error from the merge fixed. QF.69: sonnet 0 H, 0 M, box checked on the branch. QF.71: two rounds, every Medium fixed, box checked on the branch. QF.72 built: round 1 0 H, 3 M, fixed; round 2 due, box open. QF.73: sonnet 0 H, 0 M, box checked on the branch. Nothing from this branch is on main yet.
+- Tests: `npm run check` on fa343f0: exit 0, unit 2118. MK.2 4/4, ME.3 and ME.5 green. Full e2e not finished: stopped at 13 tests to rebuild for the fix, so it is due before the merge. Engine coverage not read this run.
+- A sweep and five blocking reviews used most of the build time, so QF.74 was not started.
+- Open `wip/*`: `wip/QF.69` (next). Blockers: none.
