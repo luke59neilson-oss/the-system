@@ -231,6 +231,21 @@ describe('quests and World Stability (DESIGN §7)', () => {
     expect(view(c).quests[0]).toMatchObject({ stability: 0, stabilityPercent: 25 });
   });
 
+  it('a range with min = max shows a full gauge, not NaN (QF.60)', () => {
+    const c = ok(base(), tutorial({ stability: { initial: 100, visible: true, rules: {} } }));
+    // The schema refuses min >= max; a hand-edited state can still hold it.
+    const state = c.state;
+    if (!state) throw new Error('no state');
+    const flat = {
+      ...c,
+      state: {
+        ...state,
+        rules: { ...state.rules, stability: { ...state.rules.stability, min: 100, max: 100 } },
+      },
+    };
+    expect(view(flat).quests[0]?.stabilityPercent).toBe(100);
+  });
+
   it('only the GM manages quests; undo restores stability', () => {
     let c = ok(base(), tutorial());
     const asJake: CommandContext = { ...ctx, actor: { role: 'player', characterId: 'jake' } };

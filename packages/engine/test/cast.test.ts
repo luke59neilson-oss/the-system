@@ -147,6 +147,20 @@ describe('casting a skill with a cost (MU.5)', () => {
     expect(() => replay([...c.events, forged] as typeof c.events)).toThrow(/not enough mp/);
   });
 
+  it('a recorded cast of a skill the caster lacks is refused on replay (QF.60)', () => {
+    const c = setup();
+    const forged = {
+      ...c.events.at(-1)!,
+      id: 'forged',
+      type: 'skill.cast',
+      actor: { role: 'player', characterId: 'jake' },
+      payload: { characterId: 'jake', skill: 'Nope', pool: 'mp', amount: 1 },
+    };
+    expect(() => replay([...c.events, forged] as typeof c.events)).toThrow(
+      'Jake has no skill "Nope"',
+    );
+  });
+
   it('the owner sees the cooldown; no other player sees the cast notice', () => {
     const before = setup();
     const after = ok(before, cast, as('jake'));

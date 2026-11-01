@@ -389,6 +389,13 @@ describe('CampaignStore', () => {
     CampaignStore.open('main', options).close();
     CampaignStore.open('demo', options).close();
     expect(CampaignStore.list(dataDir)).toEqual(['demo', 'main']);
+    // QF.60: a data dir with no campaigns folder yet lists nothing.
+    const fresh = mkdtempSync(path.join(tmpdir(), 'the-system-empty-'));
+    try {
+      expect(CampaignStore.list(fresh)).toEqual([]);
+    } finally {
+      rmSync(fresh, { recursive: true, force: true });
+    }
     for (const bad of ['', '../x', 'A', 'a/b', '.hidden', 'x'.repeat(65), 'con', 'nul', 'com1']) {
       expect(() => checkCampaignId(bad)).toThrow(StoreError);
     }

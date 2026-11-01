@@ -61,6 +61,11 @@ describe('quick-response helpers (MD.1)', () => {
     expect(findTarget(lines)?.text).toBe('I sneak past the guard.');
     expect(findTarget([line('The guard yawns.')])?.text).toBe('The guard yawns.');
     expect(findTarget([])).toBeNull();
+    // QF.60: a blank line is never the target, even when it is the newest.
+    expect(isQuestionOrAttempt(line('   '))).toBe(false);
+    expect(findTarget([line('I sneak past the guard.'), line('  ')])?.text).toBe(
+      'I sneak past the guard.',
+    );
   });
 
   it('finds the NPC last named, by name or label, whole words only', () => {

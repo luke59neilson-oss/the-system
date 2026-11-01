@@ -20,6 +20,7 @@ import {
   type CommandContext,
   retiredSkillNames,
 } from '../src';
+import { releaseEvolution } from '../src/evolution/model';
 import { kit, preMeRules, rawRules, mergeAccepted, run, testContext } from './helpers/events';
 
 /**
@@ -682,6 +683,55 @@ describe('evolution', () => {
     expect(c.state).toEqual(before);
   });
 
+  it('a transform may take a name left on a chosen menu, not one on a pending menu (QF.60)', () => {
+    let c = ok(atGTop(), release(archery, 'Volley', 'common'));
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    c = ok(c, award(10 * XP_F));
+    c = pickAll(c);
+    const hunter = (name: string) => ({
+      id: 'o1',
+      className: 'Hunter',
+      description: '',
+      transforms: [{ skill: 'Volley', name, rarity: 'rare' }],
+      classWeights: null,
+      statBonus: {},
+    });
+    const jake = char(c);
+    // 'Pick 5a' was passed over on the chosen level 5 menu: free to take.
+    expect(() => releaseEvolution(rules, jake, [hunter('Pick 5a')], [])).not.toThrow();
+    const pending = {
+      ...jake,
+      selections: [
+        ...jake.selections,
+        { level: 99, options: [{ name: 'Far Shot', rarity: 'rare', kind: 'class' }], chosen: null },
+      ],
+    } as unknown as Character;
+    expect(() => releaseEvolution(rules, pending, [hunter('Far Shot')], [])).toThrow(
+      '"Far Shot" is on the pending level 99 menu',
+    );
+  });
+
+  it('a one-time bonus on a single stat raises that stat alone (QF.60)', () => {
+    const before = char(atGTop()).stats;
+    let c = ok(atGTop(), {
+      type: 'evolution.release',
+      rerateApproved: true,
+      characterId: 'jake',
+      options: [
+        {
+          className: 'Hunter',
+          transforms: [{ skill: archery, name: 'Volley', rarity: 'common' }],
+          statBonus: { perception: 7 },
+        },
+      ],
+    });
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    const after = char(c).stats;
+    for (const [stat, value] of Object.entries(before)) {
+      expect(after[stat], stat).toBe(stat === 'perception' ? value + 7 : value);
+    }
+  });
+
   it('profession unlock at E: offered professions, chosen with the evolution, starting at class level', () => {
     let c = ok(atGTop(), release(archery, 'Volley', 'common'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
@@ -689,6 +739,19 @@ describe('evolution', () => {
     expect(char(c).classLevel).toBe(14);
     c = pickAll(c);
     expect(evolutionTarget(rules, char(c))?.id).toBe('E');
+    // QF.60: a blank profession offer is refused by name (the event schema
+    // refuses it too; the model must not rely on that).
+    const hunter = {
+      id: 'o1',
+      className: 'Hunter',
+      description: '',
+      transforms: [{ skill: 'Volley', name: 'Volley II', rarity: 'epic' }],
+      classWeights: null,
+      statBonus: {},
+    };
+    expect(() => releaseEvolution(rules, char(c), [hunter], ['Smith', '  '])).toThrow(
+      'A profession needs a name',
+    );
     c = ok(c, release('Volley', 'Volley II', 'epic', { professions: ['Smith', 'Cook'] }));
     expect(
       reject(c, {
@@ -1298,6 +1361,36 @@ describe('the GM withdraws a passed-over option (MQ.3, DESIGN §6)', () => {
       options: menu(10, 'rare'),
     });
   };
+
+  it("another character's practice never hides it (QF.60)", () => {
+    let c = setUp();
+    c = ok(c, {
+      type: 'character.create',
+      id: 'casper',
+      name: 'Casper',
+      className: 'Archer',
+      classSkills: kit,
+    });
+    c = ok(c, {
+      type: 'skill.grant',
+      characterId: 'casper',
+      name: 'Skill 5a',
+      rarity: 'common',
+      kind: 'class',
+    });
+    c = ok(c, {
+      type: 'practice.log',
+      characterId: 'casper',
+      action: 'Shot',
+      skills: ['Skill 5a'],
+      stat: null,
+    });
+    const mine = projectForPlayer(c.state ?? (null as never), 'jake').me.selections;
+    expect(mine.find((r) => r.level === 10)?.passedOver.map((o) => o.name)).toEqual([
+      'Skill 5a',
+      'Skill 5c',
+    ]);
+  });
 
   it('removes it from later menus and refuses it as a pick', () => {
     let c = setUp();
