@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; MV, ME, MK, QF.55–QF.58, QF.60, QF.61 and QF.70 done; QF.62 most of the way. Preview ready: Actions → Release → Run workflow (MK).
-**Next item:** QF.62 on `wip/QF.62` (head 4aa1e09, base ba89330; merge main first). Done there: cast counts toward the practice cap; typed-field check before `overLimit`; override range line; transform cost hint; durable co-DM JSON stores; backups copy only named portraits; virtual adapters rank low; speech install retry and kept archive; Whisper non-speech filter; capstone wording (Q99); undo names its blocker; trade accepter refusal and equipped hint; reveal notice (D323); e2e `QF.62.spec.ts`. Sonnet round 1 back (0 H; 2 M: one fixed, one not reproduced). Left: the Common viewer's duplicate Identify line, dead trade offers staying open, the Windows append-handle truncate (`store.ts`), then a round-1 review of those and merge. Then QF.63, QF.68, QF.69, QF.67, QF.71–QF.74; MW after.
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; MV, ME, MK, QF.55–QF.58, QF.60, QF.61 and QF.70 done; QF.62 reviewed and ready to merge, QF.63 most of the way. Preview ready: Actions → Release → Run workflow (MK).
+**Next item:** QF.62 on `wip/QF.62` (head 033e8f6, base ba89330): all Lows fixed, sonnet round 1 on the last three (0 H, 0 M, 4 L; 2 fixed). Left: the full e2e was 167/169 green at hand-off with QF.40 "refuses an undo that would lose XP" failing (not yet diagnosed; likely the QF.62 undo-blocker wording or Identify change) — run `npx playwright test e2e/QF.40.spec.ts` on the branch, fix, finish the latency project, then merge to main and check the box. Then `wip/QF.63` (head 41d0756, branched from QF.62): 14 px phone floor, platinum blue highlight, no-undo reasons, Sound name, D325; e2e `QF.63.spec.ts` written but not yet run (needs a build); then its review. Then QF.68, QF.69, QF.67, QF.71–QF.74; MW after.
 **Blockers:** none
 
 ## Run log
@@ -1635,3 +1635,11 @@ next item, blockers. -->
 - QF.62 in progress (see Next item); D323, Q99.
 - Tests: check green on `wip/QF.62` (unit 2,046); e2e QF.62 2/2, M5.2, MR.1, QF.57 green. Full e2e not run this run (no shared server code changed on main besides the M5.2 assertion; QF.62 touches shared code and runs the full suite before its merge).
 - Open `wip/*`: `wip/QF.62`. Blockers: none.
+
+### Run · 2026-11-01 14:09–15:00 UTC (close-out at minute 47)
+- Close-out at minute 47 (QF.62 and QF.63 handed off on `wip/*`).
+- Preflight: repo already attached; local `main` stale (shallow, unrelated histories), reset to `origin/main` as in D319. First fetch hit a TLS reset, retried fine. Lock pushed cleanly; vitest 5.0.5; reviewer sonnet works (worktree, background). CI on main green (ba89330). No new answers.
+- QF.62 finished on the branch: the event log is written at explicit offsets on an `r+` handle (Windows truncate); Identify drops a first line repeating its header; dead trades say why on both phones and how to clear them (D324). Sonnet round 1: 0 H, 0 M, 4 L (grade id from rules and the /proc-less test fixed; stale-level text and both-sides-short kept as Lows). Box not checked: full e2e had 1 failure (QF.40) at hand-off.
+- QF.63 started (D325): all sub-items coded; "assign all" already covered by MV.1.
+- Tests: check green on `wip/QF.62` (unit 2,051); e2e QF.62 4/4, MV.3, M3.9, MQ.8, M3.7 green; full e2e 167/169 run, QF.40 red.
+- Open `wip/*`: `wip/QF.62`, `wip/QF.63`. Blockers: none.
