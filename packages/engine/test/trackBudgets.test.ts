@@ -479,4 +479,18 @@ describe('the GM override warning on a campaign from before ME', () => {
     expect(s.skips).toContain(`${4 * 4 + 8 * 5} class spread points (base stats stay as they are)`);
     expect(s.skips).toContain(`${4 * 2 + 8 * 3} free points (no new batches to assign)`);
   });
+
+  it("says when the levels sit outside the new grade's range (QF.62)", () => {
+    const old = parseRulesConfig(preMeRules());
+    if (!old.ok) throw new Error('pre-ME rules must parse');
+    const target = { classLevel: 10, professionLevel: 0, xp: { class: 0, profession: 0 } };
+    const line =
+      "Class level 10 is in F-grade's range, not E-grade's: the points above are priced by each level's grade, and the next levels earned grant E-grade rates";
+    expect(
+      progressionOverrideSummary(old.config, fresh(), { ...target, grade: 'E' }).skips,
+    ).toContain(line);
+    expect(
+      progressionOverrideSummary(old.config, fresh(), { ...target, grade: 'F' }).skips.join('\n'),
+    ).not.toContain('range');
+  });
 });

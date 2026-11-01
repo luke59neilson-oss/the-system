@@ -257,6 +257,16 @@ export function progressionOverrideSummary(
     }
   }
 
+  // QF.62: the points above are priced by each level's own grade (what normal
+  // play grants on the way there); a character left outside its grade's level
+  // range earns its own grade's rates from the next level on (`gainXp`).
+  const rangeGrade = gradeOfLevel(rules, toClass);
+  if (known && toClass > 0 && toClass !== fromClass && rangeGrade.id !== target.grade) {
+    skips.push(
+      `Class level ${toClass} is in ${rangeGrade.id}-grade's range, not ${target.grade}-grade's: the points above are priced by each level's grade, and the next levels earned grant ${target.grade}-grade rates`,
+    );
+  }
+
   if (character.evolution !== null && known) {
     const next = {
       ...character,
