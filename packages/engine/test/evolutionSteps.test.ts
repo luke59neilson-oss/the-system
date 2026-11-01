@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildSessionLog,
   execute,
+  replay,
   projectForPlayer,
   stepBudgetProblems,
   type Campaign,
@@ -9,13 +10,12 @@ import {
   type Command,
   type CommandContext,
 } from '../src';
-import { kit, rawRules, run, testContext } from './helpers/events';
+import { kit, preMeRules, rawRules, run, testContext } from './helpers/events';
 
 // ME.2 (DESIGN §2 "Class, profession and race evolve together", L26): the
 // release carries three steps of options; totals must match the step's budget
 // at the new grade (F: class 11, profession 7, race 6) and one-time bonuses must
-// be equal within a step, unless the release says Override. WIP: the command
-// shape below is the target; the engine does not take it yet.
+// be equal within a step, unless the release says Override (D303).
 
 const ctx = testContext('me2');
 const player = (characterId: string): CommandContext => ({
@@ -267,6 +267,118 @@ describe('three-step evolution release (ME.2)', () => {
     expect(text).toContain(
       'Jake evolved into ranger, grade G → F, no profession for now, race human-f',
     );
+  });
+
+  it('refuses off-budget profession and race options, unless Override', () => {
+    const bad = threeStep();
+    (bad as any).steps.profession[0].distribution = { stats: { perception: 5 }, free: 3 };
+    (bad as any).steps.race[0].distribution = { stats: {}, free: 5 };
+    const error = reject(atGTop(), bad);
+    expect(error).toMatch(/Profession option "tracker" gives 8 points per level, not 7/);
+    expect(error).toMatch(/Race option "human-f" gives 5 points per level, not 6/);
+    const c = ok(atGTop(), { ...(bad as object), override: true } as unknown as Command);
+    expect(char(c).evolution?.override).toBe(true);
+  });
+
+  it('refuses duplicate ids in a step and options sent beside steps', () => {
+    const dup = threeStep();
+    (dup as any).steps.class[1].id = 'hunter';
+    expect(reject(atGTop(), dup)).toMatch(/share an id/);
+    expect(reject(atGTop(), threeStep({ options: [{ className: 'Ranger' }] }))).toMatch(
+      /class step/,
+    );
+  });
+
+  it('refuses steps on a campaign still on the old numbers', () => {
+    const old = run(
+      [{ type: 'campaign.create', name: 'Old', rules: preMeRules() }, make],
+      testContext('old'),
+    );
+    const c = ok(old, {
+      type: 'xp.award',
+      track: 'class',
+      amount: 400,
+      participants: [{ characterId: 'jake' }],
+    });
+    expect(reject(c, threeStep())).toMatch(/track budgets at F-grade/);
+  });
+
+  it('refuses profession options before the unlock grade to a character without one', () => {
+    const rules = rawRules() as any;
+    rules.tracks.professionUnlockGrade = 'E';
+    let c = run([{ type: 'campaign.create', name: 'Late', rules }, make], testContext('late'));
+    c = ok(c, {
+      type: 'xp.award',
+      track: 'class',
+      amount: 400,
+      participants: [{ characterId: 'jake' }],
+    });
+    expect(reject(c, threeStep())).toMatch(/Professions are offered from the E-grade/);
+    const none = threeStep();
+    (none as any).steps.profession = [];
+    c = ok(c, none);
+    c = ok(c, choose({ class: 'hunter', profession: null, race: 'human-f' }), player('jake'));
+    expect(char(c).profession).toBeNull();
+  });
+
+  it('checks every combination of transforms at release (review H1)', () => {
+    const withT = (skill: string, name: string) => [{ skill, name, rarity: 'common' }];
+    // One transform per step makes three in a combination (the rules allow 0–2).
+    const three = threeStep();
+    (three as any).steps.class[0].transforms = withT('Basic Archery', 'Archery');
+    (three as any).steps.profession[0].transforms = withT('Basic Stealth', 'Stealth');
+    (three as any).steps.race[0].transforms = withT('Archer’s Eye', 'Hawk Eye');
+    expect(reject(atGTop(), three)).toMatch(/hunter \+ tracker \+ human-f: .*transforms 3 skills/);
+    // The same skill in two steps.
+    const twice = threeStep();
+    (twice as any).steps.class[0].transforms = withT('Basic Archery', 'Archery');
+    (twice as any).steps.race[0].transforms = withT('Basic Archery', 'Bow Sense');
+    expect(reject(atGTop(), twice)).toMatch(/transformed twice/);
+    // A skill the character lacks, in the profession step.
+    const missing = threeStep();
+    (missing as any).steps.profession[0].transforms = withT('Herbalism', 'Herb Lore');
+    expect(reject(atGTop(), missing)).toMatch(/no skill "Herbalism"/);
+    // A valid profession transform applies on confirm.
+    const fine = threeStep();
+    (fine as any).steps.profession[0].transforms = withT('Basic Stealth', 'Tracker’s Stealth');
+    let c = ok(atGTop(), fine);
+    c = ok(c, choose({ class: 'ranger', profession: 'tracker', race: 'human-f' }), player('jake'));
+    expect(char(c).skills.map((x) => x.name)).toContain('Tracker’s Stealth');
+    // ...and not with "none for now".
+    c = ok(atGTop(), fine);
+    c = ok(c, choose({ class: 'ranger', profession: null, race: 'human-f' }), player('jake'));
+    expect(char(c).skills.map((x) => x.name)).toContain('Basic Stealth');
+  });
+
+  it('undoing the choice restores the pending three-step evolution; logs replay', () => {
+    const released = ok(atGTop(), threeStep());
+    const chosen = ok(
+      released,
+      choose({ class: 'hunter', profession: 'tracker', race: 'human-f' }),
+      player('jake'),
+    );
+    expect(replay(chosen.events).state).toEqual(chosen.state);
+    const undone = ok(chosen, { type: 'event.undo', eventId: chosen.events.at(-1)!.id });
+    expect(char(undone)).toEqual(char(released));
+    expect(replay(undone.events).state).toEqual(undone.state);
+    // A re-release replaces the steps.
+    const again = threeStep();
+    (again as any).steps.race = [opt('elf', {}, 6, { vitality: 2 })];
+    const replaced = ok(released, again);
+    expect(char(replaced).evolution?.steps?.race.map((o) => o.id)).toEqual(['elf']);
+  });
+
+  it('a single-choice release and choice (before ME.2) replay unchanged', () => {
+    let c = ok(atGTop(), {
+      type: 'evolution.release',
+      characterId: 'jake',
+      rerateApproved: true,
+      options: [{ className: 'Ranger', statBonus: { agility: 3 } }],
+    } as unknown as Command);
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' }, player('jake'));
+    expect(char(c).className).toBe('Ranger');
+    expect(char(c).race).toBe(char(atGTop()).race);
+    expect(replay(c.events).state).toEqual(c.state);
   });
 
   it('unreleased options never reach the player', () => {

@@ -71,6 +71,7 @@ import {
   withdrawPassedOver,
   offerSelection,
   releaseEvolution,
+  checkReleasedSteps,
   retiredSkillNames,
   grantSkill,
   type PendingEvolution,
@@ -2007,8 +2008,9 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       }
       return withCharacter(
         state,
-        rule(event, () =>
-          withSteps(
+        rule(event, () => {
+          checkedRelease(state, character, steps, rerateApproved === true);
+          return withSteps(
             steps,
             releaseEvolution(
               state.rules,
@@ -2023,8 +2025,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
               rerateApproved === true,
               override === true,
             ),
-          ),
-        ),
+          );
+        }),
       );
     }
     case 'evolution.chosen': {
@@ -2772,6 +2774,25 @@ function jointUsesOf(state: CampaignState, characterId: string) {
     const [a, b] = x < y ? [x, y] : [y, x];
     return counts.find((p) => p.skills[0] === a && p.skills[1] === b)?.count ?? 0;
   };
+}
+
+/** ME.2 review: checks every combination of a three-step release before it is stored. */
+function checkedRelease(
+  state: CampaignState,
+  character: Character,
+  steps: PendingEvolution['steps'],
+  rerateApproved: boolean,
+): void {
+  if (steps !== undefined) {
+    checkReleasedSteps(
+      state.rules,
+      character,
+      steps,
+      retiredFor(state, character),
+      jointUsesOf(state, character.id),
+      rerateApproved,
+    );
+  }
 }
 
 /** ME.2: keeps a release's three steps on the pending evolution (absent before ME.2). */

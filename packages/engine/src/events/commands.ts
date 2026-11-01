@@ -1072,9 +1072,19 @@ function releaseSteps(
   if (!ids(out.class) || !ids(out.profession) || !ids(out.race)) {
     throw new EventRejectedError('Two options in a step share an id');
   }
-  if (state && character && command.override !== true) {
-    const target = evolutionTarget(state.rules, character);
-    const budget = target?.trackBudget;
+  if ((command.options ?? []).length > 0) {
+    throw new EventRejectedError('Send the class options in the class step, not as options');
+  }
+  const target = state && character ? evolutionTarget(state.rules, character) : null;
+  // Steps set each track's points per level at the new grade, which only a
+  // grade with track budgets uses (D300): an old-rules campaign switches first.
+  if (target && target.trackBudget === undefined) {
+    throw new EventRejectedError(
+      `Three-step evolutions need track budgets at ${target.id}-grade: switch to the new numbers in Rules settings first`,
+    );
+  }
+  if (target && command.override !== true) {
+    const budget = target.trackBudget;
     if (budget !== undefined) {
       const problems = [
         ...stepBudgetProblems('Class', budget.class, out.class),

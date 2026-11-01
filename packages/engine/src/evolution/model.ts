@@ -809,22 +809,7 @@ export function chooseEvolution(
   const single = pending.options.find((o) => o.id === optionId);
   if (!single) throw new CharacterRuleError(`No evolution option "${optionId}"`);
   // ME.2: the three chosen options' transforms and one-time bonuses apply together.
-  const option: EvolutionOption =
-    picked === null
-      ? single
-      : {
-          ...single,
-          transforms: [
-            ...picked.class.transforms,
-            ...(picked.profession?.transforms ?? []),
-            ...picked.race.transforms,
-          ],
-          statBonus: sumBonuses([
-            picked.class.statBonus,
-            picked.profession?.statBonus ?? {},
-            picked.race.statBonus,
-          ]),
-        };
+  const option: EvolutionOption = picked === null ? single : combineSteps(single, picked);
   const target = evolutionTarget(rules, character);
   if (!target || target.id !== pending.toGrade) {
     throw new CharacterRuleError(
@@ -1152,8 +1137,81 @@ function applySteps(
   }
   const name = picked.profession.name.trim();
   next =
-    next.profession === null
-      ? grantProfession(rules, next, name, true)
-      : { ...next, profession: name };
+    next.profession === null ? grantProfession(rules, next, name) : { ...next, profession: name };
   return next;
+}
+
+/** ME.2: one class option with the chosen profession's and race's transforms and bonuses added. */
+function combineSteps(base: EvolutionOption, picked: PickedSteps): EvolutionOption {
+  return {
+    ...base,
+    transforms: [
+      ...picked.class.transforms,
+      ...(picked.profession?.transforms ?? []),
+      ...picked.race.transforms,
+    ],
+    statBonus: sumBonuses([
+      picked.class.statBonus,
+      picked.profession?.statBonus ?? {},
+      picked.race.statBonus,
+    ]),
+  };
+}
+
+/**
+ * ME.2 review: a three-step release is checked as every combination the
+ * player could confirm (class × profession or none × race), with the same
+ * checks a single option gets (transform count, skills, merges, ceilings,
+ * bonuses, race skills), so a release never accepts a choice it would refuse.
+ * Profession options need a profession to evolve or the unlock grade.
+ */
+export function checkReleasedSteps(
+  rules: RulesConfig,
+  character: Character,
+  steps: NonNullable<PendingEvolution['steps']>,
+  retired: ReadonlySet<string> = new Set(),
+  joint: JointUses = () => 0,
+  rerateApproved = false,
+): void {
+  const target = evolutionTarget(rules, character);
+  if (!target) return; // releaseEvolution refuses it with the reason
+  if (
+    character.profession === null &&
+    steps.profession.length > 0 &&
+    gradeIndexOf(rules, target.id) < gradeIndexOf(rules, rules.tracks.professionUnlockGrade)
+  ) {
+    throw new CharacterRuleError(
+      `Professions are offered from the ${rules.tracks.professionUnlockGrade}-grade evolution on, to a character without one`,
+    );
+  }
+  const professions: (ReleasedStepOption | null)[] =
+    character.profession === null ? [null, ...steps.profession] : [...steps.profession];
+  for (const cls of steps.class) {
+    for (const profession of professions) {
+      for (const race of steps.race) {
+        const option = combineSteps(
+          {
+            id: cls.id,
+            className: cls.name,
+            description: cls.description,
+            transforms: [],
+            classWeights: null,
+            statBonus: {},
+          },
+          { class: cls, profession, race },
+        );
+        try {
+          if (rerateApproved) checkRaceSkillsKept(character, option);
+          checkOption(rules, character, target, option, retired, joint);
+          checkStatBonus(rules, option);
+          if (rerateApproved) checkRaceSkillsNamed(character, option);
+        } catch (error) {
+          if (!(error instanceof CharacterRuleError)) throw error;
+          throw new CharacterRuleError(
+            `${cls.name} + ${profession?.name ?? 'no profession'} + ${race.name}: ${error.message}`,
+          );
+        }
+      }
+    }
+  }
 }

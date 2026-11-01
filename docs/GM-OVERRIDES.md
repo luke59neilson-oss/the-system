@@ -84,6 +84,8 @@ refusal is raised.
 | `… has the profession […]: add at least one profession option to evolve it` | packages/engine/src/events/commands.ts:1066 | Add a profession option that keeps the profession's name (it evolves in place); `character.grantProfession` with `override: true` changes the profession at any time |
 | `… has the profession […]: choose how it evolves` | packages/engine/src/evolution/model.ts:1105 | Release again with a profession option that keeps its name; `character.grantProfession` with `override: true` changes it afterwards |
 | Step budget and one-time bonus mismatches (`… option "…" gives … points per level, not …`; `… options have unequal one-time bonuses …`) | packages/engine/src/evolution/model.ts (stepBudgetProblems) | `evolution.release` with `override: true` (Evolutions tab → Override) releases unequal options (DESIGN §2 "Equal totals") |
+| `Three-step evolutions need track budgets at …-grade: switch to the new numbers in Rules settings first` | packages/engine/src/events/commands.ts:1082 | Rules settings → switch to the new numbers (D300), or release a single-choice evolution |
+| `… + … + …: …` | packages/engine/src/evolution/model.ts:1210 | One combination of the three steps breaks an evolution rule (named after the colon; its row above has the way through); change that option, or release then fix it on the sheet |
 
 ## State
 
@@ -387,6 +389,7 @@ refusal is raised.
 | `Two options in a step share an id` | packages/engine/src/events/commands.ts:1073 | Give each option in a step its own id |
 | `Choose an evolution option` | packages/engine/src/events/commands.ts:1645 | Name an option (`optionId`) or one per step (`choices`) |
 | `No … option "…"` | packages/engine/src/evolution/model.ts:1099 | Choose an option the release offers in that step |
+| `Send the class options in the class step, not as options` | packages/engine/src/events/commands.ts:1076 | Put the class options in `steps.class` |
 
 ## Permission
 
