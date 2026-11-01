@@ -188,6 +188,31 @@ const FOCUSED = `(() => {
   };
 })()`;
 
+type Focused = { kb: string | null; ring: boolean; label: string } | null;
+
+/**
+ * QF.70: reads the focused element once focus has settled after a key press.
+ * In one round trip, the page reads it after each of up to ten animation
+ * frames and answers once two frames in a row agree, so a re-render that
+ * lands between the press and the read cannot report a half-drawn focus ring.
+ */
+const SETTLED = `new Promise((done) => {
+  const read = () => JSON.stringify(${FOCUSED});
+  let last = read();
+  let frames = 0;
+  const tick = () => {
+    const next = read();
+    if (next === last || ++frames >= 10) return done(JSON.parse(next));
+    last = next;
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+})`;
+
+function settledFocus(page: Page): Promise<Focused> {
+  return page.evaluate<Focused>(SETTLED);
+}
+
 async function tabThrough(page: Page) {
   const marked = await page.evaluate<{ stops: number; positive: string[]; unreachable: string[] }>(
     MARK,
@@ -201,9 +226,7 @@ async function tabThrough(page: Page) {
   // and stop once every stop has been reached (CI flake 2026-10-25, 2026-11-01).
   for (let i = 0; i < 2 * marked.stops + 10 && reached.size < marked.stops; i++) {
     await page.keyboard.press('Tab');
-    const f = await page.evaluate<{ kb: string | null; ring: boolean; label: string } | null>(
-      FOCUSED,
-    );
+    const f = await settledFocus(page);
     if (!f?.kb) continue;
     reached.add(f.kb);
     if (!f.ring) noRing.push(f.label);
@@ -234,6 +257,10 @@ test('the player screen and GM console work from the keyboard alone', async ({ b
   const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   await page.goto(`${server.url}/play/demo-jake`);
   await expect(page.getByTestId('connection')).toHaveText('Connected');
+  // QF.70: "Connected" can show before the first view draws the status
+  // window; mark the stops only once the sheet is on screen.
+  await expect(page.getByTestId('status')).toBeVisible();
+  await expect(page.locator('.skill-open').first()).toBeVisible();
   expect(await tabThrough(page)).toBeGreaterThan(20);
 
   // Keyboard only: tab to a skill, Enter opens its details, Escape closes
