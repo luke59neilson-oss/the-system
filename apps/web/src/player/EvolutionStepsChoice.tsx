@@ -10,6 +10,7 @@ import {
   perLevelText,
   picksComplete,
   professionNoneAllowed,
+  professionUnchanged,
   stepChoices,
   stepWarnings,
   type EvolutionStepId,
@@ -58,11 +59,11 @@ export function EvolutionStepsChoice({
   const blocked = evolutionBlocked(me);
   const rerate = rerateLines(rules, me, evolution);
   const noneAllowed = professionNoneAllowed(me);
-  // The steps the player walks: a profession step with nothing to pick (a
-  // profession held and no option for it) is skipped.
-  const walk = EVOLUTION_STEPS.filter(
-    (s) => s !== 'profession' || noneAllowed || steps.profession.length > 0,
-  );
+  // ME.6 (a): the profession stays as it is when the player took one after a
+  // release that offered professions, or no option evolves the held one.
+  const unchanged = professionUnchanged(me, evolution, steps);
+  // The steps the player walks: an unchanged profession has no step.
+  const walk = EVOLUTION_STEPS.filter((s) => s !== 'profession' || !unchanged);
   const [picks, setPicksState] = useState<StepPicks>(
     () => saved?.picks ?? { class: null, profession: null, race: null },
   );
@@ -101,7 +102,7 @@ export function EvolutionStepsChoice({
     const result = await client.command({
       type: 'evolution.choose',
       characterId: me.id,
-      choices: stepChoices(picks),
+      choices: stepChoices(picks, unchanged),
       releaseId: evolution.releaseId,
     });
     setBusy(false);
@@ -215,8 +216,21 @@ export function EvolutionStepsChoice({
             Review
           </h4>
           <dl className="rows evolution-review" data-testid="evolution-review">
-            {walk.map((s) => {
+            {EVOLUTION_STEPS.map((s) => {
+              if (s === 'profession' && unchanged) {
+                return (
+                  <div key={s}>
+                    <dt>{EVOLUTION_STEP_LABEL[s]}</dt>
+                    <dd data-testid="evolution-review-profession">
+                      <span className="skill-name">[{me.profession}]</span>
+                      <span className="muted">Stays as it is.</span>
+                    </dd>
+                  </div>
+                );
+              }
+              if (!walk.includes(s)) return null;
               const c = card(s);
+              const bonus = c ? bonusText(rules, c.statBonus) : null;
               return (
                 <div key={s}>
                   <dt>{EVOLUTION_STEP_LABEL[s]}</dt>
@@ -225,8 +239,11 @@ export function EvolutionStepsChoice({
                       <>
                         <span className="skill-name">
                           [{c.name} ({rarityName(rules, c.rarity)})]
-                        </span>{' '}
-                        <span className="muted">{perLevelText(rules, c)}</span>
+                        </span>
+                        <span className="muted">Per level: {perLevelText(rules, c)}</span>
+                        <span className="muted" data-testid="evolution-review-bonus">
+                          One-time bonus: {bonus ?? 'none'}
+                        </span>
                       </>
                     ) : (
                       'None for now'
@@ -255,7 +272,7 @@ export function EvolutionStepsChoice({
           <div className="assign-actions">
             <button
               type="button"
-              disabled={busy || blocked !== null || !picksComplete(steps, me, picks)}
+              disabled={busy || blocked !== null || !picksComplete(steps, me, picks, evolution)}
               onClick={() => void confirm()}
             >
               Evolve

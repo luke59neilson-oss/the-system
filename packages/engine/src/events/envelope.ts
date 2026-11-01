@@ -213,6 +213,22 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   'profession.chosen': z.strictObject({ characterId: recordId, profession: nonBlank }),
   /** GM withdraws an untaken profession offer (M5.2, MQ.6 review). */
   'profession.offerWithdrawn': z.strictObject({ characterId: recordId, profession: nonBlank }),
+  /**
+   * ME.6 (b, DESIGN §2): the GM offers a profession at any time while the
+   * character has none, optionally with the per-level distribution and the
+   * one-time bonus it brings when taken.
+   */
+  'profession.offered': z.strictObject({
+    characterId: recordId,
+    profession: nonBlank.max(80),
+    distribution: z
+      .strictObject({
+        stats: z.record(z.string().min(1), z.number().int().nonnegative().max(100_000)),
+        free: z.number().int().nonnegative().max(100_000),
+      })
+      .optional(),
+    statBonus: z.record(z.string().min(1), z.number().int().nonnegative().max(100_000)).optional(),
+  }),
   /** GM awards a title by name (M1.15; the title library, bonuses and System text are M6.4). */
   'title.awarded': z.strictObject({ characterId: recordId, title: nonBlank.max(80) }),
   /** GM adds a title to the title library (M6.4). */
@@ -722,6 +738,12 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     releaseId: recordId.optional(),
     /** Upcast from v1: chosen under the old rules (no gate, no refill, D99). */
     legacy: z.literal(true).optional(),
+    /**
+     * Upcast from v2 (ME.6, D311): chosen before ME.6, so a three-step choice
+     * replays under the ME.2 profession rules (skipped options become name-only
+     * offers; no "no longer apply" refusal).
+     */
+    stepsV1: z.literal(true).optional(),
   }),
   /** GM starts a progress clock with N segments (M1.11, DESIGN §7). */
   'clock.created': z.strictObject({
@@ -1009,6 +1031,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'character.professionGranted': 1,
   'profession.chosen': 1,
   'profession.offerWithdrawn': 1,
+  'profession.offered': 1,
   'title.awarded': 1,
   'titleDef.defined': 1,
   'titleDef.edited': 1,
@@ -1069,7 +1092,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'selection.chosen': 1,
   'selection.optionWithdrawn': 1,
   'evolution.released': 2,
-  'evolution.chosen': 2,
+  'evolution.chosen': 3,
   'clock.created': 1,
   'clock.ticked': 1,
   'clock.removed': 2,
@@ -1137,6 +1160,8 @@ export const EVENT_UPCASTERS: EventUpcasters = {
   },
   'evolution.chosen': {
     1: (payload) => ({ ...(payload as object), legacy: true }),
+    // ME.6 (D311): three-step choices stored before ME.6 keep the ME.2 rules.
+    2: (payload) => ({ ...(payload as object), stepsV1: true }),
   },
   // M7.A: v1 removals left the clock's open montages open.
   'clock.removed': {

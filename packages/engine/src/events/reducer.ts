@@ -6,6 +6,7 @@ import {
   grantProfession,
   takeOfferedProfession,
   withdrawProfessionOffer,
+  offerProfession,
   poolMax,
   batchRemaining,
   unassignedPointsOf,
@@ -106,8 +107,8 @@ import {
 } from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). v30: entity `stats`/`notes` (bestiary; M7.2). v31: shared contests (M7.3). v32: hunger, regions, factions (M7.4). v33: no hunger tracker (MT.3; hunger events replay as no-ops). v34: bestiary categories; entity `categoryId`/`worked`/`notices` and one Identify text (MV.3). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 34;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). v30: entity `stats`/`notes` (bestiary; M7.2). v31: shared contests (M7.3). v32: hunger, regions, factions (M7.4). v33: no hunger tracker (MT.3; hunger events replay as no-ops). v34: bestiary categories; entity `categoryId`/`worked`/`notices` and one Identify text (MV.3). v35: character `professionOfferCards` and pending `professionOffered` (ME.6). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 35;
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -949,6 +950,26 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       return withCharacter(
         state,
         rule(event, () => takeOfferedProfession(state.rules, character, event.payload.profession)),
+      );
+    }
+    case 'profession.offered': {
+      const character = characterOf(state, event, event.payload.characterId);
+      const { distribution, statBonus } = event.payload;
+      const statIds = state.rules.stats.list.map((s) => s.id);
+      let card = null;
+      if (distribution !== undefined || statBonus !== undefined) {
+        checkKeys(event, Object.keys(statBonus ?? {}), statIds, 'stat');
+        if (distribution === undefined) {
+          return fail(event, 'a profession offer with a bonus needs a distribution too');
+        }
+        checkKeys(event, Object.keys(distribution.stats), statIds, 'stat');
+        const clean = checkDistribution(distribution, statIds);
+        if (distributionTotal(clean) === 0) fail(event, 'a distribution needs at least one point');
+        card = { distribution: clean, statBonus: { ...(statBonus ?? {}) } };
+      }
+      return withCharacter(
+        state,
+        rule(event, () => offerProfession(character, event.payload.profession, card)),
       );
     }
     case 'profession.offerWithdrawn': {
@@ -2043,6 +2064,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
           event.payload.legacy === true,
           jointUsesOf(state, characterId),
           event.payload.choices ?? null,
+          event.payload.stepsV1 === true,
         ),
       );
       // Practice entries follow transformed skills, so pair counts carry over.
@@ -2825,5 +2847,7 @@ function checkedRelease(
 /** ME.2: keeps a release's three steps on the pending evolution (absent before ME.2). */
 function withSteps(steps: PendingEvolution['steps'], character: Character): Character {
   if (steps === undefined || character.evolution === null) return character;
-  return { ...character, evolution: { ...character.evolution, steps } };
+  // ME.6 (a): a release to a character without a profession offers professions.
+  const offered = character.profession === null ? { professionOffered: true as const } : {};
+  return { ...character, evolution: { ...character.evolution, steps, ...offered } };
 }

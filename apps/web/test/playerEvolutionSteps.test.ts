@@ -5,6 +5,7 @@ import {
   perLevelText,
   releaseArrived,
   picksComplete,
+  professionUnchanged,
   readOpened,
   stepChoices,
   stepWarnings,
@@ -103,6 +104,24 @@ describe("the player's evolution window (ME.5)", () => {
       '[A] and [B] merge into [AB]: both are consumed, and the merged skill starts at 0 marks.',
       'The choice is final; the other options will be gone.',
     ]);
+  });
+});
+
+describe('a profession taken while a release that offered professions waits (ME.6 a)', () => {
+  const held = { profession: 'Cook' };
+  const offered = { professionOffered: true as const };
+  it('keeps the profession unchanged: no step, and the choice sends null', () => {
+    expect(professionUnchanged(held, offered, steps)).toBe(true);
+    expect(professionUnchanged(held, {}, steps)).toBe(false);
+    expect(professionUnchanged({ profession: null }, offered, steps)).toBe(false);
+    expect(picksComplete(steps, held, { class: 'c1', profession: null, race: 'r1' }, offered)).toBe(
+      true,
+    );
+    // A pick saved before the profession was taken is not sent.
+    expect(stepChoices({ class: 'c1', profession: 'p1', race: 'r1' }, true).profession).toBeNull();
+  });
+  it('a held profession cannot complete with "none for now" when it must evolve', () => {
+    expect(picksComplete(steps, held, { class: 'c1', profession: '', race: 'r1' })).toBe(false);
   });
 });
 

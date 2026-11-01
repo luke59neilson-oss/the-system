@@ -111,6 +111,14 @@ const SCENARIOS: Partial<Record<EventType, Scenario>> = {
     setup: professionOffered,
     act: { type: 'profession.choose', characterId: 'jake', profession: 'Alchemist' },
   },
+  'profession.offered': {
+    act: {
+      type: 'profession.offer',
+      characterId: 'jake',
+      profession: 'Herbalist',
+      distribution: { stats: { wisdom: 3 }, free: 2 },
+    },
+  },
   'profession.offerWithdrawn': {
     setup: professionOffered,
     act: { type: 'profession.withdrawOffer', characterId: 'jake', profession: 'Alchemist' },

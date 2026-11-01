@@ -45,6 +45,7 @@ import { OfferBuilder, type OfferTarget } from './OfferBuilder';
 import { ChangeLog } from './ChangeLog';
 import { EvolutionBuilder } from './EvolutionBuilder';
 import { MarksReview } from './MarksReview';
+import { Professions, TrackStats } from './Professions';
 import { MergeBuilder } from './MergeBuilder';
 import { PracticeCapture } from './PracticeCapture';
 import { QuestManager } from './QuestManager';
@@ -343,6 +344,12 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
               </Place>
               <Place id="merge-builder" tab={tab}>
                 <MergeBuilder client={client} state={state} />
+              </Place>
+              <Place id="professions" tab={tab}>
+                <Professions client={client} state={state} />
+              </Place>
+              <Place id="track-stats" tab={tab}>
+                <TrackStats client={client} state={state} />
               </Place>
               <Place id="skill-text" tab={tab}>
                 <SkillText client={client} state={state} />
