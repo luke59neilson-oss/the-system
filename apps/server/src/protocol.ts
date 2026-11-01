@@ -21,15 +21,18 @@ export interface HelloMessage {
    * Clients reset what they hold when it changes. Omitted without a campaign.
    */
   campaign?: string;
+  /** ML.1: no campaign is open yet; the connection is dropped when one opens. */
+  waiting?: true;
 }
 
-export function helloMessage(campaign?: string): HelloMessage {
+export function helloMessage(campaign?: string, waiting = false): HelloMessage {
   return {
     type: 'hello',
     protocol: PROTOCOL_VERSION,
     server: 'the-system',
     engineApiVersion: ENGINE_API_VERSION,
     ...(campaign === undefined ? {} : { campaign }),
+    ...(waiting ? { waiting: true as const } : {}),
   };
 }
 

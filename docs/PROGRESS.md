@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; MV, ME, MK, QF.55–QF.58, QF.60, QF.61 and QF.70 done; QF.62 reviewed and ready to merge, QF.63 most of the way. Preview ready: Actions → Release → Run workflow (MK).
-**Next item:** QF.62 on `wip/QF.62` (head 033e8f6, base ba89330): all Lows fixed, sonnet round 1 on the last three (0 H, 0 M, 4 L; 2 fixed). Left: the full e2e was 167/169 green at hand-off with QF.40 "refuses an undo that would lose XP" failing (not yet diagnosed; likely the QF.62 undo-blocker wording or Identify change) — run `npx playwright test e2e/QF.40.spec.ts` on the branch, fix, finish the latency project, then merge to main and check the box. Then `wip/QF.63` (head 41d0756, branched from QF.62): 14 px phone floor, platinum blue highlight, no-undo reasons, Sound name, D325; e2e `QF.63.spec.ts` written but not yet run (needs a build); then its review. Then ML.1–ML.A (L28; it sits before QF in ROADMAP), then QF.68, QF.69, QF.67, QF.71–QF.74; MW after.
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; ML.1 merged; ML.2 built on its branch (engine, library form, create and offer flows, unit tests), its e2e not run yet; QF.63 reviewed on its branch. Preview ready: Actions → Release → Run workflow (MK).
+**Next item:** `wip/ML.2` (head f31850f, based on wip/ML.1 8346db3; needs `git merge origin/main`): `npm run build`, run `e2e/ML.2.spec.ts` and `e2e/M4.2.spec.ts` (its weights now sit in the "Stat weights" group; the library form has a points row) and fix; then `npm run check`, the §6 review (sonnet) and merge. Then `wip/QF.63` (head ce1c681, needs `git merge origin/main`, `npm run check`, full e2e, merge). Then ML.3–ML.A, QF.68, QF.69, QF.67, QF.71–QF.74; MW after.
 **Blockers:** none
 
 ## Run log
@@ -1643,3 +1643,29 @@ next item, blockers. -->
 - QF.63 started (D325): all sub-items coded; "assign all" already covered by MV.1.
 - Tests: check green on `wip/QF.62` (unit 2,051); e2e QF.62 4/4, MV.3, M3.9, MQ.8, M3.7 green; full e2e 167/169 run, QF.40 red.
 - Open `wip/*`: `wip/QF.62`, `wip/QF.63`. Blockers: none.
+
+### Run · 2026-11-01 15:06–15:55 UTC (close-out at minute 42, lock released at minute 48)
+- Close-out at minute 42; hard stop at 52 (lock released then). Build ran to minute 41 (ML.1 started on `wip/ML.1`).
+- Preflight: no `add_repo` tool in this session, repo already at /home/claude/the-system; local `main` stale (unrelated histories), reset to `origin/main` (D319). Lock pushed cleanly; vitest 5.0.5; reviewers sonnet, fable, haiku all work (worktree; Agent calls block, so reviews ran between build steps). CI on main green (ba89330). No new answers.
+- Quality sweep D (hour 15): Rules · sonnet, Boundaries · fable, UX · haiku on 2b21061..b686eb9: 0 High, 0 Medium, 3 Low (Backlog; Q100 and D326 for a level lowered by override and earned again). Boundaries ran a live probe of every player path: clean.
+- QF.62: the QF.40 e2e failure was a test race present on main too (the change-log window could open on a list fetched before the last award); fixed in the test, 3/3 green. `npm run check` green (unit 2,051). Full e2e re-run: 164/169 green, no failure, when the run stopped; latency not run. Box not checked yet.
+- QF.63: e2e QF.63 run for the first time (green); sonnet round 1 (0 H, 2 M, 4 L) and round 2 (0 H, 1 M, 3 L); every Medium fixed: the 14 px phone floor now covers every text the demo phone screens and a skill's detail dialog show, scanned by the e2e; platinum highlight #c4e0ff with a silver/platinum screenshot pair. Box not checked: needs check + full e2e, then merge.
+- ML.1 started (`wip/ML.1`): store soft delete, Deleted list, restore (2 tests), campaign library methods and GM routes (4 tests: store and routes).
+- Tests: check green on `wip/QF.62` (unit 2,051); e2e QF.40 3/3, QF.63 2/2; full e2e 164/169 at the stop, 0 failed.
+- Open `wip/*`: `wip/QF.62`, `wip/QF.63`, `wip/ML.1`. Blockers: none.
+
+### Run · 2026-11-01 16:06–16:53 UTC (close-out at minute 44, lock released at minute 46)
+- Close-out at minute 44; build ran to minute 44 (ML.1 handed off on `wip/ML.1`, built and green, review not started: the Agent tool blocks, and a review started at minute 42 would run past the hard stop).
+- Preflight: no `add_repo` tool in this session, repo already at /home/claude/the-system; local `main` stale (unrelated histories), reset to `origin/main` (D319). Lock pushed cleanly; vitest 5.0.5. CI on main green (ba89330). No new answers. Hour 16: no efficiency check or sweep.
+- QF.62 merged and checked: merge of origin/main into the branch (QUESTIONS/DECISIONS conflicts only), `npm run check` green, full e2e 169/169 + latency 7/8: M11.3 1366×768 at 2,382 ms under load and 2,227 / 2,087 ms alone, the local-only cold-measurement flake logged in QUALITY (CI judges it). Pushed main at dd6c46d.
+- ML.1 (`wip/ML.1`): the server starts on the Campaigns home (no campaign at start; `--open <id>`; the e2e helper opens 'main' unless a spec asks for the home, D327); New campaign (folder named after it), Close campaign, Delete with the name typed (an idle opened campaign is let go first), Deleted list and Restore, Restore from a file or a campaign's backups on the home; `home.json` rows (name, characters, last opened); phones read "Waiting for the GM to open a campaign" on the join screen and the status screen and rejoin when one opens (D328, Q101). Server tests 9 new, web model tests 4; e2e ML.1 (create two, delete one, restore it, open the other, a phone joins; screenshots in docs/screens/ML.1); desktop specs splash → home → open, 8/8.
+- Tests: check green on `wip/ML.1` (unit 2,066); e2e ML.1 1/1; desktop smoke 8/8; full e2e on `wip/QF.62` 169/169 + latency 7/8 (flake above).
+- Open `wip/*`: `wip/ML.1` (review next), `wip/QF.63`. Blockers: none.
+
+### Run · 2026-11-01 17:06–17:52 UTC (close-out at minute 44, lock released at minute 46)
+- Close-out at minute 44.
+- Preflight: no `add_repo` tool, repo at /home/claude/the-system; local `main` stale (unrelated histories), reset to `origin/main` (D319). Lock pushed; vitest 5.0.5. CI on main green (dd6c46d). No new answers. Hour 17: no efficiency check or sweep.
+- ML.1 merged and checked: sonnet round 1 (1 High: the change log refetched after Close and hit a 404; 1 Medium: no server-side name check on delete) and the full e2e (MS.1: a wrong key read "Could not reach the System") fixed (D329); round 2 clean. ML.1 screenshots are the round-1 ones (the confirm button now red; re-shoot with the next ML.1-touching run).
+- ML.2 on `wip/ML.2` (f31850f): library entries carry points per level (events, validation, `entryBudget`/`entryPoints`), `character.create` takes the class and race entries' points, the library form's points row with the G budget reminder and warning, "From the library" on profession offers (D330). Engine tests 9 (`ml2.test.ts`), web model tests 5; e2e `e2e/ML.2.spec.ts` written, not run yet.
+- Tests: full e2e on wip/ML.1 before the fixes 168/170 (ML.1, MS.1 red, both fixed; re-run ML.1 ×4 and MS.1 green); latency 8/8; `npm run check` green on wip/ML.1 (unit 2,067).
+- Open `wip/*`: `wip/ML.2` (next), `wip/QF.63`. Blockers: none.

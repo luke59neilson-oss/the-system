@@ -29,7 +29,14 @@ describe('QF.54 probe: End session at 40 sessions', () => {
       const webRoot = path.join(root, 'web');
       mkdirSync(webRoot);
       writeFileSync(path.join(webRoot, 'index.html'), '<!doctype html><title>shell</title>');
-      const app = await startApp({ port: 0, host: '127.0.0.1', webRoot, dataDir, gmKey: KEY });
+      const app = await startApp({
+        openAtStart: 'main',
+        port: 0,
+        host: '127.0.0.1',
+        webRoot,
+        dataDir,
+        gmKey: KEY,
+      });
       try {
         const ws = new WebSocket(`ws://127.0.0.1:${app.port}/ws`);
         const results = new Map<string, { ok: boolean; error?: string; warning?: string }>();

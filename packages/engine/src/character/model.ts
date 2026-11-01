@@ -223,6 +223,16 @@ export interface NewCharacter {
   classWeights?: Readonly<Record<string, number>> | undefined;
   /** Portrait file name (PORTRAIT_REF); none when omitted. */
   portrait?: string | null | undefined;
+  /**
+   * ML.2 (DESIGN §2 "The GM lays these out in the library"): the class and
+   * race entries' points per level; absent tracks keep the defaults (D301).
+   */
+  distributions?:
+    | {
+        readonly class?: TrackDistribution | undefined;
+        readonly race?: TrackDistribution | undefined;
+      }
+    | undefined;
 }
 
 /** A skill as granted at creation: name and rarity, with optional System text (M3.5). */
@@ -332,7 +342,13 @@ export function createCharacter(rules: RulesConfig, input: NewCharacter): Charac
   const pools: Record<string, number> = {};
   for (const pool of rules.pools) pools[pool.id] = poolMax(rules, stats, pool.id);
 
+  const distributions: Partial<Record<StatTrack, TrackDistribution>> = {};
+  for (const track of ['class', 'race'] as const) {
+    const d = input.distributions?.[track];
+    if (d) distributions[track] = checkedDistribution(d, statIds, track);
+  }
   return {
+    ...(Object.keys(distributions).length > 0 ? { distributions } : {}),
     schemaVersion: CHARACTER_SCHEMA_VERSION,
     id,
     name,
@@ -356,6 +372,27 @@ export function createCharacter(rules: RulesConfig, input: NewCharacter): Charac
     evolution: null,
     portrait: input.portrait ?? null,
   };
+}
+
+/** Whole points ≥ 0 for known stats (ML.2); zero entries dropped. */
+function checkedDistribution(
+  d: TrackDistribution,
+  statIds: readonly string[],
+  track: string,
+): TrackDistribution {
+  const stats: Record<string, number> = {};
+  for (const [id, n] of Object.entries(d.stats)) {
+    if (!statIds.includes(id))
+      throw new CharacterRuleError(`Unknown stat "${id}" in ${track} points`);
+    if (!Number.isInteger(n) || n < 0) {
+      throw new CharacterRuleError(`${track} points for ${id} must be a whole number ≥ 0`);
+    }
+    if (n > 0) stats[id] = n;
+  }
+  if (!Number.isInteger(d.free) || d.free < 0) {
+    throw new CharacterRuleError(`${track} free points must be a whole number ≥ 0`);
+  }
+  return { stats, free: d.free };
 }
 
 /** Race level: class level before a profession, else floor(average) (DESIGN §2). */

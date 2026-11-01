@@ -199,6 +199,9 @@ refusal is raised.
 | `Unknown stat "…" in class weights` | packages/engine/src/character/model.ts:223 | Fix the input or define the thing first |
 | `Class weight for … must be a whole number from 0 to 1000` | packages/engine/src/character/model.ts:226 | Fix the input or define the thing first |
 | `Class weights must give at least one stat a weight above 0` | packages/engine/src/character/model.ts:233 | Fix the input or define the thing first |
+| `Unknown stat "…" in … points` | packages/engine/src/character/model.ts:386 | Fix the input or define the thing first |
+| `… points for … must be a whole number ≥ 0` | packages/engine/src/character/model.ts:388 | Whole points only |
+| `… free points must be a whole number ≥ 0` | packages/engine/src/character/model.ts | Whole points only |
 | `Unknown race level rounding "…"` | packages/engine/src/character/model.ts:281 | Fix the input or define the thing first |
 | `Unknown pool "…"` | packages/engine/src/character/model.ts:308 | Fix the input or define the thing first |
 | `Stat "…" is missing or not a number` | packages/engine/src/character/model.ts:311 | Fix the input or define the thing first |

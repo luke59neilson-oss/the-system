@@ -303,6 +303,7 @@ describe('session log during a scripted session (M2.4 acceptance)', () => {
     const webRoot = tempDir('log-web');
     writeFileSync(path.join(webRoot, 'index.html'), '<!doctype html><title>shell</title>');
     const app = await startApp({
+      openAtStart: 'main',
       port: 0,
       host: '127.0.0.1',
       webRoot,
@@ -436,7 +437,14 @@ describe('session log during a scripted session (M2.4 acceptance)', () => {
     const dataDir = tempDir('log-zombie');
     const webRoot = tempDir('log-zombie-web');
     writeFileSync(path.join(webRoot, 'index.html'), '<!doctype html><title>shell</title>');
-    const app = await startApp({ port: 0, host: '127.0.0.1', webRoot, dataDir, gmKey: KEY });
+    const app = await startApp({
+      openAtStart: 'main',
+      port: 0,
+      host: '127.0.0.1',
+      webRoot,
+      dataDir,
+      gmKey: KEY,
+    });
     const ws = new WebSocket(`ws://127.0.0.1:${app.port}/ws`);
     const done = new Set<string>();
     ws.addEventListener('message', (event) => {
@@ -550,7 +558,8 @@ describe('session log during a scripted session (M2.4 acceptance)', () => {
     const dataDir = tempDir('log-end');
     const webRoot = tempDir('log-end-web');
     writeFileSync(path.join(webRoot, 'index.html'), '<!doctype html><title>shell</title>');
-    const start = () => startApp({ port: 0, host: '127.0.0.1', webRoot, dataDir, gmKey: KEY });
+    const start = () =>
+      startApp({ openAtStart: 'main', port: 0, host: '127.0.0.1', webRoot, dataDir, gmKey: KEY });
     const session = async (port: number) => {
       const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
       const results = new Map<string, { ok: boolean; error?: string; warning?: string }>();

@@ -391,7 +391,7 @@ DESIGN §7 "Dice", §9. After ME, before QF.
 Q79–Q98 answered in chat. DESIGN §6, §7, §9a, §11. After MK, before QF:
 the campaigns home and the library layouts come before the real campaign.
 
-- [ ] **ML.1 Campaigns home and Delete.** DESIGN §9a "Campaigns home": the
+- [x] **ML.1 Campaigns home and Delete.** DESIGN §9a "Campaigns home": the
   GM app starts on a list of campaigns (name, last opened, characters) with
   Open, New campaign, Restore and Delete; no campaign opens by itself.
   Delete asks for the name and moves the campaign to a Deleted list (files
@@ -401,7 +401,7 @@ the campaigns home and the library layouts come before the real campaign.
   start; delete moves, restore returns, the lock is respected); desktop
   launch specs updated (splash → home → open); e2e: create two, delete one,
   restore it, open the other, a phone joins; screenshots at 1366×768.
-- [ ] **ML.2 Per-level points in the library.** DESIGN §2 "The GM lays these
+- [x] **ML.2 Per-level points in the library.** DESIGN §2 "The GM lays these
   out in the library": class, race and profession entries get whole points
   per stat plus free points per level (class weights from before ME still
   load and show as converted points); a budget reminder for the entry's
@@ -1039,7 +1039,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   spells/Cast; DESIGN §9a tab contents vs `apps/web/src/gm/tabsModel.ts`.
   *Accept:* each line fixed; `scripts/gm-overrides.test.ts` also checks every
   doc row against `listRefusals()` (fails on today's doc).
-- [ ] **QF.62 Low fixes, engine and server.** Cast skips the practice-entry
+- [x] **QF.62 Low fixes, engine and server.** Cast skips the practice-entry
   cap (`commands.ts:1976-1990`); malformed player commands throw before
   validation and log as engine bugs (`commands.ts:2050`, `hub.ts:258`); the
   override warning prices skipped points by level range, not grade

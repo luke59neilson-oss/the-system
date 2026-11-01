@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   REMEMBER_KEY,
+  WAITING_FOR_CAMPAIGN,
+  isWaitingAnswer,
   initials,
   parseJoinList,
   readRemembered,
@@ -104,5 +106,15 @@ describe('parseJoinList', () => {
     expect(row('https://evil.example/a.png')).not.toHaveProperty('portrait');
     expect(row('javascript:alert(1)')).not.toHaveProperty('portrait');
     expect(row(42)).not.toHaveProperty('portrait');
+  });
+});
+
+describe('waiting for a campaign (ML.1)', () => {
+  it('reads only a 200 with waiting: true as waiting', () => {
+    expect(isWaitingAnswer(200, { waiting: true, error: WAITING_FOR_CAMPAIGN })).toBe(true);
+    expect(isWaitingAnswer(200, null)).toBe(false);
+    expect(isWaitingAnswer(503, { waiting: true })).toBe(false);
+    expect(isWaitingAnswer(200, [])).toBe(false);
+    expect(WAITING_FOR_CAMPAIGN).toBe('Waiting for the GM to open a campaign');
   });
 });

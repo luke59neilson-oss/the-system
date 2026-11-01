@@ -52,7 +52,13 @@ describe('rules migrations on load (MR.3)', () => {
   });
 
   const load = async (): Promise<Campaign> => {
-    const app = await startApp({ port: 0, host: '127.0.0.1', webRoot, dataDir });
+    const app = await startApp({
+      openAtStart: 'main',
+      port: 0,
+      host: '127.0.0.1',
+      webRoot,
+      dataDir,
+    });
     await app.close();
     const store = CampaignStore.open('main', { dataDir, now });
     const campaign = store.campaign;

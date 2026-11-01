@@ -581,7 +581,7 @@ function defineClass(state: CampaignState, event: DomainEvent, def: ClassDef): C
 
 function defineRace(state: CampaignState, event: DomainEvent, def: RaceDef): CampaignState {
   if (hasOwn(state.raceLibrary, def.id)) fail(event, `library race "${def.id}" already exists`);
-  rule(event, () => validateRaceDef(def, state.raceLibrary));
+  rule(event, () => validateRaceDef(def, state.raceLibrary, state.rules));
   return {
     ...state,
     raceLibrary: { ...state.raceLibrary, [def.id]: def },
@@ -605,6 +605,17 @@ function defineProfession(
   };
 }
 
+/**
+ * ML.2: a library entry's points, present only when set (older entries stay as
+ * stored). An edit to all zeros clears them, so the entry falls back to its
+ * default (class weights, Human free points, the class's shape).
+ */
+function pointsOf(points: TrackDistribution | undefined): { points?: TrackDistribution } {
+  if (!points) return {};
+  const total = Object.values(points.stats).reduce((a, b) => a + b, 0) + points.free;
+  return total > 0 ? { points } : {};
+}
+
 function entryOf<T>(
   event: DomainEvent,
   library: Readonly<Record<string, T>>,
@@ -625,9 +636,9 @@ function unchanged<T extends object>(event: DomainEvent, def: T, old: T): void {
         ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
         : v,
     );
-  const same = (Object.keys(def) as (keyof T)[]).every(
-    (k) => canonical(def[k]) === canonical(old[k]),
-  );
+  // Both sides' keys, so an edit that clears a field (ML.2 points) is a change.
+  const keys = new Set([...Object.keys(def), ...Object.keys(old)] as (keyof T)[]);
+  const same = [...keys].every((k) => canonical(def[k]) === canonical(old[k]));
   if (same) fail(event, 'nothing to change');
 }
 
@@ -1378,6 +1389,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         description: changes.description ?? old.description,
         skills: changes.skills ?? old.skills,
         weights: changes.weights ?? old.weights,
+        ...pointsOf(changes.points ?? old.points),
       };
       unchanged(event, def, old);
       rule(event, () => validateClassDef(state.rules, def, state.classLibrary));
@@ -1392,9 +1404,10 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         id: raceDefId,
         name: changes.name ?? old.name,
         description: changes.description ?? old.description,
+        ...pointsOf(changes.points ?? old.points),
       };
       unchanged(event, def, old);
-      rule(event, () => validateRaceDef(def, state.raceLibrary));
+      rule(event, () => validateRaceDef(def, state.raceLibrary, state.rules));
       return { ...state, raceLibrary: { ...state.raceLibrary, [raceDefId]: def } };
     }
     case 'professionDef.defined':
@@ -1407,6 +1420,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         name: changes.name ?? old.name,
         description: changes.description ?? old.description,
         skills: changes.skills ?? old.skills,
+        ...pointsOf(changes.points ?? old.points),
       };
       unchanged(event, def, old);
       rule(event, () => validateProfessionDef(state.rules, def, state.professionLibrary));
