@@ -82,7 +82,19 @@ const useKey = (e: PracticeEntry): string | null =>
  * "repeats flagged"). The first of a run is not a repeat. Entries logged
  * outside a session are never repeats. One pass.
  */
-export function repeatedEntryIds(entries: readonly PracticeEntry[]): Set<string> {
+export function repeatedEntryIds(entries: readonly PracticeEntry[]): ReadonlySet<string> {
+  // QF.55: memoised by the entries array's identity (state arrays are never
+  // mutated, so a new log is a new array); a pure cache, same answer.
+  const cached = repeatsCache.get(entries);
+  if (cached !== undefined) return cached;
+  const out = computeRepeats(entries);
+  repeatsCache.set(entries, out);
+  return out;
+}
+
+const repeatsCache = new WeakMap<readonly PracticeEntry[], ReadonlySet<string>>();
+
+function computeRepeats(entries: readonly PracticeEntry[]): Set<string> {
   const out = new Set<string>();
   const seen = new Set<string>();
   for (const entry of entries) {
@@ -111,7 +123,24 @@ export interface SkillPairCount {
 export function skillPairCounts(
   entries: readonly PracticeEntry[],
   characterId: string,
-): SkillPairCount[] {
+): readonly SkillPairCount[] {
+  // QF.55: memoised per (entries identity, character); the GM console asks
+  // for it from several windows on every state frame.
+  let byCharacter = pairsCache.get(entries);
+  if (byCharacter === undefined) {
+    byCharacter = new Map();
+    pairsCache.set(entries, byCharacter);
+  }
+  const cached = byCharacter.get(characterId);
+  if (cached !== undefined) return cached;
+  const out = Object.freeze(computePairs(entries, characterId));
+  byCharacter.set(characterId, out);
+  return out;
+}
+
+const pairsCache = new WeakMap<readonly PracticeEntry[], Map<string, readonly SkillPairCount[]>>();
+
+function computePairs(entries: readonly PracticeEntry[], characterId: string): SkillPairCount[] {
   const repeats = repeatedEntryIds(entries);
   const counts = new Map<string, SkillPairCount>();
   for (const entry of entries) {

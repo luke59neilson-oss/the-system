@@ -244,6 +244,24 @@ describe('practice log', () => {
     ]);
     expect(skillPairCounts(entries, 'kim')).toEqual([{ skills: [archery, eye].sort(), count: 1 }]);
   });
+
+  it('memoises pair counts and repeats by the log array (QF.55)', () => {
+    const entries = [
+      entry('a', 'Volley', [archery, eye]),
+      entry('b', 'Volley', [archery, eye]),
+      entry('c', 'Ambush', [stealth, archery]),
+    ];
+    const first = skillPairCounts(entries, 'jake');
+    expect(skillPairCounts(entries, 'jake')).toBe(first);
+    expect(Object.isFrozen(first)).toBe(true);
+    expect(skillPairCounts(entries, 'kim')).not.toBe(first);
+    expect(repeatedEntryIds(entries)).toBe(repeatedEntryIds(entries));
+    // A new log (state arrays are replaced, never mutated) is counted afresh.
+    const next = [...entries, entry('d', 'Ambush again', [stealth, archery])];
+    expect(skillPairCounts(next, 'jake')).not.toBe(first);
+    expect(skillPairCounts(next, 'jake').find((p) => p.skills.includes(stealth))?.count).toBe(2);
+    expect(skillPairCounts(entries, 'jake')).toEqual(first);
+  });
 });
 
 describe('alerts', () => {
