@@ -84,6 +84,9 @@ describe('isAllowedHost (DNS rebinding)', () => {
       expect(isAllowedHost(h), h).toBe(true);
     }
     expect(isAllowedHost('table.example', ['table.example'])).toBe(true);
+    // QF.60: every octet up to 255 is an IP literal; 256 is not.
+    expect(isAllowedHost('255.255.255.255:30333')).toBe(true);
+    expect(isAllowedHost('192.168.1.256')).toBe(false);
   });
   it('refuses domain names and junk', () => {
     for (const h of [
