@@ -70,7 +70,9 @@ describe('campaign delete routes (ML.1)', () => {
   });
 
   it('deletes a closed campaign, lists it as deleted and restores it', async () => {
-    expect((await call('POST', '/api/gm/campaigns/old-test/delete')).body).toEqual({
+    expect(
+      (await call('POST', '/api/gm/campaigns/old-test/delete', { name: 'old-test' })).body,
+    ).toEqual({
       deleted: 'old-test',
     });
     expect((await call('GET', '/api/gm/campaigns/deleted')).body).toEqual({
@@ -85,19 +87,35 @@ describe('campaign delete routes (ML.1)', () => {
 
   it('refuses to delete the open campaign, and deletes it once closed', async () => {
     expect((await call('POST', '/api/gm/campaign', { id: 'old-test' })).status).toBe(200);
-    const r = await call('POST', '/api/gm/campaigns/old-test/delete');
+    const r = await call('POST', '/api/gm/campaigns/old-test/delete', { name: 'old-test' });
     expect(r.status).toBe(409);
     expect(r.body['error']).toBe('Close the campaign before deleting it');
     expect(CampaignStore.list(dataDir)).toContain('old-test');
     expect((await call('POST', '/api/gm/campaign/close')).body).toEqual({ id: null });
-    expect((await call('POST', '/api/gm/campaigns/old-test/delete')).status).toBe(200);
+    expect(
+      (await call('POST', '/api/gm/campaigns/old-test/delete', { name: 'old-test' })).status,
+    ).toBe(200);
     expect(CampaignStore.listDeleted(dataDir).map((d) => d.id)).toEqual(['old-test']);
+  });
+
+  it('refuses a delete without the campaign’s name typed', async () => {
+    for (const body of [undefined, {}, { name: 'old' }, { name: 'Old-test' }]) {
+      const r = await call('POST', '/api/gm/campaigns/old-test/delete', body);
+      expect(r.status).toBe(400);
+      expect(r.body['error']).toBe('Type the campaign’s name to delete it');
+    }
+    expect(CampaignStore.list(dataDir)).toContain('old-test');
+    await call('POST', '/api/gm/campaigns', { name: 'Second' });
+    await call('POST', '/api/gm/campaign/close');
+    expect((await call('POST', '/api/gm/campaigns/second/delete', { name: 'second' })).status).toBe(
+      200,
+    );
   });
 
   it('refuses to delete a campaign another program holds open (its lock)', async () => {
     const other = CampaignStore.open('held', { ...options(), machineId: 'other-laptop' });
     try {
-      const r = await call('POST', '/api/gm/campaigns/held/delete');
+      const r = await call('POST', '/api/gm/campaigns/held/delete', { name: 'held' });
       expect(r.status).toBe(409);
       expect(CampaignStore.list(dataDir)).toContain('held');
     } finally {
@@ -108,7 +126,7 @@ describe('campaign delete routes (ML.1)', () => {
   it('lets go of a campaign opened earlier (not open now) before deleting it', async () => {
     await call('POST', '/api/gm/campaign', { id: 'old-test' });
     await call('POST', '/api/gm/campaigns', { name: 'Second' });
-    const r = await call('POST', '/api/gm/campaigns/old-test/delete');
+    const r = await call('POST', '/api/gm/campaigns/old-test/delete', { name: 'old-test' });
     expect(r.status).toBe(200);
     expect(CampaignStore.list(dataDir)).toEqual(['second']);
   });

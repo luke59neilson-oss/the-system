@@ -130,7 +130,9 @@ export function CampaignsHome({
     const row = deleting;
     if (!row || !deleteConfirmed(typed, row)) return;
     void act(async () => {
-      await call('POST', `/api/gm/campaigns/${encodeURIComponent(row.id)}/delete`);
+      await call('POST', `/api/gm/campaigns/${encodeURIComponent(row.id)}/delete`, {
+        name: typed.trim(),
+      });
       setDeleting(null);
       setTyped('');
       setStatus(`“${homeName(row)}” moved to Deleted campaigns. Its files are kept.`);
@@ -242,7 +244,11 @@ export function CampaignsHome({
                       data-testid="delete-confirm"
                     />
                   </label>
-                  <button type="submit" disabled={busy || !deleteConfirmed(typed, row)}>
+                  <button
+                    type="submit"
+                    className="danger"
+                    disabled={busy || !deleteConfirmed(typed, row)}
+                  >
                     Delete campaign
                   </button>
                   <button type="button" className="secondary" onClick={() => setDeleting(null)}>

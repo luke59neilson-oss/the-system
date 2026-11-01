@@ -287,11 +287,57 @@ function GmConsole({
   const approved = () => {
     if (loadingRef.current?.clearOnApprove) endLoading();
   };
+  // ML.1 review: Close campaign unmounts the panels first (see `closing`
+  // below), then closes the campaign on the server and goes home.
+  const [closing, setClosing] = useState(false);
+  const [closeError, setCloseError] = useState<string | null>(null);
+  // A ref, so a re-render while closing (the socket dropping) does not send
+  // the close again with a new `onHome`.
+  const onHomeRef = useRef(onHome);
+  useEffect(() => {
+    onHomeRef.current = onHome;
+  }, [onHome]);
+  useEffect(() => {
+    if (!closing) return;
+    let live = true;
+    void (async () => {
+      try {
+        const r = await fetch('/api/gm/campaign/close', {
+          method: 'POST',
+          headers: { 'x-gm-key': gmKey },
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        window.dispatchEvent(new Event(CAMPAIGN_CHANGED));
+        if (live) onHomeRef.current?.();
+      } catch {
+        if (!live) return;
+        setCloseError('Could not close the campaign');
+        setClosing(false);
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [closing, gmKey]);
   const party = useMemo(() => partyOf(state), [state]);
   const view = resolvePerspective(wanted, party);
   if (view.kind === 'table' && !tableOpened) setTableOpened(true);
   const viewed =
     view.kind === 'character' ? party.find((m) => m.id === view.characterId) : undefined;
+
+  if (closing) {
+    // ML.1 review: the console's panels are taken down before the close is
+    // sent, so none of their polls (change log, backups) asks the server
+    // about a campaign that is no longer open.
+    return (
+      <main className="gm">
+        <h1>The System · GM</h1>
+        <p role="status" data-testid="closing-campaign">
+          Closing the campaign…
+        </p>
+      </main>
+    );
+  }
 
   if (live.status === 'refused') {
     return (
@@ -334,7 +380,15 @@ function GmConsole({
       {live.status === 'joined' && (
         <div className="campaign-bar">
           <CampaignSwitch gmKey={gmKey} stateName={state?.name ?? null} />
-          {onHome && <CloseCampaign gmKey={gmKey} onClosed={onHome} />}
+          {onHome && (
+            <CloseCampaign
+              error={closeError}
+              onClose={() => {
+                setCloseError(null);
+                setClosing(true);
+              }}
+            />
+          )}
         </div>
       )}
       {live.status === 'joined' && state === null && !created && <CreateCampaign client={client} />}
@@ -615,42 +669,19 @@ function Outcome({ result, okText }: { result: CommandResult | null; okText: str
  * ML.1: back to the Campaigns home. The campaign is closed (saved; its lock
  * freed so it can be deleted or opened elsewhere) and phones wait.
  */
-function CloseCampaign({ gmKey, onClosed }: { gmKey: string; onClosed: () => void }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const close = async () => {
+function CloseCampaign({ error, onClose }: { error: string | null; onClose: () => void }) {
+  const close = () => {
     if (
-      !window.confirm(
+      window.confirm(
         'Close this campaign and go to your campaigns? Players’ phones wait until you open one.',
       )
     ) {
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      const r = await fetch('/api/gm/campaign/close', {
-        method: 'POST',
-        headers: { 'x-gm-key': gmKey },
-      });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      window.dispatchEvent(new Event(CAMPAIGN_CHANGED));
-      onClosed();
-    } catch {
-      setError('Could not close the campaign');
-    } finally {
-      setBusy(false);
+      onClose();
     }
   };
   return (
     <span className="close-campaign">
-      <button
-        type="button"
-        className="secondary"
-        disabled={busy}
-        onClick={() => void close()}
-        data-testid="close-campaign"
-      >
+      <button type="button" className="secondary" onClick={close} data-testid="close-campaign">
         Close campaign
       </button>
       {error && (

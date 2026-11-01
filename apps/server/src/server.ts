@@ -614,6 +614,14 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     }
     if (!library.list().includes(id))
       return reply.code(404).send({ error: 'No campaign with that id' });
+    // ML.1 review: the server checks the typed name too, not only the home.
+    const typed = (request.body as { name?: unknown } | null)?.name;
+    const row = opened.has(id)
+      ? summaryOf(id)
+      : options.campaigns?.summaries?.().find((x) => x.id === id);
+    if (typeof typed !== 'string' || typed.trim() !== (row?.name ?? id)) {
+      return reply.code(400).send({ error: 'Type the campaign’s name to delete it' });
+    }
     // Opened earlier in this server's life but not open now: let go of it first.
     const idle = opened.get(id);
     if (idle) release(idle);
