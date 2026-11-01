@@ -1360,3 +1360,4 @@
 
 ## 2026-11-01 · ML.5 · sonnet (1 round)
 0 High, 1 Medium, 4 Low. Fixed the Medium (a transform to a new name kept the old casting with no way to clear it: now dropped, unit test added) and the misplaced envelope comment. Two Lows to the Backlog (a removed pool in the form; the outcome wording when only the casting returned); the cropped screenshot stays, the form's other parts are in MR.4's.
+- 2026-11-01 ML.5 (close): `skill.castingSet` added to the four registries (GM-OVERRIDES row, random-command generator, player-log scenario, `copy-casting` golden: the copy's cost 5, then after Use library text the library's 40). Tests only, no new review round (round 1 had 0 H, 1 M). Box checked.
