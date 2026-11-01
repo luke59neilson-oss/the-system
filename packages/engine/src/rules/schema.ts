@@ -211,6 +211,25 @@ export const rulesConfigSchema = z
       gradeGapMode: z.enum(['none', 'multiplier', 'lowerGradeFraction', 'gradeWalls']),
       /** Stat (and, in "gradeWalls", damage) factor for a side one grade lower (⅓). */
       lowerGradeFraction: z.number().positive().max(1),
+      /**
+       * DESIGN §7 "Dice" (MK.1, L27): how contests are rolled. "odds" (absent
+       * in campaigns made before MK) is the app's ratio odds; "d20" is each
+       * side's d20 plus its roll modifier.
+       */
+      rolls: z.enum(['odds', 'd20']).optional(),
+      /** d20 mode numbers (absent: `DEFAULT_D20`). */
+      d20: z
+        .strictObject({
+          /** Modifier per doubling of the stat over `baseStat` (+3). */
+          modifierPerDoubling: z.number().positive().max(100),
+          /** The stat that gives +0 (10). */
+          baseStat: z.number().positive().max(1_000_000),
+          /** A stat below this counts as this (1). */
+          minStat: z.number().positive().max(1_000_000),
+          /** One grade apart in "gradeWalls" mode: subtracted from the lower side's modifier (5). */
+          gradeGapPenalty: z.number().int().min(0).max(100),
+        })
+        .optional(),
     }),
     /**
      * DESIGN §7 Identify range (MQ.8, D107): a same-grade target is
