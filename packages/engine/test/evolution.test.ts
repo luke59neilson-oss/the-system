@@ -1299,6 +1299,36 @@ describe('the GM withdraws a passed-over option (MQ.3, DESIGN §6)', () => {
     });
   };
 
+  it("another character's practice never hides it (QF.60)", () => {
+    let c = setUp();
+    c = ok(c, {
+      type: 'character.create',
+      id: 'casper',
+      name: 'Casper',
+      className: 'Archer',
+      classSkills: kit,
+    });
+    c = ok(c, {
+      type: 'skill.grant',
+      characterId: 'casper',
+      name: 'Skill 5a',
+      rarity: 'common',
+      kind: 'class',
+    });
+    c = ok(c, {
+      type: 'practice.log',
+      characterId: 'casper',
+      action: 'Shot',
+      skills: ['Skill 5a'],
+      stat: null,
+    });
+    const mine = projectForPlayer(c.state ?? (null as never), 'jake').me.selections;
+    expect(mine.find((r) => r.level === 10)?.passedOver.map((o) => o.name)).toEqual([
+      'Skill 5a',
+      'Skill 5c',
+    ]);
+  });
+
   it('removes it from later menus and refuses it as a pick', () => {
     let c = setUp();
     c = ok(c, { type: 'selection.withdrawOption', characterId: 'jake', skill: ' skill 5A ' });
