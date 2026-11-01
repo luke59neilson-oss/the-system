@@ -310,7 +310,6 @@ refusal is raised.
 | `no region named "…"` | packages/engine/src/events/commands.ts | Fix the input or define the thing first (add the region, or leave the place empty) |
 | `… regions are named "…"` | packages/engine/src/events/commands.ts | Fix the input: use the region's id |
 | `wares[…]: no item named "…" in the library` | packages/engine/src/events/commands.ts | Fix the input or define the thing first (define the item, or put it in the same file) |
-| `wares[…]: … items are named "…": use the id` | packages/engine/src/events/commands.ts | Fix the input: use the item's id |
 | `entity "…" already exists` | packages/engine/src/events/reducer.ts:2140 | Fix the input or define the thing first |
 | `unknown entity "…"` | packages/engine/src/events/reducer.ts:2170 | Fix the input or define the thing first |
 | `"…" already knows …` | packages/engine/src/events/reducer.ts:2215 | Fix the input or define the thing first |

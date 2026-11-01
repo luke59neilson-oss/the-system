@@ -39,6 +39,14 @@ describe('GM overrides list (MT.7)', () => {
     );
     expect(missing).toEqual([]);
     expect(doc).not.toContain('UNCLASSIFIED');
+    // QF.61: and every row is a refusal the engine can still give (no stale rows).
+    const cells = new Set(listRefusals().map((r) => cell(r.key)));
+    const stale = doc
+      .split('\n')
+      .filter((l) => l.startsWith('| `'))
+      .map((l) => l.slice(2, l.indexOf(' | ', 2)))
+      .filter((c) => !cells.has(c));
+    expect(stale).toEqual([]);
     // Every rule's way through is built: nothing is left planned.
     expect(doc).not.toMatch(/planned/i);
     for (const line of doc.split('\n').filter((l) => l.startsWith('| `'))) {
