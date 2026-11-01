@@ -21,6 +21,8 @@ import {
   poolCommand,
   recentContests,
   rollPlan,
+  phoneDie,
+  phoneRoller,
   shareCommand,
   signedModifier,
   typedDie,
@@ -119,6 +121,12 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
   const typedA = typedDie(dieA);
   const typedB = typedDie(dieB);
   const dieError = typeof typedA === 'string' ? typedA : typeof typedB === 'string' ? typedB : null;
+  // MK.2: a player's own phone can roll for a one-character side.
+  const planNow = contestPlan(state, a, b, mode);
+  const rollerA = typeof planNow === 'string' ? null : phoneRoller(state, planNow.a);
+  const rollerB = typeof planNow === 'string' ? null : phoneRoller(state, planNow.b);
+  const phoneA = phoneDie(state, rollerA);
+  const phoneB = phoneDie(state, rollerB);
   // The contest whose practice was last logged (MC.7 review M2).
   const loggedContest = useRef<string | null>(null);
   // Keep derived side values current when a stat changes mid-fight (M7.A).
@@ -143,13 +151,25 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
     e.preventDefault();
     if (typeof plan === 'string' || dieError !== null) return;
     clear?.();
+    // A die typed on the console wins over the phone's answer.
     const typed = {
-      a: d20 && typeof typedA === 'number' ? typedA : null,
-      b: d20 && typeof typedB === 'number' ? typedB : null,
+      a: d20 && typeof typedA === 'number' ? typedA : d20 ? (phoneA?.answer ?? null) : null,
+      b: d20 && typeof typedB === 'number' ? typedB : d20 ? (phoneB?.answer ?? null) : null,
     };
     setRolled(rollPlan(state, plan, cryptoRandom, typed));
     setDieA('');
     setDieB('');
+    // MK.2: a phone's die is used once; its request closes with this roll.
+    for (const [r, p] of [
+      [rollerA, phoneA],
+      [rollerB, phoneB],
+    ] as const) {
+      if (r && p?.answer)
+        void send(
+          { type: 'roll.clear', characterId: r.characterId, requestId: p.requestId },
+          'Roll used',
+        );
+    }
     // MC.7: a contest done in the app logs practice for its characters directly,
     // once per contest: re-rolling the same sides does not log it again.
     const key = JSON.stringify([a, b, mode]);
@@ -221,6 +241,58 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
             />
           </label>
           {dieError && <p className="err">{dieError}</p>}
+          {(
+            [
+              ['a', rollerA, phoneA],
+              ['b', rollerB, phoneB],
+            ] as const
+          ).map(([side, r, p]) =>
+            r === null ? null : (
+              <p key={side} className="phone-roll" data-testid={`phone-roll-${side}`}>
+                {p === null ? (
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={busy}
+                    onClick={() =>
+                      void send(
+                        { type: 'roll.request', characterId: r.characterId, stat: r.stat },
+                        `Asked ${r.name} to roll`,
+                      )
+                    }
+                  >
+                    Ask {r.name}'s phone for a d20
+                  </button>
+                ) : p.answer === null ? (
+                  <>
+                    Waiting for {r.name}'s d20…{' '}
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={busy}
+                      onClick={() =>
+                        void send(
+                          {
+                            type: 'roll.clear',
+                            characterId: r.characterId,
+                            requestId: p.requestId,
+                          },
+                          'Request withdrawn',
+                        )
+                      }
+                    >
+                      Withdraw
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {r.name} threw {p.answer.die} ({p.answer.how === 'typed' ? 'typed' : 'app'}):
+                    used on Roll unless a die is typed above.
+                  </>
+                )}
+              </p>
+            ),
+          )}
         </div>
       )}
       <div className="library-tools">

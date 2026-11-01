@@ -192,9 +192,12 @@ export interface RolledContest {
 }
 
 /** MK.2: dice typed at the table (a real d20 thrown), per side; null = the app rolls. */
+/** A die from the table: a typed number, or a phone's answer with how it was rolled (MK.2). */
+export type TableDie = number | { readonly die: number; readonly how: 'typed' | 'app' };
+
 export interface TypedDice {
-  readonly a: number | null;
-  readonly b: number | null;
+  readonly a: TableDie | null;
+  readonly b: TableDie | null;
 }
 export const NO_TYPED_DICE: TypedDice = { a: null, b: null };
 
@@ -227,7 +230,8 @@ export function rollPlan(
     // MK.2: a die typed at the table counts for the first round; a tie rolls again in the app.
     const die = (side: 'a' | 'b', round: number) => {
       const t = typed[side];
-      return round === 0 && t !== null ? { die: t, how: 'typed' as const } : appDie(random);
+      if (round !== 0 || t === null) return appDie(random);
+      return typeof t === 'number' ? { die: t, how: 'typed' as const } : { die: t.die, how: t.how };
     };
     const result = rollD20Contest(state.rules, plan.a, plan.b, die, plan.mode);
     return { plan, roll: null, result, d20: result.d20 };
@@ -404,4 +408,40 @@ export function recentContests(state: CampaignState, limit = 5) {
     .slice(-limit)
     .reverse()
     .flatMap((id) => (own(state.contests, id) && state.contests[id] ? [state.contests[id]] : []));
+}
+
+/**
+ * MK.2: the player whose phone can roll for this side: a side with exactly one
+ * character and a stat, in a d20 campaign. Null for NPC sides and free values.
+ */
+export function phoneRoller(
+  state: CampaignState,
+  side: { readonly characterIds: readonly string[]; readonly stat: string | null },
+): { characterId: string; name: string; stat: string } | null {
+  if (state.rules.resolution.rolls !== 'd20') return null;
+  if (side.characterIds.length !== 1 || side.stat === null) return null;
+  const id = side.characterIds[0] as string;
+  const c = Object.prototype.hasOwnProperty.call(state.characters, id)
+    ? state.characters[id]
+    : undefined;
+  if (!c) return null;
+  return { characterId: id, name: c.name, stat: side.stat };
+}
+
+/**
+ * MK.2: the open roll request for that player and stat, as the console shows
+ * it: waiting, or the die the phone sent. A request for another stat does not
+ * count (the GM asks again).
+ */
+export function phoneDie(
+  state: CampaignState,
+  roller: { characterId: string; stat: string } | null,
+): { requestId: string; answer: { die: number; how: 'typed' | 'app' } | null } | null {
+  if (roller === null) return null;
+  const open = state.rollRequests ?? {};
+  const r = Object.prototype.hasOwnProperty.call(open, roller.characterId)
+    ? open[roller.characterId]
+    : undefined;
+  if (!r || r.stat !== roller.stat) return null;
+  return { requestId: r.id, answer: r.answer };
 }

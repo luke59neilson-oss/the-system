@@ -20,6 +20,8 @@ import {
   recentContests,
   refreshSide,
   rollPlan,
+  phoneDie,
+  phoneRoller,
   signedModifier,
   typedDie,
   shareCommand,
@@ -208,6 +210,44 @@ describe('encounter model: contests (M7.3)', () => {
     expect(typedDie('2.5')).toMatch(/1 to 20/);
     expect(signedModifier(-3)).toBe('−3');
     expect(signedModifier(0)).toBe('+0');
+    // A phone's answer keeps how it was rolled (MK.2 part 2).
+    const phone = rollPlan(s, plan, () => 0, { a: { die: 18, how: 'app' }, b: 4 });
+    expect(phone.d20?.rounds[0]).toMatchObject({
+      a: { die: 18, how: 'app' },
+      b: { die: 4, how: 'typed' },
+    });
+  });
+
+  it("finds the player's phone roll for a one-character side (MK.2)", () => {
+    const rules = {
+      ...DEFAULT_RULES,
+      resolution: { ...DEFAULT_RULES.resolution, rolls: 'd20' as const },
+    };
+    let c = apply(emptyCampaign(), [
+      { type: 'campaign.create', name: 'Dice', rules },
+      { type: 'character.create', id: 'jake', name: 'Jake', className: 'Archer', classSkills: kit },
+    ]);
+    const s = stateOf(c);
+    const roller = phoneRoller(s, { characterIds: ['jake'], stat: 'perception' });
+    expect(roller).toEqual({ characterId: 'jake', name: 'Jake', stat: 'perception' });
+    expect(phoneRoller(s, { characterIds: [], stat: null })).toBeNull();
+    expect(phoneRoller(s, { characterIds: ['jake'], stat: null })).toBeNull();
+    expect(phoneDie(s, roller)).toBeNull();
+    c = apply(c, [
+      { type: 'roll.request', characterId: 'jake', stat: 'perception', requestId: 'r1' },
+    ]);
+    expect(phoneDie(stateOf(c), roller)).toEqual({ requestId: 'r1', answer: null });
+    // A request for another stat does not count.
+    expect(phoneDie(stateOf(c), { characterId: 'jake', stat: 'agility' })).toBeNull();
+    c = apply(c, [{ type: 'roll.answer', characterId: 'jake', requestId: 'r1', die: 12 }]);
+    expect(phoneDie(stateOf(c), roller)).toEqual({
+      requestId: 'r1',
+      answer: { die: 12, how: 'typed' },
+    });
+    // App odds: no phone rolls.
+    expect(
+      phoneRoller({ ...s, rules: DEFAULT_RULES }, { characterIds: ['jake'], stat: 'perception' }),
+    ).toBeNull();
   });
 
   it('rolls and shares d20 dice in a d20 campaign, again while tied (MK.1)', () => {

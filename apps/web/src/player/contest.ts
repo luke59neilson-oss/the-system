@@ -1,4 +1,4 @@
-import type { PlayerContest, PlayerDie } from '@the-system/engine';
+import type { PlayerContest, PlayerDie, PlayerView } from '@the-system/engine';
 
 /**
  * Contest result pop-up (ROADMAP M7.3, D88): a contest the GM shares while the
@@ -45,4 +45,23 @@ export function diceLines(c: PlayerContest): string[] {
     const text = `You: d20 ${side(r.yours, d.yourModifier)} · They: d20 ${side(r.theirs, d.theirModifier)}`;
     return i < last ? `${text} (tie, roll again)` : text;
   });
+}
+
+/**
+ * MK.2: the phone's roll prompt: "Roll d20 for Perception (+14)" and, once
+ * answered, "You rolled 17 (typed) +14 = 31. The GM has it."
+ */
+export function rollPromptText(
+  view: Pick<PlayerView, 'rules' | 'me'>,
+  req: NonNullable<PlayerView['rollRequest']>,
+): { title: string; answer: string | null } {
+  const label = view.rules.stats.list.find((s) => s.id === req.stat)?.name ?? req.stat;
+  const mod = view.me.rollModifiers?.[req.stat] ?? 0;
+  const title = `Roll d20 for ${label} (${signed(mod)})`;
+  if (req.answer === null) return { title, answer: null };
+  const a = req.answer;
+  return {
+    title,
+    answer: `You rolled ${a.die} (${a.how === 'typed' ? 'typed' : 'app'}) ${signed(mod)} = ${a.die + mod}. The GM has it.`,
+  };
 }

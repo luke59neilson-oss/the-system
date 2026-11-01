@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { PlayerContest } from '@the-system/engine';
-import { chanceText, contestLines, diceLines, newContests } from '../src/player/contest';
+import {
+  chanceText,
+  contestLines,
+  diceLines,
+  newContests,
+  rollPromptText,
+} from '../src/player/contest';
 
 const contest = (id: string, extra: Partial<PlayerContest> = {}): PlayerContest => ({
   id,
@@ -52,5 +58,25 @@ describe('d20 dice in the pop-up (MK.2)', () => {
       'You: d20 12 (app) +3 = 15 · They: d20 5 (app) −2 = 3',
     ]);
     expect(diceLines(contest('o'))).toEqual([]);
+  });
+});
+
+describe('roll prompt (MK.2)', () => {
+  const view = {
+    rules: { stats: { list: [{ id: 'perception', name: 'Perception' }] } },
+    me: { rollModifiers: { perception: 14 } },
+  } as unknown as Parameters<typeof rollPromptText>[0];
+  it('asks for the stat with its modifier, then shows the die sent', () => {
+    expect(rollPromptText(view, { id: 'r', stat: 'perception', answer: null })).toEqual({
+      title: 'Roll d20 for Perception (+14)',
+      answer: null,
+    });
+    expect(
+      rollPromptText(view, { id: 'r', stat: 'perception', answer: { die: 17, how: 'typed' } })
+        .answer,
+    ).toBe('You rolled 17 (typed) +14 = 31. The GM has it.');
+    expect(
+      rollPromptText(view, { id: 'r', stat: 'perception', answer: { die: 3, how: 'app' } }).answer,
+    ).toBe('You rolled 3 (app) +14 = 17. The GM has it.');
   });
 });

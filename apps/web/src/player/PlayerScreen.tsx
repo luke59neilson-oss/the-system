@@ -48,6 +48,7 @@ import { QuestLog } from './QuestLog';
 import { IdentifyNotice, IdentifyPanel } from './IdentifyPanel';
 import { NotesPanel } from './NotesPanel';
 import { PracticePanel } from './PracticePanel';
+import { RollPrompt } from './RollPrompt';
 import { PartyPanel } from './PartyPanel';
 import { useChangeCount } from './changeCount';
 import { SkillDetail } from './SkillDetail';
@@ -727,6 +728,7 @@ function Status({
           )}
         </p>
       )}
+      {view.rollRequest !== null && <RollPrompt client={client} view={view} />}
       {client && view.scenePrompt !== null && (
         // MT.9 review (M3): the prompt sits low in the Practice window, so the
         // status window flags it where a phone player looks first.
