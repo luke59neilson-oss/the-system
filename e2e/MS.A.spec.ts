@@ -91,7 +91,7 @@ test(
     );
     expect(Date.now() - sent).toBeLessThan(1500);
     await expect(phone.getByTestId('class')).toHaveText('[Archer – lvl 1]');
-    await expect(phone.getByTestId('free-points')).toHaveText('2');
+    await expect(phone.getByTestId('free-points')).toHaveText('5');
     const statsBefore = await phone.getByTestId(/^stat-/).allInnerTexts();
     await gm.getByLabel('Message').fill('Welcome to the tutorial.');
     await gm.getByLabel('Recipients').selectOption({ label: 'Everyone' });
@@ -144,7 +144,7 @@ test(
     await expect(phone.getByTestId('connection')).toHaveText('Connected', { timeout: 10_000 });
     await expect(phone.getByTestId('class')).toHaveText('[Archer – lvl 1]');
     await expect(phone.getByTestId('race')).toHaveText('[Human (G) – lvl 1]');
-    await expect(phone.getByTestId('free-points')).toHaveText('2');
+    await expect(phone.getByTestId('free-points')).toHaveText('5');
     expect(await phone.getByTestId(/^stat-/).allInnerTexts()).toEqual(statsBefore);
     await expect(phone.getByTestId('messages')).toHaveText('Welcome to the tutorial.');
     await expect(phone.getByTestId('demo-badge')).toHaveCount(0);

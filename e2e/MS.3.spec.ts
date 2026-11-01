@@ -120,7 +120,7 @@ test(
     await gm.getByLabel('Amount').fill('404');
     await gm.getByLabel('Reason (GM only)').fill(REASON);
     const ding = "*'DING!' Class: [Archer] has reached level 1 - Stat points allocated*";
-    const raceDing = "*'DING!' Race: [Human] has reached level 1 - +2 free points*";
+    const raceDing = "*'DING!' Race: [Human] has reached level 1 - +5 free points*";
     const sent = Date.now();
     await gm.getByRole('button', { name: 'Award XP' }).click();
     await Promise.all(

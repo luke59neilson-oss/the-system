@@ -92,11 +92,11 @@ test(
     );
     expect(Date.now() - sent).toBeLessThan(1500);
     await expect(player.getByTestId('dings')).toContainText(
-      "*'DING!' Race: [Human] has reached level 1 - +2 free points*",
+      "*'DING!' Race: [Human] has reached level 1 - +5 free points*",
     );
     await expect(player.getByTestId('class')).toHaveText('[Archer – lvl 1]');
     await expect(player.getByTestId('race')).toHaveText('[Human (G) – lvl 1]');
-    await expect(player.getByTestId('free-points')).toHaveText('2');
+    await expect(player.getByTestId('free-points')).toHaveText('5');
     // The class spread raised stats (shown in tenths).
     const stats = await player.getByTestId(/^stat-/).allInnerTexts();
     expect(stats.some((s) => !s.endsWith('1.0'))).toBe(true);
