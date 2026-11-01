@@ -197,6 +197,36 @@ describe('three-step evolution release (ME.2)', () => {
     expect(char(c).professionLevel).toBe(level);
   });
 
+  it('evolving a profession keeps a level that differs from the class level (QF.68)', () => {
+    // A class-level gate is the only rule that lets the tracks differ at a release.
+    const raw = rawRules() as { tracks: Record<string, unknown> };
+    const rules = { ...raw, tracks: { ...raw.tracks, evolutionGate: 'class' } };
+    let c = ok(run([{ type: 'campaign.create', name: 'Gate', rules } as Command, make], ctx), {
+      type: 'xp.award',
+      track: 'class',
+      amount: 400,
+      participants: [{ characterId: 'jake' }],
+    });
+    c = ok(c, {
+      type: 'character.grantProfession',
+      characterId: 'jake',
+      profession: 'Hunter of Beasts',
+    });
+    c = ok(c, {
+      type: 'character.setProgression',
+      characterId: 'jake',
+      grade: char(c).grade,
+      classLevel: char(c).classLevel,
+      professionLevel: 2,
+      xp: { class: 0, profession: 0 },
+    });
+    expect(char(c).classLevel).not.toBe(2);
+    c = ok(c, threeStep());
+    c = ok(c, choose({ class: 'hunter', profession: 'tracker', race: 'human-f' }), player('jake'));
+    expect(char(c).profession).toBe('tracker');
+    expect(char(c).professionLevel).toBe(2);
+  });
+
   it('a three-step release needs every choice; a single-choice release takes none', () => {
     const c = ok(atGTop(), threeStep());
     expect(

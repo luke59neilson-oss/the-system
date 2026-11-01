@@ -24,6 +24,13 @@ describe('Use this shape (ME.4)', () => {
     });
   });
 
+  it('breaks a remainder tie in stat order, not by float noise (QF.68)', () => {
+    // 1 and 7 of 30 at budget 5 have the same remainder, 1/6; floats read 7's as larger.
+    const order = ['a', 'b', 'c', 'd', 'e', 'f'];
+    const tied = { stats: { a: 1, b: 7, c: 1, d: 7, e: 1, f: 13 }, free: 0 };
+    expect(scaleShape(tied, 5, order)).toEqual({ stats: { a: 1, b: 1, d: 1, f: 2 }, free: 0 });
+  });
+
   it('scales a row of all free points and refuses a zero row', () => {
     expect(scaleShape({ stats: {}, free: 5 }, 10, ORDER)).toEqual({ stats: {}, free: 10 });
     expect(scaleShape({ stats: {}, free: 0 }, 10, ORDER)).toBeNull();

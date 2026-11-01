@@ -3,6 +3,8 @@
 // budget: whole points, exact total (largest remainder, ties in stat order),
 // free points kept as free points.
 
+import { distributionTotal, scaleDistribution } from '../progression/budget';
+
 export interface ShapeRow {
   readonly stats: Readonly<Record<string, number>>;
   readonly free: number;
@@ -14,24 +16,12 @@ export function scaleShape(
   budget: number,
   statOrder: readonly string[],
 ): ShapeRow | null {
-  const keys = [...statOrder.filter((k) => (row.stats[k] ?? 0) > 0), '__free'];
-  const raw = keys.map((k) => (k === '__free' ? row.free : (row.stats[k] ?? 0)));
-  const total = raw.reduce((a, b) => a + b, 0);
-  if (total <= 0 || !Number.isInteger(budget) || budget < 0) return null;
-  const exact = raw.map((v) => (v * budget) / total);
-  const whole = exact.map((v) => Math.floor(v));
-  let left = budget - whole.reduce((a, b) => a + b, 0);
-  const order = exact
-    .map((v, i) => ({ i, rem: v - Math.floor(v) }))
-    .sort((a, b) => b.rem - a.rem || a.i - b.i);
-  for (const { i } of order) {
-    if (left <= 0) break;
-    whole[i]! += 1;
-    left -= 1;
-  }
-  const stats: Record<string, number> = {};
-  keys.forEach((k, i) => {
-    if (k !== '__free' && whole[i]! > 0) stats[k] = whole[i]!;
-  });
-  return { stats, free: whole[keys.length - 1]! };
+  if (!Number.isInteger(budget) || budget < 0) return null;
+  // Only the listed stats with points count, as in the engine's own scaling.
+  const stats = Object.fromEntries(
+    statOrder.flatMap((k) => ((row.stats[k] ?? 0) > 0 ? [[k, row.stats[k] as number]] : [])),
+  );
+  if (distributionTotal({ stats, free: row.free }) <= 0) return null;
+  // One rounding for the builder and the engine (QF.68): whole-number remainders, ties in stat order.
+  return scaleDistribution({ stats, free: row.free }, budget, statOrder);
 }
