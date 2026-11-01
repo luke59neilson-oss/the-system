@@ -22,6 +22,7 @@ test.afterEach(async () => {
 
 test('the skill-offer builder shows the standing beside the menu', async ({ browser }) => {
   const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  gm.on('dialog', (d) => void d.accept());
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Offers');
   await gm.getByRole('button', { name: 'Create campaign' }).click();

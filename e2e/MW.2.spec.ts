@@ -21,17 +21,27 @@ test.afterEach(async () => {
   await server.stop();
 });
 
-test.afterEach(async () => {
-  await server.stop();
-});
-
-function watchErrors(page: Page) {
-  const errors: string[] = [];
-  page.on('console', (msg) => {
-    if (msg.type() === 'error') errors.push(msg.text());
-  });
-  page.on('pageerror', (err) => errors.push(err.message));
-  return errors;
+async function gmCommand(gm: Page, command: Record<string, unknown>): Promise<void> {
+  const result = await gm.evaluate(
+    ({ key, command }) =>
+      new Promise<string>((resolve) => {
+        const ws = new WebSocket(
+          `ws://${(globalThis as unknown as { location: { host: string } }).location.host}/ws`,
+        );
+        ws.onmessage = (e) => {
+          const m = JSON.parse(String(e.data)) as { type: string; ok?: boolean; error?: string };
+          if (m.type === 'hello') ws.send(JSON.stringify({ type: 'join', role: 'gm', gmKey: key }));
+          if (m.type === 'joined')
+            ws.send(JSON.stringify({ type: 'command', requestId: 'x', command }));
+          if (m.type === 'result') {
+            ws.close();
+            resolve(m.ok ? 'ok' : (m.error ?? 'failed'));
+          }
+        };
+      }),
+    { key: GM_KEY, command },
+  );
+  expect(result).toBe('ok');
 }
 
 test('draft from Perception, fix the flag, edit, offer; the player sees the menu', async ({
@@ -39,6 +49,7 @@ test('draft from Perception, fix the flag, edit, offer; the player sees the menu
 }) => {
   test.setTimeout(90_000);
   const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  gm.on('dialog', (d) => void d.accept());
   await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
   await gm.getByLabel('Campaign name').fill('Offers');
   await gm.getByRole('button', { name: 'Create campaign' }).click();

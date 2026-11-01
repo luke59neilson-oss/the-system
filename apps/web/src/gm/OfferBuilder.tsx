@@ -257,7 +257,7 @@ export function OfferBuilder({
                 </p>
               )}
             </div>
-            <div className="offer-side" tabIndex={0} aria-label="Character's standing and practice">
+            <div className="offer-side" tabIndex={0} aria-label="Standing and practice">
               {standing && <Standing rules={rules} standing={standing} />}
               <aside aria-labelledby="offer-practice">
                 <h3 id="offer-practice">Practice log</h3>
