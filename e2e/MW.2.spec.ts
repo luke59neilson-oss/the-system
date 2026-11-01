@@ -130,7 +130,7 @@ test('draft from Perception, fix the flag, edit, offer; the player sees the menu
   await dialog.getByRole('button', { name: 'Confirm' }).click();
   await expect(dialog).toHaveCount(0);
   await phone.getByRole('button', { name: /Mana Lens/ }).click();
-  await expect(
-    phone.getByTestId('skill-detail').getByRole('button', { name: /^Cast/ }),
-  ).toHaveText(/^Cast \(5 /);
+  await expect(phone.getByTestId('skill-detail').getByRole('button', { name: /^Cast/ })).toHaveText(
+    /^Cast \(5 /,
+  );
 });
