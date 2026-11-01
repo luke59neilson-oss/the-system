@@ -222,7 +222,7 @@ list, not stock. Players never see the shop itself. Example:
 | `name` | yes | The shop's name. |
 | `place` | no | The region it stands in, by name or id (a region in this file or the campaign). |
 | `keeper` | no | The keeper NPC: name, look, manner. |
-| `wares` | no | Up to 100 of `{ "item": "Clotleaf Salve", "price": 15 }`. `item` names a library item, or one in this file's `items`, by name or id (any case; a name two items share is refused: use the id). `price` is a whole number of the campaign currency, 0 or more. |
+| `wares` | no | Up to 100 of `{ "item": "Clotleaf Salve", "price": 15 }`. `item` names a library item, or one in this file's `items`, by name or id (any case; when two items share a name, the most recently defined one is used, so give the id to pick another). `price` is a whole number of the campaign currency, 0 or more. |
 | `hook` | no | An optional quest hook or complication. |
 
 ### `gmNotes`: GM private notes
