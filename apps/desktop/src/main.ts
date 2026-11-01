@@ -17,6 +17,8 @@ import {
   startOnFreePort,
   webRootFor,
   isQuitForUpdate,
+  releaseMenuTemplate,
+  shouldReloadAfterCrash,
 } from './launch';
 
 /**
@@ -168,6 +170,24 @@ function openGmWindow(server: RunningApp, notice: string | null = null): void {
       ),
     ),
   );
+  // QF.58: a crashed console renderer reloads instead of staying blank.
+  // A renderer that keeps crashing stops reloading and the GM is told instead.
+  const crashReloads: number[] = [];
+  let crashNoticeOpen = false;
+  win.webContents.on('render-process-gone', (_event, details) => {
+    if (win.isDestroyed() || details.reason === 'clean-exit') return;
+    if (shouldReloadAfterCrash(crashReloads, Date.now())) return void win.webContents.reload();
+    if (crashNoticeOpen) return; // one notice at a time, however often it crashes
+    crashNoticeOpen = true;
+    void dialog
+      .showMessageBox(win, {
+        type: 'error',
+        message: 'The GM console keeps crashing.',
+        detail:
+          'Use View → Reload to try again, or quit and start The System again. Your campaign is saved.',
+      })
+      .finally(() => (crashNoticeOpen = false));
+  });
   // Links to anything but our own pages open in the system browser.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//.test(url) && !isOwnPage(url, server.port)) void shell.openExternal(url);
@@ -353,12 +373,11 @@ if (!app.requestSingleInstanceLock() || isQuitForUpdate(process.argv)) {
   void app.whenReady().then(() => {
     readyAtMs = process.uptime() * 1000;
     if (app.isPackaged) {
-      // No View menu (DevTools/reload) in release builds; macOS keeps the app
-      // and Edit menus so Cmd+C/V/Q still work.
+      // QF.58: Edit and View (reload, zoom) in release builds; never DevTools.
       Menu.setApplicationMenu(
-        process.platform === 'darwin'
-          ? Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }])
-          : null,
+        Menu.buildFromTemplate(
+          releaseMenuTemplate(process.platform) as Electron.MenuItemConstructorOptions[],
+        ),
       );
     }
     showSplash();

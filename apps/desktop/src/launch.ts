@@ -180,8 +180,8 @@ export function splashUrl(): string {
 }
 
 /**
- * MC.5 (DESIGN §11 "Listening"): the only permission the app ever grants is
- * the microphone, to the GM window, on its own console page. Video, screen
+ * MC.5 (DESIGN §11 "Listening"): the app grants only the microphone and,
+ * from QF.58, clipboard writes, to the GM window on its own console page. Video, screen
  * capture and every other permission stay refused.
  */
 export function allowsPermission(
@@ -191,7 +191,10 @@ export function allowsPermission(
   url: string,
   port: number,
 ): boolean {
-  if (!fromGmWindow || permission !== 'media' || !isOwnPage(url, port)) return false;
+  if (!fromGmWindow || !isOwnPage(url, port)) return false;
+  // QF.58: Copy (the GM link, Copy for Claude) writes the clipboard; reading stays refused.
+  if (permission === 'clipboard-sanitized-write') return true;
+  if (permission !== 'media') return false;
   const types = mediaTypes ?? [];
   return types.length > 0 && types.every((t) => t === 'audio');
 }
@@ -207,4 +210,50 @@ export const QUIT_FOR_UPDATE = '--quit-for-update';
 /** Whether a launch's arguments ask the running app to quit for an update. */
 export function isQuitForUpdate(argv: readonly string[]): boolean {
   return argv.includes(QUIT_FOR_UPDATE);
+}
+
+/** One entry of the release menu (a subset of Electron's MenuItemConstructorOptions). */
+export interface ReleaseMenuItem {
+  role?: string;
+  label?: string;
+  submenu?: ReleaseMenuItem[];
+  type?: 'separator';
+}
+
+/**
+ * QF.58: release builds get Edit and a View menu with reload and zoom (the
+ * GM can recover a stuck console and size it for the table), never DevTools.
+ * macOS keeps its app menu so Cmd+Q works.
+ */
+export function releaseMenuTemplate(platform: string): ReleaseMenuItem[] {
+  const view: ReleaseMenuItem = {
+    label: 'View',
+    submenu: [
+      { role: 'reload' },
+      { type: 'separator' },
+      { role: 'resetZoom' },
+      { role: 'zoomIn' },
+      { role: 'zoomOut' },
+      { type: 'separator' },
+      { role: 'togglefullscreen' },
+    ],
+  };
+  return [...(platform === 'darwin' ? [{ role: 'appMenu' }] : []), { role: 'editMenu' }, view];
+}
+
+/** QF.58: how many crash reloads a window gets within {@link CRASH_WINDOW_MS}. */
+export const MAX_CRASH_RELOADS = 3;
+export const CRASH_WINDOW_MS = 60_000;
+
+/**
+ * QF.58: whether a crashed console should reload. `recent` holds the times of
+ * earlier crash reloads (oldest first) and is updated in place. A renderer
+ * that keeps crashing stops reloading after {@link MAX_CRASH_RELOADS} in a
+ * minute, so the app never spins; the caller then tells the GM instead.
+ */
+export function shouldReloadAfterCrash(recent: number[], nowMs: number): boolean {
+  while (recent.length > 0 && nowMs - recent[0]! >= CRASH_WINDOW_MS) recent.shift();
+  if (recent.length >= MAX_CRASH_RELOADS) return false;
+  recent.push(nowMs);
+  return true;
 }

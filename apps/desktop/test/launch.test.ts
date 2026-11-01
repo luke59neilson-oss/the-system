@@ -3,6 +3,9 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  shouldReloadAfterCrash,
+  MAX_CRASH_RELOADS,
+  CRASH_WINDOW_MS,
   packagedSpeechFiles,
   packagedSpeechLoad,
   speechPackageDir,
@@ -11,6 +14,7 @@ import {
   desktopPort,
   gmWindowUrl,
   allowsPermission,
+  releaseMenuTemplate,
   isOwnPage,
   startErrorMessage,
   webRootFor,
@@ -188,6 +192,20 @@ describe('permissions (MC.5)', () => {
       expect(allowsPermission(true, p, ['audio'], own, 4700)).toBe(false);
     }
   });
+  it('lets the GM window write the clipboard on its own page only (QF.58)', () => {
+    expect(allowsPermission(true, 'clipboard-sanitized-write', undefined, own, 4700)).toBe(true);
+    expect(allowsPermission(false, 'clipboard-sanitized-write', undefined, own, 4700)).toBe(false);
+    expect(
+      allowsPermission(
+        true,
+        'clipboard-sanitized-write',
+        undefined,
+        'http://evil.example:4700/',
+        4700,
+      ),
+    ).toBe(false);
+    expect(allowsPermission(true, 'clipboard-sanitized-write', undefined, own, 4701)).toBe(false);
+  });
 });
 
 describe('packaged speech engine (MC.5, D236)', () => {
@@ -231,5 +249,38 @@ describe('QF.45 quit for update', () => {
     );
     expect(isQuitForUpdate(['TheSystem.exe'])).toBe(false);
     expect(isQuitForUpdate(['TheSystem.exe', '--quit-for-updates'])).toBe(false);
+  });
+});
+
+describe('release menu (QF.58)', () => {
+  const roles = (items: ReturnType<typeof releaseMenuTemplate>): string[] =>
+    items.flatMap((i) => [...(i.role ? [i.role] : []), ...roles(i.submenu ?? [])]);
+  it('has reload and zoom, and never DevTools', () => {
+    for (const platform of ['win32', 'darwin', 'linux']) {
+      const all = roles(releaseMenuTemplate(platform));
+      for (const r of ['reload', 'resetZoom', 'zoomIn', 'zoomOut', 'editMenu']) {
+        expect(all).toContain(r);
+      }
+      expect(all).not.toContain('toggleDevTools');
+      expect(all.some((r) => /devtools/i.test(r))).toBe(false);
+    }
+    expect(roles(releaseMenuTemplate('darwin'))).toContain('appMenu');
+    expect(roles(releaseMenuTemplate('win32'))).not.toContain('appMenu');
+  });
+});
+
+describe('crash reload (QF.58)', () => {
+  it('reloads a crashed console, but stops after three crashes in a minute', () => {
+    const recent: number[] = [];
+    expect(MAX_CRASH_RELOADS).toBe(3);
+    expect(shouldReloadAfterCrash(recent, 0)).toBe(true);
+    expect(shouldReloadAfterCrash(recent, 1_000)).toBe(true);
+    expect(shouldReloadAfterCrash(recent, 2_000)).toBe(true);
+    expect(shouldReloadAfterCrash(recent, 3_000)).toBe(false);
+    expect(recent).toEqual([0, 1_000, 2_000]);
+    // A minute after the first crash it may reload again.
+    expect(shouldReloadAfterCrash(recent, CRASH_WINDOW_MS - 1)).toBe(false);
+    expect(shouldReloadAfterCrash(recent, CRASH_WINDOW_MS)).toBe(true);
+    expect(recent).toEqual([1_000, 2_000, CRASH_WINDOW_MS]);
   });
 });
