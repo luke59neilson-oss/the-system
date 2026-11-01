@@ -42,6 +42,9 @@ export const WINDOWS: Readonly<Record<string, readonly ConsoleTab[]>> = {
   'marks-review': ['progression'],
   'merge-builder': ['progression'],
   'practice-capture': ['progression'],
+  // ME.6: profession offers at any time, and each track's per-level stats.
+  professions: ['progression'],
+  'track-stats': ['progression'],
   // Evolutions: who is at or near the threshold and the three-step builder (ME.3).
   'evolution-builder': ['evolutions'],
   // Library & settings: the campaign's reference data and configuration.

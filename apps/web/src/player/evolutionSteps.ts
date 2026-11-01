@@ -73,6 +73,22 @@ export function professionNoneAllowed(me: Pick<OwnSheet, 'profession'>): boolean
   return me.profession === null;
 }
 
+/**
+ * ME.6 (a): the profession stays as it is, with no step to walk: the player
+ * took a profession after a release that offered professions (those offers
+ * no longer apply), or the step has no option for the held profession.
+ */
+export function professionUnchanged(
+  me: Pick<OwnSheet, 'profession'>,
+  evolution: Pick<PendingEvolution, 'professionOffered'> | null,
+  steps: NonNullable<PendingEvolution['steps']>,
+): boolean {
+  return (
+    me.profession !== null &&
+    (evolution?.professionOffered === true || steps.profession.length === 0)
+  );
+}
+
 export interface StepPicks {
   readonly class: string | null;
   /** null = not picked yet; '' = "none for now". */
@@ -85,21 +101,27 @@ export function picksComplete(
   steps: NonNullable<PendingEvolution['steps']>,
   me: Pick<OwnSheet, 'profession'>,
   picks: StepPicks,
+  evolution: Pick<PendingEvolution, 'professionOffered'> | null = null,
 ): boolean {
   const professionDone =
-    picks.profession !== null || (!professionNoneAllowed(me) && steps.profession.length === 0);
+    professionUnchanged(me, evolution, steps) ||
+    (picks.profession !== null && (picks.profession !== '' || professionNoneAllowed(me)));
   return picks.class !== null && picks.race !== null && professionDone;
 }
 
 /** The `evolution.choose` choices for the picks ("none for now" = null). */
-export function stepChoices(picks: StepPicks): {
+export function stepChoices(
+  picks: StepPicks,
+  unchanged = false,
+): {
   class: string;
   profession: string | null;
   race: string;
 } {
   return {
     class: picks.class ?? '',
-    profession: picks.profession === null || picks.profession === '' ? null : picks.profession,
+    profession:
+      unchanged || picks.profession === null || picks.profession === '' ? null : picks.profession,
     race: picks.race ?? '',
   };
 }

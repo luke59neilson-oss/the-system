@@ -96,6 +96,8 @@ refusal is raised.
 | `"…" is not one of your offered professions` | packages/engine/src/character/model.ts:401 | Offer it first (Professions offers / evolution builder) |
 | `… already has the profession […]; the offers are locked` | packages/engine/src/character/model.ts:413 | `character.grantProfession` with `override: true` (Edit sheet → "Replace profession") sets any profession |
 | `"…" is not offered to …` | packages/engine/src/character/model.ts:420 | Offer it first (Professions offers / evolution builder) |
+| `[…] is already offered to …` | packages/engine/src/character/model.ts (offerProfession) | Withdraw the offer (Progression → Professions) and offer it again with the new stats (ME.6) |
+| `… now has the profession […]: the professions offered with this evolution no longer apply, so it stays as it is` | packages/engine/src/evolution/model.ts (pickSteps) | The player confirms with the profession unchanged; `character.grantProfession` with `override: true` replaces it afterwards (ME.6, D308) |
 | `… slot … does not exist` | packages/engine/src/economy/model.ts:171 | Equip/unequip from the right slot; holdings can be edited directly |
 | `[…] is already equipped there` | packages/engine/src/economy/model.ts:182 | Equip/unequip from the right slot; holdings can be edited directly |
 | `No […] in the inventory` | packages/engine/src/economy/model.ts:184 | Equip/unequip from the right slot; holdings can be edited directly |
@@ -165,6 +167,7 @@ refusal is raised.
 | Refusal | Where | GM way through |
 | --- | --- | --- |
 | `a distribution needs at least one point` | packages/engine/src/events/reducer.ts:1060 | Give at least one stat point or free point, or reset the track to its default (ME.1) |
+| `a profession offer with a bonus needs a distribution too` | packages/engine/src/events/reducer.ts (profession.offered) | Give the offer per-level stats too, or offer it without a bonus and add stats on the sheet when taken (ME.6) |
 | `Unknown stat "…"` | packages/engine/src/progression/budget.ts:37 | Use a stat from the rules' stat list |
 | `Points for … must be a whole number ≥ 0` | packages/engine/src/progression/budget.ts:38 | Whole points only |
 | `Free points must be a whole number ≥ 0` | packages/engine/src/progression/budget.ts:41 | Whole points only |

@@ -44,7 +44,12 @@ const award: Command = {
   participants: [{ characterId: 'jake' }],
 };
 const atGTop = (): Campaign => ok(fresh(), award);
-const opt = (id: string, stats: Record<string, number>, free: number, bonus = { agility: 2 }) => ({
+const opt = (
+  id: string,
+  stats: Record<string, number>,
+  free: number,
+  bonus: Record<string, number> = { agility: 2 },
+) => ({
   id,
   name: id,
   rarity: 'common',
@@ -158,9 +163,7 @@ describe('ME.6 (b): the GM offers professions at any time before one is taken', 
     expect(reject(c, offer('X', { distribution: { stats: { luck: 3 }, free: 2 } }))).toMatch(
       /luck/,
     );
-    expect(reject(c, offer('X', { distribution: { stats: {}, free: 0 } }))).toMatch(
-      /at least one/,
-    );
+    expect(reject(c, offer('X', { distribution: { stats: {}, free: 0 } }))).toMatch(/at least one/);
     expect(reject(c, offer('X', { statBonus: { agility: 1 } }))).toMatch(/needs a distribution/);
   });
   it('the owner sees the offer and its card; other players never do', () => {
