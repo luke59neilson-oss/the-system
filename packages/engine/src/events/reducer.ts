@@ -2750,7 +2750,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const open = state.rollRequests ?? {};
       const request = hasOwn(open, characterId) ? open[characterId] : undefined;
       if (request === undefined || request.id !== requestId) {
-        fail(event, 'that roll request is closed');
+        fail(event, 'That roll is closed: the GM already rolled or withdrew it');
       }
       if (event.type === 'roll.cleared') {
         const rest = Object.fromEntries(Object.entries(open).filter(([id]) => id !== characterId));

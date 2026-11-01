@@ -323,7 +323,7 @@ refusal is raised.
 | `A die is a whole number from 1 to 20` | packages/engine/src/events/commands.ts | Type the die again (1–20), or tap Roll and the app rolls it |
 | `unknown stat "…"` | packages/engine/src/events/reducer.ts | Fix the input: pick one of the campaign's stats |
 | `Roll requests need d20 rolls (Rules settings → Rolls)` | packages/engine/src/events/reducer.ts | Switch Rules settings → Rolls to d20 + modifier, or roll on the console (app odds need no phone die) |
-| `that roll request is closed` | packages/engine/src/events/reducer.ts | Nothing to answer (the GM used or withdrew it): the GM asks again from the contest roller |
+| `That roll is closed: the GM already rolled or withdrew it` | packages/engine/src/events/reducer.ts | Nothing to answer (the GM used or withdrew it): the GM asks again from the contest roller |
 | `that roll has already been answered` | packages/engine/src/events/reducer.ts | Nothing to do: the die is in; the GM types a die for that side on the console to replace it |
 | `Tick at least one character` | packages/engine/src/events/commands.ts | Tick who identified it, then Mark identified |
 | `… never changes: it earns no marks and is never upgraded or raised` | packages/engine/src/events/commands.ts | No way through by design (DESIGN §7, MV.3): Identify stays Common; give a new skill instead |

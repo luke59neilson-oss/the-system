@@ -137,10 +137,14 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
   const planNow = contestPlan(state, a, b, mode);
   const rollerA = typeof planNow === 'string' ? null : phoneRoller(state, planNow.a);
   const rollerB = typeof planNow === 'string' ? null : phoneRoller(state, planNow.b);
-  // Review M1: only requests this contest asked for count; reset with the sides.
-  const [asked, setAsked] = useState<ReadonlySet<string>>(() => new Set());
-  const phoneA = phoneDie(state, rollerA, asked);
-  const phoneB = phoneDie(state, rollerB, asked);
+  // Review M1: only requests this contest asked for count, per side; editing a
+  // side forgets that side's requests only (round 2 M1), Roll forgets both.
+  const [asked, setAsked] = useState<{ a: ReadonlySet<string>; b: ReadonlySet<string> }>(() => ({
+    a: new Set(),
+    b: new Set(),
+  }));
+  const phoneA = phoneDie(state, rollerA, asked.a);
+  const phoneB = phoneDie(state, rollerB, asked.b);
   // The contest whose practice was last logged (MC.7 review M2).
   const loggedContest = useRef<string | null>(null);
   // Keep derived side values current when a stat changes mid-fight (M7.A).
@@ -159,7 +163,7 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
   const change = (side: 'a' | 'b', draft: SideDraft) => {
     (side === 'a' ? setA : setB)(draft);
     setRolled(null);
-    setAsked(new Set());
+    setAsked((prev) => ({ ...prev, [side]: new Set() }));
     clear?.();
   };
   const roll = (e: FormEvent) => {
@@ -180,7 +184,7 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
       [rollerA, phoneA],
       [rollerB, phoneB],
     ]);
-    if (clears.length > 0) setAsked(new Set());
+    if (clears.length > 0) setAsked({ a: new Set(), b: new Set() });
     void (async () => {
       for (const command of clears) await send(command, 'Roll request closed');
     })();
@@ -286,7 +290,10 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
                       disabled={busy}
                       onClick={() => {
                         const requestId = newRequestId();
-                        setAsked((prev) => new Set([...prev, requestId]));
+                        setAsked((prev) => ({
+                          ...prev,
+                          [side]: new Set([...prev[side], requestId]),
+                        }));
                         void send(
                           {
                             type: 'roll.request',

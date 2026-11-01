@@ -211,13 +211,17 @@ test("a phone die belongs to its contest; a console die closes the phone's reque
   await prompt.getByRole('button', { name: 'Send die' }).click();
   await expect(roller.getByTestId('phone-roll-a')).toContainText('Jake threw 19 (typed)');
 
-  // The GM sets up a different contest: the 19 is shown but not used.
+  // Tweaking the other side keeps Jake's die (round 2 M1).
   await sideB.getByRole('textbox', { name: 'Value', exact: true }).fill('30');
+  await expect(roller.getByTestId('phone-roll-a')).toContainText('Jake threw 19 (typed)');
+  // Changing Jake's own side makes it a different roll: the 19 is shown, not used.
+  await sideA.getByLabel('Stat').selectOption({ label: 'Agility' });
   const stale = roller.getByTestId('phone-roll-stale-a');
   await expect(stale).toContainText('An earlier request to Jake is still open (threw 19)');
   await stale.getByRole('button', { name: 'Clear' }).click();
   await expect(prompt).toHaveCount(0);
   await expect(stale).toHaveCount(0);
+  await sideA.getByLabel('Stat').selectOption({ label: 'Perception' });
 
   // Asked again and still waiting, the GM types Jake's die on the console:
   // Roll uses it and the phone stops asking.
