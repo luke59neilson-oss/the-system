@@ -51,7 +51,11 @@ Luke is not watching. Never stop to ask him a question.
 
 ## 4. Orient (targeted reads)
 
-Read in full: `CLAUDE.md`, `docs/DESIGN.md`, `docs/ANSWERS.md`. Then run
+Read in full: `CLAUDE.md`, `docs/ANSWERS.md`. `docs/DESIGN.md` (L29, in
+trial; Q87): read its headings (`grep -n '^#' docs/DESIGN.md`) and every
+section the item touches, plus any section named in the item's text; read it
+whole for engine or rules items, `Mx.A` items, quality sweeps and
+efficiency checks. Reviewers still check against the whole file. Then run
 `npm run orient` (D264, in trial): it prints exactly the reads listed below
 (PROGRESS header and last entry, ROADMAP global rules and every milestone
 with an open or `[~]` box, QUESTIONS without an Answer line, the L-entries).
