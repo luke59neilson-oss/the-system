@@ -21,7 +21,6 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
 | D304 LOOP §5.6 names the `latency` project as part of the full e2e; rules-number items run it alone; PROGRESS reports "e2e N + latency M" | 2026-11-01 00:45 | main CI red/day 4 → ≤ 3 (red from latency specs a run's full e2e skipped: 71bac8f3) | red/day 4; items/run 0.7; end minute 48.8 | Highs 0, round-2 4/10 | 2026-11-01 12:00 check |
-| D297 `npm run orient` collapses checked items in open milestones to one line and hides default-kept questions | 2026-10-31 18:09 | orient words ≤ 11k (printed output 21.0k → 7.5k words) | 21,002 words; end minute 48.8; items/run 1.3 | Highs 0, round-2 4/10, red/day 5 | 2026-11-01 06:00 check |
 
 ## Kept
 
@@ -42,6 +41,8 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   Chromium cache (2026-10-23 00:08, D131).
 
 ## Reverted
+
+- D297 orient collapses checked items and default-kept questions (2026-10-31 18:09, D313): the target was met when measured directly (the printed orient output fell from 21.0k to about 7.1k words; the scorecard's `orientWords` does not measure it, as the 00:45 auditor noted), but two guards rose by one (round-2 share 4/10 → 5/10, main CI red/day 5 → 6; the red runs were latency specs and an M8.3 keyboard flake, unrelated), so the strict §9.2 rule reverts it, as at D205 and D194 (Q71 still open). `scripts/orient.mjs` prints checked items and default-kept questions again (12.9k words).
 
 - D206 blocking reviews never idle (2026-10-26 00:09, D220): half the target
   went the wrong way (items/run 1.8 → 1.5; end minute 44.2 → 46.0), guards
@@ -186,3 +187,4 @@ table last in the file.
 | 2026-10-31 12:09 | 6 | 48.8 | 2.3 | 6/10 | 0 | 29 | 7 | 11.9 | 16756 |
 | 2026-10-31 18:09 | 6 | 48.8 | 1.3 | 4/10 | 0 | 31 | 5 | 11.8 | 21002 |
 | 2026-11-01 00:15 | 6 | 48.8 | 0.7 | 4/10 | 0 | 25 | 4 | 12.1 | 20561 |
+| 2026-11-01 06:09 | 6 | 48.8 | 1.0 | 5/10 | 0 | 33 | 6 | 12.2 | 21027 |
