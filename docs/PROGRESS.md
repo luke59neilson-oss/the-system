@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.67; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV done (MV.A checked); ME.1–ME.5 done; ME.A review found 4 Mediums, queued as ME.6; MK.1 built on `wip/MK.1` (not reviewed). Preview ready: Actions → Release → Run workflow (MV).
-**Next item:** ME.6 (ME.A review fixes), then ME.A (full e2e, `fable` re-review, Preview ready); review `wip/MK.1` (head 4122fc0e) and merge; MK.2, MK.A; QF.55 onward (QF.68, QF.69 new); MW after MU
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.69; MV done; ME.1–ME.5 done; ME.6 built on `wip/ME.6` (review round 1: 0 High, 1 Medium open); MK.1 done (merged). Preview ready: Actions → Release → Run workflow (MV).
+**Next item:** finish ME.6 on `wip/ME.6` (head 9a385ad1): fix the replay Medium, then a round-2 sonnet review covering the unreviewed console UI (Professions.tsx, Per-level stats) and e2e; merge; then ME.A (full e2e, `fable`, Preview ready); MK.2, MK.A; QF.55 onward; MW after MU
 **Blockers:** none
 
 ## Run log
@@ -1540,4 +1540,12 @@ next item, blockers. -->
 - Sweep B: Boundaries clean; Tests 3 M (by the reviewer's mutations; queued as QF.68 to verify first, no time left) + 7 L; UX 2 M (review layout and missing one-time bonus, confirmed from the screenshot; into ME.6e) + 2 L (QF.69). Last sweep bc1b26b7, next rotation C.
 - MK.1 (fork, `wip/MK.1` head 4122fc0e, base bc1b26b7): `resolution.rolls` odds|d20 with config numbers, `resolution/dice.ts` (modifier, exact d20 odds, −5 one grade apart, no roll at two), contest share carries dice (typed/app) and totals, player view; engine+server 1,542 and web+scripts 414 unit tests pass, check parts clean; D307. Next: §6 sonnet review, then merge.
 - Open `wip/*`: `wip/MK.1`. Blockers: none.
+
+### Run · 2026-11-01 04:08–04:5x UTC (close-out at minute 42)
+- Close-out at minute 42: MK.1 reviewed, fixed and merged to main; ME.6 built by a fork on `wip/ME.6` and reviewed (round 1), one Medium open. Ending before 48 because the only remaining work on the open item is that Medium, which changes how stored logs replay (golden semantics) and needs more than the few minutes left; handed off below.
+- Preflight: `add_repo` not offered; repo already cloned (local main again had unrelated history; reset to `origin/main`, the old commits live on remote `wip/QF.4x` branches); lock pushed cleanly; vitest 5.0.5; reviewer sonnet works (worktree; Agent blocks until it reports, so the MK.1 review and the ME.6 fork ran as one parallel batch, minutes 1–28). CI on main green (027c7d32). No new answers. Hour 04: no efficiency check or sweep.
+- MK.1: sonnet review 0 H, 2 M, 4 L. Fixed: GM Encounter rolls follow `rolls` (app-rolled d20s, re-roll on ties, dice shared; unit test), merged main into the branch, tighter d20 config bounds. `npm run check` green (1,976 tests), e2e M7.3 + QF.47 green. Merged to main (81247c49). Box checked.
+- ME.6 (fork, `wip/ME.6` head 9a385ad1, base b985e1f5): parts a–e built; schema v35; goldens re-recorded; new golden `profession-offers.jsonl`; D308–D310; `npm run check` green (1,961), e2e ME.6/ME.5/ME.3/M2.A/M3.A/MQ.6/MU.1 green. Sonnet review (engine + phone screenshot only; deadline cut it): 0 H, 1 M, 2 L. **Open Medium:** stored logs replay differently: `applySteps` now records `professionOfferCards` for skipped options in old logs (`evolution-steps.state.json` gains `Tracker`), and the new `pickSteps` refusal (`evolution/model.ts` ~1108, gated on fold-time `professionOffered`, `reducer.ts` ~2822) would reject an old `evolution.choose` with a profession pick after a profession was taken. Next step: gate both on the event's schema version (pre-v35 events keep the old behaviour), restore the old `evolution-steps.state.json` apart from `schemaVersion`, add a replay test of the old sequence; then round-2 review incl. `Professions.tsx` and the e2e. Lows: D309 should say the one-time bonus on a late take is the builder's extension of DESIGN §2.
+- Tests: engine+web unit 1,976 on main; full e2e not run this run (no shared server/UI change on main beyond the encounter model).
+- Open `wip/*`: `wip/ME.6`. Blockers: none.
 

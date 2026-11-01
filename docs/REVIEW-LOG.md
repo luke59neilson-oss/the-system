@@ -1256,3 +1256,7 @@
 ## 2026-11-01 · MK.1 d20 + modifier in the engine · sonnet (worktree, 4122fc0e)
 - Findings: 0 High, 2 Medium, 4 Low. M1: the GM Encounter panel always sent an odds roll, so a d20 campaign could share no contest ("every roll goes through the setting" did not hold). M2: branch stale against main. L: d20 config bounds let a modifier exceed the event's ±1000 limit; `Math.round` on negative halves (custom config only); `yours`/`theirs` hold raw stats in d20 grade walls (by D307); d20 dice and both modifiers reach players once shared (by design).
 - Fixes: `encounterModel.rollPlan` follows `rules.resolution.rolls` (app-rolled d20s, again while tied) and `shareCommand` carries the dice; GM outcome line shows each die, modifier and total (unit test); main merged into the branch; d20 config bounds tightened (per doubling ≤ 10, base ≥ 1, min stat ≥ 0.01). Lows 2–4 left as documented. One round (no High, one real Medium); fixes verified with `npm run check` (1,976 tests) and e2e M7.3 + QF.47.
+
+## 2026-11-01 · ME.6 (round 1, partial) · sonnet (worktree, 9a385ad1)
+- Findings: 0 High, 1 Medium (old logs replay differently: skipped-option offer cards derived for pre-v35 events; new pick refusal can reject an old `evolution.choose`), 2 Low (D309 wording on the late-take bonus; offer/pending-release consistency, judged fine). Console UI and e2e not reviewed before the deadline.
+- Fixes: none yet; handed to the next run on `wip/ME.6`. Box stays open.
