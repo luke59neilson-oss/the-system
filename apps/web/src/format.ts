@@ -118,6 +118,8 @@ export function gmChangeText(n: GmChange): string {
       );
     case 'professionWithdrawn':
       return `Profession offer withdrawn: [${s}]`;
+    case 'professionOffered':
+      return `New profession offer: [${s}]`;
     case 'titleEdited':
       return `Title updated: [${s}]`;
     case 'equipped':

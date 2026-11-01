@@ -1260,3 +1260,7 @@
 ## 2026-11-01 · ME.6 (round 1, partial) · sonnet (worktree, 9a385ad1)
 - Findings: 0 High, 1 Medium (old logs replay differently: skipped-option offer cards derived for pre-v35 events; new pick refusal can reject an old `evolution.choose`), 2 Low (D309 wording on the late-take bonus; offer/pending-release consistency, judged fine). Console UI and e2e not reviewed before the deadline.
 - Fixes: none yet; handed to the next run on `wip/ME.6`. Box stays open.
+
+## 2026-11-01 · ME.6 round 2 · sonnet (worktree, 892e7e42)
+- Round 1 Medium (stored logs replay differently) fixed: `evolution.chosen` v3, v2 upcaster marks `stepsV1`, old choices keep the ME.2 profession rules; `evolution-steps.state.json` restored; replay tests (D311). Verified by the reviewer and by mutation (tests fail with the flag ignored).
+- Round 2: 0 High, 0 Medium, 5 Low (to QUALITY Backlog): taken offer still listed without "Taken" (Professions.tsx:254-287) and stale `professionOfferCards` after a take; Withdraw button cramped inline (:272-282); Per-level stats boxes go stale if the distribution changes underneath (:312-323), Reset has no confirm; a profession distribution can be set before any profession with no hint; no sanity cap on an offer's one-time bonus. `npm run check` 1,997 green; e2e ME.6/ME.5/ME.3 green.

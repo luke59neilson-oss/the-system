@@ -182,6 +182,32 @@ export interface Character {
    * shape for the profession, and all free points for the race (D301).
    */
   readonly distributions?: TrackDistributions;
+  /**
+   * ME.6 (b, d; DESIGN §2): what each offered profession brings when taken
+   * later: its per-level distribution and one-time bonus, by offer name.
+   * Absent when no offer carries one (older states, name-only offers).
+   */
+  readonly professionOfferCards?: Readonly<Record<string, ProfessionOfferCard>>;
+}
+
+/** ME.6: an offered profession's distribution and one-time bonus. */
+export interface ProfessionOfferCard {
+  readonly distribution: TrackDistribution;
+  readonly statBonus: Readonly<Record<string, number>>;
+}
+
+/** ME.6: the cards with one name's card set (or removed with null); absent when empty. */
+export function withOfferCard(
+  character: Character,
+  name: string,
+  card: ProfessionOfferCard | null,
+): Character {
+  const cards: Record<string, ProfessionOfferCard> = { ...(character.professionOfferCards ?? {}) };
+  if (card === null) delete cards[name];
+  else cards[name] = card;
+  const rest: Character = { ...character };
+  delete (rest as { professionOfferCards?: unknown }).professionOfferCards;
+  return Object.keys(cards).length === 0 ? rest : { ...rest, professionOfferCards: cards };
 }
 
 /** A stored portrait: the SHA-256 of the image bytes and its extension (M4.4). */
@@ -465,7 +491,46 @@ export function takeOfferedProfession(
   if (!character.professionOffers.includes(profession)) {
     throw new CharacterRuleError(`"${profession}" is not one of your offered professions`);
   }
-  return grantProfession(rules, character, profession);
+  const granted = grantProfession(rules, character, profession);
+  // ME.6 (d): a profession taken later brings the distribution (and one-time
+  // bonus) its offer set; a name-only offer keeps the default (D301).
+  const card = character.professionOfferCards?.[profession];
+  if (!card) return granted;
+  const stats = { ...granted.stats };
+  for (const [stat, value] of Object.entries(card.statBonus)) {
+    if (value > 0) stats[stat] = (stats[stat] ?? 0) + value;
+  }
+  return {
+    ...granted,
+    stats,
+    distributions: {
+      ...(granted.distributions ?? {}),
+      profession: { stats: { ...card.distribution.stats }, free: card.distribution.free },
+    },
+  };
+}
+
+/**
+ * The GM offers a profession at any time while the character has none
+ * (ME.6 b, DESIGN §2), optionally with the distribution and one-time bonus
+ * it brings when taken.
+ */
+export function offerProfession(
+  character: Character,
+  profession: string,
+  card: ProfessionOfferCard | null,
+): Character {
+  const name = required(profession, 'Profession name');
+  if (character.profession !== null) {
+    throw new CharacterRuleError(
+      `${character.name} already has the profession [${character.profession}]; the offers are locked`,
+    );
+  }
+  if (character.professionOffers.includes(name)) {
+    throw new CharacterRuleError(`[${name}] is already offered to ${character.name}`);
+  }
+  const next: Character = { ...character, professionOffers: [...character.professionOffers, name] };
+  return card === null ? next : withOfferCard(next, name, card);
 }
 
 /**
@@ -485,7 +550,7 @@ export function withdrawProfessionOffer(character: Character, profession: string
     throw new CharacterRuleError(`"${profession}" is not offered to ${character.name}`);
   }
   return {
-    ...character,
+    ...withOfferCard(character, profession, null),
     professionOffers: character.professionOffers.filter((p) => p !== profession),
     evolution:
       pending && inRelease

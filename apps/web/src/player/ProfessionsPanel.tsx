@@ -91,6 +91,11 @@ export function ProfessionsPanel({
             >
               <span className="skill-name">[{p}]</span>
               {chosen && <span className="badge">Chosen</span>}
+              {!locked && me.professionOfferCards?.[p] && (
+                <span className="muted profession-offer-card" data-testid="profession-offer-card">
+                  {offerCardText(view, p)}
+                </span>
+              )}
               {!locked && client && confirming !== p && (
                 <button
                   type="button"
@@ -137,4 +142,19 @@ export function ProfessionsPanel({
       )}
     </section>
   );
+}
+
+/** ME.6 (d): "Per level: Wisdom 3 · Free points 2; one-time bonus: Wisdom +2". */
+function offerCardText(view: PlayerView, name: string): string {
+  const card = view.me.professionOfferCards?.[name];
+  if (!card) return '';
+  const stats = view.rules.stats.list;
+  const per = stats
+    .filter((s) => (card.distribution.stats[s.id] ?? 0) > 0)
+    .map((s) => `${s.name} ${card.distribution.stats[s.id]}`);
+  per.push(`Free points ${card.distribution.free}`);
+  const bonus = stats
+    .filter((s) => (card.statBonus[s.id] ?? 0) > 0)
+    .map((s) => `${s.name} +${card.statBonus[s.id]}`);
+  return `Per level: ${per.join(' · ')}${bonus.length > 0 ? `; one-time bonus: ${bonus.join(', ')}` : ''}`;
 }

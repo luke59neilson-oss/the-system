@@ -22,7 +22,7 @@ waiting, a banner) opens the tab that handles it.
 | --- | --- |
 | Home | Needs you (what waits on the GM, each a link to its window), Party (a card per character, with what needs you), Players join (address and QR), New character |
 | Session | Session (start, end, day), Award XP, Listening, Co-DM (quick responses, picks, generate, lore), Import (approve generated content), Encounter, Quests, Broadcast, Shops, Credits ledger, Trackers, Change log, System feed |
-| Progression | Award XP, Skill offers, Practice log, Marks review, Merges |
+| Progression | Award XP, Skill offers, Practice log, Marks review, Merges, Professions, Per-level stats |
 | Evolutions | Who is at or near the threshold; the evolution builder (three steps or class only) |
 | Library & settings | Skill text, Skill library, Item library, Loot tables, Title library, Classes, races and professions, Bestiary, Reference (Primal Hunter lists), Rules settings, Co-DM settings, Campaigns and backups |
 
@@ -131,6 +131,14 @@ send it to a player.
   (**Confirm mark**); when a skill has enough, **Upgrade** it.
 - **Merges**: when two skills have worked together often enough, name the
   result and **Send merge**.
+- **Professions**: offer a character a profession at any time before they
+  have one (**Offer profession**), optionally with its per-level stats and a
+  one-time bonus, which it brings when the player takes it. **Withdraw**
+  takes an offer back.
+- **Per-level stats**: set what one level of a character's class,
+  profession or race grants (points per stat plus free points); it applies
+  from the next level. **Reset to default** goes back to the class weights
+  (race: all free points).
 - **Evolutions**: due when race level reaches the top of the grade and every
   selection is chosen. Write the paths, each with a stat bonus (**Bonus per
   stat** or +N to all), optionally **Reshape the class spread** and add

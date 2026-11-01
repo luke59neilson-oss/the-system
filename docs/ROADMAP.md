@@ -342,7 +342,7 @@ in the first session.
   theme. The GM builder's default becomes Three steps (D305). *Accept:* e2e
   (locked → released → three picks → confirm → new theme); screenshots at 390×844 locked, lit and mid-choice, and with
   reduced motion; canary.
-- [ ] **ME.6 Fixes from the ME.A review (fable, 2026-11-01).** (a) A
+- [x] **ME.6 Fixes from the ME.A review (fable, 2026-11-01).** (a) A
   profession gained while a three-step release is pending: the steps path
   must refuse offers to a character who now has a profession, and an empty
   profession step means "unchanged" (today the profession is silently

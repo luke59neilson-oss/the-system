@@ -21,6 +21,7 @@ export type GmChangeKind =
   | 'xp'
   | 'freePoints'
   | 'professionWithdrawn'
+  | 'professionOffered'
   | 'titleEdited'
   | 'equipped'
   | 'unequipped'
@@ -85,6 +86,7 @@ export const PLAYER_NOTICE_AUDIT: Readonly<Record<EventType, PlayerNoticeAudit>>
   'character.professionGranted': notifies,
   'profession.chosen': notifies,
   'profession.offerWithdrawn': notifies,
+  'profession.offered': notifies,
   'title.awarded': notifies,
   'titleDef.defined': notifies,
   'titleDef.edited': notifies,
@@ -366,6 +368,13 @@ export function gmChangeNotices(
       }
       break;
     }
+    case 'profession.offered':
+      push({
+        characterId: event.payload.characterId,
+        change: 'professionOffered',
+        subject: event.payload.profession.trim(),
+      });
+      break;
     case 'profession.offerWithdrawn':
       push({
         characterId: event.payload.characterId,

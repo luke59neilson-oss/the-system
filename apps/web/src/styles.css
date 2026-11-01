@@ -3566,3 +3566,32 @@ ol.change-log li.undone .change-text {
 .evolution-steps-choice .evolution-review dd {
   margin: 0 0 6px;
 }
+/* ME.6 (e): one pick per row (label above its card), on every width. */
+.evolution-steps-choice .evolution-review {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.evolution-steps-choice .evolution-review > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.evolution-steps-choice .evolution-review dd > span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+/* ME.6: compact per-stat boxes in the Professions and Per-level stats windows. */
+.stat-boxes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 6px 10px;
+  margin-bottom: 8px;
+}
+.stat-boxes label {
+  margin: 0;
+  font-size: 0.9em;
+}
+.stat-boxes input {
+  width: 100%;
+  min-width: 0;
+}
