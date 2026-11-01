@@ -226,6 +226,11 @@ test('Kim’s evolution: locked, lit on release, three picks, one confirm, new t
   await dialog.getByRole('button', { name: 'Back' }).click();
   await expect(dialog.getByRole('heading', { name: 'Class: choose one' })).toBeVisible();
   await dialog.getByRole('button', { name: 'Choose Storm Archer' }).click();
+  // Close keeps the picks: reopening lands on the profession step.
+  await dialog.getByRole('button', { name: 'Close evolution' }).click();
+  await expect(dialog).toHaveCount(0);
+  await panel.getByRole('button', { name: 'Continue your evolution' }).click();
+  await expect(dialog.getByRole('heading', { name: 'Profession: choose one' })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Choose none for now' })).toBeVisible();
   await dialog.getByRole('button', { name: 'Choose Herbalist' }).click();
   await dialog.getByRole('button', { name: 'Choose Human (E)' }).click();

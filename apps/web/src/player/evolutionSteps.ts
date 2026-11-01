@@ -126,3 +126,25 @@ export function stepWarnings(
   out.push('The choice is final; the other options will be gone.');
   return [...new Set(out)];
 }
+
+/**
+ * Whether the evolution sound plays (ME.5): a release new to this character
+ * arrived while the page was open. Never on load, on a character switch or
+ * in the GM's View-as panes. (Muted sound plays at volume 0.)
+ */
+export function releaseArrived(
+  seen: { readonly id: string; readonly release: string | null } | null,
+  characterId: string,
+  releaseId: string | null,
+  pane: boolean,
+): boolean {
+  if (pane || seen === null || seen.id !== characterId) return false;
+  return releaseId !== null && releaseId !== seen.release;
+}
+
+/** The picks and step a closed dialog keeps for its release (ME.5 review). */
+export interface SavedPicks {
+  readonly releaseId: string;
+  readonly picks: StepPicks;
+  readonly at: number;
+}

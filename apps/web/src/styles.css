@@ -453,6 +453,10 @@ a {
   .player-grid .professions-window {
     order: 1;
   }
+  /* ME.5 review: the Evolution window sits right under Status on phones. */
+  .player-grid .evolution-panel {
+    order: 1;
+  }
   .player-grid .quests {
     order: 2;
   }

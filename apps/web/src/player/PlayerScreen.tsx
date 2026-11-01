@@ -55,7 +55,13 @@ import { SkillSelection } from './SkillSelection';
 import { EvolutionChoice } from './EvolutionChoice';
 import { EvolutionPanel } from './EvolutionPanel';
 import { EvolutionStepsChoice } from './EvolutionStepsChoice';
-import { evolutionPanelState, readOpened, writeOpened } from './evolutionSteps';
+import {
+  evolutionPanelState,
+  readOpened,
+  releaseArrived,
+  writeOpened,
+  type SavedPicks,
+} from './evolutionSteps';
 import { useEvolutionFlash } from './evolutionFlash';
 import { describeTitleBonuses } from './titles';
 import { ProfessionsPanel } from './ProfessionsPanel';
@@ -155,8 +161,9 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
     if (!view) return;
     const seen = seenRelease.current;
     seenRelease.current = { id: characterId, release: releaseId };
-    if (pane || !seen || seen.id !== characterId) return;
-    if (releaseId !== null && releaseId !== seen.release) playSound('evolution', levelRef.current);
+    if (releaseArrived(seen, characterId, releaseId, pane)) {
+      playSound('evolution', levelRef.current);
+    }
   }, [view, releaseId, characterId, pane]);
   const waitingSelections = view ? pendingSelections(view.me.selections).length : null;
   const seenSelections = useRef<{ id: string; count: number } | null>(null);
@@ -432,6 +439,8 @@ function Status({
     if (evoFocus === 0) return;
     (evolveButton.current ?? statusHeading.current)?.focus();
   }, [evoFocus]);
+  // ME.5 review: Close keeps the picks and the step for that release.
+  const [evoPicks, setEvoPicks] = useState<SavedPicks | null>(null);
   // ME.5: the Evolution window, the pop-up and [Evolve] open the dialog here.
   const [evoHandled, setEvoHandled] = useState(evoRequest);
   if (evoRequest !== evoHandled) {
@@ -749,6 +758,8 @@ function Status({
             key={me.evolution.releaseId}
             evolution={me.evolution}
             steps={me.evolution.steps}
+            saved={evoPicks?.releaseId === me.evolution.releaseId ? evoPicks : null}
+            onPicks={setEvoPicks}
             view={view}
             client={client}
             onConfirming={() => setEvoConfirming(true)}

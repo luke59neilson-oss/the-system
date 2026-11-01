@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_RULES } from '@the-system/engine';
+import { DEFAULT_RULES, type PlayerRules } from '@the-system/engine';
 import {
   evolutionPanelState,
   perLevelText,
+  releaseArrived,
   picksComplete,
   readOpened,
   stepChoices,
@@ -86,7 +87,13 @@ describe("the player's evolution window (ME.5)", () => {
   });
 
   it('warns about merges across all three picks, and says the choice is final once', () => {
-    const w = stepWarnings(DEFAULT_RULES, { skills: [] }, [
+    const marks: PlayerRules['marks'] = {
+      carryOver: false,
+      resetOnUpgrade: true,
+      upgrades: { inferior: 3, common: 4, uncommon: 6, rare: 8 },
+      order: ['inferior', 'common', 'uncommon', 'rare', 'epic'],
+    };
+    const w = stepWarnings({ marks }, { skills: [] }, [
       card('c1', {
         transforms: [{ skill: 'A', merge: 'B', name: 'AB', rarity: 'rare' }],
       }),
@@ -96,5 +103,17 @@ describe("the player's evolution window (ME.5)", () => {
       '[A] and [B] merge into [AB]: both are consumed, and the merged skill starts at 0 marks.',
       'The choice is final; the other options will be gone.',
     ]);
+  });
+});
+
+describe('the evolution sound on a release (ME.5 review)', () => {
+  it('plays when a new release arrives while the page is open, never on load, a switch or in a pane', () => {
+    expect(releaseArrived(null, 'kim', 'e1', false)).toBe(false);
+    expect(releaseArrived({ id: 'kim', release: null }, 'kim', 'e1', false)).toBe(true);
+    expect(releaseArrived({ id: 'kim', release: 'e1' }, 'kim', 'e2', false)).toBe(true);
+    expect(releaseArrived({ id: 'kim', release: 'e1' }, 'kim', 'e1', false)).toBe(false);
+    expect(releaseArrived({ id: 'kim', release: 'e1' }, 'kim', null, false)).toBe(false);
+    expect(releaseArrived({ id: 'jo', release: null }, 'kim', 'e1', false)).toBe(false);
+    expect(releaseArrived({ id: 'kim', release: null }, 'kim', 'e1', true)).toBe(false);
   });
 });

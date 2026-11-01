@@ -13,6 +13,7 @@ import {
   stepChoices,
   stepWarnings,
   type EvolutionStepId,
+  type SavedPicks,
   type StepCard,
   type StepPicks,
 } from './evolutionSteps';
@@ -36,9 +37,14 @@ export function EvolutionStepsChoice({
   onConfirming,
   onSettled,
   onClose,
+  saved = null,
+  onPicks,
 }: {
   evolution: PendingEvolution;
   steps: Steps;
+  /** The picks a closed dialog kept for this release (ME.5 review). */
+  saved?: SavedPicks | null;
+  onPicks?: (saved: SavedPicks) => void;
   view: PlayerView;
   client: LiveClient;
   onConfirming: () => void;
@@ -57,8 +63,18 @@ export function EvolutionStepsChoice({
   const walk = EVOLUTION_STEPS.filter(
     (s) => s !== 'profession' || noneAllowed || steps.profession.length > 0,
   );
-  const [picks, setPicks] = useState<StepPicks>({ class: null, profession: null, race: null });
-  const [at, setAt] = useState<number>(0);
+  const [picks, setPicksState] = useState<StepPicks>(
+    () => saved?.picks ?? { class: null, profession: null, race: null },
+  );
+  const [at, setAtState] = useState<number>(() => saved?.at ?? 0);
+  const setPicks = (p: StepPicks) => {
+    setPicksState(p);
+    onPicks?.({ releaseId: evolution.releaseId, picks: p, at });
+  };
+  const setAt = (n: number) => {
+    setAtState(n);
+    onPicks?.({ releaseId: evolution.releaseId, picks, at: n });
+  };
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -77,8 +93,10 @@ export function EvolutionStepsChoice({
   };
   const pick = (step: EvolutionStepId, id: string) => {
     setError(null);
-    setPicks({ ...picks, [step]: id });
-    setAt(at + 1);
+    const next = { ...picks, [step]: id };
+    setPicksState(next);
+    setAtState(at + 1);
+    onPicks?.({ releaseId: evolution.releaseId, picks: next, at: at + 1 });
   };
   const confirm = async () => {
     setBusy(true);
