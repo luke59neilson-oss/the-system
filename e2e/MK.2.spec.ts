@@ -229,6 +229,17 @@ test('the phone shows the modifier of a contest one grade apart (QF.71)', async 
   // Review M1: a mode that moves the modifier ends the request; none goes stale.
   await roller.getByLabel('Grade-gap mode').selectOption('none');
   await expect(phone.getByTestId('roll-prompt')).toHaveCount(0);
+  // Round 2 M1: nor when the other side's value is blank while the mode moves.
+  await roller.getByLabel('Grade-gap mode').selectOption('gradeWalls');
+  await roller.getByRole('button', { name: "Ask Jake's phone for a d20" }).click();
+  await expect(phone.getByTestId('roll-prompt')).toContainText('(−5)');
+  const value = sideB.getByRole('textbox', { name: 'Value', exact: true });
+  await value.fill('');
+  await roller.getByLabel('Grade-gap mode').selectOption('none');
+  await expect(phone.getByTestId('roll-prompt')).toContainText('(−5)');
+  await value.fill('10');
+  await expect(phone.getByTestId('roll-prompt')).toHaveCount(0);
+  await expect(gm.locator('.err')).toHaveCount(0);
 });
 
 test("a phone die belongs to its contest; a console die closes the phone's request", async ({
