@@ -339,8 +339,8 @@ in the first session.
   available]` pop-up, sound unless muted; reduced motion: a strong static
   highlight) until opened; three steps of book-style option cards, a review
   of all three, one confirm, then the evolution notice and the new grade's
-  theme. *Accept:* e2e (locked → released → three picks → confirm → new
-  theme); screenshots at 390×844 locked, lit and mid-choice, and with
+  theme. The GM builder's default becomes Three steps (D305). *Accept:* e2e
+  (locked → released → three picks → confirm → new theme); screenshots at 390×844 locked, lit and mid-choice, and with
   reduced motion; canary.
 - [ ] **ME.A Acceptance and review.** Full suite green; `fable` review;
   "Preview ready" (LOOP §8.2).

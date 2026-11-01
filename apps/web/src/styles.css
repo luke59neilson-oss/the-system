@@ -3378,3 +3378,50 @@ ol.change-log li.undone .change-text {
   padding: 0.25rem 0 0.25rem 0.75rem;
   margin: 0.75rem 0;
 }
+
+/* ME.3: the three-step evolution builder on the Evolutions tab. */
+.evolution-steps .evolution-standing {
+  border: 1px solid var(--border, #555);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+.evolution-steps .evolution-standing p {
+  margin: 4px 0;
+}
+.evolution-steps .option-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.evolution-steps .option-card > label {
+  display: block;
+  margin-bottom: 4px;
+}
+.evolution-steps .stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px 8px;
+}
+.evolution-steps .option-card .stat-bonus[open] {
+  display: block;
+}
+.evolution-steps .stat-grid label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85em;
+  margin: 0;
+}
+.evolution-steps .stat-grid input {
+  width: 4.5em;
+}
+.evolution-steps .budget-meter {
+  font-weight: 600;
+}
+.evolution-steps .release-blockers {
+  padding-left: 18px;
+}
+.evolution-builder .evolution-near {
+  margin: 0 0 8px;
+}

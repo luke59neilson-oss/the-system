@@ -23,7 +23,7 @@ waiting, a banner) opens the tab that handles it.
 | Home | Needs you (what waits on the GM, each a link to its window), Party (a card per character, with what needs you), Players join (address and QR), New character |
 | Session | Session (start, end, day), Award XP, Listening, Co-DM (quick responses, picks, generate, lore), Import (approve generated content), Encounter, Quests, Broadcast, Shops, Credits ledger, Trackers, Change log, System feed |
 | Progression | Award XP, Skill offers, Practice log, Marks review, Merges |
-| Evolutions | Evolution builder (ME.3: the three steps move here) |
+| Evolutions | Who is at or near the threshold; the evolution builder (three steps or class only) |
 | Library & settings | Skill text, Skill library, Item library, Loot tables, Title library, Classes, races and professions, Bestiary, Reference (Primal Hunter lists), Rules settings, Co-DM settings, Campaigns and backups |
 
 Award XP is the one window in two places: the same form on both tabs (a
@@ -138,6 +138,15 @@ send it to a player.
   evolution** (each skill starts at the rarity it has now; Identify never
   drops) and tick **Approve this re-rating**. At E-grade add profession
   offers. Then **Release evolution**; the player picks the path.
+  The **Evolutions** tab lists who is within 3 race levels of the threshold.
+  Pick **Three steps: class, profession, race** to build each step's option
+  cards (name, rarity, description, points per level, one-time bonus,
+  transforms; **Add**, **Duplicate**, **Remove**). Each card's meter shows its
+  per-level total against the step's budget and its bonus against option 1,
+  in red with the difference when they differ. Release lists every reason it
+  is blocked; **Override** releases past unequal totals and a waiting
+  selection. Until players can pick three steps on their screens (ME.5),
+  **Class only** stays the default.
 - **Skill library** and **Skill text**: library text is per name and rarity
   and updates every copy you have not hand-edited; **Use library text**
   hands an edited copy back to the library.
