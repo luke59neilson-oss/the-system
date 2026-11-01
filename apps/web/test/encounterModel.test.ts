@@ -166,7 +166,7 @@ describe('encounter model: contests (M7.3)', () => {
     expect(shared[0]).toMatchObject({ roll: 0.42, success: true, chance: 0.5 });
   });
 
-  it('a typed die counts for the first round; a tie rolls again in the app (MK.2)', () => {
+  it('a typed die counts; a tie goes to the attacker with no re-roll (MK.2, ML.3)', () => {
     const rules = {
       ...DEFAULT_RULES,
       resolution: { ...DEFAULT_RULES.resolution, rolls: 'd20' as const },
@@ -184,23 +184,40 @@ describe('encounter model: contests (M7.3)', () => {
       'none',
     );
     if (typeof plan === 'string') throw new Error(plan);
-    // Jake types 7; Kim's die is the app's (0.3 → 7): a tie, then 20 against 1.
+    // Jake types 7; Kim's die is the app's (0.3 → 7): a tie, and Jake attacks.
     const draws = [0.3, 0.95, 0];
     let i = 0;
     const rolled = rollPlan(s, plan, () => draws[i++] ?? 0, { a: 7, b: null });
+    expect(i).toBe(1);
     expect(rolled.d20?.rounds.map((r) => [r.a, r.b])).toEqual([
       [
         { die: 7, how: 'typed', total: 7 },
         { die: 7, how: 'app', total: 7 },
       ],
-      [
-        { die: 20, how: 'app', total: 20 },
-        { die: 1, how: 'app', total: 1 },
-      ],
     ]);
-    expect(shareCommand(rolled)).toMatchObject({
-      dice: [{ a: { die: 7, how: 'typed' }, b: { die: 7, how: 'app' } }, {}],
-    });
+    expect(rolled.result.success).toBe(true);
+    expect(outcomeText(rolled)).toMatch(/a tie: the attacker wins\)$/);
+    expect(shareCommand(rolled)).toEqual(
+      expect.objectContaining({
+        dice: [{ a: { die: 7, how: 'typed' }, b: { die: 7, how: 'app' } }],
+        attacker: 'a',
+      }),
+    );
+    // Kim attacking: the same tie goes to Kim.
+    const kimAttacks = contestPlan(
+      s,
+      sideDraftFor(s, 'c:jake', 'strength'),
+      sideDraftFor(s, 'c:kim', 'strength'),
+      'none',
+      'b',
+    );
+    if (typeof kimAttacks === 'string') throw new Error(kimAttacks);
+    const kim = rollPlan(s, kimAttacks, () => 0.3, { a: 7, b: null });
+    expect(kim.result.success).toBe(false);
+    expect(outcomeText(kim)).toBe(
+      'Kim · Strength wins (d20: Jake · Strength 7 typed +0 = 7, Kim · Strength 7 app +0 = 7, a tie: the attacker wins)',
+    );
+    expect(shareCommand(kim)).toMatchObject({ attacker: 'b' });
     const once = rollPlan(s, plan, () => 0, { a: 15, b: 3 });
     expect(once.d20?.rounds).toHaveLength(1);
     expect(outcomeText(once)).toBe(
@@ -277,7 +294,7 @@ describe('encounter model: contests (M7.3)', () => {
     ).toBeNull();
   });
 
-  it('rolls and shares d20 dice in a d20 campaign, again while tied (MK.1)', () => {
+  it('rolls and shares d20 dice in a d20 campaign, one die each (MK.1, ML.3)', () => {
     const rules = {
       ...DEFAULT_RULES,
       resolution: { ...DEFAULT_RULES.resolution, rolls: 'd20' as const },
@@ -295,26 +312,21 @@ describe('encounter model: contests (M7.3)', () => {
       'none',
     );
     if (typeof plan === 'string') throw new Error(plan);
-    const draws = [0.5, 0.5, 0.95, 0];
+    const draws = [0.95, 0];
     let i = 0;
     const rolled = rollPlan(s, plan, () => draws[i++] ?? 0);
-    expect(i).toBe(4);
+    expect(i).toBe(2);
     expect(rolled.roll).toBeNull();
-    expect(rolled.d20?.rounds.map((r) => [r.a.die, r.b.die])).toEqual([
-      [11, 11],
-      [20, 1],
-    ]);
+    expect(rolled.d20?.rounds.map((r) => [r.a.die, r.b.die])).toEqual([[20, 1]]);
     expect(rolled.result.success).toBe(true);
     expect(outcomeText(rolled)).toBe(
-      'Jake · Strength wins (d20: Jake · Strength 20 app +0 = 20, Kim · Strength 1 app +0 = 1, after 1 tie(s))',
+      'Jake · Strength wins (d20: Jake · Strength 20 app +0 = 20, Kim · Strength 1 app +0 = 1)',
     );
     const command = shareCommand(rolled);
     expect(command).toMatchObject({
       roll: null,
-      dice: [
-        { a: { die: 11, how: 'app' }, b: { die: 11, how: 'app' } },
-        { a: { die: 20, how: 'app' }, b: { die: 1, how: 'app' } },
-      ],
+      dice: [{ a: { die: 20, how: 'app' }, b: { die: 1, how: 'app' } }],
+      attacker: 'a',
     });
     const shared = recentContests(stateOf(apply(base, [command])));
     expect(shared).toHaveLength(1);
