@@ -18,6 +18,7 @@ import {
   webRootFor,
   isQuitForUpdate,
   releaseMenuTemplate,
+  shouldReloadAfterCrash,
 } from './launch';
 
 /**
@@ -170,9 +171,17 @@ function openGmWindow(server: RunningApp, notice: string | null = null): void {
     ),
   );
   // QF.58: a crashed console renderer reloads instead of staying blank.
+  // A renderer that keeps crashing stops reloading and the GM is told instead.
+  const crashReloads: number[] = [];
   win.webContents.on('render-process-gone', (_event, details) => {
     if (win.isDestroyed() || details.reason === 'clean-exit') return;
-    win.webContents.reload();
+    if (shouldReloadAfterCrash(crashReloads, Date.now())) return void win.webContents.reload();
+    void dialog.showMessageBox(win, {
+      type: 'error',
+      message: 'The GM console keeps crashing.',
+      detail:
+        'Use View → Reload to try again, or quit and start The System again. Your campaign is saved.',
+    });
   });
   // Links to anything but our own pages open in the system browser.
   win.webContents.setWindowOpenHandler(({ url }) => {

@@ -240,3 +240,20 @@ export function releaseMenuTemplate(platform: string): ReleaseMenuItem[] {
   };
   return [...(platform === 'darwin' ? [{ role: 'appMenu' }] : []), { role: 'editMenu' }, view];
 }
+
+/** QF.58: how many crash reloads a window gets within {@link CRASH_WINDOW_MS}. */
+export const MAX_CRASH_RELOADS = 3;
+export const CRASH_WINDOW_MS = 60_000;
+
+/**
+ * QF.58: whether a crashed console should reload. `recent` holds the times of
+ * earlier crash reloads (oldest first) and is updated in place. A renderer
+ * that keeps crashing stops reloading after {@link MAX_CRASH_RELOADS} in a
+ * minute, so the app never spins; the caller then tells the GM instead.
+ */
+export function shouldReloadAfterCrash(recent: number[], nowMs: number): boolean {
+  while (recent.length > 0 && nowMs - recent[0]! >= CRASH_WINDOW_MS) recent.shift();
+  if (recent.length >= MAX_CRASH_RELOADS) return false;
+  recent.push(nowMs);
+  return true;
+}

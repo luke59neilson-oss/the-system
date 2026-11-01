@@ -3,6 +3,9 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  shouldReloadAfterCrash,
+  MAX_CRASH_RELOADS,
+  CRASH_WINDOW_MS,
   packagedSpeechFiles,
   packagedSpeechLoad,
   speechPackageDir,
@@ -263,5 +266,21 @@ describe('release menu (QF.58)', () => {
     }
     expect(roles(releaseMenuTemplate('darwin'))).toContain('appMenu');
     expect(roles(releaseMenuTemplate('win32'))).not.toContain('appMenu');
+  });
+});
+
+describe('crash reload (QF.58)', () => {
+  it('reloads a crashed console, but stops after three crashes in a minute', () => {
+    const recent: number[] = [];
+    expect(MAX_CRASH_RELOADS).toBe(3);
+    expect(shouldReloadAfterCrash(recent, 0)).toBe(true);
+    expect(shouldReloadAfterCrash(recent, 1_000)).toBe(true);
+    expect(shouldReloadAfterCrash(recent, 2_000)).toBe(true);
+    expect(shouldReloadAfterCrash(recent, 3_000)).toBe(false);
+    expect(recent).toEqual([0, 1_000, 2_000]);
+    // A minute after the first crash it may reload again.
+    expect(shouldReloadAfterCrash(recent, CRASH_WINDOW_MS - 1)).toBe(false);
+    expect(shouldReloadAfterCrash(recent, CRASH_WINDOW_MS)).toBe(true);
+    expect(recent).toEqual([1_000, 2_000, CRASH_WINDOW_MS]);
   });
 });

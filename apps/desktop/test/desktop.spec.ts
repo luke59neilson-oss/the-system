@@ -54,6 +54,15 @@ test('double-click start: server up, GM window connected with the key', async ()
     await expect(gm.getByRole('heading', { name: /Desktop smoke/ })).toBeVisible();
     await expect(gm.getByTestId('join-url')).toHaveText(/^http:\/\/.+:\d+\/?$/);
     await expect(gm.getByRole('img', { name: /QR code/ })).toBeVisible();
+    // QF.58: the window's own page may write the clipboard, so Copy works.
+    await app.evaluate(({ clipboard }) => clipboard.writeText('before'));
+    await gm.getByText('Open the GM console in another browser on this computer').click();
+    const gmLink = await gm.getByLabel('GM link').inputValue();
+    expect(gmLink).toMatch(/\/gm#?/);
+    await gm.getByRole('button', { name: 'Copy', exact: true }).click();
+    await expect(gm.getByRole('button', { name: 'Copied', exact: true })).toBeVisible();
+    expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe(gmLink);
+    await gm.getByText('Open the GM console in another browser on this computer').click();
     await expect(gm.getByTestId('connect-help').locator('summary')).toHaveText(
       'Players can’t connect? Check Windows Firewall',
     );
