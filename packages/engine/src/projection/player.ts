@@ -1358,6 +1358,7 @@ function stepCard(o: ReleasedStepOption, statIds: readonly string[]): ReleasedSt
 
 /** MK.2: the viewer's own open roll request, whitelisted field by field. */
 function ownRollRequest(state: CampaignState, viewerId: string): PlayerView['rollRequest'] {
+  if (state.rules.resolution.rolls !== 'd20') return null;
   const open = state.rollRequests ?? {};
   const r = hasOwnKey(open, viewerId) ? open[viewerId] : undefined;
   if (r === undefined) return null;

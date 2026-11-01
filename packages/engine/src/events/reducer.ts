@@ -2649,7 +2649,14 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       if (problem) fail(event, problem);
       const misfit = rulesEditStateProblem(state, parsed.config);
       if (misfit) fail(event, misfit);
-      return { ...state, rules: parsed.config };
+      // MK.2 review M3: leaving d20 closes every open roll request, so no
+      // phone keeps asking for a die nothing will use.
+      const open = state.rollRequests;
+      const closeRolls =
+        parsed.config.resolution.rolls !== 'd20' &&
+        open !== undefined &&
+        Object.keys(open).length > 0;
+      return { ...state, rules: parsed.config, ...(closeRolls ? { rollRequests: {} } : {}) };
     }
     case 'rules.migrated': {
       // MR.3 (L16, D153): XP overflow on; XP banked on a capped track is
@@ -2726,6 +2733,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       const { requestId, characterId, stat } = event.payload;
       if (!hasOwn(state.characters, characterId)) fail(event, `unknown character "${characterId}"`);
       if (!state.rules.stats.list.some((s) => s.id === stat)) fail(event, `unknown stat "${stat}"`);
+      if (state.rules.resolution.rolls !== 'd20')
+        fail(event, 'Roll requests need d20 rolls (Rules settings → Rolls)');
       const open = state.rollRequests ?? {};
       return {
         ...state,

@@ -145,4 +145,25 @@ describe('d20 roll requests (MK.2)', () => {
       ).ok,
     ).toBe(false);
   });
+  it('refuses a request while rolls are app odds (review M3)', () => {
+    const base = run([
+      { type: 'campaign.create', name: 'C', rules: rawRules() },
+      { type: 'character.create', id: 'jake', name: 'Jake', className: 'Archer', classSkills: kit },
+    ]);
+    const r = execute(base, request, testContext('x'));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/d20/);
+  });
+
+  it('a switch to app odds closes open requests; the phone stops asking (review M3)', () => {
+    let c = run([...setup, request]);
+    expect(projectForPlayer(c.state!, 'jake').rollRequest).not.toBeNull();
+    c = run([{ type: 'rules.set', rules: rawRules() }], testContext('o'), c);
+    expect(c.state!.rollRequests).toEqual({});
+    expect(projectForPlayer(c.state!, 'jake').rollRequest).toBeNull();
+    expect(replay(c.events).state!.rollRequests).toEqual({});
+    // Back on d20, nothing old reappears.
+    c = run([{ type: 'rules.set', rules: d20Rules() }], testContext('p'), c);
+    expect(projectForPlayer(c.state!, 'jake').rollRequest).toBeNull();
+  });
 });

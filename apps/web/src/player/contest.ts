@@ -56,12 +56,18 @@ export function rollPromptText(
   req: NonNullable<PlayerView['rollRequest']>,
 ): { title: string; answer: string | null } {
   const label = view.rules.stats.list.find((s) => s.id === req.stat)?.name ?? req.stat;
-  const mod = view.me.rollModifiers?.[req.stat] ?? 0;
-  const title = `Roll d20 for ${label} (${signed(mod)})`;
+  // Review M3: no modifier is known (not a d20 campaign): say so, never "+0".
+  const mod = view.me.rollModifiers?.[req.stat];
+  const title =
+    mod === undefined ? `Roll d20 for ${label}` : `Roll d20 for ${label} (${signed(mod)})`;
   if (req.answer === null) return { title, answer: null };
   const a = req.answer;
+  const how = a.how === 'typed' ? 'typed' : 'app';
   return {
     title,
-    answer: `You rolled ${a.die} (${a.how === 'typed' ? 'typed' : 'app'}) ${signed(mod)} = ${a.die + mod}. The GM has it.`,
+    answer:
+      mod === undefined
+        ? `You rolled ${a.die} (${how}). The GM has it.`
+        : `You rolled ${a.die} (${how}) ${signed(mod)} = ${a.die + mod}. The GM has it.`,
   };
 }

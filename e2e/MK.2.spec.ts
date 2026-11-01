@@ -172,3 +172,62 @@ test("the GM asks the player's phone for a d20; it rolls, and the NPC's die is t
   // Canary: the custom side's value stays with the GM.
   expect(frames.join('\n')).not.toContain('"value":20');
 });
+
+test("a phone die belongs to its contest; a console die closes the phone's request", async ({
+  browser,
+}) => {
+  const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
+  await gm.getByLabel('Campaign name').fill('Dice');
+  await gm.getByRole('button', { name: 'Create campaign' }).click();
+  const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
+  await create.getByLabel('Name', { exact: true }).fill('Jake');
+  await create.getByRole('button', { name: 'Create character' }).click();
+  await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
+  await openWindow(gm, 'rules-settings');
+  await gm.getByTestId('rules-rolls').getByRole('combobox').selectOption('d20');
+  await expect(gm.locator('section[aria-labelledby="rules-settings"]')).toContainText(
+    'Rolls: d20 + modifier.',
+  );
+  const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await phone.goto(server.url);
+  await phone.getByRole('link', { name: /Jake/ }).click();
+  await expect(phone.getByTestId('connection')).toHaveText('Connected');
+
+  await openWindow(gm, 'encounter');
+  const roller = gm.locator('form[aria-labelledby="contest-roller"]');
+  const sideA = roller.getByRole('group', { name: 'Side A' });
+  const sideB = roller.getByRole('group', { name: 'Side B' });
+  await sideA.getByLabel('Who').selectOption({ label: 'Jake' });
+  await sideA.getByLabel('Stat').selectOption({ label: 'Perception' });
+  await sideB.getByLabel('Who').selectOption('custom');
+  await sideB.getByLabel('Stat').selectOption({ label: 'Perception' });
+  await sideB.getByRole('textbox', { name: 'Value', exact: true }).fill('20');
+  await sideB.getByRole('textbox', { name: 'Players see', exact: true }).fill('Pale stalker');
+  await roller.getByRole('button', { name: "Ask Jake's phone for a d20" }).click();
+  const prompt = phone.getByTestId('roll-prompt');
+  await prompt.getByRole('textbox').fill('19');
+  await prompt.getByRole('button', { name: 'Send die' }).click();
+  await expect(roller.getByTestId('phone-roll-a')).toContainText('Jake threw 19 (typed)');
+
+  // The GM sets up a different contest: the 19 is shown but not used.
+  await sideB.getByRole('textbox', { name: 'Value', exact: true }).fill('30');
+  const stale = roller.getByTestId('phone-roll-stale-a');
+  await expect(stale).toContainText('An earlier request to Jake is still open (threw 19)');
+  await stale.getByRole('button', { name: 'Clear' }).click();
+  await expect(prompt).toHaveCount(0);
+  await expect(stale).toHaveCount(0);
+
+  // Asked again and still waiting, the GM types Jake's die on the console:
+  // Roll uses it and the phone stops asking.
+  await roller.getByRole('button', { name: "Ask Jake's phone for a d20" }).click();
+  await expect(prompt).toContainText('Roll d20 for Perception (+0)');
+  const dice = roller.getByTestId('contest-dice').getByRole('textbox');
+  await dice.nth(0).fill('12');
+  await dice.nth(1).fill('3');
+  await roller.getByRole('button', { name: 'Roll' }).click();
+  await expect(roller.getByTestId('contest-result')).toContainText('12 typed +0 = 12');
+  await expect(prompt).toHaveCount(0);
+  await expect(roller.getByTestId('phone-roll-a')).toContainText("Ask Jake's phone for a d20");
+});

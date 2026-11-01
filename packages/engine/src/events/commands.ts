@@ -911,7 +911,12 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('session.end') }),
   z.object({ type: z.literal('scene.end') }),
   z.object({ type: z.literal('scene.answer') }),
-  z.object({ type: z.literal('roll.request'), characterId: z.string(), stat: z.string() }),
+  z.object({
+    type: z.literal('roll.request'),
+    characterId: z.string(),
+    stat: z.string(),
+    requestId: z.string().min(1).max(100).optional(),
+  }),
   z.object({
     type: z.literal('roll.answer'),
     characterId: z.string(),

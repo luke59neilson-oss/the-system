@@ -22,6 +22,8 @@ import {
   recentContests,
   rollPlan,
   phoneDie,
+  phoneDieUsed,
+  rollClears,
   phoneRoller,
   shareCommand,
   signedModifier,
@@ -106,6 +108,16 @@ interface ToolProps {
   clear?: () => void;
 }
 
+const clearOf = (characterId: string, requestId: string): Command => ({
+  type: 'roll.clear',
+  characterId,
+  requestId,
+});
+
+/** A request id the console knows before the server echoes it (review M1). */
+const newRequestId = () =>
+  `rq-${Date.now().toString(36)}-${Math.floor(cryptoRandom() * 2 ** 32).toString(36)}`;
+
 function ContestRoller({ state, busy, send, clear }: ToolProps) {
   const options = sideOptions(state);
   const firstChar = options.find((o) => o.source.startsWith('c:'))?.source ?? 'custom';
@@ -125,8 +137,10 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
   const planNow = contestPlan(state, a, b, mode);
   const rollerA = typeof planNow === 'string' ? null : phoneRoller(state, planNow.a);
   const rollerB = typeof planNow === 'string' ? null : phoneRoller(state, planNow.b);
-  const phoneA = phoneDie(state, rollerA);
-  const phoneB = phoneDie(state, rollerB);
+  // Review M1: only requests this contest asked for count; reset with the sides.
+  const [asked, setAsked] = useState<ReadonlySet<string>>(() => new Set());
+  const phoneA = phoneDie(state, rollerA, asked);
+  const phoneB = phoneDie(state, rollerB, asked);
   // The contest whose practice was last logged (MC.7 review M2).
   const loggedContest = useRef<string | null>(null);
   // Keep derived side values current when a stat changes mid-fight (M7.A).
@@ -145,6 +159,7 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
   const change = (side: 'a' | 'b', draft: SideDraft) => {
     (side === 'a' ? setA : setB)(draft);
     setRolled(null);
+    setAsked(new Set());
     clear?.();
   };
   const roll = (e: FormEvent) => {
@@ -153,23 +168,22 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
     clear?.();
     // A die typed on the console wins over the phone's answer.
     const typed = {
-      a: d20 && typeof typedA === 'number' ? typedA : d20 ? (phoneA?.answer ?? null) : null,
-      b: d20 && typeof typedB === 'number' ? typedB : d20 ? (phoneB?.answer ?? null) : null,
+      a: d20 && typeof typedA === 'number' ? typedA : d20 ? phoneDieUsed(phoneA) : null,
+      b: d20 && typeof typedB === 'number' ? typedB : d20 ? phoneDieUsed(phoneB) : null,
     };
     setRolled(rollPlan(state, plan, cryptoRandom, typed));
     setDieA('');
     setDieB('');
-    // MK.2: a phone's die is used once; its request closes with this roll.
-    for (const [r, p] of [
+    // MK.2: this contest's phone requests close with the roll, answered or
+    // not (a die typed here replaced a waiting one; review M2).
+    const clears = rollClears([
       [rollerA, phoneA],
       [rollerB, phoneB],
-    ] as const) {
-      if (r && p?.answer)
-        void send(
-          { type: 'roll.clear', characterId: r.characterId, requestId: p.requestId },
-          'Roll used',
-        );
-    }
+    ]);
+    if (clears.length > 0) setAsked(new Set());
+    void (async () => {
+      for (const command of clears) await send(command, 'Roll request closed');
+    })();
     // MC.7: a contest done in the app logs practice for its characters directly,
     // once per contest: re-rolling the same sides does not log it again.
     const key = JSON.stringify([a, b, mode]);
@@ -249,20 +263,44 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
           ).map(([side, r, p]) =>
             r === null ? null : (
               <p key={side} className="phone-roll" data-testid={`phone-roll-${side}`}>
-                {p === null ? (
-                  <button
-                    type="button"
-                    className="secondary"
-                    disabled={busy}
-                    onClick={() =>
-                      void send(
-                        { type: 'roll.request', characterId: r.characterId, stat: r.stat },
-                        `Asked ${r.name} to roll`,
-                      )
-                    }
-                  >
-                    Ask {r.name}'s phone for a d20
-                  </button>
+                {p === null || !p.current ? (
+                  <>
+                    {p !== null && (
+                      <span data-testid={`phone-roll-stale-${side}`}>
+                        An earlier request to {r.name} is still open
+                        {p.answer === null ? '' : ` (threw ${p.answer.die})`}; this contest does not
+                        use it.{' '}
+                        <button
+                          type="button"
+                          className="secondary"
+                          disabled={busy}
+                          onClick={() => void send(clearOf(r.characterId, p.requestId), 'Cleared')}
+                        >
+                          Clear
+                        </button>{' '}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={busy}
+                      onClick={() => {
+                        const requestId = newRequestId();
+                        setAsked((prev) => new Set([...prev, requestId]));
+                        void send(
+                          {
+                            type: 'roll.request',
+                            characterId: r.characterId,
+                            stat: r.stat,
+                            requestId,
+                          },
+                          `Asked ${r.name} to roll`,
+                        );
+                      }}
+                    >
+                      Ask {r.name}'s phone for a d20
+                    </button>
+                  </>
                 ) : p.answer === null ? (
                   <>
                     Waiting for {r.name}'s d20…{' '}
@@ -271,14 +309,7 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
                       className="secondary"
                       disabled={busy}
                       onClick={() =>
-                        void send(
-                          {
-                            type: 'roll.clear',
-                            characterId: r.characterId,
-                            requestId: p.requestId,
-                          },
-                          'Request withdrawn',
-                        )
+                        void send(clearOf(r.characterId, p.requestId), 'Request withdrawn')
                       }
                     >
                       Withdraw
@@ -287,7 +318,15 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
                 ) : (
                   <>
                     {r.name} threw {p.answer.die} ({p.answer.how === 'typed' ? 'typed' : 'app'}):
-                    used on Roll unless you type a die in its box.
+                    used on Roll unless you type a die in its box.{' '}
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={busy}
+                      onClick={() => void send(clearOf(r.characterId, p.requestId), 'Cleared')}
+                    >
+                      Clear
+                    </button>
                   </>
                 )}
               </p>

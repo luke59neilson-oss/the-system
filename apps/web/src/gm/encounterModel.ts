@@ -429,19 +429,48 @@ export function phoneRoller(
 }
 
 /**
- * MK.2: the open roll request for that player and stat, as the console shows
- * it: waiting, or the die the phone sent. A request for another stat does not
- * count (the GM asks again).
+ * MK.2: the player's open roll request, as the console shows it: waiting, or
+ * the die the phone sent. `current` only when this contest asked for it (its
+ * id is in `asked`, which the console resets when the sides change) and for
+ * this side's stat; any other open request is shown but never used, so a die
+ * left from an earlier contest cannot decide this one (review M1).
  */
 export function phoneDie(
   state: CampaignState,
   roller: { characterId: string; stat: string } | null,
-): { requestId: string; answer: { die: number; how: 'typed' | 'app' } | null } | null {
+  asked: ReadonlySet<string>,
+): PhoneDie | null {
   if (roller === null) return null;
   const open = state.rollRequests ?? {};
   const r = Object.prototype.hasOwnProperty.call(open, roller.characterId)
     ? open[roller.characterId]
     : undefined;
-  if (!r || r.stat !== roller.stat) return null;
-  return { requestId: r.id, answer: r.answer };
+  if (!r) return null;
+  return { requestId: r.id, answer: r.answer, current: r.stat === roller.stat && asked.has(r.id) };
+}
+
+export interface PhoneDie {
+  readonly requestId: string;
+  readonly answer: { die: number; how: 'typed' | 'app' } | null;
+  readonly current: boolean;
+}
+
+/** The phone's die Roll uses: only a current request's answer. */
+export function phoneDieUsed(p: PhoneDie | null): { die: number; how: 'typed' | 'app' } | null {
+  return p !== null && p.current ? p.answer : null;
+}
+
+/**
+ * Review M1/M2: Roll closes every request this contest asked for, answered or
+ * still waiting (a die typed on the console replaces the phone's), so no phone
+ * keeps asking after the contest; an earlier contest's request is left alone.
+ */
+export function rollClears(
+  sides: readonly (readonly [{ characterId: string } | null, PhoneDie | null])[],
+): Command[] {
+  return sides.flatMap(([r, p]) =>
+    r !== null && p !== null && p.current
+      ? [{ type: 'roll.clear' as const, characterId: r.characterId, requestId: p.requestId }]
+      : [],
+  );
 }

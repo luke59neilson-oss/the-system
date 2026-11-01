@@ -21,6 +21,8 @@ import {
   refreshSide,
   rollPlan,
   phoneDie,
+  phoneDieUsed,
+  rollClears,
   phoneRoller,
   signedModifier,
   typedDie,
@@ -232,18 +234,39 @@ describe('encounter model: contests (M7.3)', () => {
     expect(roller).toEqual({ characterId: 'jake', name: 'Jake', stat: 'perception' });
     expect(phoneRoller(s, { characterIds: [], stat: null })).toBeNull();
     expect(phoneRoller(s, { characterIds: ['jake'], stat: null })).toBeNull();
-    expect(phoneDie(s, roller)).toBeNull();
+    const none = new Set<string>();
+    expect(phoneDie(s, roller, none)).toBeNull();
     c = apply(c, [
       { type: 'roll.request', characterId: 'jake', stat: 'perception', requestId: 'r1' },
     ]);
-    expect(phoneDie(stateOf(c), roller)).toEqual({ requestId: 'r1', answer: null });
-    // A request for another stat does not count.
-    expect(phoneDie(stateOf(c), { characterId: 'jake', stat: 'agility' })).toBeNull();
-    c = apply(c, [{ type: 'roll.answer', characterId: 'jake', requestId: 'r1', die: 12 }]);
-    expect(phoneDie(stateOf(c), roller)).toEqual({
+    const asked = new Set(['r1']);
+    expect(phoneDie(stateOf(c), roller, asked)).toEqual({
       requestId: 'r1',
-      answer: { die: 12, how: 'typed' },
+      answer: null,
+      current: true,
     });
+    // Review M1: a request this contest did not ask for (an earlier contest,
+    // another stat) is shown but never used.
+    expect(phoneDie(stateOf(c), roller, none)).toMatchObject({ requestId: 'r1', current: false });
+    expect(phoneDie(stateOf(c), { characterId: 'jake', stat: 'agility' }, asked)).toMatchObject({
+      current: false,
+    });
+    c = apply(c, [{ type: 'roll.answer', characterId: 'jake', requestId: 'r1', die: 12 }]);
+    const p = phoneDie(stateOf(c), roller, asked);
+    expect(p).toEqual({ requestId: 'r1', answer: { die: 12, how: 'typed' }, current: true });
+    expect(phoneDieUsed(p)).toEqual({ die: 12, how: 'typed' });
+    expect(phoneDieUsed(phoneDie(stateOf(c), roller, none))).toBeNull();
+    // Review M1/M2: Roll closes every request this contest asked for, answered
+    // or still waiting (a die typed on the console replaced it), and leaves
+    // an earlier contest's request alone.
+    expect(rollClears([[roller, p]])).toEqual([
+      { type: 'roll.clear', characterId: 'jake', requestId: 'r1' },
+    ]);
+    expect(rollClears([[roller, { requestId: 'r9', answer: null, current: true }]])).toEqual([
+      { type: 'roll.clear', characterId: 'jake', requestId: 'r9' },
+    ]);
+    expect(rollClears([[roller, phoneDie(stateOf(c), roller, none)]])).toEqual([]);
+    expect(rollClears([[null, null]])).toEqual([]);
     // App odds: no phone rolls.
     expect(
       phoneRoller(
