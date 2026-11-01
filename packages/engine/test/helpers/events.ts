@@ -603,6 +603,23 @@ function randomSkillCommand(
     }
   }
   if (roll < 0.25) {
+    if (rand() < 0.15) {
+      // ML.5: mostly a real pool, so accepted castings do not hinge on luck.
+      return {
+        type: 'skill.setCasting',
+        characterId,
+        skill: someSkill(),
+        cost: pick([
+          null,
+          { pool: 'mp', amount: 5 },
+          { pool: 'mp', amount: 5 },
+          { pool: 'no', amount: 1 },
+        ]),
+        cooldown: pick([null, '1 round']),
+        range: pick([null, '30 m']),
+        castingNotes: pick([null, 'Needs a free hand.']),
+      };
+    }
     return {
       type: 'skill.describe',
       characterId,

@@ -285,6 +285,7 @@ refusal is raised.
 | `a skill is listed twice` | packages/engine/src/events/reducer.ts:1435 | Fix the input or define the thing first |
 | `[…] has no cost to cast` | packages/engine/src/events/commands.ts:886 | Give the library entry a cost (Skill library → Cost pool and amount), or log the use as practice (`practice.log`) |
 | `… has no skill "…"` | packages/engine/src/events/reducer.ts:1438 | Fix the input or define the thing first |
+| `There is no pool "…"` | packages/engine/src/skills/library.ts:373 | Fix the input or define the thing first |
 | `no play session "…"` | packages/engine/src/events/reducer.ts:1454 | Fix the input or define the thing first |
 | `unknown practice entry "…"` | packages/engine/src/events/reducer.ts:1464 | Fix the input or define the thing first |
 | `montage "…" already exists` | packages/engine/src/events/reducer.ts:1514 | Fix the input or define the thing first |
