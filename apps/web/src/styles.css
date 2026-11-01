@@ -3672,7 +3672,8 @@ ol.change-log li.undone .change-text {
 /* QF.63 (deep review ux-10): no text under 14 px on a phone; timestamps, tags
    and bonuses are read at arm's length in a dim room. This block sits last so
    it wins over the base sizes above; e2e QF.63 scans every text element on
-   each demo character's phone screen, so a new small rule fails it. */
+   each demo character's phone screen and a skill's detail dialog, so a new
+   small rule there fails it (other dialogs are covered by the list only). */
 @media (max-width: 700px) {
   .choices .tag,
   .pane-mode .skills,
@@ -3697,7 +3698,13 @@ ol.change-log li.undone .change-text {
   .note-meta,
   .note-hint,
   .note-tag,
-  .listening-mark {
+  .listening-mark,
+  .small,
+  .skill-detail h4,
+  .skill-nickname-form p,
+  .evolution-steps .stat-grid label,
+  .bonus-preview,
+  .tag-flag {
     font-size: 0.875rem;
   }
 }

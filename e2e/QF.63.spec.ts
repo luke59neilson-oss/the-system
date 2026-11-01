@@ -80,6 +80,16 @@ test('no text under 14 px on a phone; platinum highlight is blue', async ({ brow
     await expect(page.getByTestId('connection')).toHaveText('Connected');
     await expect(page.getByTestId('name')).toBeVisible();
     expect(await smallText(page), who).toEqual([]);
+    // A skill's detail dialog (Effects, Casting, Mastery marks headings).
+    if (who === 'jake') {
+      await page
+        .getByRole('button', { name: /\[Expert Archery/ })
+        .first()
+        .click();
+      await expect(page.getByTestId('skill-detail')).toBeVisible();
+      expect(await smallText(page), 'skill detail').toEqual([]);
+      await page.keyboard.press('Escape');
+    }
     await page.close();
   }
   const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
