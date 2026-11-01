@@ -531,12 +531,15 @@ export class CampaignStore {
   }
 
   /** Deleted campaigns, by id (ML.1). */
-  static listDeleted(dataDir: string): { readonly id: string }[] {
+  static listDeleted(dataDir: string): { readonly id: string; readonly name?: string }[] {
     const dir = CampaignStore.deletedDir(dataDir);
     if (!existsSync(dir)) return [];
     return readdirSync(dir, { withFileTypes: true })
       .filter((d) => d.isDirectory() && CAMPAIGN_ID.test(d.name))
-      .map((d) => ({ id: d.name }))
+      .map((d) => {
+        const name = readHome(path.join(dir, d.name), d.name).name;
+        return name === null ? { id: d.name } : { id: d.name, name };
+      })
       .sort((a, b) => a.id.localeCompare(b.id));
   }
 

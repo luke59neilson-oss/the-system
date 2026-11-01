@@ -20,6 +20,8 @@ import { forgetGmKey, takeGmKey } from '../gmKey';
 import { LiveClient, type CommandResult, type LiveSnapshot } from '../live';
 import { CampaignBackups } from './CampaignBackups';
 import { CampaignSwitch } from './CampaignSwitch';
+import { CampaignsHome, type NewCampaign } from './CampaignsHome';
+import { CAMPAIGN_CHANGED } from './campaignsModel';
 import { feedRows } from './feed';
 import { JoinPanel } from './JoinPanel';
 import { SkillLibrary } from './SkillLibrary';
@@ -95,7 +97,67 @@ export function GmScreen() {
       </main>
     );
   }
-  return <GmConsole client={client} gmKey={gmKey ?? ''} />;
+  return <CampaignGate client={client} gmKey={gmKey ?? ''} />;
+}
+
+/**
+ * ML.1 (DESIGN §9a): the Campaigns home while no campaign is open, else the
+ * console. "Close campaign" in the console comes back here.
+ */
+function CampaignGate({ client, gmKey }: { client: LiveClient; gmKey: string }) {
+  // null: not read yet; '' : nothing open (the home).
+  const [open, setOpen] = useState<string | null>(null);
+  const [created, setCreated] = useState<NewCampaign | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let live = true;
+    fetch('/api/gm/campaign', { headers: { 'x-gm-key': gmKey } })
+      .then((r) => (r.ok ? (r.json() as Promise<{ id: string | null }>) : Promise.reject()))
+      .then((body) => {
+        if (live) setOpen(body.id ?? '');
+      })
+      .catch(() => {
+        if (live) setFailed(true);
+      });
+    return () => {
+      live = false;
+    };
+  }, [gmKey]);
+  if (open === null) {
+    return (
+      <main className="gm">
+        <h1>The System · GM</h1>
+        <p className={failed ? 'err' : 'muted'} role={failed ? 'alert' : undefined}>
+          {failed ? 'Could not reach the System. Is the app still running?' : 'Connecting…'}
+        </p>
+      </main>
+    );
+  }
+  if (open === '') {
+    return (
+      <main className="gm gm-home">
+        <header className="gm-header">
+          <h1>The System · GM</h1>
+        </header>
+        <CampaignsHome
+          gmKey={gmKey}
+          onOpened={(made) => {
+            setCreated(made);
+            setOpen('open');
+          }}
+        />
+      </main>
+    );
+  }
+  return (
+    <GmConsole
+      client={client}
+      gmKey={gmKey}
+      created={created}
+      onCreated={() => setCreated(null)}
+      onHome={() => setOpen('')}
+    />
+  );
 }
 
 function useLive(client: LiveClient): LiveSnapshot {
@@ -113,9 +175,40 @@ function partyOf(state: CampaignState | null): PartyMember[] {
   });
 }
 
-function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
+function GmConsole({
+  client,
+  gmKey,
+  created = null,
+  onCreated,
+  onHome,
+}: {
+  client: LiveClient;
+  gmKey: string;
+  /** ML.1: a campaign New campaign just made: name it once connected. */
+  created?: NewCampaign | null;
+  onCreated?: () => void;
+  /** ML.1: Close campaign went back to the Campaigns home. */
+  onHome?: () => void;
+}) {
   const live = useLive(client);
   const state = live.state;
+  // ML.1: a campaign made on the home gets its name (and the default
+  // libraries) as soon as the console has joined it, once.
+  const naming = useRef(false);
+  useEffect(() => {
+    if (!created || naming.current || live.status !== 'joined' || state !== null) return;
+    naming.current = true;
+    void (async () => {
+      const r = await client.command({
+        type: 'campaign.create',
+        name: created.name,
+        rules: DEFAULT_RULES,
+      });
+      if (r.ok && created.defaults) await client.command({ type: 'library.seedDefaults' });
+      naming.current = false;
+      onCreated?.();
+    })();
+  }, [created, live.status, state, client, onCreated]);
   const [wanted, setWanted] = useState<Perspective>({ kind: 'gm' });
   const [picked, setPicked] = useState<string[] | null>(null);
   // MU.1: the open tab of the console (remembered on this laptop).
@@ -230,8 +323,13 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
         )}
         {state && <PerspectiveBar party={party} current={view} onChange={setWanted} />}
       </header>
-      {live.status === 'joined' && <CampaignSwitch gmKey={gmKey} stateName={state?.name ?? null} />}
-      {live.status === 'joined' && state === null && <CreateCampaign client={client} />}
+      {live.status === 'joined' && (
+        <div className="campaign-bar">
+          <CampaignSwitch gmKey={gmKey} stateName={state?.name ?? null} />
+          {onHome && <CloseCampaign gmKey={gmKey} onClosed={onHome} />}
+        </div>
+      )}
+      {live.status === 'joined' && state === null && !created && <CreateCampaign client={client} />}
       {state && (
         <div className="perspective-body">
           {/* Kept mounted while viewing as a character so half-filled GM forms survive. */}
@@ -502,6 +600,57 @@ function Outcome({ result, okText }: { result: CommandResult | null; okText: str
     <p className="err" role="alert">
       {result.error}
     </p>
+  );
+}
+
+/**
+ * ML.1: back to the Campaigns home. The campaign is closed (saved; its lock
+ * freed so it can be deleted or opened elsewhere) and phones wait.
+ */
+function CloseCampaign({ gmKey, onClosed }: { gmKey: string; onClosed: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const close = async () => {
+    if (
+      !window.confirm(
+        'Close this campaign and go to your campaigns? Players’ phones wait until you open one.',
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await fetch('/api/gm/campaign/close', {
+        method: 'POST',
+        headers: { 'x-gm-key': gmKey },
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      window.dispatchEvent(new Event(CAMPAIGN_CHANGED));
+      onClosed();
+    } catch {
+      setError('Could not close the campaign');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <span className="close-campaign">
+      <button
+        type="button"
+        className="secondary"
+        disabled={busy}
+        onClick={() => void close()}
+        data-testid="close-campaign"
+      >
+        Close campaign
+      </button>
+      {error && (
+        <span className="err" role="alert">
+          {error}
+        </span>
+      )}
+    </span>
   );
 }
 

@@ -77,6 +77,7 @@ import {
   unassignedPoints,
 } from './sheet';
 import { costText } from './skillDetailModel';
+import { WAITING_FOR_CAMPAIGN } from './join';
 
 /**
  * Player status screen (MS.2 walking skeleton; the full M3 screens build on it).
@@ -182,11 +183,13 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
         <span className={`status status-${live.status}`} data-testid="connection">
           {live.status === 'joined'
             ? 'Connected'
-            : live.status === 'offline'
-              ? 'Reconnecting…'
-              : live.status === 'refused'
-                ? 'Not connected'
-                : 'Connecting…'}
+            : live.waiting
+              ? 'Waiting'
+              : live.status === 'offline'
+                ? 'Reconnecting…'
+                : live.status === 'refused'
+                  ? 'Not connected'
+                  : 'Connecting…'}
         </span>
         {live.listening && live.status === 'joined' && (
           // MC.5 (DESIGN §11): the players agreed to be heard; this says when.
@@ -279,6 +282,12 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
         </div>
       )}
       {pane && <PaneLatest live={live} view={view} />}
+      {live.waiting && live.status !== 'joined' && (
+        // ML.1 (DESIGN §9a): the GM app starts on its Campaigns home.
+        <p className="waiting-campaign" role="status" data-testid="waiting-campaign">
+          {WAITING_FOR_CAMPAIGN}
+        </p>
+      )}
       {(live.status === 'refused' || live.error) && (
         <p className="err" role="alert">
           {live.error}

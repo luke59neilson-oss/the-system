@@ -58,3 +58,67 @@ export const CAMPAIGN_CHANGED = 'the-system:campaign-changed';
 
 /** The server's limit on a restored file (`RESTORE_MAX_BYTES` in server.ts). */
 export const RESTORE_MAX_BYTES = 256 * 1024 * 1024;
+
+/** ML.1: one row of the Campaigns home (`GET /api/gm/campaigns` → `home`). */
+export interface HomeRow {
+  id: string;
+  name: string | null;
+  characters: string[];
+  lastOpened: string | null;
+}
+
+/** ML.1: validates the home rows from the server; drops malformed ones. */
+export function parseHomeRows(json: unknown): HomeRow[] {
+  const rows = (json as { home?: unknown } | null)?.home;
+  if (!Array.isArray(rows)) return [];
+  return rows.flatMap((row: unknown) => {
+    if (typeof row !== 'object' || row === null) return [];
+    const r = row as Record<string, unknown>;
+    if (typeof r['id'] !== 'string') return [];
+    return [
+      {
+        id: r['id'],
+        name: typeof r['name'] === 'string' ? r['name'] : null,
+        characters: Array.isArray(r['characters'])
+          ? r['characters'].filter((c): c is string => typeof c === 'string')
+          : [],
+        lastOpened: typeof r['lastOpened'] === 'string' ? r['lastOpened'] : null,
+      },
+    ];
+  });
+}
+
+/** ML.1: what the home calls a campaign: its name, else its folder id. */
+export function homeName(row: Pick<HomeRow, 'id' | 'name'>): string {
+  return row.name ?? row.id;
+}
+
+/** ML.1: "Last opened 2026-11-01 16:20" in the console's local time. */
+export function lastOpenedLabel(iso: string | null, timeZone?: string): string {
+  const when = iso === null ? null : new Date(iso);
+  if (!when || Number.isNaN(when.getTime())) return 'Not opened since the update';
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(when)
+      .map((p) => [p.type, p.value]),
+  );
+  return `Last opened ${parts['year']}-${parts['month']}-${parts['day']} ${parts['hour']}:${parts['minute']}`;
+}
+
+/** ML.1: the characters line of a home row. */
+export function charactersLabel(names: readonly string[]): string {
+  return names.length === 0 ? 'No characters yet' : names.join(', ');
+}
+
+/** ML.1: Delete goes ahead only once the GM has typed the campaign's name. */
+export function deleteConfirmed(typed: string, row: Pick<HomeRow, 'id' | 'name'>): boolean {
+  return typed.trim() === homeName(row);
+}

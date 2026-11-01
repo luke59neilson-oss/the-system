@@ -140,7 +140,7 @@ export interface CampaignLibrary {
   /** ML.1: moves a closed campaign to the Deleted list (files kept). */
   remove?(id: string): void;
   /** ML.1: the Deleted list. */
-  deleted?(): { readonly id: string }[];
+  deleted?(): { readonly id: string; readonly name?: string }[];
   /** ML.1: puts a deleted campaign back. */
   undelete?(id: string): void;
   /** ML.1: the Campaigns home's rows (name, characters, last opened). */
@@ -780,18 +780,29 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       return reply.code(500).send({ error: `The backup could not be written. ${seeLog}` });
     }
   });
-  app.get('/api/gm/backups', (_request, reply) => {
-    if (!active) return reply.code(404).send({ error: 'No campaign open' });
-    const id = active.store.id;
+  app.get('/api/gm/backups', (request, reply) => {
+    // ML.1: the Campaigns home asks for any listed campaign's backups.
+    const asked = (request.query as { campaign?: unknown }).campaign;
+    const id =
+      typeof asked === 'string' && options.campaigns?.list().includes(asked)
+        ? asked
+        : active?.store.id;
+    if (id === undefined) return reply.code(404).send({ error: 'No campaign open' });
     return { campaign: id, backups: options.campaigns?.backups(id) ?? [] };
   });
   app.post('/api/gm/restore', { bodyLimit: RESTORE_MAX_BYTES }, (request, reply) => {
     const library = options.campaigns;
-    if (!active || !library) return reply.code(404).send({ error: 'Restore is not available' });
-    const body = request.body as { backup?: unknown; export?: unknown } | null;
+    if (!library) return reply.code(404).send({ error: 'Restore is not available' });
+    const body = request.body as { backup?: unknown; export?: unknown; from?: unknown } | null;
+    // ML.1: on the Campaigns home a backup names its campaign (`from`).
+    const from =
+      typeof body?.from === 'string' && library.list().includes(body.from)
+        ? body.from
+        : active?.store.id;
     let source: RestoreSource;
     if (typeof body?.backup === 'string' && body.backup.length <= 200) {
-      source = { backup: body.backup, from: active.store.id };
+      if (from === undefined) return reply.code(404).send({ error: 'No campaign open' });
+      source = { backup: body.backup, from };
     } else if (body !== null && typeof body === 'object' && 'export' in body) {
       source = { export: body.export };
     } else {

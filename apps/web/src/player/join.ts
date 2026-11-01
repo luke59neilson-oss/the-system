@@ -90,3 +90,14 @@ export function parseJoinList(json: unknown): JoinEntry[] {
     ];
   });
 }
+
+/** ML.1 (DESIGN §9a): what phones say until the GM opens a campaign. */
+export const WAITING_FOR_CAMPAIGN = 'Waiting for the GM to open a campaign';
+
+/** ML.1: how often the join screen asks again while it waits. */
+export const WAITING_POLL_MS = 3000;
+
+/** ML.1: the join list's answer while no campaign is open (`503 { waiting: true }`). */
+export function isWaitingAnswer(status: number, json: unknown): boolean {
+  return status === 503 && (json as { waiting?: unknown } | null)?.waiting === true;
+}

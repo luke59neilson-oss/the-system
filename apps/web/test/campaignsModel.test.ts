@@ -1,6 +1,15 @@
 // QF.44: the Campaigns and backups window's words and file names.
 import { describe, expect, it } from 'vitest';
-import { backupLabel, count, exportFileName } from '../src/gm/campaignsModel';
+import {
+  backupLabel,
+  charactersLabel,
+  count,
+  deleteConfirmed,
+  exportFileName,
+  homeName,
+  lastOpenedLabel,
+  parseHomeRows,
+} from '../src/gm/campaignsModel';
 
 describe('campaignsModel', () => {
   it('reads a backup folder name as a time and a reason', () => {
@@ -45,5 +54,42 @@ describe('campaignsModel', () => {
     expect(count(1, 'event')).toBe('1 event');
     expect(count(1234, 'portrait')).toBe('1,234 portraits');
     expect(count(0, 'portrait')).toBe('0 portraits');
+  });
+});
+
+describe('Campaigns home (ML.1)', () => {
+  it('reads the home rows, dropping malformed ones', () => {
+    expect(
+      parseHomeRows({
+        home: [
+          { id: 'tutorial', name: 'The Tutorial', characters: ['Jake', 3], lastOpened: 'x' },
+          { id: 'old', name: null, characters: null, lastOpened: null },
+          { name: 'no id' },
+          'junk',
+        ],
+      }),
+    ).toEqual([
+      { id: 'tutorial', name: 'The Tutorial', characters: ['Jake'], lastOpened: 'x' },
+      { id: 'old', name: null, characters: [], lastOpened: null },
+    ]);
+    expect(parseHomeRows(null)).toEqual([]);
+  });
+
+  it('names, times and characters in words', () => {
+    expect(homeName({ id: 'old', name: null })).toBe('old');
+    expect(homeName({ id: 'tutorial', name: 'The Tutorial' })).toBe('The Tutorial');
+    expect(lastOpenedLabel('2026-11-01T16:20:05.000Z', 'UTC')).toBe('Last opened 2026-11-01 16:20');
+    expect(lastOpenedLabel(null)).toBe('Not opened since the update');
+    expect(charactersLabel([])).toBe('No characters yet');
+    expect(charactersLabel(['Jake', 'Casper'])).toBe('Jake, Casper');
+  });
+
+  it('Delete needs the campaign’s exact name typed', () => {
+    const row = { id: 'tutorial', name: 'The Tutorial' };
+    expect(deleteConfirmed('The Tutorial', row)).toBe(true);
+    expect(deleteConfirmed('  The Tutorial ', row)).toBe(true);
+    expect(deleteConfirmed('the tutorial', row)).toBe(false);
+    expect(deleteConfirmed('tutorial', row)).toBe(false);
+    expect(deleteConfirmed('old', { id: 'old', name: null })).toBe(true);
   });
 });
