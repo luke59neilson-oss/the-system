@@ -156,6 +156,10 @@ export async function startApp(options: StartOptions): Promise<RunningApp> {
       // QF.44: Back up now / Restore in Library & settings.
       campaigns: {
         list: () => CampaignStore.list(storeOptions.dataDir),
+        // ML.1: Delete moves a campaign to the Deleted list; Restore returns it.
+        remove: (id) => CampaignStore.softDelete(storeOptions.dataDir, id),
+        deleted: () => CampaignStore.listDeleted(storeOptions.dataDir),
+        undelete: (id) => CampaignStore.restoreDeleted(storeOptions.dataDir, id),
         backups: (id) => listBackups(storeOptions.dataDir, id),
         restore: (source) => {
           const raw =

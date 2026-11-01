@@ -120,6 +120,12 @@ export interface CampaignLibrary {
   backups(id: string): BackupInfo[];
   /** Imports the source as a new campaign (never overwriting one); returns what it holds. */
   restore(source: RestoreSource): { id: string; events: number; portraits: number };
+  /** ML.1: moves a closed campaign to the Deleted list (files kept). */
+  remove?(id: string): void;
+  /** ML.1: the Deleted list. */
+  deleted?(): { readonly id: string }[];
+  /** ML.1: puts a deleted campaign back. */
+  undelete?(id: string): void;
 }
 
 /** The largest export file Restore accepts (portraits are 2 MB each at most). */
