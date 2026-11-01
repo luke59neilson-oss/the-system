@@ -2208,6 +2208,13 @@ export const ITEM_NOT_AVAILABLE = 'That item is not available';
  * message that names nothing and shows no one's holdings.
  */
 export const TRADE_NOT_POSSIBLE = 'That trade can no longer go through';
+/**
+ * QF.62 (deep review playtest-5): the accepter's own side is short. It names
+ * only what the accepter can see of themselves; an equipped item is not in
+ * the inventory, so it is the usual cause.
+ */
+export const TRADE_YOU_LACK =
+  'That trade can no longer go through: you no longer hold what it asks of you (an equipped item does not count until you unequip it)';
 
 const countOf = (inventory: Readonly<Record<string, number>>, id: string): number =>
   Object.prototype.hasOwnProperty.call(inventory, id) ? (inventory[id] ?? 0) : 0;
@@ -2302,7 +2309,7 @@ function itemOutOfReach(state: NonNullable<Campaign['state']>, command: Command)
       trade.to !== null &&
       !(holds(trade.to, trade.get.items) && pays(trade.to, trade.get.currency))
     )
-      return TRADE_NOT_POSSIBLE;
+      return TRADE_YOU_LACK;
   }
   return null;
 }

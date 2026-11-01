@@ -460,6 +460,8 @@ function TradeForm({
   const rules = view.rules;
   const inv = view.inventory;
   const held = Object.keys(inv.items);
+  // QF.62: equipped items are not in the inventory, so they are not listed.
+  const wearing = slotRows(rules, inv).some((s) => s.itemId !== null);
   const [to, setTo] = useState(view.party[0]?.id ?? '');
   const [giveCurrency, setGiveCurrency] = useState('0');
   const [giveItem, setGiveItem] = useState('');
@@ -503,6 +505,11 @@ function TradeForm({
           </option>
         ))}
       </select>
+      {wearing && (
+        <p className="muted small" data-testid="trade-equipped-hint">
+          Equipped items are not listed: unequip one to trade it.
+        </p>
+      )}
       {giveItem !== '' && (
         <>
           <label htmlFor="trade-give-count">How many</label>

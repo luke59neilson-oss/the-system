@@ -82,7 +82,7 @@ export function listRefusals() {
         }
         // A returned constant (`return ITEM_NOT_AVAILABLE;`) is its literal.
         const name = /^\s*([A-Z][A-Z_]+)\s*$/.exec(ret[1]);
-        const def = name ? new RegExp(`const ${name[1]} = '([^']*)'`).exec(text) : null;
+        const def = name ? new RegExp(`const ${name[1]} =\\s*'([^']*)'`).exec(text) : null;
         if (def) out.push({ file: rel, line: lineOf(text, fn.index + ret.index), key: def[1] });
       }
     }

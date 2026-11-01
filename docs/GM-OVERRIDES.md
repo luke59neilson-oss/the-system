@@ -157,6 +157,7 @@ refusal is raised.
 | `this contest needs a roll` | packages/engine/src/events/reducer.ts:1923 | A malformed stored contest; share it again from the roller |
 | `That item is not available` | packages/engine/src/events/commands.ts:1773 | Players see one message that names nothing (QF.9); the GM gives items with the Item library's Give (`holdings.adjust`) |
 | `That trade can no longer go through` | packages/engine/src/events/commands.ts:1801 | A side no longer holds its part; the GM moves items with the Item library's Give/Take and currency with the Credits ledger's Grant/Fine |
+| `That trade can no longer go through: you no longer hold what it asks of you (an equipped item does not count until you unequip it)` | packages/engine/src/events/commands.ts (overLimit… trade.accept) | The accepter unequips the item, or the GM moves items with the Item library's Give/Take and currency with the Credits ledger's Grant/Fine (QF.62) |
 | `A grade wall settles this contest; it has no roll` | packages/engine/src/resolution/model.ts:328 | Fix the input (the roller fills it in) |
 | `This contest needs a roll` | packages/engine/src/resolution/model.ts:328 | Fix the input (the roller fills it in) |
 | `A d20 contest takes dice, not an odds roll` | packages/engine/src/events/commands.ts | Fix the input (the roller fills it in); or share with `rolls: "odds"` |
