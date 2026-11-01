@@ -52,14 +52,27 @@ test('phone buttons are 44 px tap targets', async ({ browser }) => {
   await phone.goto(`${server.url}/play/demo-jake`);
   await expect(phone.getByTestId('connection')).toHaveText('Connected');
   await expect(phone.getByTestId('status')).toBeVisible();
-  const small = await phone.evaluate<string[]>(
-    `[...document.querySelectorAll('button')]
-      .filter((b) => b.checkVisibility() && b.getBoundingClientRect().height < 44)
-      .map((b) => (b.textContent || '').trim().slice(0, 30) + ' ' + b.getBoundingClientRect().height)`,
-  );
-  expect(small, 'buttons under 44 px tall').toEqual([]);
+  expect(await smallTargets(phone), 'tap targets under 44 px tall').toEqual([]);
+  // The Assign panel's +/- buttons (a rule of their own) are targets too.
+  const assign = phone.getByRole('button', { name: '[Assign]' });
+  if (await assign.count()) {
+    await assign.click();
+    await expect(phone.locator('.assign-stats button').first()).toBeVisible();
+    expect(await smallTargets(phone), 'Assign panel targets under 44 px').toEqual([]);
+  }
   await phone.screenshot({ path: path.join(shots, 'player-390x844.png'), fullPage: true });
 });
+
+/** Visible buttons, fields, disclosure rows and button-like links under 44 px tall. */
+async function smallTargets(page: Page): Promise<string[]> {
+  return page.evaluate<string[]>(
+    `[...document.querySelectorAll(
+      "button, select, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), summary, a.tap-link"
+    )]
+      .filter((b) => b.checkVisibility() && b.getBoundingClientRect().height < 44)
+      .map((b) => b.tagName + ' ' + (b.textContent || b.getAttribute('aria-label') || '').trim().slice(0, 30) + ' ' + b.getBoundingClientRect().height)`,
+  );
+}
 
 /** Runs one GM command over the GM page's own origin (set-up only). */
 async function gmCommand(gm: Page, command: Record<string, unknown>): Promise<void> {
@@ -132,6 +145,7 @@ test('the card says at the grade’s top; the phone evolution shows the paths an
   );
   expect(pathsFirst, 'Choose comes before the re-rating list').toBe(true);
   await expect(choose).toBeInViewport();
+  expect(await smallTargets(phone), 'evolution dialog targets under 44 px').toEqual([]);
   await phone.screenshot({ path: path.join(shots, 'evolution-paths-390x844.png') });
   await choose.click();
   const evolve = dialog.getByRole('button', { name: 'Evolve', exact: true });

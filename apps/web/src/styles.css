@@ -1067,7 +1067,7 @@ button.secondary:hover {
 }
 .assign-stats button {
   padding: 3px 0;
-  min-height: 40px;
+  min-height: 44px;
 }
 .assign-stats button:disabled,
 .assign-actions button:disabled {
@@ -3654,5 +3654,17 @@ ol.change-log li.undone .change-text {
   select,
   input:not([type='checkbox']):not([type='radio']):not([type='range']) {
     min-height: 44px;
+  }
+  /* A link that does a button's job (Switch character) is a tap target too. */
+  a.tap-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  /* Disclosure rows keep their marker (list-item) and grow to 44 px. */
+  summary {
+    min-height: 44px;
+    padding-block: 10px;
+    box-sizing: border-box;
   }
 }
