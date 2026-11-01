@@ -131,6 +131,27 @@ test('the GM builds and releases Kim’s E-grade evolution in three steps', asyn
     await gmCommand(gm, { type: 'selection.choose', characterId: 'kim', level, skill: picked });
   }
 
+  // Jo is two race levels short of the F-grade top: listed as near.
+  await gmCommand(gm, {
+    type: 'character.create',
+    id: 'jo',
+    name: 'Jo',
+    className: 'Archer',
+    classSkills: [
+      { name: 'Basic Archery', rarity: 'inferior' },
+      { name: 'Basic One-Handed Weapon', rarity: 'inferior' },
+      { name: 'Archer’s Eye', rarity: 'common' },
+    ],
+  });
+  await gmCommand(gm, {
+    type: 'character.setProgression',
+    characterId: 'jo',
+    grade: 'F',
+    classLevel: 12,
+    professionLevel: 0,
+    xp: { class: 0, profession: 0 },
+  });
+
   // The home dashboard's "to build" line opens the Evolutions tab.
   await openTab(gm, 'home');
   await gm.getByRole('button', { name: /Kim: evolution to E-grade to build and release/ }).click();
@@ -139,6 +160,9 @@ test('the GM builds and releases Kim’s E-grade evolution in three steps', asyn
   ).toHaveAttribute('aria-selected', 'true');
   const builder = gm.locator('section[aria-labelledby="evolution-builder"]');
   await expect(builder.getByLabel('Character')).toHaveValue('kim');
+  await expect(builder.getByRole('list', { name: 'Near the threshold' })).toHaveText(
+    'Jo: 2 race levels to go',
+  );
   await builder.getByLabel('Three steps: class, profession, race').check();
   const form = builder.getByRole('form', { name: 'Evolution release' });
   await expect(form.getByRole('complementary', { name: 'Standing' })).toContainText(
@@ -186,11 +210,20 @@ test('the GM builds and releases Kim’s E-grade evolution in three steps', asyn
   await perLevel(race1, {}, 10);
   await bonus(race1, 'Vitality', 5);
 
-  await form.getByLabel(/Approve this re-rating/).check();
-  const release = form.getByRole('button', { name: 'Release evolution' });
   const blockers = form.getByRole('list', { name: 'Why Release is blocked' });
+  // Hard blockers: an unnamed option and the unapproved re-rating; Override cannot pass them.
+  await class1.getByLabel('Name', { exact: true }).fill('');
+  await expect(blockers).toContainText('Name every class option');
+  await expect(blockers).toContainText('Approve the skill re-rating before releasing');
+  await class1.getByLabel('Name', { exact: true }).fill('Storm Archer');
+  await form.getByLabel(/Approve this re-rating/).check();
+  await expect(blockers).not.toContainText('Name every class option');
+  const release = form.getByRole('button', { name: 'Release evolution' });
   await expect(blockers).toContainText('Class options have unequal one-time bonuses (5, 6)');
   await expect(release).toBeDisabled();
+  // The blockers and Release stay in view at 1366×768 (sticky bar).
+  await expect(blockers).toBeInViewport();
+  await expect(release).toBeInViewport();
   await class2.getByTestId('budget-meter').evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await gm.screenshot({ path: path.join(shots, 'gm-unequal-bonus-1366x768.png') });
   await gm.setViewportSize({ width: 1920, height: 1080 });
@@ -207,5 +240,7 @@ test('the GM builds and releases Kim’s E-grade evolution in three steps', asyn
     '[Storm Archer], [Wind Archer]',
   );
   await gm.screenshot({ path: path.join(shots, 'gm-released-1920x1080.png') });
+  await gm.setViewportSize({ width: 1366, height: 768 });
+  await gm.screenshot({ path: path.join(shots, 'gm-released-1366x768.png') });
   expect(errors).toEqual([]);
 });

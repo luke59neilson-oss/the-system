@@ -77,9 +77,10 @@ export function EvolutionBuilder({ client, state }: { client: LiveClient; state:
         <ul className="evolution-near" aria-label="Near the threshold">
           {near.map((n) => (
             <li key={n.id}>
-              {state.characters[n.id]?.name}: {n.levelsToGo} race level
-              {n.levelsToGo === 1 ? '' : 's'} to go
-              {n.levelsToGo === 0 ? ' (waiting on a skill selection)' : ''}
+              {state.characters[n.id]?.name}:{' '}
+              {n.levelsToGo === 0
+                ? 'at the threshold'
+                : `${n.levelsToGo} ${state.rules.tracks.evolutionGate === 'class' ? 'class' : 'race'} level${n.levelsToGo === 1 ? '' : 's'} to go`}
             </li>
           ))}
         </ul>

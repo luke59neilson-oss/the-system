@@ -130,6 +130,23 @@ describe('Evolutions tab model (ME.3)', () => {
       { id: 'b', levelsToGo: 3 },
       { id: 'c', levelsToGo: 0 },
     ]);
+    // The class gate counts class levels, as the engine does (ME.3 review).
+    const classGate = {
+      ...rules,
+      tracks: { ...rules.tracks, evolutionGate: 'class' },
+    } as RulesConfig;
+    const split = {
+      id: 'k',
+      grade: 'F',
+      classLevel: 14,
+      professionLevel: 4,
+      profession: 'Herbalist',
+    } as unknown as Character;
+    expect(nearThreshold(classGate, [split])).toEqual([{ id: 'k', levelsToGo: 0 }]);
+    expect(nearThreshold(rules, [split])).toEqual([]);
+    // A grade at the campaign cap never evolves.
+    const capped = { ...rules, campaign: { ...rules.campaign, levelCap: 4 } } as RulesConfig;
+    expect(nearThreshold(capped, [at('c', 'G', 4)])).toEqual([]);
   });
 
   it('dry-runs the release on the engine: an unequal bonus refuses, Override takes it', () => {

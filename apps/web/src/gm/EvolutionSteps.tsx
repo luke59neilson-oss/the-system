@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { evolutionTarget, type CampaignState } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
@@ -101,6 +101,9 @@ export function StepsForm({
       `Waits on the ${s.capstone ? 'capstone ' : ''}selection at lvl ${s.level}: the player must choose first`,
   );
   const overridable = [...blockers.overridable, ...waits];
+  // An Override ticked for problems that are gone does not carry over to new
+  // ones: the GM decides again (ME.3 review). (Adjusting state while rendering.)
+  if (override && overridable.length === 0) setOverride(false);
   const unnamed = STEPS.flatMap((step) =>
     draft[step].some((o) => o.name.trim() === '')
       ? [`Name every ${STEP_LABEL[step].toLowerCase()} option`]
@@ -131,10 +134,20 @@ export function StepsForm({
   ];
   // Only ask the engine once the draft is otherwise ready, so its message is
   // the one thing left (every combination checked, D303).
-  const engineProblem =
-    hard.length === 0 && (overridable.length === 0 || override)
-      ? stepsReleaseProblem(state, command)
-      : null;
+  // Memoised on the command, so typing elsewhere does not re-run every
+  // combination check (ME.3 review).
+  const commandKey = JSON.stringify(command);
+  const askEngine = hard.length === 0 && (overridable.length === 0 || override);
+  const engineProblem = useMemo(
+    () =>
+      askEngine
+        ? stepsReleaseProblem(
+            state,
+            JSON.parse(commandKey) as Parameters<typeof stepsReleaseProblem>[1],
+          )
+        : null,
+    [askEngine, state, commandKey],
+  );
   const blocked =
     hard.length > 0 || (overridable.length > 0 && !override) || engineProblem !== null;
 
@@ -378,39 +391,41 @@ export function StepsForm({
           as part of this evolution with an option&rsquo;s &ldquo;Offer merge&rdquo; button.
         </p>
       )}
-      {(hard.length > 0 || overridable.length > 0 || engineProblem !== null) && (
-        <ul className="release-blockers" aria-label="Why Release is blocked">
-          {hard.map((p) => (
-            <li key={p} className="err">
-              {p}
-            </li>
-          ))}
-          {overridable.map((p) => (
-            <li key={p} className={override ? 'muted' : 'err'}>
-              {p}
-              {override ? ' (overridden)' : ''}
-            </li>
-          ))}
-          {engineProblem !== null && (
-            <li className="err" data-testid="release-problem">
-              {engineProblem}
-            </li>
-          )}
-        </ul>
-      )}
-      {overridable.length > 0 && (
-        <label className="check override-toggle">
-          <input
-            type="checkbox"
-            checked={override}
-            onChange={(e) => setOverride(e.target.checked)}
-          />
-          Override: release anyway (GM authority). Logged, and undoable in the change log.
-        </label>
-      )}
-      <button type="submit" disabled={busy || blocked}>
-        Release evolution
-      </button>
+      <div className="release-bar">
+        {(hard.length > 0 || overridable.length > 0 || engineProblem !== null) && (
+          <ul className="release-blockers" aria-label="Why Release is blocked" aria-live="polite">
+            {hard.map((p) => (
+              <li key={p} className="err">
+                {p}
+              </li>
+            ))}
+            {overridable.map((p) => (
+              <li key={p} className={override ? 'muted' : 'err'}>
+                {p}
+                {override ? ' (overridden)' : ''}
+              </li>
+            ))}
+            {engineProblem !== null && (
+              <li className="err" data-testid="release-problem">
+                {engineProblem}
+              </li>
+            )}
+          </ul>
+        )}
+        {overridable.length > 0 && (
+          <label className="check override-toggle">
+            <input
+              type="checkbox"
+              checked={override}
+              onChange={(e) => setOverride(e.target.checked)}
+            />
+            Override: release anyway (GM authority). Logged, and undoable in the change log.
+          </label>
+        )}
+        <button type="submit" disabled={busy || blocked}>
+          Release evolution
+        </button>
+      </div>
       {result && (
         <p className={result.ok ? 'ok' : 'err'} role={result.ok ? 'status' : 'alert'}>
           {result.text}

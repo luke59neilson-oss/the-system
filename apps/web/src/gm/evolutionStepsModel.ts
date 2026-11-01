@@ -3,6 +3,7 @@
 // from the engine's own budget check, so the tab and the engine agree.
 import {
   execute,
+  gateLevel,
   raceLevel,
   skillPairCounts,
   stepBudgetProblems,
@@ -91,18 +92,21 @@ export function releaseBlockers(
 
 /**
  * DESIGN §9a: the characters the Evolutions tab lists, at or within `within`
- * race levels of their grade's top (the threshold), in party order, with how
- * far each one is. A character at the last grade is never listed.
+ * levels of their grade's top on the evolution gate (race level by default,
+ * class level with `evolutionGate: "class"`, as the engine decides), in party
+ * order, with how far each one is. A grade that cannot evolve (none above
+ * it, or its top at the campaign cap) is never listed (ME.3 review).
  */
 export function nearThreshold(
   rules: RulesConfig,
   characters: readonly Character[],
   within = 3,
 ): { readonly id: string; readonly levelsToGo: number }[] {
-  const last = rules.grades[rules.grades.length - 1]?.id;
   return characters.flatMap((c) => {
-    if (c.grade === last) return [];
-    const levelsToGo = Math.max(0, trackCap(rules, c.grade) - raceLevel(rules, c));
+    const i = rules.grades.findIndex((g) => g.id === c.grade);
+    const grade = rules.grades[i];
+    if (!grade || !rules.grades[i + 1] || grade.topLevel >= rules.campaign.levelCap) return [];
+    const levelsToGo = Math.max(0, trackCap(rules, c.grade) - gateLevel(rules, c));
     return levelsToGo <= within ? [{ id: c.id, levelsToGo }] : [];
   });
 }
