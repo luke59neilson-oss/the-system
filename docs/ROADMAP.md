@@ -974,7 +974,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   test per mutant above, each failing with that mutation applied
   (`/home/claude/review/mutation/mutation-runner.mjs` is not in the repo; a
   small runner in `scripts/` that re-applies these mutations is welcome).
-- [ ] **QF.61 The docs match the app.** GM-GUIDE.md:32 (campaigns and
+- [x] **QF.61 The docs match the app.** GM-GUIDE.md:32 (campaigns and
   backups "in the header"), :194-195 (import does not apply the 20% item cap
   or rarity ceilings; the sheet caps items), :117 (Table view shows up to
   4), :262-274 (Take notes / Summarise sit in the closed Session notes block),
