@@ -46,7 +46,14 @@ test('the skill-offer builder shows the standing beside the menu', async ({ brow
   const standingBox = (await standing.boundingBox())!;
   expect(standingBox.x).toBeGreaterThan(menuBox.x + menuBox.width - 1);
   await builder.scrollIntoViewIfNeeded();
+  // The whole standing fits on one screen beside the menu, practice included.
+  await builder
+    .getByTestId('offer-standing')
+    .evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'gm-standing-1366x768.png') });
+  for (const id of ['practice-counts', 'standing-equipped', 'standing-titles']) {
+    await expect(builder.getByTestId(id)).toBeInViewport({ ratio: 1 });
+  }
 
   // Far down the menu form, the standing is still on screen.
   const send = builder.getByRole('button', { name: /send/i }).last();

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { CampaignState, RulesConfig, SkillOption } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { CommandResult, LiveClient } from '../live';
@@ -258,38 +258,50 @@ export function OfferBuilder({
               )}
             </div>
             <div className="offer-side" tabIndex={0} aria-label="Standing and practice">
-              {standing && <Standing rules={rules} standing={standing} />}
-              <aside aria-labelledby="offer-practice">
-                <h3 id="offer-practice">Practice log</h3>
-                {practice.length === 0 ? (
-                  <p className="muted">Nothing logged yet.</p>
+              {(() => {
+                const practiceSummary = (
+                  <aside aria-labelledby="offer-practice" className="offer-practice-side">
+                    <h3 id="offer-practice">Practice log</h3>
+                    {practice.length === 0 ? (
+                      <p className="muted">Nothing logged yet.</p>
+                    ) : (
+                      <>
+                        {counts.length > 0 && (
+                          <p className="small" data-testid="practice-counts">
+                            Used (whole log): {counts.join(' · ')}
+                          </p>
+                        )}
+                        {standing && standing.pairs.length > 0 && (
+                          <p className="small" data-testid="practice-pairs">
+                            Used together:{' '}
+                            {standing.pairs
+                              .map((p) => `[${p.skills[0]}] + [${p.skills[1]}] ×${p.count}`)
+                              .join(' · ')}
+                          </p>
+                        )}
+                        <p className="muted small">
+                          Latest {practice.length} {practice.length === 1 ? 'entry' : 'entries'},
+                          newest first:
+                        </p>
+                        <ul className="offer-practice">
+                          {practice.map((p) => (
+                            <li key={p.id}>
+                              <span className="muted small">{p.at.slice(0, 10)}</span> {p.action}
+                              {p.skills.length > 0 &&
+                                ` · ${p.skills.map((s) => `[${s}]`).join(' + ')}`}
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </aside>
+                );
+                return standing ? (
+                  <Standing rules={rules} standing={standing} practice={practiceSummary} />
                 ) : (
-                  <>
-                    {counts.length > 0 && (
-                      <p className="small" data-testid="practice-counts">
-                        Used (whole log): {counts.join(' · ')}
-                      </p>
-                    )}
-                    {standing && standing.pairs.length > 0 && (
-                      <p className="small" data-testid="practice-pairs">
-                        Used together:{' '}
-                        {standing.pairs
-                          .map((p) => `[${p.skills[0]}] + [${p.skills[1]}] ×${p.count}`)
-                          .join(' · ')}
-                      </p>
-                    )}
-                    <p className="muted small">Latest {practice.length} entries, newest first:</p>
-                    <ul className="offer-practice">
-                      {practice.map((p) => (
-                        <li key={p.id}>
-                          <span className="muted small">{p.at.slice(0, 10)}</span> {p.action}
-                          {p.skills.length > 0 && ` · ${p.skills.map((s) => `[${s}]`).join(' + ')}`}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-              </aside>
+                  practiceSummary
+                );
+              })()}
             </div>
           </div>
         </>
@@ -299,7 +311,16 @@ export function OfferBuilder({
 }
 
 /** MW.1 (DESIGN §6): what the character already has, beside the menu. */
-function Standing({ rules, standing }: { rules: RulesConfig; standing: CharacterStanding }) {
+function Standing({
+  rules,
+  standing,
+  practice,
+}: {
+  rules: RulesConfig;
+  standing: CharacterStanding;
+  /** Beside the stats, so a long skill list never pushes it off the screen. */
+  practice: ReactNode;
+}) {
   const show = (n: number) => (n / rules.stats.displayDivisor).toFixed(rules.stats.displayDecimals);
   return (
     <section aria-labelledby="offer-standing" data-testid="offer-standing">
@@ -311,31 +332,36 @@ function Standing({ rules, standing }: { rules: RulesConfig; standing: Character
           : ` · ${standing.profession} ${standing.professionLevel ?? 0}`}
         {` · ${standing.race} ${standing.raceLevel}`}
       </p>
-      <table className="offer-standing-stats small">
-        <thead>
-          <tr>
-            <th scope="col">Stat</th>
-            <th scope="col">Base</th>
-            <th scope="col">Bonus</th>
-            <th scope="col">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {standing.stats.map((s) => (
-            <tr key={s.id} data-testid={`standing-${s.id}`}>
-              <th scope="row">{s.name}</th>
-              <td>{show(s.base)}</td>
-              <td>
-                {s.bonus === 0 ? '–' : `${s.bonus > 0 ? '+' : '−'}${show(Math.abs(s.bonus))}`}
-              </td>
-              <td>{show(s.total)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p className="small" data-testid="standing-free">
-        Free points unassigned: {standing.freePoints}
-      </p>
+      <div className="offer-standing-top">
+        <div>
+          <table className="offer-standing-stats small">
+            <thead>
+              <tr>
+                <th scope="col">Stat</th>
+                <th scope="col">Base</th>
+                <th scope="col">Bonus</th>
+                <th scope="col">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {standing.stats.map((s) => (
+                <tr key={s.id} data-testid={`standing-${s.id}`}>
+                  <th scope="row">{s.name}</th>
+                  <td>{show(s.base)}</td>
+                  <td>
+                    {s.bonus === 0 ? '–' : `${s.bonus > 0 ? '+' : '−'}${show(Math.abs(s.bonus))}`}
+                  </td>
+                  <td>{show(s.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="small" data-testid="standing-free">
+            Free points unassigned: {standing.freePoints}
+          </p>
+        </div>
+        {practice}
+      </div>
       <h4>Skills</h4>
       {standing.skills.length === 0 ? (
         <p className="muted small">None yet.</p>
@@ -617,7 +643,7 @@ function MenuForm({
               onChange={(e) => setRow(i, { description: e.target.value })}
             />
           </label>
-          <label>
+          <label className="offer-spell-toggle">
             <input
               type="checkbox"
               checked={r.spell}

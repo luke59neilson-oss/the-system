@@ -258,6 +258,23 @@ describe('the character standing (MW.1)', () => {
     expect(s.freePoints).toBeGreaterThan(0);
   });
 
+  it('a character with a profession shows it and its level', () => {
+    const state = campaign().state!;
+    const jake = state.characters['jake']!;
+    const s = characterStanding(
+      {
+        ...state,
+        characters: {
+          ...state.characters,
+          jake: { ...jake, profession: 'Alchemist', professionLevel: 4 },
+        },
+      },
+      'jake',
+    )!;
+    expect(s.profession).toBe('Alchemist');
+    expect(s.professionLevel).toBe(4);
+  });
+
   it('a character with no profession and no practice yet', () => {
     const state = campaign().state!;
     const s = characterStanding(state, 'jake')!;

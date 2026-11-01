@@ -1,4 +1,4 @@
-import { itemEffectiveStats } from '../economy/model';
+import { itemEffectiveStats, slotKey } from '../economy/model';
 import { castingForSkill } from '../skills/library';
 import { raceLevel, unassignedPointsOf, type CharacterSkill } from '../character/model';
 import { titleSources } from '../titles';
@@ -156,7 +156,7 @@ export function characterStanding(
     titles: c.titles,
     equipped: rules.economy.equipmentSlots.flatMap((slot) =>
       Array.from({ length: slot.count }, (_, i) => {
-        const id = holdings.equipped[`${slot.id}:${i}`];
+        const id = holdings.equipped[slotKey(slot.id, i)];
         return id === undefined ? [] : [{ slot: slot.name, item: state.items[id]?.name ?? id }];
       }).flat(),
     ),
