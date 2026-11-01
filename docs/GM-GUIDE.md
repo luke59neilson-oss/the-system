@@ -301,8 +301,11 @@ which the co-DM's quick responses, suggestions, drafts and notes do not read.
 
 ### Session notes and summary
 
-- **Running notes** (needs an API key): in the Co-DM panel press **Take
-  notes** at a break. The fast model reads the transcript heard since the
+Both buttons sit in the Co-DM panel's **Session notes** block, which starts
+closed: click its heading to open it.
+
+- **Running notes** (needs an API key): open **Session notes** and press
+  **Take notes** at a break. The fast model reads the transcript heard since the
   last notes and adds short lines on what happened. They go into the
   session log and its export under "Co-DM notes".
 - **Summary**: after **End session**, and before you start the next one,
