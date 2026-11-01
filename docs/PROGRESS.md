@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): ML.3, ML.4 and QF.63 merged; ML.5 built and reviewed on `wip/ML.5`, its box open until its event is in the test registries. Preview ready: Actions → Release → Run workflow (MK).
-**Next item:** `wip/ML.5` (`npm run sync -- wip/ML.5`, check it out, `git merge origin/main`): add `skill.castingSet` to the four registries `npm run check` names: the `There is no pool` row in GM-OVERRIDES (`npm run` its generator or edit by hand), the random-command list and generator (`events.test.ts` ~922, `helpers/events.ts` ~602), a scenario in `playerLog.test.ts` ~307, a new golden log (`packages/engine/test/node/golden.test.ts` "cover every reachable event type"; re-record the manifest with its script). Then check the box and merge (review done: sonnet, 1 round). Then ML.A (full suite, fable), QF.68, QF.69, QF.67, QF.71–QF.74; MW after.
+**Status:** in progress (2026-11-01): milestone ML done (ML.5, ML.A); QF.67 and QF.68 done; QF.69, QF.71 and QF.73 built on `wip/QF.69`, not reviewed. Preview ready: Actions → Release → Run workflow (ML).
+**Next item:** `wip/QF.69` (`npm run sync -- wip/QF.69`, check it out, `git merge origin/main`): §6 reviews of QF.69, QF.71 and QF.73 (one sonnet each; commits 69e50be and 102bed7), then check their boxes and merge. Then QF.72, QF.74; MW after.
 **Blockers:** none
 
 ## Run log
@@ -1687,3 +1687,14 @@ next item, blockers. -->
 - ML.5 on `wip/ML.5` (D336), box open: sonnet round 1 (0 H, 1 M, 4 L); the Medium fixed (a transform to a new name drops the casting). Engine, ML.5 and MR.4 specs green. `npm run check` on it fails 4 tests, all the new event missing from registries (see Next item), so it stayed off main.
 - Tests: on the combined branch, unit 4 failed (all ML.5 registries), the rest passed; `perf.test.ts` failed once under load and passed alone. Combined e2e ML.3, ML.4, ML.5, QF.63: 5/5. A full `npm run check` on exactly what was pushed to main was not run: main is ML.4 plus QF.63, each checked apart; CI is the check on the merge.
 - Open `wip/*`: `wip/ML.5` (next). Blockers: none.
+
+### Run · 2026-11-01 20:09–21:00 UTC (close-out at minute 48)
+- Close-out at minute 48.
+- Preflight: no `add_repo` tool, repo at /home/claude/the-system; local `main` stale (unrelated histories), reset to `origin/main` (D319). Lock pushed; vitest 5.0.5. CI on main green (2d0743a was the latest completed). No new answers. Hour 20: no efficiency check or sweep.
+- ML.5 merged and checked: `skill.castingSet` in the four registries, `copy-casting` golden.
+- ML.A checked: fable round 1 (1 H, 1 M, 5 L), fixed (D337); round 2 (0 H, 1 M, 3 L), Medium fixed, Lows to the Backlog. The round 2 reviewer did not finish check, build or e2e in its time.
+- QF.67 and QF.68 checked: sonnet, 0 H, 0 M; each reviewer's mutations failed tests, but neither finished its own `npm run check` on the shared box.
+- `wip/QF.69` (base 4e9ddb6 line, tip 102bed7): QF.69 (the status [Evolve] already opened the release, so that half is an e2e pin; the released line clears on edit), QF.71 (D338), QF.73. Affected specs green. Not reviewed, boxes open.
+- Tests: full e2e ran on 4e9ddb6 (ML.5 merged), before the ML.A, QF.67 and QF.68 commits: e2e 176 passed + latency 7 of 8; MS.3 failed under load and passed alone. After the fixes: ML.4, MS.4, QF.44 and MS.3 green. `npm run check` on the pushed commit: see the line below. Engine coverage not read this run.
+- Open `wip/*`: `wip/QF.69` (next). Blockers: none.
+- `npm run check` on e4ca932, the code pushed to main: exit 0, unit 2114. Lock released at minute 52.
