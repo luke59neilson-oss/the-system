@@ -222,8 +222,8 @@ In the **Co-DM** panel pick a kind (Shop, NPC, Place, Encounter, Item, Quest
 hook), type **What the table needs** ("an herbalist near the canyon gate"),
 and press **Generate**. The strong model writes it in the content format and
 it opens in **Import content**, where the usual checks apply (flat item
-bonuses, grades; the 20% item cap and rarity ceilings apply on the sheet,
-not at import: an item over the cap shows as capped). Edit it in **Edit the
+bonuses, grades). Import does not check rarity ceilings, and the 20% item
+cap applies on the sheet: an item over it shows as capped. Edit it in **Edit the
 generated content**, **Regenerate**, or tick and apply it. **Cancel** stops a
 slow request. A **shop** goes into the library with its keeper, wares and
 prices; **Sell** on a ware fills in a GM trade to the chosen character.
