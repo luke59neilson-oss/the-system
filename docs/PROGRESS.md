@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; MV, ME, MK, QF.55–QF.58, QF.60, QF.61 and QF.70 done; QF.62 reviewed and ready to merge, QF.63 most of the way. Preview ready: Actions → Release → Run workflow (MK).
-**Next item:** QF.62 on `wip/QF.62` (head 033e8f6, base ba89330): all Lows fixed, sonnet round 1 on the last three (0 H, 0 M, 4 L; 2 fixed). Left: the full e2e was 167/169 green at hand-off with QF.40 "refuses an undo that would lose XP" failing (not yet diagnosed; likely the QF.62 undo-blocker wording or Identify change) — run `npx playwright test e2e/QF.40.spec.ts` on the branch, fix, finish the latency project, then merge to main and check the box. Then `wip/QF.63` (head 41d0756, branched from QF.62): 14 px phone floor, platinum blue highlight, no-undo reasons, Sound name, D325; e2e `QF.63.spec.ts` written but not yet run (needs a build); then its review. Then ML.1–ML.A (L28; it sits before QF in ROADMAP), then QF.68, QF.69, QF.67, QF.71–QF.74; MW after.
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; QF.62 ready to merge (full e2e being re-run), QF.63 reviewed (2 rounds) on its branch, ML.1 started. Preview ready: Actions → Release → Run workflow (MK).
+**Next item:** merge `wip/QF.62` (head f7ea7b5, base origin/main b686eb9): check green, QF.40 e2e fixed (test race, also red on main), full e2e this run 107+/169 green with no failure when the run stopped; run the rest of the e2e project and the latency project (`npm run e2e`), then merge to main and check QF.62. Then `wip/QF.63` (head ce1c681, has QF.62 merged): sonnet 2 rounds done, all Mediums fixed; needs `npm run check` and the full e2e (the phone font floor changes shared CSS, incl. `.small` at ≤700 px), then merge and check QF.63. Then `wip/ML.1` (head 4132629, from b686eb9): store soft delete / Deleted list / restore with tests, library + GM routes (routes untested); next: route tests, no campaign open at start (app.ts opens 'main' today; `realId` in server.ts), the home UI, phones' "Waiting for the GM to open a campaign", desktop launch specs, e2e. Then ML.2–ML.A, QF.68, QF.69, QF.67, QF.71–QF.74; MW after.
 **Blockers:** none
 
 ## Run log
@@ -1643,3 +1643,14 @@ next item, blockers. -->
 - QF.63 started (D325): all sub-items coded; "assign all" already covered by MV.1.
 - Tests: check green on `wip/QF.62` (unit 2,051); e2e QF.62 4/4, MV.3, M3.9, MQ.8, M3.7 green; full e2e 167/169 run, QF.40 red.
 - Open `wip/*`: `wip/QF.62`, `wip/QF.63`. Blockers: none.
+
+### Run · 2026-11-01 15:06–15:5x UTC (close-out at minute 42)
+- Close-out at minute 42; hard stop at 52 (lock released then). Build ran to minute 41 (ML.1 started on `wip/ML.1`).
+- Preflight: no `add_repo` tool in this session, repo already at /home/claude/the-system; local `main` stale (unrelated histories), reset to `origin/main` (D319). Lock pushed cleanly; vitest 5.0.5; reviewers sonnet, fable, haiku all work (worktree; Agent calls block, so reviews ran between build steps). CI on main green (ba89330). No new answers.
+- Quality sweep D (hour 15): Rules · sonnet, Boundaries · fable, UX · haiku on 2b21061..b686eb9: 0 High, 0 Medium, 3 Low (Backlog; Q100 and D326 for a level lowered by override and earned again). Boundaries ran a live probe of every player path: clean.
+- QF.62: the QF.40 e2e failure was a test race present on main too (the change-log window could open on a list fetched before the last award); fixed in the test, 3/3 green. `npm run check` green (unit 2,051). Full e2e re-run: 107/169 green, no failure, when the run stopped; latency not run. Box not checked yet.
+- QF.63: e2e QF.63 run for the first time (green); sonnet round 1 (0 H, 2 M, 4 L) and round 2 (0 H, 1 M, 3 L); every Medium fixed: the 14 px phone floor now covers every text the demo phone screens and a skill's detail dialog show, scanned by the e2e; platinum highlight #c4e0ff with a silver/platinum screenshot pair. Box not checked: needs check + full e2e, then merge.
+- ML.1 started (`wip/ML.1`): store soft delete, Deleted list, restore (2 tests), campaign library methods and GM routes.
+- Tests: check green on `wip/QF.62` (unit 2,051); e2e QF.40 3/3, QF.63 2/2; full e2e 107/169 so far, 0 failed.
+- Open `wip/*`: `wip/QF.62`, `wip/QF.63`, `wip/ML.1`. Blockers: none.
+
