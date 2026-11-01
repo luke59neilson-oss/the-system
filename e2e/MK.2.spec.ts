@@ -58,7 +58,10 @@ test('a d20 contest with a typed and an app die reaches both screens', async ({ 
   await expect(phone.getByTestId('mod-strength')).toHaveText('[+0]');
   await phone.screenshot({ path: path.join(shots, 'player-sheet-390x844.png') });
 
-  // Jake's Perception (typed 18) against a custom stalker at 20 (+3, app die).
+  // Jake's Perception (typed 3) against a custom stalker at 20 (+3, app die).
+  // Jake's total 3 is below the stalker's lowest (1 + 3), so it never ties and
+  // the result stays one round with the typed die (an 18 tied 1 in 20: CI red
+  // on c4da9455).
   await openWindow(gm, 'encounter');
   const roller = gm.locator('form[aria-labelledby="contest-roller"]');
   const sideA = roller.getByRole('group', { name: 'Side A' });
@@ -76,10 +79,10 @@ test('a d20 contest with a typed and an app die reaches both screens', async ({ 
   await dice.getByRole('textbox').first().fill('21');
   await expect(dice).toContainText('1 to 20');
   await expect(roller.getByRole('button', { name: 'Roll' })).toBeDisabled();
-  await dice.getByRole('textbox').first().fill('18');
+  await dice.getByRole('textbox').first().fill('3');
   await roller.getByRole('button', { name: 'Roll' }).click();
   const result = roller.getByTestId('contest-result');
-  await expect(result).toContainText('18 typed +0 = 18');
+  await expect(result).toContainText('3 typed +0 = 3');
   await expect(result).toContainText(/Pale stalker \d+ app \+3 = \d+/);
   await gm.screenshot({ path: path.join(shots, 'gm-contest-1366x768.png') });
   await roller.getByRole('button', { name: 'Share with the table' }).click();
@@ -88,7 +91,7 @@ test('a d20 contest with a typed and an app die reaches both screens', async ({ 
   const popup = phone.getByTestId('contest-popup');
   await expect(popup).toBeVisible();
   const lines = popup.getByTestId('contest-dice-line');
-  await expect(lines.first()).toContainText('You: d20 18 (typed) +0 = 18');
+  await expect(lines.first()).toContainText('You: d20 3 (typed) +0 = 3');
   await expect(lines.last()).toContainText(/They: d20 \d+ \(app\) \+3 = \d+/);
   await phone.screenshot({ path: path.join(shots, 'player-contest-390x844.png') });
 
