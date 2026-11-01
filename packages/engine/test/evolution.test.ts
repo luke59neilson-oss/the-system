@@ -20,6 +20,7 @@ import {
   type CommandContext,
   retiredSkillNames,
 } from '../src';
+import { releaseEvolution } from '../src/evolution/model';
 import { kit, preMeRules, rawRules, mergeAccepted, run, testContext } from './helpers/events';
 
 /**
@@ -682,6 +683,27 @@ describe('evolution', () => {
     expect(c.state).toEqual(before);
   });
 
+  it('a one-time bonus on a single stat raises that stat alone (QF.60)', () => {
+    const before = char(atGTop()).stats;
+    let c = ok(atGTop(), {
+      type: 'evolution.release',
+      rerateApproved: true,
+      characterId: 'jake',
+      options: [
+        {
+          className: 'Hunter',
+          transforms: [{ skill: archery, name: 'Volley', rarity: 'common' }],
+          statBonus: { perception: 7 },
+        },
+      ],
+    });
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    const after = char(c).stats;
+    for (const [stat, value] of Object.entries(before)) {
+      expect(after[stat], stat).toBe(stat === 'perception' ? value + 7 : value);
+    }
+  });
+
   it('profession unlock at E: offered professions, chosen with the evolution, starting at class level', () => {
     let c = ok(atGTop(), release(archery, 'Volley', 'common'));
     c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
@@ -689,6 +711,19 @@ describe('evolution', () => {
     expect(char(c).classLevel).toBe(14);
     c = pickAll(c);
     expect(evolutionTarget(rules, char(c))?.id).toBe('E');
+    // QF.60: a blank profession offer is refused by name (the event schema
+    // refuses it too; the model must not rely on that).
+    const hunter = {
+      id: 'o1',
+      className: 'Hunter',
+      description: '',
+      transforms: [{ skill: 'Volley', name: 'Volley II', rarity: 'epic' }],
+      classWeights: null,
+      statBonus: {},
+    };
+    expect(() => releaseEvolution(rules, char(c), [hunter], ['Smith', '  '])).toThrow(
+      'A profession needs a name',
+    );
     c = ok(c, release('Volley', 'Volley II', 'epic', { professions: ['Smith', 'Cook'] }));
     expect(
       reject(c, {
