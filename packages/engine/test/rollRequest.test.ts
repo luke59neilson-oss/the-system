@@ -131,6 +131,13 @@ describe('d20 roll requests (MK.2)', () => {
     expect(asked.ok).toBe(false);
   });
 
+  it('carries the contest modifier to its player, and nothing when there is none (QF.71)', () => {
+    const c = run([...setup, { ...request, modifier: -5 } as Command]);
+    expect(projectForPlayer(c.state!, 'jake').rollRequest?.modifier).toBe(-5);
+    const plain = run([...setup, request]);
+    expect(projectForPlayer(plain.state!, 'jake').rollRequest).not.toHaveProperty('modifier');
+  });
+
   it('refuses an unknown stat or character', () => {
     const base = run(setup);
     expect(

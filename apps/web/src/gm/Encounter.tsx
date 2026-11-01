@@ -319,6 +319,12 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
                       disabled={busy}
                       onClick={() => {
                         const requestId = newRequestId();
+                        // QF.71: the phone shows this contest's modifier, not the sheet's.
+                        const contest =
+                          typeof planNow === 'string'
+                            ? null
+                            : d20Modifiers(state.rules, planNow.a, planNow.b, planNow.mode);
+                        const modifier = side === 'a' ? contest?.modA : contest?.modB;
                         setAsked((prev) => ({
                           ...prev,
                           [side]: new Set([...prev[side], requestId]),
@@ -329,6 +335,7 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
                             characterId: r.characterId,
                             stat: r.stat,
                             requestId,
+                            ...(modifier === undefined ? {} : { modifier }),
                           },
                           `Asked ${r.name} to roll`,
                         );

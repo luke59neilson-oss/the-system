@@ -79,4 +79,18 @@ describe('roll prompt (MK.2)', () => {
       rollPromptText(view, { id: 'r', stat: 'perception', answer: { die: 3, how: 'app' } }).answer,
     ).toBe('You rolled 3 (app) +14 = 17. The GM has it.');
   });
+  it('shows the contest modifier over the sheet one (QF.71)', () => {
+    const req = { id: 'r', stat: 'perception', modifier: -2, answer: { die: 12, how: 'app' } };
+    const asked = rollPromptText(view, req as Parameters<typeof rollPromptText>[1]);
+    expect(asked.title).toBe('Roll d20 for Perception (−2)');
+    expect(asked.answer).toBe('You rolled 12 (app) −2 = 10. The GM has it.');
+  });
+  it('has no modifier to show outside d20: never a "+0" (QF.73)', () => {
+    const plain = { ...view, me: {} } as unknown as typeof view;
+    const req = { id: 'r', stat: 'perception', answer: { die: 7, how: 'typed' } } as const;
+    expect(rollPromptText(plain, req)).toEqual({
+      title: 'Roll d20 for Perception',
+      answer: 'You rolled 7 (typed). The GM has it.',
+    });
+  });
 });

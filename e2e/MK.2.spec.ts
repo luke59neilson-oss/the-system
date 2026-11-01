@@ -180,6 +180,43 @@ test("the GM asks the player's phone for a d20; it rolls, and the NPC's die is t
   expect(frames.join('\n')).not.toContain('"value":20');
 });
 
+test('the phone shows the modifier of a contest one grade apart (QF.71)', async ({ browser }) => {
+  const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  await gm.goto(`${server.url}/gm#key=${GM_KEY}`);
+  await gm.getByLabel('Campaign name').fill('Dice');
+  await gm.getByRole('button', { name: 'Create campaign' }).click();
+  const create = gm.locator('form[aria-labelledby="new-character"]');
+  await reveal(gm, create);
+  await create.getByLabel('Name', { exact: true }).fill('Jake');
+  await create.getByRole('button', { name: 'Create character' }).click();
+  await expect(gm.getByRole('heading', { level: 3, name: 'Jake', exact: true })).toBeVisible();
+  await openWindow(gm, 'rules-settings');
+  await gm.getByTestId('rules-rolls').getByRole('combobox').selectOption('d20');
+  await expect(gm.locator('section[aria-labelledby="rules-settings"]')).toContainText(
+    'Rolls: d20 + modifier.',
+  );
+  const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await phone.goto(server.url);
+  await phone.getByRole('link', { name: /Jake/ }).click();
+  await expect(phone.getByTestId('connection')).toHaveText('Connected');
+
+  await openWindow(gm, 'encounter');
+  const roller = gm.locator('form[aria-labelledby="contest-roller"]');
+  const sideA = roller.getByRole('group', { name: 'Side A' });
+  const sideB = roller.getByRole('group', { name: 'Side B' });
+  await sideA.getByLabel('Who').selectOption({ label: 'Jake' });
+  await sideA.getByLabel('Stat').selectOption({ label: 'Perception' });
+  await sideB.getByLabel('Who').selectOption('custom');
+  await sideB.getByLabel('Grade').selectOption('F');
+  await sideB.getByLabel('Stat').selectOption({ label: 'Perception' });
+  await sideB.getByRole('textbox', { name: 'Value', exact: true }).fill('10');
+  await sideB.getByRole('textbox', { name: 'Players see', exact: true }).fill('Pale stalker');
+  await roller.getByLabel('Grade-gap mode').selectOption('gradeWalls');
+  await roller.getByRole('button', { name: "Ask Jake's phone for a d20" }).click();
+  // The sheet says +0; one grade below, this contest takes the penalty.
+  await expect(phone.getByTestId('roll-prompt')).toContainText('Roll d20 for Perception (−5)');
+});
+
 test("a phone die belongs to its contest; a console die closes the phone's request", async ({
   browser,
 }) => {

@@ -469,6 +469,8 @@ export interface PlayerView {
   readonly rollRequest: {
     readonly id: string;
     readonly stat: string;
+    /** QF.71: the contest's modifier, when it differs from the sheet's. */
+    readonly modifier?: number;
     readonly answer: { readonly die: number; readonly how: 'typed' | 'app' } | null;
   } | null;
   /**
@@ -1365,6 +1367,7 @@ function ownRollRequest(state: CampaignState, viewerId: string): PlayerView['rol
   return {
     id: r.id,
     stat: r.stat,
+    ...(r.modifier === undefined ? {} : { modifier: r.modifier }),
     answer: r.answer === null ? null : { die: r.answer.die, how: r.answer.how },
   };
 }

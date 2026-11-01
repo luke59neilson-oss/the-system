@@ -251,6 +251,8 @@ describe('encounter model: contests (M7.3)', () => {
     const roller = phoneRoller(s, { characterIds: ['jake'], stat: 'perception' });
     expect(roller).toEqual({ characterId: 'jake', name: 'Jake', stat: 'perception' });
     expect(phoneRoller(s, { characterIds: [], stat: null })).toBeNull();
+    // QF.73: a side of two has no one phone to ask.
+    expect(phoneRoller(s, { characterIds: ['jake', 'jake'], stat: 'perception' })).toBeNull();
     expect(phoneRoller(s, { characterIds: ['jake'], stat: null })).toBeNull();
     const none = new Set<string>();
     expect(phoneDie(s, roller, none)).toBeNull();

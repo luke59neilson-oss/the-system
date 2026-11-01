@@ -1045,6 +1045,7 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     requestId: recordId,
     characterId: recordId,
     stat: z.string().min(1).max(40),
+    modifier: z.number().int().optional(),
   }),
   /** MK.2: the die for an open roll request, typed from the table or rolled by the app. */
   'roll.answered': z.strictObject({

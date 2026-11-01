@@ -65,7 +65,7 @@ export function rollPromptText(
 ): { title: string; answer: string | null } {
   const label = view.rules.stats.list.find((s) => s.id === req.stat)?.name ?? req.stat;
   // Review M3: no modifier is known (not a d20 campaign): say so, never "+0".
-  const mod = view.me.rollModifiers?.[req.stat];
+  const mod = req.modifier ?? view.me.rollModifiers?.[req.stat];
   const title =
     mod === undefined ? `Roll d20 for ${label}` : `Roll d20 for ${label} (${signed(mod)})`;
   if (req.answer === null) return { title, answer: null };

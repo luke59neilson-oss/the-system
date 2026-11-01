@@ -754,7 +754,14 @@ export type Command =
   /** MT.9: the player (or the GM for them) has answered the end-of-scene prompt. */
   | { type: 'scene.answer'; sceneId: string; characterId: string }
   /** MK.2: ask a player's phone for a d20 for this stat. */
-  | { type: 'roll.request'; characterId: string; stat: string; requestId?: string | undefined }
+  | {
+      type: 'roll.request';
+      characterId: string;
+      stat: string;
+      requestId?: string | undefined;
+      /** QF.71: the contest's own modifier, when it differs from the sheet's. */
+      modifier?: number | undefined;
+    }
   /**
    * MK.2: answer the open roll request: a die thrown at the table (`die`, 1–20)
    * or, without one, a die the app rolls with the context's random source.
@@ -949,6 +956,7 @@ const commandSchema = z.discriminatedUnion('type', [
     characterId: z.string(),
     stat: z.string(),
     requestId: z.string().min(1).max(100).optional(),
+    modifier: z.number().int().optional(),
   }),
   z.object({
     type: z.literal('roll.answer'),
@@ -2231,6 +2239,7 @@ function toEvent(
           requestId: command.requestId ?? ctx.newId(),
           characterId: command.characterId,
           stat: command.stat,
+          ...(command.modifier === undefined ? {} : { modifier: command.modifier }),
         },
       };
     case 'roll.answer': {

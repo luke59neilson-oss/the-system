@@ -257,6 +257,8 @@ export interface RollRequest {
   readonly id: string;
   /** Stat id from the rules config. */
   readonly stat: string;
+  /** QF.71: the contest's modifier (grade-gap penalty or adjusted value), when the GM's contest set it. */
+  readonly modifier?: number;
   readonly at: string;
   readonly answer: { readonly die: number; readonly how: 'typed' | 'app' } | null;
 }
@@ -2765,7 +2767,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       return { ...state, scenePrompt: pending.length === 0 ? null : { ...prompt!, pending } };
     }
     case 'roll.requested': {
-      const { requestId, characterId, stat } = event.payload;
+      const { requestId, characterId, stat, modifier } = event.payload;
       if (!hasOwn(state.characters, characterId)) fail(event, `unknown character "${characterId}"`);
       if (!state.rules.stats.list.some((s) => s.id === stat)) fail(event, `unknown stat "${stat}"`);
       if (state.rules.resolution.rolls !== 'd20')
@@ -2775,7 +2777,13 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         ...state,
         rollRequests: {
           ...open,
-          [characterId]: { id: requestId, stat, at: event.timestamp, answer: null },
+          [characterId]: {
+            id: requestId,
+            stat,
+            ...(modifier === undefined ? {} : { modifier }),
+            at: event.timestamp,
+            answer: null,
+          },
         },
       };
     }
