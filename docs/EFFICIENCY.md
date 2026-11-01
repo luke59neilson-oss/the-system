@@ -21,7 +21,7 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
 | D315 `scripts/metrics.mjs` reads run headings with no id (end minute from "close-out at minute N" when the end time is `5x`) and counts the real `npm run orient` output plus the full reads | 2026-11-01 06:50 | end minute and orient words measure the current runs (end minute was frozen at 48.8 since 2026-10-30; orient words 21.0k scored vs 7.2k printed); series break at this row | end minute 47.0 (re-measured); orient words 22,973; items/run 1.0 | Highs 0, round-2 5/10, red/day 6 | 2026-11-01 18:00 check |
-| D304 LOOP §5.6 names the `latency` project as part of the full e2e; rules-number items run it alone; PROGRESS reports "e2e N + latency M" | 2026-11-01 00:45 | main CI red/day 4 → ≤ 3 (red from latency specs a run's full e2e skipped: 71bac8f3) | red/day 4; items/run 0.7; end minute 48.8 | Highs 0, round-2 4/10 | 2026-11-01 12:00 check |
+| D319 LOOP §1.2 fetches main as a single ref and resets a stale local main (efficiency check 2026-11-01 12:10, sonnet auditor proposal 1, wording only; the `npm run sync` script is still queued) | 2026-11-01 12:52 | fewer setup detours: end minute 45.0 → ≥ 47 | end minute 45.0; items/run 1.2 | Highs 0, round-2 5/10, red/day 5 | 2026-11-02 12:00 check |
 
 ## Kept
 
@@ -42,6 +42,8 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
   Chromium cache (2026-10-23 00:08, D131).
 
 ## Reverted
+
+- D304 latency project run alone for rules-number items (2026-11-01 00:45, D320): target missed (main CI red/day 4 → 5, target ≤ 3) and a guard rose (round-2 share 4/10 → 5/10), so §9.2 reverts it. The auditor judged the rise unrelated (no latency-only reds in the last three runs; Q71). Kept: §5.6 still says `npm run e2e` is both projects and the PROGRESS tests line reads "e2e N + latency M" (an ambiguity fix).
 
 - D297 orient collapses checked items and default-kept questions (2026-10-31 18:09, D313): the target was met when measured directly (the printed orient output fell from 21.0k to about 7.1k words; the scorecard's `orientWords` does not measure it, as the 00:45 auditor noted), but two guards rose by one (round-2 share 4/10 → 5/10, main CI red/day 5 → 6; the red runs were latency specs and an M8.3 keyboard flake, unrelated), so the strict §9.2 rule reverts it, as at D205 and D194 (Q71 still open). `scripts/orient.mjs` prints checked items and default-kept questions again (12.9k words).
 
@@ -76,6 +78,11 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 - `npm run orient` prints checked QF items whole (the QF section is ~3k words, the 2026-10-31 deep-review block ~3.5k, ~4.6k under `[x]` bullets): print open/`[~]` bullets in full and checked ones as ID + title; drop QUESTIONS entries marked "Not put to Luke … default kept". Target orient words 16.7k → ~11k; risk low (keep any bullet naming a `wip/`), with a unit test of the filter. Next check may apply it.
 - `npm run ci-triage -- <run id>`: one read-only call that lists failed jobs, prints annotations and the local repro line (alone, `--workers=2`, xvfb for desktop). Target: fewer tool calls per red start; does not itself move red/day.
+
+## Tier 1 proposals queued (efficiency check 2026-11-01 12:10, sonnet auditor)
+
+- `npm run sync` (`scripts/sync.mjs`): fetches `main` and named `wip/*` as single refs, resets local `main` only when it has no unpushed commits (unit test of that guard), prints one line. D319 applied the LOOP wording; the script would save the remaining 3–5 setup calls.
+- `npm run ci-triage -- <run id>` (queued 2026-10-31, still unbuilt): failed jobs, annotations and the local repro line in one read-only call. Judge on tool calls per red start, not red/day.
 
 ## Proposals for Luke (Tier 2)
 
@@ -192,3 +199,4 @@ table last in the file.
 | 2026-11-01 00:15 | 6 | 48.8 | 0.7 | 4/10 | 0 | 25 | 4 | 12.1 | 20561 |
 | 2026-11-01 06:09 | 6 | 48.8 | 1.0 | 5/10 | 0 | 33 | 6 | 12.2 | 21027 |
 | 2026-11-01 06:46 (D315: parsers fixed, series break) | 6 | 47.0 | 1.0 | 5/10 | 0 | 32 | 6 | 12.3 | 22973 |
+| 2026-11-01 12:10 | 6 | 45.0 | 1.2 | 5/10 | 0 | 26 | 5 | 12.7 | 22406 |

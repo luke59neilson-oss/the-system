@@ -24,8 +24,12 @@ Luke is not watching. Never stop to ask him a question.
 1. If the repo is not attached, call `add_repo` (owner `luke59neilson-oss`,
    repo `the-system`, access `push`) and clone exactly as that tool instructs,
    to `/home/claude/the-system`.
-2. Always `git fetch origin` and `git merge --ff-only origin/main` before
-   reading any file below.
+2. Always fetch main as a single ref, `git fetch origin
+   +main:refs/remotes/origin/main` (a plain `git fetch origin` of every
+   branch hangs here; fetch a `wip/*` branch the same way), then
+   `git merge --ff-only origin/main` before reading any file below. If local
+   `main` is stale (the merge refuses "unrelated histories") and has no
+   unpushed commits, `git reset --hard origin/main` instead (D319).
 3. Create any of `docs/PROGRESS.md`, `docs/QUESTIONS.md`,
    `docs/REVIEW-LOG.md` that is missing.
 
@@ -145,9 +149,7 @@ them whole costs about 30k tokens per run for history you do not need):
    `Mx.A` and whenever you change shared server or UI code. The full suite
    is `npm run e2e`: both Playwright projects, `e2e` and the serial
    `latency` one (`--project=e2e` alone is not the full suite; CI runs
-   both). An item that changes rules numbers also runs
-   `npx playwright test --project=latency` with nothing else running, and
-   the PROGRESS tests line says "e2e N + latency M" (D304, in trial). CI runs the full
+   both); the PROGRESS tests line says "e2e N + latency M". CI runs the full
    suite on every push; a red main is the next run's first task.
 7. Banned in committed code: `.skip`, `.only`, `@ts-ignore`,
    `@ts-expect-error` without a reason, `eslint-disable`, lowering the
