@@ -201,6 +201,9 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
           <button
             type="button"
             className="sound-toggle"
+            // QF.63 (ux-12): aria-pressed carries the state, so the name stays
+            // "Sound" and a screen reader does not say on/off twice.
+            aria-label="Sound"
             aria-pressed={sound}
             data-testid="sound"
             onClick={toggleSound}
