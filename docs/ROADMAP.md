@@ -364,7 +364,7 @@ in the first session.
 
 DESIGN §7 "Dice", §9. After ME, before QF.
 
-- [ ] **MK.1 d20 + modifier in the engine.** Campaign setting `rolls:
+- [x] **MK.1 d20 + modifier in the engine.** Campaign setting `rolls:
   "odds" | "d20"` (default odds; existing campaigns unchanged); roll
   modifier = round(3 × log2(stat ÷ 10)) on the stat with bonuses, a stat
   below 1 counted as 1; a d20 contest records each side's die (1–20), how it
