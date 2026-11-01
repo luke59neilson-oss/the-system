@@ -1293,3 +1293,5 @@
 - No fixes required; Lows go to the QUALITY backlog. Box not checked yet: the full e2e found four specs reading hidden-tab DOM (fixed on 39f78fa); the rest of the suite is still to run.
 
 - 2026-11-01 09:3x follow-up: rest of the e2e suite run on wip/QF.55 (90 specs after MC.3 plus the four re-fixed: 86 passed, 4 failed, all reading party `class-level-*` on the Home tab while the Session tab showed); MQ.A, MS.1, MS.4, MV.2 and latency M4.A now open the tab first (774523a, 343c2e5). Low (1) fixed: the notes list takes focus when the last "Show more" goes (QF.55 e2e asserts it). Latency project 8/8, check green (unit 2,015). Merged to main (dfd963d); box checked.
+
+- 2026-11-01 · QF.70 · sonnet (round 1, worktree on a980b24): 10/10 with `--repeat-each=10 --workers=2`; no banned patterns, no loosened assertions. 0 High, 2 Medium: the settle-wait can return the pre-press element (wait for `data-kb` to change from the pre-press value, then two stable frames); the 10-frame cap returns silently if focus never settles (fail instead). 3 Lows to the QUALITY backlog. Not fixed this run (minute 43): handed off on `wip/QF.70`; two Mediums mean a round 2 after the fix.

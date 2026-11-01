@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.69; MV, ME and MK done (MK.A checked 07:55). Preview ready: Actions → Release → Run workflow (MK).
-**Next item:** QF.55 on `wip/QF.55` (head 39f78fa, merged main 1a36dfe): code done, probe recorded (main 45/43/43/44/49 → branch 4/10/8/6/8 ms per command at 40 sessions), sonnet review 0 H / 0 M. Hidden-tab windows no longer render, so e2e specs that read a hidden tab's DOM fail: M4.6, M5.3, MC.2, MC.3 fixed (open the tab first); the second half of the e2e suite (after MC.3 in file order) was not run. Next: `npm run build && npx playwright test --project=e2e` in the background (it takes >10 min; never in one foreground call), fix any further hidden-tab readers the same way, optional Low fix (focus after the last "Show more"), then merge to main and check the box. Then QF.70, QF.56 onward; MW after MU.
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; MV, ME, MK and QF.55 done. Preview ready: Actions → Release → Run workflow (MK).
+**Next item:** QF.70 on `wip/QF.70` (head a980b24, base bc8d434): 10/10 green, sonnet round 1 found 2 Medium (settle-wait should wait for focus to change from the pre-press `data-kb`, then two stable frames; fail instead of returning silently at the 10-frame cap). Fix both, re-run `--repeat-each=10 --workers=2`, round-2 review, merge. Then QF.56 onward (QF.71–QF.74 from sweep C in file order); MW after MU.
 **Blockers:** none
 
 ## Run log
@@ -1590,3 +1590,11 @@ next item, blockers. -->
 - Tests: check green (unit 2,015); e2e partial (see above).
 - Open `wip/*`: `wip/QF.55`. Blockers: none.
 
+### Run · 2026-11-01 09:09–10:0x UTC (close-out at minute 43)
+- Close-out at minute 43: QF.70's two review Mediums need a fix plus a 10× repeat (5 min) and a round-2 review, which do not fit before 52; handed off on `wip/QF.70`.
+- Preflight: `add_repo` not offered; repo already cloned (local main had unrelated history again; reset to `origin/main`; only `git fetch origin <branch>` works, a plain fetch hung); lock pushed cleanly; vitest 5.0.5; reviewers haiku, sonnet, fable work (worktree; Agent blocks, so the three sweep reviewers and the build fork ran as one parallel batch, minutes 1–36). CI on main green (1a36dfe). No new answers. Hour 09: quality sweep C (Rules haiku, Tests sonnet, UX fable), scope bc1b26b7..2b21061.
+- QF.55 done: rest of the e2e suite on wip/QF.55 (90 tests: 86 passed; MQ.A, MS.1, MS.4, MV.2 and latency M4.A read Home-tab levels while another tab showed, fixed to open the tab first); notes focus Low fixed; latency 8/8 (M4.A re-run alone after its fix); check green (unit 2,015). Merged to main (dfd963d), box checked (bc8d434).
+- QF.70: settle-wait for focus after each Tab and wait for the player sheet before counting (a980b24 on `wip/QF.70`); sonnet review 10/10 at `--repeat-each=10 --workers=2`, 0 H / 2 M / 3 L. Box open.
+- Sweep C: Rules clean (1 L); Tests 2 M confirmed by re-running the mutations myself (QF.73) + 3 L; UX 2 M confirmed in code (QF.71 contest modifier on the roll prompt, QF.72 roll request has no cue on the phone), 1 M likely (QF.74, verify by screenshot first), 7 L. Lows to the QUALITY backlog. Last sweep 2b21061, next rotation D.
+- Tests: check green (unit 2,015); e2e: full suite covered across this and the last run on QF.55's code; latency 8.
+- Open `wip/*`: `wip/QF.70`. Blockers: none.

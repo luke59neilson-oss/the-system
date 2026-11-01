@@ -1032,6 +1032,32 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   two open 2-point level-ups and asserts each batch's allocation; it fails
   with the key-order mutation applied.
 
+- [ ] **QF.71 The phone's roll prompt shows the contest's modifier.** Sweep C
+  (UX, fable), Medium, confirmed in code: `player/contest.ts:60` shows the
+  sheet modifier, but `resolution/dice.ts:93-104` takes the −5 grade-gap
+  penalty (grade walls) or the adjusted value (other modes), so the prompt
+  says "12 +3 = 15" and the shared pop-up "12 −2 = 10". *Accept:* the request
+  (or its projection) carries the contest's modifier and the prompt and answer
+  line show it; engine and web tests for a one-grade-apart contest; MK.2 e2e.
+- [ ] **QF.72 A roll request announces itself on the phone.** Sweep C (UX,
+  fable), Medium, confirmed: `history/gmChanges.ts:194-196` gives
+  `roll.requested` no notice, and `RollPrompt` sits inside the Status window
+  with no live region, so a player reading Quests or Notes sees nothing.
+  *Accept:* a request raises a toast/notice for its owner only (canary green)
+  and the prompt is reachable from it; e2e at 390×844 scrolled to Notes.
+  Also fix the Low: `RollPrompt` resets its typed die when `req.id` changes.
+- [ ] **QF.73 Dice tests that can fail.** Sweep C (Tests, sonnet), two
+  Mediums confirmed by re-running the mutations: `encounterModel.ts:445`
+  dropping `characterIds.length !== 1` (16/16 green) and `contest.ts:60`
+  `?? 0` (4/4 green). *Accept:* a two-character side offers no phone roll;
+  a non-d20 view's prompt has no "+0"; each mutation fails a test.
+- [ ] **QF.74 A stat's d20 modifier stays beside its value when it has a
+  bonus.** Sweep C (UX, fable), Medium, likely (CSS reasoning, no screenshot
+  of the state): `styles.css:1338-1343` + `:3611-3620` put "[+N]" alone on a
+  third line, far left, when a stat has an item or title bonus. *Accept:*
+  verify with a screenshot first (d20 campaign, item with a stat bonus, 390×844
+  and 1366×768); if confirmed, value and modifier stay together; screenshots.
+
 ## MR — Luke's answers, batch 2 (2026-10-22)
 
 Answers to Q43–Q52 (DESIGN §2, §6, §7 updated; L14–L18). They change finished

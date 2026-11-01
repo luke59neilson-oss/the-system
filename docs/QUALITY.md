@@ -5,7 +5,7 @@ across items, with several models on different lenses, for what those
 reviews miss. Decisions: L13 in `docs/DECISIONS.md`. Fixes are queued as QF items in
 `docs/ROADMAP.md`.
 
-**Last sweep:** bc1b26b7 (2026-11-01, B) · **Next rotation:** C
+**Last sweep:** 2b21061 (2026-11-01, C) · **Next rotation:** D
 
 ## Lenses and rotation
 
@@ -223,6 +223,9 @@ lowered by their verifiers and folded into the Low batches.
 | 2026-11-01 03:10 | B, 52c9c148..bc1b26b7 | Boundaries · haiku | 0 | 0 | 0 | clean (read only; projections, ME commands, reference route, hub) | 0 | ~190k |
 | 2026-11-01 03:10 | B, 52c9c148..bc1b26b7 | Tests · fable | 0 | 3 | 7 | 3 M by the reviewer's mutations, queued as QF.68 to verify first (no time left this run); 7 L to Backlog | 0 | ~243k |
 | 2026-11-01 03:10 | B, 52c9c148..bc1b26b7 | UX · sonnet | 0 | 2 | 2 | 2 M confirmed from `ME.5/player-review-390x844.png` and code (into ME.6e); 2 L as QF.69 | 0 | ~88k |
+| 2026-11-01 09:10 | C, bc1b26b7..2b21061 | Rules · haiku | 0 | 0 | 1 | clean by reading (no vitest: no node_modules in worktree); 1 L to Backlog | 0 | ~100k |
+| 2026-11-01 09:10 | C, bc1b26b7..2b21061 | Tests · sonnet | 0 | 2 | 3 | 2 M confirmed by re-running the mutations (QF.73); 3 L to Backlog (1 a repeat) | 0 | ~150k |
+| 2026-11-01 09:10 | C, bc1b26b7..2b21061 | UX · fable | 0 | 3 | 7 | 2 M confirmed in code (QF.71, QF.72); 1 M likely, verify first (QF.74); 7 L to Backlog | 0 | ~100k |
 - 2026-11-01 07:4x · local full e2e (1 worker) on wip/MK.2: `e2e/M8.3.spec.ts:221` keyboard test failed (43.7 s); passed alone with MK.2 (6/6). Repeat of the 2026-10-25 mode: now a QF item (QF.70).
 
 ## Backlog (Lows; M11.5 goes through these)
@@ -433,6 +436,11 @@ lowered by their verifiers and folded into the Low batches.
 - MK.A review 2026-11-01 (fable, Low): `gm-rules-rolls-1366x768.png` shows the Skill text window, not the Rolls select (screenshot before scrolling); "Ask Jake's phone" floats right of side B's die box; Ask is offered for a walled (two-grade) contest; the phone's modifier comes from the sheet even if the GM edits the side's value; two typed dice that tie are re-rolled by the app (D312), the result says only "after 1 tie"; editing side A's "Players see" label closes Jake's request; no golden log holds a d20 `contest.shared`; die bounds 1–20 repeated as literals beside `D20_SIDES`; DESIGN speaks of stat 10 → +0 while the sheet shows 1.0.
 
 - MK.A round 2 2026-11-01 (fable, Low): a contest side changed before the server echoes Ask or Withdraw leaves a stale request (Clear by hand) or sends a second clear that is refused; the Shared rolls odds text rounds to 0%/100% where `percent()` says <1%/>99%.
+
+- 2026-11-01 sweep C Rules (haiku): d20 contests store unadjusted `yours`/`theirs` though `ContestResult` documents adjusted values (`resolution/dice.ts:101`; nothing displays them today).
+- 2026-11-01 sweep C Tests (sonnet): `MAX_D20_ROUNDS` cap untested (`dice.ts`); `rollModifier` `Number.isFinite` guard untested; d20 shared contests give players the NPC side's exact modifier, which narrows a GM-only stat (DESIGN §7 shows modifiers; confirm intent).
+- 2026-11-01 sweep C UX (fable): Per-level stats window never renders its `problem` and the empty form warns "Total 0 of 8" (`Professions.tsx:328-449`), blank-name Offer unexplained; Rules settings show `rolls` twice (select plus free-text "Resolution" field) and the option text is mis-parenthesised (`RulesSettings.tsx:203-239`); evolution/profession cards show raw points next to tenths elsewhere; dice-flow buttons unmount and drop focus, no live regions (`Encounter.tsx:277-357`, `RollPrompt.tsx:46-48`); a console-typed die silently replaces the phone's answer; the Professions offer form shows below the unlock grade (`Professions.tsx:192-253`).
+- 2026-11-01 QF.70 review (sonnet) Lows: ~2× timeout headroom (47–66 s of 120 s); rAF stalls in a hidden page; strict `getByTestId('status')`.
 
 ## Final review (M11.5)
 
