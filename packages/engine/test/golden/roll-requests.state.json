@@ -6,10 +6,7 @@
     "campaign": {
       "levelCap": 240,
       "typicalLevelsPerSession": 6,
-      "typicalLevelsPerSessionRange": [
-        4,
-        8
-      ],
+      "typicalLevelsPerSessionRange": [4, 8],
       "plannedSessions": 40
     },
     "stats": {
@@ -202,10 +199,7 @@
     "xp": {
       "aboveLevelBonusPerLevel": 0.1,
       "aboveLevelBonusCap": 1,
-      "gradeBelowFactors": [
-        0.3333333333333333,
-        0
-      ],
+      "gradeBelowFactors": [0.3333333333333333, 0],
       "overflow": true,
       "defaultSplit": "even"
     },
@@ -513,9 +507,7 @@
       "portrait": null
     }
   },
-  "characterOrder": [
-    "jake"
-  ],
+  "characterOrder": ["jake"],
   "broadcasts": [],
   "scheduledBroadcasts": [],
   "items": {},
