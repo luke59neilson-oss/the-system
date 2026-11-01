@@ -63,7 +63,7 @@ test('the GM grants and fines currency; players see their own notices; the ledge
   const win = gm.locator('section[aria-labelledby="currency-ledger"]');
   await openWindow(gm, 'currency-ledger');
   await expect(win.getByRole('heading', { level: 2 })).toHaveText('Credits');
-  await expect(win).toContainText('No Credits has changed hands yet.');
+  await expect(win).toContainText('Nothing has changed hands yet.');
   await expect(win.getByTestId('currency-balance')).toHaveText(['0 Credits', '0 Credits']);
 
   // A grant to everyone, with a reason each player sees.

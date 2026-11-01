@@ -101,7 +101,7 @@ describe("the player's evolution window (ME.5)", () => {
       card('r1'),
     ]);
     expect(w).toEqual([
-      '[A] and [B] merge into [AB]: both are consumed, and the merged skill starts at 0 marks.',
+      '[A] and [B] merge into [AB]: both are used up, and the new skill’s progress starts at 0.',
       'The choice is final; the other options will be gone.',
     ]);
   });

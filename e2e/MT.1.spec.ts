@@ -112,12 +112,12 @@ test('the GM sets and approves the re-rating; the player sees it', async ({ brow
   await player.getByTestId('evolution-pending').getByRole('button', { name: '[Evolve]' }).click();
   const dialog = player.getByTestId('evolution');
   const rerate = dialog.getByTestId('evolution-rerate');
-  await expect(rerate).toContainText(/\[Archer.s Eye\] Common → Inferior/);
+  await expect(rerate).toContainText(/\[Archer.s Eye\] is now Inferior \(was Common\)/);
   await expect(rerate.getByRole('listitem').filter({ hasText: 'Identify' })).toHaveText(
     '[Identify] stays Common',
   );
   const lines = await rerate.getByRole('listitem').allTextContents();
-  expect(lines.filter((l) => l.includes('→'))).toHaveLength(1);
+  expect(lines.filter((l) => l.includes(' is now '))).toHaveLength(1);
   await rerate.scrollIntoViewIfNeeded();
   await player.screenshot({ path: path.join(shots, 'player-rerate-390x844.png') });
   await dialog.getByRole('button', { name: 'Choose Far Shot' }).click();

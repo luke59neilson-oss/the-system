@@ -134,11 +134,11 @@ for (const viewport of [
     await page.getByTestId('evolution-pending').getByRole('button', { name: '[Evolve]' }).click();
     const dialog = page.getByTestId('evolution');
     await expect(dialog.getByTestId('evolution-rerate')).toContainText(
-      'the next upgrade costs the new rarity’s marks and starts the skill again at 0. A skill a path transforms follows that path instead and starts at 0 marks.',
+      'An upgrade starts that skill’s progress at 0. A skill a path changes follows that path instead.',
     );
     await dialog.getByRole('button', { name: 'Choose Hatchet Ranger' }).click();
     await expect(dialog.getByTestId('evolution-warnings')).toContainText(
-      '[Basic One-Handed Weapon] becomes [Hatchet Work]: a transformed skill starts at 0 marks, so its 1 mastery mark resets.',
+      '[Basic One-Handed Weapon] becomes [Hatchet Work]: a changed skill starts its progress at 0, so its 1 mark of progress goes.',
     );
     await page.screenshot({ path: path.join(shots, `player-evolution-reset-${size}.png`) });
     await dialog.getByRole('button', { name: 'Evolve' }).click();

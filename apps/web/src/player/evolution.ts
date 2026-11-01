@@ -89,12 +89,12 @@ export function evolutionWarnings(
   option: EvolutionOption,
 ): string[] {
   const out: string[] = [];
-  const marks = (n: number) => `${n} mastery ${n === 1 ? 'mark' : 'marks'}`;
+  const marks = (n: number) => `${n} ${n === 1 ? 'mark' : 'marks'}`;
   for (const t of option.transforms) {
     if (t.merge !== undefined) {
       // A merge (M5.2, DESIGN §6): the originals are consumed; marks start at 0.
       out.push(
-        `[${t.skill}] and [${t.merge}] merge into [${t.name}]: both are consumed, and the merged skill starts at 0 marks.`,
+        `[${t.skill}] and [${t.merge}] merge into [${t.name}]: both are used up, and the new skill’s progress starts at 0.`,
       );
       continue;
     }
@@ -106,9 +106,9 @@ export function evolutionWarnings(
     out.push(
       kept === 0
         ? rules.marks.resetOnUpgrade
-          ? `${lead}a transformed skill starts at 0 marks, so its ${marks(s.marks)} ${s.marks === 1 ? 'resets' : 'reset'}.`
-          : `${lead}its ${marks(s.marks)} ${s.marks === 1 ? 'resets' : 'reset'} to 0.`
-        : `${lead}the rarity gain spends ${marks(s.marks - kept)}; ${kept} ${kept === 1 ? 'carries' : 'carry'} on.`,
+          ? `${lead}a changed skill starts its progress at 0, so its ${marks(s.marks)} of progress ${s.marks === 1 ? 'goes' : 'go'}.`
+          : `${lead}its progress (${marks(s.marks)}) resets to 0.`
+        : `${lead}the rarity gain uses ${marks(s.marks - kept)} of progress; ${kept} ${kept === 1 ? 'carries' : 'carry'} on.`,
     );
   }
   if (option.classWeights !== null)
@@ -119,7 +119,7 @@ export function evolutionWarnings(
 
 /**
  * The release's re-rating (MR.1, DESIGN §6), one line per skill in sheet
- * order: "[Archer's Eye] Common → Inferior", or "[Identify] stays Common".
+ * order: "[Archer's Eye] is now Inferior (was Common)" (QF.57: plain words), or "[Identify] stays Common".
  * Empty for releases stored before MR.1 (they re-rate nothing).
  */
 export function rerateLines(
@@ -142,6 +142,6 @@ export function rerateLines(
     const from = rarityName(rules, s.rarity);
     return rarity === s.rarity
       ? `[${s.name}] stays ${from}`
-      : `[${s.name}] ${from} → ${rarityName(rules, rarity)}`;
+      : `[${s.name}] is now ${rarityName(rules, rarity)} (was ${from})`;
   });
 }

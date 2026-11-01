@@ -70,7 +70,7 @@ describe('evolution screen helpers (M3.13)', () => {
           { skill: 'Basic Archery', merge: 'Gone', name: 'Storm Arrows', rarity: 'rare' },
         ],
       })[0],
-    ).toMatch(/\[Basic Archery\] and \[Gone\] merge into \[Storm Arrows\]: both are consumed/);
+    ).toMatch(/\[Basic Archery\] and \[Gone\] merge into \[Storm Arrows\]: both are used up/);
   });
 
   it('lists reshaped weights biggest first, ties in stat order', () => {
@@ -84,7 +84,7 @@ describe('evolution screen helpers (M3.13)', () => {
   it('warns about lost marks, a reshape, and finality', () => {
     const w = evolutionWarnings(rules, me(), option({ classWeights: { agility: 2 } }));
     expect(w).toEqual([
-      '[Basic Archery] becomes [Expert Archery]: its 3 mastery marks reset to 0.',
+      '[Basic Archery] becomes [Expert Archery]: its progress (3 marks) resets to 0.',
       'Your class stat spread changes for every class level from now on.',
       'The choice is final; the other options will be gone.',
     ]);
@@ -95,7 +95,7 @@ describe('evolution screen helpers (M3.13)', () => {
       ['The choice is final; the other options will be gone.'],
     );
     expect(evolutionWarnings(rules, me({ skills: [skill('Basic Archery', 1)] }), option())[0]).toBe(
-      '[Basic Archery] becomes [Expert Archery]: its 1 mastery mark resets to 0.',
+      '[Basic Archery] becomes [Expert Archery]: its progress (1 mark) resets to 0.',
     );
   });
 });
@@ -105,15 +105,15 @@ describe('evolution warnings with marks carrying over (MQ.4, D114)', () => {
   it('names the marks a rarity gain spends and the ones that carry on', () => {
     // Common → Rare costs 4 (one step).
     expect(evolutionWarnings(carrying, at(6), option())[0]).toBe(
-      '[Basic Archery] becomes [Expert Archery]: the rarity gain spends 4 mastery marks; 2 carry on.',
+      '[Basic Archery] becomes [Expert Archery]: the rarity gain uses 4 marks of progress; 2 carry on.',
     );
     expect(evolutionWarnings(carrying, at(5), option())[0]).toBe(
-      '[Basic Archery] becomes [Expert Archery]: the rarity gain spends 4 mastery marks; 1 carries on.',
+      '[Basic Archery] becomes [Expert Archery]: the rarity gain uses 4 marks of progress; 1 carries on.',
     );
   });
   it('says marks reset when the gain costs all of them', () => {
     expect(evolutionWarnings(carrying, at(3), option())[0]).toBe(
-      '[Basic Archery] becomes [Expert Archery]: its 3 mastery marks reset to 0.',
+      '[Basic Archery] becomes [Expert Archery]: its progress (3 marks) resets to 0.',
     );
   });
   it('says nothing about marks when the transform keeps the rarity', () => {
@@ -134,10 +134,10 @@ describe('evolution warnings when every upgrade starts at 0 marks (MR.2, L15)', 
   const at = (marks: number) => me({ skills: [skill('Basic Archery', marks)] });
   it('says a transform that raises the rarity resets every mark', () => {
     expect(evolutionWarnings(resetting, at(6), option())[0]).toBe(
-      '[Basic Archery] becomes [Expert Archery]: a transformed skill starts at 0 marks, so its 6 mastery marks reset.',
+      '[Basic Archery] becomes [Expert Archery]: a changed skill starts its progress at 0, so its 6 marks of progress go.',
     );
     expect(evolutionWarnings(resetting, at(1), option())[0]).toBe(
-      '[Basic Archery] becomes [Expert Archery]: a transformed skill starts at 0 marks, so its 1 mastery mark resets.',
+      '[Basic Archery] becomes [Expert Archery]: a changed skill starts its progress at 0, so its 1 mark of progress goes.',
     );
   });
   it('says a transform at the same rarity resets them too', () => {
@@ -145,7 +145,7 @@ describe('evolution warnings when every upgrade starts at 0 marks (MR.2, L15)', 
       transforms: [{ skill: 'Basic Archery', name: 'Expert Archery', rarity: 'common' }],
     });
     expect(evolutionWarnings(resetting, at(3), keep)[0]).toBe(
-      '[Basic Archery] becomes [Expert Archery]: a transformed skill starts at 0 marks, so its 3 mastery marks reset.',
+      '[Basic Archery] becomes [Expert Archery]: a changed skill starts its progress at 0, so its 3 marks of progress go.',
     );
   });
   it('says nothing about a skill with no marks', () => {
@@ -200,7 +200,7 @@ describe('rerateLines (MR.1)', () => {
           { skill: 'Basic Archery', rarity: 'rare' },
         ],
       }),
-    ).toEqual(['[Basic Archery] Common → Rare', '[Identify] stays Common']);
+    ).toEqual(['[Basic Archery] is now Rare (was Common)', '[Identify] stays Common']);
   });
   it('is empty for a release stored before MR.1', () => {
     expect(rerateLines(rules, me, {})).toEqual([]);
@@ -209,7 +209,7 @@ describe('rerateLines (MR.1)', () => {
     const rare = { ...skill('Archer’s Eye', 0), rarity: 'rare' } as OwnSheet['skills'][number];
     const mine = { skills: [rare, skill('Identify', 2)] };
     expect(rerateLines(rules, mine, { rerate: [] })).toEqual([
-      '[Archer’s Eye] Rare → Common',
+      '[Archer’s Eye] is now Common (was Rare)',
       '[Identify] stays Common',
     ]);
     expect(

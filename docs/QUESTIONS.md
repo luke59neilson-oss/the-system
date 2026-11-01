@@ -736,3 +736,10 @@ DESIGN/ROADMAP; do not re-apply them.
     unless you type a die for that side yourself. A new ask replaces an
     unanswered one. Default: as built. Option: ask every player in a
     group-side at once, or ask from the party cards without opening a contest.
+
+97. **Player wording for evolutions and contests (QF.57, D318).** Players now
+    read "Your skills keep their text and progress; their rarity label
+    changes for F-grade. An upgrade starts that skill's progress at 0.",
+    "[Archer's Eye] is now Inferior (was Common)" and, for a contest two
+    grades apart, "Too far apart in grade: the higher grade wins, no roll."
+    Default: these words. Option: give me the wording you want.

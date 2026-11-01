@@ -129,7 +129,7 @@ export function gmChangeText(n: GmChange): string {
     case 'skillGranted':
       return `*Skill acquired: [${s} (${d})]*`;
     case 'skillRarity':
-      return with_(`Skill [${s}] re-rated`);
+      return with_(`Skill [${s}] has a new rarity`);
     case 'skillUnique':
       return d === 'on' ? `Skill [${s}] is now Unique` : `Skill [${s}] is no longer Unique`;
     case 'skillText':

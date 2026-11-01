@@ -255,7 +255,7 @@ export function EvolutionStepsChoice({
           </dl>
           {rerate.length > 0 && (
             <details className="evolution-rerate" data-testid="evolution-rerate">
-              <summary>Your skills are re-rated for {evolution.toGrade}-grade</summary>
+              <summary>Your skills&rsquo; rarity labels at {evolution.toGrade}-grade</summary>
               <ul aria-label="Skill re-rating">
                 {rerate.map((line) => (
                   <li key={line}>{line}</li>
@@ -327,7 +327,7 @@ function OptionCard({
         One-time bonus: {bonus ?? 'none'}
       </p>
       {o.transforms.length > 0 && (
-        <ul className="evolution-transforms" aria-label="Skills transformed">
+        <ul className="evolution-transforms" aria-label="Skills changed">
           {o.transforms.map((t) => (
             <li key={t.skill}>{transformText(rules, view.me, t)}</li>
           ))}

@@ -166,7 +166,7 @@ test('a player chooses a released evolution with a profession', async ({ browser
   await expect(warnings).toContainText(
     // MR.2: every transform starts the skill at 0 marks.
     new RegExp(
-      `\\[${skill}\\] becomes \\[Storm Shot\\]: a transformed skill starts at 0 marks, so its \\d+ mastery marks? resets?\\.`,
+      `\\[${skill}\\] becomes \\[Storm Shot\\]: a changed skill starts its progress at 0, so its \\d+ marks? of progress go(es)?\\.`,
     ),
   );
   await expect(warnings).toContainText('Your class stat spread changes');

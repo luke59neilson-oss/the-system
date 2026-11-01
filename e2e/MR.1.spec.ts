@@ -94,23 +94,23 @@ for (const viewport of [
     await page.getByTestId('evolution-pending').getByRole('button', { name: '[Evolve]' }).click();
     const dialog = page.getByTestId('evolution');
     const rerate = dialog.getByTestId('evolution-rerate');
-    await expect(rerate).toContainText('Your skills are re-rated for F-grade');
-    await expect(rerate).toContainText('Text and mastery marks stay');
+    await expect(rerate).toContainText('their rarity label changes for F-grade');
+    await expect(rerate).toContainText('Your skills keep their text and progress');
     await expect(rerate.getByRole('listitem').filter({ hasText: 'Identify' })).toHaveText(
       '[Identify] stays Common',
     );
     const lines = await rerate.getByRole('listitem').allTextContents();
     expect(lines.length).toBeGreaterThan(1);
-    const dropped = lines.filter((l) => l.includes('→'));
+    const dropped = lines.filter((l) => l.includes(' is now '));
     expect(dropped.length).toBeGreaterThan(0);
     await page.screenshot({
       path: path.join(shots, `player-evolution-rerate-${viewport.width}x${viewport.height}.png`),
     });
 
-    // One dropped skill, to check the sheet afterwards: "[Name] Common → Inferior".
-    const match = /^\[(.+)\] (\w+) → (\w+)$/.exec(dropped[0] ?? '');
+    // One dropped skill, to check the sheet afterwards: "[Name] is now Inferior (was Common)".
+    const match = /^\[(.+)\] is now (\w+) \(was (\w+)\)$/.exec(dropped[0] ?? '');
     expect(match).not.toBeNull();
-    const [, name, , to] = match as unknown as [string, string, string, string];
+    const [, name, to] = match as unknown as [string, string, string, string];
 
     await dialog.getByRole('button', { name: 'Choose Longbow Adept' }).click();
     await dialog.getByRole('button', { name: 'Evolve' }).click();
