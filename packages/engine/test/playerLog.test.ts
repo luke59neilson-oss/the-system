@@ -493,6 +493,10 @@ describe('player notice audit (MU.2)', () => {
     if (!scenario) return;
     const { event, notices } = lastNotices(scenario);
     expect(event?.type).toBe(type);
+    // QF.60: the exact notice list, for both characters, per event type (an
+    // equip that also claimed a skill, or a set that named an unchanged field,
+    // changes it).
+    expect(notices).toMatchSnapshot();
     const told = scenario.told ?? 'jake';
     expect(
       notices.filter((n) => n.characterId === told).map((n) => n.kind),
@@ -604,6 +608,27 @@ describe('player notice audit (MU.2)', () => {
     const xp = lastNotices(SCENARIOS['xp.awarded']!).notices;
     expect(xp.filter((n) => n.kind === 'gmChange')).toEqual([
       { kind: 'gmChange', characterId: 'jake', change: 'xp', subject: 'class', detail: '50' },
+    ]);
+  });
+
+  it('a progression set names only the fields that changed (QF.60)', () => {
+    const { notices } = lastNotices({
+      act: {
+        type: 'character.setProgression',
+        characterId: 'jake',
+        grade: 'G',
+        classLevel: 0,
+        professionLevel: 0,
+        xp: { class: 40, profession: 0 },
+      },
+    });
+    expect(notices).toEqual([
+      {
+        kind: 'gmChange',
+        characterId: 'jake',
+        change: 'progression',
+        diffs: [{ label: 'Class XP', from: '0', to: '40' }],
+      },
     ]);
   });
 
