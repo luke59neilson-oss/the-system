@@ -16,7 +16,23 @@ export function feedRows(
 ): FeedRow[] {
   const nameOf = (id: string) => state.characters[id]?.name ?? '—';
   const rows: (FeedRow & { ids: string[] })[] = [];
+  // QF.55: only the newest `limit` rows are shown, so start at the first entry
+  // of the limit-th row from the end (a broadcast row is a run of entries with
+  // one seq) instead of building a row for every notification of the campaign.
+  const sameRow = (i: number) => {
+    const a = notifications[i]!;
+    const b = notifications[i - 1]!;
+    return (
+      a.notification.kind === 'broadcast' && b.notification.kind === 'broadcast' && a.seq === b.seq
+    );
+  };
+  let start = notifications.length;
+  for (let groups = 0; start > 0 && groups < limit; groups++) {
+    start--;
+    while (start > 0 && sameRow(start)) start--;
+  }
   notifications.forEach((n, index) => {
+    if (index < start) return;
     const note = n.notification;
     const prev = rows[rows.length - 1];
     if (note.kind === 'broadcast' && prev && prev.key.startsWith(`b${n.seq}:`)) {
