@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.67; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV done (MV.A checked); ME.1 and ME.2 done. Preview ready: Actions → Release → Run workflow (MV).
-**Next item:** ME.3 on `wip/ME.3` (head 1f77293c, base 920cf1b5): done so far: `apps/web/src/gm/evolutionStepsModel.ts` (budget meters per option, release blockers split hard/overridable via the engine's `stepBudgetProblems`, `nearThreshold` within 3 race levels) with unit tests; the Evolutions tab added to `tabsModel.ts` (Session, Progression, Evolutions, Library) with the evolution builder moved there; GM-GUIDE table. Next: the tab's UI (character list, three-step builder with option cards add/duplicate/remove, meters in red with the difference, re-rating list and merge prompts moved here, standing panel, Release with reasons and Override tick sending `evolution.release` `steps`), home dashboard link, e2e `ME.3.spec.ts` (Kim's E-grade evolution) and screenshots at 1366×768 and 1920×1080; full `npm run e2e` (both projects) since it moves a window; then ME.4–ME.A (L26), MK.1–MK.A (L27), QF.55 onward (QF.67 included); MW after MU
+**Status:** in progress (2026-10-31): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.67; QF.38–QF.54, QF.59, QF.64–QF.66 done; MV done (MV.A checked); ME.1, ME.2 and ME.3 done. Preview ready: Actions → Release → Run workflow (MV).
+**Next item:** ME.4 on `wip/ME.4` (head 565bd0aa, base 46f7adb9): done so far: `apps/web/src/gm/shapeModel.ts` `scaleShape` (largest remainder, exact total, free kept free, zero row refused) with unit tests. Next: `npm run reference` embeds `docs/reference/primal-hunter/evolutions.csv`; the Evolutions tab shows the table (totals, percent shapes) plus the campaign's earlier options; a **Use this shape** button per row on each step card (EvolutionSteps.tsx); canary; e2e applying Archer's shape at the E-grade class budget. Then ME.5 (make Three steps the builder default, D305), ME.A, MK.1–MK.A, QF.55 onward; MW after MU
 **Blockers:** none
 
 ## Run log
@@ -1517,4 +1517,11 @@ next item, blockers. -->
 - ME.3 (wip): builder model and the Evolutions tab in the console table (see Next item).
 - Tests: unit 1,921 (check green on wip/ME.3 a029cf8e); engine 1,072; e2e touched: M3.13, MQ.6, MR.1, MT.1 (6 passed) + latency MS.2/MS.3/MS.A (3 passed). Full e2e not run this run (engine-only item; CI runs both projects). Engine coverage not re-measured.
 - Open `wip/*`: `wip/ME.3`. Blockers: none.
+
+### Run · 2026-11-01 01:08–01:59 UTC (close-out at minute 42)
+- Close-out at minute 42: ME.3 checked and merged to main (46f7adb9); ME.4 started on `wip/ME.4` (565bd0aa).
+- Preflight: `add_repo` not offered; repo already cloned (local `main` had unrelated history; reset to `origin/main`); lock pushed cleanly; vitest 5.0.5; CI green on 920cf1b5. No new answers. Hour 01: no efficiency check or sweep.
+- ME.3 finished (D305): Evolutions tab builder with Three steps (class, profession, race option cards: name, rarity, description, points per level, one-time bonus, transforms; add, duplicate, remove; budget meters in red with the difference; standing panel; re-rating list and merge prompts; release blockers in a sticky bar with Override) or Class only, which stays the default until ME.5; the tab dry-runs the release on the engine; near-threshold list. Home "to build" link opens the tab. Review round 1 (sonnet): 0 H, 2 M (near list ignored the evolution gate; Release below the fold), 6 L; fixed or backlogged. Round 2: 0 H, 1 M (result outside the sticky bar), 1 L; fixed.
+- Tests: unit 1,926; e2e touched: ME.3, M5.2, M5.A, MT.1, MT.7, MU.1 (all passed). Full `npm run e2e` started at 01:49 but could not finish before the hard stop (57 passed, 0 failed by 01:55); CI runs both projects on this push. Engine unchanged (coverage not re-measured).
+- Open `wip/*`: `wip/ME.4`. Blockers: none.
 
