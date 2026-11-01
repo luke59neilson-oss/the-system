@@ -191,6 +191,9 @@ export const PLAYER_NOTICE_AUDIT: Readonly<Record<EventType, PlayerNoticeAudit>>
   'session.ended': none,
   'scene.ended': none,
   'scene.answered': none,
+  'roll.requested': none,
+  'roll.answered': none,
+  'roll.cleared': none,
   'event.undone': silent(
     'an undo makes the history read as if the event never happened (D27); the sheet shows the result',
   ),

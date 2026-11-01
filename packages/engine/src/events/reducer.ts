@@ -241,6 +241,21 @@ export interface CampaignState {
    * (older states and snapshots read the same).
    */
   readonly scenePrompt?: ScenePrompt | null;
+  /**
+   * MK.2: the open d20 roll request per character id (one at a time; a new
+   * request replaces it). Absent until the GM first asks for a roll, so older
+   * states and snapshots read the same.
+   */
+  readonly rollRequests?: Readonly<Record<string, RollRequest>>;
+}
+
+/** MK.2: a d20 the GM asked a player to roll, and their answer once given. */
+export interface RollRequest {
+  readonly id: string;
+  /** Stat id from the rules config. */
+  readonly stat: string;
+  readonly at: string;
+  readonly answer: { readonly die: number; readonly how: 'typed' | 'app' } | null;
 }
 
 /** An end-of-scene prompt on players' screens (MT.9). */
@@ -2699,6 +2714,38 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         fail(event, `${characterId} has already answered`);
       const pending = prompt!.pending.filter((id) => id !== characterId);
       return { ...state, scenePrompt: pending.length === 0 ? null : { ...prompt!, pending } };
+    }
+    case 'roll.requested': {
+      const { requestId, characterId, stat } = event.payload;
+      if (!hasOwn(state.characters, characterId)) fail(event, `unknown character "${characterId}"`);
+      if (!state.rules.stats.list.some((s) => s.id === stat)) fail(event, `unknown stat "${stat}"`);
+      const open = state.rollRequests ?? {};
+      return {
+        ...state,
+        rollRequests: {
+          ...open,
+          [characterId]: { id: requestId, stat, at: event.timestamp, answer: null },
+        },
+      };
+    }
+    case 'roll.answered':
+    case 'roll.cleared': {
+      const { requestId, characterId } = event.payload;
+      const open = state.rollRequests ?? {};
+      const request = hasOwn(open, characterId) ? open[characterId] : undefined;
+      if (request === undefined || request.id !== requestId) {
+        fail(event, 'that roll request is closed');
+      }
+      if (event.type === 'roll.cleared') {
+        const rest = Object.fromEntries(Object.entries(open).filter(([id]) => id !== characterId));
+        return { ...state, rollRequests: rest };
+      }
+      if (request!.answer !== null) fail(event, 'that roll has already been answered');
+      const { die, how } = event.payload;
+      return {
+        ...state,
+        rollRequests: { ...open, [characterId]: { ...request!, answer: { die, how } } },
+      };
     }
     case 'event.undone':
       return fail(event, 'undo is applied by the event log, not the reducer');

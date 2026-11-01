@@ -201,6 +201,8 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   // MT.9: each player learns only whether their own answer is still due
   // (not who else was asked or has answered).
   scenePrompt: 'owner',
+  // MK.2: each player gets only their own open roll request (stat and answer).
+  rollRequests: 'owner',
 };
 
 /** The rules subset a player screen needs to draw the sheet (no GM tuning, no stability). */
@@ -460,6 +462,15 @@ export interface PlayerView {
    * null. Never says who else was asked or has answered.
    */
   readonly scenePrompt: { readonly id: string } | null;
+  /**
+   * MK.2: the d20 the GM asked this player to roll (stat id; the modifier is
+   * in `rollModifiers`), with their answer once given; null when none is open.
+   */
+  readonly rollRequest: {
+    readonly id: string;
+    readonly stat: string;
+    readonly answer: { readonly die: number; readonly how: 'typed' | 'app' } | null;
+  } | null;
   /**
    * QF.48: whether a play session is running (the table knows; the
    * session's ids, dates and numbers stay the GM's). A scene prompt the
@@ -1062,6 +1073,7 @@ export function projectForPlayer(
         ? { id: state.scenePrompt.id }
         : null,
     sessionRunning: state.currentSession !== null,
+    rollRequest: ownRollRequest(state, viewer.id),
     hiddenQuests: state.questOrder.filter((id) => {
       const q = hasOwnKey(state.quests, id) ? state.quests[id] : undefined;
       return q !== undefined && hiddenQuestNoticed(q, state.characterOrder).includes(viewer.id);
@@ -1341,5 +1353,17 @@ function stepCard(o: ReleasedStepOption, statIds: readonly string[]): ReleasedSt
       rarity: t.rarity,
       ...(t.merge === undefined ? {} : { merge: t.merge }),
     })),
+  };
+}
+
+/** MK.2: the viewer's own open roll request, whitelisted field by field. */
+function ownRollRequest(state: CampaignState, viewerId: string): PlayerView['rollRequest'] {
+  const open = state.rollRequests ?? {};
+  const r = hasOwnKey(open, viewerId) ? open[viewerId] : undefined;
+  if (r === undefined) return null;
+  return {
+    id: r.id,
+    stat: r.stat,
+    answer: r.answer === null ? null : { die: r.answer.die, how: r.answer.how },
   };
 }

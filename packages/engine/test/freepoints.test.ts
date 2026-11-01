@@ -249,6 +249,7 @@ describe('free points', () => {
       'trade.cancel': 'trade.cancelled',
       'practice.log': 'practice.logged',
       'scene.answer': 'scene.answered',
+      'roll.answer': 'roll.answered',
       'entity.closeNotice': 'entity.noticeClosed',
       'montage.focus': 'montage.focused',
       'note.create': 'note.created',

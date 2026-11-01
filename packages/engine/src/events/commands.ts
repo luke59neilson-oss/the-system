@@ -9,6 +9,7 @@ import {
 } from './envelope';
 import { CharacterRuleError, raceLevel } from '../character';
 import {
+  appDie,
   rollsModeOf,
   settleContest,
   settleD20Contest,
@@ -720,6 +721,15 @@ export type Command =
   | { type: 'scene.end'; sceneId?: string | undefined; characterIds?: string[] | undefined }
   /** MT.9: the player (or the GM for them) has answered the end-of-scene prompt. */
   | { type: 'scene.answer'; sceneId: string; characterId: string }
+  /** MK.2: ask a player's phone for a d20 for this stat. */
+  | { type: 'roll.request'; characterId: string; stat: string; requestId?: string | undefined }
+  /**
+   * MK.2: answer the open roll request: a die thrown at the table (`die`, 1–20)
+   * or, without one, a die the app rolls with the context's random source.
+   */
+  | { type: 'roll.answer'; characterId: string; requestId: string; die?: number | undefined }
+  /** MK.2: the GM used or withdrew the open roll request. */
+  | { type: 'roll.clear'; characterId: string; requestId: string }
   | { type: 'event.undo'; eventId: string };
 
 export interface StatBonusInput {
@@ -901,6 +911,14 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('session.end') }),
   z.object({ type: z.literal('scene.end') }),
   z.object({ type: z.literal('scene.answer') }),
+  z.object({ type: z.literal('roll.request'), characterId: z.string(), stat: z.string() }),
+  z.object({
+    type: z.literal('roll.answer'),
+    characterId: z.string(),
+    requestId: z.string(),
+    die: z.number().optional(),
+  }),
+  z.object({ type: z.literal('roll.clear'), characterId: z.string(), requestId: z.string() }),
   z.object({ type: z.literal('event.undo') }),
 ]);
 
@@ -923,6 +941,7 @@ export const PLAYER_COMMANDS: ReadonlySet<CommandType> = new Set<CommandType>([
   'trade.cancel',
   'practice.log',
   'scene.answer',
+  'roll.answer',
   'entity.closeNotice',
   'montage.focus',
   'note.create',
@@ -2139,6 +2158,38 @@ function toEvent(
       return {
         type: 'scene.answered',
         payload: { sceneId: command.sceneId, characterId: command.characterId },
+      };
+    case 'roll.request':
+      return {
+        type: 'roll.requested',
+        payload: {
+          requestId: command.requestId ?? ctx.newId(),
+          characterId: command.characterId,
+          stat: command.stat,
+        },
+      };
+    case 'roll.answer': {
+      let die: number;
+      let how: 'typed' | 'app';
+      if (command.die === undefined) {
+        if (!ctx.random) throw new EventRejectedError('No random source to roll with');
+        ({ die, how } = appDie(ctx.random));
+      } else {
+        if (!Number.isInteger(command.die) || command.die < 1 || command.die > 20) {
+          throw new EventRejectedError('A die is a whole number from 1 to 20');
+        }
+        die = command.die;
+        how = 'typed';
+      }
+      return {
+        type: 'roll.answered',
+        payload: { requestId: command.requestId, characterId: command.characterId, die, how },
+      };
+    }
+    case 'roll.clear':
+      return {
+        type: 'roll.cleared',
+        payload: { requestId: command.requestId, characterId: command.characterId },
       };
     case 'event.undo':
       return { type: 'event.undone', payload: { eventId: command.eventId } };
