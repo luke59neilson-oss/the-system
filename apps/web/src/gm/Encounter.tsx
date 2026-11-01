@@ -287,7 +287,7 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
                 ) : (
                   <>
                     {r.name} threw {p.answer.die} ({p.answer.how === 'typed' ? 'typed' : 'app'}):
-                    used on Roll unless a die is typed above.
+                    used on Roll unless you type a die in its box.
                   </>
                 )}
               </p>

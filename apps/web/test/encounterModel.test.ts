@@ -246,7 +246,10 @@ describe('encounter model: contests (M7.3)', () => {
     });
     // App odds: no phone rolls.
     expect(
-      phoneRoller({ ...s, rules: DEFAULT_RULES }, { characterIds: ['jake'], stat: 'perception' }),
+      phoneRoller(
+        { ...s, rules: { ...s.rules, resolution: { ...s.rules.resolution, rolls: 'odds' } } },
+        { characterIds: ['jake'], stat: 'perception' },
+      ),
     ).toBeNull();
   });
 
