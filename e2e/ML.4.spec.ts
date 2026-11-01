@@ -128,7 +128,6 @@ test('each campaign keeps its own buttons; sharing lore makes a party copy', asy
     .getByRole('button', { name: /^Restore / })
     .click();
   await win.getByTestId('restored').getByRole('button', { name: 'Open restored campaign' }).click();
-  gm.once('dialog', (d) => void d.accept());
   await expect(gm.getByTestId('restored-badge')).toBeVisible();
   await openTab(gm, 'library');
   await expect(settings.getByLabel('Button 5 name')).toHaveValue('Twist');
