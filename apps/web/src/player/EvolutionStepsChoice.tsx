@@ -67,10 +67,6 @@ export function EvolutionStepsChoice({
     () => saved?.picks ?? { class: null, profession: null, race: null },
   );
   const [at, setAtState] = useState<number>(() => saved?.at ?? 0);
-  const setPicks = (p: StepPicks) => {
-    setPicksState(p);
-    onPicks?.({ releaseId: evolution.releaseId, picks: p, at });
-  };
   const setAt = (n: number) => {
     setAtState(n);
     onPicks?.({ releaseId: evolution.releaseId, picks, at: n });
