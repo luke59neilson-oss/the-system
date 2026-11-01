@@ -553,7 +553,7 @@ function GmConsole({
                 <RulesSettings client={client} state={state} />
               </Place>
               <Place id="codm-settings" tab={tab}>
-                <CoDmSettings gmKey={gmKey} />
+                <CoDmSettings gmKey={gmKey} campaignName={state.name} />
               </Place>
               <Place id="campaign-backups" tab={tab}>
                 <CampaignBackups

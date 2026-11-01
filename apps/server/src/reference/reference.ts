@@ -142,9 +142,9 @@ export const SAMPLE_LISTS: Readonly<Record<string, readonly ReferenceList[]>> = 
   quick: ['creatures', 'items', 'skills', 'classes'],
 };
 
-export const REFERENCE_SAMPLE_MAX = 8;
+export const REFERENCE_SAMPLE_MAX = 16;
 /** Characters of sample lines at most, so a prompt stays small. */
-export const REFERENCE_SAMPLE_CHARS = 1_200;
+export const REFERENCE_SAMPLE_CHARS = 2_400;
 
 /** A stable 32-bit hash, so the same request picks the same sample. */
 function hash(s: string): number {

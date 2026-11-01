@@ -130,6 +130,11 @@ describe('co-DM sample', () => {
   ];
   const kinds = [...GENERATE_KINDS, 'quick', 'unknown'];
 
+  it('offers up to 16 rows (ML.4), more than the old 8', () => {
+    expect(REFERENCE_SAMPLE_MAX).toBe(16);
+    expect(referenceSample(all, 'quick', 'a herbalist shop').length).toBeGreaterThan(8);
+  });
+
   it('never includes a god-tied row, and stays small, for every kind and request', () => {
     for (const kind of kinds) {
       for (const request of requests) {

@@ -41,7 +41,7 @@ import { evolutionReference } from './reference/evolutions';
 import { registerReferenceRoutes } from './reference/routes';
 import { NotesStore } from './ai/sessionNotes';
 import { registerSuggestionRoutes } from './ai/suggestionRoutes';
-import { registerQuickRoutes } from './ai/quickRoutes';
+import { campaignQuickSettings, registerQuickRoutes } from './ai/quickRoutes';
 import { registerPrepareRoutes } from './ai/prepareRoutes';
 import { z } from 'zod';
 import { AiError } from './ai/client';
@@ -476,6 +476,8 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   };
   const setActive = (next: Opened | null) => {
     active = next;
+    // ML.4: a campaign takes its own quick-response setup the first time it opens.
+    if (next && options.coDm) campaignQuickSettings(next.store, options.coDm.dir);
     options.onActiveChange?.(next?.store ?? null);
     dropSockets();
   };
@@ -530,6 +532,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     if (!first.ok)
       throw new Error(`Could not open campaign "${options.openAtStart}": ${first.error}`);
     active = first.entry;
+    if (options.coDm) campaignQuickSettings(active.store, options.coDm.dir);
     options.onActiveChange?.(active.store);
   }
 

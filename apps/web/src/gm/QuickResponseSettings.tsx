@@ -4,7 +4,7 @@ import { keyForSlot, moveSlot, type QuickSlot } from './quickModel';
 /**
  * Quick-response settings (MD.1, DESIGN §11): rename the five buttons,
  * rewrite the instruction behind each, and change their order; Reset brings
- * back the defaults. Saved on this laptop, GM-only.
+ * back the defaults. Saved per campaign (ML.4), GM-only.
  */
 export function QuickResponseSettings({ gmKey }: { gmKey: string }) {
   const [slots, setSlots] = useState<QuickSlot[] | null>(null);

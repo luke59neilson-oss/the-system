@@ -421,7 +421,7 @@ the campaigns home and the library layouts come before the real campaign.
   (ties to the attacker on both sides; meeting a target; exact odds updated
   in the tests from MK.1/QF.73); e2e: a tie lands for the attacker; the
   player's re-rating text matches DESIGN word for word.
-- [ ] **ML.4 Co-DM settings per campaign; sharing lore; more examples.**
+- [x] **ML.4 Co-DM settings per campaign; sharing lore; more examples.**
   Quick-response button names, instructions and order are kept per
   campaign (a new campaign starts from the defaults; the laptop's current
   setup is copied into each existing campaign the first time it opens);

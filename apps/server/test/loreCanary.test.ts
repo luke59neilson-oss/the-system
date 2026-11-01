@@ -80,6 +80,27 @@ describe('kept lore is GM-only (MD.3)', () => {
       expect(json).not.toContain('LORE-CANARY');
       expect(json).not.toContain('npc:Old Tam');
     }
+
+    // ML.4: Share with the party makes a party copy; the lore note stays GM-only.
+    send('k3', {
+      type: 'note.create',
+      noteId: 'lore-1-party',
+      characterId: null,
+      kind: 'party',
+      title: 'Old Tam',
+      body: 'SHARED-COPY Tam owes the ferryman twice.',
+    });
+    expect(gm.filter((m) => m.type === 'result').at(-1)).toEqual({
+      type: 'result',
+      requestId: 'k3',
+      ok: true,
+    });
+    expect(JSON.stringify(phone)).toContain('SHARED-COPY');
+    for (const m of [...phone, ...pane]) {
+      const json = JSON.stringify(m);
+      expect(json).not.toContain('LORE-CANARY');
+      expect(json).not.toContain('npc:Old Tam');
+    }
     gmConn.close();
     jake.close();
     viewAs.close();
