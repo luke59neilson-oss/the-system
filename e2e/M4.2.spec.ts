@@ -110,10 +110,16 @@ test('the GM manages classes, races and professions; characters start from them'
   await lib.getByLabel('Skill 2', { exact: true }).fill('Footwork');
   await lib.getByLabel('Skill 3', { exact: true }).fill('Feint');
   await lib.getByLabel('Skill 3 rarity').selectOption({ label: 'Rare' });
-  await lib.getByLabel('Agility').fill('4.5');
+  await lib
+    .getByRole('group', { name: /Stat weights/ })
+    .getByLabel('Agility')
+    .fill('4.5');
   await expect(lib.getByRole('note')).toContainText('whole numbers');
   await expect(add).toBeDisabled();
-  await lib.getByLabel('Agility').fill('4');
+  await lib
+    .getByRole('group', { name: /Stat weights/ })
+    .getByLabel('Agility')
+    .fill('4');
   await add.click();
   await expect(lib.getByRole('status')).toHaveText('[Duelist] added to the library');
   await expect(tab(/^Classes \(7\)/)).toBeVisible();

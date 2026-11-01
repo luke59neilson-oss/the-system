@@ -113,6 +113,25 @@ export function Professions({ client, state }: { client: LiveClient; state: Camp
     setFree('');
     setBonus({});
   };
+  // ML.2 (DESIGN §2): a library profession brings its name and points per level.
+  const library = state.professionLibraryOrder.flatMap((id) => {
+    const def = state.professionLibrary[id];
+    return def ? [def] : [];
+  });
+  const fromLibrary = (def: (typeof library)[number]) => {
+    setName(def.name);
+    if (def.points) {
+      setWithStats(true);
+      const texts: Record<string, string> = {};
+      for (const [id, n] of Object.entries(def.points.stats)) texts[id] = String(n);
+      setStats(texts);
+      setFree(String(def.points.free));
+    } else {
+      setWithStats(false);
+      setStats({});
+      setFree('');
+    }
+  };
   const budget = character ? budgetOf(state, character.grade, 'profession') : null;
   const perLevel = wholeNumbers(stats);
   const freeN = free.trim() === '' ? 0 : Number(free);
@@ -195,6 +214,26 @@ export function Professions({ client, state }: { client: LiveClient; state: Camp
             </p>
           ) : (
             <form onSubmit={(e) => void send(e)} aria-label="Offer a profession">
+              {library.length > 0 && (
+                <label>
+                  From the library
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const def = library.find((d) => d.id === e.target.value);
+                      if (def) fromLibrary(def);
+                    }}
+                    data-testid="profession-from-library"
+                  >
+                    <option value="">Choose a profession…</option>
+                    {library.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label>
                 Profession name
                 <input value={name} onChange={(e) => setName(e.target.value)} />

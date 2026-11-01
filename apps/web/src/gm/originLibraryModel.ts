@@ -1,4 +1,6 @@
 import {
+  entryBudget,
+  entryPoints,
   missingDefaultEntries,
   type DefaultTarget,
   type CampaignState,
@@ -36,6 +38,10 @@ export interface OriginDraft {
   skills: SkillRow[];
   /** Class only: weight per stat id, as typed. */
   weights: Record<string, string>;
+  /** ML.2: whole points per stat id for one level, as typed (blank = 0). */
+  points: Record<string, string>;
+  /** ML.2: free points per level, as typed (blank = 0). */
+  free: string;
 }
 
 type Rules = Pick<RulesConfig, 'stats' | 'skills' | 'grades'>;
@@ -107,7 +113,35 @@ export function emptyDraft(kind: OriginKind, rules: Rules): OriginDraft {
           }))
         : [],
     weights: kind === 'class' ? weightTexts(rules, null) : {},
+    points: pointTexts(rules, null),
+    free: '',
   };
+}
+
+/** ML.2: one points text per stat, blank where the entry gives none. */
+export function pointTexts(
+  rules: Rules,
+  stats: Readonly<Record<string, number>> | null,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const stat of rules.stats.list) {
+    const n = stats?.[stat.id] ?? 0;
+    out[stat.id] = n > 0 ? String(n) : '';
+  }
+  return out;
+}
+
+/**
+ * ML.2: what the entry's points read on the form: its own points, a class's
+ * weights converted to points at the first grade's class budget, or blank.
+ */
+function storedPoints(kind: OriginKind, def: OriginDef, rules: Rules) {
+  const grade = rules.grades[0]?.id ?? '';
+  const weights = kind === 'class' && 'weights' in def ? def.weights : undefined;
+  return entryPoints(rules, grade, {
+    ...(def.points ? { points: def.points } : {}),
+    ...(weights ? { weights } : {}),
+  });
 }
 
 export function draftOf(kind: OriginKind, def: OriginDef, rules: Rules): OriginDraft {
@@ -116,7 +150,62 @@ export function draftOf(kind: OriginKind, def: OriginDef, rules: Rules): OriginD
     description: def.description,
     skills: 'skills' in def ? def.skills.map((s) => ({ name: s.name, rarity: s.rarity })) : [],
     weights: kind === 'class' && 'weights' in def ? weightTexts(rules, def.weights) : {},
+    ...(() => {
+      const shown = storedPoints(kind, def, rules);
+      return {
+        points: pointTexts(rules, shown?.points.stats ?? null),
+        free: shown && shown.points.free > 0 ? String(shown.points.free) : '',
+      };
+    })(),
   };
+}
+
+const POINTS_TEXT = /^\d{0,3}$/;
+
+/** ML.2: the draft's points per level, or null while a box is not a whole number 0–999. */
+export function draftPoints(
+  draft: Pick<OriginDraft, 'points' | 'free'>,
+): { stats: Record<string, number>; free: number } | null {
+  const texts = [...Object.values(draft.points), draft.free].map((t) => t.trim());
+  if (texts.some((t) => !POINTS_TEXT.test(t))) return null;
+  const stats: Record<string, number> = {};
+  for (const [id, t] of Object.entries(draft.points)) {
+    const n = Number(t.trim() || '0');
+    if (n > 0) stats[id] = n;
+  }
+  return { stats, free: Number(draft.free.trim() || '0') };
+}
+
+/**
+ * ML.2 (DESIGN §2, Q93): the budget reminder for an entry at the first grade
+ * (G: class 8, race 5, profession 5) and a warning while the total differs.
+ */
+export function pointsCheck(
+  kind: OriginKind,
+  draft: Pick<OriginDraft, 'points' | 'free'>,
+  rules: Rules,
+): { grade: string; budget: number | null; total: number | null; warning: string | null } {
+  const grade = rules.grades[0]?.id ?? '';
+  const budget = entryBudget(rules, grade, kind);
+  const points = draftPoints(draft);
+  const total =
+    points === null ? null : Object.values(points.stats).reduce((a, b) => a + b, 0) + points.free;
+  let warning: string | null = null;
+  if (budget !== null && total !== null && total !== budget) {
+    warning =
+      total === 0
+        ? `No points set: ${defaultNote(kind)}`
+        : `These total ${total}; the ${grade}-grade budget for a ${kind} level is ${budget}. Each level is scaled to the budget until they match.`;
+  }
+  return { grade, budget, total, warning };
+}
+
+function defaultNote(kind: OriginKind): string {
+  return kind === 'race'
+    ? 'each race level gives all free points (Human).'
+    : kind === 'profession'
+      ? 'each profession level follows the class’s shape.'
+      : 'each class level follows the stat weights below.';
 }
 
 /** Why the draft cannot be saved yet, or null. */
@@ -130,6 +219,7 @@ export function draftProblem(kind: OriginKind, draft: OriginDraft): string | nul
     }
     if (values.every((t) => Number(t) === 0)) return 'Give at least one stat a weight above 0.';
   }
+  if (draftPoints(draft) === null) return 'Points per level are whole numbers from 0 to 999.';
   return null;
 }
 
@@ -148,6 +238,10 @@ function fieldsOf(kind: OriginKind, draft: OriginDraft): Record<string, unknown>
     for (const [stat, text] of Object.entries(draft.weights)) weights[stat] = Number(text.trim());
     fields['weights'] = weights;
   }
+  // ML.2: points only once any are set, so an entry without stays without.
+  const points = draftPoints(draft);
+  if (points && (points.free > 0 || Object.keys(points.stats).length > 0))
+    fields['points'] = points;
   return fields;
 }
 
@@ -176,6 +270,9 @@ export function saveCommand(
   for (const key of Object.keys(next)) {
     if (JSON.stringify(next[key]) !== JSON.stringify(old[key])) changes[key] = next[key];
   }
+  // ML.2 review: blanking every point box clears stored points (the engine
+  // drops an all-zero edit), so the entry follows its default again.
+  if (!('points' in next) && editing.points) changes['points'] = { stats: {}, free: 0 };
   if (Object.keys(changes).length === 0) return null;
   return { type: `${kind}Def.edit`, [ID_FIELD[kind]]: editing.id, ...changes };
 }
@@ -202,6 +299,39 @@ export function missingDefaults(state: DefaultTarget): number {
     lacking.professions.length +
     lacking.skills.length
   );
+}
+
+/**
+ * ML.2 review: whether the class's weights are set aside by points per level
+ * (the entry has its own, or the draft lays out new ones). An old class's
+ * weights shown as converted points still use the weights.
+ */
+export function weightsSetAside(
+  draft: OriginDraft,
+  editing: OriginDef | null,
+  rules: Rules,
+): boolean {
+  const points = draftPoints(draft);
+  if (points === null || points.free + Object.values(points.stats).reduce((a, b) => a + b, 0) === 0)
+    return false;
+  if (editing === null || editing.points) return true;
+  const loaded = draftPoints(draftOf('class', editing, rules));
+  return JSON.stringify(loaded) !== JSON.stringify(points);
+}
+
+/** ML.2 review: an entry's own points per level, for its library card ("" when none). */
+export function pointsSummary(
+  rules: Rules,
+  points: { readonly stats: Readonly<Record<string, number>>; readonly free: number } | undefined,
+): string {
+  if (!points) return '';
+  const parts = rules.stats.list
+    .map((s, i) => ({ name: s.name, n: points.stats[s.id] ?? 0, i }))
+    .filter((s) => s.n > 0)
+    .sort((a, b) => b.n - a.n || a.i - b.i)
+    .map((s) => `${s.name} +${s.n}`);
+  if (points.free > 0) parts.push(`+${points.free} free`);
+  return parts.length === 0 ? '' : `Per level: ${parts.join(' · ')}`;
 }
 
 /** One line describing a class's weights, biggest first ("Agility 3 · Perception 3 · …"). */

@@ -742,6 +742,17 @@ interface ClassChoice {
   description: string;
   skills: readonly { name: string; rarity: string; description?: string; flavor?: string }[];
   weights: Readonly<Record<string, number>>;
+  /** ML.2: the library entry's points per level (absent before ML.2 and on the built-in six). */
+  points?: { readonly stats: Readonly<Record<string, number>>; readonly free: number } | undefined;
+}
+
+/** ML.2: the `distributions` a new character takes from its library entries. */
+function entryDistributions(
+  cls: ClassChoice['points'],
+  race: ClassChoice['points'],
+): { distributions?: { class?: ClassChoice['points']; race?: ClassChoice['points'] } } {
+  if (!cls && !race) return {};
+  return { distributions: { ...(cls ? { class: cls } : {}), ...(race ? { race } : {}) } };
 }
 
 function CreateCharacter({
@@ -760,7 +771,8 @@ function CreateCharacter({
   const library = entriesOf(state, 'class') as ClassChoice[];
   // Campaigns made before M4.2 may have no classes yet; the built-in six keep working.
   const classes: readonly ClassChoice[] = library.length > 0 ? library : STARTER_CLASSES;
-  const races = entriesOf(state, 'race').map((r) => r.name);
+  const raceEntries = entriesOf(state, 'race');
+  const races = raceEntries.map((r) => r.name);
   const raceChoices = races.length > 0 ? races : [state.rules.character.defaultRace];
   const [classId, setClassId] = useState('');
   const [race, setRace] = useState('');
@@ -797,6 +809,8 @@ function CreateCharacter({
       })),
       classWeights: chosen.weights,
       ...(portrait === undefined ? {} : { portrait }),
+      // ML.2: the class and race entries' points per level, when the GM laid them out.
+      ...entryDistributions(chosen.points, raceEntries.find((r) => r.name === chosenRace)?.points),
     });
     if (r.ok) {
       setName('');

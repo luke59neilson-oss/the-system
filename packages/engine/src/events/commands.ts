@@ -56,6 +56,12 @@ export interface StepOptionInput {
     | undefined;
 }
 
+/** ML.2: whole points per stat plus free points per level of a track. */
+export interface LevelPoints {
+  stats: Readonly<Record<string, number>>;
+  free: number;
+}
+
 export type Command =
   | { type: 'campaign.create'; name: string; rules: unknown }
   | {
@@ -74,6 +80,13 @@ export type Command =
       classWeights?: Readonly<Record<string, number>> | undefined;
       /** Portrait file name the server stored (M4.4). */
       portrait?: string | undefined;
+      /** ML.2: the class and race library entries' points per level. */
+      distributions?:
+        | {
+            class?: LevelPoints | undefined;
+            race?: LevelPoints | undefined;
+          }
+        | undefined;
     }
   | { type: 'character.rename'; characterId: string; name: string }
   | { type: 'character.setPortrait'; characterId: string; portrait: string | null }
@@ -580,6 +593,7 @@ export type Command =
       description?: string | undefined;
       skills: readonly { name: string; rarity: string }[];
       weights: Readonly<Record<string, number>>;
+      points?: LevelPoints | undefined;
     }
   | {
       type: 'classDef.edit';
@@ -588,18 +602,21 @@ export type Command =
       description?: string | undefined;
       skills?: readonly { name: string; rarity: string }[] | undefined;
       weights?: Readonly<Record<string, number>> | undefined;
+      points?: LevelPoints | undefined;
     }
   | {
       type: 'raceDef.define';
       id?: string | undefined;
       name: string;
       description?: string | undefined;
+      points?: LevelPoints | undefined;
     }
   | {
       type: 'raceDef.edit';
       raceDefId: string;
       name?: string | undefined;
       description?: string | undefined;
+      points?: LevelPoints | undefined;
     }
   | {
       type: 'professionDef.define';
@@ -607,6 +624,7 @@ export type Command =
       name: string;
       description?: string | undefined;
       skills?: readonly { name: string; rarity: string }[] | undefined;
+      points?: LevelPoints | undefined;
     }
   | {
       type: 'professionDef.edit';
@@ -614,6 +632,7 @@ export type Command =
       name?: string | undefined;
       description?: string | undefined;
       skills?: readonly { name: string; rarity: string }[] | undefined;
+      points?: LevelPoints | undefined;
     }
   /** Adds every default library entry whose name the campaign's libraries lack (M4.2). */
   | { type: 'library.seedDefaults' }
@@ -1197,6 +1216,11 @@ function toEvent(
       if (command.race !== undefined) payload['race'] = command.race;
       if (command.classWeights !== undefined) payload['classWeights'] = command.classWeights;
       if (command.portrait !== undefined) payload['portrait'] = command.portrait;
+      const distributions = {
+        ...(command.distributions?.class ? { class: command.distributions.class } : {}),
+        ...(command.distributions?.race ? { race: command.distributions.race } : {}),
+      };
+      if (Object.keys(distributions).length > 0) payload['distributions'] = distributions;
       return { type: 'character.created', payload };
     }
     case 'character.rename':
@@ -1924,14 +1948,15 @@ function toEvent(
           description: command.description ?? '',
           skills: command.skills,
           weights: command.weights,
+          ...(command.points ? { points: command.points } : {}),
         },
       };
     case 'classDef.edit': {
-      const { classDefId, name, description, skills, weights } = command;
+      const { classDefId, name, description, skills, weights, points } = command;
       // Undefined fields vanish in the event's JSON round trip (= unchanged).
       return {
         type: 'classDef.edited',
-        payload: { classDefId, name, description, skills, weights },
+        payload: { classDefId, name, description, skills, weights, points },
       };
     }
     case 'raceDef.define':
@@ -1941,11 +1966,12 @@ function toEvent(
           id: command.id ?? ctx.newId(),
           name: command.name,
           description: command.description ?? '',
+          ...(command.points ? { points: command.points } : {}),
         },
       };
     case 'raceDef.edit': {
-      const { raceDefId, name, description } = command;
-      return { type: 'raceDef.edited', payload: { raceDefId, name, description } };
+      const { raceDefId, name, description, points } = command;
+      return { type: 'raceDef.edited', payload: { raceDefId, name, description, points } };
     }
     case 'professionDef.define':
       return {
@@ -1955,13 +1981,14 @@ function toEvent(
           name: command.name,
           description: command.description ?? '',
           skills: command.skills ?? [],
+          ...(command.points ? { points: command.points } : {}),
         },
       };
     case 'professionDef.edit': {
-      const { professionDefId, name, description, skills } = command;
+      const { professionDefId, name, description, skills, points } = command;
       return {
         type: 'professionDef.edited',
-        payload: { professionDefId, name, description, skills },
+        payload: { professionDefId, name, description, skills, points },
       };
     }
     case 'library.seedDefaults':
