@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; MV, ME, MK, QF.55 and QF.70 done. Preview ready: Actions → Release → Run workflow (MK).
-**Next item:** QF.56 on `wip/QF.56` (head 1fa6be4, base f789b6e): portrait confirm, "at the grade's top", Fill N XP button, short alert lines, phone evolution paths first, 3:1 control borders, 44 px phone buttons, join QR second on Home all done; next: e2e for the XP button, card text and evolution order + screenshots (evolution dialog 390×844, XP award 1366×768), a contrast check on control borders, the full e2e suite (shared CSS changed), sonnet review, merge. Then QF.57 onward (QF.71–QF.74 in file order); MW after.
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; MV, ME, MK, QF.55, QF.70, QF.56 and QF.57 done. Preview ready: Actions → Release → Run workflow (MK).
+**Next item:** QF.58 on `wip/QF.58` (base: QF.57 head 578ab0f; note it still carries the stray `node_modules` symlink from eb9e821: merge main, which removes it, first): clipboard-sanitized-write allowed for the GM window's own page (unit test), release View menu with reload and zoom, no DevTools (unit test), `render-process-gone` reloads the console — all done; next: a desktop spec that clicks Copy and reads the clipboard (needs the Electron binary: `npm run desktop:smoke`), then sonnet review, merge. Then QF.60 onward (QF.71–QF.74 in file order); MW after.
 **Blockers:** none
 
 ## Run log
@@ -1606,4 +1606,14 @@ next item, blockers. -->
 - QF.56 started on `wip/QF.56` (see Next item); M3.*, M8.3, M4.4, M4.6, M9.3, MC.2, MT.5, MS.1, MS.3, M11.2, M5.2, M5.A, MR.1, MR.2, MT.1 and QF.56 green on it.
 - Tests: check green (unit 2,015); e2e: the specs above; full suite not run this run (QF.56 must run it before merging).
 - Open `wip/*`: `wip/QF.56`. Blockers: none.
+
+### Run · 2026-11-01 11:09–12:0x UTC (close-out at minute 50)
+- Close-out at minute 50 (full e2e + latency on QF.56 finished at 46; QF.58 handed off at 44).
+- Preflight: `add_repo` not offered; repo already cloned (local main stale and shallow: plain `git fetch` hung, `git fetch origin +main:refs/remotes/origin/main` worked, then reset to `origin/main`); lock pushed cleanly; vitest 5.0.5; reviewer sonnet works (worktree; Agent blocks). CI on main green (f789b6e). No new answers. Hour 11: no efficiency check or sweep.
+- QF.56 done: e2e for the card's "at the grade's top", phone evolution order with Choose/Evolve in view, the Fill N XP button, a unit test for control-border contrast (fails with the old colour); round 1 (3 M) led to 44 px Assign +/-, Switch character and disclosure rows on phones and a tap-target check over fields, links, the Assign panel and the evolution dialog; round 2 clean. Full suite e2e 164 + latency 8 green on wip/QF.56. Merged.
+- QF.57 done: plain player wording (D318, Q97): rarity labels at evolution, "[X] is now Rare (was Common)", progress instead of mastery marks in the evolution warnings, "Too far apart in grade: the higher grade wins, no roll.", "Nothing has changed hands yet.", no "server terminal" on the join hint; the practice error already showed only on submit (spec pins it). Sonnet 2 rounds (round 2 clean). Specs QF.57, MR.1, MR.2, MT.1, M3.13, M6.3, M7.3 green. Merged.
+- Slip: QF.57's first commit (eb9e821) added a `node_modules` symlink from its worktree; merging it replaced main's node_modules here. Removed on main (2209536) and `.gitignore` now ignores a symlink too; `wip/QF.58` still holds it until it merges main.
+- QF.58 started on `wip/QF.58` (see Next item).
+- Tests: static checks green; web + desktop unit 363 (full unit 2,017 at QF.56); e2e 164 + latency 8 (QF.56); QF.57 specs above.
+- Open `wip/*`: `wip/QF.58`. Blockers: none.
 

@@ -910,7 +910,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   memoised by `state.practice` identity; windows on hidden tabs don't render;
   heavy panels are memoised; the notes list pages; a CDP probe at 40 sessions
   shows GM main-thread time per command at least halved.
-- [ ] **QF.56 The home dashboard and phones work at the table.** At
+- [x] **QF.56 The home dashboard and phones work at the table.** At
   1366×768 the join QR is below the fold (`GmScreen.tsx:244-267`; DESIGN §9a
   puts it second); the phone evolution dialog puts the re-rating list before
   the paths and Evolve below the fold (`EvolutionChoice.tsx:115-130`); phone
@@ -927,7 +927,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   session, M players)"; `role="alert"` only on short error lines; the card
   says "at the grade's top"; the button reads "Remove portrait" with a
   confirm; screenshots at 1366×768 and 390×844.
-- [ ] **QF.57 Plain words for players.** The evolution explanation and log use
+- [x] **QF.57 Plain words for players.** The evolution explanation and log use
   internal terms ("re-rated", "transforms", "mastery marks";
   `EvolutionChoice.tsx:117-123`, `format.ts:124`); the contest pop-up says
   "A grade wall decides it: no roll." (`player/contest.ts:26`); the join

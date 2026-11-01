@@ -1301,3 +1301,13 @@
 - Round-1 Mediums fixed: SETTLED waits for focus to leave the pre-press `data-kb`, then two equal frames, and fails at a 30-frame cap with what it saw.
 - Also fixed while repeating (one 29/30 run here): the walk now waits for the demo reconnect (demo party in View as + Connected) and for the Listening panel's speech check before marking stops.
 - Round 2: 0 H / 0 M / 4 L. Not changed: L1 (Jake only exists in the demo hub's state, which only the new socket serves, so the old socket cannot show it), L2 (rAF in a hidden page; headless pages are visible), L3 (fails loudly, intended), L4 (speech line depends on no speech env in e2e; logged to the QUALITY backlog).
+
+## 2026-11-01 · QF.56 · sonnet (2 rounds)
+- Round 1 (worktree on 3e9f5fb): check green (2,017 unit); QF.56, ME.5, M4.6 7/7. 0 High, 3 Medium, 5 Low. M1 the tap-target check covered only `<button>` on one screen; M2 `.assign-stats button { min-height: 40px }` beat the phone 44 px rule; M3 MergeBuilder/ListenPanel `role="alert"` lines.
+- Fixes (1146d17): `smallTargets()` covers buttons, selects, text inputs, `summary` and `a.tap-link` on the status page, the open Assign panel and the evolution dialog (fails with the 40 px rule back); Assign +/- 44 px; Switch character link and disclosure rows 44 px on phones. M3 not changed: each is one short `<p>` error line (round 2 agreed).
+- Round 2 (1146d17): 0 H / 0 M / 3 L (summary rows not opened by the spec; file inputs; a clash warning re-announces while typing). Lows to the backlog.
+
+## 2026-11-01 · QF.57 · sonnet (2 rounds)
+- Round 1 (worktree on 92f1a31): tsc, web unit, QF.57/MR.1/MT.1/M7.3 green. 0 High, 2 Medium, 6 Low. M1 the evolution warnings still said "mastery marks", "transformed", "consumed" and the cards' label "Skills transformed"; M2 "keep their progress" rests on raised skills keeping marks (true: `rerateSkill` leaves marks alone).
+- Fixes (578ab0f): warnings speak of progress ("a changed skill starts its progress at 0, so its 6 marks of progress go", "uses 4 marks of progress; 2 carry on", "both are used up"), label "Skills changed"; MR.2, M3.13 and unit tests follow the wording (still exact). M2: wording kept, accurate.
+- Round 2 (578ab0f): 0 H / 0 M / 3 L (the word "go"; "keep progress" next to "starts at 0" may read as a contradiction; SkillDetail's "Mastery marks" heading). Lows to the backlog; wording is Q97 for Luke.
