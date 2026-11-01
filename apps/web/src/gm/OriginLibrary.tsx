@@ -329,7 +329,7 @@ export function OriginLibrary({ client, state }: { client: LiveClient; state: Ca
             </p>
           )}
           {budget.warning && (
-            <p className="warn" role="note" data-testid="points-warning">
+            <p className="warn" data-testid="points-warning">
               {budget.warning}
             </p>
           )}
