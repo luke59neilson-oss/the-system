@@ -1,7 +1,8 @@
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { startApp, type RunningApp } from '../src/app';
 import { CampaignStore } from '../src/store';
 
 // ML.1 (DESIGN §9a "Campaigns home", L28): Delete moves a campaign to a
@@ -36,5 +37,49 @@ describe('campaign delete and restore (ML.1)', () => {
     } finally {
       open.close();
     }
+  });
+});
+
+describe('campaign delete routes (ML.1)', () => {
+  const KEY = 'h'.repeat(32);
+  let webRoot: string;
+  let app: RunningApp | null = null;
+  const call = async (method: string, url: string) => {
+    const res = await fetch(`http://127.0.0.1:${app!.port}${url}`, {
+      method,
+      headers: { 'x-gm-key': KEY },
+    });
+    return { status: res.status, body: (await res.json()) as Record<string, unknown> };
+  };
+  beforeEach(async () => {
+    webRoot = mkdtempSync(path.join(tmpdir(), 'the-system-home-web-'));
+    writeFileSync(path.join(webRoot, 'index.html'), '<!doctype html><title>shell</title>');
+    CampaignStore.open('old-test', options()).close();
+    app = await startApp({ port: 0, host: '127.0.0.1', webRoot, dataDir, gmKey: KEY });
+  });
+  afterEach(async () => {
+    await app?.close();
+    app = null;
+    rmSync(webRoot, { recursive: true, force: true });
+  });
+
+  it('deletes a closed campaign, lists it as deleted and restores it', async () => {
+    expect((await call('POST', '/api/gm/campaigns/old-test/delete')).body).toEqual({
+      deleted: 'old-test',
+    });
+    expect((await call('GET', '/api/gm/campaigns/deleted')).body).toEqual({
+      deleted: [{ id: 'old-test' }],
+    });
+    expect(CampaignStore.list(dataDir)).not.toContain('old-test');
+    expect((await call('POST', '/api/gm/campaigns/old-test/undelete')).body).toEqual({
+      restored: 'old-test',
+    });
+    expect(CampaignStore.list(dataDir)).toContain('old-test');
+  });
+
+  it('refuses to delete the open campaign', async () => {
+    const r = await call('POST', '/api/gm/campaigns/main/delete');
+    expect(r.status).toBe(409);
+    expect(CampaignStore.list(dataDir)).toContain('main');
   });
 });
