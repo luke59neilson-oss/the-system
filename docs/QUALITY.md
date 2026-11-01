@@ -426,6 +426,8 @@ lowered by their verifiers and folded into the Low batches.
 - (Sweep D 2026-10-31, UX · haiku) Import content's "Apply N" counts ticked entries with no noun; say "Apply N entries".
 - (QF.53 review, sonnet) Small frames (results, notifications, an undo's whole-history reset) still queue for a backlogged socket until the heartbeat drops it; the drop takes 40–60 s (third tick); a campaign switch clears the heartbeat set before the 1012 close completes; the heartbeat test's raw client never answers pings even when awake.
 
+- MK.2 review 2026-11-01 (sonnet rounds 1–2, Low): `roll.requested` takes one-character sides only; the phone prompt sits below the status window and "[+0]" wraps at 390×844 ("Intelligence 1.0" then "[+0]" on a second line); the GM's phone-die note sits under both dice boxes at 1366×768, away from side A; MK.2 screenshots show only +0 modifiers; a client-chosen `requestId` is not checked for reuse (GM-only, one live request per character); the asked-request marker is in memory, so a console reload makes an answered phone die stale (Clear and Ask again); the reducer's d20 gate on `roll.requested` would refuse a stored request made outside d20 (none exist).
+
 ## Final review (M11.5)
 
 Whole-repo review by a model other than the builder's, at the head of
