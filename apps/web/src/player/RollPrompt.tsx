@@ -77,23 +77,25 @@ export function RollPrompt({ client, view }: { client: LiveClient | null; view: 
 export function RollCall({ view }: { view: PlayerView }) {
   const [went, setWent] = useState<string | null>(null);
   const req = view.rollRequest;
-  if (req === null || req.answer !== null || went === req.id) return null;
-  const { title } = rollPromptText(view, req);
+  const open = req !== null && req.answer === null && went !== req.id;
+  // The live region is always there, so screen readers announce what appears in it.
   return (
-    <div className="roll-call-layer" aria-live="polite">
-      <button
-        type="button"
-        className="roll-call"
-        data-testid="roll-call"
-        onClick={() => {
-          setWent(req.id);
-          document
-            .querySelector('[data-testid="roll-prompt"]')
-            ?.scrollIntoView({ block: 'center' });
-        }}
-      >
-        The GM asks: {title}
-      </button>
+    <div className="roll-call-layer" role="status" data-testid="roll-call-layer">
+      {open && (
+        <button
+          type="button"
+          className="roll-call"
+          data-testid="roll-call"
+          onClick={() => {
+            setWent(req.id);
+            document
+              .querySelector('[data-testid="roll-prompt"]')
+              ?.scrollIntoView({ block: 'center' });
+          }}
+        >
+          The GM asks: {rollPromptText(view, req).title}
+        </button>
+      )}
     </div>
   );
 }

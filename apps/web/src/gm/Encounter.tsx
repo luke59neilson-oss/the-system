@@ -168,7 +168,9 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
   // that moves a side's modifier away from that ends the side's request, so the
   // phone is never left with a number the contest will not use. Sides that do
   // not make a contest yet (a value being retyped) decide when they do.
-  const [askedMod, setAskedMod] = useState<{ a?: number | undefined; b?: number | undefined }>({});
+  // The roller is kept too: while a side is being retyped there is no plan to name it.
+  type Asked = { readonly roller: NonNullable<typeof rollerA>; readonly modifier?: number };
+  const [askedOf, setAskedOf] = useState<{ a?: Asked; b?: Asked }>({});
   const closeMoved = (
     nextA: SideDraft,
     nextB: SideDraft,
@@ -177,11 +179,16 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
   ) => {
     const after = contestModifiers(state, nextA, nextB, nextMode);
     const moved = (['a', 'b'] as const).filter(
-      (s) => s === alsoClose || (after !== null && askedMod[s] !== after[s]),
+      (s) =>
+        askedOf[s] !== undefined &&
+        (s === alsoClose || (after !== null && askedOf[s]?.modifier !== after[s])),
     );
     if (moved.length === 0) return;
     const clears = rollClears(
-      moved.map((s) => (s === 'a' ? ([rollerA, phoneA] as const) : ([rollerB, phoneB] as const))),
+      moved.map((s) => {
+        const roller = askedOf[s]?.roller ?? null;
+        return [roller, phoneDie(state, roller, asked[s])] as const;
+      }),
     );
     setAsked((prev) => ({
       a: moved.includes('a') ? new Set() : prev.a,
@@ -344,7 +351,10 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
                         const requestId = newRequestId();
                         // QF.71: the phone shows this contest's modifier, not the sheet's.
                         const modifier = contestModifiers(state, a, b, mode)?.[side];
-                        setAskedMod((prev) => ({ ...prev, [side]: modifier }));
+                        setAskedOf((prev) => ({
+                          ...prev,
+                          [side]: { roller: r, ...(modifier === undefined ? {} : { modifier }) },
+                        }));
                         setAsked((prev) => ({
                           ...prev,
                           [side]: new Set([...prev[side], requestId]),
