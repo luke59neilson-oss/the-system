@@ -2,6 +2,8 @@
 :root {
   color-scheme: dark;
   --bg: #0b0f17;
+  /* QF.56: control borders read at 3:1 on the field and the panel (WCAG 1.4.11). */
+  --control-border: #5a7bb0;
   --panel: rgba(20, 28, 44, 0.86);
   --border: #5a7fb8;
   --glow: rgba(110, 160, 255, 0.35);
@@ -178,7 +180,7 @@ textarea {
   font: inherit;
   color: var(--text);
   background: #0e1524;
-  border: 1px solid #3b5682;
+  border: 1px solid var(--control-border);
   border-radius: 4px;
   padding: 6px 8px;
 }
@@ -318,7 +320,7 @@ h3 {
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid #3b5682;
+  border: 1px solid var(--control-border);
   border-radius: 4px;
   color: var(--text);
   text-decoration: none;
@@ -514,7 +516,7 @@ a {
 .view-as-btn {
   background: transparent;
   color: var(--text);
-  border: 1px solid #3b5682;
+  border: 1px solid var(--control-border);
   padding: 4px 10px;
 }
 .view-as-btn.active {
@@ -694,7 +696,7 @@ a {
 .campaign-switch button {
   background: transparent;
   color: var(--accent);
-  border: 1px solid #3b5682;
+  border: 1px solid var(--control-border);
   padding: 3px 10px;
   font-size: 0.85rem;
 }
@@ -762,7 +764,7 @@ a {
 button.secondary {
   color: var(--accent);
   background: transparent;
-  border: 1px solid #3b5682;
+  border: 1px solid var(--control-border);
 }
 button.secondary:hover {
   border-color: var(--accent);
@@ -1065,7 +1067,7 @@ button.secondary:hover {
 }
 .assign-stats button {
   padding: 3px 0;
-  min-height: 40px;
+  min-height: 44px;
 }
 .assign-stats button:disabled,
 .assign-actions button:disabled {
@@ -1167,7 +1169,7 @@ button.skill-open:hover .skill-name {
   padding: 7px 8px;
   color: var(--text);
   background: #0e1524;
-  border: 1px solid #3b5682;
+  border: 1px solid var(--control-border);
   border-radius: 4px;
 }
 .skill-nickname-form p {
@@ -3644,4 +3646,25 @@ ol.change-log li.undone .change-text {
 .roll-prompt-form input {
   width: 5em;
   display: block;
+}
+
+/* QF.56: on phones every button and field is a 44 px tap target (WCAG 2.5.5). */
+@media (max-width: 700px) {
+  button,
+  select,
+  input:not([type='checkbox']):not([type='radio']):not([type='range']) {
+    min-height: 44px;
+  }
+  /* A link that does a button's job (Switch character) is a tap target too. */
+  a.tap-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  /* Disclosure rows keep their marker (list-item) and grow to 44 px. */
+  summary {
+    min-height: 44px;
+    padding-block: 10px;
+    box-sizing: border-box;
+  }
 }

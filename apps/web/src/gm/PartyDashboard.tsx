@@ -3,6 +3,7 @@ import {
   characterEffectiveStats,
   characterFlags,
   formatStat,
+  isAtCap,
   applyProgressionOverride,
   poolMax,
   progressionOverrideSummary,
@@ -125,7 +126,10 @@ function PartyCard({
             )}
             <dt>XP</dt>
             <dd data-testid={`xp-${c.id}`}>
-              {c.xp.class} / {xpPerLevel(rules, c)}
+              {/* QF.56: XP overflows at the top (DESIGN §2), so "0 / 100" there misleads. */}
+              {isAtCap(rules, c.grade, c.classLevel)
+                ? 'at the grade’s top'
+                : `${c.xp.class} / ${xpPerLevel(rules, c)}`}
               {c.profession !== null && ` · profession ${c.xp.profession}`}
             </dd>
           </dl>

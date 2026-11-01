@@ -237,7 +237,9 @@ export function XpAward({ client, state }: { client: LiveClient; state: Campaign
                       setResult(null);
                     }}
                   >
-                    Use for {group.length}
+                    {/* QF.56: the amount on the button, not in a tooltip. */}
+                    Fill {suggested.toLocaleString('en-US')} XP (typical session, {group.length}{' '}
+                    {group.length === 1 ? 'player' : 'players'})
                   </button>
                 );
               })()}

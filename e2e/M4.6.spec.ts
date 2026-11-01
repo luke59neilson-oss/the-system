@@ -61,7 +61,7 @@ test('the GM previews and awards XP with a custom split', async ({ browser }) =>
   await expect(award.getByTestId('typical-session')).toContainText(
     'G: 1 level = 100 XP; a typical session ≈ 6 levels = 600 XP each',
   );
-  await award.getByRole('button', { name: 'Use for 3' }).click();
+  await award.getByRole('button', { name: 'Fill 1,200 XP (typical session, 3 players)' }).click();
   await expect(award.getByLabel('Amount')).toHaveValue('1200');
   await expect(award.getByTestId(`levels-${jake}`)).toHaveText(' · class lvl 0 → 4');
   await expect(award.getByTestId('xp-lost')).toHaveCount(0);

@@ -76,7 +76,7 @@ export function PortraitPicker({
             aria-label="Remove the new character’s portrait"
             onClick={() => onImage(null)}
           >
-            Remove
+            Remove portrait
           </button>
         )}
         <p className="muted small">Optional. PNG, JPEG or WebP; shrunk to 512 px.</p>
@@ -159,11 +159,13 @@ export function PortraitCell({
           disabled={busy}
           aria-label={`Remove ${c.name}’s portrait`}
           onClick={() => {
+            // QF.56: the button sits by the name; a slip must not lose the image.
+            if (!window.confirm(`Remove ${c.name}’s portrait? Players stop seeing it.`)) return;
             setError(null);
             void set(null);
           }}
         >
-          Remove
+          Remove portrait
         </button>
       )}
       {error && (

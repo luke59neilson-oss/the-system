@@ -221,7 +221,7 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
           </label>
         )}
         {!pane && (
-          <a className="muted" href="/">
+          <a className="muted tap-link" href="/">
             Switch character
           </a>
         )}

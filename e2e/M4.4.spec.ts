@@ -168,6 +168,11 @@ test('the GM creates characters with portraits; players see them live', async ({
     buffer: png(300, 300, 120),
   });
   await expect(kimRow.getByTestId('portrait').locator('img')).toBeVisible();
+  // QF.56: Remove portrait asks first.
+  gm.once('dialog', (d) => {
+    expect(d.message()).toContain('Remove Jake Thayne’s portrait?');
+    void d.accept();
+  });
   await jakeRow.getByRole('button', { name: 'Remove Jake Thayne’s portrait' }).click();
   await expect(jakeRow.getByTestId('portrait')).toHaveText('JT');
   await expect(member.getByTestId('portrait')).toHaveText('JT');

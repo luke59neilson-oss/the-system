@@ -83,7 +83,8 @@ export function GmScreen() {
     return (
       <main className="gm">
         <h1>The System · GM</h1>
-        <section className="window" role="alert">
+        {/* QF.56: role="alert" only on short error lines, never a whole window. */}
+        <section className="window">
           <h2>GM key needed</h2>
           <p>
             Open the GM console from the desktop app (its “Players join” box has a GM link for other
@@ -195,9 +196,9 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
     return (
       <main className="gm">
         <h1>The System · GM</h1>
-        <section className="window" role="alert">
+        <section className="window">
           <h2>Not connected</h2>
-          <p>{live.error}</p>
+          <p role="alert">{live.error}</p>
           <button
             type="button"
             onClick={() => {
@@ -254,6 +255,10 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
                   }}
                 />
               </Place>
+              {/* QF.56: the join address and QR come second (DESIGN §9a), above the fold. */}
+              <Place id="join" tab={tab}>
+                <JoinPanel gmKey={gmKey} />
+              </Place>
               <Place id="party" tab={tab}>
                 <PartyDashboard
                   client={client}
@@ -264,9 +269,6 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
                     setTab('progression');
                   }}
                 />
-              </Place>
-              <Place id="join" tab={tab}>
-                <JoinPanel gmKey={gmKey} />
               </Place>
               <Place id="create-character" tab={tab}>
                 <CreateCharacter client={client} gmKey={gmKey} state={state} />
