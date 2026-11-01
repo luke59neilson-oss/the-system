@@ -1287,3 +1287,8 @@
 - Three Mediums need a second fable round (LOOP §6.4); it cannot report before minute 50, so the box stays unchecked and the next run launches round 2 on `wip/MK.A`.
 - Round 2 (fable, b2a92cd2, scoped to the fixes, returned at minute 43): 0 High, 1 Medium, 2 Low. Medium: any keystroke in a side's label or value closed the phone request and discarded its die. Fixed (verified myself, LOOP §6.4): a side change closes its request only when the side's character or stat changes. Low (backlog): a side change before the server echoes Ask/Withdraw leaves a stale request or a rejected second clear; the odds text uses `Math.round` (0%/100%) instead of `percent()` (<1%/>99%).
 - Full e2e on c125a80e: 157 passed, 1 failed (`M8.3` keyboard test, passes alone and with MK.2: the listed flake); latency 8 passed. MK.2 + M8.3 green again on the final MK.A commit. Box checked.
+
+## 2026-11-01 · QF.55 (sonnet, round 1, 4fcf368)
+- 0 High, 0 Medium, 3 Low: (1) `NotesPanel.tsx` ~469: focus drops to the body when the last "Show more" disappears; (2) `ConsoleTabs.tsx` `Frozen`: the render cost moves to the tab switch, and the console tab under the view-as pane still renders; (3) `e2e/QF.55.spec.ts` passes without `Frozen` (no regression guard for hidden-tab rendering).
+- No fixes required; Lows go to the QUALITY backlog. Box not checked yet: the full e2e found four specs reading hidden-tab DOM (fixed on 39f78fa); the rest of the suite is still to run.
+

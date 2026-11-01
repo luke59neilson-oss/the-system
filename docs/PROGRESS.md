@@ -1,7 +1,7 @@
 # Progress
 
 **Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.69; MV, ME and MK done (MK.A checked 07:55). Preview ready: Actions → Release → Run workflow (MK).
-**Next item:** QF.55 on `wip/QF.55` (head 0692cd02, base 700d35c1; merge main first): done so far: `skillPairCounts`/`repeatedEntryIds` memoised by log identity (tests), hidden-tab windows skip re-renders (`Place` → memo `Frozen`), phone notes list pages (30, Show more) with one date formatter, evolution plans and feed memoised, `scripts/gm-probe.ts` (CDP probe). Next: e2e for notes paging and a hidden-tab form surviving a switch; run the probe at 40 sessions on origin/main and on the branch (`npm run build`, `npx tsx scripts/gm-probe.ts 40`) and record both (accept: per-command main thread at least halved); review. Then QF.56 onward (QF.70 is new); MW after MU.
+**Next item:** QF.55 on `wip/QF.55` (head 39f78fa, merged main 1a36dfe): code done, probe recorded (main 45/43/43/44/49 → branch 4/10/8/6/8 ms per command at 40 sessions), sonnet review 0 H / 0 M. Hidden-tab windows no longer render, so e2e specs that read a hidden tab's DOM fail: M4.6, M5.3, MC.2, MC.3 fixed (open the tab first); the second half of the e2e suite (after MC.3 in file order) was not run. Next: `npm run build && npx playwright test --project=e2e` in the background (it takes >10 min; never in one foreground call), fix any further hidden-tab readers the same way, optional Low fix (focus after the last "Show more"), then merge to main and check the box. Then QF.70, QF.56 onward; MW after MU.
 **Blockers:** none
 
 ## Run log
@@ -1579,3 +1579,14 @@ next item, blockers. -->
 - QF.55 started on `wip/QF.55` (see Next item).
 - Tests: unit 2,011+ (check green on wip/MK.A); e2e 157/158 + latency 8 (M8.3 flake green alone).
 - Open `wip/*`: `wip/QF.55`. Blockers: none.
+
+### Run · 2026-11-01 08:10–08:5x UTC (close-out at minute 42)
+- Close-out at minute 42: QF.55 handed off on `wip/QF.55` at a full-e2e step that does not fit before 44 (the suite takes >10 min here); writing this note and releasing the lock takes the run to ~minute 46.
+- Preflight: `add_repo` not offered; repo already cloned (local main reset to `origin/main`; `git fetch` without a refspec hung, `git fetch origin main` works); lock pushed cleanly; vitest 5.0.5; reviewer model sonnet works (Agent call blocks; run with worktree isolation). No new answers.
+- Red CI on main (c4da9455, `e2e/MK.2.spec.ts:82`): the typed 18 tied the app d20 + 3 one time in 20 and re-rolled. Fixed (1a36dfe): Jake types 3, below the stalker's lowest total; MK.2 green 3×; check green.
+- QF.55: profiled the Session tab (unminified build + CDP profiler): `shortTime` made two Intl formatters per row per frame and `feedRows` built every notification's row before keeping 50. Cached formatters; the feed starts at the limit-th row from the end (broadcast runs kept whole; unit tests). Probe at 40 sessions: main 45/43/43/44/49, branch 4/10/8/6/8 ms per command (home/session/progression/evolutions/library): every tab at least halved. New `e2e/QF.55.spec.ts` (notes paging, half-filled form survives a tab switch) + screenshots.
+- Review: sonnet on 4fcf368: 0 High, 0 Medium, 3 Low (focus drops after the last "Show more"; cost moves to the tab switch and the view-as pane is not frozen; no test pins that a hidden window skips rendering). Lows to the backlog.
+- Full e2e (run while reviewing, so 2 CPUs shared): first ~79 tests, 4 failed: M4.6, M5.3, MC.2, MC.3 read DOM on a hidden tab (stale by design now); each now opens its tab; the four pass alone (39f78fa). Rest of the suite not run: box stays unchecked.
+- Tests: check green (unit 2,015); e2e partial (see above).
+- Open `wip/*`: `wip/QF.55`. Blockers: none.
+
