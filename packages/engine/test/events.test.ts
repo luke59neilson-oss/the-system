@@ -955,6 +955,7 @@ describe('property: replay equals incremental state', () => {
       'character.professionGranted',
       'profession.chosen',
       'profession.offerWithdrawn',
+      'profession.offered', // ME.6: me6.test.ts and profession-offers.jsonl
       'skill.merged',
       'skill.mergeOffered',
       'skill.mergeAnswered',

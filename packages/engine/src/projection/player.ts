@@ -69,6 +69,8 @@ export const CHARACTER_FIELD_VISIBILITY: Readonly<Record<keyof Character, Visibi
   profession: 'party',
   // MQ.6: the professions offered to this character are theirs alone.
   professionOffers: 'owner',
+  // ME.6: what each offered profession brings (per-level stats, bonus); theirs alone.
+  professionOfferCards: 'owner',
   // MT.2: a merge the GM sent waits on its owner's answer; nobody else sees it.
   mergeOffer: 'owner',
   // MT.2: the GM's record of the answer; the player already knows it.
@@ -249,6 +251,16 @@ export interface OwnSheet {
   readonly profession: string | null;
   /** Professions the GM offered (MQ.6); locked once `profession` is set. */
   readonly professionOffers: readonly string[];
+  /** ME.6: per offer, the per-level stats and one-time bonus it brings when taken. */
+  readonly professionOfferCards: Readonly<
+    Record<
+      string,
+      {
+        readonly distribution: { readonly stats: Readonly<Record<string, number>>; readonly free: number };
+        readonly statBonus: Readonly<Record<string, number>>;
+      }
+    >
+  >;
   /**
    * A merge the GM sent, waiting on this player's answer (MT.2, Q62), with
    * the rarity it would have now (null when it can no longer apply).
@@ -755,6 +767,25 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
     className: c.className,
     profession: c.profession,
     professionOffers: [...c.professionOffers],
+    professionOfferCards: Object.fromEntries(
+      c.professionOffers.flatMap((name) => {
+        const card = c.professionOfferCards?.[name];
+        return card
+          ? [
+              [
+                name,
+                {
+                  distribution: {
+                    stats: copyRecord(card.distribution.stats, statIds),
+                    free: card.distribution.free,
+                  },
+                  statBonus: copyRecord(card.statBonus, statIds),
+                },
+              ],
+            ]
+          : [];
+      }),
+    ),
     mergeOffer: ownMergeOffer(state, c),
     classLevel: c.classLevel,
     professionLevel: c.professionLevel,
@@ -852,6 +883,9 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
               ? {}
               : { rerate: c.evolution.rerate.map((r) => ({ skill: r.skill, rarity: r.rarity })) }),
             ...(c.evolution.rerateApproved === true ? { rerateApproved: true as const } : {}),
+            ...(c.evolution.professionOffered === true
+              ? { professionOffered: true as const }
+              : {}),
             // MT.7: the GM let this evolution go ahead of waiting selections,
             // so the owner's screen must not block the choice.
             ...(c.evolution.override === true ? { override: true as const } : {}),

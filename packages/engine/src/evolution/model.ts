@@ -2,6 +2,7 @@ import {
   CharacterRuleError,
   gradeIndexOf,
   grantProfession,
+  withOfferCard,
   newSkill,
   poolMax,
   raceLevel,
@@ -132,6 +133,12 @@ export interface PendingEvolution {
     readonly profession: readonly ReleasedStepOption[];
     readonly race: readonly ReleasedStepOption[];
   };
+  /**
+   * ME.6 (a): the release was built for a character without a profession, so
+   * its profession step holds offers. Derived when the release is folded (not
+   * stored in the event), so older logs replay unchanged. Absent = false.
+   */
+  readonly professionOffered?: true;
 }
 
 /** ME.2: a released step option as stored on the pending evolution. */
@@ -1085,13 +1092,23 @@ function pickSteps(
     return found;
   };
   let profession: ReleasedStepOption | null = null;
+  // ME.6 (a): a profession gained after a release that offered professions
+  // makes those offers void; the profession then stays as it is.
+  const keepsProfession =
+    character.profession !== null &&
+    (pending.professionOffered === true || steps.profession.length === 0);
   if (choices.profession === null) {
-    if (character.profession !== null) {
+    if (character.profession !== null && !keepsProfession) {
       throw new CharacterRuleError(
         `${character.name} has the profession [${character.profession}]: choose how it evolves`,
       );
     }
   } else {
+    if (character.profession !== null && pending.professionOffered === true) {
+      throw new CharacterRuleError(
+        `${character.name} now has the profession [${character.profession}]: the professions offered with this evolution no longer apply, so it stays as it is`,
+      );
+    }
     profession = find(steps.profession, choices.profession, 'profession');
   }
   return {
@@ -1130,10 +1147,29 @@ function applySteps(
     race: dist(picked.race),
   };
   if (picked.profession !== null) distributions.profession = dist(picked.profession);
+  else if (character.profession !== null && character.distributions?.profession) {
+    // ME.6 (a): the held profession stays unchanged, its distribution too.
+    distributions.profession = character.distributions.profession;
+  }
   let next: Character = { ...character, race: picked.race.name.trim(), distributions };
   if (picked.profession === null) {
-    const offered = pending.steps?.profession.map((o) => o.name.trim()) ?? [];
-    return { ...next, professionOffers: mergeOffers(next.professionOffers, offered) };
+    if (character.profession !== null) return next;
+    const options = pending.steps?.profession ?? [];
+    next = {
+      ...next,
+      professionOffers: mergeOffers(
+        next.professionOffers,
+        options.map((o) => o.name.trim()),
+      ),
+    };
+    // ME.6 (d): each skipped option keeps its distribution and bonus with the offer.
+    for (const o of options) {
+      next = withOfferCard(next, o.name.trim(), {
+        distribution: dist(o),
+        statBonus: { ...o.statBonus },
+      });
+    }
+    return next;
   }
   const name = picked.profession.name.trim();
   next =

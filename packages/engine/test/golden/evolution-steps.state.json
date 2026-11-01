@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 34,
+  "schemaVersion": 35,
   "name": "Evolution steps golden",
   "rules": {
     "configVersion": 2,
@@ -534,6 +534,19 @@
         "race": {
           "stats": {},
           "free": 6
+        }
+      },
+      "professionOfferCards": {
+        "Tracker": {
+          "distribution": {
+            "stats": {
+              "perception": 5
+            },
+            "free": 2
+          },
+          "statBonus": {
+            "perception": 1
+          }
         }
       }
     },

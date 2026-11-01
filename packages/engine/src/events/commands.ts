@@ -77,6 +77,14 @@ export type Command =
     }
   /** Player: take one of the professions the GM offered (MQ.6). */
   | { type: 'profession.choose'; characterId: string; profession: string }
+  /** GM only: offer a profession while the character has none (ME.6 b). */
+  | {
+      type: 'profession.offer';
+      characterId: string;
+      profession: string;
+      distribution?: { stats: Readonly<Record<string, number>>; free: number } | undefined;
+      statBonus?: Readonly<Record<string, number>> | undefined;
+    }
   /** GM only: withdraw an untaken profession offer (M5.2). */
   | { type: 'profession.withdrawOffer'; characterId: string; profession: string }
   | { type: 'title.award'; characterId: string; title: string }
@@ -737,6 +745,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('character.grantProfession') }),
   z.object({ type: z.literal('profession.choose') }),
   z.object({ type: z.literal('profession.withdrawOffer') }),
+  z.object({ type: z.literal('profession.offer') }),
   z.object({ type: z.literal('title.award') }),
   z.object({ type: z.literal('titleDef.define') }),
   z.object({ type: z.literal('titleDef.edit') }),
@@ -1171,6 +1180,23 @@ function toEvent(
           characterId: command.characterId,
           profession: command.profession,
           ...(command.override === true ? { override: true as const } : {}),
+        },
+      };
+    case 'profession.offer':
+      return {
+        type: 'profession.offered',
+        payload: {
+          characterId: command.characterId,
+          profession: command.profession,
+          ...(command.distribution === undefined
+            ? {}
+            : {
+                distribution: {
+                  stats: { ...command.distribution.stats },
+                  free: command.distribution.free,
+                },
+              }),
+          ...(command.statBonus === undefined ? {} : { statBonus: { ...command.statBonus } }),
         },
       };
     case 'profession.withdrawOffer':
