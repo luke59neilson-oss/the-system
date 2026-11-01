@@ -1342,3 +1342,7 @@
 
 ## 2026-11-01 · QF.62 merged (full e2e at the merge) · no new review
 - Full e2e on the merge of origin/main into `wip/QF.62`: e2e 169/169 green; latency 7/8 (M11.3 1366×768 at 2,382 ms under load, 2,227 / 2,087 ms alone: the local-only cold-measurement flake in QUALITY "Flakes"; CI judges it). `npm run check` green. Box checked.
+
+## 2026-11-01 · ML.1 Campaigns home and Delete · sonnet (2 rounds)
+- Round 1 (c4c8e53): check green; ML.1 e2e red. 1 High, 1 Medium, 3 Low. H after Close the change log's debounced refetch hit `/api/gm/changelog` → 404 (fixed: Close takes the console's panels down first, then sends the close; D329). M the delete route did not check the typed name (fixed: 400 unless the body's name matches the home's name or the id; server test). L confirm button not red (fixed: `danger`); L home panel leaves the right side empty and L two "Restore" words on one screen (kept, Backlog-level). The full e2e also showed MS.1 red: a wrong key read "Could not reach the System" (fixed: the home gate shows "GM key rejected").
+- Round 2 (8346db3): 0 High, 0 Medium; Lows only (no timeout on a hanging close; only 401/403 count as a rejected key). Tests green.

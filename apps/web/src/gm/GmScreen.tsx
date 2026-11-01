@@ -102,6 +102,28 @@ export function GmScreen() {
  * ML.1 (DESIGN §9a): the Campaigns home while no campaign is open, else the
  * console. "Close campaign" in the console comes back here.
  */
+/** The GM key was refused: say so and offer to forget it. */
+function KeyRejected({ error }: { error: string | null }) {
+  return (
+    <main className="gm">
+      <h1>The System · GM</h1>
+      <section className="window">
+        <h2>Not connected</h2>
+        <p role="alert">{error}</p>
+        <button
+          type="button"
+          onClick={() => {
+            forgetGmKey();
+            window.location.reload();
+          }}
+        >
+          Forget key
+        </button>
+      </section>
+    </main>
+  );
+}
+
 function CampaignGate({ gmKey }: { gmKey: string }) {
   // null: not read yet; '' : nothing open (the home); else the opening's number.
   const [open, setOpen] = useState<string | null>(null);
@@ -115,20 +137,29 @@ function CampaignGate({ gmKey }: { gmKey: string }) {
   const openings = useRef(0);
   const [created, setCreated] = useState<NewCampaign | null>(null);
   const [failed, setFailed] = useState(false);
+  // ML.1 review: a wrong key says so (as the live connection did before ML.1).
+  const [rejected, setRejected] = useState(false);
   useEffect(() => {
     let live = true;
     fetch('/api/gm/campaign', { headers: { 'x-gm-key': gmKey } })
-      .then((r) => (r.ok ? (r.json() as Promise<{ id: string | null }>) : Promise.reject()))
+      .then((r) => {
+        if (r.status === 401 || r.status === 403) {
+          if (live) setRejected(true);
+          return Promise.reject(new Error('rejected'));
+        }
+        return r.ok ? (r.json() as Promise<{ id: string | null }>) : Promise.reject();
+      })
       .then((body) => {
         if (live) setOpen(body.id === null ? '' : String(++openings.current));
       })
-      .catch(() => {
-        if (live) setFailed(true);
+      .catch((e: unknown) => {
+        if (live && !(e instanceof Error && e.message === 'rejected')) setFailed(true);
       });
     return () => {
       live = false;
     };
   }, [gmKey]);
+  if (rejected) return <KeyRejected error="GM key rejected" />;
   if (open === null) {
     return (
       <main className="gm">
@@ -339,26 +370,7 @@ function GmConsole({
     );
   }
 
-  if (live.status === 'refused') {
-    return (
-      <main className="gm">
-        <h1>The System · GM</h1>
-        <section className="window">
-          <h2>Not connected</h2>
-          <p role="alert">{live.error}</p>
-          <button
-            type="button"
-            onClick={() => {
-              forgetGmKey();
-              window.location.reload();
-            }}
-          >
-            Forget key
-          </button>
-        </section>
-      </main>
-    );
-  }
+  if (live.status === 'refused') return <KeyRejected error={live.error} />;
 
   return (
     <main className={`gm perspective-${state ? view.kind : 'gm'}`}>

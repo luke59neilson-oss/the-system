@@ -391,7 +391,7 @@ DESIGN §7 "Dice", §9. After ME, before QF.
 Q79–Q98 answered in chat. DESIGN §6, §7, §9a, §11. After MK, before QF:
 the campaigns home and the library layouts come before the real campaign.
 
-- [ ] **ML.1 Campaigns home and Delete.** DESIGN §9a "Campaigns home": the
+- [x] **ML.1 Campaigns home and Delete.** DESIGN §9a "Campaigns home": the
   GM app starts on a list of campaigns (name, last opened, characters) with
   Open, New campaign, Restore and Delete; no campaign opens by itself.
   Delete asks for the name and moves the campaign to a Deleted list (files
