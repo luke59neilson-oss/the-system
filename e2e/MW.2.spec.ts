@@ -97,15 +97,40 @@ test('draft from Perception, fix the flag, edit, offer; the player sees the menu
   await expect(menu.getByTestId('draft-flags-2')).toHaveCount(0);
   await row(1).getByLabel('Name').fill('Keener Sight');
   await expect(send).toBeEnabled();
+  const framesBeforeSend = frames.length;
   await send.click();
   await expect(builder.getByRole('status')).toContainText('Menu sent to Jake');
   await expect(builder.getByTestId('pending-menu')).toContainText('[Keener Sight');
 
   // The player sees the edited menu; drafts never went out before it was sent.
-  await phone.getByRole('button', { name: '[Choose]' }).first().click();
+  // Older selections from the demo and the award come first: settle them.
+  await expect(phone.getByRole('button', { name: '[Choose]' })).toBeVisible();
   const dialog = phone.getByRole('dialog');
-  await expect(dialog.getByRole('button', { name: 'Choose Keener Sight' })).toBeVisible();
+  const edited = dialog.getByRole('button', { name: 'Choose Keener Sight' });
+  for (let opened = 0; ; opened += 1) {
+    expect(opened).toBeLessThan(12);
+    await phone.getByRole('button', { name: '[Choose]' }).click();
+    await expect(dialog.getByRole('button', { name: /^Choose / }).first()).toBeVisible();
+    if (await edited.isVisible()) break;
+    await dialog
+      .getByRole('button', { name: /^Choose / })
+      .first()
+      .click();
+    await expect(dialog.getByRole('button', { name: 'Confirm' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Confirm' }).click();
+    await expect(dialog).toHaveCount(0);
+  }
   await expect(dialog.getByRole('button', { name: 'Choose Mana Lens' })).toBeVisible();
+  expect(frames.slice(0, framesBeforeSend).join('')).not.toContain('Mana Lens');
   expect(frames.join('')).not.toContain('Keen Sight');
   await phone.screenshot({ path: path.join(shots, 'player-menu-390x844.png') });
+
+  // The spell's cost reached its library entry: once chosen, it can be cast.
+  await dialog.getByRole('button', { name: 'Choose Mana Lens' }).click();
+  await dialog.getByRole('button', { name: 'Confirm' }).click();
+  await expect(dialog).toHaveCount(0);
+  await phone.getByRole('button', { name: /Mana Lens/ }).click();
+  await expect(
+    phone.getByTestId('skill-detail').getByRole('button', { name: /^Cast/ }),
+  ).toHaveText(/^Cast \(5 /);
 });
