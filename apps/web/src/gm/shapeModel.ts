@@ -34,6 +34,26 @@ export function shapePercent(
   ];
 }
 
+/**
+ * The reference with every row cut to the campaign's own stats (ME.4 review):
+ * a stat the rules do not have leaves the row, its total is recounted, and a
+ * row left with no points is dropped, so the table, the percentages and Use
+ * this shape all agree.
+ */
+export function fitReference(
+  reference: EvolutionReference,
+  statIds: readonly string[],
+): EvolutionReference {
+  const known = new Set(statIds);
+  const fit = (rows: readonly ShapeReferenceRow[]) =>
+    rows.flatMap((r) => {
+      const stats = Object.fromEntries(Object.entries(r.stats).filter(([k]) => known.has(k)));
+      const total = Object.values(stats).reduce((a, b) => a + b, 0) + r.free;
+      return total > 0 ? [{ ...r, stats, total }] : [];
+    });
+  return { books: fit(reference.books), campaign: fit(reference.campaign) };
+}
+
 /** The rows a step's shape picker lists: that track's rows first, then the rest. */
 export function rowsForStep(reference: EvolutionReference, track: ShapeTrack): ShapeReferenceRow[] {
   const all = [...reference.campaign, ...reference.books];

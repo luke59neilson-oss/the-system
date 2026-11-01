@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { ShapeReferenceRow } from '@the-system/engine';
-import { rowLabel, rowsForStep, scaleShape, shapePercent } from '../src/gm/shapeModel';
+import {
+  fitReference,
+  rowLabel,
+  rowsForStep,
+  scaleShape,
+  shapePercent,
+} from '../src/gm/shapeModel';
 
 const ORDER = ['strength', 'agility', 'perception'];
 
@@ -61,5 +67,25 @@ describe('the reference table (ME.4)', () => {
     expect(rowsForStep(ref, 'profession').map((r) => r.id)).toEqual(['c1', 'b2', 'b1']);
     expect(rowsForStep(ref, 'class').map((r) => r.id)).toEqual(['b1', 'c1', 'b2']);
     expect(rowLabel(row({}))).toBe('Archer (class, books: G · start · Jake Thayne; 5/level)');
+  });
+});
+
+describe('the reference cut to the campaign stats (ME.4 review)', () => {
+  it('drops stats the rules lack, recounts the total, and drops empty rows', () => {
+    const ref = {
+      books: [
+        row({ stats: { perception: 2, zeal: 3 }, free: 1, total: 6 }),
+        row({ id: 'z', stats: { zeal: 4 }, free: 0, total: 4 }),
+      ],
+      campaign: [],
+    };
+    expect(fitReference(ref, ORDER).books).toEqual([
+      row({ stats: { perception: 2 }, free: 1, total: 3 }),
+    ]);
+  });
+  it('refuses a budget that is not a whole number', () => {
+    expect(scaleShape(row({}), 2.5, ORDER)).toBeNull();
+    expect(scaleShape(row({}), Number.NaN, ORDER)).toBeNull();
+    expect(scaleShape(row({}), -1, ORDER)).toBeNull();
   });
 });

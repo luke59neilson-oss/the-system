@@ -68,7 +68,12 @@ describe("the books' evolution options (ME.4)", () => {
         // Free points stay free: none appear from a row without them, and a
         // row with them keeps some once the budget is at least its own total.
         if (row.free === 0) expect(s!.free, row.name).toBe(0);
-        else if (budget >= row.total) expect(s!.free, row.name).toBeGreaterThan(0);
+        else {
+          // Largest remainder: never below the exact share rounded down, never above it rounded up.
+          const exact = (row.free * budget) / row.total;
+          expect(s!.free, `${row.name} at ${budget}`).toBeGreaterThanOrEqual(Math.floor(exact));
+          expect(s!.free, `${row.name} at ${budget}`).toBeLessThanOrEqual(Math.ceil(exact));
+        }
       }
     }
   });

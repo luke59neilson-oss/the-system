@@ -8,7 +8,7 @@ export interface ShapeRow {
   readonly free: number;
 }
 
-/** The row scaled to `budget`, or null for a row with no points. */
+/** The row scaled to `budget`, or null for a row with no points or a budget that is not a whole number ≥ 0. */
 export function scaleShape(
   row: ShapeRow,
   budget: number,
@@ -17,7 +17,7 @@ export function scaleShape(
   const keys = [...statOrder.filter((k) => (row.stats[k] ?? 0) > 0), '__free'];
   const raw = keys.map((k) => (k === '__free' ? row.free : (row.stats[k] ?? 0)));
   const total = raw.reduce((a, b) => a + b, 0);
-  if (total <= 0 || budget < 0) return null;
+  if (total <= 0 || !Number.isInteger(budget) || budget < 0) return null;
   const exact = raw.map((v) => (v * budget) / total);
   const whole = exact.map((v) => Math.floor(v));
   let left = budget - whole.reduce((a, b) => a + b, 0);

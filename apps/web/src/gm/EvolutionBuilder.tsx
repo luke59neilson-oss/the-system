@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { evolutionTarget, type CampaignState, type EvolutionOption } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
@@ -11,7 +11,7 @@ import {
 import { nearThreshold } from './evolutionStepsModel';
 import { StepsForm } from './EvolutionSteps';
 import { EvolutionReferenceTable } from './EvolutionReference';
-import { EVOLUTION_REFERENCE_URL, type EvolutionReference } from './shapeModel';
+import { EVOLUTION_REFERENCE_URL, fitReference, type EvolutionReference } from './shapeModel';
 
 export interface TransformDraft {
   skill: string;
@@ -60,7 +60,12 @@ export function EvolutionBuilder({
   gmKey: string;
   state: CampaignState;
 }) {
-  const reference = useEvolutionReference(gmKey, state);
+  const fetched = useEvolutionReference(gmKey, state);
+  const statIds = state.rules.stats.list.map((s) => s.id).join(',');
+  const reference = useMemo(
+    () => (fetched === null ? null : fitReference(fetched, statIds.split(','))),
+    [fetched, statIds],
+  );
   const ready = state.characterOrder.flatMap((id) => {
     const plan = evolutionPlan(state, id);
     return plan ? [{ id, plan }] : [];
