@@ -53,6 +53,15 @@ import { useChangeCount } from './changeCount';
 import { SkillDetail } from './SkillDetail';
 import { SkillSelection } from './SkillSelection';
 import { EvolutionChoice } from './EvolutionChoice';
+import { EvolutionPanel } from './EvolutionPanel';
+import { EvolutionStepsChoice } from './EvolutionStepsChoice';
+import {
+  evolutionPanelState,
+  readOpened,
+  releaseArrived,
+  writeOpened,
+  type SavedPicks,
+} from './evolutionSteps';
 import { useEvolutionFlash } from './evolutionFlash';
 import { describeTitleBonuses } from './titles';
 import { ProfessionsPanel } from './ProfessionsPanel';
@@ -130,6 +139,32 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
   useEffect(() => {
     if (evolving && !pane) playSound('evolution', levelRef.current);
   }, [evolving, pane]);
+  // ME.5 (DESIGN §9): the Evolution window lights up on a release until this
+  // browser opens it (remembered per character); the System pop-up can be put
+  // off with Later; the evolution sound plays when a release arrives while
+  // the page is open (never on load, never in View-as panes).
+  const [evoOpened, setEvoOpened] = useState<Readonly<Record<string, string>>>({});
+  const openedRelease =
+    evoOpened[characterId] ?? readOpened(pane ? null : browserStorage(), characterId);
+  const [evoRequest, setEvoRequest] = useState(0);
+  const [evoLater, setEvoLater] = useState<string | null>(null);
+  const releaseId = view?.me.evolution?.releaseId ?? null;
+  const evoState = view ? evolutionPanelState(view.me.evolution, openedRelease) : 'locked';
+  const openEvolution = () => {
+    if (releaseId === null || pane) return;
+    setEvoOpened({ ...evoOpened, [characterId]: releaseId });
+    writeOpened(browserStorage(), characterId, releaseId);
+    setEvoRequest((n) => n + 1);
+  };
+  const seenRelease = useRef<{ id: string; release: string | null } | null>(null);
+  useEffect(() => {
+    if (!view) return;
+    const seen = seenRelease.current;
+    seenRelease.current = { id: characterId, release: releaseId };
+    if (releaseArrived(seen, characterId, releaseId, pane)) {
+      playSound('evolution', levelRef.current);
+    }
+  }, [view, releaseId, characterId, pane]);
   const waitingSelections = view ? pendingSelections(view.me.selections).length : null;
   const seenSelections = useRef<{ id: string; count: number } | null>(null);
   useEffect(() => {
@@ -216,6 +251,32 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
         </p>
       )}
       {view && <BroadcastBanners messages={view.messages} />}
+      {view && view.me.evolution !== null && evoState === 'lit' && evoLater !== releaseId && (
+        <div className="contest-layer">
+          <section
+            className={`contest-popup evolution-popup${themeClass(view.rules.grades.find((g) => g.id === view.me.evolution?.toGrade)?.theme)}`}
+            role="dialog"
+            aria-labelledby="evolution-popup-heading"
+            data-testid="evolution-popup"
+          >
+            <h2 id="evolution-popup-heading">[Evolution available]</h2>
+            <p>
+              You have reached the peak of your grade. The System offers you{' '}
+              {view.me.evolution.toGrade}-grade.
+            </p>
+            <div className="assign-actions">
+              {!pane && (
+                <button type="button" onClick={openEvolution}>
+                  Open your evolution
+                </button>
+              )}
+              <button type="button" className="secondary" onClick={() => setEvoLater(releaseId)}>
+                Later
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       {pane && <PaneLatest live={live} view={view} />}
       {(live.status === 'refused' || live.error) && (
         <p className="err" role="alert">
@@ -231,7 +292,19 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
           <div className="player-col">
             {/* MT.2: an open merge offer waits on an answer, so it sits on top. */}
             <MergeOfferPanel view={view} client={pane ? null : client} />
-            <Status view={view} client={pane ? null : client} />
+            <Status
+              view={view}
+              client={pane ? null : client}
+              lit={evoState === 'lit'}
+              evoRequest={evoRequest}
+              onEvolve={openEvolution}
+            />
+            <EvolutionPanel
+              view={view}
+              opened={openedRelease}
+              canOpen={!pane}
+              onOpen={openEvolution}
+            />
             <RunningLog live={live} />
             <ProfessionsPanel view={view} client={pane ? null : client} />
             <PartyPanel view={view} />
@@ -249,7 +322,21 @@ export function PlayerScreen({ characterId }: { characterId: string }) {
   );
 }
 
-function Status({ view, client }: { view: PlayerView; client: LiveClient | null }) {
+function Status({
+  view,
+  client,
+  lit = false,
+  evoRequest = 0,
+  onEvolve,
+}: {
+  view: PlayerView;
+  client: LiveClient | null;
+  /** ME.5: a released evolution not yet opened lights the window in the next metal. */
+  lit?: boolean;
+  /** ME.5: bumped when the Evolution window or pop-up asks to open the evolution. */
+  evoRequest?: number;
+  onEvolve?: () => void;
+}) {
   const me: OwnSheet = view.me;
   const rules = view.rules;
   const poolName = (id: string) => rules.pools.find((p) => p.id === id)?.name ?? id;
@@ -352,6 +439,17 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
     if (evoFocus === 0) return;
     (evolveButton.current ?? statusHeading.current)?.focus();
   }, [evoFocus]);
+  // ME.5 review: Close keeps the picks and the step for that release.
+  const [evoPicks, setEvoPicks] = useState<SavedPicks | null>(null);
+  // ME.5: the Evolution window, the pop-up and [Evolve] open the dialog here.
+  const [evoHandled, setEvoHandled] = useState(evoRequest);
+  if (evoRequest !== evoHandled) {
+    setEvoHandled(evoRequest);
+    if (client && me.evolution !== null) {
+      setEvoNotice(null);
+      setEvoOpen(me.evolution.releaseId);
+    }
+  }
   const [selOpen, setSelOpen] = useState<{ level: number; offerId: string } | null>(null);
   const [selConfirming, setSelConfirming] = useState<number | null>(null);
   const [selNotice, setSelNotice] = useState<string | null>(null);
@@ -423,10 +521,16 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
   return (
     <section
       ref={statusSection}
-      className={`window status-window${metal}`}
+      className={`window status-window${metal}${lit ? ' evolution-lit' : ''}`}
       aria-labelledby="status"
       data-testid="status"
     >
+      {lit && (
+        <span
+          className={`evolution-glow${themeClass(rules.grades.find((g) => g.id === me.evolution?.toGrade)?.theme)}`}
+          aria-hidden="true"
+        />
+      )}
       <h2 id="status" tabIndex={-1} ref={statusHeading}>
         Status
       </h2>
@@ -600,8 +704,11 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
               ref={evolveButton}
               aria-haspopup="dialog"
               onClick={() => {
-                setEvoNotice(null);
-                setEvoOpen(me.evolution?.releaseId ?? null);
+                if (onEvolve) onEvolve();
+                else {
+                  setEvoNotice(null);
+                  setEvoOpen(me.evolution?.releaseId ?? null);
+                }
               }}
             >
               [Evolve]
@@ -643,26 +750,51 @@ function Status({ view, client }: { view: PlayerView; client: LiveClient | null 
           {evoNotice}
         </p>
       )}
-      {client && me.evolution !== null && evoOpen === me.evolution.releaseId && (
-        <EvolutionChoice
-          key={me.evolution.releaseId}
-          evolution={me.evolution}
-          view={view}
-          client={client}
-          onConfirming={() => setEvoConfirming(true)}
-          onSettled={(ok) => {
-            setEvoConfirming(false);
-            if (ok) {
+      {client &&
+        me.evolution !== null &&
+        evoOpen === me.evolution.releaseId &&
+        (me.evolution.steps !== undefined ? (
+          <EvolutionStepsChoice
+            key={me.evolution.releaseId}
+            evolution={me.evolution}
+            steps={me.evolution.steps}
+            saved={evoPicks?.releaseId === me.evolution.releaseId ? evoPicks : null}
+            onPicks={setEvoPicks}
+            view={view}
+            client={client}
+            onConfirming={() => setEvoConfirming(true)}
+            onSettled={(ok) => {
+              setEvoConfirming(false);
+              if (ok) {
+                setEvoOpen(null);
+                setEvoFocus((n) => n + 1);
+              }
+            }}
+            onClose={() => {
               setEvoOpen(null);
               setEvoFocus((n) => n + 1);
-            }
-          }}
-          onClose={() => {
-            setEvoOpen(null);
-            setEvoFocus((n) => n + 1);
-          }}
-        />
-      )}
+            }}
+          />
+        ) : (
+          <EvolutionChoice
+            key={me.evolution.releaseId}
+            evolution={me.evolution}
+            view={view}
+            client={client}
+            onConfirming={() => setEvoConfirming(true)}
+            onSettled={(ok) => {
+              setEvoConfirming(false);
+              if (ok) {
+                setEvoOpen(null);
+                setEvoFocus((n) => n + 1);
+              }
+            }}
+            onClose={() => {
+              setEvoOpen(null);
+              setEvoFocus((n) => n + 1);
+            }}
+          />
+        ))}
       {selNotice && (
         <p className="err" role="alert" data-testid="selection-notice">
           {selNotice}

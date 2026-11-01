@@ -236,6 +236,8 @@ test('an early montage and an evolution released before its selections', async (
   const builder = gm.locator('section[aria-labelledby="evolution-builder"]');
   const form = builder.getByRole('form', { name: 'Evolution release' });
   await openWindow(gm, 'evolution-builder');
+  // ME.5: Three steps is the default; this spec covers the one-choice form.
+  await builder.getByLabel('Class only (one choice)').check();
   await expect(form.getByTestId('evolution-waits')).toContainText('lvl 5');
   await form.getByRole('group', { name: 'Option 1' }).getByLabel('Class name').fill('Ranger');
   await form.getByLabel(/Approve this re-rating/).check();

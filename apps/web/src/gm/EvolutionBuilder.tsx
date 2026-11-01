@@ -84,8 +84,8 @@ export function EvolutionBuilder({
   const character = current === undefined ? undefined : state.characters[current.id];
   const stepsPossible =
     character !== undefined && evolutionTarget(state.rules, character)?.trackBudget !== undefined;
-  // D305: one choice stays the default until the player's screen can pick three steps (ME.5).
-  const [shape, setShape] = useState<'single' | 'steps'>('single');
+  // D305, ME.5: Three steps is the default now that players pick all three.
+  const [shape, setShape] = useState<'single' | 'steps'>('steps');
   return (
     <section className="window evolution-builder" aria-labelledby="evolution-builder">
       <h2 id="evolution-builder">Evolutions</h2>

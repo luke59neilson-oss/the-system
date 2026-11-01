@@ -333,7 +333,7 @@ in the first session.
   GM-only. *Accept:* unit tests (scaling keeps the exact total for every
   row at every budget; a row of all free points; a zero row refused);
   canary; e2e applying Archer's shape at the E-grade class budget.
-- [ ] **ME.5 The player's evolution.** DESIGN §9 "Evolution on the player's
+- [x] **ME.5 The player's evolution.** DESIGN §9 "Evolution on the player's
   screen": the locked, greyed Evolution tab; on release it lights up all
   over (glow and pulse in the next grade's metal, the `[Evolution
   available]` pop-up, sound unless muted; reduced motion: a strong static

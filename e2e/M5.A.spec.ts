@@ -116,6 +116,8 @@ test('selection, evolution, mark upgrade and merge between the GM and the player
   const evolution = gm.locator('section[aria-labelledby="evolution-builder"]');
   await openWindow(gm, 'evolution-builder');
   await expect(evolution.getByLabel('Character')).toHaveValue('jake');
+  // ME.5: Three steps is the default; this spec covers the one-choice form.
+  await evolution.getByLabel('Class only (one choice)').check();
   const release = evolution.getByRole('form', { name: 'Evolution release' });
   const path1 = release.getByRole('group', { name: 'Option 1' });
   await path1.getByLabel('Class name').fill('Storm Archer');

@@ -453,6 +453,10 @@ a {
   .player-grid .professions-window {
     order: 1;
   }
+  /* ME.5 review: the Evolution window sits right under Status on phones. */
+  .player-grid .evolution-panel {
+    order: 1;
+  }
   .player-grid .quests {
     order: 2;
   }
@@ -3476,4 +3480,89 @@ ol.change-log li.undone .change-text {
 }
 .evolution-reference > label select {
   width: auto;
+}
+
+/* ME.5: the player's Evolution window, locked, lit and open (DESIGN §9). */
+.evolution-panel.evolution-locked {
+  opacity: 0.55;
+  filter: grayscale(1);
+}
+.evolution-panel .evolution-lock {
+  color: var(--muted);
+  font-weight: normal;
+}
+.evolution-panel.evolution-lit,
+.status-window.evolution-lit {
+  position: relative;
+  border-color: var(--metal-hi);
+  animation: evolution-call 1.8s ease-in-out infinite;
+}
+.status-window .evolution-glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 2px solid var(--metal-hi);
+  animation: evolution-call 1.8s ease-in-out infinite;
+}
+.evolution-panel.evolution-lit h2,
+.evolution-popup h2 {
+  color: var(--metal-text);
+}
+.evolution-panel .evolution-open {
+  background: var(--metal-hi);
+  color: #10141c;
+  font-weight: 600;
+}
+.evolution-popup {
+  border: 2px solid var(--metal-hi);
+  box-shadow: 0 0 32px color-mix(in srgb, var(--metal-hi) 70%, transparent);
+}
+@keyframes evolution-call {
+  0%,
+  100% {
+    box-shadow: 0 0 6px color-mix(in srgb, var(--metal-hi) 40%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 30px color-mix(in srgb, var(--metal-hi) 90%, transparent),
+      inset 0 0 18px color-mix(in srgb, var(--metal) 40%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* A strong static highlight instead of the pulse. */
+  .evolution-panel.evolution-lit,
+  .status-window.evolution-lit,
+  .status-window .evolution-glow {
+    animation: none;
+    box-shadow:
+      0 0 0 3px var(--metal-hi),
+      0 0 24px color-mix(in srgb, var(--metal-hi) 80%, transparent);
+  }
+}
+.evolution-steps-choice .evolution-progress {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 10px;
+  font-family: var(--mono);
+}
+.evolution-steps-choice .evolution-progress li {
+  color: var(--muted);
+}
+.evolution-steps-choice .evolution-progress li.current {
+  color: var(--metal-text);
+  font-weight: 600;
+}
+.evolution-steps-choice .evolution-progress li.done::after {
+  content: ' ✓';
+}
+.evolution-steps-choice .evolution-per-level {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+.evolution-steps-choice .evolution-review dd {
+  margin: 0 0 6px;
 }
