@@ -571,7 +571,7 @@ describe('evolution', () => {
   it('rejects bad releases', () => {
     const c = atGTop();
     const bad = (
-      options: Extract<Command, { type: 'evolution.release' }>['options'],
+      options: NonNullable<Extract<Command, { type: 'evolution.release' }>['options']>,
       professions?: string[],
     ) =>
       reject(c, {

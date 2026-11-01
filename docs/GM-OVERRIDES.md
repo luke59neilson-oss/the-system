@@ -81,6 +81,11 @@ refusal is raised.
 | `The merged skill would be above the highest rarity a skill can have` | packages/engine/src/skills/model.ts:314 | No rarity exists to give (past Mythical, or the reserved Divine; DESIGN §6). Give the merged skill with `skill.grant` at Mythical and remove the originals by re-rating, or make the rarity unreserved in Rules |
 | `[…] cannot be equipped` | packages/engine/src/economy/model.ts:174 | Edit the item in the item library to give it a slot |
 | `[…] goes in a … slot, not …` | packages/engine/src/economy/model.ts:174 | Edit the item in the item library to change its slot |
+| `… has the profession […]: add at least one profession option to evolve it` | packages/engine/src/events/commands.ts:1066 | Add a profession option that keeps the profession's name (it evolves in place); `character.grantProfession` with `override: true` changes the profession at any time |
+| `… has the profession […]: choose how it evolves` | packages/engine/src/evolution/model.ts:1105 | Release again with a profession option that keeps its name; `character.grantProfession` with `override: true` changes it afterwards |
+| Step budget and one-time bonus mismatches (`… option "…" gives … points per level, not …`; `… options have unequal one-time bonuses …`) | packages/engine/src/evolution/model.ts (stepBudgetProblems) | `evolution.release` with `override: true` (Evolutions tab → Override) releases unequal options (DESIGN §2 "Equal totals") |
+| `Three-step evolutions need track budgets at …-grade: switch to the new numbers in Rules settings first` | packages/engine/src/events/commands.ts:1082 | Rules settings → switch to the new numbers (D300), or release a single-choice evolution |
+| `… + … + …: …` | packages/engine/src/evolution/model.ts:1210 | One combination of the three steps breaks an evolution rule (named after the colon; its row above has the way through); change that option, or release then fix it on the sheet |
 
 ## State
 
@@ -152,6 +157,8 @@ refusal is raised.
 | `That trade can no longer go through` | packages/engine/src/events/commands.ts:1801 | A side no longer holds its part; the GM moves items and currency with Edit holdings |
 | `A grade wall settles this contest; it has no roll` | packages/engine/src/resolution/model.ts:328 | Fix the input (the roller fills it in) |
 | `This contest needs a roll` | packages/engine/src/resolution/model.ts:328 | Fix the input (the roller fills it in) |
+| `This evolution is a single choice; choose one option` | packages/engine/src/evolution/model.ts:1090 | The release was made before three steps (or with one choice): choose one option, or release again with steps |
+| `Choose a class, a profession (or none for now) and a race` | packages/engine/src/evolution/model.ts:1095 | The release has three steps: send one choice per step (the GM may choose for the player) |
 
 ## Data
 
@@ -379,6 +386,10 @@ refusal is raised.
 | `Bonus source "…" given twice` | packages/engine/src/bonuses/effective.ts:106 | Fix the input |
 | `Stat "…" is missing or not a whole number` | packages/engine/src/bonuses/effective.ts:115 | Set stats directly (`character.setStats`) |
 | `Bad command…` | packages/engine/src/events/commands.ts:1895 | A malformed command (the app never sends one); fix the input |
+| `Two options in a step share an id` | packages/engine/src/events/commands.ts:1073 | Give each option in a step its own id |
+| `Choose an evolution option` | packages/engine/src/events/commands.ts:1645 | Name an option (`optionId`) or one per step (`choices`) |
+| `No … option "…"` | packages/engine/src/evolution/model.ts:1099 | Choose an option the release offers in that step |
+| `Send the class options in the class step, not as options` | packages/engine/src/events/commands.ts:1076 | Put the class options in `steps.class` |
 
 ## Permission
 

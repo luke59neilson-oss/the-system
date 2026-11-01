@@ -71,8 +71,10 @@ import {
   withdrawPassedOver,
   offerSelection,
   releaseEvolution,
+  checkReleasedSteps,
   retiredSkillNames,
   grantSkill,
+  type PendingEvolution,
 } from '../evolution';
 import {
   montageAvailable,
@@ -1994,26 +1996,37 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       );
     }
     case 'evolution.released': {
-      const { characterId, options, professions, legacy, rerate, rerateApproved, override } =
+      const { characterId, options, professions, legacy, rerate, rerateApproved, override, steps } =
         event.payload;
       const character = characterOf(state, event, characterId);
+      if (steps !== undefined) {
+        const statIds = state.rules.stats.list.map((s) => s.id);
+        for (const o of [...steps.class, ...steps.profession, ...steps.race]) {
+          checkKeys(event, Object.keys(o.distribution.stats), statIds, 'stat');
+          checkKeys(event, Object.keys(o.statBonus), statIds, 'stat');
+        }
+      }
       return withCharacter(
         state,
-        rule(event, () =>
-          releaseEvolution(
-            state.rules,
-            character,
-            options,
-            professions,
-            retiredFor(state, character),
-            event.id,
-            legacy === true,
-            rerate ?? null,
-            jointUsesOf(state, characterId),
-            rerateApproved === true,
-            override === true,
-          ),
-        ),
+        rule(event, () => {
+          checkedRelease(state, character, steps, rerateApproved === true);
+          return withSteps(
+            steps,
+            releaseEvolution(
+              state.rules,
+              character,
+              options,
+              professions,
+              retiredFor(state, character),
+              event.id,
+              legacy === true,
+              rerate ?? null,
+              jointUsesOf(state, characterId),
+              rerateApproved === true,
+              override === true,
+            ),
+          );
+        }),
       );
     }
     case 'evolution.chosen': {
@@ -2029,6 +2042,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
           event.payload.releaseId ?? null,
           event.payload.legacy === true,
           jointUsesOf(state, characterId),
+          event.payload.choices ?? null,
         ),
       );
       // Practice entries follow transformed skills, so pair counts carry over.
@@ -2760,4 +2774,29 @@ function jointUsesOf(state: CampaignState, characterId: string) {
     const [a, b] = x < y ? [x, y] : [y, x];
     return counts.find((p) => p.skills[0] === a && p.skills[1] === b)?.count ?? 0;
   };
+}
+
+/** ME.2 review: checks every combination of a three-step release before it is stored. */
+function checkedRelease(
+  state: CampaignState,
+  character: Character,
+  steps: PendingEvolution['steps'],
+  rerateApproved: boolean,
+): void {
+  if (steps !== undefined) {
+    checkReleasedSteps(
+      state.rules,
+      character,
+      steps,
+      retiredFor(state, character),
+      jointUsesOf(state, character.id),
+      rerateApproved,
+    );
+  }
+}
+
+/** ME.2: keeps a release's three steps on the pending evolution (absent before ME.2). */
+function withSteps(steps: PendingEvolution['steps'], character: Character): Character {
+  if (steps === undefined || character.evolution === null) return character;
+  return { ...character, evolution: { ...character.evolution, steps } };
 }

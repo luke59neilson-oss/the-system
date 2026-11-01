@@ -291,14 +291,32 @@ export function describeEvent(
       if (!now) break;
       const grade = was && was.grade !== now.grade ? `, grade ${was.grade} → ${now.grade}` : '';
       const offered = (was?.evolution?.professions.length ?? 0) > 0;
-      const prof = event.payload.profession
-        ? `, profession ${line(event.payload.profession)}`
-        : offered
-          ? ', no profession for now'
-          : '';
+      const steps = event.payload.choices;
+      // ME.2: a three-step evolution names the profession taken or evolved, and the race.
+      const prof =
+        steps !== undefined
+          ? (steps.profession === null || now.profession === null
+              ? ', no profession for now'
+              : `, profession ${line(now.profession)}`) + `, race ${line(now.race)}`
+          : event.payload.profession
+            ? `, profession ${line(event.payload.profession)}`
+            : offered
+              ? ', no profession for now'
+              : '';
       // A merge offered as part of the evolution (M5.2) is a notable event too.
       const chosen = was?.evolution?.options.find((o) => o.id === event.payload.optionId);
-      const merged = (chosen?.transforms ?? [])
+      // ME.2: merges can ride on any of the three chosen options.
+      const stepped = was?.evolution?.steps;
+      const picks = steps === undefined || stepped === undefined ? null : steps;
+      const transforms =
+        picks === null || stepped === undefined
+          ? (chosen?.transforms ?? [])
+          : [
+              ...(stepped.class.find((o) => o.id === picks.class)?.transforms ?? []),
+              ...(stepped.profession.find((o) => o.id === picks.profession)?.transforms ?? []),
+              ...(stepped.race.find((o) => o.id === picks.race)?.transforms ?? []),
+            ];
+      const merged = transforms
         .filter((t) => t.merge !== undefined)
         .map((t) => `, merged ${line(t.skill)} + ${line(t.merge ?? '')} into ${line(t.name)}`)
         .join('');

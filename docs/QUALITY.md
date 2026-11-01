@@ -221,6 +221,7 @@ lowered by their verifiers and folded into the Low batches.
   a pane's Identify notice, MV.3, covers the console while Tab is walked).
 
 ## Backlog (Lows; M11.5 goes through these)
+- (ME.2 review round 2, sonnet) with `steps`, `releaseEvolution` still runs `checkOption` on the class-only `options`, so rules with `evolutionTransforms.min` ≥ 1 refuse a class option whose transform would come from the profession or race step; combination refusals name options by display name, which can repeat across steps.
 
 - (ME.1 review, sonnet) after the GM lowers a class or profession level and it is earned again, a second track batch with the same `track`/`trackLevel` is pushed and only `freePoints.spend` can reach it (add a had-guard like race batches); a custom grade with a zero race budget and zero shares pushes a 0-point race batch.
 - (MV.A review, fable) View as / Table view panes get the Identify notice with no Close, so the GM cannot see the pane until the player closes it; simulation and soak tests still send `freePoints.assign`, not the `freePoints.spend` the phone sends (no randomized spend/override/undo invariants); campaigns from before MV.3 decide Identify range at the old reveal, so an entity read live before may show `[??? – lvl ???]` until re-marked (say so in GM-GUIDE); after a lost connection on confirm the phone says the GM changed the free points; the notice header repeats the GM's own `[Name – lvl N]` line; `entity.closeNotice` answers differently for real and unknown entity ids.

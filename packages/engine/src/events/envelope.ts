@@ -27,6 +27,28 @@ const broadcastDisplay = z.discriminatedUnion('mode', [
   z.strictObject({ mode: z.literal('timed'), seconds: z.number().int().min(5).max(86_400) }),
 ]);
 const statValues = z.record(z.string().min(1), z.number().int().nonnegative());
+/** ME.2: one option in a step of a three-step evolution (DESIGN §2). */
+const stepOption = z.strictObject({
+  id: recordId,
+  name: nonBlank,
+  rarity: recordId,
+  description: z.string().trim().max(2000),
+  distribution: z.strictObject({
+    stats: statValues,
+    free: z.number().int().nonnegative().max(1_000_000),
+  }),
+  statBonus: statValues,
+  transforms: z
+    .array(
+      z.strictObject({
+        skill: nonBlank,
+        name: nonBlank,
+        rarity: recordId,
+        merge: nonBlank.optional(),
+      }),
+    )
+    .max(10),
+});
 /** One side of a shared contest (M7.3). */
 const contestSide = z.strictObject({
   label: z.string().trim().min(1).max(80),
@@ -649,6 +671,18 @@ export const EVENT_PAYLOAD_SCHEMAS = {
       .max(10),
     professions: z.array(nonBlank).max(10),
     /**
+     * ME.2 (DESIGN §2): the three steps (class, profession, race), each a list
+     * of options with a distribution at the new grade and a one-time bonus.
+     * Absent on releases stored before ME.2, which stay one choice.
+     */
+    steps: z
+      .strictObject({
+        class: z.array(stepOption).min(1).max(10),
+        profession: z.array(stepOption).max(10),
+        race: z.array(stepOption).min(1).max(10),
+      })
+      .optional(),
+    /**
      * Each kept skill's rarity after the evolution (MR.1, DESIGN §6); absent in
      * releases stored before MR.1, which re-rate nothing.
      */
@@ -671,6 +705,13 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     characterId: recordId,
     optionId: recordId,
     profession: nonBlank.nullable(),
+    /**
+     * ME.2: the option chosen in each step of a three-step release (`optionId`
+     * repeats the class choice); absent for single-choice releases.
+     */
+    choices: z
+      .strictObject({ class: recordId, profession: recordId.nullable(), race: recordId })
+      .optional(),
     /** The release chosen from (its event id); absent only in logs from before it existed. */
     releaseId: recordId.optional(),
     /** Upcast from v1: chosen under the old rules (no gate, no refill, D99). */

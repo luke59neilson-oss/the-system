@@ -431,7 +431,24 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
         gmNote: `${GM}-batch`,
       }));
       // M1.10: menus and released evolutions are the owner's alone.
-      strings.push(`OWNER-${id}-menu`, `OWNER-${id}-evo`);
+      strings.push(
+        `OWNER-${id}-menu`,
+        `OWNER-${id}-evo`,
+        `OWNER-${id}-step-class`,
+        `OWNER-${id}-step-prof`,
+        `OWNER-${id}-step-race`,
+      );
+      // ME.2: a three-step release's option cards; unknown keys are GM-only.
+      const card = (name: string) => ({
+        id: name,
+        name,
+        rarity: 'common',
+        description: '',
+        distribution: { stats: { strength: num() }, free: 2, gmNote: `${GM}-dist` },
+        statBonus: { agility: num() },
+        transforms: [],
+        gmNote: `${GM}-step`,
+      });
       c.selections = [
         {
           level: 5,
@@ -454,6 +471,11 @@ describe('canary: GM-only and other players’ data never reach a player', () =>
             statBonus: { strength: 5 },
           },
         ],
+        steps: {
+          class: [card(`OWNER-${id}-step-class`)],
+          profession: [card(`OWNER-${id}-step-prof`)],
+          race: [card(`OWNER-${id}-step-race`)],
+        },
       };
       owner.set(id, { strings, numbers });
     }

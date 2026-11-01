@@ -10,7 +10,7 @@ import {
 import { CharacterRuleError, raceLevel } from '../character';
 import { settleContest, type ContestSideRecord, type GradeGapMode } from '../resolution';
 import { titleDefByName } from '../titles';
-import { keptRerate } from '../evolution';
+import { evolutionTarget, keptRerate, stepBudgetProblems } from '../evolution';
 import { castingForSkill, normalizeTags, poolLabel } from '../skills/library';
 import { missingDefaultEntries } from '../content/defaults';
 import { largestRemainderSplit } from '../progression';
@@ -31,6 +31,22 @@ import { appendEvent, type Campaign } from './log';
  * Commands are requests; events are facts. `execute` turns a command into
  * validated events and appends them, or explains why it cannot.
  */
+/** ME.2: one option in a step of a three-step evolution, as the GM sends it. */
+export interface StepOptionInput {
+  readonly id?: string | undefined;
+  readonly name: string;
+  readonly rarity?: string | undefined;
+  readonly description?: string | undefined;
+  readonly distribution: {
+    readonly stats: Readonly<Record<string, number>>;
+    readonly free: number;
+  };
+  readonly statBonus?: Readonly<Record<string, number>> | undefined;
+  readonly transforms?:
+    | readonly { skill: string; name: string; rarity: string; merge?: string | undefined }[]
+    | undefined;
+}
+
 export type Command =
   | { type: 'campaign.create'; name: string; rules: unknown }
   | {
@@ -364,7 +380,8 @@ export type Command =
   | {
       type: 'evolution.release';
       characterId: string;
-      options: readonly {
+      /** The single-choice options (before ME.2); may be empty when `steps` is given. */
+      options?: readonly {
         /** Optional; "o1", "o2"... by position when omitted. */
         id?: string | undefined;
         className: string;
@@ -377,6 +394,17 @@ export type Command =
       }[];
       /** Offered at the profession unlock grade; default none. */
       professions?: readonly string[] | undefined;
+      /**
+       * ME.2 (DESIGN §2): class, profession and race steps. When given, the
+       * class step's options stand in for `options` (send an empty list).
+       */
+      steps?:
+        | {
+            class: readonly StepOptionInput[];
+            profession?: readonly StepOptionInput[] | undefined;
+            race: readonly StepOptionInput[];
+          }
+        | undefined;
       /**
        * The GM's re-rating (MR.1, MT.1): skill name → rarity after the
        * evolution. Skills not named keep the rarity they have going in.
@@ -393,8 +421,14 @@ export type Command =
   | {
       type: 'evolution.choose';
       characterId: string;
-      optionId: string;
+      /** The class option of a single-choice release (before ME.2). */
+      optionId?: string | undefined;
       profession?: string | null | undefined;
+      /**
+       * ME.2: one option per step of a three-step release (profession null =
+       * "none for now", only for a character without a profession).
+       */
+      choices?: { class: string; profession?: string | null | undefined; race: string } | undefined;
       /** The release being answered; defaults to the one pending now. */
       releaseId?: string | undefined;
     }
@@ -773,7 +807,8 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('selection.withdrawOption') }),
   z.object({
     type: z.literal('evolution.release'),
-    options: z.array(z.record(z.string(), z.unknown())),
+    options: z.array(z.record(z.string(), z.unknown())).optional(),
+    steps: z.record(z.string(), z.unknown()).optional(),
     rerate: z.record(z.string(), z.string()).optional(),
     rerateApproved: z.boolean().optional(),
   }),
@@ -996,6 +1031,70 @@ function rerateFor(
     .filter(([name]) => !known.has(name))
     .map(([skill, rarity]) => ({ skill, rarity }));
   return [...keptRerate(character, overrides), ...extra];
+}
+
+/**
+ * ME.2: normalises the three steps and refuses a release whose options miss
+ * their step's budget at the new grade or whose one-time bonuses differ within
+ * a step, unless the GM ticked Override (DESIGN §2 "Equal totals").
+ */
+function releaseSteps(
+  campaign: Campaign,
+  command: Extract<Command, { type: 'evolution.release' }>,
+) {
+  const state = campaign.state;
+  const character = pendingOf(campaign, command.characterId);
+  const steps = command.steps!;
+  const norm = (list: readonly StepOptionInput[], prefix: string) =>
+    list.map((o, i) => ({
+      id: o.id ?? `${prefix}${i + 1}`,
+      name: o.name,
+      rarity: o.rarity ?? 'common',
+      description: o.description ?? '',
+      distribution: { stats: { ...o.distribution.stats }, free: o.distribution.free },
+      statBonus: o.statBonus ?? {},
+      transforms: o.transforms ?? [],
+    }));
+  const out = {
+    class: norm(steps.class, 'c'),
+    profession: norm(steps.profession ?? [], 'p'),
+    race: norm(steps.race, 'r'),
+  };
+  // Every evolution has a profession step: a character with a profession
+  // evolves it, so its step needs at least one option (DESIGN §2).
+  if (character && character.profession !== null && out.profession.length === 0) {
+    throw new EventRejectedError(
+      `${character.name} has the profession [${character.profession}]: add at least one profession option to evolve it`,
+    );
+  }
+  const ids = (list: readonly { id: string }[]) =>
+    new Set(list.map((o) => o.id)).size === list.length;
+  if (!ids(out.class) || !ids(out.profession) || !ids(out.race)) {
+    throw new EventRejectedError('Two options in a step share an id');
+  }
+  if ((command.options ?? []).length > 0) {
+    throw new EventRejectedError('Send the class options in the class step, not as options');
+  }
+  const target = state && character ? evolutionTarget(state.rules, character) : null;
+  // Steps set each track's points per level at the new grade, which only a
+  // grade with track budgets uses (D300): an old-rules campaign switches first.
+  if (target && target.trackBudget === undefined) {
+    throw new EventRejectedError(
+      `Three-step evolutions need track budgets at ${target.id}-grade: switch to the new numbers in Rules settings first`,
+    );
+  }
+  if (target && command.override !== true) {
+    const budget = target.trackBudget;
+    if (budget !== undefined) {
+      const problems = [
+        ...stepBudgetProblems('Class', budget.class, out.class),
+        ...stepBudgetProblems('Profession', budget.profession, out.profession),
+        ...stepBudgetProblems('Race', budget.race, out.race),
+      ];
+      if (problems.length > 0) throw new EventRejectedError(problems.join('; '));
+    }
+  }
+  return out;
 }
 
 function pendingOf(campaign: Campaign, characterId: string) {
@@ -1502,7 +1601,7 @@ function toEvent(
         type: 'selection.optionWithdrawn',
         payload: { characterId: command.characterId, skill: command.skill },
       };
-    case 'evolution.release':
+    case 'evolution.release': {
       if (command.rerateApproved !== true) {
         throw new EventRejectedError(
           "Approve the skill re-rating first: the GM sets each kept skill's rarity and approves the list (DESIGN §6)",
@@ -1517,11 +1616,23 @@ function toEvent(
           refuseIdentifyChange(campaign, command.characterId, skill);
         }
       }
+      const steps = command.steps === undefined ? undefined : releaseSteps(campaign, command);
       return {
         type: 'evolution.released',
         payload: {
           characterId: command.characterId,
-          options: command.options.map((o, i) => ({
+          ...(steps === undefined ? {} : { steps }),
+          options: (steps === undefined
+            ? (command.options ?? [])
+            : steps.class.map((o) => ({
+                id: o.id,
+                className: o.name,
+                description: o.description,
+                transforms: o.transforms,
+                classWeights: null,
+                statBonus: o.statBonus,
+              }))
+          ).map((o, i) => ({
             id: o.id ?? `o${i + 1}`,
             className: o.className,
             description: o.description ?? '',
@@ -1529,23 +1640,40 @@ function toEvent(
             classWeights: o.classWeights ?? null,
             statBonus: o.statBonus ?? {},
           })),
-          professions: command.professions ?? [],
+          // With steps, the profession step carries the offers (ME.2).
+          professions: steps === undefined ? (command.professions ?? []) : [],
           rerate: rerateFor(campaign, command.characterId, command.rerate ?? {}),
           rerateApproved: true,
           ...(command.override === true ? { override: true as const } : {}),
         },
       };
-    case 'evolution.choose':
+    }
+    case 'evolution.choose': {
+      const choices = command.choices;
+      const optionId = choices?.class ?? command.optionId;
+      if (optionId === undefined) {
+        throw new EventRejectedError('Choose an evolution option');
+      }
       return {
         type: 'evolution.chosen',
         payload: {
           characterId: command.characterId,
-          optionId: command.optionId,
-          profession: command.profession ?? null,
+          optionId,
+          profession: choices === undefined ? (command.profession ?? null) : null,
+          ...(choices === undefined
+            ? {}
+            : {
+                choices: {
+                  class: choices.class,
+                  profession: choices.profession ?? null,
+                  race: choices.race,
+                },
+              }),
           releaseId:
             command.releaseId ?? pendingOf(campaign, command.characterId)?.evolution?.releaseId,
         },
       };
+    }
     case 'clock.create':
       return {
         type: 'clock.created',
