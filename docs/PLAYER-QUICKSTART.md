@@ -18,7 +18,7 @@ GM's laptop; nothing to install.
 
 ## Your status screen
 
-- **Status**: name, race, class, profession (from E-grade), HP / MP /
+- **Status**: name, race, class, profession (once you have one), HP / MP /
   Stamina, the nine stats in tenths (23 → 2.3), titles and skills. Values
   update live as the GM plays.
 - **Free points · [Assign]**: all your unassigned free points, from every
@@ -28,12 +28,18 @@ GM's laptop; nothing to install.
 - **Skill selection · [Choose]**: when the System offers new skills. New
   options are listed first, passed-over ones below. Pick one, then
   **Confirm** (or **Back**). It can wait for a break in play.
-- **[Evolve]**: appears when the GM releases your evolution. Look at each
-  path and its stat bonus, **Choose** one, then **Evolve**.
+- **Evolution**: the tab is always there, greyed out, until the GM releases
+  your evolution; then it lights up. Pick a class, then a profession, then a
+  race option (each shows its per-level stats and one-time bonus), review
+  all three and confirm once.
 - Tap any skill (shown as `[Name (Rarity)]`) to read its description, effects and mastery
   marks, and to give it a **Nickname**.
-- **Professions**: from E-grade the GM offers professions that fit what you
-  have done. Pick one or wait; once you choose, the list locks.
+- Spells are skills with a cost: the skill's page shows its cost,
+  cooldown, range and notes, and **Cast** pays the cost from your pool (it is
+  refused when the pool is too low). The GM sees each cast as practice and
+  can undo it. Cooldowns are shown, not enforced: keep track at the table.
+- **Professions**: the GM offers ones that fit what you have done. **Take**
+  one now or later; then the other offers lock.
 
 ## The other panels
 

@@ -1319,3 +1319,8 @@
 
 ## 2026-11-01 · QF.60 · sonnet (1 round)
 - Round 1 (worktree on cdb15ec): check green (2,028 unit); `npm run mutants` 13/13 killed; 7 extra mutations of the same lines killed, one equivalent (`v >= 0` bonus filter). No banned patterns; runner restores each file in `finally`. 0 High, 0 Medium, 3 Low (the transform keep-own-name exemption is unpinned but unreachable; a second `index === -1` in skills/model.ts not covered; trade snapshots have no player-to-player trade). Lows to the QUALITY backlog.
+
+## 2026-11-01 · QF.61 · sonnet (2 rounds)
+- Round 1 (worktree on d13203b): vitest green (2,028); the new gm-overrides stale-row check fails on the pre-fix doc (flags exactly the `wares[…] … use the id` row) and passes now. 0 High, 2 Medium, 3 Low: PLAYER-QUICKSTART professions line named a "none for now" control the Professions panel lacks; DESIGN §9a Session/Progression still listed titles, View as, notes and loot where tabsModel has none and omitted track-stats; GM-GUIDE said three tabs, professions offered in the Evolution builder, demo switch "in the header"; GM-OVERRIDES equip rows said "holdings can be edited directly".
+- Fixes (c6bb9da): each line rewritten against ProfessionsPanel.tsx, tabsModel.ts and GmScreen.tsx.
+- Round 2 (c6bb9da): 0 High, 0 Medium, 1 Low (a cosmetic hard line break in GM-GUIDE). Quickstart at 587/600 words.

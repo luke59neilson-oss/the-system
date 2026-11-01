@@ -36,8 +36,8 @@ refusal is raised.
 | --- | --- | --- |
 | `…: rarity "…" is not allowed at …-grade (ceiling …)` | packages/engine/src/character/model.ts:206 | `skill.setRarity` (Edit sheet → "Set rarity") sets any skill above the ceiling after creation; or raise the ceiling in Rules |
 | `Professions unlock at …-grade` | packages/engine/src/character/model.ts:373 | `character.grantProfession` with `override: true` (Edit sheet → "Grant a profession now") grants one before E-grade, at the class level |
-| `Not enough … (has …)` | packages/engine/src/economy/model.ts:140 | Edit holdings (`holdings.adjust`) sets currency and items directly |
-| `Not enough […] (has …, needs …)` | packages/engine/src/economy/model.ts:149 | Edit holdings (`holdings.adjust`) sets currency and items directly |
+| `Not enough … (has …)` | packages/engine/src/economy/model.ts:140 | the Credits ledger's Grant/Fine and the Item library's Give/Take (`holdings.adjust`) set currency and items directly |
+| `Not enough […] (has …, needs …)` | packages/engine/src/economy/model.ts:149 | the Credits ledger's Grant/Fine and the Item library's Give/Take (`holdings.adjust`) set currency and items directly |
 | `Approve the skill re-rating first: the GM sets each kept skill's rarity and approves the list (DESIGN §6)` | packages/engine/src/events/commands.ts:1335 | One click: the GM sets and approves the re-rating in the evolution builder (the approval is the GM's own act) |
 | `Not enough … to cast […]: … of …` | packages/engine/src/events/commands.ts:889 | Set the pool (Edit sheet → pools, `character.setPools`) first, or log the use as practice without spending (`practice.log`); cooldowns are never enforced |
 | `not enough …: … of …` | packages/engine/src/events/reducer.ts:1721 | The replay check behind the one above (a recorded cast the pool cannot pay); same way through |
@@ -77,7 +77,7 @@ refusal is raised.
 | `the … list (ids and order) cannot change in a running campaign` | packages/engine/src/events/reducer.ts:731 | No override, by guarantee 2: stored events name grades, stats, pools, rarities and slots by id and position, so changing the list would change what the log means. Rename entries and change their numbers freely; a new list needs a new campaign |
 | `XP overflow always stays on` | packages/engine/src/events/reducer.ts:735 | No rules switch (Luke, Q49/L16: overflow applies to every campaign); the GM sets XP and levels directly with the level/XP/grade override (`character.setProgression`) |
 | `XP overflow is turned on by the rules migration when the campaign opens, which moves banked XP first` | packages/engine/src/events/reducer.ts:735 | Reopen the campaign so the migration runs; then the level/XP/grade override sets anything directly |
-| `these rules do not fit the campaign as it is: ……` | packages/engine/src/events/reducer.ts:792 | Bring the named characters inside the new rules first (level/XP/grade override, "Set rarity", Edit holdings), then save the rules |
+| `these rules do not fit the campaign as it is: ……` | packages/engine/src/events/reducer.ts:792 | Bring the named characters inside the new rules first (level/XP/grade override, "Set rarity", Credits ledger Grant/Fine, Item library Give/Take), then save the rules |
 | `The merged skill would be above the highest rarity a skill can have` | packages/engine/src/skills/model.ts:314 | No rarity exists to give (past Mythical, or the reserved Divine; DESIGN §6). Give the merged skill with `skill.grant` at Mythical and remove the originals by re-rating, or make the rarity unreserved in Rules |
 | `[…] cannot be equipped` | packages/engine/src/economy/model.ts:174 | Edit the item in the item library to give it a slot |
 | `[…] goes in a … slot, not …` | packages/engine/src/economy/model.ts:174 | Edit the item in the item library to change its slot |
@@ -98,10 +98,10 @@ refusal is raised.
 | `"…" is not offered to …` | packages/engine/src/character/model.ts:420 | Offer it first (Professions offers / evolution builder) |
 | `[…] is already offered to …` | packages/engine/src/character/model.ts (offerProfession) | Withdraw the offer (Progression → Professions) and offer it again with the new stats (ME.6) |
 | `… now has the profession […]: the professions offered with this evolution no longer apply, so it stays as it is` | packages/engine/src/evolution/model.ts (pickSteps) | The player confirms with the profession unchanged; `character.grantProfession` with `override: true` replaces it afterwards (ME.6, D308) |
-| `… slot … does not exist` | packages/engine/src/economy/model.ts:171 | Equip/unequip from the right slot; holdings can be edited directly |
-| `[…] is already equipped there` | packages/engine/src/economy/model.ts:182 | Equip/unequip from the right slot; holdings can be edited directly |
-| `No […] in the inventory` | packages/engine/src/economy/model.ts:184 | Equip/unequip from the right slot; holdings can be edited directly |
-| `Nothing is equipped in …` | packages/engine/src/economy/model.ts:196 | Equip/unequip from the right slot; holdings can be edited directly |
+| `… slot … does not exist` | packages/engine/src/economy/model.ts:171 | Equip/unequip from the right slot; the Item library's Give/Take (`holdings.adjust`) changes holdings directly |
+| `[…] is already equipped there` | packages/engine/src/economy/model.ts:182 | Equip/unequip from the right slot; the Item library's Give/Take (`holdings.adjust`) changes holdings directly |
+| `No […] in the inventory` | packages/engine/src/economy/model.ts:184 | Equip/unequip from the right slot; the Item library's Give/Take (`holdings.adjust`) changes holdings directly |
+| `Nothing is equipped in …` | packages/engine/src/economy/model.ts:196 | Equip/unequip from the right slot; the Item library's Give/Take (`holdings.adjust`) changes holdings directly |
 | `The libraries already hold every default entry` | packages/engine/src/events/commands.ts:888 | Nothing left to seed |
 | `A mark needs a play session` | packages/engine/src/events/commands.ts:1261 | Start a session (Session panel); marks are counted per session |
 | `XP overflow is already on` | packages/engine/src/events/commands.ts:1679 | Already on |
@@ -155,8 +155,8 @@ refusal is raised.
 | `… already has that portrait` | packages/engine/src/events/reducer.ts:868 | Nothing to change |
 | `a walled contest has no roll` | packages/engine/src/events/reducer.ts:1923 | A malformed stored contest; share it again from the roller |
 | `this contest needs a roll` | packages/engine/src/events/reducer.ts:1923 | A malformed stored contest; share it again from the roller |
-| `That item is not available` | packages/engine/src/events/commands.ts:1773 | Players see one message that names nothing (QF.9); the GM gives items with Edit holdings (`holdings.adjust`) |
-| `That trade can no longer go through` | packages/engine/src/events/commands.ts:1801 | A side no longer holds its part; the GM moves items and currency with Edit holdings |
+| `That item is not available` | packages/engine/src/events/commands.ts:1773 | Players see one message that names nothing (QF.9); the GM gives items with the Item library's Give (`holdings.adjust`) |
+| `That trade can no longer go through` | packages/engine/src/events/commands.ts:1801 | A side no longer holds its part; the GM moves items with the Item library's Give/Take and currency with the Credits ledger's Grant/Fine |
 | `A grade wall settles this contest; it has no roll` | packages/engine/src/resolution/model.ts:328 | Fix the input (the roller fills it in) |
 | `This contest needs a roll` | packages/engine/src/resolution/model.ts:328 | Fix the input (the roller fills it in) |
 | `A d20 contest takes dice, not an odds roll` | packages/engine/src/events/commands.ts | Fix the input (the roller fills it in); or share with `rolls: "odds"` |
@@ -310,7 +310,6 @@ refusal is raised.
 | `no region named "…"` | packages/engine/src/events/commands.ts | Fix the input or define the thing first (add the region, or leave the place empty) |
 | `… regions are named "…"` | packages/engine/src/events/commands.ts | Fix the input: use the region's id |
 | `wares[…]: no item named "…" in the library` | packages/engine/src/events/commands.ts | Fix the input or define the thing first (define the item, or put it in the same file) |
-| `wares[…]: … items are named "…": use the id` | packages/engine/src/events/commands.ts | Fix the input: use the item's id |
 | `entity "…" already exists` | packages/engine/src/events/reducer.ts:2140 | Fix the input or define the thing first |
 | `unknown entity "…"` | packages/engine/src/events/reducer.ts:2170 | Fix the input or define the thing first |
 | `"…" already knows …` | packages/engine/src/events/reducer.ts:2215 | Fix the input or define the thing first |

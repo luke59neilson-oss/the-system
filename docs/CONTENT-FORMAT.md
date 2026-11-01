@@ -9,7 +9,10 @@ file applies until the GM approves it (M9.3).
 
 - Machine-readable schema: [`content-format.schema.json`](content-format.schema.json)
   (JSON Schema draft 2020-12, generated from `packages/engine/src/content/format.ts`).
-- Examples (each one is checked by the tests): [`content-examples/`](content-examples/).
+- Examples: [`content-examples/`](content-examples/). The tests import the
+  library, bestiary and shop examples end to end; the skill-offer and
+  evolution examples are checked and turned into commands but not applied,
+  since they need a character with a selection or evolution waiting.
 - Content packs, ready to import: [`content-packs/tutorial.json`](content-packs/tutorial.json),
   the five-session tutorial on the Host (DESIGN §8). Import it into a new
   campaign before session 1 (GM console → Import content).
@@ -222,7 +225,7 @@ list, not stock. Players never see the shop itself. Example:
 | `name` | yes | The shop's name. |
 | `place` | no | The region it stands in, by name or id (a region in this file or the campaign). |
 | `keeper` | no | The keeper NPC: name, look, manner. |
-| `wares` | no | Up to 100 of `{ "item": "Clotleaf Salve", "price": 15 }`. `item` names a library item, or one in this file's `items`, by name or id (any case; a name two items share is refused: use the id). `price` is a whole number of the campaign currency, 0 or more. |
+| `wares` | no | Up to 100 of `{ "item": "Clotleaf Salve", "price": 15 }`. `item` names a library item, or one in this file's `items`, by name or id (any case; when two items share a name, the most recently defined one is used, so give the id to pick another). `price` is a whole number of the campaign currency, 0 or more. |
 | `hook` | no | An optional quest hook or complication. |
 
 ### `gmNotes`: GM private notes

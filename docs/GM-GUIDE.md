@@ -13,7 +13,7 @@ when something will not connect, see [`TROUBLESHOOTING.md`](https://github.com/l
 
 ## Where everything is (the console's tabs)
 
-The console opens on **Home**; three tabs hold everything else. The open tab
+The console opens on **Home**; four tabs hold everything else. The open tab
 is remembered on this laptop. Click a tab, or focus the tab bar and use the
 arrow keys (Home and End jump to the ends). A dashboard link (a selection
 waiting, a banner) opens the tab that handles it.
@@ -29,8 +29,9 @@ waiting, a banner) opens the tab that handles it.
 Award XP is the one window in two places: the same form on both tabs (a
 half-typed award shows on either). Its participant rows are the Session
 tab's party at a glance. Titles are awarded from the Title library;
-professions are offered in the Evolution builder; factions live in
-Trackers; the demo switch sits in the header on every tab, and campaigns
+professions are offered from Progression → Professions (and an evolution
+may offer them too); factions live in Trackers; the demo switch is the bar
+under the header on every tab, and campaigns
 and backups have their own window in Library & settings. The list
 mirrors `apps/web/src/gm/tabsModel.ts`.
 
@@ -92,7 +93,8 @@ send it to a player.
      the target's grade and level for the grade rules and the above-level
      bonus. The preview shows each character's levels, overflow to the other
      track and any XP that would be *lost* before you press **Award XP**.
-     The "Typical session" line suggests an award for ≈ 6 levels per grade.
+     The grade reference line reads "a typical session ≈ 6 levels = N XP
+     each", and its Fill button puts that award in.
    - **Encounter**: **Contest roll** (pick each side's stat; the grade-wall
      rules apply; **Share with the table** shows the result to players),
      **Damage and healing** on HP / MP / Stamina, and **Progress clocks**
@@ -117,8 +119,9 @@ send it to a player.
      **Ledger** (**Grant** / **Fine** currency), **Title library**
      (**Award title**), **Trackers** (regions, survivor factions; hunger is narrated, not tracked).
 3. **View as**: the header switches between **GM**, any character (exactly
-   what that player sees) and **Table view** (every player's screen side by
-   side). Your half-filled GM forms survive the switch.
+   what that player sees) and **Table view** (up to 4 players' screens side
+   by side; with more characters, tick which 4 to show). Your half-filled GM
+   forms survive the switch.
 
 ## Level-ups, skills and evolutions
 
@@ -130,7 +133,7 @@ send it to a player.
 - **Marks review**: confirm at most one mastery mark per skill per session
   (**Confirm mark**); when a skill has enough, **Upgrade** it.
 - **Merges**: when two skills have worked together often enough, name the
-  result and **Send merge**.
+  result and **Send merge offer**.
 - **Professions**: offer a character a profession at any time before they
   have one (**Offer profession**), optionally with its per-level stats and a
   one-time bonus, which it brings when the player takes it. **Withdraw**
@@ -221,7 +224,8 @@ In the **Co-DM** panel pick a kind (Shop, NPC, Place, Encounter, Item, Quest
 hook), type **What the table needs** ("an herbalist near the canyon gate"),
 and press **Generate**. The strong model writes it in the content format and
 it opens in **Import content**, where the usual checks apply (flat item
-bonuses, the 20% item cap, rarity ceilings, grades). Edit it in **Edit the
+bonuses, grades). Import does not check rarity ceilings, and the 20% item
+cap applies on the sheet: an item over it shows as capped. Edit it in **Edit the
 generated content**, **Regenerate**, or tick and apply it. **Cancel** stops a
 slow request. A **shop** goes into the library with its keeper, wares and
 prices; **Sell** on a ware fills in a GM trade to the chosen character.
@@ -299,8 +303,11 @@ which the co-DM's quick responses, suggestions, drafts and notes do not read.
 
 ### Session notes and summary
 
-- **Running notes** (needs an API key): in the Co-DM panel press **Take
-  notes** at a break. The fast model reads the transcript heard since the
+Both buttons sit in the Co-DM panel's **Session notes** block, which starts
+closed: click its heading to open it.
+
+- **Running notes** (needs an API key): open **Session notes** and press
+  **Take notes** at a break. The fast model reads the transcript heard since the
   last notes and adds short lines on what happened. They go into the
   session log and its export under "Co-DM notes".
 - **Summary**: after **End session**, and before you start the next one,
@@ -331,7 +338,7 @@ default.
 The build never calls the paid API; tests use recorded replies. The first
 time you use your own key, check the live path once (a few cents):
 
-1. Co-DM settings: save the key, press **Test connection** (expect "Connected"),
+1. Co-DM settings: save the key, press **Test connection** (expect "Connected (<model>)"),
    and see the spend counter show 1 call.
 2. Generate a Shop from a one-line request; it opens in Import content with
    no errors, and the spend counter goes up.
