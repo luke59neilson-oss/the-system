@@ -1224,3 +1224,11 @@
 
 ## 2026-11-01 · ME.2 · round 2 (sonnet)
 - No High or Medium; every round-1 finding confirmed fixed. Lows: the class-only `options` still meet `evolutionTransforms.min` alone (only bites with min ≥ 1 rules; QUALITY Backlog); the new check runs on replay (no three-step release has reached main before this, so no stored log has one); combination errors name options by display name (cosmetic). Box checked.
+
+## 2026-11-01 · ME.3 · round 1 (sonnet)
+- No High. Medium: the near-threshold list ignored `evolutionGate` and grades that cannot evolve (fixed: engine's `gateLevel`, non-evolvable grades skipped, unit tests); Release, blockers and Override sat far below the fold at 1366×768 (fixed: sticky release bar, e2e asserts it in viewport, 1366 shots).
+- Low: Override stayed ticked invisibly (fixed: resets when nothing is left to override); dry run on every render (fixed: memoised on the command); blocker list not live (fixed: aria-live); test gaps (fixed: near list and hard blockers in e2e). Deferred to the QUALITY Backlog: switching Three steps / Class only drops the draft; a draft does not re-seed when the character's profession or distributions change; card labels by position.
+
+## 2026-11-01 · ME.3 · round 2 (sonnet)
+- No High. Medium: the release result sat outside the sticky bar, off screen after Release (fixed: result inside the bar, e2e asserts it in viewport; Override unticks after a release so a second click needs a fresh decision).
+- Low: the bar had no max height (fixed: 40vh with scrolling, scroll padding for focused inputs).

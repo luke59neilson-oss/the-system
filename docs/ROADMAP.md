@@ -313,7 +313,7 @@ in the first session.
   profession gets offers and "none for now", one with a profession evolves it;
   confirm applies all three; old log replay); canary (unreleased options
   never in player frames).
-- [ ] **ME.3 The Evolutions tab (GM).** A fourth console tab (DESIGN §9a)
+- [x] **ME.3 The Evolutions tab (GM).** A fourth console tab (DESIGN §9a)
   and the home dashboard's "evolutions to build" link to it: characters at
   or within 3 race levels of the threshold; per character the builder with
   the three steps, option cards (add, duplicate, remove), a budget meter per
