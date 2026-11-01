@@ -3,7 +3,8 @@
 // here changes the campaign: a draft is GM-only data in the campaign folder
 // until the GM confirms it, which logs an ordinary `practice.log`. Pure
 // helpers (prompt, parse, attribution) plus a small file store.
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
+import { damagedFile, readJsonFile, writeJsonFile } from './jsonFile';
 import path from 'node:path';
 import { z } from 'zod';
 import { AiError, requireWhole, type AiClient } from './client';
@@ -262,9 +263,9 @@ export class DraftStore {
   private read(): DraftFile {
     if (!existsSync(this.file)) return { version: 1, readUpTo: {}, drafts: [] };
     // A damaged file throws, so it is never overwritten (as D241 for voices).
-    const data = JSON.parse(readFileSync(this.file, 'utf8')) as Partial<DraftFile> | null;
+    const data = readJsonFile(this.file, 'practice drafts') as Partial<DraftFile> | null;
     if (!data || !Array.isArray(data.drafts) || typeof data.readUpTo !== 'object') {
-      throw new Error('The practice drafts file is damaged; move it aside to start over');
+      throw new Error(damagedFile('practice drafts', this.file));
     }
     return { version: 1, readUpTo: data.readUpTo ?? {}, drafts: data.drafts };
   }
@@ -297,9 +298,6 @@ export class DraftStore {
   }
 
   private write(body: DraftFile): void {
-    mkdirSync(this.dir, { recursive: true });
-    const tmp = `${this.file}.tmp`;
-    writeFileSync(tmp, JSON.stringify(body, null, 2) + '\n');
-    renameSync(tmp, this.file);
+    writeJsonFile(this.file, body);
   }
 }

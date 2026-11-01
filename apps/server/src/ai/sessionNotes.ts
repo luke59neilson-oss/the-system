@@ -3,7 +3,8 @@
 // met) for the session log and its export. GM-only data in the campaign
 // folder; nothing here changes the campaign. Pure helpers (prompt, parse,
 // render) plus a small per-session file store.
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
+import { damagedFile, readJsonFile, writeJsonFile } from './jsonFile';
 import path from 'node:path';
 import { z } from 'zod';
 import { AiError, requireWhole, type AiClient } from './client';
@@ -198,22 +199,13 @@ export class NotesStore {
   read(session: number): SessionNotesFile {
     const f = this.file(session);
     if (!existsSync(f)) return EMPTY;
-    let data: unknown;
-    try {
-      data = JSON.parse(readFileSync(f, 'utf8'));
-    } catch {
-      throw new Error(`Damaged session notes file: ${f}`);
-    }
+    const data = readJsonFile(f, 'session notes');
     const parsed = fileSchema.safeParse(data);
-    if (!parsed.success) throw new Error(`Damaged session notes file: ${f}`);
+    if (!parsed.success) throw new Error(damagedFile('session notes', f));
     return parsed.data;
   }
 
   write(session: number, value: SessionNotesFile): void {
-    mkdirSync(this.dir, { recursive: true });
-    const f = this.file(session);
-    const tmp = `${f}.tmp`;
-    writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`);
-    renameSync(tmp, f);
+    writeJsonFile(this.file(session), value);
   }
 }

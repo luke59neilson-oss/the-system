@@ -4,7 +4,8 @@
 // client (so the spend counter counts it), and keeps the chips and the
 // dismissed ids in the campaign folder. These routes never change the
 // campaign: a chip only fills in the MC.2 generate request.
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
+import { damagedFile, readJsonFile, writeJsonFile } from './jsonFile';
 import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -56,9 +57,9 @@ export class SuggestionStore {
       return { version: 1, chips: [], dismissed: [], readUpTo: {}, lastCallAt: null };
     }
     // A damaged file throws, so it is never overwritten (as D241).
-    const data = JSON.parse(readFileSync(this.file, 'utf8')) as Partial<SuggestionFile> | null;
+    const data = readJsonFile(this.file, 'suggestions') as Partial<SuggestionFile> | null;
     if (!data || !Array.isArray(data.chips) || !Array.isArray(data.dismissed)) {
-      throw new Error('The suggestions file is damaged; move it aside to start over');
+      throw new Error(damagedFile('suggestions', this.file));
     }
     return {
       version: 1,
@@ -78,10 +79,7 @@ export class SuggestionStore {
   }
 
   write(body: SuggestionFile): void {
-    mkdirSync(this.dir, { recursive: true });
-    const tmp = `${this.file}.tmp`;
-    writeFileSync(tmp, JSON.stringify(body, null, 2) + '\n');
-    renameSync(tmp, this.file);
+    writeJsonFile(this.file, body);
   }
 }
 
