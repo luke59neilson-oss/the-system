@@ -52,6 +52,7 @@ test('the GM lays out Archer’s points at G; a new Archer levels up by them', a
   // A class from before ML.2 shows its weights as converted points: 8 at G.
   await expect(budget).toHaveText('G-grade budget for a class level: 8 · these total 8');
   await expect(warning).toHaveCount(0);
+  await expect(lib.getByTestId('weights-unused')).toHaveCount(0);
 
   // Lay out Luke's example from scratch.
   for (const input of await points.locator('input').all()) await input.fill('');
@@ -70,10 +71,16 @@ test('the GM lays out Archer’s points at G; a new Archer levels up by them', a
   await lib.getByRole('button', { name: 'Save changes' }).click();
   await expect(lib.getByRole('status')).toHaveText('[Archer] saved');
 
+  // The card shows the points, and the weights say they are not in use.
+  await expect(
+    classes.getByRole('button', { name: /\[Archer\]/ }).getByTestId('entry-points-summary'),
+  ).toHaveText('Per level: Intelligence +3 · Agility +2 · Strength +1 · +2 free');
+
   // Reopening it reads the points back.
   await classes.getByRole('button', { name: /\[Archer\]/ }).click();
   await expect(lib.getByTestId('points-intelligence')).toHaveValue('3');
   await expect(lib.getByTestId('points-free')).toHaveValue('2');
+  await expect(lib.getByTestId('weights-unused')).toBeVisible();
 
   // Races remind of the race budget.
   await lib

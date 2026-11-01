@@ -13,6 +13,8 @@ import {
   emptyDraft,
   missingDefaults,
   pointsCheck,
+  pointsSummary,
+  weightsSetAside,
   saveCommand,
   searchEntries,
   unsavedChanges,
@@ -241,6 +243,38 @@ describe('ML.2 points per level in the library form', () => {
       DEFAULT_RULES,
     );
     expect(edited).toMatchObject({ type: 'classDef.edit', points: { stats: { strength: 6 } } });
+  });
+  it('blanking every point box clears an entry’s own points (review)', () => {
+    const own = { ...warrior, points: { stats: { strength: 1, agility: 2 }, free: 5 } };
+    const d = draftOf('class', own, DEFAULT_RULES);
+    for (const id of Object.keys(d.points)) d.points[id] = '';
+    d.free = '';
+    expect(unsavedChanges('class', d, own, DEFAULT_RULES)).toBe(true);
+    expect(saveCommand('class', d, own, DEFAULT_RULES)).toEqual({
+      type: 'classDef.edit',
+      classDefId: 'w',
+      points: { stats: {}, free: 0 },
+    });
+  });
+  it('says the weights are set aside only when points replace them (review)', () => {
+    const d = draftOf('class', warrior, DEFAULT_RULES);
+    expect(weightsSetAside(d, warrior, DEFAULT_RULES)).toBe(false);
+    expect(
+      weightsSetAside({ ...d, points: { ...d.points, agility: '1' } }, warrior, DEFAULT_RULES),
+    ).toBe(true);
+    const own = { ...warrior, points: { stats: { strength: 8 }, free: 0 } };
+    expect(weightsSetAside(draftOf('class', own, DEFAULT_RULES), own, DEFAULT_RULES)).toBe(true);
+    expect(weightsSetAside(emptyDraft('class', DEFAULT_RULES), null, DEFAULT_RULES)).toBe(false);
+  });
+  it('summarises an entry’s own points for its card (review)', () => {
+    expect(
+      pointsSummary(DEFAULT_RULES, {
+        stats: { strength: 1, agility: 2, intelligence: 3 },
+        free: 2,
+      }),
+    ).toBe('Per level: Intelligence +3 · Agility +2 · Strength +1 · +2 free');
+    expect(pointsSummary(DEFAULT_RULES, undefined)).toBe('');
+    expect(pointsSummary(DEFAULT_RULES, { stats: {}, free: 0 })).toBe('');
   });
   it('reads a class’s own points back unchanged', () => {
     const own = { ...warrior, points: { stats: { strength: 1, agility: 2 }, free: 5 } };

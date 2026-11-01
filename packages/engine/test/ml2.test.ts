@@ -73,6 +73,20 @@ describe('ML.2 library entries carry points per level', () => {
     expect(replay(c.events).state).toEqual(c.state);
   });
 
+  it('an all-zero points edit clears them, so the entry follows its default (review)', () => {
+    let c = ok(run([created], ctx), archer);
+    c = ok(c, { type: 'classDef.edit', classDefId: 'archer', points: { stats: {}, free: 0 } });
+    expect(c.state!.classLibrary['archer']).not.toHaveProperty('points');
+    c = ok(c, { type: 'raceDef.define', id: 'elf', name: 'Elf', points: humanPoints });
+    c = ok(c, {
+      type: 'raceDef.edit',
+      raceDefId: 'elf',
+      points: { stats: { agility: 0 }, free: 0 },
+    });
+    expect(c.state!.raceLibrary['elf']).not.toHaveProperty('points');
+    expect(replay(c.events).state).toEqual(c.state);
+  });
+
   it('refuses points for an unknown stat or not whole numbers', () => {
     const c = run([created], ctx);
     const base = archer as Extract<Command, { type: 'classDef.define' }>;

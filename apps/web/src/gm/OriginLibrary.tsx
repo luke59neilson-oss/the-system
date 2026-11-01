@@ -14,6 +14,8 @@ import {
   saveCommand,
   searchEntries,
   unsavedChanges,
+  pointsSummary,
+  weightsSetAside,
   weightSummary,
   type OriginDef,
   type OriginDraft,
@@ -199,8 +201,14 @@ export function OriginLibrary({ client, state }: { client: LiveClient; state: Ca
                     ))}
                   </span>
                 )}
-                {'weights' in def && (
-                  <span className="library-desc muted">{weightSummary(rules, def.weights)}</span>
+                {pointsSummary(rules, def.points) !== '' ? (
+                  <span className="library-desc muted" data-testid="entry-points-summary">
+                    {pointsSummary(rules, def.points)}
+                  </span>
+                ) : (
+                  'weights' in def && (
+                    <span className="library-desc muted">{weightSummary(rules, def.weights)}</span>
+                  )
                 )}
               </button>
             </li>
@@ -337,6 +345,12 @@ export function OriginLibrary({ client, state }: { client: LiveClient; state: Ca
         {kind === 'class' && (
           <fieldset className="library-weights">
             <legend>Stat weights (share of each level’s class spread)</legend>
+            {weightsSetAside(draft, base, rules) && (
+              <p className="muted hint" data-testid="weights-unused">
+                Not used while points per level are set above; blank every point box to use these
+                weights again.
+              </p>
+            )}
             {rules.stats.list.map((stat) => (
               <label key={stat.id}>
                 {stat.name}

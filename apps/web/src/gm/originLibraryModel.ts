@@ -270,6 +270,9 @@ export function saveCommand(
   for (const key of Object.keys(next)) {
     if (JSON.stringify(next[key]) !== JSON.stringify(old[key])) changes[key] = next[key];
   }
+  // ML.2 review: blanking every point box clears stored points (the engine
+  // drops an all-zero edit), so the entry follows its default again.
+  if (!('points' in next) && editing.points) changes['points'] = { stats: {}, free: 0 };
   if (Object.keys(changes).length === 0) return null;
   return { type: `${kind}Def.edit`, [ID_FIELD[kind]]: editing.id, ...changes };
 }
@@ -299,6 +302,39 @@ export function missingDefaults(state: DefaultTarget): number {
 }
 
 /** One line describing a class's weights, biggest first ("Agility 3 · Perception 3 · …"). */
+/**
+ * ML.2 review: whether the class's weights are set aside by points per level
+ * (the entry has its own, or the draft lays out new ones). An old class's
+ * weights shown as converted points still use the weights.
+ */
+export function weightsSetAside(
+  draft: OriginDraft,
+  editing: OriginDef | null,
+  rules: Rules,
+): boolean {
+  const points = draftPoints(draft);
+  if (points === null || points.free + Object.values(points.stats).reduce((a, b) => a + b, 0) === 0)
+    return false;
+  if (editing === null || editing.points) return true;
+  const loaded = draftPoints(draftOf('class', editing, rules));
+  return JSON.stringify(loaded) !== JSON.stringify(points);
+}
+
+/** ML.2 review: an entry's own points per level, for its library card ("" when none). */
+export function pointsSummary(
+  rules: Rules,
+  points: { readonly stats: Readonly<Record<string, number>>; readonly free: number } | undefined,
+): string {
+  if (!points) return '';
+  const parts = rules.stats.list
+    .map((s, i) => ({ name: s.name, n: points.stats[s.id] ?? 0, i }))
+    .filter((s) => s.n > 0)
+    .sort((a, b) => b.n - a.n || a.i - b.i)
+    .map((s) => `${s.name} +${s.n}`);
+  if (points.free > 0) parts.push(`+${points.free} free`);
+  return parts.length === 0 ? '' : `Per level: ${parts.join(' · ')}`;
+}
+
 export function weightSummary(rules: Rules, weights: Readonly<Record<string, number>>): string {
   return rules.stats.list
     .map((s, i) => ({ name: s.name, w: weights[s.id] ?? 0, i }))

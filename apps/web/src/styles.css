@@ -1980,7 +1980,8 @@ button.danger {
   grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: 0 10px;
 }
-.library-weights legend {
+.library-weights legend,
+.library-weights > p {
   grid-column: 1 / -1;
 }
 

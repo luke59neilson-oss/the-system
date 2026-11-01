@@ -605,9 +605,15 @@ function defineProfession(
   };
 }
 
-/** ML.2: a library entry's points, present only when set (older entries stay as stored). */
+/**
+ * ML.2: a library entry's points, present only when set (older entries stay as
+ * stored). An edit to all zeros clears them, so the entry falls back to its
+ * default (class weights, Human free points, the class's shape).
+ */
 function pointsOf(points: TrackDistribution | undefined): { points?: TrackDistribution } {
-  return points ? { points } : {};
+  if (!points) return {};
+  const total = Object.values(points.stats).reduce((a, b) => a + b, 0) + points.free;
+  return total > 0 ? { points } : {};
 }
 
 function entryOf<T>(
@@ -630,9 +636,9 @@ function unchanged<T extends object>(event: DomainEvent, def: T, old: T): void {
         ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
         : v,
     );
-  const same = (Object.keys(def) as (keyof T)[]).every(
-    (k) => canonical(def[k]) === canonical(old[k]),
-  );
+  // Both sides' keys, so an edit that clears a field (ML.2 points) is a change.
+  const keys = new Set([...Object.keys(def), ...Object.keys(old)] as (keyof T)[]);
+  const same = [...keys].every((k) => canonical(def[k]) === canonical(old[k]));
   if (same) fail(event, 'nothing to change');
 }
 
