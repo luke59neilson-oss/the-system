@@ -751,3 +751,11 @@ DESIGN/ROADMAP; do not re-apply them.
     Library & settings. DESIGN now says Session. Default: Session (as built).
     Option: move them to Library & settings (movable panels cannot move a
     panel between tabs).
+
+100. **A level lowered by the GM and earned again (sweep D, D326).** The GM's
+    "Level, XP and grade" override takes nothing back when it lowers a level
+    (D214). Earning that class or profession level again grants its stats
+    again, so lowering and re-earning adds stats twice; only race-level free
+    points are granted once (D38). Default: as built (an override is a
+    correction of levels, not of stats; the GM fixes stats with Edit sheet).
+    Option: a re-earned level grants nothing the first time granted.
