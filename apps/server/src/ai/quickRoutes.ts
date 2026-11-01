@@ -36,7 +36,7 @@ export const QUICK_SETTINGS_FILE = 'quick-responses.json';
 const regionName = (state: CampaignState): string | null =>
   state.currentRegion === null ? null : (state.regions[state.currentRegion]?.name ?? null);
 
-/** The GM's five slots on this laptop (D256: a GM preference, not campaign data). */
+/** The five slots in one folder: a campaign's own, or the laptop's from before ML.4. */
 export class QuickSettingsStore {
   private readonly file: string;
   constructor(private readonly dir: string) {
@@ -62,6 +62,28 @@ export class QuickSettingsStore {
   reset(): void {
     this.write(DEFAULT_QUICK_SLOTS);
   }
+
+  exists(): boolean {
+    return existsSync(this.file);
+  }
+}
+
+/**
+ * ML.4 (DESIGN §11, Q79): the setup is kept per campaign. The first time a
+ * campaign opens it gets its own copy: a new campaign (no events yet) starts
+ * from the defaults, an existing one from the laptop's setup from before ML.4.
+ */
+export function campaignQuickSettings(
+  store: Pick<CampaignStore, 'dir' | 'campaign'>,
+  laptopDir: string,
+): QuickSettingsStore {
+  const own = new QuickSettingsStore(store.dir);
+  if (!own.exists()) {
+    own.write(
+      store.campaign.state ? new QuickSettingsStore(laptopDir).read() : DEFAULT_QUICK_SLOTS,
+    );
+  }
+  return own;
 }
 
 const postSchema = z.strictObject({
@@ -89,7 +111,7 @@ export function registerQuickRoutes(
     spend: () => SpendSnapshot;
   },
 ): void {
-  const settings = new QuickSettingsStore(options.dir);
+  const settingsOf = (store: CampaignStore) => campaignQuickSettings(store, options.dir);
 
   const scene = (store: CampaignStore) => {
     const state = store.campaign.state as CampaignState;
@@ -101,7 +123,7 @@ export function registerQuickRoutes(
 
   app.get('/api/gm/ai/quick', (_request, reply) => {
     const a = options.active();
-    const slots = settings.read();
+    const slots = a ? settingsOf(a.store).read() : DEFAULT_QUICK_SLOTS;
     if (!a?.store.campaign.state)
       return { slots, target: null, npc: null, npcs: [], place: null, session: null };
     try {
@@ -128,11 +150,17 @@ export function registerQuickRoutes(
         .code(400)
         .send({ error: body.error.issues[0]?.message ?? 'Send { slots } with all five' });
     }
+    const a = options.active();
+    if (!a) return reply.code(409).send({ error: 'Open a campaign first' });
+    const settings = settingsOf(a.store);
     settings.write(body.data.slots);
     return { slots: settings.read() };
   });
 
-  app.delete('/api/gm/ai/quick/settings', () => {
+  app.delete('/api/gm/ai/quick/settings', (_request, reply) => {
+    const a = options.active();
+    if (!a) return reply.code(409).send({ error: 'Open a campaign first' });
+    const settings = settingsOf(a.store);
     settings.reset();
     return { slots: settings.read() };
   });
@@ -142,7 +170,7 @@ export function registerQuickRoutes(
     if (!a?.store.campaign.state) return reply.code(404).send({ error: 'No campaign open' });
     const body = postSchema.safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: 'Bad quick-response request' });
-    const slot = settings.read()[body.data.slot - 1] as QuickSlot;
+    const slot = settingsOf(a.store).read()[body.data.slot - 1] as QuickSlot;
     const s = scene(a.store);
     const target = body.data.target ?? s.target?.text;
     if (target === undefined) {

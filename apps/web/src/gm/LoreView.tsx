@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import type { CampaignState } from '@the-system/engine';
 import type { LiveClient } from '../live';
-import { LORE_TAG, loreNotes, loreScope, retagLore } from './quickModel';
+import { LORE_TAG, loreNotes, loreScope, partyCopyId, retagLore } from './quickModel';
+
+const hasOwn = (o: object, k: string) => Object.prototype.hasOwnProperty.call(o, k);
 
 interface LoreDraft {
   readonly id: string;
@@ -15,7 +17,8 @@ interface LoreDraft {
  * MD.3 Lore view (DESIGN §11 "Keep"): the lore the GM has kept, newest first,
  * each with the NPC, place and session it is tagged to. The GM edits a note's
  * title, text, NPC and place, or deletes it (review M3). Kept lore is a GM
- * note: GM-only, and the co-DM reads it for that NPC or place.
+ * note: GM-only, and the co-DM reads it for that NPC or place, until the GM
+ * shares a party copy (ML.4).
  */
 export function LoreView({ client, state }: { client: LiveClient; state: CampaignState }) {
   const notes = loreNotes(Object.values(state.notes));
@@ -61,6 +64,23 @@ export function LoreView({ client, state }: { client: LiveClient; state: Campaig
       if (editing?.id === id) setEditing(null);
       setMessage('Lore deleted');
     } else setMessage(r.error);
+  };
+
+  // ML.4 (DESIGN §11, Q81): a party copy, under an id tied to the note, so a
+  // second press cannot post it twice. The note itself stays GM-only, and the
+  // copy carries none of its NPC and place tags.
+  const share = async (id: string, title: string, body: string) => {
+    setBusy(true);
+    const r = await client.command({
+      type: 'note.create',
+      noteId: partyCopyId(id),
+      characterId: null,
+      kind: 'party',
+      title,
+      body,
+    });
+    setBusy(false);
+    setMessage(r.ok ? 'Shared with the party: players can read the copy in Party notes' : r.error);
   };
 
   const set = (patch: Partial<LoreDraft>) => setEditing((d) => (d ? { ...d, ...patch } : d));
@@ -143,7 +163,20 @@ export function LoreView({ client, state }: { client: LiveClient; state: Campaig
                   </button>{' '}
                   <button type="button" disabled={busy} onClick={() => void remove(n.id, n.title)}>
                     Delete
-                  </button>
+                  </button>{' '}
+                  {hasOwn(state.notes, partyCopyId(n.id)) ? (
+                    <span className="muted" data-testid="lore-shared">
+                      Shared with the party
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void share(n.id, n.title, n.body)}
+                    >
+                      Share with the party
+                    </button>
+                  )}
                 </>
               )}
             </li>

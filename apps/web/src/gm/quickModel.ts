@@ -197,6 +197,9 @@ export function generatedLore(file: unknown): { text: string; names: string[] } 
   return { text: lines.join('\n'), names };
 }
 
+/** The id of a lore note's party copy (ML.4): one copy per note. */
+export const partyCopyId = (noteId: string): string => `${noteId}-party`;
+
 /** MD.3 Lore view: GM notes tagged lore, newest first. */
 export function loreNotes<
   N extends {

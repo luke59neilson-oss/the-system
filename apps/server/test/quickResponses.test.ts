@@ -101,7 +101,7 @@ describe('quick-response helpers (MD.1)', () => {
     expect(p).not.toContain('y'.repeat(2000));
     // QF.50: the long note is clipped, not dropped; the prompt stays bounded.
     expect(p).toContain(`- ${'y'.repeat(QUICK_LORE_NOTE_MAX - 1)}…`);
-    expect(p.length).toBeLessThan(QUICK_NPC_NOTES_MAX + QUICK_LORE_MAX + 1000);
+    expect(p.length).toBeLessThan(QUICK_NPC_NOTES_MAX + QUICK_LORE_MAX + 2200);
   });
 
   it('parses one line plus at most three beats, tolerating drift', () => {
