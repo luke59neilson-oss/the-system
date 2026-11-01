@@ -2,7 +2,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from './helpers/test';
-import { openTab } from './helpers/gmTabs';
+import { openTab, openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
 // ML.4 (DESIGN §11, Q79, Q81): the quick-response setup is kept per campaign,
@@ -117,6 +117,23 @@ test('each campaign keeps its own buttons; sharing lore makes a party copy', asy
   await expect(notes.getByTestId('note-body-view')).toContainText('LORE-ML4 Tam owes a toll.');
   await notes.scrollIntoViewIfNeeded();
   await phone.screenshot({ path: path.join(shots, 'player-shared-lore-390x844.png') });
+
+  // ML.A review: a restored copy has the same name but its own setup; the form reloads.
+  await openWindow(gm, 'campaign-backups');
+  const win = gm.locator('section[aria-labelledby="campaign-backups"]');
+  await win.getByRole('button', { name: 'Back up now' }).click();
+  await win
+    .getByTestId('backup-row')
+    .first()
+    .getByRole('button', { name: /^Restore / })
+    .click();
+  await win.getByTestId('restored').getByRole('button', { name: 'Open restored campaign' }).click();
+  gm.once('dialog', (d) => void d.accept());
+  await expect(gm.getByTestId('restored-badge')).toBeVisible();
+  await openTab(gm, 'library');
+  await expect(settings.getByLabel('Button 5 name')).toHaveValue('Twist');
+  await gm.getByRole('button', { name: 'Back to my campaign' }).click();
+  await expect(gm.getByTestId('restored-badge')).toHaveCount(0);
 
   // Review: a switch without leaving the console reloads the settings form.
   await gm.getByRole('button', { name: 'Load demo campaign' }).click();

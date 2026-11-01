@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { CAMPAIGN_CHANGED } from './campaignsModel';
 import { QuickResponseSettings } from './QuickResponseSettings';
 import { shouldPollSpend, spendLine, useLiveSpend } from './spend';
 
@@ -18,6 +19,26 @@ interface CoDmStatus {
  */
 export function CoDmSettings({ gmKey, campaignName }: { gmKey: string; campaignName: string }) {
   const [status, setStatus] = useState<CoDmStatus | null>(null);
+  // ML.A review: the form is keyed by the campaign's id; a restored copy has the same name.
+  const [campaignId, setCampaignId] = useState<string | null>(null);
+  const [switched, setSwitched] = useState(0);
+  useEffect(() => {
+    const bump = () => setSwitched((n) => n + 1);
+    window.addEventListener(CAMPAIGN_CHANGED, bump);
+    return () => window.removeEventListener(CAMPAIGN_CHANGED, bump);
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/gm/campaign', { headers: { 'x-gm-key': gmKey } })
+      .then((r) => (r.ok ? (r.json() as Promise<{ id: string | null }>) : null))
+      .then((body) => {
+        if (!cancelled && body) setCampaignId(body.id);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [gmKey, campaignName, switched]);
   const [key, setKey] = useState('');
   const [fast, setFast] = useState('');
   const [strong, setStrong] = useState('');
@@ -183,8 +204,8 @@ export function CoDmSettings({ gmKey, campaignName }: { gmKey: string; campaignN
             Test connection
           </button>
           <p data-testid="codm-spend">{spendLine(spend ?? status.spend)}</p>
-          {/* ML.4: keyed, so a campaign switch reloads the form, never saving one campaign's setup over another's. */}
-          <QuickResponseSettings key={campaignName} gmKey={gmKey} />
+          {/* ML.4: keyed by id, so a campaign switch reloads the form, never saving one campaign's setup over another's. */}
+          {campaignId !== null && <QuickResponseSettings key={campaignId} gmKey={gmKey} />}
           {message && (
             <p role="status" className="muted">
               {message}

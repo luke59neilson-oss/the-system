@@ -203,8 +203,9 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
 
   // The active campaign. Switching (real ↔ demo) closes every socket; clients
   // reconnect and join the new campaign's hub, so no frame ever mixes the two.
-  // ML.1: "my campaign" for the demo toggle is the first non-demo campaign
-  // opened in this server's life (the one open at start, if any).
+  // ML.1: "my campaign" for the demo toggle is the one the GM opened from the
+  // Campaigns home (the one open at start, if any); a demo or restored copy
+  // opened on top of it leaves it alone, and Delete forgets it (ML.A review).
   let realId: string | null =
     options.live?.store?.id ??
     (options.openAtStart !== DEMO_CAMPAIGN_ID ? options.openAtStart : null) ??
@@ -594,8 +595,10 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       ...(options.campaigns.deleted?.() ?? []).map((d) => d.id),
     ];
     const id = campaignIdFor(name, taken);
+    const fromHome = active === null;
     const result = openById(id);
     if (!result.ok) return reply.code(result.code).send({ error: result.error });
+    if (fromHome) realId = id;
     setActive(result.entry);
     return { id, name, demo: false, main: id === realId };
   });
@@ -633,6 +636,10 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     } catch (error) {
       app.log.error(error);
       return reply.code(409).send({ error: 'Could not delete that campaign; is it open?' });
+    }
+    if (realId === id) {
+      const current = active?.store.id;
+      realId = current !== undefined && current !== DEMO_CAMPAIGN_ID ? current : null;
     }
     return { deleted: id };
   });
@@ -680,8 +687,10 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     if (id === active?.store.id) {
       return { id, demo: id === DEMO_CAMPAIGN_ID, main: id === realId };
     }
+    const fromHome = active === null;
     const result = openById(id);
     if (!result.ok) return reply.code(result.code).send({ error: result.error });
+    if (fromHome && id !== DEMO_CAMPAIGN_ID) realId = id;
     setActive(result.entry);
     return { id, demo: id === DEMO_CAMPAIGN_ID, main: id === realId };
   });

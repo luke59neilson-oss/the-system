@@ -131,6 +131,29 @@ describe('campaign delete routes (ML.1)', () => {
     expect(CampaignStore.list(dataDir)).toEqual(['second']);
   });
 
+  it('my campaign is the one opened from the home, and Delete forgets it (ML.A)', async () => {
+    await call('POST', '/api/gm/campaign', { id: 'old-test' });
+    await call('POST', '/api/gm/campaign/close');
+    const made = await call('POST', '/api/gm/campaigns', { name: 'Real Game' });
+    expect(made.body).toMatchObject({ id: 'real-game', main: true });
+    expect((await call('GET', '/api/gm/campaign')).body).toMatchObject({ main: true });
+    // Back to my campaign is this one, not the first ever opened.
+    const stay = await call('POST', '/api/gm/campaign', { demo: false });
+    expect(stay.body).toMatchObject({ id: 'real-game', main: true });
+    // A second campaign opened on top is not "mine".
+    await call('POST', '/api/gm/campaign', { id: 'old-test' });
+    expect((await call('GET', '/api/gm/campaign')).body).toMatchObject({ main: false });
+    await call('POST', '/api/gm/campaign', { demo: false });
+    await call('POST', '/api/gm/campaign/close');
+    // Deleted, it is gone: nothing brings back an empty folder of its name.
+    await call('POST', '/api/gm/campaigns/real-game/delete', { name: 'real-game' });
+    const back = await call('POST', '/api/gm/campaign', { demo: false });
+    expect(back.status).toBe(409);
+    expect(CampaignStore.list(dataDir)).toEqual(['old-test']);
+    const restored = await call('POST', '/api/gm/campaigns/real-game/undelete');
+    expect(restored.status).toBe(200);
+  });
+
   it('starts with no campaign open; phones are told to wait', async () => {
     expect((await call('GET', '/api/gm/campaign')).body).toEqual({
       id: null,
