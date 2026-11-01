@@ -13,6 +13,7 @@ import {
   rollsModeOf,
   settleContest,
   settleD20Contest,
+  type Attacker,
   type ContestSideRecord,
   type DieRoll,
   type GradeGapMode,
@@ -489,8 +490,10 @@ export type Command =
       roll: number | null;
       /** MK.1: odds or d20 (default: the campaign's `resolution.rolls`). */
       rolls?: RollsMode | undefined;
-      /** MK.1: a d20 contest's dice per round, all but the last tied (none when walled). */
+      /** MK.1: a d20 contest's dice, one per side (none when walled; ML.3: no re-roll). */
       dice?: readonly { a: DieRoll; b: DieRoll }[] | undefined;
+      /** ML.3: the side that acts; a tie goes to it (default: side A). */
+      attacker?: Attacker | undefined;
     }
   | {
       type: 'montage.offer';
@@ -1815,7 +1818,14 @@ function toEvent(
       let d20 = null;
       try {
         if (rolls === 'd20') {
-          const settled = settleD20Contest(rules, command.a, command.b, mode, command.dice ?? []);
+          const settled = settleD20Contest(
+            rules,
+            command.a,
+            command.b,
+            mode,
+            command.dice ?? [],
+            command.attacker ?? 'a',
+          );
           d20 = settled.d20;
           result = settled;
         } else {

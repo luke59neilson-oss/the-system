@@ -13,7 +13,9 @@ import {
  * d20 + modifier rolls (ROADMAP MK.1, DESIGN §7 "Dice", L27). A campaign
  * setting (`resolution.rolls`) picks app odds (the default, and every campaign
  * made before MK) or d20: each side rolls a d20 and adds its roll modifier,
- * the higher total wins, a tie rolls again. The modifier is
+ * the higher total wins. Meets beats (ML.3, Luke 2026-11-01): a tie goes to
+ * the attacker (the side that acts), with no re-roll; contests shared before
+ * ML.3 rolled ties again and replay as stored. The modifier is
  * round(3 × log2(stat ÷ 10)) on the stat with its bonuses, a stat below 1
  * counted as 1 (all numbers from `resolution.d20`). Grade walls hold: one
  * grade apart the lower side takes −5 to its modifier (and ⅓ damage, as in
@@ -62,11 +64,29 @@ export interface D20Round {
   readonly b: DieRoll & { readonly total: number };
 }
 
-/** The dice of a d20 contest: each side's modifier and every round (all but the last tied). */
+/** ML.3: the side that acts; a tied d20 contest goes to it. */
+export type Attacker = 'a' | 'b';
+
+/**
+ * The dice of a d20 contest: each side's modifier and its rounds. From ML.3
+ * on it names the attacker and has exactly one round (a tie goes to the
+ * attacker); before ML.3 every round but the last was a tie rolled again.
+ */
 export interface D20Record {
   readonly modA: number;
   readonly modB: number;
   readonly rounds: readonly D20Round[];
+  readonly attacker?: Attacker | undefined;
+}
+
+/** ML.3: whether side A wins a round, a tie going to the attacker. */
+export function d20RoundWon(round: D20Round, attacker: Attacker): boolean {
+  return round.a.total > round.b.total || (round.a.total === round.b.total && attacker === 'a');
+}
+
+/** ML.3 (DESIGN §7): against a set target, meeting it succeeds. */
+export function d20MeetsTarget(total: number, target: number): boolean {
+  return total >= target;
 }
 
 export interface D20ContestResult extends ContestResult {
@@ -74,8 +94,6 @@ export interface D20ContestResult extends ContestResult {
   readonly d20: D20Record | null;
 }
 
-/** The most rounds one contest records (ties are 5% at equal modifiers). */
-export const MAX_D20_ROUNDS = 50;
 
 /**
  * Both sides' modifiers (null when a grade wall settles the contest). In
@@ -104,8 +122,12 @@ export function d20Modifiers(
   return { yours, theirs, modA: rollModifier(rules, yours), modB: rollModifier(rules, theirs) };
 }
 
-/** Exact chance that side A wins with d20 + modA against d20 + modB, ties rolled again. */
-export function d20WinChance(modA: number, modB: number): number {
+/**
+ * Exact chance that side A wins with d20 + modA against d20 + modB. With an
+ * attacker (ML.3) a tie goes to it; without one, ties are rolled again (how
+ * contests before ML.3 were settled).
+ */
+export function d20WinChance(modA: number, modB: number, attacker?: Attacker): number {
   let wins = 0;
   let ties = 0;
   for (let x = 1; x <= D20_SIDES; x++) {
@@ -115,7 +137,9 @@ export function d20WinChance(modA: number, modB: number): number {
       else if (d === 0) ties++;
     }
   }
-  const decided = D20_SIDES * D20_SIDES - ties;
+  const all = D20_SIDES * D20_SIDES;
+  if (attacker !== undefined) return (wins + (attacker === 'a' ? ties : 0)) / all;
+  const decided = all - ties;
   return decided === 0 ? 0.5 : wins / decided;
 }
 
@@ -131,8 +155,8 @@ function checkDie(roll: DieRoll, label: string): void {
 }
 
 /**
- * Settles a d20 contest from the dice rolled: every round but the last a tie,
- * the last decides. A walled contest takes no dice.
+ * Settles a d20 contest from one die per side: the higher total wins and a
+ * tie goes to the attacker (ML.3). A walled contest takes no dice.
  */
 export function settleD20Contest(
   rules: RulesConfig,
@@ -140,7 +164,10 @@ export function settleD20Contest(
   b: ContestSide,
   mode: GradeGapMode,
   dice: readonly { readonly a: DieRoll; readonly b: DieRoll }[],
+  attacker: Attacker = 'a',
 ): D20ContestResult {
+  if (attacker !== 'a' && attacker !== 'b')
+    throw new CharacterRuleError('The attacker is side A or side B');
   const mods = d20Modifiers(rules, a, b, mode);
   if (mods === null) {
     if (dice.length > 0)
@@ -158,30 +185,24 @@ export function settleD20Contest(
     };
   }
   if (dice.length === 0) throw new CharacterRuleError('This contest needs each side’s d20');
-  if (dice.length > MAX_D20_ROUNDS) throw new CharacterRuleError('Too many tied rounds');
+  if (dice.length > 1)
+    throw new CharacterRuleError('One d20 each: a tie goes to the attacker, with no re-roll');
   const { modA, modB } = mods;
-  const rounds: D20Round[] = dice.map((r, i) => {
-    checkDie(r.a, 'Your die');
-    checkDie(r.b, 'Their die');
-    const round = {
-      a: { die: r.a.die, how: r.a.how, total: r.a.die + modA },
-      b: { die: r.b.die, how: r.b.how, total: r.b.die + modB },
-    };
-    const tie = round.a.total === round.b.total;
-    const last = i === dice.length - 1;
-    if (tie && last) throw new CharacterRuleError('A tie rolls again');
-    if (!tie && !last) throw new CharacterRuleError('Only a tie rolls again');
-    return round;
-  });
-  const final = rounds[rounds.length - 1] as D20Round;
+  const r = dice[0] as { readonly a: DieRoll; readonly b: DieRoll };
+  checkDie(r.a, 'Your die');
+  checkDie(r.b, 'Their die');
+  const round: D20Round = {
+    a: { die: r.a.die, how: r.a.how, total: r.a.die + modA },
+    b: { die: r.b.die, how: r.b.how, total: r.b.die + modB },
+  };
   return {
     yours: mods.yours,
     theirs: mods.theirs,
-    chance: d20WinChance(modA, modB),
+    chance: d20WinChance(modA, modB, attacker),
     roll: null,
     walled: false,
-    success: final.a.total > final.b.total,
-    d20: { modA, modB, rounds },
+    success: d20RoundWon(round, attacker),
+    d20: { modA, modB, rounds: [round], attacker },
   };
 }
 
@@ -195,9 +216,9 @@ export function appDie(rng: () => number): DieRoll {
 }
 
 /**
- * Rolls a d20 contest: `die` gives each side's die per round (a typed die or
- * `appDie`), rolling again while tied. No dice are drawn when a grade wall
- * settles it.
+ * Rolls a d20 contest: `die` gives each side's die (a typed die or
+ * `appDie`); a tie goes to the attacker (ML.3). No dice are drawn when a
+ * grade wall settles it.
  */
 export function rollD20Contest(
   rules: RulesConfig,
@@ -205,16 +226,9 @@ export function rollD20Contest(
   b: ContestSide,
   die: (side: 'a' | 'b', round: number) => DieRoll,
   mode: GradeGapMode = rules.resolution.gradeGapMode,
+  attacker: Attacker = 'a',
 ): D20ContestResult {
   const mods = d20Modifiers(rules, a, b, mode);
-  if (mods === null) return settleD20Contest(rules, a, b, mode, []);
-  const dice: { a: DieRoll; b: DieRoll }[] = [];
-  for (let i = 0; i < MAX_D20_ROUNDS; i++) {
-    const round = { a: die('a', i), b: die('b', i) };
-    dice.push(round);
-    if (round.a.die + mods.modA !== round.b.die + mods.modB) {
-      return settleD20Contest(rules, a, b, mode, dice);
-    }
-  }
-  throw new CharacterRuleError('Too many tied rounds');
+  if (mods === null) return settleD20Contest(rules, a, b, mode, [], attacker);
+  return settleD20Contest(rules, a, b, mode, [{ a: die('a', 0), b: die('b', 0) }], attacker);
 }
