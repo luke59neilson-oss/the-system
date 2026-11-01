@@ -322,6 +322,17 @@ const SCENARIOS: Partial<Record<EventType, Scenario>> = {
     ],
     act: { type: 'skill.useLibraryText', characterId: 'jake', skill: 'Basic Archery' },
   },
+  'skill.castingSet': {
+    act: {
+      type: 'skill.setCasting',
+      characterId: 'jake',
+      skill: 'Basic Archery',
+      cost: { pool: 'mp', amount: 5 },
+      cooldown: null,
+      range: null,
+      castingNotes: null,
+    },
+  },
   'skill.markAwarded': {
     act: { type: 'skill.awardMark', characterId: 'jake', skill: 'Basic Archery', session: 'x1' },
   },

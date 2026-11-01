@@ -920,6 +920,7 @@ describe('property: replay equals incremental state', () => {
       'skill.grant',
       'skill.describe',
       'skill.useLibraryText',
+      'skill.setCasting',
       'skill.awardMark',
       'skill.upgrade',
       'clock.create',

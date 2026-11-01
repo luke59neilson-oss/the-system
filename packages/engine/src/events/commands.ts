@@ -358,6 +358,16 @@ export type Command =
     }
   /** GM hands a hand-written skill copy back to the library (MR.4). */
   | { type: 'skill.useLibraryText'; characterId: string; skill: string }
+  /** ML.5: GM gives a skill copy its own cost, cooldown, range and casting notes. */
+  | {
+      type: 'skill.setCasting';
+      characterId: string;
+      skill: string;
+      cost: { pool: string; amount: number } | null;
+      cooldown: string | null;
+      range: string | null;
+      castingNotes: string | null;
+    }
   | {
       type: 'skill.awardMark';
       characterId: string;
@@ -851,6 +861,7 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('skill.setRarity') }),
   z.object({ type: z.literal('skill.grant') }),
   z.object({ type: z.literal('skill.useLibraryText') }),
+  z.object({ type: z.literal('skill.setCasting') }),
   z.object({ type: z.literal('skill.awardMark') }),
   z.object({ type: z.literal('skill.upgrade') }),
   z.object({ type: z.literal('skill.merge'), skills: z.array(z.unknown()) }),
@@ -1583,6 +1594,18 @@ function toEvent(
           skill: command.skill,
           description: command.description,
           flavor: command.flavor,
+        },
+      };
+    case 'skill.setCasting':
+      return {
+        type: 'skill.castingSet',
+        payload: {
+          characterId: command.characterId,
+          skill: command.skill,
+          cost: command.cost,
+          cooldown: command.cooldown,
+          range: command.range,
+          castingNotes: command.castingNotes,
         },
       };
     case 'skill.useLibraryText':

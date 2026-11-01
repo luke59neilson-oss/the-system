@@ -431,6 +431,17 @@ exports[`player notice audit (MU.2) > skill.cast from the GM tells the character
 ]
 `;
 
+exports[`player notice audit (MU.2) > skill.castingSet from the GM tells the character it changes 1`] = `
+[
+  {
+    "change": "skillText",
+    "characterId": "jake",
+    "kind": "gmChange",
+    "subject": "Basic Archery",
+  },
+]
+`;
+
 exports[`player notice audit (MU.2) > skill.described from the GM tells the character it changes 1`] = `
 [
   {

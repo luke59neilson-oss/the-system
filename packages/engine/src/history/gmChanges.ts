@@ -134,6 +134,7 @@ export const PLAYER_NOTICE_AUDIT: Readonly<Record<EventType, PlayerNoticeAudit>>
   'skill.raritySet': notifies,
   'skill.granted': notifies,
   'skill.libraryTextUsed': notifies,
+  'skill.castingSet': notifies,
   'skill.markAwarded': notifies,
   'skill.upgraded': notifies,
   'skill.merged': notifies,
@@ -455,6 +456,7 @@ export function gmChangeNotices(
       });
       break;
     case 'skill.described':
+    case 'skill.castingSet':
     case 'skill.libraryTextUsed':
       push({
         characterId: event.payload.characterId,

@@ -56,6 +56,14 @@
       "sha256": "7d8149617ba0763f67d80d957b7b3c6cd61ae15b15395fa8be666b94d2b2cbe4",
       "schemaVersion": 35
     },
+    "copy-casting.jsonl": {
+      "sha256": "4b936b219f21727af5c01869284c6d243036832fed115beba26a225d4dc984ea",
+      "schemaVersion": 35
+    },
+    "copy-casting.state.json": {
+      "sha256": "fe00c61e52dd7189769913f47efa623eac56adb326683635be9a07269cc338b7",
+      "schemaVersion": 35
+    },
     "defaults.jsonl": {
       "sha256": "40cdb92ff2d06edb5c44a9c33d05c6302a7f28cd0b37a0721333944fa4d8a011",
       "schemaVersion": 21

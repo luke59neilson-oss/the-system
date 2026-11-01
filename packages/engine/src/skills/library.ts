@@ -225,8 +225,13 @@ export function entryForSkill(
 export function castingForSkill(
   rules: RulesConfig,
   library: Readonly<Record<string, SkillDef>>,
-  skill: Pick<CharacterSkill, 'name' | 'rarity' | 'textRarity'>,
+  skill: Pick<CharacterSkill, 'name' | 'rarity' | 'textRarity' | 'casting'>,
 ): SkillCasting | null {
+  // ML.5: a hand-written copy's own casting replaces the library's; all empty
+  // means this copy has none, whatever the library says.
+  if (skill.casting) {
+    return Object.values(skill.casting).every((v) => v === null) ? null : skill.casting;
+  }
   const def = entryForSkill(rules, library, skill);
   if (def || !rules.skills.libraryByRarity) return castingOf(def);
   const ladder = rules.skills.rarities.map((r) => r.id);
@@ -299,8 +304,9 @@ export function syncCharacterSkills(
 }
 
 function withoutEditMark(skill: CharacterSkill): CharacterSkill {
-  const { textEdited, ...rest } = skill;
+  const { textEdited, casting, ...rest } = skill;
   void textEdited;
+  void casting;
   return rest;
 }
 
@@ -334,6 +340,12 @@ export function useLibraryText(
   );
   // An all-blank entry would leave the hand text in place but unmarked.
   if (!def || (def.description.trim() === '' && def.flavor.trim() === '')) {
+    // ML.5: the copy's own casting still goes back; its hand text stays, marked.
+    if (skill.casting) {
+      const { casting, ...rest } = skill;
+      void casting;
+      return { ...character, skills: character.skills.map((s, i) => (i === index ? rest : s)) };
+    }
     throw new CharacterRuleError(`The library has no entry with text for [${name}] at its rarity`);
   }
   const { textRarity, ...plain } = withoutEditMark(skill);
@@ -341,6 +353,34 @@ export function useLibraryText(
   const synced = syncSkillText(plain, def);
   const skills = character.skills.map((s, i) => (i === index ? synced : s));
   return { ...character, skills };
+}
+
+/**
+ * ML.5 (DESIGN §6, Q85): gives a copy its own cost, cooldown, range and casting
+ * notes. That makes the copy hand-written, so Use library text returns it.
+ */
+export function setCopyCasting(
+  rules: Pick<RulesConfig, 'pools'>,
+  character: Character,
+  name: string,
+  casting: NonNullable<CharacterSkill['casting']>,
+): Character {
+  const index = character.skills.findIndex((s) => s.name === name);
+  const skill = character.skills[index];
+  if (!skill) throw new CharacterRuleError(`${character.name} has no skill "${name}"`);
+  const pool = casting.cost?.pool;
+  if (pool !== undefined && !rules.pools.some((p) => p.id === pool)) {
+    throw new CharacterRuleError(`There is no pool "${pool}"`);
+  }
+  const text = (v: string | null) => (v === null || v.trim() === '' ? null : v.trim());
+  const own = {
+    cost: casting.cost ? { pool: casting.cost.pool, amount: casting.cost.amount } : null,
+    cooldown: text(casting.cooldown),
+    range: text(casting.range),
+    castingNotes: text(casting.castingNotes),
+  };
+  const next: CharacterSkill = { ...skill, textEdited: true, casting: own };
+  return { ...character, skills: character.skills.map((s, i) => (i === index ? next : s)) };
 }
 
 /** Fills a granted skill's empty description and flavour from its library entry. */

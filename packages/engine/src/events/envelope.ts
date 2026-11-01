@@ -526,6 +526,15 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     description: skillDescription.nullable(),
     flavor: skillFlavor.nullable(),
   }),
+  /** ML.5: a skill copy's own casting (DESIGN §6, Q85); Use library text removes it. */
+  'skill.castingSet': z.strictObject({
+    characterId: recordId,
+    skill: nonBlank,
+    cost: skillCost.nullable(),
+    cooldown: z.string().max(MAX_CASTING_SHORT).nullable(),
+    range: z.string().max(MAX_CASTING_SHORT).nullable(),
+    castingNotes: z.string().max(MAX_CASTING_NOTES).nullable(),
+  }),
   /** GM hands a hand-written skill copy back to the library entry for its name and rarity (MR.4). */
   'skill.libraryTextUsed': z.strictObject({
     characterId: recordId,
@@ -1107,6 +1116,7 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'skill.raritySet': 1,
   'skill.granted': 1,
   'skill.libraryTextUsed': 1,
+  'skill.castingSet': 1,
   'skill.markAwarded': 1,
   'skill.upgraded': 1,
   'skill.merged': 2,
