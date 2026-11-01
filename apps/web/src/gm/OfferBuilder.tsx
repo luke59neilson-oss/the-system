@@ -543,7 +543,7 @@ function MenuForm({
           },
       sent,
     );
-    if (r.ok) setRows(fresh());
+    if (unsaved.length === 0) setRows(fresh());
   };
   const setRow = (i: number, patch: Partial<Row>) =>
     setRows(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));

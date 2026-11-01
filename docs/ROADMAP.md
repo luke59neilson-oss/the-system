@@ -1604,7 +1604,7 @@ DESIGN §5, §6, §7, §9a. After MD.
 
 DESIGN §6, §9a, §11. After MU. MW.4 covers the Evolutions tab (ME.3) too.
 
-- [ ] **MW.1 The character's standing in the skill-offer builder.** DESIGN
+- [x] **MW.1 The character's standing in the skill-offer builder.** DESIGN
   §6 "Building an offer": beside the menu, the chosen character's grade,
   levels, stats (base, bonuses, total), unassigned free points, skills
   (rarity, marks, cost, kind), titles, equipped items, profession, and the
@@ -1612,7 +1612,7 @@ DESIGN §6, §9a, §11. After MU. MW.4 covers the Evolutions tab (ME.3) too.
   readable at 1366×768 without scrolling the menu away. *Accept:* unit test
   of the standing model (a full character; one without a profession; one
   with no practice yet); e2e; screenshots at 1366×768 and 1920×1080.
-- [ ] **MW.2 Co-DM skill-offer drafts.** Three buttons in the builder: from a
+- [x] **MW.2 Co-DM skill-offer drafts.** Three buttons in the builder: from a
   stat, from one of the character's skills, from a typed direction (DESIGN
   §11 "Skill-offer drafts"); the prompt carries the standing, practice
   summary, the selection's rarity ceiling and capstone rule, and stays

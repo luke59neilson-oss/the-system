@@ -105,8 +105,10 @@ export function parseCost(amount: string): number | null {
  */
 /** The library entry a menu row would follow (keyed by name and rarity, L4). */
 export function libraryEntry(state: CampaignState, name: string, rarity: string) {
+  const key = name.trim().toLowerCase();
+  const byRarity = state.rules.skills.libraryByRarity;
   return Object.values(state.skillLibrary).find(
-    (d) => d.name === name.trim() && d.rarity === rarity,
+    (d) => d.name.toLowerCase() === key && (!byRarity || d.rarity === rarity),
   );
 }
 

@@ -361,6 +361,18 @@ describe('a spell row and the library (MW.2 review)', () => {
     expect(flags).toHaveLength(1);
     expect(flags[0]).toMatch(/library's Bolt costs 3 .*match it or rename/);
   });
+  it('matches a name as the engine does: any case; name alone without library-by-rarity', () => {
+    const entry = withEntry({ pool, amount: 3 });
+    const lower = { ...spell('5'), name: ' bolt ' };
+    expect(draftFlags(entry, 'jake', 2, [lower]).rows[0]![0]).toMatch(/library's Bolt costs 3/);
+    const rare = { ...spell('5'), rarity: 'rare' };
+    expect(draftFlags(entry, 'jake', 2, [rare]).rows[0]).toEqual([]);
+    const legacy = {
+      ...entry,
+      rules: { ...entry.rules, skills: { ...entry.rules.skills, libraryByRarity: false } },
+    };
+    expect(draftFlags(legacy, 'jake', 2, [rare]).rows[0]![0]).toMatch(/library's Bolt/);
+  });
   it('accepts the matching cost', () => {
     expect(draftFlags(withEntry({ pool, amount: 3 }), 'jake', 2, [spell('3')]).rows[0]).toEqual([]);
   });
