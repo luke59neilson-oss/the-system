@@ -22,7 +22,8 @@ waiting, a banner) opens the tab that handles it.
 | --- | --- |
 | Home | Needs you (what waits on the GM, each a link to its window), Party (a card per character, with what needs you), Players join (address and QR), New character |
 | Session | Session (start, end, day), Award XP, Listening, Co-DM (quick responses, picks, generate, lore), Import (approve generated content), Encounter, Quests, Broadcast, Shops, Credits ledger, Trackers, Change log, System feed |
-| Progression | Award XP, Skill offers, Evolution builder, Practice log, Marks review, Merges |
+| Progression | Award XP, Skill offers, Practice log, Marks review, Merges |
+| Evolutions | Evolution builder (ME.3: the three steps move here) |
 | Library & settings | Skill text, Skill library, Item library, Loot tables, Title library, Classes, races and professions, Bestiary, Reference (Primal Hunter lists), Rules settings, Co-DM settings, Campaigns and backups |
 
 Award XP is the one window in two places: the same form on both tabs (a
