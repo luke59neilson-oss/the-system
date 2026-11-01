@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.69; MV done; ME.1–ME.5 done; ME.6 built on `wip/ME.6` (review round 1: 0 High, 1 Medium open); MK.1 done (merged). Preview ready: Actions → Release → Run workflow (MV).
-**Next item:** finish ME.6 on `wip/ME.6` (head 9a385ad1): fix the replay Medium, then a round-2 sonnet review covering the unreviewed console UI (Professions.tsx, Per-level stats) and e2e; merge; then ME.A (full e2e, `fable`, Preview ready); MK.2, MK.A; QF.55 onward; MW after MU
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.69; MV done; ME.1–ME.6 done; ME.A on `wip/ME.A` (fable round 1: 1 Medium fixed, full e2e not finished); MK.1 done; MK.2 part 1 on `wip/MK.2`. Preview ready: Actions → Release → Run workflow (MV).
+**Next item:** ME.A on `wip/ME.A` (head 5713e07c): run the full e2e (`npm run e2e`), verify the Medium fix (round 2 not required: one Medium), merge, check the box, Preview ready (ME); then MK.2 on `wip/MK.2` (head 30e0a723, base 8eef0b87; merge main first): the phone's "Roll d20 for <Stat> (+N)" prompt (GM roll-request and answer events, optional state field, projection, phone and console UI, answered die feeds the contest roller as typed), then its sonnet review; MK.A; QF.55 onward; MW after MU
 **Blockers:** none
 
 ## Run log
@@ -1549,3 +1549,13 @@ next item, blockers. -->
 - Tests: engine+web unit 1,976 on main; full e2e not run this run (no shared server/UI change on main beyond the encounter model).
 - Open `wip/*`: `wip/ME.6`. Blockers: none.
 
+
+### Run · 2026-11-01 05:08–05:5x UTC (close-out at minute 44)
+- Close-out at minute 44 (hand-off time); lock released at ~minute 46 because the only work left in reach is the full e2e still running here, which the next run repeats for ME.A anyway.
+- Preflight: `add_repo` not offered; repo already cloned (local main had unrelated history again; reset to `origin/main`); lock pushed cleanly; vitest 5.0.5; reviewers sonnet and fable work (worktree; Agent blocks, so reviewer + fork ran as one batch). No new answers. Hour 05: no efficiency check or sweep.
+- CI on main was red (81247c49): `e2e/M8.3.spec.ts` keyboard sweep missed the six View-as buttons (second time, first 2026-10-25). Cause: Tab starts from the last click, so the walk must wrap; the loop allowed only `stops + 5` presses. Fixed in the test (up to two laps, stopping once every stop is reached; assertions unchanged); passed alone and with `--workers=2`; QUALITY Flakes noted. Pushed 8eef0b87.
+- ME.6: replay Medium fixed (`evolution.chosen` v3, `stepsV1` upcast; golden `evolution-steps.state.json` restored; replay tests, mutation-checked; D311; D309 wording per the Low). Round-2 sonnet review: 0 H, 0 M, 5 L (Backlog). Merged to main (ee15de66). Box checked.
+- ME.A: fable review round 1 (partial, at ee15de66): 1 Medium (profession offer below an old campaign's unlock grade, Take then fails) fixed on `wip/ME.A` 5713e07c with an engine test; 4 Lows to Backlog. Full e2e started at minute 34 on ee15de66: 74 passed, 0 failed when the lock was released (not finished). Box not checked.
+- MK.2 (fork, `wip/MK.2` head 30e0a723, base 8eef0b87): part 1 done (Rolls setting in rules settings; GM contest roller with modifiers, d20 chance, typed die per side for the first round; sheet `[+N]` modifiers with d20 on; player pop-up dice lines; e2e + screenshots; D312, Q95). `npm run check` and MK.2 e2e green on the branch. Left: the phone's own roll prompt (see Next item). Not reviewed yet.
+- Tests: unit 1,997 (main) + 1 on `wip/ME.A`; e2e ME.6/ME.5/ME.3 green; full e2e partial (74/74 so far).
+- Open `wip/*`: `wip/ME.A`, `wip/MK.2`. Blockers: none.
