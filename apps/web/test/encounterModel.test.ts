@@ -10,6 +10,7 @@ import {
 } from '@the-system/engine';
 import {
   clockRows,
+  contestModifiers,
   contestPlan,
   factorText,
   montageProgress,
@@ -296,6 +297,48 @@ describe('encounter model: contests (M7.3)', () => {
     ).toBeNull();
   });
 
+  it('the phone is asked with the modifier the roll uses, either side, every mode (QF.71)', () => {
+    const rules = {
+      ...DEFAULT_RULES,
+      resolution: { ...DEFAULT_RULES.resolution, rolls: 'd20' as const },
+    };
+    const s = stateOf(
+      apply(emptyCampaign(), [
+        { type: 'campaign.create', name: 'Dice', rules },
+        {
+          type: 'character.create',
+          id: 'jake',
+          name: 'Jake',
+          className: 'Archer',
+          classSkills: kit,
+        },
+      ]),
+    );
+    const jake = sideDraftFor(s, 'c:jake', 'perception');
+    const higher: SideDraft = {
+      ...sideDraftFor(s, 'custom', 'perception'),
+      grade: 'F',
+      value: '10',
+      label: 'Pale stalker',
+    };
+    const seen = new Set<string>();
+    for (const mode of ['gradeWalls', 'none', 'multiplier', 'lowerGradeFraction'] as const) {
+      for (const [a, b] of [
+        [jake, higher],
+        [higher, jake],
+      ] as const) {
+        const asked = contestModifiers(s, a, b, mode);
+        const plan = contestPlan(s, a, b, mode);
+        if (typeof plan === 'string') throw new Error(plan);
+        const rolled = rollPlan(s, plan, () => 0.5);
+        expect(asked).toEqual({ a: rolled.d20?.modA, b: rolled.d20?.modB });
+        seen.add(String(asked?.a === undefined ? 'none' : asked.a));
+      }
+    }
+    // A one-grade gap moves the lower side's modifier, so the modes really differ.
+    expect(seen.size).toBeGreaterThan(1);
+    expect(contestModifiers(s, jake, { ...higher, value: '' }, 'none')).toBeNull();
+  });
   it('rolls and shares d20 dice in a d20 campaign, one die each (MK.1, ML.3)', () => {
     const rules = {
       ...DEFAULT_RULES,

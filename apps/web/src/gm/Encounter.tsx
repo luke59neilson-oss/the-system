@@ -26,6 +26,7 @@ import {
   rollClears,
   sharedRollText,
   phoneRoller,
+  contestModifiers,
   shareCommand,
   signedModifier,
   typedDie,
@@ -163,9 +164,28 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
     }
   }
   const plan = contestPlan(state, a, b, mode, attacker);
+  // QF.71 review M1: a request shows the modifier it was asked with; an edit
+  // that moves a side's modifier ends that side's request, so the phone is never
+  // left with a number the contest will not use.
+  const closeMoved = (nextA: SideDraft, nextB: SideDraft, nextMode: GradeGapMode) => {
+    const before = contestModifiers(state, a, b, mode);
+    const after = contestModifiers(state, nextA, nextB, nextMode);
+    if (before === null || after === null) return;
+    const moved = (['a', 'b'] as const).filter((s) => before[s] !== after[s]);
+    if (moved.length === 0) return;
+    const clears = rollClears(
+      moved.map((s) => (s === 'a' ? ([rollerA, phoneA] as const) : ([rollerB, phoneB] as const))),
+    );
+    setAsked((prev) => ({
+      a: moved.includes('a') ? new Set() : prev.a,
+      b: moved.includes('b') ? new Set() : prev.b,
+    }));
+    for (const command of clears) void send(command, 'Roll request closed');
+  };
   const change = (side: 'a' | 'b', draft: SideDraft) => {
     (side === 'a' ? setA : setB)(draft);
     setRolled(null);
+    closeMoved(side === 'a' ? draft : a, side === 'b' ? draft : b, mode);
     // MK.A review M3: when the side's player or stat changes, its open request
     // ends with it, so no phone keeps asking; a label or value edit keeps the
     // die (round 2 M1).
@@ -229,8 +249,10 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
         <select
           value={mode}
           onChange={(e) => {
-            setMode(e.target.value as GradeGapMode);
+            const next = e.target.value as GradeGapMode;
+            setMode(next);
             setRolled(null);
+            closeMoved(a, b, next);
           }}
         >
           {MODES.map((m) => (
@@ -320,11 +342,7 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
                       onClick={() => {
                         const requestId = newRequestId();
                         // QF.71: the phone shows this contest's modifier, not the sheet's.
-                        const contest =
-                          typeof planNow === 'string'
-                            ? null
-                            : d20Modifiers(state.rules, planNow.a, planNow.b, planNow.mode);
-                        const modifier = side === 'a' ? contest?.modA : contest?.modB;
+                        const modifier = contestModifiers(state, a, b, mode)?.[side];
                         setAsked((prev) => ({
                           ...prev,
                           [side]: new Set([...prev[side], requestId]),

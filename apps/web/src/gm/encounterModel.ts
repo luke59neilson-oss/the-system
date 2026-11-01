@@ -2,6 +2,7 @@ import {
   appDie,
   characterEffectiveStats,
   contestChance,
+  d20Modifiers,
   damageFactor,
   montageAvailable,
   poolMax,
@@ -446,6 +447,22 @@ export function recentContests(state: CampaignState, limit = 5) {
  * MK.2: the player whose phone can roll for this side: a side with exactly one
  * character and a stat, in a d20 campaign. Null for NPC sides and free values.
  */
+/**
+ * QF.71: the modifier each side rolls with in this contest, as the phone shows
+ * it. Null while the sides do not make a contest yet; a walled contest has none.
+ */
+export function contestModifiers(
+  state: CampaignState,
+  a: SideDraft,
+  b: SideDraft,
+  mode: GradeGapMode,
+): { readonly a: number | undefined; readonly b: number | undefined } | null {
+  const plan = contestPlan(state, a, b, mode);
+  if (typeof plan === 'string') return null;
+  const mods = d20Modifiers(state.rules, plan.a, plan.b, plan.mode);
+  return { a: mods?.modA, b: mods?.modB };
+}
+
 export function phoneRoller(
   state: CampaignState,
   side: { readonly characterIds: readonly string[]; readonly stat: string | null },

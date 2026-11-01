@@ -215,6 +215,9 @@ test('the phone shows the modifier of a contest one grade apart (QF.71)', async 
   await roller.getByRole('button', { name: "Ask Jake's phone for a d20" }).click();
   // The sheet says +0; one grade below, this contest takes the penalty.
   await expect(phone.getByTestId('roll-prompt')).toContainText('Roll d20 for Perception (−5)');
+  // Review M1: a mode that moves the modifier ends the request; none goes stale.
+  await roller.getByLabel('Grade-gap mode').selectOption('none');
+  await expect(phone.getByTestId('roll-prompt')).toHaveCount(0);
 });
 
 test("a phone die belongs to its contest; a console die closes the phone's request", async ({
