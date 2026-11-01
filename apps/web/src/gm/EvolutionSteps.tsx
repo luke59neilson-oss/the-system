@@ -164,6 +164,7 @@ export function StepsForm({
     setBusy(true);
     const r = await client.command(command);
     setBusy(false);
+    if (r.ok) setOverride(false);
     setResult(
       r.ok
         ? { ok: true, text: `Evolution released to ${character.name}` }
@@ -425,12 +426,12 @@ export function StepsForm({
         <button type="submit" disabled={busy || blocked}>
           Release evolution
         </button>
+        {result && (
+          <p className={result.ok ? 'ok' : 'err'} role={result.ok ? 'status' : 'alert'}>
+            {result.text}
+          </p>
+        )}
       </div>
-      {result && (
-        <p className={result.ok ? 'ok' : 'err'} role={result.ok ? 'status' : 'alert'}>
-          {result.text}
-        </p>
-      )}
     </form>
   );
 }

@@ -236,6 +236,8 @@ test('the GM builds and releases Kim’s E-grade evolution in three steps', asyn
   await expect(release).toBeEnabled();
   await release.click();
   await expect(builder.getByRole('status')).toHaveText('Evolution released to Kim');
+  await expect(builder.getByRole('status')).toBeInViewport();
+  await expect(form.getByLabel(/^Override: release anyway/)).not.toBeChecked();
   await expect(builder.getByTestId('evolution-released')).toContainText(
     '[Storm Archer], [Wind Archer]',
   );

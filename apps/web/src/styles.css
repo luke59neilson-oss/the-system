@@ -3431,6 +3431,11 @@ ol.change-log li.undone .change-text {
   background: var(--bg);
   border-top: 1px solid var(--border, #555);
   padding: 8px 0;
+  max-height: 40vh;
+  overflow: auto;
+}
+.evolution-steps {
+  scroll-padding-bottom: 40vh;
 }
 .evolution-builder .evolution-near {
   margin: 0 0 8px;
