@@ -94,7 +94,6 @@ export interface D20ContestResult extends ContestResult {
   readonly d20: D20Record | null;
 }
 
-
 /**
  * Both sides' modifiers (null when a grade wall settles the contest). In
  * "gradeWalls" mode the stats count as they are and the lower side takes the
