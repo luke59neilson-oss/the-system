@@ -751,3 +751,11 @@ DESIGN/ROADMAP; do not re-apply them.
     Library & settings. DESIGN now says Session. Default: Session (as built).
     Option: move them to Library & settings (movable panels cannot move a
     panel between tabs).
+
+99. **Does a Rare option passed over earlier satisfy the capstone (QF.62,
+    D323)?** DESIGN §6: the last selection before an evolution must include
+    an option at the grade's ceiling. The engine counts only the options the
+    GM adds to that menu, not options passed over at earlier levels that the
+    player's menu also lists. The refusal now says so ("add at least one new
+    rare option (options passed over earlier do not count)"). Default: only
+    new options count. Option: a passed-over option at the ceiling counts.

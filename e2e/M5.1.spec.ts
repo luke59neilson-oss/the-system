@@ -226,7 +226,7 @@ test('the dashboard chip opens a capstone selection, which needs a ceiling optio
   await row(3).getByLabel('Name').fill('Hunter’s Patience');
   await row(3).getByLabel('Rarity').selectOption({ label: 'Uncommon' });
   await expect(menu.getByTestId('offer-problem')).toHaveText(
-    'Level 10 is the F-grade capstone: offer at least one rare option',
+    'Level 10 is the F-grade capstone: add at least one new rare option (options passed over earlier do not count)',
   );
   await expect(send).toBeDisabled();
   await row(2).getByLabel('Rarity').selectOption({ label: 'Rare' });
