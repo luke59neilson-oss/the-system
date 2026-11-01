@@ -957,7 +957,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   launch with `--disable-gpu` (or hardware acceleration off under a test
   flag); the splash bound is measured after a warm-up launch; desktop-smoke
   green on 5 consecutive CI runs; no retries added.
-- [ ] **QF.60 Tests that can fail (mutation testing).** Surviving mutants with
+- [x] **QF.60 Tests that can fail (mutation testing).** Surviving mutants with
   no test: one-field `character.setProgression` notices
   (`history/gmChanges.ts:295`), equip/unequip falling into a skill notice
   (`gmChanges.ts:400`), another character's practice hiding a passed-over
