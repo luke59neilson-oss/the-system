@@ -401,7 +401,7 @@ the campaigns home and the library layouts come before the real campaign.
   start; delete moves, restore returns, the lock is respected); desktop
   launch specs updated (splash → home → open); e2e: create two, delete one,
   restore it, open the other, a phone joins; screenshots at 1366×768.
-- [ ] **ML.2 Per-level points in the library.** DESIGN §2 "The GM lays these
+- [x] **ML.2 Per-level points in the library.** DESIGN §2 "The GM lays these
   out in the library": class, race and profession entries get whole points
   per stat plus free points per level (class weights from before ME still
   load and show as converted points); a budget reminder for the entry's
