@@ -1,6 +1,7 @@
 import { raceLevel } from '../character';
 import { execute } from '../events/commands';
 import type { Campaign } from '../events/log';
+import { changeLog } from './changeLog';
 
 /**
  * QF.40: what an undo would do to each character's progression (grade,
@@ -10,7 +11,15 @@ import type { Campaign } from '../events/log';
  */
 export type UndoPreview =
   | { readonly ok: true; readonly changes: readonly string[] }
-  | { readonly ok: false; readonly error: string };
+  | {
+      readonly ok: false;
+      readonly error: string;
+      /**
+       * QF.62: the change-log line of the later change that blocks the undo,
+       * when one does, so the GM knows which to undo first.
+       */
+      readonly blockedBy?: string;
+    };
 
 export function undoPreview(campaign: Campaign, eventId: string, now: string): UndoPreview {
   const r = execute(
@@ -23,7 +32,15 @@ export function undoPreview(campaign: Campaign, eventId: string, now: string): U
       newId: () => `undo-preview-${campaign.events.length}`,
     },
   );
-  if (!r.ok) return { ok: false, error: r.error };
+  if (!r.ok) {
+    const blocker = /depends on it: Event (\S+) \(/.exec(r.error)?.[1];
+    const row =
+      blocker === undefined ? undefined : changeLog(campaign).find((x) => x.id === blocker);
+    const line = row?.lines[0];
+    return line === undefined
+      ? { ok: false, error: r.error }
+      : { ok: false, error: r.error, blockedBy: line };
+  }
   const was = campaign.state?.characters ?? {};
   const changes: string[] = [];
   for (const [id, now] of Object.entries(r.campaign.state?.characters ?? {})) {
