@@ -685,6 +685,91 @@ a {
 .perspective-table .party {
   overflow-x: auto;
 }
+/* ML.1: the demo switch and Close campaign share one row. */
+.campaign-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+}
+.campaign-bar .campaign-switch {
+  flex: 1 1 auto;
+}
+.close-campaign button {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--control-border);
+  padding: 3px 10px;
+  font-size: 0.85rem;
+}
+/* ML.1: the Campaigns home (DESIGN §9a). */
+.campaigns-home {
+  max-width: 820px;
+}
+.home-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.home-list > li {
+  border: 1px solid var(--control-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.home-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.home-name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.home-delete,
+.home-backups {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+.home-backups ul,
+.home-deleted ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.home-backups li,
+.home-deleted li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.home-new,
+.home-restore,
+.home-deleted {
+  margin-top: 16px;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.waiting-campaign {
+  font-size: 1.05rem;
+  color: var(--accent);
+}
 /* Demo campaign switch (MS.4). */
 .campaign-switch {
   display: flex;

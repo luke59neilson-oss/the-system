@@ -2,7 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { ENGINE_NAME } from '@the-system/engine';
 import { isHostBrowser } from '../gm/perspective';
 import {
+  WAITING_FOR_CAMPAIGN,
+  WAITING_POLL_MS,
   browserStorage,
+  isWaitingAnswer,
   parseJoinList,
   readRemembered,
   rememberedEntry,
@@ -21,15 +24,24 @@ const playUrl = (id: string) => `/play/${encodeURIComponent(id)}`;
 export function PlayerHome() {
   const [characters, setCharacters] = useState<JoinEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // ML.1: no campaign is open on the GM's laptop yet.
+  const [waiting, setWaiting] = useState(false);
   const [rememberedId] = useState(() => readRemembered(browserStorage()));
 
   // Sets state only once the request settles (never synchronously).
   const load = useCallback((signal?: AbortSignal) => {
     fetch('/api/characters', signal ? { signal } : {})
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((json: unknown) => {
+      .then(async (r) => {
+        const json: unknown = await r.json().catch(() => null);
+        if (isWaitingAnswer(r.status, json)) return { waiting: true as const };
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return { waiting: false as const, json };
+      })
+      .then((answer) => {
         setError(null);
-        setCharacters(parseJoinList(json));
+        setWaiting(answer.waiting);
+        if (answer.waiting) setCharacters(null);
+        else setCharacters(parseJoinList(answer.json));
       })
       .catch((e: unknown) => {
         if (signal?.aborted) return;
@@ -42,6 +54,17 @@ export function PlayerHome() {
     const controller = new AbortController();
     load(controller.signal);
     return () => controller.abort();
+  }, [load]);
+  // ML.1: ask again every few seconds, so the list follows the GM opening,
+  // closing or switching campaigns (a phone often waits here before the GM
+  // has opened one).
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = setInterval(() => load(controller.signal), WAITING_POLL_MS);
+    return () => {
+      clearInterval(timer);
+      controller.abort();
+    };
   }, [load]);
 
   const last = characters ? rememberedEntry(characters, rememberedId) : null;
@@ -72,7 +95,14 @@ export function PlayerHome() {
             {error}
           </p>
         )}
-        {!error && characters === null && <p className="muted">Connecting to the System…</p>}
+        {waiting && (
+          <p className="waiting-campaign" role="status" data-testid="waiting-campaign">
+            {WAITING_FOR_CAMPAIGN}
+          </p>
+        )}
+        {!error && !waiting && characters === null && (
+          <p className="muted">Connecting to the System…</p>
+        )}
         {characters?.length === 0 && (
           <p className="muted">No characters yet. Your GM will create them.</p>
         )}

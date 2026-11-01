@@ -42,7 +42,7 @@ test('double-click start: server up, GM window connected with the key', async ()
   app.process().stderr?.on('data', (chunk: Buffer) => (printed += chunk.toString()));
   try {
     const gm = await gmWindow(app);
-    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    await expect(gm.getByRole('heading', { name: 'Campaigns', exact: true })).toBeVisible();
     const gmKey = await gm.evaluate(() => sessionStorage.getItem('the-system.gmKey'));
     expect(gmKey).toMatch(/^.{16,}$/);
     // The key was moved out of the address bar.
@@ -51,6 +51,7 @@ test('double-click start: server up, GM window connected with the key', async ()
     await expect(gm.getByRole('heading', { name: 'New campaign' })).toBeVisible();
     await gm.getByLabel('Campaign name').fill('Desktop smoke');
     await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
     await expect(gm.getByRole('heading', { name: /Desktop smoke/ })).toBeVisible();
     await expect(gm.getByTestId('join-url')).toHaveText(/^http:\/\/.+:\d+\/?$/);
     await expect(gm.getByRole('img', { name: /QR code/ })).toBeVisible();
@@ -73,7 +74,7 @@ test('double-click start: server up, GM window connected with the key', async ()
 
     const health = await fetch(`http://127.0.0.1:${port}/health`);
     expect(health.status).toBe(200);
-    expect(existsSync(path.join(dataDir, 'campaigns', 'main', 'events.jsonl'))).toBe(true);
+    expect(existsSync(path.join(dataDir, 'campaigns', 'desktop-smoke', 'events.jsonl'))).toBe(true);
 
     // QF.58: Copy for Claude takes the async clipboard path: the legacy copy
     // command is stubbed to fail, so only navigator.clipboard.write can pass.
@@ -139,13 +140,13 @@ test('double-click start: server up, GM window connected with the key', async ()
     expect(printed).not.toContain(encodeURIComponent(gmKey ?? ''));
     // M10.1: quitting backs the campaign up first.
     await app.close();
-    const backups = path.join(dataDir, 'campaigns', 'main', 'backups');
+    const backups = path.join(dataDir, 'campaigns', 'desktop-smoke', 'backups');
     const made = readdirSync(backups).filter((name) => name.endsWith('-quit'));
     expect(made).toHaveLength(1);
     const copy = readFileSync(path.join(backups, made[0] ?? '', 'events.jsonl'), 'utf8');
     expect(copy).toContain('Desktop smoke');
     expect(copy).toBe(
-      readFileSync(path.join(dataDir, 'campaigns', 'main', 'events.jsonl'), 'utf8'),
+      readFileSync(path.join(dataDir, 'campaigns', 'desktop-smoke', 'events.jsonl'), 'utf8'),
     );
   } finally {
     await app.close();
@@ -171,14 +172,15 @@ test('a polite close then a forced kill (an installer upgrading) still leaves th
   });
   // Captured once: Playwright disposes the app object once the process dies.
   const proc = app.process();
-  const backups = path.join(dataDir, 'campaigns', 'main', 'backups');
+  const backups = path.join(dataDir, 'campaigns', 'upgrade-smoke', 'backups');
   const quitCopies = () =>
     existsSync(backups) ? readdirSync(backups).filter((name) => name.endsWith('-quit')) : [];
   try {
     const gm = await gmWindow(app);
-    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    await expect(gm.getByRole('heading', { name: 'Campaigns', exact: true })).toBeVisible();
     await gm.getByLabel('Campaign name').fill('Upgrade smoke');
     await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
     await expect(gm.getByRole('heading', { name: /Upgrade smoke/ })).toBeVisible();
     expect(quitCopies()).toEqual([]);
     // The polite close: the app asks "Quit The System?" and keeps running.
@@ -226,13 +228,14 @@ test('a second launch with --quit-for-update makes the running app quit cleanly'
     env,
   });
   const proc = app.process();
-  const campaign = path.join(dataDir, 'campaigns', 'main');
+  const campaign = path.join(dataDir, 'campaigns', 'update-smoke');
   const backups = path.join(campaign, 'backups');
   try {
     const gm = await gmWindow(app);
-    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    await expect(gm.getByRole('heading', { name: 'Campaigns', exact: true })).toBeVisible();
     await gm.getByLabel('Campaign name').fill('Update smoke');
     await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
     await expect(gm.getByRole('heading', { name: /Update smoke/ })).toBeVisible();
     expect(existsSync(path.join(campaign, 'LOCK'))).toBe(true);
     const exited = new Promise<number | null>((resolve) => proc.once('exit', resolve));

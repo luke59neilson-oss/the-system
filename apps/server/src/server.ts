@@ -33,7 +33,7 @@ import {
 import { helloMessage } from './protocol';
 import { SessionLogWriter, sessionReport, type SessionLogOptions } from './sessionLog';
 import { authPath, gmKeyMatches, isAllowedHost, isAllowedOrigin } from './security';
-import { StoreError, type BackupInfo, type CampaignStore } from './store';
+import { StoreError, type BackupInfo, type CampaignStore, type CampaignSummary } from './store';
 import { registerCoDmRoutes, type CoDm } from './ai/coDm';
 import { draftsDir, registerPracticeDraftRoutes } from './ai/practiceRoutes';
 import { registerNotesRoutes } from './ai/notesRoutes';
@@ -57,8 +57,25 @@ export interface CreateServerOptions {
   webRoot: string;
   /** Fastify request logging; tests pass a stream to capture the log (MC.1 key canary). */
   logger?: boolean | { stream: { write(line: string): void }; level?: string; file?: string };
-  /** The open campaign and hub settings; without it the WebSocket only says hello. */
-  live?: { store: CampaignStore } & HubOptions;
+  /**
+   * Hub settings and the campaign open at start; without `store` the server
+   * starts on the Campaigns home (ML.1) and the GM opens one. Without `live`
+   * the WebSocket only says hello.
+   */
+  live?: { store?: CampaignStore } & HubOptions;
+  /**
+   * ML.1: opens this campaign (through `openCampaign`) before listening, as
+   * if the GM had opened it on the home (the e2e suite's servers use 'main').
+   */
+  openAtStart?: string;
+  /**
+   * ML.1: closes a campaign the GM closed or is deleting. When given, the
+   * caller owns every store `openCampaign` returns and closes the rest itself;
+   * otherwise the server closes the ones it opened when it closes.
+   */
+  releaseCampaign?: (store: CampaignStore) => void;
+  /** ML.1: told whenever the open campaign changes (null: back on the home). */
+  onActiveChange?: (store: CampaignStore | null) => void;
   /** Extra origins allowed to open the WebSocket (e.g. the Vite dev server). */
   allowedOrigins?: readonly string[];
   /** Extra Host names accepted besides localhost, IP literals and *.local. */
@@ -120,6 +137,14 @@ export interface CampaignLibrary {
   backups(id: string): BackupInfo[];
   /** Imports the source as a new campaign (never overwriting one); returns what it holds. */
   restore(source: RestoreSource): { id: string; events: number; portraits: number };
+  /** ML.1: moves a closed campaign to the Deleted list (files kept). */
+  remove?(id: string): void;
+  /** ML.1: the Deleted list. */
+  deleted?(): { readonly id: string; readonly name?: string }[];
+  /** ML.1: puts a deleted campaign back. */
+  undelete?(id: string): void;
+  /** ML.1: the Campaigns home's rows (name, characters, last opened). */
+  summaries?(): CampaignSummary[];
 }
 
 /** The largest export file Restore accepts (portraits are 2 MB each at most). */
@@ -130,6 +155,30 @@ export const DEMO_CAMPAIGN_ID = 'demo';
 
 /** /api paths anyone on the LAN may read; every other /api path needs the GM key. */
 export const PUBLIC_API = new Set(['/api/characters']);
+
+/** ML.1: what phones read while no campaign is open (DESIGN §9a). */
+export const WAITING_FOR_CAMPAIGN = 'Waiting for the GM to open a campaign';
+
+/**
+ * ML.1: a new campaign's folder id from its name ("The Tutorial" →
+ * "the-tutorial"), made unique among `taken` with -2, -3…
+ */
+export function campaignIdFor(name: string, taken: readonly string[]): string {
+  const base =
+    name
+      .normalize('NFKD')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/gu, '-')
+      .replace(/^-+|-+$/gu, '')
+      .slice(0, 56)
+      .replace(/-+$/u, '') || 'campaign';
+  const safe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9]|demo)$/u.test(base) ? `${base}-campaign` : base;
+  if (!taken.includes(safe)) return safe;
+  for (let n = 2; ; n++) {
+    const id = `${safe}-${n}`;
+    if (!taken.includes(id)) return id;
+  }
+}
 
 /** Builds the Fastify app. Does not listen; callers decide host and port. */
 export async function createServer(options: CreateServerOptions): Promise<FastifyInstance> {
@@ -154,10 +203,15 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
 
   // The active campaign. Switching (real ↔ demo) closes every socket; clients
   // reconnect and join the new campaign's hub, so no frame ever mixes the two.
-  const realId = options.live?.store.id ?? null;
+  // ML.1: "my campaign" for the demo toggle is the first non-demo campaign
+  // opened in this server's life (the one open at start, if any).
+  let realId: string | null =
+    options.live?.store?.id ??
+    (options.openAtStart !== DEMO_CAMPAIGN_ID ? options.openAtStart : null) ??
+    null;
   const logWriters: SessionLogWriter[] = [];
   /** One hub (and session log writer) per campaign for the server's life. */
-  const openLive = (store: CampaignStore, live: { store: CampaignStore } & HubOptions) => {
+  const openLive = (store: CampaignStore, live: { store?: CampaignStore } & HubOptions) => {
     const writer = options.sessionLog
       ? new SessionLogWriter(store, {
           ...options.sessionLog,
@@ -170,7 +224,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       ...live,
       afterAppend: (s, events) => sessionEnded(s, events, writer),
     });
-    return { store, hub };
+    return { store, hub, writer };
   };
   /**
    * Session end (M4.3): back up the campaign and write the session report.
@@ -223,9 +277,12 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
         : null;
     })();
   };
-  let active = options.live ? openLive(options.live.store, options.live) : null;
-  const opened = new Map<string, { store: CampaignStore; hub: LiveHub }>();
-  if (active && options.live) opened.set(options.live.store.id, active);
+  type Opened = ReturnType<typeof openLive>;
+  const callerStore = options.live?.store ?? null;
+  let active: Opened | null =
+    options.live && callerStore ? openLive(callerStore, options.live) : null;
+  const opened = new Map<string, Opened>();
+  if (active && callerStore) opened.set(callerStore.id, active);
   const sockets = new Set<{
     close: (code: number, reason: string) => void;
     terminate: () => void;
@@ -373,7 +430,13 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
 
   app.get(WS_PATH, { websocket: true }, (socket) => {
     if (!active) {
-      socket.send(JSON.stringify(helloMessage()));
+      // ML.1: no campaign open: the phone waits and rejoins when one opens.
+      socket.send(JSON.stringify(helloMessage(undefined, options.live !== undefined)));
+      if (options.live) {
+        sockets.add(socket);
+        socket.on('pong', () => missedPongs.set(socket, 0));
+        socket.on('close', () => sockets.delete(socket));
+      }
       return;
     }
     sockets.add(socket);
@@ -406,75 +469,218 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     });
   });
 
-  // Which campaign is open, and switching between the real one and the demo.
-  app.get('/api/gm/campaign', (_request, reply) => {
-    if (!active || realId === null) return reply.code(404).send({ error: 'No campaign open' });
+  /** Drops every socket so clients rejoin whatever is open now (or wait on the home). */
+  const dropSockets = () => {
+    for (const socket of [...sockets]) socket.close(1012, 'Campaign changed');
+    sockets.clear();
+  };
+  const setActive = (next: Opened | null) => {
+    active = next;
+    options.onActiveChange?.(next?.store ?? null);
+    dropSockets();
+  };
+  /** Closes a campaign this server opened (its log writer too) so its lock is free. */
+  const release = (entry: Opened) => {
+    opened.delete(entry.store.id);
+    if (entry.writer) {
+      entry.writer.close();
+      logWriters.splice(logWriters.indexOf(entry.writer), 1);
+    }
+    if (entry.store === callerStore) return;
+    if (options.releaseCampaign) options.releaseCampaign(entry.store);
+    else entry.store.close();
+  };
+  type OpenResult = { ok: true; entry: Opened } | { ok: false; code: number; error: string };
+  /** Opens (or returns the already open) campaign `id`; seeds the demo once. */
+  const openById = (id: string): OpenResult => {
+    const live = options.live;
+    const found = opened.get(id);
+    if (found) return { ok: true, entry: found };
+    if (!live || !options.openCampaign) {
+      return { ok: false, code: 404, error: 'Campaign switching is not available' };
+    }
+    let store: CampaignStore;
+    try {
+      store = options.openCampaign(id);
+    } catch (error) {
+      app.log.error(error);
+      // Details (paths, host names) stay in the server log.
+      return { ok: false, code: 409, error: 'Could not open that campaign' };
+    }
+    // A fresh demo directory is seeded once (one write); later loads keep what the GM did.
+    if (id === DEMO_CAMPAIGN_ID && store.campaign.events.length === 0) {
+      try {
+        store.appendAll(buildDemoEvents({ now: live.now, newId: live.newId }));
+      } catch (error) {
+        if (options.releaseCampaign) options.releaseCampaign(store);
+        else store.close();
+        app.log.error(error);
+        return { ok: false, code: 500, error: 'Could not build the demo campaign' };
+      }
+    }
+    // One hub per campaign while it stays open, so switching back keeps its
+    // in-memory notification history.
+    const entry = openLive(store, live);
+    opened.set(id, entry);
+    if (id !== DEMO_CAMPAIGN_ID) realId ??= id;
+    return { ok: true, entry };
+  };
+  if (options.openAtStart !== undefined && active === null) {
+    const first = openById(options.openAtStart);
+    if (!first.ok)
+      throw new Error(`Could not open campaign "${options.openAtStart}": ${first.error}`);
+    active = first.entry;
+    options.onActiveChange?.(active.store);
+  }
+
+  // Which campaign is open (id null: the Campaigns home, ML.1), and switching.
+  app.get('/api/gm/campaign', () => {
+    if (!active) return { id: null, demo: false, main: false };
     const id = active.store.id;
     return { id, demo: id === DEMO_CAMPAIGN_ID, main: id === realId };
   });
-  // QF.44: every campaign on disk, for the console's Campaigns and backups window.
-  app.get('/api/gm/campaigns', (_request, reply) => {
-    if (!active || realId === null) return reply.code(404).send({ error: 'No campaign open' });
-    const ids = options.campaigns?.list() ?? [realId];
+  /** ML.1: a campaign's home row, live for the ones open in this server. */
+  const summaryOf = (id: string): CampaignSummary => {
+    const live = opened.get(id)?.store.campaign.state;
+    const kept = options.campaigns?.summaries?.().find((x) => x.id === id) ?? {
+      id,
+      name: null,
+      characters: [],
+      lastOpened: null,
+    };
+    if (!live) return kept;
     return {
-      active: active.store.id,
+      ...kept,
+      name: live.name,
+      characters: live.characterOrder.flatMap((c) => {
+        const name = live.characters[c]?.name;
+        return name === undefined ? [] : [name];
+      }),
+    };
+  };
+  // QF.44 / ML.1: every campaign on disk, for the Campaigns home and backups.
+  app.get('/api/gm/campaigns', () => {
+    const ids = (options.campaigns?.list() ?? (callerStore ? [callerStore.id] : [])).filter(
+      (id) => id !== DEMO_CAMPAIGN_ID,
+    );
+    const kept = new Map((options.campaigns?.summaries?.() ?? []).map((x) => [x.id, x]));
+    return {
+      active: active?.store.id ?? null,
       main: realId,
-      campaigns: ids.filter((id) => id !== DEMO_CAMPAIGN_ID),
+      campaigns: ids,
+      home: ids.map((id) =>
+        opened.has(id)
+          ? summaryOf(id)
+          : (kept.get(id) ?? { id, name: null, characters: [], lastOpened: null }),
+      ),
     };
   });
+  // ML.1: New campaign: a folder named after it, opened at once (the console
+  // then sends campaign.create with the name and the default libraries).
+  app.post('/api/gm/campaigns', (request, reply) => {
+    const body = request.body as { name?: unknown } | null;
+    const name = typeof body?.name === 'string' ? body.name.trim() : '';
+    if (name === '' || name.length > 200) {
+      return reply.code(400).send({ error: 'Give the campaign a name (up to 200 characters)' });
+    }
+    if (!options.campaigns || !options.openCampaign) {
+      return reply.code(404).send({ error: 'New campaigns are not available' });
+    }
+    const taken = [
+      ...options.campaigns.list(),
+      ...(options.campaigns.deleted?.() ?? []).map((d) => d.id),
+    ];
+    const id = campaignIdFor(name, taken);
+    const result = openById(id);
+    if (!result.ok) return reply.code(result.code).send({ error: result.error });
+    setActive(result.entry);
+    return { id, name, demo: false, main: id === realId };
+  });
+  // ML.1: Close goes back to the Campaigns home; phones wait for the next one.
+  app.post('/api/gm/campaign/close', () => {
+    if (!active) return { id: null };
+    const closing = active;
+    setActive(null);
+    release(closing);
+    return { id: null };
+  });
+  // ML.1: Delete moves a campaign to the Deleted list; never the open one.
+  app.post('/api/gm/campaigns/:id/delete', (request, reply) => {
+    const { id } = request.params as { id: string };
+    const library = options.campaigns;
+    if (!library?.remove) return reply.code(404).send({ error: 'Delete is not available' });
+    if (active?.store.id === id) {
+      return reply.code(409).send({ error: 'Close the campaign before deleting it' });
+    }
+    if (!library.list().includes(id))
+      return reply.code(404).send({ error: 'No campaign with that id' });
+    // ML.1 review: the server checks the typed name too, not only the home.
+    const typed = (request.body as { name?: unknown } | null)?.name;
+    const row = opened.has(id)
+      ? summaryOf(id)
+      : options.campaigns?.summaries?.().find((x) => x.id === id);
+    if (typeof typed !== 'string' || typed.trim() !== (row?.name ?? id)) {
+      return reply.code(400).send({ error: 'Type the campaign’s name to delete it' });
+    }
+    // Opened earlier in this server's life but not open now: let go of it first.
+    const idle = opened.get(id);
+    if (idle) release(idle);
+    try {
+      library.remove(id);
+    } catch (error) {
+      app.log.error(error);
+      return reply.code(409).send({ error: 'Could not delete that campaign; is it open?' });
+    }
+    return { deleted: id };
+  });
+  app.get('/api/gm/campaigns/deleted', () => ({ deleted: options.campaigns?.deleted?.() ?? [] }));
+  app.post('/api/gm/campaigns/:id/undelete', (request, reply) => {
+    const { id } = request.params as { id: string };
+    const library = options.campaigns;
+    if (!library?.undelete || !library.deleted) {
+      return reply.code(404).send({ error: 'Restore is not available' });
+    }
+    if (!library.deleted().some((d) => d.id === id)) {
+      return reply.code(404).send({ error: 'No deleted campaign with that id' });
+    }
+    try {
+      library.undelete(id);
+    } catch (error) {
+      app.log.error(error);
+      return reply.code(409).send({ error: 'Could not restore that campaign' });
+    }
+    return { restored: id };
+  });
   app.post('/api/gm/campaign', (request, reply) => {
-    const live = options.live;
-    if (!active || !live || realId === null || !options.openCampaign) {
+    if (!options.live || !options.openCampaign) {
       return reply.code(404).send({ error: 'Campaign switching is not available' });
     }
     const body = request.body as { demo?: unknown; id?: unknown } | null;
     let id: string;
     if (typeof body?.id === 'string') {
-      // QF.44: any campaign folder on disk (a restored one), by its listed id.
-      const known = options.campaigns?.list() ?? [realId];
-      if (!known.includes(body.id) && body.id !== realId) {
+      // QF.44 / ML.1: any campaign folder on disk, by its listed id.
+      const known = options.campaigns?.list() ?? (callerStore ? [callerStore.id] : []);
+      if (!known.includes(body.id) && !opened.has(body.id)) {
         return reply.code(404).send({ error: 'No campaign with that id' });
       }
       id = body.id;
     } else if (typeof body?.demo === 'boolean') {
-      id = body.demo ? DEMO_CAMPAIGN_ID : realId;
+      if (!body.demo && realId === null) {
+        return reply.code(409).send({ error: 'No campaign to go back to; open one from the home' });
+      }
+      id = body.demo ? DEMO_CAMPAIGN_ID : (realId as string);
     } else {
       return reply
         .code(400)
         .send({ error: 'Send { "demo": true }, { "demo": false } or { "id": "<campaign>" }' });
     }
-    const demo = id === DEMO_CAMPAIGN_ID;
-    const result = () => ({ id, demo, main: id === realId });
-    if (id === active.store.id) return result();
-    let next = opened.get(id);
-    if (!next) {
-      let store: CampaignStore;
-      try {
-        store = options.openCampaign(id);
-      } catch (error) {
-        app.log.error(error);
-        // Details (paths, host names) stay in the server log.
-        return reply.code(409).send({ error: 'Could not open that campaign' });
-      }
-      // A fresh demo directory is seeded once (one write); later loads keep what the GM did.
-      if (demo && store.campaign.events.length === 0) {
-        try {
-          store.appendAll(buildDemoEvents({ now: live.now, newId: live.newId }));
-        } catch (error) {
-          store.close();
-          app.log.error(error);
-          return reply.code(500).send({ error: 'Could not build the demo campaign' });
-        }
-      }
-      // One hub per campaign for the server's life, so switching back keeps its
-      // in-memory notification history.
-      next = openLive(store, live);
-      opened.set(id, next);
+    if (id === active?.store.id) {
+      return { id, demo: id === DEMO_CAMPAIGN_ID, main: id === realId };
     }
-    active = next;
-    for (const socket of [...sockets]) socket.close(1012, 'Campaign changed');
-    sockets.clear();
-    return result();
+    const result = openById(id);
+    if (!result.ok) return reply.code(result.code).send({ error: result.error });
+    setActive(result.entry);
+    return { id, demo: id === DEMO_CAMPAIGN_ID, main: id === realId };
   });
   // preClose runs before Fastify waits for connections to end: write the last
   // session logs now, then drop every socket so a sleeping phone that never
@@ -494,9 +700,11 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     if (heartbeat) clearInterval(heartbeat);
     // Writers are closed in preClose; closing again is a no-op unless something changed.
     for (const writer of logWriters) writer.close();
-    // The caller closes the store it passed in; close the ones opened here.
-    for (const [id, { store }] of opened) {
-      if (id === realId) continue;
+    // The caller closes the store it passed in, and every store when it
+    // owns them (`releaseCampaign`); otherwise close the ones opened here.
+    if (options.releaseCampaign) return;
+    for (const { store } of opened.values()) {
+      if (store === callerStore) continue;
       try {
         store.close();
       } catch (error) {
@@ -506,7 +714,12 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   });
 
   // Join list: the only campaign data any LAN client may read over HTTP.
-  app.get('/api/characters', () => {
+  app.get('/api/characters', (_request, reply) => {
+    // ML.1: phones say "Waiting for the GM to open a campaign" (DESIGN §9a).
+    if (!active && options.live) {
+      // 200, not an error status: phones ask every few seconds while they wait.
+      return reply.send({ waiting: true, error: WAITING_FOR_CAMPAIGN });
+    }
     const state = active?.store.campaign.state;
     if (!state) return [];
     return state.characterOrder.flatMap((id) => {
@@ -576,18 +789,29 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       return reply.code(500).send({ error: `The backup could not be written. ${seeLog}` });
     }
   });
-  app.get('/api/gm/backups', (_request, reply) => {
-    if (!active) return reply.code(404).send({ error: 'No campaign open' });
-    const id = active.store.id;
+  app.get('/api/gm/backups', (request, reply) => {
+    // ML.1: the Campaigns home asks for any listed campaign's backups.
+    const asked = (request.query as { campaign?: unknown }).campaign;
+    const id =
+      typeof asked === 'string' && options.campaigns?.list().includes(asked)
+        ? asked
+        : active?.store.id;
+    if (id === undefined) return reply.code(404).send({ error: 'No campaign open' });
     return { campaign: id, backups: options.campaigns?.backups(id) ?? [] };
   });
   app.post('/api/gm/restore', { bodyLimit: RESTORE_MAX_BYTES }, (request, reply) => {
     const library = options.campaigns;
-    if (!active || !library) return reply.code(404).send({ error: 'Restore is not available' });
-    const body = request.body as { backup?: unknown; export?: unknown } | null;
+    if (!library) return reply.code(404).send({ error: 'Restore is not available' });
+    const body = request.body as { backup?: unknown; export?: unknown; from?: unknown } | null;
+    // ML.1: on the Campaigns home a backup names its campaign (`from`).
+    const from =
+      typeof body?.from === 'string' && library.list().includes(body.from)
+        ? body.from
+        : active?.store.id;
     let source: RestoreSource;
     if (typeof body?.backup === 'string' && body.backup.length <= 200) {
-      source = { backup: body.backup, from: active.store.id };
+      if (from === undefined) return reply.code(404).send({ error: 'No campaign open' });
+      source = { backup: body.backup, from };
     } else if (body !== null && typeof body === 'object' && 'export' in body) {
       source = { export: body.export };
     } else {

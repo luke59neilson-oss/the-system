@@ -90,7 +90,7 @@ export interface SeqNotification {
 const LIMITS_RETRY_MS = 1000;
 
 type ServerMessage =
-  | { type: 'hello'; protocol: number; campaign?: string }
+  | { type: 'hello'; protocol: number; campaign?: string; waiting?: true }
   | { type: 'joined'; role: 'gm' | 'player'; characterId: string | null; seq: number }
   | { type: 'view'; seq: number; view: PlayerView }
   | { type: 'state'; seq: number; state: CampaignState | null }
@@ -137,6 +137,8 @@ export interface LiveSnapshot {
    * this page was open, so the sheet changed under the player; they are told.
    */
   campaignSwitched: string | null;
+  /** ML.1: no campaign is open on the GM's laptop yet; this page rejoins when one is. */
+  waiting: boolean;
 }
 
 export type CommandResult = { ok: true; warning?: string } | { ok: false; error: string };
@@ -158,6 +160,7 @@ export class LiveClient {
     campaign: null,
     listening: false,
     campaignSwitched: null,
+    waiting: false,
   };
   private readonly listeners = new Set<(s: LiveSnapshot) => void>();
   private readonly pending = new Map<string, (r: CommandResult) => void>();
@@ -320,6 +323,13 @@ export class LiveClient {
           });
         }
         if (campaign !== this.snapshot.campaign) this.update({ campaign });
+        // ML.1: nothing to join until the GM opens a campaign; the server drops
+        // this socket then and the reconnect joins it.
+        if (message.waiting) {
+          this.update({ waiting: true });
+          return;
+        }
+        if (this.snapshot.waiting) this.update({ waiting: false });
         const join =
           this.join.role === 'gm'
             ? { type: 'join', role: 'gm', gmKey: this.join.gmKey }

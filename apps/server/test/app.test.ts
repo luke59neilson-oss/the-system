@@ -24,6 +24,7 @@ describe('startApp', () => {
 
   it('listens, uses the given key, and closes idempotently releasing the campaign', async () => {
     const app = await startApp({
+      openAtStart: 'main',
       port: 0,
       host: '127.0.0.1',
       webRoot,
@@ -44,7 +45,13 @@ describe('startApp', () => {
   });
 
   it('generates a key when none is given', async () => {
-    const app = await startApp({ port: 0, host: '127.0.0.1', webRoot, dataDir });
+    const app = await startApp({
+      openAtStart: 'main',
+      port: 0,
+      host: '127.0.0.1',
+      webRoot,
+      dataDir,
+    });
     try {
       expect(app.generatedKey).toBe(true);
       expect(app.gmKey.length).toBeGreaterThanOrEqual(32);
@@ -54,11 +61,23 @@ describe('startApp', () => {
   });
 
   it('rethrows a busy port and releases the campaign lock', async () => {
-    const first = await startApp({ port: 0, host: '127.0.0.1', webRoot, dataDir });
+    const first = await startApp({
+      openAtStart: 'main',
+      port: 0,
+      host: '127.0.0.1',
+      webRoot,
+      dataDir,
+    });
     const otherData = mkdtempSync(path.join(tmpdir(), 'the-system-app-data2-'));
     try {
       await expect(
-        startApp({ port: first.port, host: '127.0.0.1', webRoot, dataDir: otherData }),
+        startApp({
+          openAtStart: 'main',
+          port: first.port,
+          host: '127.0.0.1',
+          webRoot,
+          dataDir: otherData,
+        }),
       ).rejects.toMatchObject({ code: 'EADDRINUSE' });
       CampaignStore.open('main', {
         dataDir: otherData,
@@ -72,13 +91,26 @@ describe('startApp', () => {
 
   it('fails cleanly when the web build is missing and releases the lock', async () => {
     await expect(
-      startApp({ port: 0, host: '127.0.0.1', webRoot: path.join(webRoot, 'nope'), dataDir }),
+      startApp({
+        openAtStart: 'main',
+        port: 0,
+        host: '127.0.0.1',
+        webRoot: path.join(webRoot, 'nope'),
+        dataDir,
+      }),
     ).rejects.toThrow(/Web build not found/);
     CampaignStore.open('main', { dataDir, now: () => '2026-10-21T00:00:00.000Z' }).close();
   });
 
   it('reports the server OS in the join info (M10.1 firewall help)', async () => {
-    const app = await startApp({ port: 0, host: '127.0.0.1', webRoot, dataDir, platform: 'win32' });
+    const app = await startApp({
+      openAtStart: 'main',
+      port: 0,
+      host: '127.0.0.1',
+      webRoot,
+      dataDir,
+      platform: 'win32',
+    });
     try {
       const res = await fetch(`http://127.0.0.1:${app.port}/api/join`, {
         headers: { 'x-gm-key': app.gmKey },
@@ -130,6 +162,7 @@ describe('startApp backupOnClose', () => {
     try {
       seed();
       const app = await startApp({
+        openAtStart: 'main',
         port: 0,
         host: '127.0.0.1',
         webRoot,
@@ -155,6 +188,7 @@ describe('startApp backupOnClose', () => {
     try {
       seed();
       const app = await startApp({
+        openAtStart: 'main',
         port: 0,
         host: '127.0.0.1',
         webRoot,
@@ -170,7 +204,13 @@ describe('startApp backupOnClose', () => {
       const made = backups();
       expect(made).toHaveLength(1);
       expect(made[0]).toMatch(/-quit$/);
-      const off = await startApp({ port: 0, host: '127.0.0.1', webRoot, dataDir });
+      const off = await startApp({
+        openAtStart: 'main',
+        port: 0,
+        host: '127.0.0.1',
+        webRoot,
+        dataDir,
+      });
       off.backup();
       await off.close();
       expect(backups()).toHaveLength(1);
@@ -183,6 +223,7 @@ describe('startApp backupOnClose', () => {
     fresh();
     try {
       const empty = await startApp({
+        openAtStart: 'main',
         port: 0,
         host: '127.0.0.1',
         webRoot,
@@ -192,7 +233,13 @@ describe('startApp backupOnClose', () => {
       await empty.close();
       expect(backups()).toEqual([]);
       seed();
-      const off = await startApp({ port: 0, host: '127.0.0.1', webRoot, dataDir });
+      const off = await startApp({
+        openAtStart: 'main',
+        port: 0,
+        host: '127.0.0.1',
+        webRoot,
+        dataDir,
+      });
       await off.close();
       expect(backups()).toEqual([]);
     } finally {
@@ -205,6 +252,7 @@ describe('startApp backupOnClose', () => {
     try {
       seed();
       const app = await startApp({
+        openAtStart: 'main',
         port: 0,
         host: '127.0.0.1',
         webRoot,

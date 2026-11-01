@@ -787,3 +787,11 @@ DESIGN/ROADMAP; do not re-apply them.
     points are granted once (D38). Default: as built (an override is a
     correction of levels, not of stats; the GM fixes stats with Edit sheet).
     Option: a re-earned level grants nothing the first time granted.
+
+101. **Does going back to the Campaigns home close the campaign? (ML.1, D328)**
+    The console's **Close campaign** button closes the open campaign (saved,
+    its lock freed so it can be deleted) and shows the Campaigns home;
+    players' phones then say "Waiting for the GM to open a campaign" until
+    you open one. Default: as built (home = nothing open). Option: a
+    "Campaigns" button that shows the list while the campaign stays open for
+    the players, closing it only when you open another or delete it.

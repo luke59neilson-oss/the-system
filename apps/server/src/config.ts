@@ -10,6 +10,8 @@ export interface ServerOptions {
   dataDir: string;
   /** GM key; generated at launch when not given (the desktop app injects it). */
   gmKey: string | undefined;
+  /** ML.1: a campaign to open at start (`--open <id>`); omitted: the Campaigns home. */
+  openAtStart?: string;
 }
 
 export class ConfigError extends Error {}
@@ -49,5 +51,6 @@ export function resolveOptions(
     dataDir: flag('data-dir') ?? env['DATA_DIR'] ?? 'data',
     // Never a flag: command lines are visible to other local users.
     gmKey,
+    ...(flag('open') === undefined ? {} : { openAtStart: flag('open') as string }),
   };
 }
