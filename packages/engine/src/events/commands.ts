@@ -2403,10 +2403,19 @@ export function execute(campaign: Campaign, command: Command, ctx: CommandContex
   }
   const denied = authorize(command, ctx.actor);
   if (denied) return { ok: false, error: `Not allowed: ${denied}` };
-  const unreachable = campaign.state ? itemOutOfReach(campaign.state, command) : null;
-  if (unreachable) return { ok: false, error: unreachable };
-  const capped = campaign.state ? overLimit(campaign.state, command, ctx.actor) : null;
-  if (capped) return { ok: false, error: capped };
+  // QF.62: these checks read the command's raw fields before `toEvent` checks
+  // their shape, so a malformed command (a missing or mistyped field) is a bad
+  // command, not an engine bug: a TypeError here is answered like a bad shape.
+  let early: string | null;
+  try {
+    early = campaign.state
+      ? (itemOutOfReach(campaign.state, command) ?? overLimit(campaign.state, command, ctx.actor))
+      : null;
+  } catch (error) {
+    if (error instanceof TypeError) return { ok: false, error: `Bad command "${command.type}"` };
+    throw error;
+  }
+  if (early) return { ok: false, error: early };
   try {
     const { type, payload } = toEvent(command, ctx, campaign);
     // Events carry the running session (M4.3); a session's own start and end carry its id.
