@@ -588,6 +588,7 @@ DESIGN/ROADMAP; do not re-apply them.
     been tried on real voices yet; your first session with the mic will
     show it. Default: keep 0.6 / 0.1 and the stricter bar for one voice.
     Option: lower them if too few lines get names.
+    Not put to Luke yet: tune after the first session with the mic. (default kept, L28)
 
 79. **Which line do the quick responses answer? (MD.1, D256)** The buttons
     answer the newest line that reads as a player's question or attempt (ends
@@ -597,6 +598,7 @@ DESIGN/ROADMAP; do not re-apply them.
     the picker changes it. Your button names, instructions and order are
     saved on the laptop, so they are the same in every campaign. Default:
     as described. Option: per-campaign button settings.
+    Answer (Luke, 2026-11-01, chat): per campaign. (applied, L28, ML.4)
 
 80. **How the co-DM's row of five fills (MD.2, D258).** Chips sit in five
     fixed slots (keys 6–9 and 0). A slot keeps its chip until you dismiss
@@ -607,6 +609,7 @@ DESIGN/ROADMAP; do not re-apply them.
     fraction of a cent each on the fast model). With no API key it never
     looks. Default: as described. Options: leave a dismissed slot empty
     until the next look; a longer wait after a question.
+    Answer (Luke, 2026-11-01, chat): as built. (default kept, L28)
 
 81. **Sharing kept lore (MD.3, D260).** Keep saves an answer or a
     generated item as a GM note tagged lore, the NPC, the place and the
@@ -615,6 +618,7 @@ DESIGN/ROADMAP; do not re-apply them.
     legend you copy it into a party note. Default: as described. Option: a
     "Share with the party" button on a lore note that makes that party copy
     for you.
+    Answer (Luke, 2026-11-01, chat): a Share with the party button. (applied, L28, ML.4)
 
 82. **Where co-DM generations are approved (MU.1, D261).** DESIGN §9a lists
     content import under Library & settings, but a co-DM generation (a shop
@@ -623,6 +627,7 @@ DESIGN/ROADMAP; do not re-apply them.
     on the **Session** tab beside the co-DM, and pasting a content pack from
     Claude happens there too. Default: Import on Session. Option: Import on
     Library & settings, with a generation switching you to that tab.
+    Answer (Luke, 2026-11-01, chat): Session tab, as built. (default kept, L28)
 
 83. **CI on wip branches instead of long local e2e runs? (efficiency, Tier 2;
     2026-10-30 auditor).** Run the same CI on `wip/**` pushes with the e2e
@@ -638,6 +643,7 @@ DESIGN/ROADMAP; do not re-apply them.
     rows, which serves as the Session tab's party at a glance. Default: one
     form on both tabs. Option: a smaller Session form (amount and who only)
     with the target and bonus on Progression.
+    Answer (Luke, 2026-11-01, chat): one form on both tabs, as built. (default kept, L28)
 
 85. **Spell costs on hand-edited and upgraded skills (MU.4, D270).** A
     skill's cost, cooldown, range and casting notes come from the library
@@ -646,6 +652,7 @@ DESIGN/ROADMAP; do not re-apply them.
     entry for yet, it keeps the cost of the nearest lower rarity's entry until
     you write one. Default: as described. Option: let a hand edit also set a
     per-character cost.
+    Answer (Luke, 2026-11-01, chat): yes, per character. (applied, L28, ML.5)
 
 86. **Reference lists in the co-DM's prompts (MU.6, D272).** Generations and
     quick responses get up to 8 rows from the Primal Hunter lists as naming
@@ -654,6 +661,7 @@ DESIGN/ROADMAP; do not re-apply them.
     editing a CSV, `npm run reference` (or the next build run) brings the app
     up to date. Default: as described. Options: more or fewer examples; let
     the co-DM reuse book names as-is.
+    Answer (Luke, 2026-11-01, chat): 16 examples, still invented names. (applied, L28, ML.4)
 
 87. **Read DESIGN.md by section instead of whole each run? (efficiency, 2026-10-31 auditor).**
     DESIGN.md is ~4,900 words, 40–45% of what a run reads before building.
@@ -661,6 +669,7 @@ DESIGN/ROADMAP; do not re-apply them.
     whole only for rules changes and sweeps (reviewers still check against
     DESIGN). Saves ~5k tokens and a few minutes per run; risk: a missed rule
     in another section. Default: no change (DESIGN.md read in full).
+    Decided in chat (2026-11-01, efficiency delegated to the chat session): yes, as a trial; LOOP §4 updated. (applied, L29)
 
 88. **Reviewers trust the builder's `npm run check` result? (efficiency, 2026-10-31 06:07 auditor).**
     The Agent tool here blocks while a reviewer runs, and each reviewer
@@ -670,6 +679,7 @@ DESIGN/ROADMAP; do not re-apply them.
     item's own tests and e2e and anything it doubts, and says what it re-ran.
     Saves ~2.5–5 min per item; risk: the reviewer is no longer an independent
     run of the full gate (Tier 2, LOOP §6.2). Default: no change.
+    Decided in chat (2026-11-01): no change; reviewers keep re-running the gate while main CI red/day is above target. (L29)
 
 89. **Which campaign opens when the app starts? (QF.44, D281)** Restore adds a
     backup or a downloaded file as a new campaign (`main-restored`) and you
@@ -679,6 +689,7 @@ DESIGN/ROADMAP; do not re-apply them.
     from that window each time. Default: always start on the main campaign.
     Option: remember the last campaign you opened (or a "Make this my main
     campaign" button).
+    Answer (Luke, 2026-11-01, chat): the app starts on a Campaigns home; he picks the campaign there. (applied, L28, ML.1)
 
 90. **Even split under percentages (MV.2, D296).** The award box starts each
     player at an even whole percentage (34/33/33). Taken literally, 1,000 XP
@@ -691,6 +702,7 @@ DESIGN/ROADMAP; do not re-apply them.
     numbers back in, and the box says "Even split: the XP is divided
     exactly evenly" (the literal 34% of 1,200 would lose XP past a grade's
     top on the "typical session" suggestion).
+    Not put to Luke; default kept (exact even split until a percentage is typed). (L28)
 
 91. **Identify after MV.3 (D298).** Identify is refused marks, upgrades and
     being raised at an evolution; merging it keeps the older GM override
@@ -699,12 +711,14 @@ DESIGN/ROADMAP; do not re-apply them.
     move to GM notes. A GM edit to an entity's grade or level does not
     re-decide earlier results (mark it identified again for that). Default:
     as built. Option: also refuse the GM override for merging Identify.
+    Not put to Luke; default kept (the GM override for merging stays: the GM can overrule anything). (L28)
 
 92. **Old campaigns and the ME stat budgets (D300).** A campaign created
     before ME keeps its old per-level numbers until you switch in rules
     settings; the switch applies from the next level-up and never changes
     points already granted. Default: as built (no automatic switch).
     Option: offer the switch once, on opening an old campaign.
+    Answer (Luke, 2026-11-01, chat): no switch offer; test campaigns get deleted and the real campaign starts fresh. (applied, L28, ML.1)
 
 93. **What a level grants before the GM sets a distribution (ME.1, D301).**
     Until ME.2 builds options with distributions, a character without one
@@ -714,6 +728,7 @@ DESIGN/ROADMAP; do not re-apply them.
     the race (Human). The GM can set any track's points per level on a
     character. Default: as built. Option: give the class 2 free points of its
     8 at G (your example's split) when it has only weights.
+    Answer (Luke, 2026-11-01, chat): Luke lays out the starting classes' points himself; the library gets per-level points with a budget reminder. (applied, L28, ML.2)
 
 94. **A profession option skipped with "none for now" (ME.2, D303).** When
     a player picks "none for now" at an evolution, the profession options stay
@@ -722,12 +737,14 @@ DESIGN/ROADMAP; do not re-apply them.
     default points per level (the class's shape), not the distribution its
     option card showed. Default: as built (keeps old offers working). Option:
     keep each skipped option's distribution and bonus with its offer.
+    Answer (Luke, 2026-11-01, chat): keep each skipped option's points and bonus with its offer; Luke lays out professions with a budget reminder. (applied, L28, ML.2)
 
 95. **Ties after a typed die (MK.2, D312).** When a d20 contest ties, both
     sides roll again. A die typed from the table counts only for the first
     round; any re-roll after a tie is rolled by the app, so the table does
     not wait for a second throw. Default: as built. Option: ask for a
     second typed die on a tie.
+    Answer (Luke, 2026-11-01, chat): no re-roll: meets beats, a tie goes to the attacker. (applied, L28, ML.3)
 
 96. **Asking a phone for a roll (MK.2, D314).** The contest roller has an
     "Ask <name>'s phone for a d20" button for a side that is one player's
@@ -736,6 +753,7 @@ DESIGN/ROADMAP; do not re-apply them.
     unless you type a die for that side yourself. A new ask replaces an
     unanswered one. Default: as built. Option: ask every player in a
     group-side at once, or ask from the party cards without opening a contest.
+    Answer (Luke, 2026-11-01, chat): as built; he will mostly ask for physical dice. (default kept, L28)
 
 97. **Player wording for evolutions and contests (QF.57, D318).** Players now
     read "Your skills keep their text and progress; their rarity label
@@ -743,6 +761,7 @@ DESIGN/ROADMAP; do not re-apply them.
     "[Archer's Eye] is now Inferior (was Common)" and, for a contest two
     grades apart, "Too far apart in grade: the higher grade wins, no roll."
     Default: these words. Option: give me the wording you want.
+    Answer (Luke, 2026-11-01, chat): "While once powerful and rare for your previous grade, the power and rarity of your skills are less in comparison to your current grade. Some skill rarities have been adjusted to amend this."; no explanation line for contests two or more grades apart. (applied, L28, ML.3)
 
 98. **Where content import, the Credits ledger and factions sit (QF.61, D322).**
     The console has content import, the Credits ledger and the trackers
@@ -751,6 +770,7 @@ DESIGN/ROADMAP; do not re-apply them.
     Library & settings. DESIGN now says Session. Default: Session (as built).
     Option: move them to Library & settings (movable panels cannot move a
     panel between tabs).
+    Answer (Luke, 2026-11-01, chat): Session, as built. (default kept, L28)
 
 99. **Does a Rare option passed over earlier satisfy the capstone (QF.62,
     D323)?** DESIGN §6: the last selection before an evolution must include
