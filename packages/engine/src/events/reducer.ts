@@ -581,7 +581,7 @@ function defineClass(state: CampaignState, event: DomainEvent, def: ClassDef): C
 
 function defineRace(state: CampaignState, event: DomainEvent, def: RaceDef): CampaignState {
   if (hasOwn(state.raceLibrary, def.id)) fail(event, `library race "${def.id}" already exists`);
-  rule(event, () => validateRaceDef(def, state.raceLibrary));
+  rule(event, () => validateRaceDef(def, state.raceLibrary, state.rules));
   return {
     ...state,
     raceLibrary: { ...state.raceLibrary, [def.id]: def },
@@ -603,6 +603,11 @@ function defineProfession(
     professionLibrary: { ...state.professionLibrary, [def.id]: def },
     professionLibraryOrder: [...state.professionLibraryOrder, def.id],
   };
+}
+
+/** ML.2: a library entry's points, present only when set (older entries stay as stored). */
+function pointsOf(points: TrackDistribution | undefined): { points?: TrackDistribution } {
+  return points ? { points } : {};
 }
 
 function entryOf<T>(
@@ -1378,6 +1383,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         description: changes.description ?? old.description,
         skills: changes.skills ?? old.skills,
         weights: changes.weights ?? old.weights,
+        ...pointsOf(changes.points ?? old.points),
       };
       unchanged(event, def, old);
       rule(event, () => validateClassDef(state.rules, def, state.classLibrary));
@@ -1392,9 +1398,10 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         id: raceDefId,
         name: changes.name ?? old.name,
         description: changes.description ?? old.description,
+        ...pointsOf(changes.points ?? old.points),
       };
       unchanged(event, def, old);
-      rule(event, () => validateRaceDef(def, state.raceLibrary));
+      rule(event, () => validateRaceDef(def, state.raceLibrary, state.rules));
       return { ...state, raceLibrary: { ...state.raceLibrary, [raceDefId]: def } };
     }
     case 'professionDef.defined':
@@ -1407,6 +1414,7 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         name: changes.name ?? old.name,
         description: changes.description ?? old.description,
         skills: changes.skills ?? old.skills,
+        ...pointsOf(changes.points ?? old.points),
       };
       unchanged(event, def, old);
       rule(event, () => validateProfessionDef(state.rules, def, state.professionLibrary));

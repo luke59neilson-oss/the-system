@@ -132,17 +132,26 @@ const skillDefFields = {
 };
 /** Class, race and profession library fields (M4.2). */
 const librarySkillRef = z.strictObject({ name: nonBlank, rarity: recordId });
+/** ML.2: whole points per stat plus free points that one level of a track grants. */
+const levelPoints = z.strictObject({
+  stats: z.record(z.string().min(1), z.number().int().nonnegative().max(100_000)),
+  free: z.number().int().nonnegative().max(100_000),
+});
+/** ML.2: a library entry's points per level; optional, so entries made before ML.2 stay valid. */
+const entryPoints = levelPoints.optional();
 const classDefFields = {
   name: nonBlank,
   description: skillDescription.trim(),
   skills: z.array(librarySkillRef).max(20),
   weights: statValues,
+  points: entryPoints,
 };
-const raceDefFields = { name: nonBlank, description: skillDescription.trim() };
+const raceDefFields = { name: nonBlank, description: skillDescription.trim(), points: entryPoints };
 const professionDefFields = {
   name: nonBlank,
   description: skillDescription.trim(),
   skills: z.array(librarySkillRef).max(10),
+  points: entryPoints,
 };
 const stabilityRules = z.record(
   z.string().min(1).max(60),
@@ -196,6 +205,10 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     classWeights: statValues.optional(),
     /** Optional since M4.4, so older payloads stay valid. */
     portrait: portraitRef.optional(),
+    /** ML.2: the class and race entries' points per level; optional, so older payloads stay valid. */
+    distributions: z
+      .strictObject({ class: levelPoints.optional(), race: levelPoints.optional() })
+      .optional(),
   }),
   'character.renamed': z.strictObject({ characterId: recordId, name: nonBlank }),
   /** GM sets or clears (null) a character's portrait (M4.4). */
@@ -606,6 +619,7 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     description: classDefFields.description.optional(),
     skills: classDefFields.skills.optional(),
     weights: classDefFields.weights.optional(),
+    points: classDefFields.points,
   }),
   /** GM adds a race to the race library (M4.2; GM-only). */
   'raceDef.defined': z.strictObject({ id: recordId, ...raceDefFields }),
@@ -613,6 +627,7 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     raceDefId: recordId,
     name: raceDefFields.name.optional(),
     description: raceDefFields.description.optional(),
+    points: raceDefFields.points,
   }),
   /** GM adds a profession to the profession library (M4.2; GM-only). */
   'professionDef.defined': z.strictObject({ id: recordId, ...professionDefFields }),
@@ -621,6 +636,7 @@ export const EVENT_PAYLOAD_SCHEMAS = {
     name: professionDefFields.name.optional(),
     description: professionDefFields.description.optional(),
     skills: professionDefFields.skills.optional(),
+    points: professionDefFields.points,
   }),
   /**
    * GM adds the default library set in one go (M4.2): the entries are stored
