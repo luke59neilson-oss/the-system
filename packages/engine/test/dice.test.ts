@@ -51,9 +51,13 @@ describe('roll modifier (MK.1)', () => {
   });
 
   it('a campaign with no rolls setting rolls app odds', () => {
-    const { rolls: _drop, ...resolution } = rules.resolution;
-    expect(rollsModeOf({ ...rules, resolution })).toBe('odds');
+    const resolution: Record<string, unknown> = { ...rules.resolution };
+    delete resolution['rolls'];
+    expect(rollsModeOf({ ...rules, resolution } as typeof rules)).toBe('odds');
     expect(rollsModeOf(rules)).toBe('odds');
+    expect(rollsModeOf({ ...rules, resolution: { ...rules.resolution, rolls: 'd20' } })).toBe(
+      'd20',
+    );
   });
 });
 
