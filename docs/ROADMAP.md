@@ -357,7 +357,7 @@ in the first session.
   (e) Phone review step: one column, with each pick's one-time bonus
   (`EvolutionStepsChoice.tsx:217-250`, `styles.css:277`; also sweep B UX).
   *Accept:* engine tests per part; e2e for (b), (c), (e); screenshots.
-- [ ] **ME.A Acceptance and review.** Full suite green; `fable` review;
+- [x] **ME.A Acceptance and review.** Full suite green; `fable` review;
   "Preview ready" (LOOP §8.2).
 
 ## MK — Dice (Luke, 2026-10-31; L27)

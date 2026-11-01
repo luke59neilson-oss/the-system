@@ -1268,3 +1268,9 @@
 ## 2026-11-01 · ME.A round 1 · fable (worktree, ee15de66; partial, deadline)
 - 1 Medium: the GM could offer a profession below the campaign's profession unlock grade (old campaigns, ME.1), and the player's Take then failed. Fixed on `wip/ME.A`: `profession.offered` refuses below the unlock grade; engine test in `me6.test.ts`.
 - 4 Low to QUALITY Backlog. Reviewer ran vitest (1,997 green); did not run lint/typecheck or e2e. Full e2e still to finish; box not checked.
+
+## 2026-11-01 · ME.A close · (no round 2)
+- Round 1 (fable, partial) found 1 Medium and 4 Lows; one Medium needs no second round (LOOP §6.4). Fix verified by its engine test; full e2e on d4ed0be6 (wip/ME.A merged with main): e2e 155 + latency 8 passed. Box checked.
+
+## 2026-11-01 · MK.2 round 1 · sonnet (worktree, e3846472; partial, deadline)
+- 0 High, 3 Medium, 5 Low. Medium: (1) `phoneDie` (encounterModel.ts) matches an answered request by character and stat only, so a stale die from an earlier contest silently decides a new one; requests clear only when Roll uses the phone die; (2) a die typed on the console for a player leaves the phone request open (`roll.clear` sent only when an answer exists, Encounter.tsx ~166), so the phone keeps asking after the contest; (3) `rollPromptText` (player/contest.ts) falls back to "+0" when there is no modifier (e.g. rules switched to app odds with a request open) and open requests are not cleared on a rules change; the prompt shows the stat modifier without the −5 grade-gap penalty (unstated). Low: `requestId` in the `roll.request` Command type but not the schema; one-character sides only; prompt placement and "[+0]" wrap at 390×844; the GM's phone-die note floats away from side A at 1366×768; screenshots exercise +0 only. Not fixed this run (review returned at minute 41); next run fixes them on `wip/MK.2` and runs round 2 (3 Mediums).
