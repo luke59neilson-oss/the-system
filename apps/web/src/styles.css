@@ -3670,7 +3670,9 @@ ol.change-log li.undone .change-text {
 }
 
 /* QF.63 (deep review ux-10): no text under 14 px on a phone; timestamps, tags
-   and bonuses are read at arm's length in a dim room. */
+   and bonuses are read at arm's length in a dim room. This block sits last so
+   it wins over the base sizes above; e2e QF.63 scans every text element on
+   each demo character's phone screen, so a new small rule fails it. */
 @media (max-width: 700px) {
   .choices .tag,
   .pane-mode .skills,
@@ -3680,7 +3682,22 @@ ol.change-log li.undone .change-text {
   .stats .stat-bonus,
   .library-tags .tag,
   .flag-owner,
-  .faction-revealed {
+  .faction-revealed,
+  .pane-mode h3,
+  .status,
+  .demo-badge,
+  .assign-btn,
+  .badge,
+  .offer-kind,
+  .item-bonus,
+  .item-desc,
+  fieldset legend,
+  .practice-sub,
+  .bestiary-category,
+  .note-meta,
+  .note-hint,
+  .note-tag,
+  .listening-mark {
     font-size: 0.875rem;
   }
 }
