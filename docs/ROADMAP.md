@@ -1057,7 +1057,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   carried-over Rare option (or should say "new"); revealing a bestiary entry
   notifies nobody and a Common viewer sees a duplicate Identify line.
   *Accept:* a test or e2e per item.
-- [ ] **QF.63 Low fixes, screens.** Silver and platinum frames read alike
+- [x] **QF.63 Low fixes, screens.** Silver and platinum frames read alike
   (ring highlight colours); 12 px text on phones (`styles.css:367,888,924,931`);
   change-log rows with no Undo give no reason (`ChangeLog.tsx:256`); the
   Sound toggle announces its state twice; many free-point batches after a big

@@ -97,6 +97,12 @@ describe('grade themes', () => {
     expect(deltaE2000(platinum, diamond)).toBeGreaterThanOrEqual(10);
   });
 
+  it('silver and platinum highlight edges differ by ΔE of at least 10 (QF.63)', () => {
+    const silver = hexToRgb(token(themes, '.theme-silver', '--metal-hi'));
+    const platinum = hexToRgb(token(themes, '.theme-platinum', '--metal-hi'));
+    expect(deltaE2000(silver, platinum)).toBeGreaterThanOrEqual(10);
+  });
+
   it('all seven metals are distinct', () => {
     const metals = GRADES.map((t) => token(themes, `.theme-${t}`, '--metal'));
     expect(new Set(metals).size).toBe(GRADES.length);

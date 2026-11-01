@@ -53,6 +53,14 @@ const NO_UNDO = new Set([
   'hunger.levelsSet',
 ]);
 
+/** QF.63 (deep review ux-11): why a row has no Undo, shown in its place. */
+export function noUndoReason(type: string): string | null {
+  if (!NO_UNDO.has(type)) return null;
+  if (type === 'campaign.created') return 'No undo: it starts the campaign';
+  if (type === 'rules.migrated') return 'No undo: a rules update';
+  return 'No undo: retired, changes nothing';
+}
+
 /** Waits this long after the last state change before refetching the log. */
 const REFETCH_MS = 250;
 
@@ -284,7 +292,11 @@ export function ChangeLog({
               </span>
               {r.lines.join(' · ')}
             </span>
-            {NO_UNDO.has(r.type) ? null : r.undoneBy ? (
+            {NO_UNDO.has(r.type) ? (
+              <span className="muted small" data-testid="no-undo">
+                {noUndoReason(r.type)}
+              </span>
+            ) : r.undoneBy ? (
               <span className="muted small">(undone)</span>
             ) : confirming === r.id ? (
               // Undo cannot itself be undone, so it takes a second click on
