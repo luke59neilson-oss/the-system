@@ -3,6 +3,8 @@ import type { PlayerNote } from '@the-system/engine';
 import {
   MAX_TAGS,
   editedLabel,
+  notesPage,
+  NOTES_PAGE,
   isOwnNote,
   noteLabel,
   noteTitle,
@@ -137,5 +139,15 @@ describe('Markdown subset', () => {
       { kind: 'text', text: ' and ' },
       { kind: 'em', text: 'i' },
     ]);
+  });
+});
+
+describe('notes paging (QF.55)', () => {
+  it('shows a page and counts the rest', () => {
+    const rows = Array.from({ length: 70 }, (_, i) => i);
+    expect(notesPage(rows, NOTES_PAGE)).toEqual({ rows: rows.slice(0, 30), more: 40 });
+    expect(notesPage(rows, 90)).toEqual({ rows, more: 0 });
+    expect(notesPage([], NOTES_PAGE)).toEqual({ rows: [], more: 0 });
+    expect(NOTES_PAGE).toBeGreaterThanOrEqual(10);
   });
 });

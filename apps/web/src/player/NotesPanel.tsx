@@ -11,6 +11,8 @@ import {
   parseMarkdown,
   parseTags,
   tagProblem,
+  notesPage,
+  NOTES_PAGE,
   visibleNotes,
   type Inline,
   type NoteFilter,
@@ -77,7 +79,16 @@ export function NotesPanel({
   const names: Record<string, string> = Object.fromEntries(view.party.map((p) => [p.id, p.name]));
   names[me] = view.me.name;
   const byId = new Map(view.notes.map((n) => [n.id, n]));
-  const rows = visibleNotes(view.notes, filter, query, tag);
+  const matching = visibleNotes(view.notes, filter, query, tag);
+  // QF.55: the list renders a page at a time; a new filter starts from the top.
+  const [shown, setShown] = useState(NOTES_PAGE);
+  const [pageKey, setPageKey] = useState(`${filter}|${query}|${tag ?? ''}`);
+  const key = `${filter}|${query}|${tag ?? ''}`;
+  if (pageKey !== key) {
+    setPageKey(key);
+    setShown(NOTES_PAGE);
+  }
+  const { rows, more } = notesPage(matching, shown);
   const editing = draft?.id != null ? byId.get(draft.id) : undefined;
   // The note being edited was deleted (by its author elsewhere, the GM, or an undo).
   const lost = draft !== null && draft.id !== null && editing === undefined;
@@ -454,6 +465,16 @@ export function NotesPanel({
             );
           })}
         </ul>
+      )}
+      {more > 0 && (
+        <button
+          type="button"
+          className="secondary notes-more"
+          data-testid="notes-more"
+          onClick={() => setShown((n) => n + NOTES_PAGE)}
+        >
+          Show {Math.min(more, NOTES_PAGE)} more ({more} not shown)
+        </button>
       )}
     </section>
   );
