@@ -242,6 +242,9 @@ test('the GM builds and releases Kim’s E-grade evolution in three steps', asyn
     '[Storm Archer], [Wind Archer]',
   );
   await gm.screenshot({ path: path.join(shots, 'gm-released-1920x1080.png') });
+  // QF.69: an edit makes it a new draft, so the "released" line goes.
+  await class2.getByLabel('Free points per level', { exact: true }).fill('1');
+  await expect(builder.getByRole('status')).toHaveCount(0);
   await gm.setViewportSize({ width: 1366, height: 768 });
   await gm.screenshot({ path: path.join(shots, 'gm-released-1366x768.png') });
   expect(errors).toEqual([]);

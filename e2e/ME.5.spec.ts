@@ -202,6 +202,12 @@ test('Kim’s evolution: locked, lit on release, three picks, one confirm, new t
   await expect(popup).toHaveCount(0);
   await expect(panel).toHaveAttribute('data-state', 'lit');
 
+  // QF.69: the status window's [Evolve] counts as opening the release too.
+  await player.getByTestId('status').getByRole('button', { name: '[Evolve]' }).click();
+  await expect(panel).toHaveAttribute('data-state', 'open');
+  await expect(player.getByTestId('status')).not.toHaveClass(/evolution-lit/);
+  await player.getByRole('button', { name: 'Close evolution' }).click();
+
   // Jo sees nothing of Kim's evolution.
   await expect(jo.getByTestId('evolution-panel')).toHaveAttribute('data-state', 'locked');
   for (const name of ['Storm Archer', 'Thorn Ranger', 'Herbalist', 'Human (E)']) {
@@ -209,9 +215,7 @@ test('Kim’s evolution: locked, lit on release, three picks, one confirm, new t
   }
 
   // Three steps of book-style cards.
-  await panel.getByRole('button', { name: 'Open your evolution' }).click();
-  await expect(panel).toHaveAttribute('data-state', 'open');
-  await expect(player.getByTestId('status')).not.toHaveClass(/evolution-lit/);
+  await panel.locator('.evolution-open').click();
   const dialog = player.getByTestId('evolution');
   await expect(dialog.getByRole('heading', { name: 'Class: choose one' })).toBeVisible();
   const storm = dialog.getByTestId('evolution-option').filter({ hasText: 'Storm Archer' });
