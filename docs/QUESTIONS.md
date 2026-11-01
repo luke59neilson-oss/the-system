@@ -743,3 +743,11 @@ DESIGN/ROADMAP; do not re-apply them.
     "[Archer's Eye] is now Inferior (was Common)" and, for a contest two
     grades apart, "Too far apart in grade: the higher grade wins, no roll."
     Default: these words. Option: give me the wording you want.
+
+98. **Where content import, the Credits ledger and factions sit (QF.61, D322).**
+    The console has content import, the Credits ledger and the trackers
+    (regions and factions) on the Session tab, so co-DM generations are
+    approved mid-narration; DESIGN §9a listed import and factions under
+    Library & settings. DESIGN now says Session. Default: Session (as built).
+    Option: move them to Library & settings (movable panels cannot move a
+    panel between tabs).
