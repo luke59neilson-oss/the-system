@@ -255,6 +255,10 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
                   }}
                 />
               </Place>
+              {/* QF.56: the join address and QR come second (DESIGN §9a), above the fold. */}
+              <Place id="join" tab={tab}>
+                <JoinPanel gmKey={gmKey} />
+              </Place>
               <Place id="party" tab={tab}>
                 <PartyDashboard
                   client={client}
@@ -265,9 +269,6 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
                     setTab('progression');
                   }}
                 />
-              </Place>
-              <Place id="join" tab={tab}>
-                <JoinPanel gmKey={gmKey} />
               </Place>
               <Place id="create-character" tab={tab}>
                 <CreateCharacter client={client} gmKey={gmKey} state={state} />
