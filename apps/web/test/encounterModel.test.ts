@@ -20,6 +20,8 @@ import {
   recentContests,
   refreshSide,
   rollPlan,
+  signedModifier,
+  typedDie,
   shareCommand,
   sideDraftFor,
   sideOptions,
@@ -159,6 +161,55 @@ describe('encounter model: contests (M7.3)', () => {
     expect(shared[0]).toMatchObject({ roll: 0.42, success: true, chance: 0.5 });
   });
 
+  it('a typed die counts for the first round; a tie rolls again in the app (MK.2)', () => {
+    const rules = {
+      ...DEFAULT_RULES,
+      resolution: { ...DEFAULT_RULES.resolution, rolls: 'd20' as const },
+    };
+    const base = apply(emptyCampaign(), [
+      { type: 'campaign.create', name: 'Dice', rules },
+      { type: 'character.create', id: 'jake', name: 'Jake', className: 'Archer', classSkills: kit },
+      { type: 'character.create', id: 'kim', name: 'Kim', className: 'Archer', classSkills: kit },
+    ]);
+    const s = stateOf(base);
+    const plan = contestPlan(
+      s,
+      sideDraftFor(s, 'c:jake', 'strength'),
+      sideDraftFor(s, 'c:kim', 'strength'),
+      'none',
+    );
+    if (typeof plan === 'string') throw new Error(plan);
+    // Jake types 7; Kim's die is the app's (0.3 → 7): a tie, then 20 against 1.
+    const draws = [0.3, 0.95, 0];
+    let i = 0;
+    const rolled = rollPlan(s, plan, () => draws[i++] ?? 0, { a: 7, b: null });
+    expect(rolled.d20?.rounds.map((r) => [r.a, r.b])).toEqual([
+      [
+        { die: 7, how: 'typed', total: 7 },
+        { die: 7, how: 'app', total: 7 },
+      ],
+      [
+        { die: 20, how: 'app', total: 20 },
+        { die: 1, how: 'app', total: 1 },
+      ],
+    ]);
+    expect(shareCommand(rolled)).toMatchObject({
+      dice: [{ a: { die: 7, how: 'typed' }, b: { die: 7, how: 'app' } }, {}],
+    });
+    const once = rollPlan(s, plan, () => 0, { a: 15, b: 3 });
+    expect(once.d20?.rounds).toHaveLength(1);
+    expect(outcomeText(once)).toBe(
+      'Jake · Strength wins (d20: Jake · Strength 15 typed +0 = 15, Kim · Strength 3 typed +0 = 3)',
+    );
+    expect(typedDie('')).toBeNull();
+    expect(typedDie(' 20 ')).toBe(20);
+    expect(typedDie('0')).toMatch(/1 to 20/);
+    expect(typedDie('21')).toMatch(/1 to 20/);
+    expect(typedDie('2.5')).toMatch(/1 to 20/);
+    expect(signedModifier(-3)).toBe('−3');
+    expect(signedModifier(0)).toBe('+0');
+  });
+
   it('rolls and shares d20 dice in a d20 campaign, again while tied (MK.1)', () => {
     const rules = {
       ...DEFAULT_RULES,
@@ -188,7 +239,7 @@ describe('encounter model: contests (M7.3)', () => {
     ]);
     expect(rolled.result.success).toBe(true);
     expect(outcomeText(rolled)).toBe(
-      'Jake · Strength wins (d20: Jake · Strength 20+0 = 20, Kim · Strength 1+0 = 1, after 1 tie(s))',
+      'Jake · Strength wins (d20: Jake · Strength 20 app +0 = 20, Kim · Strength 1 app +0 = 1, after 1 tie(s))',
     );
     const command = shareCommand(rolled);
     expect(command).toMatchObject({

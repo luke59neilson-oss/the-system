@@ -32,6 +32,7 @@ import { canReadNote, skillPairCounts } from '../practice';
 import { identifyText, type Entity } from '../entities';
 import { daysLeft, hiddenQuestNoticed, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
+import { rollModifier } from '../resolution/dice';
 import type { SharedContest } from '../resolution';
 import {
   atCeiling,
@@ -273,6 +274,11 @@ export interface OwnSheet {
   readonly stats: Readonly<Record<string, number>>;
   /** Stats after equipped item bonuses (M3.7, D60/D81): the Stats block and pool maxima. */
   readonly effectiveStats: Readonly<Record<string, number>>;
+  /**
+   * MK.2 (DESIGN §7 "Dice"): each stat's roll modifier from `effectiveStats`,
+   * only while the campaign rolls d20 + modifier (absent with app odds).
+   */
+  readonly rollModifiers?: Readonly<Record<string, number>>;
   /** Stats whose item bonus hit the item cap (MQ.14, DESIGN §4), shown as capped. */
   readonly itemCappedStats: readonly string[];
   /**
@@ -786,6 +792,13 @@ function ownSheet(state: CampaignState, c: Character): OwnSheet {
     classSpreadTotals: copyRecord(c.classSpreadTotals, statIds),
     stats: copyRecord(c.stats, statIds),
     effectiveStats: copyRecord(effective, statIds),
+    ...(rules.resolution.rolls === 'd20'
+      ? {
+          rollModifiers: Object.fromEntries(
+            statIds.map((id) => [id, rollModifier(rules, own(effective, id) ?? 0)]),
+          ),
+        }
+      : {}),
     itemCappedStats: itemCappedStats(rules, c.stats, h, state.items),
     itemStats: copyRecord(itemEffectiveStats(rules, c.stats, h, state.items), statIds),
     pools: rules.pools.map((p) => ({

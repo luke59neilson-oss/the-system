@@ -191,6 +191,27 @@ export interface RolledContest {
   readonly d20?: D20Record | null;
 }
 
+/** MK.2: dice typed at the table (a real d20 thrown), per side; null = the app rolls. */
+export interface TypedDice {
+  readonly a: number | null;
+  readonly b: number | null;
+}
+export const NO_TYPED_DICE: TypedDice = { a: null, b: null };
+
+/** A typed die: blank = the app rolls (null); a whole number 1–20; anything else is an error string. */
+export function typedDie(text: string): number | null | string {
+  const t = text.trim();
+  if (t === '') return null;
+  if (!/^\d+$/.test(t)) return 'A die is a whole number from 1 to 20';
+  const n = Number(t);
+  return n >= 1 && n <= 20 ? n : 'A die is a whole number from 1 to 20';
+}
+
+/** "+3" / "−3" for a roll modifier. */
+export function signedModifier(n: number): string {
+  return n < 0 ? `−${-n}` : `+${n}`;
+}
+
 /**
  * Rolls a planned contest with the given random source (no draw when walled).
  * Follows the campaign's `rolls` setting (MK.1): in d20 mode the app rolls
@@ -200,9 +221,15 @@ export function rollPlan(
   state: CampaignState,
   plan: ContestPlan,
   random: () => number,
+  typed: TypedDice = NO_TYPED_DICE,
 ): RolledContest {
   if (state.rules.resolution.rolls === 'd20') {
-    const result = rollD20Contest(state.rules, plan.a, plan.b, () => appDie(random), plan.mode);
+    // MK.2: a die typed at the table counts for the first round; a tie rolls again in the app.
+    const die = (side: 'a' | 'b', round: number) => {
+      const t = typed[side];
+      return round === 0 && t !== null ? { die: t, how: 'typed' as const } : appDie(random);
+    };
+    const result = rollD20Contest(state.rules, plan.a, plan.b, die, plan.mode);
     return { plan, roll: null, result, d20: result.d20 };
   }
   const roll = plan.walled ? null : random();
@@ -243,10 +270,11 @@ export function outcomeText(rolled: RolledContest): string {
   const d20 = rolled.d20;
   if (d20) {
     const last = d20.rounds[d20.rounds.length - 1];
-    const signed = (n: number) => (n < 0 ? `−${-n}` : `+${n}`);
+    const signed = signedModifier;
+    const how = (d: { how: 'typed' | 'app' }) => (d.how === 'typed' ? ' typed' : ' app');
     const ties = d20.rounds.length > 1 ? `, after ${d20.rounds.length - 1} tie(s)` : '';
     return last
-      ? `${winner} wins (d20: ${plan.a.label} ${last.a.die}${signed(d20.modA)} = ${last.a.total}, ${plan.b.label} ${last.b.die}${signed(d20.modB)} = ${last.b.total}${ties})`
+      ? `${winner} wins (d20: ${plan.a.label} ${last.a.die}${how(last.a)} ${signed(d20.modA)} = ${last.a.total}, ${plan.b.label} ${last.b.die}${how(last.b)} ${signed(d20.modB)} = ${last.b.total}${ties})`
       : `${winner} wins`;
   }
   const roll = Math.round((result.roll ?? 0) * 100);

@@ -614,6 +614,17 @@ function Status({
                   {')'}
                 </span>
               )}
+              {me.rollModifiers?.[s.id] !== undefined && (
+                <span
+                  className="stat-mod"
+                  data-testid={`mod-${s.id}`}
+                  title="d20 roll modifier"
+                  aria-label={`d20 modifier ${rollMod(me.rollModifiers[s.id] ?? 0)}`}
+                >
+                  {' '}
+                  [{rollMod(me.rollModifiers[s.id] ?? 0)}]
+                </span>
+              )}
             </li>
           );
         })}
@@ -1436,4 +1447,9 @@ function PaneLatest({ live, view }: { live: LiveSnapshot; view: PlayerView | nul
       )}
     </div>
   );
+}
+
+/** MK.2: a d20 roll modifier as "+3" or "−3". */
+function rollMod(n: number): string {
+  return n < 0 ? `−${-n}` : `+${n}`;
 }

@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { contestPracticeCommands } from './practiceDraftsModel';
-import type { CampaignState, Command, GradeGapMode } from '@the-system/engine';
+import { d20Modifiers, type CampaignState, type Command, type GradeGapMode } from '@the-system/engine';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
 import {
@@ -16,6 +16,9 @@ import {
   recentContests,
   rollPlan,
   shareCommand,
+  signedModifier,
+  typedDie,
+  type ContestPlan,
   refreshSide,
   sideDraftFor,
   sideOptions,
@@ -78,6 +81,14 @@ export function Encounter({ client, state }: { client: LiveClient; state: Campai
   );
 }
 
+/** MK.2: " · modifiers +3 / +0" in a d20 campaign (empty otherwise or when walled). */
+function modifiersText(state: CampaignState, plan: ContestPlan): string {
+  if (state.rules.resolution.rolls !== 'd20') return '';
+  const mods = d20Modifiers(state.rules, plan.a, plan.b, plan.mode);
+  if (!mods) return '';
+  return ` · d20 ${plan.a.label} ${signedModifier(mods.modA)}, ${plan.b.label} ${signedModifier(mods.modB)}`;
+}
+
 interface ToolProps {
   state: CampaignState;
   busy: boolean;
@@ -94,6 +105,13 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
   const [b, setB] = useState<SideDraft>(() => emptySide(state));
   const [mode, setMode] = useState<GradeGapMode>(state.rules.resolution.gradeGapMode);
   const [rolled, setRolled] = useState<RolledContest | null>(null);
+  // MK.2: dice thrown at the table and typed in (blank: the app rolls).
+  const [dieA, setDieA] = useState('');
+  const [dieB, setDieB] = useState('');
+  const d20 = state.rules.resolution.rolls === 'd20';
+  const typedA = typedDie(dieA);
+  const typedB = typedDie(dieB);
+  const dieError = typeof typedA === 'string' ? typedA : typeof typedB === 'string' ? typedB : null;
   // The contest whose practice was last logged (MC.7 review M2).
   const loggedContest = useRef<string | null>(null);
   // Keep derived side values current when a stat changes mid-fight (M7.A).
@@ -116,9 +134,15 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
   };
   const roll = (e: FormEvent) => {
     e.preventDefault();
-    if (typeof plan === 'string') return;
+    if (typeof plan === 'string' || dieError !== null) return;
     clear?.();
-    setRolled(rollPlan(state, plan, cryptoRandom));
+    const typed = {
+      a: d20 && typeof typedA === 'number' ? typedA : null,
+      b: d20 && typeof typedB === 'number' ? typedB : null,
+    };
+    setRolled(rollPlan(state, plan, cryptoRandom, typed));
+    setDieA('');
+    setDieB('');
     // MC.7: a contest done in the app logs practice for its characters directly,
     // once per contest: re-rolling the same sides does not log it again.
     const key = JSON.stringify([a, b, mode]);
@@ -164,10 +188,35 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
           ? plan
           : plan.walled
             ? `Grade wall: ${plan.chance === 1 ? plan.a.label : plan.b.label} succeeds, no roll`
-            : `${plan.a.label}: ${percent(plan.chance)} · ${plan.b.label}: ${percent(1 - plan.chance)}`}
+            : `${plan.a.label}: ${percent(plan.chance)} · ${plan.b.label}: ${percent(1 - plan.chance)}${modifiersText(state, plan)}`}
       </p>
+      {d20 && (
+        <div className="contest-dice row" data-testid="contest-dice">
+          <label>
+            {typeof plan === 'string' ? 'Side A' : plan.a.label}: d20 thrown (1–20; blank: the app
+            rolls)
+            <input
+              inputMode="numeric"
+              value={dieA}
+              onChange={(e) => setDieA(e.target.value)}
+              aria-invalid={typeof typedA === 'string'}
+            />
+          </label>
+          <label>
+            {typeof plan === 'string' ? 'Side B' : plan.b.label}: d20 thrown (1–20; blank: the app
+            rolls)
+            <input
+              inputMode="numeric"
+              value={dieB}
+              onChange={(e) => setDieB(e.target.value)}
+              aria-invalid={typeof typedB === 'string'}
+            />
+          </label>
+          {dieError && <p className="err">{dieError}</p>}
+        </div>
+      )}
       <div className="library-tools">
-        <button type="submit" disabled={typeof plan === 'string'}>
+        <button type="submit" disabled={typeof plan === 'string' || dieError !== null}>
           Roll
         </button>
         <button
