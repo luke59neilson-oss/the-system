@@ -2108,7 +2108,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       return { ...state, clocks: { ...state.clocks, [clockId]: ticked } };
     }
     case 'contest.shared': {
-      const { contestId, a, b, mode, roll, yours, theirs, chance, walled, success } = event.payload;
+      const { contestId, a, b, mode, roll, yours, theirs, chance, walled, success, rolls, d20 } =
+        event.payload;
       if (hasOwn(state.contests, contestId)) fail(event, `contest "${contestId}" already exists`);
       const grades = state.rules.grades.map((g) => g.id);
       const statIds = state.rules.stats.list.map((s) => s.id);
@@ -2124,8 +2125,30 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       }
       // The stored outcome stands (settled under the rules when shared); only
       // its own consistency is checked, so a later rules change cannot flip it.
-      if (walled !== (roll === null)) {
-        fail(event, walled ? 'a walled contest has no roll' : 'this contest needs a roll');
+      if (rolls === 'd20') {
+        // MK.1: no odds roll; the dice decide unless a wall settled it.
+        if (roll !== null) fail(event, 'a d20 contest has no odds roll');
+        if (walled !== (d20 === undefined)) {
+          fail(event, walled ? 'a walled contest has no dice' : 'this contest needs dice');
+        }
+        if (d20) {
+          d20.rounds.forEach((r, i) => {
+            if (r.a.total !== r.a.die + d20.modA || r.b.total !== r.b.die + d20.modB) {
+              fail(event, 'a total does not match its die and modifier');
+            }
+            const tie = r.a.total === r.b.total;
+            if (tie !== i < d20.rounds.length - 1) fail(event, 'only a tie rolls again');
+          });
+          const last = d20.rounds[d20.rounds.length - 1];
+          if (last && success !== last.a.total > last.b.total) {
+            fail(event, 'the outcome does not match the dice');
+          }
+        }
+      } else {
+        if (d20 !== undefined) fail(event, 'an odds contest has no dice');
+        if (walled !== (roll === null)) {
+          fail(event, walled ? 'a walled contest has no roll' : 'this contest needs a roll');
+        }
       }
       if (roll !== null && success !== roll < chance) {
         fail(event, 'the outcome does not match the roll');
@@ -2140,6 +2163,10 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         mode,
         sharedAt: event.timestamp,
         ...result,
+        ...(rolls === 'd20' ? { rolls } : {}),
+        ...(d20
+          ? { d20: { ...d20, rounds: d20.rounds.map((r) => ({ a: { ...r.a }, b: { ...r.b } })) } }
+          : {}),
       };
       return {
         ...state,

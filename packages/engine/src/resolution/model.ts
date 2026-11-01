@@ -310,6 +310,17 @@ export interface SharedContest extends ContestResult {
   readonly b: ContestSideRecord;
   readonly mode: GradeGapMode;
   readonly sharedAt: string;
+  /** MK.1: "d20" when rolled with dice; absent for app odds. */
+  readonly rolls?: 'd20';
+  /** MK.1: the modifiers and dice of a d20 contest (absent when odds or walled). */
+  readonly d20?: {
+    readonly modA: number;
+    readonly modB: number;
+    readonly rounds: readonly {
+      readonly a: { readonly die: number; readonly how: 'typed' | 'app'; readonly total: number };
+      readonly b: { readonly die: number; readonly how: 'typed' | 'app'; readonly total: number };
+    }[];
+  };
 }
 
 /**

@@ -248,8 +248,15 @@ exports[`default rules > match the snapshot 1`] = `
     "selectionAlertWithinLevels": 5,
   },
   "resolution": {
+    "d20": {
+      "baseStat": 10,
+      "gradeGapPenalty": 5,
+      "minStat": 1,
+      "modifierPerDoubling": 3,
+    },
     "gradeGapMode": "gradeWalls",
     "lowerGradeFraction": 0.3333333333333333,
+    "rolls": "odds",
   },
   "skills": {
     "evolutionTransforms": {

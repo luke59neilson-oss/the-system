@@ -1,9 +1,11 @@
 import {
+  appDie,
   characterEffectiveStats,
   contestChance,
   damageFactor,
   montageAvailable,
   poolMax,
+  rollD20Contest,
   settleContest,
   walled,
   type CampaignState,
@@ -11,6 +13,7 @@ import {
   type Command,
   type ContestResult,
   type ContestSideRecord,
+  type D20Record,
   type GradeGapMode,
   type Montage,
 } from '@the-system/engine';
@@ -184,13 +187,27 @@ export interface RolledContest {
   readonly plan: ContestPlan;
   readonly roll: number | null;
   readonly result: ContestResult;
+  /** MK.1: the dice of a d20 contest (null when walled; absent in odds mode). */
+  readonly d20?: D20Record | null;
 }
 
-/** Rolls a planned contest with the given random source (no draw when walled). */
-export function rollPlan(state: CampaignState, plan: ContestPlan, random: () => number) {
+/**
+ * Rolls a planned contest with the given random source (no draw when walled).
+ * Follows the campaign's `rolls` setting (MK.1): in d20 mode the app rolls
+ * each side's d20, again while tied; typed dice come with MK.2.
+ */
+export function rollPlan(
+  state: CampaignState,
+  plan: ContestPlan,
+  random: () => number,
+): RolledContest {
+  if (state.rules.resolution.rolls === 'd20') {
+    const result = rollD20Contest(state.rules, plan.a, plan.b, () => appDie(random), plan.mode);
+    return { plan, roll: null, result, d20: result.d20 };
+  }
   const roll = plan.walled ? null : random();
   const result = settleContest(state.rules, plan.a, plan.b, plan.mode, roll);
-  return { plan, roll, result } satisfies RolledContest;
+  return { plan, roll, result };
 }
 
 /** The command that shares a rolled contest with the table. */
@@ -201,7 +218,14 @@ export function shareCommand(rolled: RolledContest): Command {
     b: rolled.plan.b,
     mode: rolled.plan.mode,
     roll: rolled.roll,
+    ...(rolled.d20 === undefined
+      ? {}
+      : { dice: (rolled.d20?.rounds ?? []).map((r) => ({ a: dieOf(r.a), b: dieOf(r.b) })) }),
   };
+}
+
+function dieOf(d: { readonly die: number; readonly how: 'typed' | 'app' }) {
+  return { die: d.die, how: d.how };
 }
 
 /** "75%" (whole percent; "<1%" and ">99%" near the ends). */
@@ -216,6 +240,15 @@ export function outcomeText(rolled: RolledContest): string {
   const { plan, result } = rolled;
   const winner = result.success ? plan.a.label : plan.b.label;
   if (result.walled) return `${winner} wins: a grade wall, no roll`;
+  const d20 = rolled.d20;
+  if (d20) {
+    const last = d20.rounds[d20.rounds.length - 1];
+    const signed = (n: number) => (n < 0 ? `−${-n}` : `+${n}`);
+    const ties = d20.rounds.length > 1 ? `, after ${d20.rounds.length - 1} tie(s)` : '';
+    return last
+      ? `${winner} wins (d20: ${plan.a.label} ${last.a.die}${signed(d20.modA)} = ${last.a.total}, ${plan.b.label} ${last.b.die}${signed(d20.modB)} = ${last.b.total}${ties})`
+      : `${winner} wins`;
+  }
   const roll = Math.round((result.roll ?? 0) * 100);
   return `${winner} wins (${plan.a.label} ${percent(result.chance)}, rolled ${roll})`;
 }
