@@ -54,7 +54,7 @@ test('a generated shop opens in the import preview and is approved', async ({ br
   await codm.getByLabel('Generate').selectOption('item');
   await codm.getByLabel('What the table needs').fill('percent bonus please');
   await codm.getByRole('button', { name: 'Generate', exact: true }).click();
-  await expect(imp.getByRole('alert', { name: 'Problems in the file' })).toContainText(
+  await expect(imp.getByRole('list', { name: 'Problems in the file' })).toContainText(
     'items[0].bonuses[0]',
   );
   await expect(codm.getByTestId('codm-message')).toHaveText(

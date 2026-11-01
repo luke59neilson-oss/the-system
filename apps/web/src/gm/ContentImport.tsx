@@ -281,8 +281,15 @@ export function ContentImport({
           }}
         />
       </label>
+      {/* QF.56: a short alert line; the list itself is read on demand. */}
       {preview && !preview.ok && (
-        <ul className="err" role="alert" aria-label="Problems in the file">
+        <p className="err" role="alert">
+          {preview.errors.length === 1 ? '1 problem' : `${preview.errors.length} problems`} in the
+          file; nothing was imported.
+        </p>
+      )}
+      {preview && !preview.ok && (
+        <ul className="err" aria-label="Problems in the file">
           {preview.errors.map((e) => (
             <li key={`${e.path}:${e.message}`}>
               <code>{e.path}</code>: {e.message}
@@ -302,7 +309,13 @@ export function ContentImport({
             </p>
           )}
           {preview.errors.length > 0 && (
-            <ul className="err" role="alert" aria-label="Entries that cannot apply">
+            <p className="err" role="alert">
+              {preview.errors.length === 1 ? '1 entry' : `${preview.errors.length} entries`} cannot
+              apply.
+            </p>
+          )}
+          {preview.errors.length > 0 && (
+            <ul className="err" aria-label="Entries that cannot apply">
               {preview.errors.map((e) => (
                 <li key={`${e.path}:${e.message}`}>
                   <code>{e.path}</code>: {e.message}

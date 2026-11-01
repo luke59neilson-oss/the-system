@@ -39,7 +39,7 @@ test('the GM previews a content file and applies the ticked entries', async ({ b
       '{"format":"the-system/content","version":1,"skills":[{"name":"","rarty":"rare"}]}',
     ),
   });
-  await expect(panel.getByRole('alert', { name: 'Problems in the file' })).toContainText(
+  await expect(panel.getByRole('list', { name: 'Problems in the file' })).toContainText(
     'skills[0]',
   );
 
@@ -82,7 +82,7 @@ test('entries that cannot apply are shown; a changed campaign stops the apply', 
       }),
     ),
   });
-  await expect(panel.getByRole('alert', { name: 'Entries that cannot apply' })).toContainText(
+  await expect(panel.getByRole('list', { name: 'Entries that cannot apply' })).toContainText(
     'skillOffers[0].character',
   );
   await expect(panel.getByRole('checkbox')).toHaveCount(2);
@@ -145,13 +145,13 @@ test('server refusals and a lost server show as messages, and a blocked tick sto
   );
   await openWindow(gm, 'import');
   await input.setInputFiles(library);
-  await expect(panel.getByRole('alert', { name: 'Problems in the file' })).toContainText(
+  await expect(panel.getByRole('list', { name: 'Problems in the file' })).toContainText(
     'No campaign open',
   );
   await gm.unroute(route);
   await gm.route(route, (r) => r.fulfill({ status: 413, body: 'too large' }));
   await input.setInputFiles(library);
-  await expect(panel.getByRole('alert', { name: 'Problems in the file' })).toContainText(
+  await expect(panel.getByRole('list', { name: 'Problems in the file' })).toContainText(
     'The file is too large',
   );
   await gm.unroute(route);

@@ -83,7 +83,8 @@ export function GmScreen() {
     return (
       <main className="gm">
         <h1>The System · GM</h1>
-        <section className="window" role="alert">
+        {/* QF.56: role="alert" only on short error lines, never a whole window. */}
+        <section className="window">
           <h2>GM key needed</h2>
           <p>
             Open the GM console from the desktop app (its “Players join” box has a GM link for other
@@ -195,9 +196,9 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
     return (
       <main className="gm">
         <h1>The System · GM</h1>
-        <section className="window" role="alert">
+        <section className="window">
           <h2>Not connected</h2>
-          <p>{live.error}</p>
+          <p role="alert">{live.error}</p>
           <button
             type="button"
             onClick={() => {
