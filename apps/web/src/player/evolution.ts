@@ -119,7 +119,7 @@ export function evolutionWarnings(
 
 /**
  * The release's re-rating (MR.1, DESIGN §6), one line per skill in sheet
- * order: "[Archer's Eye] Common → Inferior", or "[Identify] stays Common".
+ * order: "[Archer's Eye] is now Inferior (was Common)" (QF.57: plain words), or "[Identify] stays Common".
  * Empty for releases stored before MR.1 (they re-rate nothing).
  */
 export function rerateLines(
@@ -142,6 +142,6 @@ export function rerateLines(
     const from = rarityName(rules, s.rarity);
     return rarity === s.rarity
       ? `[${s.name}] stays ${from}`
-      : `[${s.name}] ${from} → ${rarityName(rules, rarity)}`;
+      : `[${s.name}] is now ${rarityName(rules, rarity)} (was ${from})`;
   });
 }

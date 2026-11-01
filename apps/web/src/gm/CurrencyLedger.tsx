@@ -150,7 +150,7 @@ export function CurrencyLedger({ client, state }: { client: LiveClient; state: C
         </select>
       </label>
       {ledger.length === 0 ? (
-        <p className="muted">No {currency} has changed hands yet.</p>
+        <p className="muted">Nothing has changed hands yet.</p>
       ) : (
         <table className="ledger" aria-labelledby="currency-ledger-list">
           <thead>

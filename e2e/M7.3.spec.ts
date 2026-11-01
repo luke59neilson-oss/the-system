@@ -97,7 +97,7 @@ test('the GM rolls and shares contests, deals damage and runs a clock', async ({
   await expect(win.getByRole('status').last()).toHaveText('Shared with the table');
   const popup = page.getByTestId('contest-popup');
   await expect(popup).toContainText('[Jake · Perception] vs [Beast Lord]');
-  await expect(popup).toContainText('A grade wall decides it: no roll.');
+  await expect(popup).toContainText('Too far apart in grade: the higher grade wins, no roll.');
   await expect(popup).toContainText('Failure.');
   await page.screenshot({ path: path.join(shots, 'player-contest-popup-390x844.png') });
   await popup.getByRole('button', { name: 'OK' }).click();

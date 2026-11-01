@@ -220,11 +220,11 @@ export function EvolutionChoice({
       {rerate.length > 0 && (
         <section className="evolution-rerate" data-testid="evolution-rerate">
           <p className="muted">
-            Your skills are re-rated for {evolution.toGrade}-grade: same power, new label. Text and
-            mastery marks stay; the next upgrade costs the new rarity&rsquo;s marks
-            {rules.marks.resetOnUpgrade ? ' and starts the skill again at 0' : ''}. A skill a path
-            transforms follows that path instead
-            {rules.marks.resetOnUpgrade ? ' and starts at 0 marks' : ''}.
+            {/* QF.57: plain words, no "re-rated", "transforms" or "mastery marks". */}
+            Your skills keep their text and progress; their rarity label changes for{' '}
+            {evolution.toGrade}-grade.
+            {rules.marks.resetOnUpgrade ? ' An upgrade starts that skill’s progress at 0.' : ''} A
+            skill a path changes follows that path instead.
           </p>
           <ul aria-label="Skill re-rating">
             {rerate.map((line) => (

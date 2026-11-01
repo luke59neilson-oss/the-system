@@ -101,7 +101,7 @@ export function PlayerHome() {
         {isHostBrowser(window.location.hostname) && (
           <p className="muted">
             On the GM’s laptop? <a href="/gm">Open the GM console</a> (needs the GM link from the
-            desktop app or server terminal).
+            desktop app).
           </p>
         )}
       </section>

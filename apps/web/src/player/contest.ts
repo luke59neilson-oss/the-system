@@ -23,7 +23,7 @@ export function chanceText(chance: number): string {
 export function contestLines(c: PlayerContest): { title: string; odds: string; result: string } {
   return {
     title: `[${c.yours.label}] vs [${c.theirs}]`,
-    odds: c.walled ? 'A grade wall decides it: no roll.' : `Your chance: ${chanceText(c.chance)}`,
+    odds: c.walled ? 'Too far apart in grade: the higher grade wins, no roll.' : `Your chance: ${chanceText(c.chance)}`,
     result: c.won ? 'Success.' : 'Failure.',
   };
 }

@@ -200,7 +200,7 @@ describe('rerateLines (MR.1)', () => {
           { skill: 'Basic Archery', rarity: 'rare' },
         ],
       }),
-    ).toEqual(['[Basic Archery] Common → Rare', '[Identify] stays Common']);
+    ).toEqual(['[Basic Archery] is now Rare (was Common)', '[Identify] stays Common']);
   });
   it('is empty for a release stored before MR.1', () => {
     expect(rerateLines(rules, me, {})).toEqual([]);
@@ -209,7 +209,7 @@ describe('rerateLines (MR.1)', () => {
     const rare = { ...skill('Archer’s Eye', 0), rarity: 'rare' } as OwnSheet['skills'][number];
     const mine = { skills: [rare, skill('Identify', 2)] };
     expect(rerateLines(rules, mine, { rerate: [] })).toEqual([
-      '[Archer’s Eye] Rare → Common',
+      '[Archer’s Eye] is now Common (was Rare)',
       '[Identify] stays Common',
     ]);
     expect(
