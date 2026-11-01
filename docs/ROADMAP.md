@@ -1072,7 +1072,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   mutation at `model.ts:1140`); the seeded simulation runs only on pre-ME
   rules (add a seed on default rules with three-step releases). *Accept:*
   each mutation named in `docs/QUALITY.md` sweep B fails a test.
-- [ ] **QF.69 The status-window [Evolve] marks the release opened; the GM's
+- [x] **QF.69 The status-window [Evolve] marks the release opened; the GM's
   "released" line clears on edit.** Sweep B (UX, sonnet), Lows raised with
   the review layout to one item: `PlayerScreen.tsx:705-713` bypasses
   `openEvolution`; `EvolutionSteps.tsx:172-182,456-458`. *Accept:* e2e.
@@ -1084,7 +1084,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   two open 2-point level-ups and asserts each batch's allocation; it fails
   with the key-order mutation applied.
 
-- [ ] **QF.71 The phone's roll prompt shows the contest's modifier.** Sweep C
+- [x] **QF.71 The phone's roll prompt shows the contest's modifier.** Sweep C
   (UX, fable), Medium, confirmed in code: `player/contest.ts:60` shows the
   sheet modifier, but `resolution/dice.ts:93-104` takes the −5 grade-gap
   penalty (grade walls) or the adjusted value (other modes), so the prompt
