@@ -3730,6 +3730,10 @@ ol.change-log li.undone .change-text {
 .stats-d20 li > :first-child {
   margin-right: auto;
 }
+/* QF.74: the bonus takes its own line below, so the modifier stays by the value. */
+.stats-d20 .stat-bonus {
+  order: 1;
+}
 
 /* MK.2: the phone's "Roll d20 for <Stat>" prompt. */
 .roll-prompt {
