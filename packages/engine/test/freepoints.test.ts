@@ -357,6 +357,15 @@ describe('free points: any amount at once (MV.1)', () => {
     expect(replay(JSON.parse(JSON.stringify(after.events)) as unknown[])).toEqual(after);
   });
 
+  it('splits a spend in stat order, whatever order the allocation lists (QF.67)', () => {
+    const c = jake(ok(three(), spend({ agility: 3, strength: 1 })));
+    expect(c?.freePointBatches).toEqual([
+      { raceLevel: 1, points: 2, allocation: { strength: 1, agility: 1 }, locked: true },
+      { raceLevel: 2, points: 2, allocation: { agility: 2 }, locked: true },
+      { raceLevel: 3, points: 2, allocation: null, locked: false },
+    ]);
+  });
+
   it('keeps points back; a partly used level-up keeps the rest open and finishes later', () => {
     const c1 = ok(three(), spend({ vitality: 3 }));
     const b1 = jake(c1)?.freePointBatches ?? [];
