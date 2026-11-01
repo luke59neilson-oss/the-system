@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): sweep A done, no High or Medium stands. On `wip/QF.69`: QF.69, QF.71 and QF.73 reviewed (boxes checked there), QF.72 awaits review round 2. Preview ready: Actions → Release → Run workflow (ML).
-**Next item:** `wip/QF.69` (`npm run sync -- wip/QF.69`, check it out, `git merge origin/main`): QF.72 review round 2 (commits 116ad23, fa343f0), full e2e, then check its box and merge to main. Then QF.74; MW after.
+**Status:** in progress (2026-11-01): QF.69, QF.71–QF.74 on main. MW.1 and MW.2 built on `wip/MW.2`, neither reviewed. Preview ready: Actions → Release → Run workflow (ML).
+**Next item:** `wip/MW.2` (`npm run sync -- wip/MW.2`, check it out, `git merge origin/main`): fix e2e/MW.2.spec.ts line 107 (the phone dialog opens the older level 50 menu first), then review MW.1 and MW.2. MW.3 after.
 **Blockers:** none
 
 ## Run log
@@ -1707,3 +1707,11 @@ next item, blockers. -->
 - Tests: `npm run check` on fa343f0: exit 0, unit 2118. MK.2 4/4, ME.3 and ME.5 green. Full e2e not finished: stopped at 13 tests to rebuild for the fix, so it is due before the merge. Engine coverage not read this run.
 - A sweep and five blocking reviews used most of the build time, so QF.74 was not started.
 - Open `wip/*`: `wip/QF.69` (next). Blockers: none.
+
+### Run · 2026-11-01 22:09–22:59 UTC (close-out at minute 49)
+- Close-out at minute 49, after the hand-off at 44.
+- Preflight: no `add_repo` tool, repo at /home/claude/the-system; `npm run sync` reset a stale local main. Lock pushed; vitest 5.0.5. CI on main green at the last completed run (b8b950d). No new answers. Hour 22: no sweep, no efficiency check.
+- Finished and merged to main: QF.69, QF.71, QF.73 (reviewed last run), QF.72 (sonnet round 2: 0 H, 2 M, both fixed), QF.74 (bug confirmed by a failing spec first; sonnet 0 H, 0 M).
+- Tests: `npm run e2e` on the QF commit 25801a7: e2e 177 + latency 8 with no failures (log shows 188 ticks, not reconciled: read the next run's total). `npm run check` exit 0, unit 2134, on 38bb3bf6 (the superset, MW work included). Engine coverage not read this run.
+- `wip/MW.2` at 38bb3bf6, base 25801a7: MW.1 complete with spec and screenshots, unreviewed. MW.2 built: route `/api/gm/ai/skill-drafts`, fake, flags, buttons, unit tests green. Its e2e fails at line 107: `Choose Keener Sight` not visible, likely because the dialog shows the level 50 menu first. Not diagnosed further. Spell cost reaching the library entry has no test yet. Next step: fix the spec, add that test, then one review for each item.
+- Blockers: none.
