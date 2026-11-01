@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OUT_OF_RANGE, identifyHeader, identifyResult } from '../src/player/identify';
+import { OUT_OF_RANGE, identifyBody, identifyHeader, identifyResult } from '../src/player/identify';
 
 const known = [
   {
@@ -48,5 +48,36 @@ describe('identifyHeader (MQ.8)', () => {
       '[Pale hunter (F) – lvl 7]',
     );
     expect(identifyHeader({ ...base, inRange: true, grade: null, level: null })).toBeNull();
+  });
+});
+
+describe('identifyBody (QF.62)', () => {
+  const stalker = { id: 's', label: 'Canyon Stalker', inRange: true, grade: 'F', level: 7 };
+  it('drops a first line that only restates the header, so a Common viewer sees no duplicate', () => {
+    expect(identifyBody({ ...stalker, text: '[Canyon Stalker – lvl 7]' })).toBeNull();
+    expect(
+      identifyBody({
+        ...stalker,
+        text: '[Canyon Stalker – lvl 7] A lean hunter of the scar canyons.',
+      }),
+    ).toBe('A lean hunter of the scar canyons.');
+    expect(
+      identifyBody({
+        ...stalker,
+        label: 'Pale hunter',
+        level: 14,
+        text: '[Pale Hunter – lvl 14]\nIt hunts.',
+      }),
+    ).toBe('It hunts.');
+  });
+  it('keeps text whose bracket says something else, or when there is no header', () => {
+    expect(identifyBody({ ...stalker, text: '[Canyon Stalker – lvl 9] Grown.' })).toBe(
+      '[Canyon Stalker – lvl 9] Grown.',
+    );
+    expect(identifyBody({ ...stalker, text: '[Fever] Burns.' })).toBe('[Fever] Burns.');
+    expect(
+      identifyBody({ ...stalker, grade: null, level: null, text: '[Canyon Stalker – lvl 7]' }),
+    ).toBe('[Canyon Stalker – lvl 7]');
+    expect(identifyBody({ ...stalker, text: null })).toBeNull();
   });
 });

@@ -9,6 +9,7 @@ import {
   equipTarget,
   itemLabel,
   openTrades,
+  ownSideShort,
   parties,
   partyName,
   slotRows,
@@ -274,6 +275,7 @@ export function Inventory({ view, client }: { view: PlayerView; client: LiveClie
           {trades.incoming.map((t) => (
             <li key={t.id} data-testid="trade-incoming">
               <TradeText view={view} trade={t} />
+              <TradeShort text={ownSideShort(inv, t.get, label, 'decline it')} />
               {client && (
                 <span className="item-actions">
                   <button
@@ -309,6 +311,7 @@ export function Inventory({ view, client }: { view: PlayerView; client: LiveClie
           {trades.outgoing.map((t) => (
             <li key={t.id} data-testid="trade-outgoing">
               <TradeText view={view} trade={t} />
+              <TradeShort text={ownSideShort(inv, t.give, label, 'withdraw the offer')} />
               {client && (
                 <button
                   type="button"
@@ -341,6 +344,17 @@ export function Inventory({ view, client }: { view: PlayerView; client: LiveClie
         </details>
       )}
     </section>
+  );
+}
+
+/** QF.62: why the viewer's own side of an open trade cannot be paid now. */
+function TradeShort({ text }: { text: string | null }) {
+  if (text === null) return null;
+  return (
+    <span className="muted trade-short" data-testid="trade-short">
+      {' '}
+      {text}
+    </span>
   );
 }
 

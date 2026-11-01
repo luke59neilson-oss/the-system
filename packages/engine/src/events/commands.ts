@@ -2204,10 +2204,12 @@ function toEvent(
 /** One message for an unknown item and one the character does not hold (QF.2). */
 export const ITEM_NOT_AVAILABLE = 'That item is not available';
 /**
- * Accepting a trade when either side no longer has its part (QF.9): one
- * message that names nothing and shows no one's holdings.
+ * Accepting a trade when the offering side no longer has its part (QF.9): it
+ * names no item and shows no balance. QF.62 says which side and how to clear
+ * the dead offer; the accepter could already tell by elimination (TRADE_YOU_LACK).
  */
-export const TRADE_NOT_POSSIBLE = 'That trade can no longer go through';
+export const TRADE_NOT_POSSIBLE =
+  'That trade can no longer go through: the other side no longer has everything it offered. Decline it to clear it.';
 /**
  * QF.62 (deep review playtest-5): the accepter's own side is short. It names
  * only what the accepter can see of themselves; an equipped item is not in

@@ -153,6 +153,29 @@ export function openTrades(inv: PlayerInventory, viewerId: string) {
   };
 }
 
+/**
+ * QF.62 (deep review playtest-5): why the viewer's own side of a trade can no
+ * longer be paid from what they hold, or null when it can. Uses only the
+ * viewer's own inventory. An equipped item is not in `items`, so it is named
+ * as such; for an outgoing offer pass its `give`, for an incoming one its `get`.
+ */
+export function ownSideShort(
+  inv: PlayerInventory,
+  side: { readonly currency: number; readonly items: Readonly<Record<string, number>> },
+  label: (id: string) => string,
+  way: 'withdraw the offer' | 'decline it',
+): string | null {
+  const worn = new Set(Object.values(inv.equipped));
+  for (const [id, n] of Object.entries(side.items)) {
+    const have = Object.prototype.hasOwnProperty.call(inv.items, id) ? (inv.items[id] ?? 0) : 0;
+    if (have >= n) continue;
+    return worn.has(id)
+      ? `${label(id)} is equipped; unequip it or ${way}.`
+      : `You no longer hold ${label(id)}; ${way}.`;
+  }
+  return side.currency > inv.currency ? `You no longer have the currency it needs; ${way}.` : null;
+}
+
 /** A whole number from a form field, or null when it isn't one in 0..max. */
 export function wholeNumber(text: string, max: number): number | null {
   if (!/^\d+$/u.test(text.trim())) return null;

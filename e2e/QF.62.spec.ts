@@ -4,7 +4,8 @@ import { expect, test, type Page } from './helpers/test';
 import { openWindow } from './helpers/gmTabs';
 import { startBuiltServer, type RunningServer } from './helpers/server';
 
-// QF.62: Low fixes with a screen: the transform cost hint, the reveal notice.
+// QF.62: Low fixes with a screen: the transform cost hint, the reveal notice,
+// the Identify text without a repeated header, dead trades.
 const GM_KEY = 'e2e-gm-key-qf62-0123456789abcdef62';
 const shots = path.resolve(import.meta.dirname, '../docs/screens/QF.62');
 let server: RunningServer;
@@ -104,7 +105,7 @@ test('revealing an Identify entry tells the player', async ({ browser }) => {
     entityId: 'qf62-stalker',
     name: 'Ridge Stalker',
     grade: 'G',
-    level: 2,
+    level: 0,
     tiers: [{ minRarity: 'common', text: '[Ridge Stalker]' }],
   });
   await gmCommand(gm, {
@@ -113,5 +114,63 @@ test('revealing an Identify entry tells the player', async ({ browser }) => {
     characterIds: ['demo-sultan'],
   });
   await expect(phone.getByText(/New Identify entry: .*Ridge Stalker/).first()).toBeVisible();
+  // The tier text only restated the header, so a Common viewer sees it once.
+  await gmCommand(gm, {
+    type: 'entity.edit',
+    entityId: 'qf62-stalker',
+    tiers: [{ minRarity: 'common', text: '[Ridge Stalker – lvl 0]' }],
+  });
+  const panel = phone.getByTestId('identify');
+  await panel.getByRole('button', { name: 'Ridge Stalker' }).click();
+  await expect(panel.getByTestId('identify-header')).toHaveText('[Ridge Stalker (G) – lvl 0]');
+  await expect(panel.getByTestId('identify-text')).toHaveText(
+    'Your Identify reveals nothing more about it.',
+  );
   await phone.screenshot({ path: path.join(shots, 'reveal-notice-390x844.png') });
+});
+
+test('a dead trade says why on both phones and how to clear it', async ({ browser }) => {
+  const gm = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  await demo(gm);
+  // Jake offers his bow to Miranda, then puts it back on.
+  await gmCommand(gm, { type: 'item.unequip', characterId: 'demo-jake', slot: 'mainHand' });
+  await gmCommand(gm, {
+    type: 'trade.propose',
+    tradeId: 'qf62-bow',
+    characterId: 'demo-jake',
+    to: 'demo-miranda',
+    give: { items: { 'demo-bow': 1 } },
+    get: { currency: 1 },
+  });
+  await gmCommand(gm, {
+    type: 'item.equip',
+    characterId: 'demo-jake',
+    itemId: 'demo-bow',
+    slot: 'mainHand',
+  });
+
+  const jake = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await jake.goto(`${server.url}/play/demo-jake`);
+  await expect(jake.getByTestId('connection')).toHaveText('Connected');
+  const offer = jake.getByTestId('trade-outgoing');
+  await expect(offer.getByTestId('trade-short')).toHaveText(
+    /is equipped; unequip it or withdraw the offer\.$/,
+  );
+  await offer.scrollIntoViewIfNeeded();
+  await jake.screenshot({ path: path.join(shots, 'dead-trade-offerer-390x844.png') });
+
+  const miranda = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await miranda.goto(`${server.url}/play/demo-miranda`);
+  await expect(miranda.getByTestId('connection')).toHaveText('Connected');
+  const incoming = miranda.getByTestId('trade-incoming');
+  await expect(incoming.getByTestId('trade-short')).toHaveCount(0);
+  await incoming.getByRole('button', { name: '[Accept]' }).click();
+  await expect(miranda.getByTestId('inventory-error')).toHaveText(
+    /the other side no longer has everything it offered\. Decline it to clear it\./,
+  );
+  await incoming.scrollIntoViewIfNeeded();
+  await miranda.screenshot({ path: path.join(shots, 'dead-trade-accepter-390x844.png') });
+  await incoming.getByRole('button', { name: '[Decline]' }).click();
+  await expect(miranda.getByTestId('trade-incoming')).toHaveCount(0);
+  await expect(jake.getByTestId('trade-outgoing')).toHaveCount(0);
 });
