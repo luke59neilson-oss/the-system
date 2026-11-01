@@ -11,6 +11,7 @@ import {
   rmSync,
   writeFileSync,
   fsyncSync,
+  constants,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -424,10 +425,10 @@ describe('disk faults (QF.7)', () => {
       ...options,
       logIo: {
         // Writes half the bytes, then the disk fills up.
-        write: (fd, data, offset, length) => {
-          if (!failNext) return writeSync(fd, data, offset, length);
+        write: (fd, data, offset, length, position) => {
+          if (!failNext) return writeSync(fd, data, offset, length, position);
           failNext = false;
-          writeSync(fd, data, offset, Math.max(1, Math.floor(length / 2)));
+          writeSync(fd, data, offset, Math.max(1, Math.floor(length / 2)), position);
           throw diskFull();
         },
       },
@@ -449,14 +450,37 @@ describe('disk faults (QF.7)', () => {
     reopened.close();
   });
 
+  it('writes each append at the end of the whole lines, on a handle that is not O_APPEND', () => {
+    // QF.62: on Windows an O_APPEND handle cannot be truncated, so the log is
+    // opened for read-write and every write names its position.
+    const positions: number[] = [];
+    const flags: number[] = [];
+    const store = CampaignStore.open('main', {
+      ...options,
+      logIo: {
+        write: (fd, data, offset, length, position) => {
+          positions.push(position);
+          flags.push(fcntlFlags(fd));
+          return writeSync(fd, data, offset, length, position);
+        },
+      },
+    });
+    play(store, script);
+    const size = readFileSync(logFile()).length;
+    play(store, [rename('Next')], context('p'));
+    expect(positions.at(-1)).toBe(size);
+    expect(flags.every((f) => (f & constants.O_APPEND) === 0)).toBe(true);
+    store.close();
+  });
+
   it('refuses every later write when a failed write cannot be undone', () => {
     let fail = false;
     const store = CampaignStore.open('main', {
       ...options,
       logIo: {
-        write: (fd, data, offset, length) => {
-          if (!fail) return writeSync(fd, data, offset, length);
-          writeSync(fd, data, offset, 1);
+        write: (fd, data, offset, length, position) => {
+          if (!fail) return writeSync(fd, data, offset, length, position);
+          writeSync(fd, data, offset, 1, position);
           throw diskFull();
         },
         ftruncate: () => {
@@ -510,6 +534,14 @@ describe('disk faults (QF.7)', () => {
     store.close();
   });
 });
+
+/** The open flags of a descriptor (Linux /proc; CI runs on Linux). */
+function fcntlFlags(fd: number): number {
+  const info = readFileSync(`/proc/self/fdinfo/${fd}`, 'utf8');
+  const match = /^flags:\s+([0-7]+)$/m.exec(info);
+  if (!match?.[1]) throw new Error(`no flags line for fd ${fd}`);
+  return parseInt(match[1], 8);
+}
 
 describe('export and import', () => {
   const TOKEN = 'ghp_CANARYTOKEN1234567890';

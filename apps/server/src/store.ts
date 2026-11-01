@@ -139,13 +139,14 @@ export interface StoreOptions {
 
 /** The file calls an append makes on the event log (see StoreOptions.logIo). */
 export interface LogIo {
-  write(fd: number, data: Buffer, offset: number, length: number): number;
+  /** Writes at `position` (the log is not opened for append; see open). */
+  write(fd: number, data: Buffer, offset: number, length: number, position: number): number;
   fsync(fd: number): void;
   ftruncate(fd: number, length: number): void;
 }
 
 const NODE_LOG_IO: LogIo = {
-  write: (fd, data, offset, length) => writeSync(fd, data, offset, length),
+  write: (fd, data, offset, length, position) => writeSync(fd, data, offset, length, position),
   fsync: (fd) => fsyncSync(fd),
   ftruncate: (fd, length) => ftruncateSync(fd, length),
 };
@@ -216,10 +217,15 @@ export function parseLogText(data: Buffer | string): TornLogResult {
 const stamp = (iso: string) => iso.replace(/[:.]/g, '-');
 
 /** writeSync until every byte is written (it may write fewer). */
-function writeAll(fd: number, data: Buffer, write: LogIo['write'] = NODE_LOG_IO.write): void {
+function writeAll(
+  fd: number,
+  data: Buffer,
+  write: LogIo['write'] = NODE_LOG_IO.write,
+  start = 0,
+): void {
   let done = 0;
   while (done < data.length) {
-    const n = write(fd, data, done, data.length - done);
+    const n = write(fd, data, done, data.length - done, start + done);
     if (n <= 0) throw new StoreError('Write made no progress');
     done += n;
   }
@@ -580,8 +586,11 @@ export class CampaignStore {
       throw error;
     }
     closeSync(fd);
-    const appendFd = openSync(logFile, 'a');
-    return new CampaignStore(id, dir, loaded.campaign, appendFd, options, {
+    // Not 'a': on Windows an O_APPEND handle lacks FILE_WRITE_DATA, so the
+    // cut-back after a failed write (ftruncate) could fail and latch the
+    // store. appendAll writes at goodBytes explicitly instead (QF.62).
+    const logFd = openSync(logFile, 'r+');
+    return new CampaignStore(id, dir, loaded.campaign, logFd, options, {
       tornCopy,
       fromSnapshot: loaded.usedSnapshot,
       lock,
@@ -611,7 +620,7 @@ export class CampaignStore {
     const bytes = Buffer.from(events.map((e) => `${JSON.stringify(e)}\n`).join(''), 'utf8');
     const io = { ...NODE_LOG_IO, ...this.options.logIo };
     try {
-      writeAll(fd, bytes, io.write);
+      writeAll(fd, bytes, io.write, this.goodBytes);
     } catch (error) {
       try {
         io.ftruncate(fd, this.goodBytes);
