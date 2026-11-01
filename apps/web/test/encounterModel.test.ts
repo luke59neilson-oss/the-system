@@ -20,6 +20,13 @@ import {
   recentContests,
   refreshSide,
   rollPlan,
+  phoneDie,
+  phoneDieUsed,
+  rollClears,
+  sharedRollText,
+  phoneRoller,
+  signedModifier,
+  typedDie,
   shareCommand,
   sideDraftFor,
   sideOptions,
@@ -159,6 +166,117 @@ describe('encounter model: contests (M7.3)', () => {
     expect(shared[0]).toMatchObject({ roll: 0.42, success: true, chance: 0.5 });
   });
 
+  it('a typed die counts for the first round; a tie rolls again in the app (MK.2)', () => {
+    const rules = {
+      ...DEFAULT_RULES,
+      resolution: { ...DEFAULT_RULES.resolution, rolls: 'd20' as const },
+    };
+    const base = apply(emptyCampaign(), [
+      { type: 'campaign.create', name: 'Dice', rules },
+      { type: 'character.create', id: 'jake', name: 'Jake', className: 'Archer', classSkills: kit },
+      { type: 'character.create', id: 'kim', name: 'Kim', className: 'Archer', classSkills: kit },
+    ]);
+    const s = stateOf(base);
+    const plan = contestPlan(
+      s,
+      sideDraftFor(s, 'c:jake', 'strength'),
+      sideDraftFor(s, 'c:kim', 'strength'),
+      'none',
+    );
+    if (typeof plan === 'string') throw new Error(plan);
+    // Jake types 7; Kim's die is the app's (0.3 → 7): a tie, then 20 against 1.
+    const draws = [0.3, 0.95, 0];
+    let i = 0;
+    const rolled = rollPlan(s, plan, () => draws[i++] ?? 0, { a: 7, b: null });
+    expect(rolled.d20?.rounds.map((r) => [r.a, r.b])).toEqual([
+      [
+        { die: 7, how: 'typed', total: 7 },
+        { die: 7, how: 'app', total: 7 },
+      ],
+      [
+        { die: 20, how: 'app', total: 20 },
+        { die: 1, how: 'app', total: 1 },
+      ],
+    ]);
+    expect(shareCommand(rolled)).toMatchObject({
+      dice: [{ a: { die: 7, how: 'typed' }, b: { die: 7, how: 'app' } }, {}],
+    });
+    const once = rollPlan(s, plan, () => 0, { a: 15, b: 3 });
+    expect(once.d20?.rounds).toHaveLength(1);
+    expect(outcomeText(once)).toBe(
+      'Jake · Strength wins (d20: Jake · Strength 15 typed +0 = 15, Kim · Strength 3 typed +0 = 3)',
+    );
+    expect(typedDie('')).toBeNull();
+    expect(typedDie(' 20 ')).toBe(20);
+    expect(typedDie('0')).toMatch(/1 to 20/);
+    expect(typedDie('21')).toMatch(/1 to 20/);
+    expect(typedDie('2.5')).toMatch(/1 to 20/);
+    expect(signedModifier(-3)).toBe('−3');
+    expect(signedModifier(0)).toBe('+0');
+    // A phone's answer keeps how it was rolled (MK.2 part 2).
+    const phone = rollPlan(s, plan, () => 0, { a: { die: 18, how: 'app' }, b: 4 });
+    expect(phone.d20?.rounds[0]).toMatchObject({
+      a: { die: 18, how: 'app' },
+      b: { die: 4, how: 'typed' },
+    });
+  });
+
+  it("finds the player's phone roll for a one-character side (MK.2)", () => {
+    const rules = {
+      ...DEFAULT_RULES,
+      resolution: { ...DEFAULT_RULES.resolution, rolls: 'd20' as const },
+    };
+    let c = apply(emptyCampaign(), [
+      { type: 'campaign.create', name: 'Dice', rules },
+      { type: 'character.create', id: 'jake', name: 'Jake', className: 'Archer', classSkills: kit },
+    ]);
+    const s = stateOf(c);
+    const roller = phoneRoller(s, { characterIds: ['jake'], stat: 'perception' });
+    expect(roller).toEqual({ characterId: 'jake', name: 'Jake', stat: 'perception' });
+    expect(phoneRoller(s, { characterIds: [], stat: null })).toBeNull();
+    expect(phoneRoller(s, { characterIds: ['jake'], stat: null })).toBeNull();
+    const none = new Set<string>();
+    expect(phoneDie(s, roller, none)).toBeNull();
+    c = apply(c, [
+      { type: 'roll.request', characterId: 'jake', stat: 'perception', requestId: 'r1' },
+    ]);
+    const asked = new Set(['r1']);
+    expect(phoneDie(stateOf(c), roller, asked)).toEqual({
+      requestId: 'r1',
+      answer: null,
+      current: true,
+    });
+    // Review M1: a request this contest did not ask for (an earlier contest,
+    // another stat) is shown but never used.
+    expect(phoneDie(stateOf(c), roller, none)).toMatchObject({ requestId: 'r1', current: false });
+    expect(phoneDie(stateOf(c), { characterId: 'jake', stat: 'agility' }, asked)).toMatchObject({
+      current: false,
+    });
+    c = apply(c, [{ type: 'roll.answer', characterId: 'jake', requestId: 'r1', die: 12 }]);
+    const p = phoneDie(stateOf(c), roller, asked);
+    expect(p).toEqual({ requestId: 'r1', answer: { die: 12, how: 'typed' }, current: true });
+    expect(phoneDieUsed(p)).toEqual({ die: 12, how: 'typed' });
+    expect(phoneDieUsed(phoneDie(stateOf(c), roller, none))).toBeNull();
+    // Review M1/M2: Roll closes every request this contest asked for, answered
+    // or still waiting (a die typed on the console replaced it), and leaves
+    // an earlier contest's request alone.
+    expect(rollClears([[roller, p]])).toEqual([
+      { type: 'roll.clear', characterId: 'jake', requestId: 'r1' },
+    ]);
+    expect(rollClears([[roller, { requestId: 'r9', answer: null, current: true }]])).toEqual([
+      { type: 'roll.clear', characterId: 'jake', requestId: 'r9' },
+    ]);
+    expect(rollClears([[roller, phoneDie(stateOf(c), roller, none)]])).toEqual([]);
+    expect(rollClears([[null, null]])).toEqual([]);
+    // App odds: no phone rolls.
+    expect(
+      phoneRoller(
+        { ...s, rules: { ...s.rules, resolution: { ...s.rules.resolution, rolls: 'odds' } } },
+        { characterIds: ['jake'], stat: 'perception' },
+      ),
+    ).toBeNull();
+  });
+
   it('rolls and shares d20 dice in a d20 campaign, again while tied (MK.1)', () => {
     const rules = {
       ...DEFAULT_RULES,
@@ -188,7 +306,7 @@ describe('encounter model: contests (M7.3)', () => {
     ]);
     expect(rolled.result.success).toBe(true);
     expect(outcomeText(rolled)).toBe(
-      'Jake · Strength wins (d20: Jake · Strength 20+0 = 20, Kim · Strength 1+0 = 1, after 1 tie(s))',
+      'Jake · Strength wins (d20: Jake · Strength 20 app +0 = 20, Kim · Strength 1 app +0 = 1, after 1 tie(s))',
     );
     const command = shareCommand(rolled);
     expect(command).toMatchObject({
@@ -353,5 +471,18 @@ describe('encounter model: clocks and montages (M7.3)', () => {
       { type: 'montage.close', montageId: 'm' },
     ]);
     expect(clockRows(stateOf(c))[0]).toMatchObject({ complete: true, montageReady: false });
+  });
+
+  it('describes a shared roll in the GM list (MK.A review M1)', () => {
+    const base = { chance: 0.36, roll: null, a: { label: 'Jake' }, b: { label: 'Stalker' } };
+    expect(sharedRollText({ ...base, walled: true })).toBe('grade wall');
+    expect(sharedRollText({ ...base, walled: false, roll: 0.71 })).toBe('36% for Jake, rolled 71');
+    const t = (a: number, b: number) => ({ a: { total: a }, b: { total: b } });
+    expect(sharedRollText({ ...base, walled: false, d20: { rounds: [t(9, 9), t(14, 11)] } })).toBe(
+      'd20: Jake 14 vs Stalker 11, after 1 tie',
+    );
+    expect(sharedRollText({ ...base, walled: false, d20: { rounds: [t(3, 12)] } })).toBe(
+      'd20: Jake 3 vs Stalker 12',
+    );
   });
 });

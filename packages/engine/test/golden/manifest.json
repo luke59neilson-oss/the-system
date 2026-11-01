@@ -288,6 +288,14 @@
       "sha256": "627eee32a2473905bfd57b41464581bca7ef6c350c10fe06d63fdb5bde1ecdd9",
       "schemaVersion": 35
     },
+    "roll-requests.jsonl": {
+      "sha256": "28623d0ec823d94e5fd5e46621819a7865d7b3e8faa21da5c266534ac1df6b6d",
+      "schemaVersion": 35
+    },
+    "roll-requests.state.json": {
+      "sha256": "c56aaa3005170cabec29d82ff90e53d68f65e107bb31a98fbd363901bc5a0f54",
+      "schemaVersion": 35
+    },
     "rules-migration.jsonl": {
       "sha256": "c90a36eb444ff5138d3be80c8303787d8d374ca7d991edd97e1c7481be0f3d12",
       "schemaVersion": 23

@@ -1013,6 +1013,21 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   'scene.ended': z.strictObject({ sceneId: recordId, characterIds: z.array(recordId).max(200) }),
   /** MT.9: a player answered the end-of-scene prompt (logged practice or nothing). */
   'scene.answered': z.strictObject({ sceneId: recordId, characterId: recordId }),
+  /** MK.2: the GM asks a player to roll a d20 for a stat (replaces any open request). */
+  'roll.requested': z.strictObject({
+    requestId: recordId,
+    characterId: recordId,
+    stat: z.string().min(1).max(40),
+  }),
+  /** MK.2: the die for an open roll request, typed from the table or rolled by the app. */
+  'roll.answered': z.strictObject({
+    requestId: recordId,
+    characterId: recordId,
+    die: z.number().int().min(1).max(20),
+    how: z.enum(['typed', 'app']),
+  }),
+  /** MK.2: the GM used or withdrew a roll request. */
+  'roll.cleared': z.strictObject({ requestId: recordId, characterId: recordId }),
   /** Compensating event: the target stops counting, as if it had never happened. */
   'event.undone': z.strictObject({ eventId: recordId }),
 } as const;
@@ -1130,6 +1145,9 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'session.ended': 2,
   'scene.ended': 1,
   'scene.answered': 1,
+  'roll.requested': 1,
+  'roll.answered': 1,
+  'roll.cleared': 1,
   'event.undone': 1,
 };
 
@@ -1233,6 +1251,7 @@ export const PLAYER_EVENT_TYPES: ReadonlySet<EventType> = new Set<EventType>([
   'trade.cancelled',
   'practice.logged',
   'scene.answered',
+  'roll.answered',
   'entity.noticeClosed',
   'montage.focused',
   'note.created',

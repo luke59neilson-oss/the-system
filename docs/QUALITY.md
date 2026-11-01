@@ -223,6 +223,7 @@ lowered by their verifiers and folded into the Low batches.
 | 2026-11-01 03:10 | B, 52c9c148..bc1b26b7 | Boundaries · haiku | 0 | 0 | 0 | clean (read only; projections, ME commands, reference route, hub) | 0 | ~190k |
 | 2026-11-01 03:10 | B, 52c9c148..bc1b26b7 | Tests · fable | 0 | 3 | 7 | 3 M by the reviewer's mutations, queued as QF.68 to verify first (no time left this run); 7 L to Backlog | 0 | ~243k |
 | 2026-11-01 03:10 | B, 52c9c148..bc1b26b7 | UX · sonnet | 0 | 2 | 2 | 2 M confirmed from `ME.5/player-review-390x844.png` and code (into ME.6e); 2 L as QF.69 | 0 | ~88k |
+- 2026-11-01 07:4x · local full e2e (1 worker) on wip/MK.2: `e2e/M8.3.spec.ts:221` keyboard test failed (43.7 s); passed alone with MK.2 (6/6). Repeat of the 2026-10-25 mode: now a QF item (QF.70).
 
 ## Backlog (Lows; M11.5 goes through these)
 
@@ -425,6 +426,12 @@ lowered by their verifiers and folded into the Low batches.
 - (QF.52 review r2, sonnet) A timed, unpinned banner pushed out of the newest 50 messages within its lifetime drops from the phone; after Show older, focus can land on a pinned extra; the probe's "old way" is a projection+stringify simulation and its timing margin depends on load; the in-place canary is JSON-based over the golden logs only.
 - (Sweep D 2026-10-31, UX · haiku) Import content's "Apply N" counts ticked entries with no noun; say "Apply N entries".
 - (QF.53 review, sonnet) Small frames (results, notifications, an undo's whole-history reset) still queue for a backlogged socket until the heartbeat drops it; the drop takes 40–60 s (third tick); a campaign switch clears the heartbeat set before the 1012 close completes; the heartbeat test's raw client never answers pings even when awake.
+
+- MK.2 review 2026-11-01 (sonnet rounds 1–2, Low): `roll.requested` takes one-character sides only; the phone prompt sits below the status window and "[+0]" wraps at 390×844 ("Intelligence 1.0" then "[+0]" on a second line); the GM's phone-die note sits under both dice boxes at 1366×768, away from side A; MK.2 screenshots show only +0 modifiers; a client-chosen `requestId` is not checked for reuse (GM-only, one live request per character); the asked-request marker is in memory, so a console reload makes an answered phone die stale (Clear and Ask again); the reducer's d20 gate on `roll.requested` would refuse a stored request made outside d20 (none exist).
+
+- MK.A review 2026-11-01 (fable, Low): `gm-rules-rolls-1366x768.png` shows the Skill text window, not the Rolls select (screenshot before scrolling); "Ask Jake's phone" floats right of side B's die box; Ask is offered for a walled (two-grade) contest; the phone's modifier comes from the sheet even if the GM edits the side's value; two typed dice that tie are re-rolled by the app (D312), the result says only "after 1 tie"; editing side A's "Players see" label closes Jake's request; no golden log holds a d20 `contest.shared`; die bounds 1–20 repeated as literals beside `D20_SIDES`; DESIGN speaks of stat 10 → +0 while the sheet shows 1.0.
+
+- MK.A round 2 2026-11-01 (fable, Low): a contest side changed before the server echoes Ask or Withdraw leaves a stale request (Clear by hand) or sends a second clear that is refused; the Shared rolls odds text rounds to 0%/100% where `percent()` says <1%/>99%.
 
 ## Final review (M11.5)
 

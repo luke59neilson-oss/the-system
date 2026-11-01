@@ -375,7 +375,7 @@ DESIGN §7 "Dice", §9. After ME, before QF.
   (modifiers for 1, 5, 10, 20, 30, 80, 2,900; exact d20 odds within 5 points
   of ratio odds for ratios 1–8; ties; −5 grade rule; no roll at two grades;
   replay of an odds-mode log).
-- [ ] **MK.2 Rolling at the table.** The setting in rules settings; when a
+- [x] **MK.2 Rolling at the table.** The setting in rules settings; when a
   roll is needed, the player's phone asks "Roll d20 for Perception (+14)"
   with **Roll** and a 1–20 box, and the GM console does the same for NPCs
   and monsters (and may enter a player's die for them); results show each
@@ -383,7 +383,7 @@ DESIGN §7 "Dice", §9. After ME, before QF.
   stat's modifier. *Accept:* e2e: a contest with one typed and one
   app-rolled die, both screens showing the result; a sheet with modifiers;
   canary; screenshots at 390×844 and 1366×768.
-- [ ] **MK.A Acceptance and review.** Full suite green; `fable` review;
+- [x] **MK.A Acceptance and review.** Full suite green; `fable` review;
   "Preview ready" (LOOP §8.2).
 
 ## QF — Quality fixes (from sweeps, LOOP §10)
@@ -900,6 +900,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   `{undoneSeqs}` frame; the backup and report run off the request path;
   probes at 40 sessions show undo < 300 ms and End session < 300 ms of
   event-loop block.
+- [ ] **QF.70 The keyboard sweep test waits for focus.** `e2e/M8.3.spec.ts` (keyboard alone) failed again in a full local run on 2026-11-01 and passed alone (QUALITY Flakes, second occurrence after 2026-10-25). *Accept:* the Tab walk waits for focus to settle after each press (no fixed sleeps, no retries); the spec passes 10/10 with `--repeat-each=10` under `--workers=2`.
 - [ ] **QF.55 The GM console and phones render only what they show.** The GM
   console re-renders every mounted window on each state frame, with
   `skillPairCounts` (stringify + regex per practice entry) as the top cost
