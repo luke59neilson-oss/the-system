@@ -57,6 +57,7 @@ import { Trackers } from './Trackers';
 import { Encounter } from './Encounter';
 import { RulesSettings } from './RulesSettings';
 import { CoDmSettings } from './CoDmSettings';
+import { CopyCasting } from './CopyCasting';
 import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
 import { ConsoleTabs, Place, useConsoleTab } from './ConsoleTabs';
@@ -930,6 +931,7 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
     entry !== undefined &&
     entry !== null &&
     (entry.description.trim() !== '' || entry.flavor.trim() !== '');
+  const ownCasting = current?.casting !== undefined;
   const followed = current && entryForSkill(state.rules, state.skillLibrary, current);
   const handWritten = current?.textEdited === true;
   // MR.A: a copy re-rated at evolution follows its old rarity's entry; Use
@@ -1029,11 +1031,11 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
           type="button"
           className="secondary"
           style={{ marginLeft: 8 }}
-          disabled={busy || !current || !detached || !reconnectable}
+          disabled={busy || !current || !detached || (!reconnectable && !ownCasting)}
           title={
             !detached
               ? 'This copy already follows the library'
-              : !reconnectable
+              : !reconnectable && !ownCasting
                 ? 'The library has no entry with text for this skill at its rarity'
                 : 'Replace this copy’s text with the library entry’s and follow later edits'
           }
@@ -1043,6 +1045,15 @@ function SkillText({ client, state }: { client: LiveClient; state: CampaignState
         </button>
       )}
       <Outcome result={result} okText={reconnected ? 'Library text in use' : 'Skill text saved'} />
+      {character && current && (
+        <CopyCasting
+          key={`${character.id}/${current.name}/${JSON.stringify(current.casting ?? null)}`}
+          client={client}
+          state={state}
+          characterId={character.id}
+          skill={current}
+        />
+      )}
     </form>
   );
 }

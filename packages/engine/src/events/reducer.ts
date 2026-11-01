@@ -46,6 +46,7 @@ import {
   describeSkill,
   fillGrantedSkills,
   syncCharacterSkills,
+  setCopyCasting,
   useLibraryText,
   mergeSkills,
   offerMerge,
@@ -1907,6 +1908,14 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         rule(event, () =>
           describeSkill(character, skill, description, flavor, state.rules.skills.libraryByRarity),
         ),
+      );
+    }
+    case 'skill.castingSet': {
+      const { characterId, skill, ...casting } = event.payload;
+      const character = characterOf(state, event, characterId);
+      return withCharacter(
+        state,
+        rule(event, () => setCopyCasting(state.rules, character, skill, casting)),
       );
     }
     case 'skill.libraryTextUsed': {

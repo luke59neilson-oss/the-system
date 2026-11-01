@@ -32,6 +32,17 @@ export interface CharacterSkill {
    * Absent = its own rarity; an upgrade or transform clears it.
    */
   readonly textRarity?: string;
+  /**
+   * ML.5 (DESIGN §6, Q85): this hand-written copy's own cost, cooldown, range
+   * and casting notes, in place of the library's, until Use library text.
+   * Absent = it follows the library, so stored states keep their shape.
+   */
+  readonly casting?: {
+    readonly cost: { readonly pool: string; readonly amount: number } | null;
+    readonly cooldown: string | null;
+    readonly range: string | null;
+    readonly castingNotes: string | null;
+  };
 }
 
 /** One level-up's free points (DESIGN §4): assigned once, then locked (M1.5). */

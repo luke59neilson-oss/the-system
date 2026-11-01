@@ -87,6 +87,7 @@ export const CHANGE_LOG_PHRASES: Readonly<Record<string, string>> = {
   'freePoints.overridden': 'free points changed by the GM',
   'skill.described': 'skill text edited',
   'skill.libraryTextUsed': 'skill text handed back to the library',
+  'skill.castingSet': 'a skill copy given its own casting',
   'skill.cast': 'skill cast',
   'skill.nicknamed': 'skill nicknamed',
   'skill.uniqueSet': 'skill Unique tag changed',
