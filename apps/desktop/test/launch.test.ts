@@ -11,6 +11,7 @@ import {
   desktopPort,
   gmWindowUrl,
   allowsPermission,
+  releaseMenuTemplate,
   isOwnPage,
   startErrorMessage,
   webRootFor,
@@ -188,6 +189,20 @@ describe('permissions (MC.5)', () => {
       expect(allowsPermission(true, p, ['audio'], own, 4700)).toBe(false);
     }
   });
+  it('lets the GM window write the clipboard on its own page only (QF.58)', () => {
+    expect(allowsPermission(true, 'clipboard-sanitized-write', undefined, own, 4700)).toBe(true);
+    expect(allowsPermission(false, 'clipboard-sanitized-write', undefined, own, 4700)).toBe(false);
+    expect(
+      allowsPermission(
+        true,
+        'clipboard-sanitized-write',
+        undefined,
+        'http://evil.example:4700/',
+        4700,
+      ),
+    ).toBe(false);
+    expect(allowsPermission(true, 'clipboard-sanitized-write', undefined, own, 4701)).toBe(false);
+  });
 });
 
 describe('packaged speech engine (MC.5, D236)', () => {
@@ -231,5 +246,22 @@ describe('QF.45 quit for update', () => {
     );
     expect(isQuitForUpdate(['TheSystem.exe'])).toBe(false);
     expect(isQuitForUpdate(['TheSystem.exe', '--quit-for-updates'])).toBe(false);
+  });
+});
+
+describe('release menu (QF.58)', () => {
+  const roles = (items: ReturnType<typeof releaseMenuTemplate>): string[] =>
+    items.flatMap((i) => [...(i.role ? [i.role] : []), ...roles(i.submenu ?? [])]);
+  it('has reload and zoom, and never DevTools', () => {
+    for (const platform of ['win32', 'darwin', 'linux']) {
+      const all = roles(releaseMenuTemplate(platform));
+      for (const r of ['reload', 'resetZoom', 'zoomIn', 'zoomOut', 'editMenu']) {
+        expect(all).toContain(r);
+      }
+      expect(all).not.toContain('toggleDevTools');
+      expect(all.some((r) => /devtools/i.test(r))).toBe(false);
+    }
+    expect(roles(releaseMenuTemplate('darwin'))).toContain('appMenu');
+    expect(roles(releaseMenuTemplate('win32'))).not.toContain('appMenu');
   });
 });

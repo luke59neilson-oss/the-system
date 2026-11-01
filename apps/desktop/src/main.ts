@@ -17,6 +17,7 @@ import {
   startOnFreePort,
   webRootFor,
   isQuitForUpdate,
+  releaseMenuTemplate,
 } from './launch';
 
 /**
@@ -168,6 +169,11 @@ function openGmWindow(server: RunningApp, notice: string | null = null): void {
       ),
     ),
   );
+  // QF.58: a crashed console renderer reloads instead of staying blank.
+  win.webContents.on('render-process-gone', (_event, details) => {
+    if (win.isDestroyed() || details.reason === 'clean-exit') return;
+    win.webContents.reload();
+  });
   // Links to anything but our own pages open in the system browser.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//.test(url) && !isOwnPage(url, server.port)) void shell.openExternal(url);
@@ -353,12 +359,11 @@ if (!app.requestSingleInstanceLock() || isQuitForUpdate(process.argv)) {
   void app.whenReady().then(() => {
     readyAtMs = process.uptime() * 1000;
     if (app.isPackaged) {
-      // No View menu (DevTools/reload) in release builds; macOS keeps the app
-      // and Edit menus so Cmd+C/V/Q still work.
+      // QF.58: Edit and View (reload, zoom) in release builds; never DevTools.
       Menu.setApplicationMenu(
-        process.platform === 'darwin'
-          ? Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }])
-          : null,
+        Menu.buildFromTemplate(
+          releaseMenuTemplate(process.platform) as Electron.MenuItemConstructorOptions[],
+        ),
       );
     }
     showSplash();
