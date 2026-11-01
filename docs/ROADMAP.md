@@ -1091,7 +1091,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   says "12 +3 = 15" and the shared pop-up "12 −2 = 10". *Accept:* the request
   (or its projection) carries the contest's modifier and the prompt and answer
   line show it; engine and web tests for a one-grade-apart contest; MK.2 e2e.
-- [ ] **QF.72 A roll request announces itself on the phone.** Sweep C (UX,
+- [x] **QF.72 A roll request announces itself on the phone.** Sweep C (UX,
   fable), Medium, confirmed: `history/gmChanges.ts:194-196` gives
   `roll.requested` no notice, and `RollPrompt` sits inside the Status window
   with no live region, so a player reading Quests or Notes sees nothing.
@@ -1103,7 +1103,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   dropping `characterIds.length !== 1` (16/16 green) and `contest.ts:60`
   `?? 0` (4/4 green). *Accept:* a two-character side offers no phone roll;
   a non-d20 view's prompt has no "+0"; each mutation fails a test.
-- [ ] **QF.74 A stat's d20 modifier stays beside its value when it has a
+- [x] **QF.74 A stat's d20 modifier stays beside its value when it has a
   bonus.** Sweep C (UX, fable), Medium, likely (CSS reasoning, no screenshot
   of the state): `styles.css:1338-1343` + `:3611-3620` put "[+N]" alone on a
   third line, far left, when a stat has an item or title bonus. *Accept:*
