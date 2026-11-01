@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; MV, ME, MK, QF.55, QF.70, QF.56, QF.57, QF.58 and QF.60 done. Preview ready: Actions → Release → Run workflow (MK).
-**Next item:** QF.61 on `wip/QF.61` (head 37fb975; merge main first): every listed doc line is fixed (GM-OVERRIDES stale row and Edit holdings, GM-GUIDE Table view / import checks / Session notes / quoted labels, CONTENT-FORMAT examples and shared item names, PLAYER-QUICKSTART spells and Cast, DESIGN §9a placement per D322) and `scripts/gm-overrides.test.ts` checks every row; check green at 37fb975. Next: sonnet review, merge (D322/Q98 already on main). Then QF.62, QF.63, QF.68, QF.69, QF.67, QF.71–QF.74 in file order; MW after.
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; MV, ME, MK, QF.55–QF.58, QF.60, QF.61 and QF.70 done; QF.62 most of the way. Preview ready: Actions → Release → Run workflow (MK).
+**Next item:** QF.62 on `wip/QF.62` (head 4aa1e09, base ba89330; merge main first). Done there: cast counts toward the practice cap; typed-field check before `overLimit`; override range line; transform cost hint; durable co-DM JSON stores; backups copy only named portraits; virtual adapters rank low; speech install retry and kept archive; Whisper non-speech filter; capstone wording (Q99); undo names its blocker; trade accepter refusal and equipped hint; reveal notice (D323); e2e `QF.62.spec.ts`. Sonnet round 1 back (0 H; 2 M: one fixed, one not reproduced). Left: the Common viewer's duplicate Identify line, dead trade offers staying open, the Windows append-handle truncate (`store.ts`), then a round-1 review of those and merge. Then QF.63, QF.68, QF.69, QF.67, QF.71–QF.74; MW after.
 **Blockers:** none
 
 ## Run log
@@ -1627,3 +1627,11 @@ next item, blockers. -->
 - Tests: check green (unit 2,028 on main); desktop 8/8; QF.58 and QF.60 touch no e2e specs (no shared server or UI code), so no full e2e this run.
 - Open `wip/*`: `wip/QF.61`. Blockers: none.
 
+### Run · 2026-11-01 13:08–13:53 UTC (close-out at minute 44)
+- Close-out at minute 44 (QF.62 handed off on `wip/QF.62`).
+- Preflight: `add_repo` not offered; repo attached. Local `main` was stale (unrelated histories, no unpushed work), reset to `origin/main` (D319). Lock pushed cleanly; vitest 5.0.5; reviewer sonnet works (worktree; Agent blocks). No new answers.
+- CI on main was red three runs in a row (6178968, 8a99552, e70750e): `e2e/M5.2.spec.ts` still expected QF.57's old "Common → Inferior" re-rating line. Fixed the assertion (8fa5910); M5.2, MR.1, QF.57 specs green locally.
+- QF.61 done: sonnet 2 rounds (round 1: 0 H, 2 M, 3 L, all fixed; round 2: 1 cosmetic L). Merged (ba89330).
+- QF.62 in progress (see Next item); D323, Q99.
+- Tests: check green on `wip/QF.62` (unit 2,046); e2e QF.62 2/2, M5.2, MR.1, QF.57 green. Full e2e not run this run (no shared server code changed on main besides the M5.2 assertion; QF.62 touches shared code and runs the full suite before its merge).
+- Open `wip/*`: `wip/QF.62`. Blockers: none.
