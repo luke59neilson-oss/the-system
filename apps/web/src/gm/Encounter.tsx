@@ -97,7 +97,7 @@ function d20Text(state: CampaignState, plan: ContestPlan): string | null {
   if (state.rules.resolution.rolls !== 'd20') return null;
   const mods = d20Modifiers(state.rules, plan.a, plan.b, plan.mode);
   if (!mods) return null;
-  const chance = d20WinChance(mods.modA, mods.modB);
+  const chance = d20WinChance(mods.modA, mods.modB, plan.attacker);
   return `d20: ${plan.a.label} ${signedModifier(mods.modA)} (${percent(chance)}) · ${plan.b.label} ${signedModifier(mods.modB)} (${percent(1 - chance)})`;
 }
 
@@ -126,6 +126,8 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
   const [a, setA] = useState<SideDraft>(() => sideDraftFor(state, firstChar, firstStat));
   const [b, setB] = useState<SideDraft>(() => emptySide(state));
   const [mode, setMode] = useState<GradeGapMode>(state.rules.resolution.gradeGapMode);
+  // ML.3: the side that acts wins a tied d20 contest (default: side A).
+  const [attacker, setAttacker] = useState<'a' | 'b'>('a');
   const [rolled, setRolled] = useState<RolledContest | null>(null);
   // MK.2: dice thrown at the table and typed in (blank: the app rolls).
   const [dieA, setDieA] = useState('');
@@ -160,7 +162,7 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
       setRolled(null);
     }
   }
-  const plan = contestPlan(state, a, b, mode);
+  const plan = contestPlan(state, a, b, mode, attacker);
   const change = (side: 'a' | 'b', draft: SideDraft) => {
     (side === 'a' ? setA : setB)(draft);
     setRolled(null);
@@ -239,6 +241,22 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
           ))}
         </select>
       </label>
+      {state.rules.resolution.rolls === 'd20' && (
+        <label>
+          Attacker (wins a tie)
+          <select
+            value={attacker}
+            data-testid="contest-attacker"
+            onChange={(e) => {
+              setAttacker(e.target.value === 'b' ? 'b' : 'a');
+              setRolled(null);
+            }}
+          >
+            <option value="a">{typeof plan === 'string' ? 'Side A' : plan.a.label}</option>
+            <option value="b">{typeof plan === 'string' ? 'Side B' : plan.b.label}</option>
+          </select>
+        </label>
+      )}
       <p className="muted" data-testid="contest-chance" aria-live="polite">
         {typeof plan === 'string'
           ? plan

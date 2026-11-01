@@ -827,6 +827,8 @@ export const EVENT_PAYLOAD_SCHEMAS = {
           .array(z.strictObject({ a: d20Die, b: d20Die }))
           .min(1)
           .max(50),
+        /** ML.3: the side that acts (one round, a tie goes to it); absent before ML.3. */
+        attacker: z.enum(['a', 'b']).optional(),
       })
       .optional(),
   }),

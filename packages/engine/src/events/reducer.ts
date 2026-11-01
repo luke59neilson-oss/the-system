@@ -79,6 +79,7 @@ import {
   type PendingEvolution,
 } from '../evolution';
 import {
+  d20RoundWon,
   montageAvailable,
   newClock,
   tickClock,
@@ -2190,16 +2191,27 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
           fail(event, walled ? 'a walled contest has no dice' : 'this contest needs dice');
         }
         if (d20) {
-          d20.rounds.forEach((r, i) => {
+          d20.rounds.forEach((r) => {
             if (r.a.total !== r.a.die + d20.modA || r.b.total !== r.b.die + d20.modB) {
               fail(event, 'a total does not match its die and modifier');
             }
-            const tie = r.a.total === r.b.total;
-            if (tie !== i < d20.rounds.length - 1) fail(event, 'only a tie rolls again');
           });
           const last = d20.rounds[d20.rounds.length - 1];
-          if (last && success !== last.a.total > last.b.total) {
-            fail(event, 'the outcome does not match the dice');
+          if (d20.attacker !== undefined) {
+            // ML.3: one round; meets beats, a tie goes to the attacker.
+            if (d20.rounds.length !== 1) fail(event, 'a d20 contest has one roll per side');
+            if (last && success !== d20RoundWon(last, d20.attacker)) {
+              fail(event, 'the outcome does not match the dice');
+            }
+          } else {
+            // Shared before ML.3: ties were rolled again.
+            d20.rounds.forEach((r, i) => {
+              const tie = r.a.total === r.b.total;
+              if (tie !== i < d20.rounds.length - 1) fail(event, 'only a tie rolls again');
+            });
+            if (last && success !== last.a.total > last.b.total) {
+              fail(event, 'the outcome does not match the dice');
+            }
           }
         }
       } else {

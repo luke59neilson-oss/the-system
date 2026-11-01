@@ -320,6 +320,8 @@ export interface SharedContest extends ContestResult {
       readonly a: { readonly die: number; readonly how: 'typed' | 'app'; readonly total: number };
       readonly b: { readonly die: number; readonly how: 'typed' | 'app'; readonly total: number };
     }[];
+    /** ML.3: the side that acts (a tie goes to it); absent before ML.3. */
+    readonly attacker?: 'a' | 'b' | undefined;
   };
 }
 

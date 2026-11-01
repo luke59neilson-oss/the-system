@@ -51,25 +51,22 @@ describe('d20 contests shared with the table (MK.1)', () => {
         modA: 3,
         modB: 0,
         rounds: [{ a: { die: 9, how: 'typed', total: 12 }, b: { die: 13, how: 'app', total: 13 } }],
+        attacker: 'a',
       },
     });
   });
 
-  it('records the tied rounds before the deciding one', () => {
-    const c = run([
-      ...setup(),
-      share({
-        dice: [
-          { a: die(10), b: die(13) },
-          { a: die(15), b: die(2) },
-        ],
-      }),
-    ]);
-    expect(c.state?.contests['k1']?.d20?.rounds).toHaveLength(2);
-    expect(c.state?.contests['k1']?.success).toBe(true);
+  it('a tie goes to the attacker, whichever side acts (ML.3)', () => {
+    const tie = [{ a: die(10), b: die(13) }]; // 10 + 3 = 13 + 0
+    const a = run([...setup(), share({ dice: tie })]);
+    expect(a.state?.contests['k1']).toMatchObject({ success: true, chance: 0.66 });
+    expect(a.state?.contests['k1']?.d20?.rounds).toHaveLength(1);
+    const b = run([...setup(), share({ dice: tie, attacker: 'b' })]);
+    expect(b.state?.contests['k1']).toMatchObject({ success: false, chance: 0.6175 });
+    expect(b.state?.contests['k1']?.d20?.attacker).toBe('b');
   });
 
-  it('refuses dice that do not fit: a tie last, an odds roll, no dice, dice on a wall', () => {
+  it('refuses dice that do not fit: a re-roll, an odds roll, no dice, dice on a wall', () => {
     const base = run(setup());
     const ctx = testContext('x');
     const refused = (cmd: Command, text: string) =>
@@ -77,7 +74,15 @@ describe('d20 contests shared with the table (MK.1)', () => {
         ok: false,
         error: expect.stringContaining(text),
       });
-    refused(share({ dice: [{ a: die(10), b: die(13) }] }), 'tie rolls again');
+    refused(
+      share({
+        dice: [
+          { a: die(10), b: die(13) },
+          { a: die(15), b: die(2) },
+        ],
+      }),
+      'no re-roll',
+    );
     refused(share({ roll: 0.5 }), 'takes dice');
     refused(share({ dice: [] }), 'needs each side');
     refused(share({ dice: [{ a: die(21), b: die(1) }] }), '1–20');
@@ -200,5 +205,27 @@ describe('d20 contests shared with the table (MK.1)', () => {
     ).toThrow(/total does not match/);
     expect(() => appendEvent(c, event({ roll: 0.2 }))).toThrow(/no odds roll/);
     expect(() => appendEvent(c, event({ rolls: undefined }))).toThrow(/odds contest has no dice/);
+    // Shared before ML.3 (no attacker): tied rounds rolled again replay as stored.
+    const tied = {
+      modA: 0,
+      modB: 0,
+      rounds: [
+        { a: { ...die(4), total: 4 }, b: { ...die(4), total: 4 } },
+        { a: { ...die(5), total: 5 }, b: { ...die(3), total: 3 } },
+      ],
+    };
+    expect(appendEvent(c, event({ d20: tied })).state?.contests['k9']?.success).toBe(true);
+    // From ML.3 on: one round, a tie goes to the attacker.
+    const one = (attacker: 'a' | 'b') => ({
+      modA: 0,
+      modB: 0,
+      rounds: [{ a: { ...die(4), total: 4 }, b: { ...die(4), total: 4 } }],
+      attacker,
+    });
+    expect(appendEvent(c, event({ d20: one('a') })).state?.contests['k9']?.success).toBe(true);
+    expect(() => appendEvent(c, event({ d20: one('b') }))).toThrow(/does not match the dice/);
+    expect(() => appendEvent(c, event({ d20: { ...tied, attacker: 'a' } }))).toThrow(
+      /one roll per side/,
+    );
   });
 });
