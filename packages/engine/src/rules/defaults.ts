@@ -179,6 +179,8 @@ export const DEFAULT_RULES: RulesConfigInput = {
   resolution: {
     gradeGapMode: 'gradeWalls', // §7 grade walls (Luke), MQ.5
     lowerGradeFraction: 1 / 3,
+    rolls: 'odds', // §7 Dice (MK.1): app odds by default
+    d20: { modifierPerDoubling: 3, baseStat: 10, minStat: 1, gradeGapPenalty: 5 },
   },
   identify: { sameGradeLevelRatio: 1.5 }, // §7 Identify range, MQ.8
   montage: { minClockFill: 0.5, requireNoFailures: true }, // §7

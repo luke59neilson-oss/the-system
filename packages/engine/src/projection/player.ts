@@ -32,6 +32,7 @@ import { canReadNote, skillPairCounts } from '../practice';
 import { identifyText, type Entity } from '../entities';
 import { daysLeft, hiddenQuestNoticed, type QuestStatus } from '../quests';
 import type { RulesConfig } from '../rules';
+import type { SharedContest } from '../resolution';
 import {
   atCeiling,
   entryForSkill,
@@ -384,6 +385,26 @@ export interface PlayerContest {
   /** True when a grade wall settled it with no roll. */
   readonly walled: boolean;
   readonly won: boolean;
+  /**
+   * MK.1: a d20 contest's dice from the viewer's side: each round's dice
+   * (how rolled) and totals, and both modifiers (DESIGN §7: results show each
+   * die, modifier and total). Absent for app odds and walled contests.
+   */
+  readonly d20?: {
+    readonly yourModifier: number;
+    readonly theirModifier: number;
+    readonly rounds: readonly {
+      readonly yours: PlayerDie;
+      readonly theirs: PlayerDie;
+    }[];
+  };
+}
+
+/** One die of a d20 contest as a participant sees it (MK.1). */
+export interface PlayerDie {
+  readonly die: number;
+  readonly how: 'typed' | 'app';
+  readonly total: number;
 }
 
 /** How many recent shared contests a player view carries (M7.3). */
@@ -1255,9 +1276,26 @@ function playerContests(state: CampaignState, viewerId: string): PlayerContest[]
       chance: wholePercent(onA ? c.chance : 1 - c.chance),
       walled: c.walled,
       won: onA ? c.success : !c.success,
+      ...(c.d20 ? { d20: playerDice(c.d20, onA) } : {}),
     });
   }
   return out.reverse();
+}
+
+/** A d20 contest's dice from one side (MK.1), whitelisted field by field. */
+function playerDice(
+  d: NonNullable<SharedContest['d20']>,
+  onA: boolean,
+): NonNullable<PlayerContest['d20']> {
+  const die = (x: PlayerDie): PlayerDie => ({ die: x.die, how: x.how, total: x.total });
+  return {
+    yourModifier: onA ? d.modA : d.modB,
+    theirModifier: onA ? d.modB : d.modA,
+    rounds: d.rounds.map((r) => ({
+      yours: die(onA ? r.a : r.b),
+      theirs: die(onA ? r.b : r.a),
+    })),
+  };
 }
 
 /** Revealed factions, name and standing only (MT.8). */
