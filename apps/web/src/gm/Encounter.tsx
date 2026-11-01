@@ -24,6 +24,7 @@ import {
   phoneDie,
   phoneDieUsed,
   rollClears,
+  sharedRollText,
   phoneRoller,
   shareCommand,
   signedModifier,
@@ -163,7 +164,10 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
   const change = (side: 'a' | 'b', draft: SideDraft) => {
     (side === 'a' ? setA : setB)(draft);
     setRolled(null);
+    // MK.A review M3: the side's open request ends with it, so no phone keeps asking.
+    const clears = rollClears([side === 'a' ? [rollerA, phoneA] : [rollerB, phoneB]]);
     setAsked((prev) => ({ ...prev, [side]: new Set() }));
+    for (const command of clears) void send(command, 'Roll request closed');
     clear?.();
   };
   const roll = (e: FormEvent) => {
@@ -366,13 +370,7 @@ function ContestRoller({ state, busy, send, clear }: ToolProps) {
             {recent.map((c) => (
               <li key={c.id}>
                 {c.success ? c.a.label : c.b.label} won against {c.success ? c.b.label : c.a.label}{' '}
-                <span className="muted">
-                  (
-                  {c.walled
-                    ? 'grade wall'
-                    : `${percent(c.chance)} for ${c.a.label}, rolled ${Math.round((c.roll ?? 0) * 100)}`}
-                  )
-                </span>
+                <span className="muted">({sharedRollText(c)})</span>
               </li>
             ))}
           </ul>

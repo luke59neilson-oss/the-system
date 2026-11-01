@@ -161,6 +161,10 @@ test("the GM asks the player's phone for a d20; it rolls, and the NPC's die is t
   // The phone's request closes once its die is used.
   await expect(prompt).toHaveCount(0);
   await roller.getByRole('button', { name: 'Share with the table' }).click();
+  // MK.A review M1: the GM's list of shared rolls shows the d20 totals.
+  await expect(roller.locator('.contest-recent')).toContainText(
+    `d20: Jake · Perception ${die} vs Pale stalker ${theirs + 3}`,
+  );
 
   const popup = phone.getByTestId('contest-popup');
   await expect(popup).toBeVisible();
@@ -214,13 +218,11 @@ test("a phone die belongs to its contest; a console die closes the phone's reque
   // Tweaking the other side keeps Jake's die (round 2 M1).
   await sideB.getByRole('textbox', { name: 'Value', exact: true }).fill('30');
   await expect(roller.getByTestId('phone-roll-a')).toContainText('Jake threw 19 (typed)');
-  // Changing Jake's own side makes it a different roll: the 19 is shown, not used.
+  // Changing Jake's own side makes it a different roll: the request closes,
+  // so his phone stops asking (MK.A review M3), and nothing stale remains.
   await sideA.getByLabel('Stat').selectOption({ label: 'Agility' });
-  const stale = roller.getByTestId('phone-roll-stale-a');
-  await expect(stale).toContainText('An earlier request to Jake is still open (threw 19)');
-  await stale.getByRole('button', { name: 'Clear' }).click();
   await expect(prompt).toHaveCount(0);
-  await expect(stale).toHaveCount(0);
+  await expect(roller.getByTestId('phone-roll-stale-a')).toHaveCount(0);
   await sideA.getByLabel('Stat').selectOption({ label: 'Perception' });
 
   // Asked again and still waiting, the GM types Jake's die on the console:
