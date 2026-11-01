@@ -483,6 +483,61 @@ export class CampaignStore {
       .sort();
   }
 
+  /** Where deleted campaigns wait, restorable (ML.1). */
+  static deletedDir(dataDir: string): string {
+    return path.join(dataDir, 'deleted');
+  }
+
+  /**
+   * ML.1 (DESIGN §9a): moves a campaign's folder to the Deleted list; nothing
+   * is erased. Refused while the campaign is open (its lock is held).
+   */
+  static softDelete(dataDir: string, id: string): void {
+    const dir = path.join(CampaignStore.campaignsDir(dataDir), checkCampaignId(id));
+    if (!existsSync(dir)) throw new StoreError('No campaign with that id');
+    const target = path.join(CampaignStore.deletedDir(dataDir), id);
+    if (existsSync(target)) throw new StoreError('A deleted campaign with that id already exists');
+    const lockFile = path.join(dir, 'LOCK');
+    let lock: string;
+    try {
+      lock = takeLock(lockFile, {
+        isAlive: defaultIsAlive,
+        processStart,
+        machine: hostname(),
+      });
+    } catch (error) {
+      throw new StoreError(
+        `The campaign is open; close it before deleting (${(error as Error).message})`,
+      );
+    }
+    try {
+      mkdirSync(CampaignStore.deletedDir(dataDir), { recursive: true });
+      rmSync(lockFile, { force: true });
+      renameSync(dir, target);
+    } finally {
+      heldLocks.delete(lock);
+    }
+  }
+
+  /** Deleted campaigns, by id (ML.1). */
+  static listDeleted(dataDir: string): { readonly id: string }[] {
+    const dir = CampaignStore.deletedDir(dataDir);
+    if (!existsSync(dir)) return [];
+    return readdirSync(dir, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && CAMPAIGN_ID.test(d.name))
+      .map((d) => ({ id: d.name }))
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }
+
+  /** Puts a deleted campaign back on the list (ML.1). */
+  static restoreDeleted(dataDir: string, id: string): void {
+    const from = path.join(CampaignStore.deletedDir(dataDir), checkCampaignId(id));
+    if (!existsSync(from)) throw new StoreError('No deleted campaign with that id');
+    const to = path.join(CampaignStore.campaignsDir(dataDir), id);
+    if (existsSync(to)) throw new StoreError('A campaign with that id already exists');
+    renameSync(from, to);
+  }
+
   /**
    * Opens the campaign (creating it when missing) and loads its log. The log
    * is validated before any repair touches the file.
