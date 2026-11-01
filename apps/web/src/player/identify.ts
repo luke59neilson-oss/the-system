@@ -44,9 +44,8 @@ export function identifyHeader(e: PlayerIdentify): string | null {
 }
 
 /** A status line's name and level with any grade dropped: `[Canyon Stalker – lvl 7]` → `canyon stalker–lvl 7`. */
-const statusKey = (line: string): string =>
-  line
-    .replace(/\(\s*[A-Za-z]\s*\)/gu, '')
+const statusKey = (line: string, grade: string | null): string =>
+  (grade === null ? line : line.split(`(${grade})`).join(''))
     .replace(/\s+/gu, ' ')
     .replace(/\s*[–-]\s*/gu, '–')
     .trim()
@@ -63,7 +62,7 @@ export function identifyBody(e: PlayerIdentify): string | null {
   const header = identifyHeader(e);
   if (header === null) return e.text;
   const match = /^\s*(\[[^\]\n]*\])[ \t]*\n?/u.exec(e.text);
-  if (!match?.[1] || statusKey(match[1]) !== statusKey(header)) return e.text;
+  if (!match?.[1] || statusKey(match[1], e.grade) !== statusKey(header, e.grade)) return e.text;
   const rest = e.text.slice(match[0].length).trim();
   return rest === '' ? null : rest;
 }

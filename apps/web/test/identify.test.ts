@@ -70,6 +70,11 @@ describe('identifyBody (QF.62)', () => {
       }),
     ).toBe('It hunts.');
   });
+  it('drops the repeat for a grade id from the rules config of any length', () => {
+    expect(identifyBody({ ...stalker, grade: 'SS', text: '[Canyon Stalker – lvl 7] Old.' })).toBe(
+      'Old.',
+    );
+  });
   it('keeps text whose bracket says something else, or when there is no header', () => {
     expect(identifyBody({ ...stalker, text: '[Canyon Stalker – lvl 9] Grown.' })).toBe(
       '[Canyon Stalker – lvl 9] Grown.',
