@@ -126,7 +126,7 @@ test('the GM builds and releases an evolution with re-rating', async ({ browser 
   const path1 = dialog.getByRole('listitem', { name: '[Storm Hunter]' });
   await expect(path1.getByTestId('evolution-bonus')).toContainText('+5 Strength');
   await expect(dialog.getByTestId('evolution-rerate')).toContainText(
-    /Archer.s Eye\] Common → Inferior/,
+    /Archer.s Eye\] is now Inferior \(was Common\)/,
   );
   await dialog.getByRole('button', { name: 'Choose Storm Hunter' }).click();
   await dialog.getByRole('button', { name: 'Evolve' }).click();
