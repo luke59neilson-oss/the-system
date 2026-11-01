@@ -26,6 +26,8 @@ export * from './report';
 export * from './history';
 export * from './dashboard';
 export * from './standing';
+export * from './ideas/import';
+export * from './ideas/choose';
 export * from './titles';
 export * from './trackers';
 export * from './shops';
