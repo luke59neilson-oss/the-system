@@ -1,3 +1,4 @@
+import { newIdeas, type IdeaKind, type ImportedIdea } from '../ideas/import';
 import { z } from 'zod';
 import {
   EVENT_SCHEMA_VERSIONS,
@@ -335,6 +336,26 @@ export type Command =
       shareable?: boolean | undefined;
     }
   | { type: 'note.delete'; noteId: string; characterId: string | null }
+  /** MW.3: the GM's Ideas board (DESIGN §11). */
+  | {
+      type: 'idea.add';
+      id?: string;
+      text: string;
+      kind?: IdeaKind;
+      tags?: readonly string[];
+      source?: string;
+    }
+  | {
+      type: 'idea.edit';
+      ideaId: string;
+      text?: string;
+      kind?: IdeaKind;
+      tags?: readonly string[];
+      source?: string;
+      pinned?: boolean;
+      used?: boolean;
+    }
+  | { type: 'idea.import'; ideas: readonly ImportedIdea[] }
   | { type: 'skill.nickname'; characterId: string; skill: string; nickname: string | null }
   /** MU.5: the owner (or the GM) casts a skill with a cost; the pool pays it. */
   | { type: 'skill.cast'; characterId: string; skill: string }
@@ -861,6 +882,9 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('note.create') }),
   z.object({ type: z.literal('note.edit') }),
   z.object({ type: z.literal('note.delete') }),
+  z.object({ type: z.literal('idea.add') }),
+  z.object({ type: z.literal('idea.edit') }),
+  z.object({ type: z.literal('idea.import'), ideas: z.array(z.unknown()) }),
   z.object({ type: z.literal('skill.nickname') }),
   z.object({ type: z.literal('skill.cast') }),
   z.object({ type: z.literal('skill.describe') }),
@@ -1576,6 +1600,40 @@ function toEvent(
       return {
         type: 'note.edited',
         payload: { noteId, characterId, title, body, tags, shareable },
+      };
+    }
+    case 'idea.add':
+      return {
+        type: 'idea.added',
+        payload: {
+          idea: {
+            id: command.id ?? ctx.newId(),
+            text: command.text,
+            kind: command.kind ?? 'other',
+            tags: [...(command.tags ?? [])],
+            source: command.source ?? '',
+            created: ctx.now(),
+            used: false,
+            pinned: false,
+          },
+        },
+      };
+    case 'idea.edit': {
+      const { type: _type, ...payload } = command;
+      return { type: 'idea.edited', payload };
+    }
+    case 'idea.import': {
+      // A repeat import skips ideas already held (DESIGN §11).
+      const fresh = newIdeas(command.ideas, new Set(campaign.state?.ideaOrder ?? []));
+      return {
+        type: 'idea.imported',
+        payload: {
+          ideas: fresh.map((idea) => ({
+            ...idea,
+            created: idea.created ?? ctx.now(),
+            pinned: false,
+          })),
+        },
       };
     }
     case 'note.delete':

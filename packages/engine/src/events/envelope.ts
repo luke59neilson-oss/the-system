@@ -1,3 +1,4 @@
+import { IDEA_KINDS } from '../ideas/import';
 import { z } from 'zod';
 import { PORTRAIT_REF } from '../character/model';
 import { MAX_CASTING_NOTES, MAX_CASTING_SHORT, MAX_SKILL_COST } from '../skills/library';
@@ -182,6 +183,18 @@ export const actorSchema = z.discriminatedUnion('role', [
   z.strictObject({ role: z.literal('player'), characterId: recordId }),
 ]);
 export type Actor = z.output<typeof actorSchema>;
+
+const ideaKind = z.enum(IDEA_KINDS);
+const ideaRecord = z.strictObject({
+  id: recordId,
+  text: z.string().trim().min(1).max(5_000),
+  kind: ideaKind,
+  tags: z.array(nonBlank).max(20),
+  source: z.string().max(500),
+  created: z.string().max(40).nullable(),
+  used: z.boolean(),
+  pinned: z.boolean(),
+});
 
 /** Payload schemas by event type, at their current schema version. */
 export const EVENT_PAYLOAD_SCHEMAS = {
@@ -484,6 +497,18 @@ export const EVENT_PAYLOAD_SCHEMAS = {
   /** The GM marks practice entries reviewed (M5.5). */
   'practice.reviewed': z.strictObject({ entryIds: z.array(recordId).min(1).max(500) }),
   /** A note; `characterId` is the author as the actor acts (null = the GM). */
+  /** MW.3: the GM's story ideas (DESIGN §11). GM-only: never in a player frame. */
+  'idea.added': z.strictObject({ idea: ideaRecord }),
+  'idea.edited': z.strictObject({
+    ideaId: recordId,
+    text: z.string().trim().min(1).max(5_000).optional(),
+    kind: ideaKind.optional(),
+    tags: z.array(nonBlank).max(20).optional(),
+    source: z.string().max(500).optional(),
+    pinned: z.boolean().optional(),
+    used: z.boolean().optional(),
+  }),
+  'idea.imported': z.strictObject({ ideas: z.array(ideaRecord).max(2_000) }),
   'note.created': z.strictObject({
     noteId: recordId,
     characterId: recordId.nullable(),
@@ -1107,6 +1132,9 @@ export const EVENT_SCHEMA_VERSIONS: Readonly<Record<EventType, number>> = {
   'practice.edited': 1,
   'practice.removed': 1,
   'practice.reviewed': 1,
+  'idea.added': 1,
+  'idea.edited': 1,
+  'idea.imported': 1,
   'note.created': 1,
   'note.edited': 1,
   'note.deleted': 1,

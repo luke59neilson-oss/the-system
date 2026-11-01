@@ -171,6 +171,8 @@ export const CAMPAIGN_FIELD_VISIBILITY: Readonly<Record<keyof CampaignState, Vis
   entityOrder: 'gm',
   // M3.11: each player gets the open montages offered to them, by label, with
   // their own focus; never the clock, the other participants or their focuses.
+  ideas: 'gm',
+  ideaOrder: 'gm',
   montages: 'owner',
   montageOrder: 'gm',
   // M7.3: each player gets the shared contests they took part in, from their

@@ -1,3 +1,4 @@
+import type { ImportedIdea } from '../ideas/import';
 import { TitleRuleError, titleKey, titleSources, validateTitleDef, type TitleDef } from '../titles';
 import {
   CharacterRuleError,
@@ -110,8 +111,14 @@ import {
 } from '../library';
 import { EventRejectedError, type DomainEvent } from './envelope';
 
-/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). v30: entity `stats`/`notes` (bestiary; M7.2). v31: shared contests (M7.3). v32: hunger, regions, factions (M7.4). v33: no hunger tracker (MT.3; hunger events replay as no-ops). v34: bestiary categories; entity `categoryId`/`worked`/`notices` and one Identify text (MV.3). v35: character `professionOfferCards` and pending `professionOffered` (ME.6). */
-export const CAMPAIGN_STATE_SCHEMA_VERSION = 35;
+/** Bumped when the serialized campaign state shape changes, including any nested character change (snapshots, M2.1). v2: character v2. v3: broadcasts. v4: items, holdings, trades (M1.7). v5: practice log, notes (M1.8). v6: character v3 (skill marks, merges; M1.9). v7: character v4 (selections, evolution; M1.10). v8: progress clocks (M1.11). v9: quests, World Stability, day counter (M1.12). v10: character v5 (skill text; M3.5). v11: Identify entities (M3.9). v12: montages (M3.11). v13: skill library (M4.1). v14: class, race and profession libraries (M4.2). v15: play sessions (M4.3). v18: character v7 (profession offers; MQ.6). v19: quest `noticeTo` (hidden-quest notice; MQ.7). v20: entity `grade`/`level` (Identify range; MQ.8). v21: `rules.limits` (QF.3; a v20 snapshot has no limits, so it must be replayed). v22: `rules.skills.marksResetOnUpgrade` (MR.2). v23: `rules.migrated` (MR.3). v24: rules.skills.handTextSurvivesUpgrade (MR.4). v25: scheduled broadcasts (M4.7). v26: practice entries carry `reviewed` (M5.5). v27: loot tables and the loot log (M6.2). v30: entity `stats`/`notes` (bestiary; M7.2). v31: shared contests (M7.3). v32: hunger, regions, factions (M7.4). v33: no hunger tracker (MT.3; hunger events replay as no-ops). v34: bestiary categories; entity `categoryId`/`worked`/`notices` and one Identify text (MV.3). v35: character `professionOfferCards` and pending `professionOffered` (ME.6). v36: the GM's story ideas (MW.3). */
+export const CAMPAIGN_STATE_SCHEMA_VERSION = 36;
+
+/** MW.3: one story idea on the GM's board. */
+export interface Idea extends ImportedIdea {
+  readonly created: string | null;
+  readonly pinned: boolean;
+}
 
 /** A System broadcast as kept in state, so players who missed it live still get it. */
 export interface BroadcastRecord {
@@ -215,6 +222,9 @@ export interface CampaignState {
   /** Contest ids in share order. */
   readonly contestOrder: readonly string[];
   /** Montages offered on clocks (M3.11). Players see only their own open offers. */
+  /** MW.3: the GM's story ideas (DESIGN §11). GM-only. */
+  readonly ideas: Readonly<Record<string, Idea>>;
+  readonly ideaOrder: readonly string[];
   readonly montages: Readonly<Record<string, Montage>>;
   /** Montage ids in offer order. */
   readonly montageOrder: readonly string[];
@@ -921,6 +931,8 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
       entityOrder: [],
       bestiaryCategories: {},
       bestiaryCategoryOrder: [],
+      ideas: {},
+      ideaOrder: [],
       montages: {},
       montageOrder: [],
       contests: {},
@@ -1795,6 +1807,35 @@ function applyEventRaw(state: CampaignState | null, event: DomainEvent): Campaig
         ...state,
         montages: { ...state.montages, [montageId]: { ...montage, status: 'closed' } },
       };
+    }
+    case 'idea.added': {
+      const { idea } = event.payload;
+      if (hasOwn(state.ideas, idea.id)) fail(event, `idea "${idea.id}" already exists`);
+      return {
+        ...state,
+        ideas: { ...state.ideas, [idea.id]: idea },
+        ideaOrder: [...state.ideaOrder, idea.id],
+      };
+    }
+    case 'idea.edited': {
+      const { ideaId, ...patch } = event.payload;
+      const idea = hasOwn(state.ideas, ideaId) ? state.ideas[ideaId] : undefined;
+      if (!idea) return fail(event, `unknown idea "${ideaId}"`);
+      if (Object.values(patch).every((v) => v === undefined)) fail(event, 'nothing to change');
+      const defined = Object.fromEntries(
+        Object.entries(patch).filter(([, v]) => v !== undefined),
+      ) as Partial<Idea>;
+      return { ...state, ideas: { ...state.ideas, [ideaId]: { ...idea, ...defined } } };
+    }
+    case 'idea.imported': {
+      const ideas: Record<string, Idea> = { ...state.ideas };
+      const order = [...state.ideaOrder];
+      for (const idea of event.payload.ideas) {
+        if (hasOwn(ideas, idea.id)) continue;
+        ideas[idea.id] = idea;
+        order.push(idea.id);
+      }
+      return { ...state, ideas, ideaOrder: order };
     }
     case 'note.created': {
       const { noteId, kind, title, body, tags, shareable } = event.payload;
