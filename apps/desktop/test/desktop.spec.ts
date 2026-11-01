@@ -75,6 +75,51 @@ test('double-click start: server up, GM window connected with the key', async ()
     expect(health.status).toBe(200);
     expect(existsSync(path.join(dataDir, 'campaigns', 'main', 'events.jsonl'))).toBe(true);
 
+    // QF.58: Copy for Claude takes the async clipboard path: the legacy copy
+    // command is stubbed to fail, so only navigator.clipboard.write can pass.
+    await gm
+      .getByRole('tablist', { name: 'Console tabs' })
+      .getByRole('tab', { name: 'Session', exact: true })
+      .click();
+    const session = gm.locator('section[aria-labelledby="session-heading"]');
+    await session.getByRole('button', { name: 'Start session 1' }).click();
+    await expect(session.getByRole('status')).toHaveText('Session 1 started');
+    await gm.evaluate(() => {
+      document.execCommand = () => false;
+    });
+    await session.getByRole('button', { name: 'Copy log for Claude' }).click();
+    await expect(session.getByRole('status')).toHaveText(
+      'Session 1 report copied: paste it into Claude',
+    );
+    expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toMatch(
+      /^# Session 1 log \(running\): Desktop smoke$/m,
+    );
+
+    // QF.58: a crashed console reloads by itself and is still the GM's (the
+    // key survives the reload in sessionStorage).
+    await app.evaluate(({ BrowserWindow }) => {
+      const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().endsWith('/gm'));
+      if (!win) throw new Error('no GM window');
+      win.webContents.forcefullyCrashRenderer();
+    });
+    // Playwright drops a page once it crashes, so the reloaded page is read
+    // through the main process.
+    const afterCrash = () =>
+      app.evaluate(async ({ BrowserWindow }) => {
+        const win = BrowserWindow.getAllWindows().find((w) =>
+          w.webContents.getURL().endsWith('/gm'),
+        );
+        if (!win || win.webContents.isCrashed()) return null;
+        // While it reloads the frame may be replaced mid-call: poll again.
+        return (await win.webContents
+          .executeJavaScript(
+            `[document.querySelector('[data-testid="connection"]')?.textContent ?? '',
+            sessionStorage.getItem('the-system.gmKey')]`,
+          )
+          .catch(() => null)) as [string, string | null] | null;
+      });
+    await expect.poll(afterCrash, { timeout: 15_000 }).toEqual(['Connected', gmKey]);
+
     // A plain browser on the same machine gets no GM powers without the key.
     const browser = await chromium.launch(
       existsSync(localChromium) ? { executablePath: localChromium } : {},
