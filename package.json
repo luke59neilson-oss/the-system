@@ -23,6 +23,7 @@
     "metrics": "node scripts/metrics.mjs",
     "clock": "node scripts/clock.mjs",
     "orient": "node scripts/orient.mjs",
+    "sync": "node scripts/sync.mjs",
     "mutants": "node scripts/mutants.mjs",
     "reference": "node scripts/reference.mjs",
     "golden:record": "node scripts/golden-manifest.mjs record",

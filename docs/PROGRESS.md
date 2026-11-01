@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; ML.1 merged; ML.2 built on its branch (engine, library form, create and offer flows, unit tests), its e2e not run yet; QF.63 reviewed on its branch. Preview ready: Actions → Release → Run workflow (MK).
-**Next item:** `wip/ML.2` (head f31850f, based on wip/ML.1 8346db3; needs `git merge origin/main`): `npm run build`, run `e2e/ML.2.spec.ts` and `e2e/M4.2.spec.ts` (its weights now sit in the "Stat weights" group; the library form has a points row) and fix; then `npm run check`, the §6 review (sonnet) and merge. Then `wip/QF.63` (head ce1c681, needs `git merge origin/main`, `npm run check`, full e2e, merge). Then ML.3–ML.A, QF.68, QF.69, QF.67, QF.71–QF.74; MW after.
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; ML.1 and ML.2 merged; ML.3 built on its branch (engine, form, wording, unit tests), its e2e not run yet; QF.63 merged with main on its branch, full e2e part-run. Preview ready: Actions → Release → Run workflow (MK).
+**Next item:** `wip/ML.3` (head d80b4e4, based on main e41d2c5; `npm run sync -- wip/ML.3`, check it out, `git merge origin/main`): `npm run build`, run `e2e/ML.3.spec.ts`, `e2e/MK.2.spec.ts` (odds now 62%), `e2e/QF.57.spec.ts` (re-rating words), `e2e/M7.3.spec.ts` (walled pop-up has no explanation line), `e2e/QF.73.spec.ts` if it pins d20 odds; `npm run check`; screenshots; §6 review (sonnet); merge. Then `wip/QF.63` (head aa4a3af, main e41d2c5 merged in; screenshots took QF.63's side, the e2e re-shoots them): finish the full e2e (both projects) and merge. Then ML.4, ML.5, ML.A, QF.68, QF.69, QF.67, QF.71–QF.74; MW after.
 **Blockers:** none
 
 ## Run log
@@ -1669,3 +1669,11 @@ next item, blockers. -->
 - ML.2 on `wip/ML.2` (f31850f): library entries carry points per level (events, validation, `entryBudget`/`entryPoints`), `character.create` takes the class and race entries' points, the library form's points row with the G budget reminder and warning, "From the library" on profession offers (D330). Engine tests 9 (`ml2.test.ts`), web model tests 5; e2e `e2e/ML.2.spec.ts` written, not run yet.
 - Tests: full e2e on wip/ML.1 before the fixes 168/170 (ML.1, MS.1 red, both fixed; re-run ML.1 ×4 and MS.1 green); latency 8/8; `npm run check` green on wip/ML.1 (unit 2,067).
 - Open `wip/*`: `wip/ML.2` (next), `wip/QF.63`. Blockers: none.
+
+### Run · 2026-11-01 18:06–18:57 UTC (close-out at minute 44, lock released at minute 51)
+- Close-out at minute 44.
+- Preflight: no `add_repo` tool, repo at /home/claude/the-system; local `main` stale (unrelated histories), reset to `origin/main` (D319). Lock pushed; vitest 5.0.5. CI on main green (d7694d9). No new answers. Hour 18: efficiency check (sonnet auditor): D315 Kept (D334); Tier 1 applied: `npm run sync` (D332, in trial).
+- ML.2 merged and checked: before review its e2e needed `reveal` for the new-character form and GM-OVERRIDES lacked the points refusals; sonnet round 1 (2 Medium: saved points could not be cleared; stale weights beside points with no note) fixed (D331); round 2 clean (Lows only). `npm run check` green (unit 2,085); ML.2 + M4.2 e2e green.
+- QF.63: main merged into `wip/QF.63` (aa4a3af; DECISIONS conflict resolved, screenshots took QF.63's side). Full e2e on it (includes ML.2): e2e project 169/173 green, none failed, stopped for the hard stop; latency not run. Box not checked.
+- ML.3 on `wip/ML.3` (d80b4e4): one d20 each, a tie goes to the attacker (form select, default side A), old tied contests replay as stored, `d20MeetsTarget`; Luke's re-rating words (pinned to DESIGN by a unit test); walled pop-ups show players only the result (D333). Engine and web unit tests green, typecheck green; e2e `ML.3.spec.ts` written and MK.2/QF.57/M7.3 specs updated, not run yet.
+- Open `wip/*`: `wip/ML.3` (next), `wip/QF.63`. Blockers: none.

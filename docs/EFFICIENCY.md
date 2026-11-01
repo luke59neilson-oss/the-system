@@ -20,11 +20,12 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
-| D315 `scripts/metrics.mjs` reads run headings with no id (end minute from "close-out at minute N" when the end time is `5x`) and counts the real `npm run orient` output plus the full reads | 2026-11-01 06:50 | end minute and orient words measure the current runs (end minute was frozen at 48.8 since 2026-10-30; orient words 21.0k scored vs 7.2k printed); series break at this row | end minute 47.0 (re-measured); orient words 22,973; items/run 1.0 | Highs 0, round-2 5/10, red/day 6 | 2026-11-01 18:00 check |
+| D332 `npm run sync` (`scripts/sync.mjs`, unit-tested guard: never resets a `main` holding unpushed commits) replaces the manual §1.2 fetch/merge/reset calls (efficiency check 2026-11-01 18:07, sonnet auditor proposal A) | 2026-11-01 18:55 | fewer setup calls: end minute ≥ 48, items/run ≥ 1.0 | end minute 47.2; items/run 0.8 | Highs 1, round-2 6/10, red/day 8 | 2026-11-02 18:00 check |
 | D319 LOOP §1.2 fetches main as a single ref and resets a stale local main (efficiency check 2026-11-01 12:10, sonnet auditor proposal 1, wording only; the `npm run sync` script is still queued) | 2026-11-01 12:52 | fewer setup detours: end minute 45.0 → ≥ 47 | end minute 45.0; items/run 1.2 | Highs 0, round-2 5/10, red/day 5 | 2026-11-02 12:00 check |
 
 ## Kept
 
+- D315 metrics parser repair (2026-11-01 18:07, D334): a measurement change, so the guard moves are not attributable to it (the High was ML.1's change-log 404; round-2 share and items/run follow item size; red/day was three reds 12:00–12:47, green since); its target is met (end minute follows the runs again: 48.8 frozen → 47.0, 45.0, 47.2). Kept rather than reverted, since reverting would freeze the scorecard again.
 - D264 `npm run orient` (2026-10-30 18:09, D274): the word target could not move (the metric already modelled the targeted reads; the script prints ~3.7k words; required full reads floor ~8k); kept for one consistent command instead of several reads. Guards: Highs 3 → 0; round-2 4/10 → 7/10 (item-specific Mediums); red/day 2 → 5 (one M3.7 toast cluster, fixed by 492127d2).
 - D248 measured close-out (2026-10-26 13:00, D263): end minute 43.7 → 48.2, items/run flat at 1.2, guards flat (Highs 3, round-2 share 4/10, red/day 4 → 2).
 - D234 metrics count review rounds per item (2026-10-26 06:58, D257): round-2 share and Highs read per item again (4/10, 3); items/run 1.7 → 1.8, end minute 44.2 → 44.8; guards flat.
@@ -79,12 +80,13 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 - `npm run orient` prints checked QF items whole (the QF section is ~3k words, the 2026-10-31 deep-review block ~3.5k, ~4.6k under `[x]` bullets): print open/`[~]` bullets in full and checked ones as ID + title; drop QUESTIONS entries marked "Not put to Luke … default kept". Target orient words 16.7k → ~11k; risk low (keep any bullet naming a `wip/`), with a unit test of the filter. Next check may apply it.
 - `npm run ci-triage -- <run id>`: one read-only call that lists failed jobs, prints annotations and the local repro line (alone, `--workers=2`, xvfb for desktop). Target: fewer tool calls per red start; does not itself move red/day.
 
-## Tier 1 proposals queued (efficiency check 2026-11-01 12:10, sonnet auditor)
+## Tier 1 proposals queued (efficiency check 2026-11-01 12:10, sonnet auditor; `npm run sync` applied 18:55 as D332)
 
-- `npm run sync` (`scripts/sync.mjs`): fetches `main` and named `wip/*` as single refs, resets local `main` only when it has no unpushed commits (unit test of that guard), prints one line. D319 applied the LOOP wording; the script would save the remaining 3–5 setup calls.
 - `npm run ci-triage -- <run id>` (queued 2026-10-31, still unbuilt): failed jobs, annotations and the local repro line in one read-only call. Judge on tool calls per red start, not red/day.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-11-01 18:07 auditor (sonnet): D315 Kept (D334). Tier 1 applied: `npm run sync` (D332). Tier 1 queued: work order, a built `wip/*` branch gets its review and merge before a new item starts (QF.63 sat built for three runs); `npm run ci-triage` after that. No Tier 2.
 
 - 2026-11-01 06:09 auditor (sonnet): Tier 1 applied: repair the scorecard parsers (D315; end minute had been frozen since 2026-10-30 because id-less `### Run ·` headings did not match). Tier 1 queued for the next check: start an `Mx.A` full e2e in the background in the first minutes on a pinned SHA, keep a per-SHA ledger of passed spec files so a rerun on an identical tree skips them (final full pass still at the last SHA), and run the latency project even when the e2e project fails. No Tier 2.
 

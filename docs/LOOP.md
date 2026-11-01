@@ -24,7 +24,8 @@ Luke is not watching. Never stop to ask him a question.
 1. If the repo is not attached, call `add_repo` (owner `luke59neilson-oss`,
    repo `the-system`, access `push`) and clone exactly as that tool instructs,
    to `/home/claude/the-system`.
-2. Always fetch main as a single ref, `git fetch origin
+2. Run `npm run sync` (add `-- wip/<item>` to fetch a wip branch too; D332, in
+   trial): it does the rest of this step and prints one line. By hand: always fetch main as a single ref, `git fetch origin
    +main:refs/remotes/origin/main` (a plain `git fetch origin` of every
    branch hangs here; fetch a `wip/*` branch the same way), then
    `git merge --ff-only origin/main` before reading any file below. If local
