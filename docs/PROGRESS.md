@@ -1678,12 +1678,12 @@ next item, blockers. -->
 - ML.3 on `wip/ML.3` (d80b4e4): one d20 each, a tie goes to the attacker (form select, default side A), old tied contests replay as stored, `d20MeetsTarget`; Luke's re-rating words (pinned to DESIGN by a unit test); walled pop-ups show players only the result (D333). Engine and web unit tests green, typecheck green; e2e `ML.3.spec.ts` written and MK.2/QF.57/M7.3 specs updated, not run yet.
 - Open `wip/*`: `wip/ML.3` (next), `wip/QF.63`. Blockers: none.
 
-### Run · 2026-11-01 19:09–20:00 UTC (close-out at minute 47, lock released by minute 52)
+### Run · 2026-11-01 19:09–19:57 UTC (close-out at minute 47, lock released at minute 48)
 - Close-out at minute 47.
 - Preflight: no `add_repo` tool, repo at /home/claude/the-system; local `main` stale (unrelated histories), reset to `origin/main` (D319). Lock pushed; vitest 5.0.5. CI on main green (29e804c). No new answers. Hour 19: no efficiency check or sweep.
 - ML.3 merged and checked: sonnet round 1 (0 H, 0 M, 2 L); the steps evolution now shows Luke's re-rating words outside the collapsed list; the other Low to the Backlog.
 - ML.4 merged and checked (D335): sonnet round 1 (0 H, 1 M, 3 L); the settings form reloads on a campaign switch (e2e added); a campaign opened at start takes its setup at open; two Lows to the Backlog.
-- QF.63 merged and checked: full e2e on it with ML.3 merged: e2e project green (174 passed across both projects); two latency specs (M11.3, MS.3) failed while other work loaded the machine and passed alone. ML.4 was not in that run; its spec and QF.63's passed together afterwards.
+- QF.63 merged and checked: full e2e on it with ML.3 merged: e2e 174 green + latency 6 green; two latency specs (M11.3, MS.3) failed while other work loaded the machine and passed alone. ML.4 was not in that run; its spec and QF.63's passed together afterwards.
 - ML.5 on `wip/ML.5` (D336), box open: sonnet round 1 (0 H, 1 M, 4 L); the Medium fixed (a transform to a new name drops the casting). Engine, ML.5 and MR.4 specs green. `npm run check` on it fails 4 tests, all the new event missing from registries (see Next item), so it stayed off main.
 - Tests: on the combined branch, unit 4 failed (all ML.5 registries), the rest passed; `perf.test.ts` failed once under load and passed alone. Combined e2e ML.3, ML.4, ML.5, QF.63: 5/5. A full `npm run check` on exactly what was pushed to main was not run: main is ML.4 plus QF.63, each checked apart; CI is the check on the merge.
 - Open `wip/*`: `wip/ML.5` (next). Blockers: none.
