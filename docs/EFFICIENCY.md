@@ -20,6 +20,7 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
+| D304 LOOP §5.6 names the `latency` project as part of the full e2e; rules-number items run it alone; PROGRESS reports "e2e N + latency M" | 2026-11-01 00:45 | main CI red/day 4 → ≤ 3 (red from latency specs a run's full e2e skipped: 71bac8f3) | red/day 4; items/run 0.7; end minute 48.8 | Highs 0, round-2 4/10 | 2026-11-01 12:00 check |
 | D297 `npm run orient` collapses checked items in open milestones to one line and hides default-kept questions | 2026-10-31 18:09 | orient words ≤ 11k (printed output 21.0k → 7.5k words) | 21,002 words; end minute 48.8; items/run 1.3 | Highs 0, round-2 4/10, red/day 5 | 2026-11-01 06:00 check |
 
 ## Kept
@@ -75,6 +76,8 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 - `npm run ci-triage -- <run id>`: one read-only call that lists failed jobs, prints annotations and the local repro line (alone, `--workers=2`, xvfb for desktop). Target: fewer tool calls per red start; does not itself move red/day.
 
 ## Proposals for Luke (Tier 2)
+
+- 2026-11-01 00:45 auditor (sonnet): D297 not judgeable yet (judge at 06:00). Tier 1 applied: name the `latency` project in LOOP §5.6 (D304; ME.1's full local e2e ran only the `e2e` project and main went red on three MS.* latency specs). Tier 1 queued: `orientWords` in `scripts/metrics.mjs` does not measure the real `npm run orient` output (7,226 words printed vs 20,561 scored; it never applies `collapseChecked` and skips QUESTIONS), so D297's saving cannot show: count orient.mjs's output plus the required full reads, noting the break in the scorecard. No Tier 2.
 
 - 2026-10-31 18:09 auditor (sonnet): no trials to judge. Applied Tier 1 (D297): orient collapses checked items in open milestones (5.5k words of checked QF bodies) and hides QUESTIONS kept at their default without Luke. No Tier 2 proposal (e2e wall time and review cost would need selective specs or review changes).
 
@@ -182,3 +185,4 @@ table last in the file.
 | 2026-10-31 06:16 | 6 | 48.8 | 1.5 | 7/10 | 0 | 16 | 5 | 12.0 | 16339 |
 | 2026-10-31 12:09 | 6 | 48.8 | 2.3 | 6/10 | 0 | 29 | 7 | 11.9 | 16756 |
 | 2026-10-31 18:09 | 6 | 48.8 | 1.3 | 4/10 | 0 | 31 | 5 | 11.8 | 21002 |
+| 2026-11-01 00:15 | 6 | 48.8 | 0.7 | 4/10 | 0 | 25 | 4 | 12.1 | 20561 |

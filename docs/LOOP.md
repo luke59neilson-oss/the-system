@@ -142,7 +142,12 @@ them whole costs about 30k tokens per run for history you do not need):
      branches alone.
 6. **Test scope.** Before each push to main: `npm run check` plus the e2e
    specs for the items you touched. Run the full e2e suite before every
-   `Mx.A` and whenever you change shared server or UI code. CI runs the full
+   `Mx.A` and whenever you change shared server or UI code. The full suite
+   is `npm run e2e`: both Playwright projects, `e2e` and the serial
+   `latency` one (`--project=e2e` alone is not the full suite; CI runs
+   both). An item that changes rules numbers also runs
+   `npx playwright test --project=latency` with nothing else running, and
+   the PROGRESS tests line says "e2e N + latency M" (D304, in trial). CI runs the full
    suite on every push; a red main is the next run's first task.
 7. Banned in committed code: `.skip`, `.only`, `@ts-ignore`,
    `@ts-expect-error` without a reason, `eslint-disable`, lowering the
