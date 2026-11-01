@@ -687,7 +687,15 @@ export class CampaignStore {
       fsyncFile(path.join(staging, file));
     }
     // MT.10 (Q40): the portraits folder too, so a backup restores whole.
-    const names = portraitNames(this.dir);
+    // QF.62: only portraits some event names (set now, or restorable by an
+    // undo); an upload no character ever used is not copied into every backup.
+    const used = new Set(
+      this.campaignValue.events.flatMap((e) => {
+        const portrait = (e.payload as { portrait?: unknown } | null)?.portrait;
+        return typeof portrait === 'string' ? [portrait] : [];
+      }),
+    );
+    const names = portraitNames(this.dir).filter((n) => used.has(n));
     if (names.length > 0) {
       const into = path.join(staging, 'portraits');
       mkdirSync(into);

@@ -582,6 +582,17 @@ describe('export and import', () => {
     play(store, script);
     const a = savePortrait(store.dir, png(1));
     const b = savePortrait(store.dir, png(2));
+    // QF.62: an upload no event names (here png 3) stays out of the backup; a
+    // replaced portrait (a) stays in, since an undo can bring it back.
+    savePortrait(store.dir, png(3));
+    play(
+      store,
+      [
+        { type: 'character.setPortrait', characterId: 'jake', portrait: a },
+        { type: 'character.setPortrait', characterId: 'jake', portrait: b },
+      ],
+      context('pt'),
+    );
     writeFileSync(path.join(store.dir, 'portraits', 'stray.txt'), 'not a portrait');
     const folder = store.backup();
     expect(readdirSync(path.join(folder, 'portraits')).sort()).toEqual([a, b].sort());
