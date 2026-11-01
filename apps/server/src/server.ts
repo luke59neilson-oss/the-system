@@ -6,6 +6,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import {
   CHANGE_LOG_CATEGORIES,
   buildDemoEvents,
+  campaignEvolutionOptions,
   changeLogPage,
   portraitUrl,
   undoPreview,
@@ -36,6 +37,7 @@ import { StoreError, type BackupInfo, type CampaignStore } from './store';
 import { registerCoDmRoutes, type CoDm } from './ai/coDm';
 import { draftsDir, registerPracticeDraftRoutes } from './ai/practiceRoutes';
 import { registerNotesRoutes } from './ai/notesRoutes';
+import { evolutionReference } from './reference/evolutions';
 import { registerReferenceRoutes } from './reference/routes';
 import { NotesStore } from './ai/sessionNotes';
 import { registerSuggestionRoutes } from './ai/suggestionRoutes';
@@ -535,6 +537,13 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     changeLogs.set(store, cache);
     return changeLogPage(cache.rows, parseChangeLogQuery(request.query));
   });
+
+  // ME.4 (DESIGN §4): the Evolutions tab's reference table: the books'
+  // options and the campaign's own earlier ones. GM-only (under /api/gm/).
+  app.get('/api/gm/evolution-reference', () => ({
+    books: evolutionReference(),
+    campaign: active ? campaignEvolutionOptions(active.store.campaign) : [],
+  }));
 
   // QF.40: what an undo would change in each character's levels, for the
   // change log's confirm (a dry run on the campaign value; nothing is saved).

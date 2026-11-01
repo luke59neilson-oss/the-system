@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildSessionLog,
+  campaignEvolutionOptions,
   execute,
   replay,
   projectForPlayer,
@@ -417,5 +418,29 @@ describe('step budget check (ME.2)', () => {
       'Class option "Ranger" gives 10 points per level, not 11',
       'Class options have unequal one-time bonuses (2, 3); make them equal or tick Override',
     ]);
+  });
+});
+
+// ME.4 (DESIGN §4 "Reference while building"): the campaign's own earlier
+// options for the Evolutions tab's reference table.
+describe("the campaign's earlier evolution options (ME.4)", () => {
+  it('lists every option of a three-step release, and drops an undone release', () => {
+    const c = ok(atGTop(), threeStep());
+    const rows = campaignEvolutionOptions(c);
+    expect(rows.map((r) => [r.track, r.name, r.total])).toEqual([
+      ['class', 'hunter', 11],
+      ['class', 'ranger', 11],
+      ['profession', 'tracker', 7],
+      ['race', 'human-f', 6],
+    ]);
+    expect(rows[0]).toMatchObject({
+      source: 'campaign',
+      stats: { perception: 6, agility: 3 },
+      free: 2,
+    });
+    expect(rows[0]!.note).toMatch(/^Jake, \d{4}-\d{2}-\d{2}$/);
+    const undone = ok(c, { type: 'event.undo', eventId: c.events.at(-1)!.id });
+    expect(campaignEvolutionOptions(undone)).toEqual([]);
+    expect(campaignEvolutionOptions(atGTop())).toEqual([]);
   });
 });

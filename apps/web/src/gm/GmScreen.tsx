@@ -333,7 +333,7 @@ function GmConsole({ client, gmKey }: { client: LiveClient; gmKey: string }) {
                 <OfferBuilder client={client} state={state} target={offerTarget} />
               </Place>
               <Place id="evolution-builder" tab={tab}>
-                <EvolutionBuilder client={client} state={state} />
+                <EvolutionBuilder client={client} gmKey={gmKey} state={state} />
               </Place>
               <Place id="practice-capture" tab={tab}>
                 <PracticeCapture client={client} gmKey={gmKey} state={state} />
