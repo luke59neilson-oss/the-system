@@ -31,6 +31,12 @@ async function demo(page: Page) {
   await page.getByRole('button', { name: 'Create campaign' }).click();
   await page.getByRole('button', { name: 'Load demo campaign' }).click();
   await expect(page.getByTestId('demo-badge')).toBeVisible();
+  // QF.70: loading the demo drops the socket and reconnects a second later;
+  // the demo party in View as proves the new socket has the demo's state.
+  await expect(
+    page.getByRole('navigation', { name: 'View as' }).getByRole('button', { name: 'Jake' }),
+  ).toBeVisible();
+  await expect(page.getByTestId('connection')).toHaveText('Connected');
 }
 
 async function setTheme(page: Page, theme: string) {
@@ -192,25 +198,33 @@ type Focused = { kb: string | null; ring: boolean; label: string } | null;
 
 /**
  * QF.70: reads the focused element once focus has settled after a key press.
- * In one round trip, the page reads it after each of up to ten animation
- * frames and answers once two frames in a row agree, so a re-render that
- * lands between the press and the read cannot report a half-drawn focus ring.
+ * In one round trip, the page waits for focus to leave the stop it was on
+ * before the press (`before`; skipped when that was no stop, e.g. the browser
+ * chrome), then answers once two animation frames in a row agree, so a
+ * re-render that lands between the press and the read cannot report a stale
+ * stop or a half-drawn focus ring. Focus that has not settled within 30 frames
+ * fails the test with what it saw, instead of answering with a guess.
  */
-const SETTLED = `new Promise((done) => {
+const SETTLED = `((before) => new Promise((done, fail) => {
   const read = () => JSON.stringify(${FOCUSED});
+  const kbOf = (json) => (json === 'null' ? null : JSON.parse(json).kb);
   let last = read();
+  let moved = before === null || kbOf(last) !== before;
   let frames = 0;
   const tick = () => {
     const next = read();
-    if (next === last || ++frames >= 10) return done(JSON.parse(next));
+    if (moved && next === last) return done(JSON.parse(next));
+    if (!moved && kbOf(next) !== before) moved = true;
+    if (++frames >= 30)
+      return fail(new Error('focus did not settle after Tab (was ' + before + ', now ' + next + ')'));
     last = next;
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
-})`;
+}))`;
 
-function settledFocus(page: Page): Promise<Focused> {
-  return page.evaluate<Focused>(SETTLED);
+function settledFocus(page: Page, before: string | null): Promise<Focused> {
+  return page.evaluate<Focused>(`${SETTLED}(${JSON.stringify(before)})`);
 }
 
 async function tabThrough(page: Page) {
@@ -224,9 +238,13 @@ async function tabThrough(page: Page) {
   // Tab starts from the last click (a console tab), not the top, so the walk
   // wraps through the browser chrome back to the first stops; allow two laps
   // and stop once every stop has been reached (CI flake 2026-10-25, 2026-11-01).
+  let before: string | null = await page.evaluate<string | null>(
+    `document.activeElement?.getAttribute('data-kb') ?? null`,
+  );
   for (let i = 0; i < 2 * marked.stops + 10 && reached.size < marked.stops; i++) {
     await page.keyboard.press('Tab');
-    const f = await settledFocus(page);
+    const f = await settledFocus(page, before);
+    before = f?.kb ?? null;
     if (!f?.kb) continue;
     reached.add(f.kb);
     if (!f.ring) noRing.push(f.label);
@@ -249,6 +267,12 @@ test('the player screen and GM console work from the keyboard alone', async ({ b
   let gmStops = 0;
   for (const t of TABS) {
     await openTab(gm, t.id);
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    // QF.70: the Listening panel asks the server whether speech-to-text is
+    // installed and then disables Start listening; mark the stops after that.
+    if (t.id === 'session') {
+      await expect(gm.getByText('Speech-to-text is not installed')).toBeVisible();
+    }
     await gm.evaluate(`document.activeElement && document.activeElement.blur()`);
     gmStops += await tabThrough(gm);
   }
