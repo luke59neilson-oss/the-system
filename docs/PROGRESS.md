@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; QF.62 merged; ML.1 built on its branch (check, e2e and desktop smoke green), review next; QF.63 reviewed on its branch. Preview ready: Actions → Release → Run workflow (MK).
-**Next item:** `wip/ML.1` (head 492255d, has main dd6c46d merged): built and green (`npm run check` unit 2,066; `e2e/ML.1.spec.ts` 1/1; desktop smoke 8/8 under xvfb). Launch its §6 review (sonnet, worktree at 492255d) first and run the full `npm run e2e` on the branch while it works (the GM console's start and `/api/characters` changed; every older spec now starts with `--open main`, D327); fix findings, merge, check ML.1. Then `wip/QF.63` (head ce1c681, needs `git merge origin/main`): sonnet 2 rounds done, all Mediums fixed; needs `npm run check` and the full e2e, then merge and check QF.63. Then ML.2–ML.A, QF.68, QF.69, QF.67, QF.71–QF.74; MW after.
+**Status:** in progress (2026-11-01): every milestone done; deep review queued QF.38–QF.63, sweeps added QF.64–QF.74; ML.1 merged; ML.2 built on its branch (engine, library form, create and offer flows, unit tests), its e2e not run yet; QF.63 reviewed on its branch. Preview ready: Actions → Release → Run workflow (MK).
+**Next item:** `wip/ML.2` (head f31850f, based on wip/ML.1 8346db3; needs `git merge origin/main`): `npm run build`, run `e2e/ML.2.spec.ts` and `e2e/M4.2.spec.ts` (its weights now sit in the "Stat weights" group; the library form has a points row) and fix; then `npm run check`, the §6 review (sonnet) and merge. Then `wip/QF.63` (head ce1c681, needs `git merge origin/main`, `npm run check`, full e2e, merge). Then ML.3–ML.A, QF.68, QF.69, QF.67, QF.71–QF.74; MW after.
 **Blockers:** none
 
 ## Run log
@@ -1661,3 +1661,11 @@ next item, blockers. -->
 - ML.1 (`wip/ML.1`): the server starts on the Campaigns home (no campaign at start; `--open <id>`; the e2e helper opens 'main' unless a spec asks for the home, D327); New campaign (folder named after it), Close campaign, Delete with the name typed (an idle opened campaign is let go first), Deleted list and Restore, Restore from a file or a campaign's backups on the home; `home.json` rows (name, characters, last opened); phones read "Waiting for the GM to open a campaign" on the join screen and the status screen and rejoin when one opens (D328, Q101). Server tests 9 new, web model tests 4; e2e ML.1 (create two, delete one, restore it, open the other, a phone joins; screenshots in docs/screens/ML.1); desktop specs splash → home → open, 8/8.
 - Tests: check green on `wip/ML.1` (unit 2,066); e2e ML.1 1/1; desktop smoke 8/8; full e2e on `wip/QF.62` 169/169 + latency 7/8 (flake above).
 - Open `wip/*`: `wip/ML.1` (review next), `wip/QF.63`. Blockers: none.
+
+### Run · 2026-11-01 17:06–17:52 UTC (close-out at minute 44, lock released at minute 46)
+- Close-out at minute 44.
+- Preflight: no `add_repo` tool, repo at /home/claude/the-system; local `main` stale (unrelated histories), reset to `origin/main` (D319). Lock pushed; vitest 5.0.5. CI on main green (dd6c46d). No new answers. Hour 17: no efficiency check or sweep.
+- ML.1 merged and checked: sonnet round 1 (1 High: the change log refetched after Close and hit a 404; 1 Medium: no server-side name check on delete) and the full e2e (MS.1: a wrong key read "Could not reach the System") fixed (D329); round 2 clean. ML.1 screenshots are the round-1 ones (the confirm button now red; re-shoot with the next ML.1-touching run).
+- ML.2 on `wip/ML.2` (f31850f): library entries carry points per level (events, validation, `entryBudget`/`entryPoints`), `character.create` takes the class and race entries' points, the library form's points row with the G budget reminder and warning, "From the library" on profession offers (D330). Engine tests 9 (`ml2.test.ts`), web model tests 5; e2e `e2e/ML.2.spec.ts` written, not run yet.
+- Tests: full e2e on wip/ML.1 before the fixes 168/170 (ML.1, MS.1 red, both fixed; re-run ML.1 ×4 and MS.1 green); latency 8/8; `npm run check` green on wip/ML.1 (unit 2,067).
+- Open `wip/*`: `wip/ML.2` (next), `wip/QF.63`. Blockers: none.
