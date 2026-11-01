@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { execute, type Command, type CommandContext } from '../src/events/commands';
+import type { Campaign } from '../src/events/log';
+import { CAMPAIGN_FIELD_VISIBILITY } from '../src/projection/player';
+import { rawRules, run, testContext } from './helpers/events';
 import { newIdeas, parseIdeas } from '../src/ideas/import';
 
 const file = (over: object = {}) =>
@@ -62,5 +66,52 @@ describe('reading story ideas (MW.3)', () => {
     if (!r.ok) throw new Error(r.error);
     expect(newIdeas(r.ideas, new Set(['a', 'b']))).toEqual([]);
     expect(newIdeas(r.ideas, new Set(['a'])).map((i) => i.id)).toEqual(['b']);
+  });
+});
+
+describe('the Ideas board (MW.3)', () => {
+  const ctx = testContext();
+  const gm = (c: Campaign, command: Command): Campaign => {
+    const r = execute(c, command, ctx);
+    if (!r.ok) throw new Error(r.error);
+    return r.campaign;
+  };
+  const start = () =>
+    gm(run([{ type: 'campaign.create', name: 'Ideas', rules: rawRules() }]), {
+      type: 'idea.add',
+      text: 'A bridge that eats names',
+      kind: 'place',
+      tags: ['river'],
+    });
+
+  it('adds, edits, pins and marks used; undoing used restores it', () => {
+    let c = start();
+    const id = c.state!.ideaOrder[0]!;
+    c = gm(c, { type: 'idea.edit', ideaId: id, text: 'A hungry bridge', pinned: true, used: true });
+    expect(c.state!.ideas[id]).toMatchObject({ text: 'A hungry bridge', pinned: true, used: true });
+    c = gm(c, { type: 'idea.edit', ideaId: id, used: false });
+    expect(c.state!.ideas[id]).toMatchObject({
+      text: 'A hungry bridge',
+      pinned: true,
+      used: false,
+    });
+  });
+  it('a repeat import skips what is held', () => {
+    const parsed = parseIdeas(file());
+    if (!parsed.ok) throw new Error(parsed.error);
+    let c = gm(start(), { type: 'idea.import', ideas: parsed.ideas });
+    expect(c.state!.ideaOrder).toHaveLength(3);
+    c = gm(c, { type: 'idea.import', ideas: parsed.ideas });
+    expect(c.state!.ideaOrder).toHaveLength(3);
+  });
+  it('a player can neither issue idea commands nor see ideas', () => {
+    const c = start();
+    const asPlayer: CommandContext = {
+      ...ctx,
+      actor: { role: 'player', characterId: 'jake' },
+    };
+    expect(execute(c, { type: 'idea.add', text: 'x' }, asPlayer).ok).toBe(false);
+    expect(CAMPAIGN_FIELD_VISIBILITY.ideas).toBe('gm');
+    expect(CAMPAIGN_FIELD_VISIBILITY.ideaOrder).toBe('gm');
   });
 });
