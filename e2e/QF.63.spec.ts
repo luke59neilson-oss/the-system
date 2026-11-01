@@ -63,6 +63,10 @@ test('no small text under 14 px on a phone; platinum highlight is blue', async (
   }, SMALL);
   expect(sizes.length).toBeGreaterThan(0);
   expect(sizes.filter((s) => s.px < 14)).toEqual([]);
+  // ux-12: the toggle's name is "Sound"; its state is aria-pressed alone.
+  const sound = phone.getByRole('button', { name: 'Sound', exact: true });
+  await expect(sound).toHaveAttribute('aria-pressed', /true|false/);
+  await expect(sound).toHaveText(/^Sound: (on|off)$/);
   await phone.getByTestId('status').evaluate((el) => {
     for (const c of [...el.classList]) if (c.startsWith('theme-')) el.classList.remove(c);
     el.classList.add('theme-platinum');
