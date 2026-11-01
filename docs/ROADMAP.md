@@ -901,7 +901,7 @@ by the coordinator. Full reports with probes and file:line: `docs/reviews/2026-1
   probes at 40 sessions show undo < 300 ms and End session < 300 ms of
   event-loop block.
 - [ ] **QF.70 The keyboard sweep test waits for focus.** `e2e/M8.3.spec.ts` (keyboard alone) failed again in a full local run on 2026-11-01 and passed alone (QUALITY Flakes, second occurrence after 2026-10-25). *Accept:* the Tab walk waits for focus to settle after each press (no fixed sleeps, no retries); the spec passes 10/10 with `--repeat-each=10` under `--workers=2`.
-- [ ] **QF.55 The GM console and phones render only what they show.** The GM
+- [x] **QF.55 The GM console and phones render only what they show.** The GM
   console re-renders every mounted window on each state frame, with
   `skillPairCounts` (stringify + regex per practice entry) as the top cost
   (`EvolutionBuilder.tsx:52`, `evolutionBuilderModel.ts:101,159`,
