@@ -27,7 +27,7 @@ test('packaged app: server up, web build served, GM window connected', async () 
   try {
     expect(await app.evaluate(({ app: a }) => a.isPackaged)).toBe(true);
     const gm = await gmWindow(app);
-    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    await expect(gm.getByRole('heading', { name: 'Campaigns', exact: true })).toBeVisible();
     // QF.45: the speech engine loads inside packaged Electron (RunAsNode and
     // NODE_OPTIONS fuses off), from the app's own resources.
     const speech = await app.evaluate(
@@ -46,9 +46,10 @@ test('packaged app: server up, web build served, GM window connected', async () 
     // M10.1 in the packaged app: a campaign, then quitting leaves a "-quit" backup.
     await gm.getByLabel('Campaign name').fill('Packaged smoke');
     await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
     await expect(gm.getByRole('heading', { name: /Packaged smoke/ })).toBeVisible();
     await app.close();
-    const backups = path.join(dataDir, 'campaigns', 'main', 'backups');
+    const backups = path.join(dataDir, 'campaigns', 'packaged-smoke', 'backups');
     expect(readdirSync(backups).filter((name) => name.endsWith('-quit'))).toHaveLength(1);
   } finally {
     await app.close();

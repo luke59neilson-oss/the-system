@@ -709,7 +709,8 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
   app.get('/api/characters', (_request, reply) => {
     // ML.1: phones say "Waiting for the GM to open a campaign" (DESIGN §9a).
     if (!active && options.live) {
-      return reply.code(503).send({ waiting: true, error: WAITING_FOR_CAMPAIGN });
+      // 200, not an error status: phones ask every few seconds while they wait.
+      return reply.send({ waiting: true, error: WAITING_FOR_CAMPAIGN });
     }
     const state = active?.store.campaign.state;
     if (!state) return [];

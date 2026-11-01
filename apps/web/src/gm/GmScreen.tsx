@@ -70,8 +70,6 @@ import { tabOf } from './tabsModel';
  */
 export function GmScreen() {
   const [gmKey] = useState(() => takeGmKey());
-  const client = useMemo(() => (gmKey ? new LiveClient({ role: 'gm', gmKey }) : null), [gmKey]);
-  useEffect(() => () => client?.close(), [client]);
   // A GM link pasted into this tab changes only the fragment: reload to pick up the key.
   useEffect(() => {
     const onHash = () => {
@@ -81,7 +79,7 @@ export function GmScreen() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  if (!client) {
+  if (!gmKey) {
     return (
       <main className="gm">
         <h1>The System · GM</h1>
@@ -97,16 +95,24 @@ export function GmScreen() {
       </main>
     );
   }
-  return <CampaignGate client={client} gmKey={gmKey ?? ''} />;
+  return <CampaignGate gmKey={gmKey} />;
 }
 
 /**
  * ML.1 (DESIGN §9a): the Campaigns home while no campaign is open, else the
  * console. "Close campaign" in the console comes back here.
  */
-function CampaignGate({ client, gmKey }: { client: LiveClient; gmKey: string }) {
-  // null: not read yet; '' : nothing open (the home).
+function CampaignGate({ gmKey }: { gmKey: string }) {
+  // null: not read yet; '' : nothing open (the home); else the opening's number.
   const [open, setOpen] = useState<string | null>(null);
+  // One live connection per opened campaign, so nothing of a closed one shows
+  // while the next one connects.
+  const client = useMemo(
+    () => (open !== null && open !== '' ? new LiveClient({ role: 'gm', gmKey }) : null),
+    [gmKey, open],
+  );
+  useEffect(() => () => client?.close(), [client]);
+  const openings = useRef(0);
   const [created, setCreated] = useState<NewCampaign | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -114,7 +120,7 @@ function CampaignGate({ client, gmKey }: { client: LiveClient; gmKey: string }) 
     fetch('/api/gm/campaign', { headers: { 'x-gm-key': gmKey } })
       .then((r) => (r.ok ? (r.json() as Promise<{ id: string | null }>) : Promise.reject()))
       .then((body) => {
-        if (live) setOpen(body.id ?? '');
+        if (live) setOpen(body.id === null ? '' : String(++openings.current));
       })
       .catch(() => {
         if (live) setFailed(true);
@@ -143,14 +149,16 @@ function CampaignGate({ client, gmKey }: { client: LiveClient; gmKey: string }) 
           gmKey={gmKey}
           onOpened={(made) => {
             setCreated(made);
-            setOpen('open');
+            setOpen(String(++openings.current));
           }}
         />
       </main>
     );
   }
+  if (!client) return null;
   return (
     <GmConsole
+      key={open}
       client={client}
       gmKey={gmKey}
       created={created}

@@ -122,7 +122,7 @@ describe('campaign delete routes (ML.1)', () => {
     // Nothing was created by starting: only the campaign already on disk.
     expect(CampaignStore.list(dataDir)).toEqual(['old-test']);
     const res = await fetch(`http://127.0.0.1:${app!.port}/api/characters`);
-    expect(res.status).toBe(503);
+    expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       waiting: true,
       error: 'Waiting for the GM to open a campaign',

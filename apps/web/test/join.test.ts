@@ -110,10 +110,10 @@ describe('parseJoinList', () => {
 });
 
 describe('waiting for a campaign (ML.1)', () => {
-  it('reads only a 503 with waiting: true as waiting', () => {
-    expect(isWaitingAnswer(503, { waiting: true, error: WAITING_FOR_CAMPAIGN })).toBe(true);
-    expect(isWaitingAnswer(503, null)).toBe(false);
-    expect(isWaitingAnswer(503, { error: 'busy' })).toBe(false);
+  it('reads only a 200 with waiting: true as waiting', () => {
+    expect(isWaitingAnswer(200, { waiting: true, error: WAITING_FOR_CAMPAIGN })).toBe(true);
+    expect(isWaitingAnswer(200, null)).toBe(false);
+    expect(isWaitingAnswer(503, { waiting: true })).toBe(false);
     expect(isWaitingAnswer(200, [])).toBe(false);
     expect(WAITING_FOR_CAMPAIGN).toBe('Waiting for the GM to open a campaign');
   });

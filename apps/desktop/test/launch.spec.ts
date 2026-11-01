@@ -114,7 +114,7 @@ test('a splash says "Starting The System…" at once, then hands over to the GM 
       .toBe(true);
 
     const gm = await gmWindow(app);
-    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    await expect(gm.getByRole('heading', { name: 'Campaigns', exact: true })).toBeVisible();
     // QF.59: the app's own fallback reveal is 10 s, so wait longer than it;
     // then check the window appeared because the console painted, not
     // because the fallback fired.
@@ -131,6 +131,11 @@ test('a splash says "Starting The System…" at once, then hands over to the GM 
     expect(
       await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible()),
     ).toBe(true);
+    // ML.1: splash → Campaigns home → open: a new campaign opens and connects.
+    await gm.locator('form.home-new').getByLabel('Campaign name').fill('Launch smoke');
+    await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    await expect(gm.getByTestId('close-campaign')).toBeVisible();
   } finally {
     await app.close();
     p.cleanup();
@@ -147,7 +152,7 @@ test('a second launch exits and brings the running window to the front', async (
   const app = await launch(env);
   try {
     const gm = await gmWindow(app);
-    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    await expect(gm.getByRole('heading', { name: 'Campaigns', exact: true })).toBeVisible();
     // Push the GM window back: hide it, as if behind other windows.
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.hide());
     const heard = app.evaluate(
@@ -177,7 +182,7 @@ test('a second launch exits and brings the running window to the front', async (
       .toEqual({ visible: true, focused: true });
     // Still one window, still connected: no second server, no error.
     expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
-    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    await expect(gm.getByRole('heading', { name: 'Campaigns', exact: true })).toBeVisible();
   } finally {
     await app.close();
     p.cleanup();
@@ -217,7 +222,7 @@ test('a port taken by another program moves to the next free one and says so', a
   });
   try {
     const gm = await gmWindow(app);
-    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    await expect(gm.getByRole('heading', { name: 'Campaigns', exact: true })).toBeVisible();
     const port = Number(new URL(gm.url()).port);
     expect(port).toBe(held.port + 1);
     await expect
@@ -232,6 +237,7 @@ test('a port taken by another program moves to the next free one and says so', a
     // The join address players see carries the new port.
     await gm.getByLabel('Campaign name').fill('Busy port');
     await gm.getByRole('button', { name: 'Create campaign' }).click();
+    await expect(gm.getByTestId('connection')).toHaveText('Connected');
     await expect(gm.getByTestId('join-url')).toHaveText(new RegExp(`:${port}/?$`));
   } finally {
     await app.close();
@@ -279,14 +285,14 @@ test('a second launch while starting exits and brings the splash forward', async
       .toEqual([{ title: 'Starting The System…', focused: true }]);
     // The start carries on and the console still opens.
     const gm = await gmWindow(app);
-    await expect(gm.getByTestId('connection')).toHaveText('Connected');
+    await expect(gm.getByRole('heading', { name: 'Campaigns', exact: true })).toBeVisible();
   } finally {
     await app.close();
     p.cleanup();
   }
 });
 
-test('closing the splash while starting quits and closes the campaign it opened', async () => {
+test('closing the splash while starting quits cleanly and opens no campaign (ML.1)', async () => {
   const p = profile();
   const app = await launch({
     THE_SYSTEM_PORT: '0',
@@ -297,15 +303,11 @@ test('closing the splash while starting quits and closes the campaign it opened'
   try {
     const splash = await app.firstWindow();
     await expect(splash.getByRole('heading', { name: 'Starting The System…' })).toBeVisible();
-    const campaign = path.join(p.dataDir, 'campaigns', 'main');
-    // The server is up and holds the campaign lock while the start is held.
-    await expect.poll(() => existsSync(path.join(campaign, 'LOCK'))).toBe(true);
     const exited = new Promise<void>((r) => app.process().once('exit', () => r()));
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.close());
     await exited;
-    // Closed properly: the lock is released and no GM window ever opened.
-    expect(existsSync(path.join(campaign, 'LOCK'))).toBe(false);
-    expect(existsSync(path.join(campaign, 'events.jsonl'))).toBe(true);
+    // The app starts on the Campaigns home: nothing was opened or created.
+    expect(existsSync(path.join(p.dataDir, 'campaigns', 'main'))).toBe(false);
   } finally {
     await app.close().catch(() => undefined);
     p.cleanup();

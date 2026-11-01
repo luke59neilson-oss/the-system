@@ -55,16 +55,17 @@ export function PlayerHome() {
     load(controller.signal);
     return () => controller.abort();
   }, [load]);
-  // ML.1: while waiting, ask again until the GM opens a campaign.
+  // ML.1: ask again every few seconds, so the list follows the GM opening,
+  // closing or switching campaigns (a phone often waits here before the GM
+  // has opened one).
   useEffect(() => {
-    if (!waiting) return;
     const controller = new AbortController();
     const timer = setInterval(() => load(controller.signal), WAITING_POLL_MS);
     return () => {
       clearInterval(timer);
       controller.abort();
     };
-  }, [waiting, load]);
+  }, [load]);
 
   const last = characters ? rememberedEntry(characters, rememberedId) : null;
 
