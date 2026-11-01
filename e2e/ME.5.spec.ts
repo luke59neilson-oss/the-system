@@ -239,6 +239,7 @@ test('Kim’s evolution: locked, lit on release, three picks, one confirm, new t
   await expect(review).toContainText('Profession[Herbalist (Uncommon)]');
   await expect(review).toContainText('Race[Human (E) (Uncommon)]');
   await expect(dialog.getByTestId('evolution-warnings')).toContainText('The choice is final');
+  await expect(dialog.getByRole('button', { name: 'Evolve' })).toBeInViewport(); // QF.56
   await player.screenshot({ path: path.join(shots, 'player-review-390x844.png') });
 
   // One confirm: the grade changes and the screen takes copper.
