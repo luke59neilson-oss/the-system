@@ -683,6 +683,34 @@ describe('evolution', () => {
     expect(c.state).toEqual(before);
   });
 
+  it('a transform may take a name left on a chosen menu, not one on a pending menu (QF.60)', () => {
+    let c = ok(atGTop(), release(archery, 'Volley', 'common'));
+    c = ok(c, { type: 'evolution.choose', characterId: 'jake', optionId: 'o1' });
+    c = ok(c, award(10 * XP_F));
+    c = pickAll(c);
+    const hunter = (name: string) => ({
+      id: 'o1',
+      className: 'Hunter',
+      description: '',
+      transforms: [{ skill: 'Volley', name, rarity: 'rare' }],
+      classWeights: null,
+      statBonus: {},
+    });
+    const jake = char(c);
+    // 'Pick 5a' was passed over on the chosen level 5 menu: free to take.
+    expect(() => releaseEvolution(rules, jake, [hunter('Pick 5a')], [])).not.toThrow();
+    const pending = {
+      ...jake,
+      selections: [
+        ...jake.selections,
+        { level: 99, options: [{ name: 'Far Shot', rarity: 'rare', kind: 'class' }], chosen: null },
+      ],
+    } as unknown as Character;
+    expect(() => releaseEvolution(rules, pending, [hunter('Far Shot')], [])).toThrow(
+      '"Far Shot" is on the pending level 99 menu',
+    );
+  });
+
   it('a one-time bonus on a single stat raises that stat alone (QF.60)', () => {
     const before = char(atGTop()).stats;
     let c = ok(atGTop(), {
