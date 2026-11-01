@@ -2314,6 +2314,25 @@ function itemOutOfReach(state: NonNullable<Campaign['state']>, command: Command)
   return null;
 }
 
+/** QF.62: the fields `overLimit` reads have the types it expects. */
+function limitedFieldsTyped(command: Command): boolean {
+  const c = command as unknown as Record<string, unknown>;
+  const text = (v: unknown, optional: boolean) =>
+    typeof v === 'string' || (optional && v === undefined);
+  const list = (v: unknown) =>
+    v === undefined || (Array.isArray(v) && v.every((x) => typeof x === 'string'));
+  switch (command.type) {
+    case 'practice.log':
+      return text(c['action'], false) && list(c['skills']) && list(c['tags']);
+    case 'note.create':
+      return text(c['title'], true) && text(c['body'], true) && list(c['tags']);
+    case 'note.edit':
+      return text(c['title'], true) && text(c['body'], true) && list(c['tags']);
+    default:
+      return true;
+  }
+}
+
 /** Characters a note counts toward its author's `noteCharsPerCharacter` (QF.3). */
 const noteChars = (note: {
   readonly title: string;
@@ -2410,18 +2429,13 @@ export function execute(campaign: Campaign, command: Command, ctx: CommandContex
   }
   const denied = authorize(command, ctx.actor);
   if (denied) return { ok: false, error: `Not allowed: ${denied}` };
-  // QF.62: these checks read the command's raw fields before `toEvent` checks
-  // their shape, so a malformed command (a missing or mistyped field) is a bad
-  // command, not an engine bug: a TypeError here is answered like a bad shape.
-  let early: string | null;
-  try {
-    early = campaign.state
-      ? (itemOutOfReach(campaign.state, command) ?? overLimit(campaign.state, command, ctx.actor))
-      : null;
-  } catch (error) {
-    if (error instanceof TypeError) return { ok: false, error: `Bad command "${command.type}"` };
-    throw error;
-  }
+  // QF.62: `overLimit` reads raw fields before `toEvent` checks their shape, so
+  // a mistyped field there is a bad command, not an engine bug (no catch-all:
+  // a real bug in these checks still throws).
+  if (!limitedFieldsTyped(command)) return { ok: false, error: `Bad command "${command.type}"` };
+  const early = campaign.state
+    ? (itemOutOfReach(campaign.state, command) ?? overLimit(campaign.state, command, ctx.actor))
+    : null;
   if (early) return { ok: false, error: early };
   try {
     const { type, payload } = toEvent(command, ctx, campaign);
