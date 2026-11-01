@@ -13,19 +13,48 @@ import { pathToFileURL } from 'node:url';
 export const HEADER =
   '| Date (UTC) | Runs | End minute (mean) | Items per run | Round-2 share | Highs | Main CI runs/day | Main CI red/day | Main CI minutes (mean) | Orient words |';
 
-const RUN_HEADING = /^### Run (\S+) · (\d{4}-\d{2}-\d{2}) (\d{2}):(\d{2})[–-](\d{2}):(\d{2}) UTC/;
+// The run id is optional (entries since 2026-10-30 have none), and an end time
+// written as "05:5x" is unknown: the end minute then comes from "ended at N" or
+// "close-out at minute N" in the heading or the entry, or is left out.
+const RUN_HEADING =
+  /^### Run(?: (\S+))? · (\d{4}-\d{2}-\d{2}) (\d{2}):(\d{2})[–-](\d{2}):([\dx]{2}) UTC/;
+const STATED_END = [/\bended at (?:minute )?(\d+)/, /\bclose-out at minute (\d+)/i];
 
-/** Run entries from PROGRESS.md headings, oldest first. */
+/** Run entries from PROGRESS.md headings, oldest first; `minutes` is null when unknown. */
 export function parseRuns(progress) {
   const runs = [];
+  let current = null;
+  const settle = () => {
+    if (current === null) return;
+    if (current.minutes === null) {
+      for (const re of STATED_END) {
+        const m = re.exec(current.text);
+        if (m) {
+          current.minutes = Number(m[1]);
+          break;
+        }
+      }
+    }
+    runs.push({ id: current.id, date: current.date, minutes: current.minutes });
+    current = null;
+  };
   for (const line of progress.split('\n')) {
+    if (line.startsWith('### ') || line.startsWith('## ')) settle();
     const m = RUN_HEADING.exec(line);
-    if (!m) continue;
-    const start = Number(m[3]) * 60 + Number(m[4]);
-    let end = Number(m[5]) * 60 + Number(m[6]);
-    if (end < start) end += 24 * 60; // ran past midnight
-    runs.push({ id: m[1], date: m[2], minutes: end - start });
+    if (!m) {
+      if (current !== null) current.text += `\n${line}`;
+      continue;
+    }
+    let minutes = null;
+    if (!m[6].includes('x')) {
+      const start = Number(m[3]) * 60 + Number(m[4]);
+      let end = Number(m[5]) * 60 + Number(m[6]);
+      if (end < start) end += 24 * 60; // ran past midnight
+      minutes = end - start;
+    }
+    current = { id: m[1] ?? null, date: m[2], minutes, text: line };
   }
+  settle();
   return runs;
 }
 
@@ -93,16 +122,12 @@ export function ciSummary(runs, nowMs) {
 
 const words = (text) => text.split(/\s+/).filter(Boolean).length;
 
-/** Words a run reads while orienting under LOOP §4 (targeted reads). */
-export function orientWords({ claude, loop, design, answers, progress, roadmap, decisions }) {
-  const header = progress.split('\n').slice(0, 6).join('\n');
-  const lastEntry = progress.slice(Math.max(0, progress.lastIndexOf('\n### ')));
-  const sections = roadmap.split(/\n(?=## )/);
-  const open = sections.filter((s) => /^## Global rules/.test(s) || /^- \[[ ~]\]/m.test(s));
-  const lEntries = decisions.split('\n').filter((l) => /^- L\d+ /.test(l));
-  return [claude, loop, design, answers, header, lastEntry, ...open, ...lEntries]
-    .map(words)
-    .reduce((a, b) => a + b, 0);
+/**
+ * Words a run reads while orienting under LOOP §4: the full reads (CLAUDE.md,
+ * LOOP.md, DESIGN.md, ANSWERS.md) plus what `npm run orient` prints.
+ */
+export function orientWords({ claude, loop, design, answers, orient }) {
+  return [claude, loop, design, answers, orient].map(words).reduce((a, b) => a + b, 0);
 }
 
 const mean = (xs) => (xs.length === 0 ? 0 : xs.reduce((a, b) => a + b, 0) / xs.length);
@@ -117,7 +142,7 @@ export function scorecardRow({ date, runs, deltas, reviews, ci, orient, window }
   const cells = [
     date,
     String(lastRuns.length),
-    fixed(mean(lastRuns.map((r) => r.minutes))),
+    fixed(mean(lastRuns.map((r) => r.minutes).filter((m) => m !== null))),
     fixed(mean(lastDeltas)),
     `${round2}/${lastReviews.length}`,
     String(lastReviews.reduce((a, r) => a + r.high, 0)),
@@ -196,9 +221,10 @@ function main(argv) {
       loop: read('docs/LOOP.md'),
       design: read('docs/DESIGN.md'),
       answers: read('docs/ANSWERS.md'),
-      progress,
-      roadmap: read('docs/ROADMAP.md'),
-      decisions: read('docs/DECISIONS.md'),
+      orient: execFileSync(process.execPath, ['scripts/orient.mjs'], {
+        encoding: 'utf8',
+        maxBuffer: 64 * 1024 * 1024,
+      }),
     }),
     window,
   });
