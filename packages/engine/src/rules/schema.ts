@@ -219,13 +219,15 @@ export const rulesConfigSchema = z
       rolls: z.enum(['odds', 'd20']).optional(),
       /** d20 mode numbers (absent: `DEFAULT_D20`). */
       d20: z
+        // Bounds keep every modifier and total inside the contest event's
+        // limits (±1000 / ±2000) for any stat a campaign can reach (MK.1 review).
         .strictObject({
           /** Modifier per doubling of the stat over `baseStat` (+3). */
-          modifierPerDoubling: z.number().positive().max(100),
+          modifierPerDoubling: z.number().positive().max(10),
           /** The stat that gives +0 (10). */
-          baseStat: z.number().positive().max(1_000_000),
+          baseStat: z.number().min(1).max(1_000_000),
           /** A stat below this counts as this (1). */
-          minStat: z.number().positive().max(1_000_000),
+          minStat: z.number().min(0.01).max(1_000_000),
           /** One grade apart in "gradeWalls" mode: subtracted from the lower side's modifier (5). */
           gradeGapPenalty: z.number().int().min(0).max(100),
         })

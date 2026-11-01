@@ -159,6 +159,50 @@ describe('encounter model: contests (M7.3)', () => {
     expect(shared[0]).toMatchObject({ roll: 0.42, success: true, chance: 0.5 });
   });
 
+  it('rolls and shares d20 dice in a d20 campaign, again while tied (MK.1)', () => {
+    const rules = {
+      ...DEFAULT_RULES,
+      resolution: { ...DEFAULT_RULES.resolution, rolls: 'd20' as const },
+    };
+    const base = apply(emptyCampaign(), [
+      { type: 'campaign.create', name: 'Dice', rules },
+      { type: 'character.create', id: 'jake', name: 'Jake', className: 'Archer', classSkills: kit },
+      { type: 'character.create', id: 'kim', name: 'Kim', className: 'Archer', classSkills: kit },
+    ]);
+    const s = stateOf(base);
+    const plan = contestPlan(
+      s,
+      sideDraftFor(s, 'c:jake', 'strength'),
+      sideDraftFor(s, 'c:kim', 'strength'),
+      'none',
+    );
+    if (typeof plan === 'string') throw new Error(plan);
+    const draws = [0.5, 0.5, 0.95, 0];
+    let i = 0;
+    const rolled = rollPlan(s, plan, () => draws[i++] ?? 0);
+    expect(i).toBe(4);
+    expect(rolled.roll).toBeNull();
+    expect(rolled.d20?.rounds.map((r) => [r.a.die, r.b.die])).toEqual([
+      [11, 11],
+      [20, 1],
+    ]);
+    expect(rolled.result.success).toBe(true);
+    expect(outcomeText(rolled)).toBe(
+      'Jake · Strength wins (d20: Jake · Strength 20+0 = 20, Kim · Strength 1+0 = 1, after 1 tie(s))',
+    );
+    const command = shareCommand(rolled);
+    expect(command).toMatchObject({
+      roll: null,
+      dice: [
+        { a: { die: 11, how: 'app' }, b: { die: 11, how: 'app' } },
+        { a: { die: 20, how: 'app' }, b: { die: 1, how: 'app' } },
+      ],
+    });
+    const shared = recentContests(stateOf(apply(base, [command])));
+    expect(shared).toHaveLength(1);
+    expect(shared[0]).toMatchObject({ success: true });
+  });
+
   it('formats percentages without hiding long odds', () => {
     expect(percent(0.75)).toBe('75%');
     expect(percent(0.004)).toBe('<1%');
