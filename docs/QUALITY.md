@@ -229,6 +229,7 @@ lowered by their verifiers and folded into the Low batches.
 - 2026-11-01 07:4x · local full e2e (1 worker) on wip/MK.2: `e2e/M8.3.spec.ts:221` keyboard test failed (43.7 s); passed alone with MK.2 (6/6). Repeat of the 2026-10-25 mode: now a QF item (QF.70).
 
 ## Backlog (Lows; M11.5 goes through these)
+- 2026-11-01 QF.70 round 2 (sonnet): M8.3 waits for the "Speech-to-text is not installed" line, so it would time out if a speech env reached e2e (wait on the Start listening button's final state instead); SETTLED uses rAF, which never fires in a hidden page.
 - 2026-11-01 QF.55 review (sonnet) Lows: focus drops to the body when the last notes "Show more" button disappears (`NotesPanel.tsx` ~469); hidden-tab render cost moves to the tab switch and the tab under the view-as pane is not frozen (`ConsoleTabs.tsx` `Frozen`); no test pins that a hidden window skips rendering (`e2e/QF.55.spec.ts`); the phone Notifications list is unpaged with a date per row.
 
 - 2026-11-01 ME.A review (fable, round 1 at ee15de66) Lows: a late-taken offer's one-time bonus does not refill pools as at evolution (`character/model.ts:499-511`); "none for now" silently overwrites a GM offer card of the same name (`evolution/model.ts:1172-1179`); a GM override grant of a new profession during a release built for the old one forces a rename (`pickSteps`); the offer toast overlaps the Quests window at 390×844 (`docs/screens/ME.6/player-offer-390x844.png`).

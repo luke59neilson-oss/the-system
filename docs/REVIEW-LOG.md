@@ -1295,3 +1295,9 @@
 - 2026-11-01 09:3x follow-up: rest of the e2e suite run on wip/QF.55 (90 specs after MC.3 plus the four re-fixed: 86 passed, 4 failed, all reading party `class-level-*` on the Home tab while the Session tab showed); MQ.A, MS.1, MS.4, MV.2 and latency M4.A now open the tab first (774523a, 343c2e5). Low (1) fixed: the notes list takes focus when the last "Show more" goes (QF.55 e2e asserts it). Latency project 8/8, check green (unit 2,015). Merged to main (dfd963d); box checked.
 
 - 2026-11-01 · QF.70 · sonnet (round 1, worktree on a980b24): 10/10 with `--repeat-each=10 --workers=2`; no banned patterns, no loosened assertions. 0 High, 2 Medium: the settle-wait can return the pre-press element (wait for `data-kb` to change from the pre-press value, then two stable frames); the 10-frame cap returns silently if focus never settles (fail instead). 3 Lows to the QUALITY backlog. Not fixed this run (minute 43): handed off on `wip/QF.70`; two Mediums mean a round 2 after the fix.
+
+## 2026-11-01 · QF.70 round 2 · sonnet
+- Commit 7d73e28 (base bc8d434 via a980b24). Check green; M8.3 whole file 30/30 at `--repeat-each=10 --workers=2`.
+- Round-1 Mediums fixed: SETTLED waits for focus to leave the pre-press `data-kb`, then two equal frames, and fails at a 30-frame cap with what it saw.
+- Also fixed while repeating (one 29/30 run here): the walk now waits for the demo reconnect (demo party in View as + Connected) and for the Listening panel's speech check before marking stops.
+- Round 2: 0 H / 0 M / 4 L. Not changed: L1 (Jake only exists in the demo hub's state, which only the new socket serves, so the old socket cannot show it), L2 (rAF in a hidden page; headless pages are visible), L3 (fails loudly, intended), L4 (speech line depends on no speech env in e2e; logged to the QUALITY backlog).
