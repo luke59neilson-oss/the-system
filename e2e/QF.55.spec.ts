@@ -50,6 +50,11 @@ test('the phone notes list pages, and a new filter starts from the top', async (
   await expect(notes).toHaveCount(60);
   await expect(more).toHaveText(new RegExp(`\\(${before - 30} not shown\\)$`));
 
+  // The last press removes the button; focus stays in the list, not the page body.
+  for (let i = 0; i < 20 && (await more.count()) > 0; i += 1) await more.click();
+  await expect(more).toHaveCount(0);
+  await expect(phone.getByTestId('notes-list')).toBeFocused();
+
   // A new filter shows its first page again.
   await phone.getByLabel('Show notes').selectOption('journal');
   const journal = await notes.count();

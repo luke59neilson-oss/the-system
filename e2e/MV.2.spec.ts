@@ -116,9 +116,12 @@ test('1,000 XP to four at 40/20/20/20 lands 400/200/200/200', async ({ browser }
   await expect(award.getByRole('status')).toHaveText(
     'Awarded 1,000 class XP to Jake (400), Kim (200), Ada (200) and Bo (200).',
   );
+  // The form starts even again for the next award.
+  await expect(pct('Jake')).toHaveValue('25');
+  await openWindow(gm, 'party');
   await expect(gm.getByTestId(`class-level-${jake}`)).toHaveText('4');
   await expect(gm.getByTestId(`class-level-${kim}`)).toHaveText('2');
-  // The form starts even again for the next award.
+  await openWindow(gm, 'award-xp');
   await expect(pct('Jake')).toHaveValue('25');
   expect(errors).toEqual([]);
 });

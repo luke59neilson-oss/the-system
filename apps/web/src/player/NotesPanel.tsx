@@ -89,6 +89,14 @@ export function NotesPanel({
     setShown(NOTES_PAGE);
   }
   const { rows, more } = notesPage(matching, shown);
+  // When the last "Show more" press removes the button, keep focus in the list.
+  const list = useRef<HTMLUListElement | null>(null);
+  const focusListAfterMore = useRef(false);
+  useEffect(() => {
+    if (!focusListAfterMore.current) return;
+    focusListAfterMore.current = false;
+    if (more === 0) list.current?.focus();
+  }, [shown, more]);
   const editing = draft?.id != null ? byId.get(draft.id) : undefined;
   // The note being edited was deleted (by its author elsewhere, the GM, or an undo).
   const lost = draft !== null && draft.id !== null && editing === undefined;
@@ -342,7 +350,7 @@ export function NotesPanel({
           No notes match.
         </p>
       ) : (
-        <ul className="notes-list" data-testid="notes-list">
+        <ul className="notes-list" data-testid="notes-list" ref={list} tabIndex={-1}>
           {rows.map((note) => {
             const open = openId === note.id;
             const own = isOwnNote(note, me);
@@ -471,7 +479,10 @@ export function NotesPanel({
           type="button"
           className="secondary notes-more"
           data-testid="notes-more"
-          onClick={() => setShown((n) => n + NOTES_PAGE)}
+          onClick={() => {
+            focusListAfterMore.current = true;
+            setShown((n) => n + NOTES_PAGE);
+          }}
         >
           Show {Math.min(more, NOTES_PAGE)} more ({more} not shown)
         </button>
