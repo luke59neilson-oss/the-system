@@ -428,6 +428,42 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       campaigns: ids.filter((id) => id !== DEMO_CAMPAIGN_ID),
     };
   });
+  // ML.1: Delete moves a campaign to the Deleted list; never the open one.
+  app.post('/api/gm/campaigns/:id/delete', (request, reply) => {
+    const { id } = request.params as { id: string };
+    const library = options.campaigns;
+    if (!library?.remove) return reply.code(404).send({ error: 'Delete is not available' });
+    if (active?.store.id === id) {
+      return reply.code(409).send({ error: 'Close the campaign before deleting it' });
+    }
+    if (!library.list().includes(id))
+      return reply.code(404).send({ error: 'No campaign with that id' });
+    try {
+      library.remove(id);
+    } catch (error) {
+      app.log.error(error);
+      return reply.code(409).send({ error: 'Could not delete that campaign; is it open?' });
+    }
+    return { deleted: id };
+  });
+  app.get('/api/gm/campaigns/deleted', () => ({ deleted: options.campaigns?.deleted?.() ?? [] }));
+  app.post('/api/gm/campaigns/:id/undelete', (request, reply) => {
+    const { id } = request.params as { id: string };
+    const library = options.campaigns;
+    if (!library?.undelete || !library.deleted) {
+      return reply.code(404).send({ error: 'Restore is not available' });
+    }
+    if (!library.deleted().some((d) => d.id === id)) {
+      return reply.code(404).send({ error: 'No deleted campaign with that id' });
+    }
+    try {
+      library.undelete(id);
+    } catch (error) {
+      app.log.error(error);
+      return reply.code(409).send({ error: 'Could not restore that campaign' });
+    }
+    return { restored: id };
+  });
   app.post('/api/gm/campaign', (request, reply) => {
     const live = options.live;
     if (!active || !live || realId === null || !options.openCampaign) {
