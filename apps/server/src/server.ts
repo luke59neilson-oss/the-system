@@ -40,6 +40,7 @@ import { registerNotesRoutes } from './ai/notesRoutes';
 import { evolutionReference } from './reference/evolutions';
 import { registerReferenceRoutes } from './reference/routes';
 import { NotesStore } from './ai/sessionNotes';
+import { registerSkillDraftRoutes } from './ai/skillDrafts';
 import { registerSuggestionRoutes } from './ai/suggestionRoutes';
 import { campaignQuickSettings, registerQuickRoutes } from './ai/quickRoutes';
 import { registerPrepareRoutes } from './ai/prepareRoutes';
@@ -355,6 +356,8 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     registerCoDmRoutes(app, options.coDm);
     // MC.7: practice drafts from the transcript, for the GM's review.
     registerPracticeDraftRoutes(app, { active: () => active, client: options.coDm.client });
+    // MW.2: co-DM drafts for the skill-offer builder.
+    registerSkillDraftRoutes(app, { active: () => active, client: options.coDm.client });
     // MC.9: running session notes and the end-of-session summary.
     registerNotesRoutes(app, {
       active: () => active,

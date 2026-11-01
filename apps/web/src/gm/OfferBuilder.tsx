@@ -6,7 +6,9 @@ import { cssToken } from '../player/sheet';
 import {
   builderSlots,
   characterStanding,
+  draftFlags,
   offerProblem,
+  parseCost,
   practiceSkillCounts,
   practiceStatCounts,
   recentPractice,
@@ -26,9 +28,35 @@ interface Row {
   rarity: string;
   kind: 'class' | 'profession';
   description: string;
+  /** MW.2: a spell carries a cost in a pool; the library entry gets it on send. */
+  spell: boolean;
+  costPool: string;
+  costAmount: string;
 }
 
-const blankRow = (rarity: string): Row => ({ name: '', rarity, kind: 'class', description: '' });
+const blankRow = (rarity: string, pool = ''): Row => ({
+  name: '',
+  rarity,
+  kind: 'class',
+  description: '',
+  spell: false,
+  costPool: pool,
+  costAmount: '',
+});
+
+/** A draft as the server sends it (apps/server/src/ai/skillDrafts.ts). */
+interface SkillDraft {
+  name: string;
+  rarity: string;
+  kind: 'class' | 'profession';
+  description: string;
+  spell: boolean;
+  cost: { pool: string; amount: number } | null;
+}
+type DraftSource =
+  | { mode: 'stat'; stat: string }
+  | { mode: 'skill'; skill: string }
+  | { mode: 'direction'; direction: string };
 
 type Report = (r: CommandResult, okText: string) => void;
 
@@ -42,10 +70,12 @@ const visibleRarities = (rules: RulesConfig) => rules.skills.rarities.filter((r)
  */
 export function OfferBuilder({
   client,
+  gmKey,
   state,
   target,
 }: {
   client: LiveClient;
+  gmKey: string;
   state: CampaignState;
   target?: OfferTarget | null;
 }) {
@@ -186,6 +216,7 @@ export function OfferBuilder({
                     // A fresh draft for each character and selection (no rows carried over).
                     key={`${characterId}:${slot.level}`}
                     client={client}
+                    gmKey={gmKey}
                     state={state}
                     characterId={characterId}
                     level={slot.level}
@@ -334,6 +365,7 @@ function Standing({ rules, standing }: { rules: RulesConfig; standing: Character
 /** The draft menu for one character's selection. */
 function MenuForm({
   client,
+  gmKey,
   state,
   characterId,
   level,
@@ -343,6 +375,7 @@ function MenuForm({
   onSent,
 }: {
   client: LiveClient;
+  gmKey: string;
   state: CampaignState;
   characterId: string;
   level: number;
@@ -356,8 +389,17 @@ function MenuForm({
   const hasProfession = character?.profession != null;
   const rarities = visibleRarities(rules);
   const lowest = rarities[0]?.id ?? '';
-  const fresh = () => Array.from({ length: rules.skills.menuSize.min }, () => blankRow(lowest));
+  const firstPool = rules.pools[0]?.id ?? '';
+  const blank = () => blankRow(lowest, firstPool);
+  const fresh = () => Array.from({ length: rules.skills.menuSize.min }, blank);
   const [rows, setRows] = useState<Row[]>(fresh);
+  const [stat, setStat] = useState(rules.stats.list[0]?.id ?? '');
+  const [skill, setSkill] = useState('');
+  const [direction, setDirection] = useState('');
+  const [drafting, setDrafting] = useState(false);
+  const [draftNote, setDraftNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const ownSkills = character?.skills.map((s) => s.name) ?? [];
+  const pickedSkill = ownSkills.includes(skill) ? skill : (ownSkills[0] ?? '');
 
   const options: SkillOption[] = rows.map((r) => ({
     name: r.name.trim(),
@@ -366,15 +408,89 @@ function MenuForm({
     kind: hasProfession ? r.kind : 'class',
     description: r.description.trim(),
   }));
+  const flags = draftFlags(state, characterId, level, rows);
+  const flagged = flags.menu.length > 0 || flags.rows.some((f) => f.length > 0);
   const problem = offerProblem(state, characterId, level, options);
+
+  // MW.2: drafts fill the blank rows, then add rows up to the menu's maximum.
+  const draftFrom = async (source: DraftSource) => {
+    setDrafting(true);
+    setDraftNote(null);
+    try {
+      const res = await fetch('/api/gm/ai/skill-drafts', {
+        method: 'POST',
+        headers: { 'x-gm-key': gmKey, 'content-type': 'application/json' },
+        body: JSON.stringify({ characterId, level, source }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        drafts?: SkillDraft[];
+      };
+      if (!res.ok || !data.drafts) {
+        setDraftNote({ ok: false, text: data.error ?? 'The co-DM could not draft options' });
+        return;
+      }
+      const incoming = data.drafts.map((d) => ({
+        name: d.name,
+        rarity: d.rarity,
+        kind: d.kind,
+        description: d.description,
+        spell: d.spell,
+        costPool: d.cost?.pool ?? firstPool,
+        costAmount: d.cost === null ? '' : String(d.cost.amount),
+      }));
+      const merged = rows.filter((r) => r.name.trim() !== '');
+      const room = rules.skills.menuSize.max - merged.length;
+      const taken = incoming.slice(0, Math.max(0, room));
+      const next = [...merged, ...taken];
+      while (next.length < rules.skills.menuSize.min) next.push(blank());
+      setRows(next);
+      const left = incoming.length - taken.length;
+      setDraftNote({
+        ok: true,
+        text: `${taken.length} draft${taken.length === 1 ? '' : 's'} added: edit them, then send the menu${
+          left > 0 ? ` (${left} did not fit)` : ''
+        }`,
+      });
+    } catch {
+      setDraftNote({ ok: false, text: 'Could not reach the server' });
+    } finally {
+      setDrafting(false);
+    }
+  };
 
   const send = async (e: FormEvent) => {
     e.preventDefault();
-    if (problem !== null) return;
+    if (problem !== null || flagged) return;
     // Stay on this selection once its menu is out (the default picks the
     // first one still needing a menu).
     onSent();
     setBusy(true);
+    // MW.2: a spell's cost lives on its library entry, which the chosen skill follows.
+    for (const row of rows) {
+      const amount = row.spell ? parseCost(row.costAmount) : null;
+      if (amount === null) continue;
+      const cost = { pool: row.costPool, amount };
+      const known = Object.values(state.skillLibrary).find(
+        (d) => d.name === row.name.trim() && d.rarity === row.rarity,
+      );
+      const saved = await client.command(
+        known
+          ? { type: 'skillDef.edit', skillDefId: known.id, cost }
+          : {
+              type: 'skillDef.define',
+              name: row.name.trim(),
+              rarity: row.rarity,
+              description: row.description.trim(),
+              cost,
+            },
+      );
+      if (!saved.ok) {
+        setBusy(false);
+        report(saved, '');
+        return;
+      }
+    }
     const r = await client.command({
       type: 'selection.offer',
       characterId,
@@ -395,6 +511,71 @@ function MenuForm({
 
   return (
     <form onSubmit={send} aria-label="Selection menu">
+      <fieldset className="offer-drafts" data-testid="offer-drafts">
+        <legend>Co-DM drafts</legend>
+        <div className="row">
+          <label>
+            Stat{' '}
+            <select value={stat} onChange={(e) => setStat(e.target.value)}>
+              {rules.stats.list.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            disabled={drafting}
+            onClick={() => void draftFrom({ mode: 'stat', stat })}
+          >
+            Draft from stat
+          </button>
+        </div>
+        <div className="row">
+          <label>
+            Skill{' '}
+            <select value={pickedSkill} onChange={(e) => setSkill(e.target.value)}>
+              {ownSkills.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            disabled={drafting || pickedSkill === ''}
+            onClick={() => void draftFrom({ mode: 'skill', skill: pickedSkill })}
+          >
+            Draft from skill
+          </button>
+        </div>
+        <div className="row">
+          <label>
+            Direction{' '}
+            <input
+              value={direction}
+              maxLength={500}
+              onChange={(e) => setDirection(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            disabled={drafting || direction.trim() === ''}
+            onClick={() => void draftFrom({ mode: 'direction', direction: direction.trim() })}
+          >
+            Draft from direction
+          </button>
+        </div>
+        <p
+          className={draftNote?.ok === false ? 'err' : 'muted small'}
+          aria-live="polite"
+          data-testid="draft-note"
+        >
+          {drafting ? 'The co-DM is drafting…' : (draftNote?.text ?? '')}
+        </p>
+      </fieldset>
       {rows.map((r, i) => (
         <fieldset key={i} className="offer-row">
           <legend>Option {i + 1}</legend>
@@ -436,13 +617,54 @@ function MenuForm({
               onChange={(e) => setRow(i, { description: e.target.value })}
             />
           </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={r.spell}
+              onChange={(e) => setRow(i, { spell: e.target.checked })}
+            />{' '}
+            Spell
+          </label>
+          {r.spell && (
+            <>
+              <label>
+                Cost{' '}
+                <input
+                  inputMode="numeric"
+                  value={r.costAmount}
+                  aria-label={`Option ${i + 1} cost`}
+                  onChange={(e) => setRow(i, { costAmount: e.target.value })}
+                />
+              </label>
+              <label>
+                Pool{' '}
+                <select
+                  value={r.costPool}
+                  onChange={(e) => setRow(i, { costPool: e.target.value })}
+                >
+                  {rules.pools.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
+          )}
+          {(flags.rows[i]?.length ?? 0) > 0 && (
+            <ul className="err offer-flags" data-testid={`draft-flags-${i}`}>
+              {flags.rows[i]?.map((f) => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
+          )}
         </fieldset>
       ))}
       <div className="row">
         <button
           type="button"
           disabled={rows.length >= rules.skills.menuSize.max}
-          onClick={() => setRows([...rows, blankRow(lowest)])}
+          onClick={() => setRows([...rows, blank()])}
         >
           Add option
         </button>
@@ -453,10 +675,15 @@ function MenuForm({
         >
           Remove last
         </button>
-        <button type="submit" disabled={busy || problem !== null}>
+        <button type="submit" disabled={busy || problem !== null || flagged}>
           Send menu
         </button>
       </div>
+      {flags.menu.map((f) => (
+        <p key={f} className="err" data-testid="draft-menu-flag">
+          {f}
+        </p>
+      ))}
       {problem !== null && rows.some((r) => r.name.trim() !== '') && (
         <p className="err" data-testid="offer-problem">
           {problem}

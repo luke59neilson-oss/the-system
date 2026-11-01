@@ -80,3 +80,61 @@ export function offerProblem(
     return error instanceof Error ? error.message : String(error);
   }
 }
+
+/** MW.2: a menu row as the flags read it. */
+export interface DraftRow {
+  readonly name: string;
+  readonly rarity: string;
+  readonly spell: boolean;
+  /** Amount typed for a spell's cost; a whole number above 0 is a cost. */
+  readonly costAmount: string;
+}
+
+/** A spell's typed cost, or null when it is not a whole number above 0. */
+export function parseCost(amount: string): number | null {
+  const t = amount.trim();
+  const n = Number(t);
+  return /^\d+$/.test(t) && n > 0 ? n : null;
+}
+
+/**
+ * MW.2 (DESIGN §11): what stands against a menu, per row and for the whole menu:
+ * a rarity above the ceiling, a missed capstone, a name the character has or
+ * another row has, a spell with no cost. A flagged menu cannot be sent.
+ */
+export function draftFlags(
+  state: CampaignState,
+  characterId: string,
+  level: number,
+  rows: readonly DraftRow[],
+): { readonly rows: readonly (readonly string[])[]; readonly menu: readonly string[] } {
+  const { rules } = state;
+  const slot = builderSlots(state, characterId).find((s) => s.level === level);
+  const c = state.characters[characterId];
+  const ladder = rules.skills.rarities.map((r) => r.id);
+  const label = (id: string) => rules.skills.rarities.find((r) => r.id === id)?.name ?? id;
+  const key = (name: string) => name.trim().toLowerCase();
+  const owned = new Set((c?.skills ?? []).map((s) => key(s.name)));
+  const ceiling = slot ? ladder.indexOf(slot.ceiling) : -1;
+  const flagged = rows.map((r, i) => {
+    const flags: string[] = [];
+    const name = key(r.name);
+    if (ceiling >= 0 && ladder.indexOf(r.rarity) > ceiling) {
+      flags.push(`Above this selection's ceiling (${label(slot?.ceiling ?? '')})`);
+    }
+    if (name !== '' && owned.has(name))
+      flags.push(`${c?.name ?? 'The character'} already has this name`);
+    if (name !== '' && rows.some((o, j) => j < i && key(o.name) === name)) {
+      flags.push('Another option has this name');
+    }
+    if (r.spell && parseCost(r.costAmount) === null) flags.push('A spell needs a cost');
+    return flags;
+  });
+  const named = rows.filter((r) => key(r.name) !== '');
+  const missed =
+    slot?.capstone === true && named.length > 0 && !named.some((r) => r.rarity === slot.ceiling);
+  return {
+    rows: flagged,
+    menu: missed ? [`The capstone needs an option at the ceiling (${label(slot.ceiling)})`] : [],
+  };
+}

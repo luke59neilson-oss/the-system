@@ -63,6 +63,20 @@ export function e2eFakeClient(key: () => string | null, models: () => AiModelSet
           usage: { inputTokens: 400, outputTokens: 60 },
         });
       }
+      // MW.2, TEST ONLY: two clean drafts and a spell with no cost, which the builder flags.
+      if (last.startsWith('Skill-offer drafts.')) {
+        return Promise.resolve({
+          text: JSON.stringify({
+            drafts: [
+              { name: 'Keen Sight', rarity: 'common', description: 'See what hides at range.' },
+              { name: 'Far Mark', rarity: 'common', description: 'Mark a target you can see.' },
+              { name: 'Mana Lens', rarity: 'common', description: 'Focus sight.', spell: true },
+            ],
+          }),
+          model: models()[request.role],
+          usage: { inputTokens: 700, outputTokens: 120 },
+        });
+      }
       if (last.startsWith('Quick response.')) {
         const text = e2eQuickResponse(last, request.role);
         return (async () => {

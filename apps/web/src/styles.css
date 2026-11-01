@@ -2524,6 +2524,16 @@ ol.change-log li.undone .change-text {
 .offer-standing-stats thead th:not(:first-child) {
   text-align: right;
 }
+.offer-drafts {
+  margin: 0 0 10px;
+}
+.offer-drafts .row {
+  margin-bottom: 6px;
+}
+.offer-flags {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
 .offer-standing-skills {
   list-style: none;
   margin: 0 0 6px;

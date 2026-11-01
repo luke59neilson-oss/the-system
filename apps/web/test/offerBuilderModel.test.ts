@@ -10,7 +10,9 @@ import {
 import {
   builderSlots,
   characterStanding,
+  draftFlags,
   offerProblem,
+  parseCost,
   practiceSkillCounts,
   practiceStatCounts,
   recentPractice,
@@ -271,3 +273,41 @@ describe('the character standing (MW.1)', () => {
 function state0Pool(c: Campaign): string {
   return c.state!.rules.pools[0]!.id;
 }
+
+describe('skill-offer draft flags (MW.2)', () => {
+  const row = (name: string, rarity = 'common', spell = false, costAmount = '') => ({
+    name,
+    rarity,
+    spell,
+    costAmount,
+  });
+  const state = campaign().state!;
+
+  it('a clean menu has no flags', () => {
+    const f = draftFlags(state, 'jake', 2, [row('A'), row('B'), row('C', 'rare', true, '5')]);
+    expect(f.rows.flat()).toEqual([]);
+    expect(f.menu).toEqual([]);
+  });
+  it('flags a rarity above the ceiling', () => {
+    const f = draftFlags(state, 'jake', 2, [row('A', 'epic')]);
+    expect(f.rows[0]?.[0]).toMatch(/ceiling \(Rare\)/);
+  });
+  it('flags a missed capstone, and clears it with a ceiling option', () => {
+    expect(draftFlags(state, 'jake', 4, [row('A')]).menu[0]).toMatch(/capstone/i);
+    expect(draftFlags(state, 'jake', 4, [row('A', 'rare')]).menu).toEqual([]);
+    expect(draftFlags(state, 'jake', 4, [row('')]).menu).toEqual([]);
+  });
+  it('flags a name the character has, in any case, and a repeat within the menu', () => {
+    const f = draftFlags(state, 'jake', 2, [row('basic archery'), row('New'), row(' new ')]);
+    expect(f.rows[0]?.[0]).toMatch(/Jake already has/);
+    expect(f.rows[1]).toEqual([]);
+    expect(f.rows[2]?.[0]).toMatch(/Another option/);
+  });
+  it('flags a spell with no cost, and parses costs', () => {
+    expect(draftFlags(state, 'jake', 2, [row('A', 'common', true)]).rows[0]?.[0]).toMatch(/cost/);
+    expect(draftFlags(state, 'jake', 2, [row('A', 'common', true, '0')]).rows[0]).toHaveLength(1);
+    expect(parseCost(' 5 ')).toBe(5);
+    expect(parseCost('1.5')).toBeNull();
+    expect(parseCost('')).toBeNull();
+  });
+});
