@@ -13,7 +13,7 @@ when something will not connect, see [`TROUBLESHOOTING.md`](https://github.com/l
 
 ## Where everything is (the console's tabs)
 
-The console opens on **Home**; three tabs hold everything else. The open tab
+The console opens on **Home**; four tabs hold everything else. The open tab
 is remembered on this laptop. Click a tab, or focus the tab bar and use the
 arrow keys (Home and End jump to the ends). A dashboard link (a selection
 waiting, a banner) opens the tab that handles it.
@@ -29,8 +29,9 @@ waiting, a banner) opens the tab that handles it.
 Award XP is the one window in two places: the same form on both tabs (a
 half-typed award shows on either). Its participant rows are the Session
 tab's party at a glance. Titles are awarded from the Title library;
-professions are offered in the Evolution builder; factions live in
-Trackers; the demo switch sits in the header on every tab, and campaigns
+professions are offered from Progression → Professions (and an evolution
+may offer them too); factions live in Trackers; the demo switch is the bar
+under the header on every tab, and campaigns
 and backups have their own window in Library & settings. The list
 mirrors `apps/web/src/gm/tabsModel.ts`.
 

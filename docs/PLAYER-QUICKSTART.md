@@ -38,9 +38,8 @@ GM's laptop; nothing to install.
   cooldown, range and notes, and **Cast** pays the cost from your pool (it is
   refused when the pool is too low). The GM sees each cast as practice and
   can undo it. Cooldowns are shown, not enforced: keep track at the table.
-- **Professions**: the GM offers professions that fit what you have done,
-  from the start. Pick one or choose "none for now"; once you choose, the
-  list locks.
+- **Professions**: the GM offers ones that fit what you have done. **Take**
+  one now or later; then the other offers lock.
 
 ## The other panels
 

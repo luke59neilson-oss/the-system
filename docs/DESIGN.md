@@ -443,12 +443,13 @@ tabs hold everything else, each a set of panels instead of one scroll:
 
 - **Session:** the party at a glance with a quick **Award XP**; the co-DM
   (quick responses, suggestions, listening, generation, loading screen);
-  encounters and contests; quests and World Stability; broadcasts; loot and
+  encounters and contests; quests and World Stability; broadcasts;
   shops; the Credits ledger; trackers (regions and factions); content import
-  (co-DM generations are previewed and approved here, mid-narration); notes;
-  View as; the change log with undo.
+  (co-DM generations are previewed and approved here, mid-narration); the
+  change log with undo; the System feed. Session notes sit inside the co-DM
+  panel; View as is the bar in the header, on every tab.
 - **Progression:** the full XP award; skill offers; marks review; merges;
-  professions; the practice log review; titles.
+  professions and each track's per-level stats; the practice log review.
 - **Evolutions** (its own tab, Luke 2026-10-31): who is at or near the
   threshold, and per character the evolution builder: the class,
   profession and race steps with option cards, a budget meter per option

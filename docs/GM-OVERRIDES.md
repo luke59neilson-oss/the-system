@@ -98,10 +98,10 @@ refusal is raised.
 | `"…" is not offered to …` | packages/engine/src/character/model.ts:420 | Offer it first (Professions offers / evolution builder) |
 | `[…] is already offered to …` | packages/engine/src/character/model.ts (offerProfession) | Withdraw the offer (Progression → Professions) and offer it again with the new stats (ME.6) |
 | `… now has the profession […]: the professions offered with this evolution no longer apply, so it stays as it is` | packages/engine/src/evolution/model.ts (pickSteps) | The player confirms with the profession unchanged; `character.grantProfession` with `override: true` replaces it afterwards (ME.6, D308) |
-| `… slot … does not exist` | packages/engine/src/economy/model.ts:171 | Equip/unequip from the right slot; holdings can be edited directly |
-| `[…] is already equipped there` | packages/engine/src/economy/model.ts:182 | Equip/unequip from the right slot; holdings can be edited directly |
-| `No […] in the inventory` | packages/engine/src/economy/model.ts:184 | Equip/unequip from the right slot; holdings can be edited directly |
-| `Nothing is equipped in …` | packages/engine/src/economy/model.ts:196 | Equip/unequip from the right slot; holdings can be edited directly |
+| `… slot … does not exist` | packages/engine/src/economy/model.ts:171 | Equip/unequip from the right slot; the Item library's Give/Take (`holdings.adjust`) changes holdings directly |
+| `[…] is already equipped there` | packages/engine/src/economy/model.ts:182 | Equip/unequip from the right slot; the Item library's Give/Take (`holdings.adjust`) changes holdings directly |
+| `No […] in the inventory` | packages/engine/src/economy/model.ts:184 | Equip/unequip from the right slot; the Item library's Give/Take (`holdings.adjust`) changes holdings directly |
+| `Nothing is equipped in …` | packages/engine/src/economy/model.ts:196 | Equip/unequip from the right slot; the Item library's Give/Take (`holdings.adjust`) changes holdings directly |
 | `The libraries already hold every default entry` | packages/engine/src/events/commands.ts:888 | Nothing left to seed |
 | `A mark needs a play session` | packages/engine/src/events/commands.ts:1261 | Start a session (Session panel); marks are counted per session |
 | `XP overflow is already on` | packages/engine/src/events/commands.ts:1679 | Already on |
