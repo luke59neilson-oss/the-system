@@ -188,7 +188,7 @@ export function EvolutionChoice({
                   <p className="muted offer-description">No description.</p>
                 )}
                 {o.transforms.length > 0 && (
-                  <ul className="evolution-transforms" aria-label="Skills transformed">
+                  <ul className="evolution-transforms" aria-label="Skills changed">
                     {o.transforms.map((t) => (
                       <li key={t.skill}>{transformText(rules, me, t)}</li>
                     ))}

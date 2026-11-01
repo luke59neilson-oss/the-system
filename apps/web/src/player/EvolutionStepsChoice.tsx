@@ -327,7 +327,7 @@ function OptionCard({
         One-time bonus: {bonus ?? 'none'}
       </p>
       {o.transforms.length > 0 && (
-        <ul className="evolution-transforms" aria-label="Skills transformed">
+        <ul className="evolution-transforms" aria-label="Skills changed">
           {o.transforms.map((t) => (
             <li key={t.skill}>{transformText(rules, view.me, t)}</li>
           ))}
