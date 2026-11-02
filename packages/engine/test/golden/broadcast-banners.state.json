@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 35,
+  "schemaVersion": 36,
   "name": "Banners",
   "rules": {
     "configVersion": 2,
@@ -525,6 +525,8 @@
   "entityOrder": [],
   "bestiaryCategories": {},
   "bestiaryCategoryOrder": [],
+  "ideas": {},
+  "ideaOrder": [],
   "montages": {},
   "montageOrder": [],
   "contests": {},

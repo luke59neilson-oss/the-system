@@ -252,6 +252,17 @@ refusal is raised.
 | `unknown item "…"` | packages/engine/src/events/reducer.ts:276 | Fix the input or define the thing first |
 | `unknown loot table "…"` | packages/engine/src/events/reducer.ts:322 | Fix the input or define the thing first |
 | `unknown trade "…"` | packages/engine/src/events/reducer.ts:327 | Fix the input or define the thing first |
+| `idea "…" already exists` | packages/engine/src/events/reducer.ts | Fix the input or define the thing first |
+| `unknown idea "…"` | packages/engine/src/events/reducer.ts | Fix the input or define the thing first |
+| `every one of these ideas is already on the board` | packages/engine/src/events/commands.ts | Fix the input or define the thing first |
+| `There is nothing to import` | packages/engine/src/ideas/import.ts | Fix the input or define the thing first |
+| `This is not an ideas export file` | packages/engine/src/ideas/import.ts | Fix the input or define the thing first |
+| `This ideas file is version …; this app reads version …` | packages/engine/src/ideas/import.ts | Fix the input or define the thing first |
+| `This ideas file has no ideas list` | packages/engine/src/ideas/import.ts | Fix the input or define the thing first |
+| `Idea … in this file has no id or text` | packages/engine/src/ideas/import.ts | Fix the input or define the thing first |
+| `Idea … in this file is too long` | packages/engine/src/ideas/import.ts | Fix the input or define the thing first |
+| `An idea is over … characters; shorten it first` | packages/engine/src/ideas/import.ts | Fix the input or define the thing first |
+| `Import at most … ideas at a time` | packages/engine/src/ideas/import.ts | Fix the input or define the thing first |
 | `library skill "…" already exists` | packages/engine/src/events/reducer.ts:495 | Fix the input or define the thing first |
 | `library class "…" already exists` | packages/engine/src/events/reducer.ts:505 | Fix the input or define the thing first |
 | `library race "…" already exists` | packages/engine/src/events/reducer.ts:515 | Fix the input or define the thing first |

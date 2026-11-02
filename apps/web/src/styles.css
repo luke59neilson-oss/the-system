@@ -3899,3 +3899,20 @@ ol.change-log li.undone .change-text {
     font-size: 0.875rem;
   }
 }
+
+/* MW.3: the GM's Ideas board. */
+.ideas-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.ideas-list .idea-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ideas-list .muted {
+  margin: 0.15rem 0 0.35rem;
+}

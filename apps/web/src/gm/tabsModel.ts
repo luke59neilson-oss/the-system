@@ -55,6 +55,8 @@ export const WINDOWS: Readonly<Record<string, readonly ConsoleTab[]>> = {
   'title-library': ['library'],
   'origin-library': ['library'],
   bestiary: ['library'],
+  // MW.3: the GM's story ideas (DESIGN §11).
+  ideas: ['library'],
   // MU.6: the Primal Hunter reference lists (GM-only).
   reference: ['library'],
   'rules-settings': ['library'],

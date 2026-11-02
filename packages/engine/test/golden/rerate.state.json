@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 35,
+  "schemaVersion": 36,
   "name": "Re-rating golden",
   "rules": {
     "configVersion": 2,
@@ -544,6 +544,8 @@
   "entityOrder": [],
   "bestiaryCategories": {},
   "bestiaryCategoryOrder": [],
+  "ideas": {},
+  "ideaOrder": [],
   "montages": {},
   "montageOrder": [],
   "contests": {},

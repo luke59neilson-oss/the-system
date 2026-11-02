@@ -36,6 +36,7 @@ import { entriesOf } from './originLibraryModel';
 import { resolvePerspective, type PartyMember, type Perspective } from './perspective';
 import { PerspectiveBar, PlayerPane, TablePanes } from './ViewAs';
 import { SessionPanel } from './SessionPanel';
+import { IdeasBoard } from './IdeasBoard';
 import { ContentImport, type IncomingContent } from './ContentImport';
 import { CoDmPanel } from './CoDmPanel';
 import type { PickedLine } from './QuickResponses';
@@ -546,6 +547,9 @@ function GmConsole({
               </Place>
               <Place id="bestiary" tab={tab}>
                 <Bestiary client={client} state={state} />
+              </Place>
+              <Place id="ideas" tab={tab}>
+                <IdeasBoard client={client} state={state} />
               </Place>
               <Place id="reference" tab={tab}>
                 <Reference gmKey={gmKey} />

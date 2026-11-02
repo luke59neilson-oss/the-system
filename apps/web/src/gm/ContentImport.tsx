@@ -1,3 +1,4 @@
+import { ideaLabel, type UsedIdea } from './ideasModel';
 import { useEffect, useRef, useState } from 'react';
 import { friendlyError } from '../format';
 import type { LiveClient } from '../live';
@@ -51,6 +52,8 @@ export interface IncomingContent {
   readonly generated?: boolean;
   /** QF.50: the generation kind asked for; entries of other kinds start unticked. */
   readonly kind?: string;
+  /** MW.3: the GM's story idea this generation used; approving it marks the idea used. */
+  readonly idea?: UsedIdea | null;
 }
 
 /** The entries ticked when a preview opens: every one that can apply and was asked for. */
@@ -92,6 +95,9 @@ export function ContentImport({
   const [fileName, setFileName] = useState('');
   const [generated, setGenerated] = useState(false);
   const [genKind, setGenKind] = useState<string | undefined>(undefined);
+  const [genIdea, setGenIdea] = useState<UsedIdea | null>(null);
+  // MW.3: the idea just marked used, with its Undo.
+  const [markedIdea, setMarkedIdea] = useState<UsedIdea | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
   // Errors from re-checking only the ticked entries (an entry that needs one
@@ -166,6 +172,7 @@ export function ContentImport({
         setFileName(name);
         setGenerated(isGenerated);
         setGenKind(kind);
+        setGenIdea(isGenerated ? (incoming.idea ?? null) : null);
         setPreview(p);
         setChecks(new Map());
         setChecking(false);
@@ -256,7 +263,14 @@ export function ContentImport({
     setPreview(null);
     setChecks(new Map());
     setOutcome(`Applied ${applied.size} entr${applied.size === 1 ? 'y' : 'ies'}`);
-    if (generated && applied.size > 0) onApproved?.();
+    if (generated && applied.size > 0) {
+      onApproved?.();
+      if (genIdea) {
+        const marked = await client.command({ type: 'idea.edit', ideaId: genIdea.id, used: true });
+        if (marked.ok) setMarkedIdea(genIdea);
+      }
+    }
+    setGenIdea(null);
   };
 
   const blocked = [...picked].some((p) => checks.has(p));
@@ -268,6 +282,28 @@ export function ContentImport({
       onChange={() => setOutcome(null)}
     >
       <h2 id="import-heading">Import content</h2>
+      {markedIdea && (
+        <p className="ok" data-testid="import-idea-used">
+          Idea marked used: {ideaLabel(markedIdea)}{' '}
+          <button
+            type="button"
+            onClick={() => {
+              void client
+                .command({ type: 'idea.edit', ideaId: markedIdea.id, used: false })
+                .then((r) => {
+                  if (r.ok) setMarkedIdea(null);
+                });
+            }}
+          >
+            Undo
+          </button>
+        </p>
+      )}
+      {genIdea && preview?.ok && (
+        <p className="muted" data-testid="import-idea">
+          Uses your idea: {ideaLabel(genIdea)}. Approving this marks it used.
+        </p>
+      )}
       <label>
         Content file (.json)
         <input

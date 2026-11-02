@@ -16,6 +16,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { SpeechModel, WHISPER_TINY_EN } from '../speech/model';
 
+const offersIdeas = (prompt: string): boolean => prompt.includes("The GM's story ideas");
+
 export const E2E_FAKE_AI_ENV = 'THE_SYSTEM_E2E_FAKE_AI';
 export const E2E_KEY_PREFIX = 'sk-ant-e2e-';
 const MARK = 'e2e-fake:';
@@ -78,7 +80,7 @@ export function e2eFakeClient(key: () => string | null, models: () => AiModelSet
         });
       }
       if (last.startsWith('Quick response.')) {
-        const text = e2eQuickResponse(last, request.role);
+        const text = `${e2eQuickResponse(last, request.role)}${offersIdeas(last) ? '\nIDEA: 1' : ''}`;
         return (async () => {
           for (const piece of streamPieces(text)) {
             if (request.signal?.aborted) throw new AiError('The request was cancelled', 'network');
@@ -122,7 +124,12 @@ export function e2eFakeClient(key: () => string | null, models: () => AiModelSet
         ],
         models(),
       );
-      return fixtures.complete(request);
+      // MW.3, TEST ONLY: when the GM's ideas are offered, say the first was used.
+      return fixtures
+        .complete(request)
+        .then((reply) =>
+          offersIdeas(last) ? { ...reply, text: `${reply.text}\nIDEA: 1` } : reply,
+        );
     },
   };
 }

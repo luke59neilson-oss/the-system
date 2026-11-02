@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 35,
+  "schemaVersion": 36,
   "name": "Golden: tailored professions (MQ.6)",
   "rules": {
     "configVersion": 2,
@@ -656,6 +656,8 @@
   "entityOrder": [],
   "bestiaryCategories": {},
   "bestiaryCategoryOrder": [],
+  "ideas": {},
+  "ideaOrder": [],
   "montages": {},
   "montageOrder": [],
   "contests": {},

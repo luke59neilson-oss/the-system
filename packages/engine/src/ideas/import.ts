@@ -18,6 +18,14 @@ export type IdeaParse =
   | { readonly ok: true; readonly ideas: readonly ImportedIdea[] }
   | { readonly ok: false; readonly error: string };
 
+/** What one idea and one import may hold (the event payload refuses more). */
+export const IDEA_TEXT_MAX = 5_000;
+export const IDEA_SOURCE_MAX = 500;
+export const IDEA_TAGS_MAX = 20;
+export const IDEA_ID_MAX = 100;
+export const IDEAS_IMPORT_MAX = 2_000;
+const IDEA_CREATED_MAX = 40;
+
 const IDEAS_FORMAT = 'the-system-ideas';
 const IDEAS_VERSION = 1;
 
@@ -40,10 +48,16 @@ function fromPaste(text: string): IdeaParse {
   for (const block of text.split(/\r?\n\s*\r?\n/u)) {
     const body = block.trim();
     if (body === '') continue;
+    if (body.length > IDEA_TEXT_MAX) {
+      return { ok: false, error: `An idea is over ${IDEA_TEXT_MAX} characters; shorten it first` };
+    }
     const id = pastedId(body);
     if (seen.has(id)) continue;
     seen.add(id);
     ideas.push({ id, text: body, kind: 'other', tags: [], source: '', created: null, used: false });
+  }
+  if (ideas.length > IDEAS_IMPORT_MAX) {
+    return { ok: false, error: `Import at most ${IDEAS_IMPORT_MAX} ideas at a time` };
   }
   return ideas.length === 0
     ? { ok: false, error: 'There is nothing to import' }
@@ -69,24 +83,40 @@ function fromExport(data: Record<string, unknown>): IdeaParse {
       return { ok: false, error: `Idea ${i + 1} in this file has no id or text` };
     }
     const text = raw['text'].trim();
-    if (raw['id'] === '' || text === '') {
+    if (raw['id'].trim() === '' || text === '') {
       return { ok: false, error: `Idea ${i + 1} in this file has no id or text` };
+    }
+    if (text.length > IDEA_TEXT_MAX || raw['id'].length > IDEA_ID_MAX) {
+      return { ok: false, error: `Idea ${i + 1} in this file is too long` };
     }
     if (seen.has(raw['id'])) continue;
     seen.add(raw['id']);
     const kind = IDEA_KINDS.find((k) => k === raw['kind']) ?? 'other';
     const tags = Array.isArray(raw['tags'])
-      ? raw['tags'].filter((t): t is string => typeof t === 'string')
+      ? [
+          ...new Set(
+            raw['tags']
+              .filter((t): t is string => typeof t === 'string')
+              .map((t) => t.trim())
+              .filter((t) => t !== ''),
+          ),
+        ].slice(0, IDEA_TAGS_MAX)
       : [];
     ideas.push({
       id: raw['id'],
       text,
       kind,
       tags,
-      source: typeof raw['source'] === 'string' ? raw['source'] : '',
-      created: typeof raw['created'] === 'string' ? raw['created'] : null,
+      source: typeof raw['source'] === 'string' ? raw['source'].slice(0, IDEA_SOURCE_MAX) : '',
+      created:
+        typeof raw['created'] === 'string' && raw['created'].length <= IDEA_CREATED_MAX
+          ? raw['created']
+          : null,
       used: raw['used'] === true,
     });
+  }
+  if (ideas.length > IDEAS_IMPORT_MAX) {
+    return { ok: false, error: `Import at most ${IDEAS_IMPORT_MAX} ideas at a time` };
   }
   return { ok: true, ideas };
 }

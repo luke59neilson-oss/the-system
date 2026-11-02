@@ -9,6 +9,7 @@ import { damagedFile, readJsonFile, writeJsonFile } from './jsonFile';
 import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { ideasInPlay } from './ideas';
 import { AiError, type AiClient } from './client';
 import { draftsDir, readTranscript } from './practiceRoutes';
 import { isQuestionOrAttempt } from './quickResponses';
@@ -184,7 +185,12 @@ export function registerSuggestionRoutes(
       const chips = await suggest(
         options.client,
         fresh.slice(-RECENT_LINES),
-        { party, known },
+        {
+          party,
+          known,
+          // MW.3: ideas fitting what was just said.
+          ideas: ideasInPlay(state, { words: fresh.map((l) => l.text).join(' ') }),
+        },
         dismissed,
       );
       // Re-read: a chip dismissed while the call ran stays gone (MC.8 review M2).

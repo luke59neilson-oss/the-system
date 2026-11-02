@@ -99,9 +99,9 @@ describe('the Ideas board (MW.3)', () => {
   it('a repeat import skips what is held', () => {
     const parsed = parseIdeas(file());
     if (!parsed.ok) throw new Error(parsed.error);
-    let c = gm(start(), { type: 'idea.import', ideas: parsed.ideas });
+    const c = gm(start(), { type: 'idea.import', ideas: parsed.ideas });
     expect(c.state!.ideaOrder).toHaveLength(3);
-    c = gm(c, { type: 'idea.import', ideas: parsed.ideas });
+    expect(execute(c, { type: 'idea.import', ideas: parsed.ideas }, ctx).ok).toBe(false);
     expect(c.state!.ideaOrder).toHaveLength(3);
   });
   it('a player can neither issue idea commands nor see ideas', () => {

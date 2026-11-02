@@ -13,6 +13,8 @@ import type { TranscriptLine } from '../speech/transcript';
 import { SHARED_SYSTEM_LINES } from './setting';
 
 /** Where the table is heading, from one transcript line. */
+import type { UsedIdea } from './ideas';
+
 export interface Heading {
   /** Stable id from kind and normalised place, so one destination is drafted once (D249). */
   readonly id: string;
@@ -27,6 +29,8 @@ export interface Heading {
 
 /** A prepared draft: the heading plus the content file the strong model wrote. */
 export interface PreparedDraft extends Heading {
+  /** MW.3: the GM's story idea this draft used, if any. */
+  readonly idea?: UsedIdea | null;
   readonly file: unknown;
   /** When it was prepared (ms since epoch). */
   readonly at: number;

@@ -8,15 +8,29 @@ import {
   CONTENT_FORMAT,
   CONTENT_FORMAT_VERSION,
   contentJsonSchema,
+  IDEA_LINE_INSTRUCTION,
+  ideaPromptLines,
   type CampaignState,
+  type Idea,
 } from '@the-system/engine';
 import { AiError, type AiRequest } from './client';
 import { loreForRequest, loreLines } from './quickResponses';
+import { ideasInPlay } from './ideas';
 import { referencePromptBlock } from '../reference/reference';
 import { SHARED_SYSTEM_LINES } from './setting';
 
 export const GENERATE_KINDS = ['shop', 'npc', 'place', 'encounter', 'item', 'questHook'] as const;
 export type GenerateKind = (typeof GENERATE_KINDS)[number];
+
+/** MW.3: the idea kind that fits each thing the co-DM generates. */
+const IDEA_KIND_OF: Readonly<Record<GenerateKind, string>> = {
+  shop: 'place',
+  npc: 'npc',
+  place: 'place',
+  encounter: 'hook',
+  item: 'item',
+  questHook: 'quest',
+};
 
 export const GENERATE_LABELS: Readonly<Record<GenerateKind, string>> = {
   shop: 'Shop',
@@ -79,10 +93,19 @@ export function campaignContext(state: CampaignState): string {
   return lines.join('\n');
 }
 
+/** MW.3: the ideas a generation offers (an idea's kind is matched by the generation's). */
+export const generateIdeas = (
+  kind: GenerateKind,
+  prompt: string,
+  state: CampaignState,
+): readonly Idea[] => ideasInPlay(state, { kind: IDEA_KIND_OF[kind], words: prompt });
+
 export function buildGenerateRequest(
   kind: GenerateKind,
   prompt: string,
   state: CampaignState,
+  // MW.3: the ideas offered; the caller keeps them to read the reply's IDEA line.
+  ideas: readonly Idea[] = generateIdeas(kind, prompt, state),
 ): AiRequest {
   const system = [
     'You are the co-DM for a LitRPG tabletop game run by the GM (style: The Primal Hunter; the System, status screens, skill rarities).',
@@ -102,6 +125,11 @@ export function buildGenerateRequest(
   const here = state.currentRegion ? (state.regions[state.currentRegion]?.name ?? null) : null;
   const lore = loreLines(loreForRequest(Object.values(state.notes), here, prompt));
   if (lore.length) content.push(['Kept lore (do not contradict):', ...lore].join('\n'));
+  const hooks = ideaPromptLines(
+    ideas,
+    `${IDEA_LINE_INSTRUCTION} That line goes after the JSON object and is the only thing outside it.`,
+  );
+  if (hooks.length) content.push(hooks.join('\n'));
   // MU.6: a few book names of the right kind as naming and tone examples (never god-tied).
   const examples = referencePromptBlock(kind, `${prompt} ${here ?? ''}`);
   if (examples) content.push(examples);

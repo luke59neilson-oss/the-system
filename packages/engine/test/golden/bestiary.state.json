@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 35,
+  "schemaVersion": 36,
   "name": "Golden: bestiary",
   "rules": {
     "configVersion": 2,
@@ -674,6 +674,8 @@
     }
   },
   "bestiaryCategoryOrder": ["beasts"],
+  "ideas": {},
+  "ideaOrder": [],
   "montages": {},
   "montageOrder": [],
   "contests": {},

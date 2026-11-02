@@ -1027,6 +1027,10 @@ describe('property: replay equals incremental state', () => {
       'bestiary.categoryDefined',
       'bestiary.categoryRenamed',
       'bestiary.categoryRemoved',
+      // MW.3: the Ideas board has its own tests (ideas-events.test.ts) and golden log.
+      'idea.added',
+      'idea.edited',
+      'idea.imported',
     ]);
     expect(
       EVENT_TYPES.filter((t) => !seen.has(t) && !unreachable.has(t)),

@@ -1,3 +1,4 @@
+import { ideaLabel, type UsedIdea } from './ideasModel';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   endQuick,
@@ -55,12 +56,15 @@ export function QuickResponses({
   picked,
   onSpend,
   onKeep,
+  onIdeaApproved,
 }: {
   gmKey: string;
   picked: PickedLine | null;
   onSpend: (spend: { calls: number; dollars: number }) => void;
   /** MD.3: save a kept answer; resolves to an error message, or null when saved. */
   onKeep?: (lore: KeptLore) => Promise<string | null>;
+  /** MW.3: a kept answer used this idea. */
+  onIdeaApproved?: (idea: UsedIdea) => void;
 }) {
   const [keepDraft, setKeepDraft] = useState<string | null>(null);
   const [keepNote, setKeepNote] = useState<string | null>(null);
@@ -285,6 +289,11 @@ export function QuickResponses({
               )}
             </>
           )}
+          {!answer.streaming && answer.idea && (
+            <p className="muted" data-testid="quick-idea">
+              Uses your idea: {ideaLabel(answer.idea)}
+            </p>
+          )}
           {!answer.streaming && last && (
             <button
               type="button"
@@ -327,6 +336,8 @@ export function QuickResponses({
                   else {
                     setKeepDraft(null);
                     setKeepNote('Kept as lore (GM only)');
+                    // MW.3: approving an answer marks the idea it used.
+                    if (answer.idea) onIdeaApproved?.(answer.idea);
                   }
                 });
               }}
