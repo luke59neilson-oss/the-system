@@ -86,6 +86,7 @@ describe('the panel layout (MW.4)', () => {
     expect(orderedPanels(PAGE, EMPTY_LAYOUT)).toEqual(PAGE);
     expect(panelWidth(EMPTY_LAYOUT, 'a')).toBe('third');
     expect(panelWidth(EMPTY_LAYOUT, 'offer-builder')).toBe('full');
+    expect(panelWidth(EMPTY_LAYOUT, 'evolution-builder')).toBe('full');
   });
 
   it('a move skips panels that draw nothing, and stops at the ends of what shows', () => {

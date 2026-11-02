@@ -190,6 +190,26 @@ test('the Evolutions, Progression and Library tabs have panel menus too', async 
       await expect(gm.locator(`[data-window="${id}"] > :not(.panel-menu)`).first()).toBeVisible();
     }
   }
+  // The lone Evolutions panel fills its tab, as it did before panels moved.
+  await openTab(gm, 'evolutions');
+  await expect(gm.locator('[data-window="evolution-builder"]')).toHaveAttribute(
+    'data-width',
+    'full',
+  );
+  await gm.screenshot({ path: path.join(shots, 'default-evolutions-1366x768.png') });
+
+  // Narrowed to a half, the skill-offer builder stacks its standing under the menu.
+  await openTab(gm, 'progression');
+  await gm.getByTestId('panel-menu-offer-builder').getByRole('button').click();
+  await gm.getByRole('button', { name: 'Half', exact: true }).click();
+  const columns = await gm
+    .locator('.offer-layout')
+    .evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+  expect(columns).toBe(1);
+  await gm.screenshot({ path: path.join(shots, 'offer-builder-half-1366x768.png') });
+  await gm.keyboard.press('Escape');
+  await gm.getByRole('button', { name: 'Reset layout' }).click();
+
   await openTab(gm, 'home');
   await gm.screenshot({ path: path.join(shots, 'default-home-1366x768.png') });
 

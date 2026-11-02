@@ -120,6 +120,8 @@ const DEFAULT_WIDTHS: Readonly<Record<string, PanelWidth>> = {
   encounter: 'full',
   trackers: 'full',
   'offer-builder': 'full',
+  // Alone on its tab: the old auto-fit grid stretched it, and its cards need the room.
+  'evolution-builder': 'full',
   'skill-library': 'full',
   'item-library': 'full',
   'loot-tables': 'full',
