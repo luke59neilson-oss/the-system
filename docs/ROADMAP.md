@@ -1623,7 +1623,7 @@ DESIGN §6, §9a, §11. After MU. MW.4 covers the Evolutions tab (ME.3) too.
   runs use recorded fixtures only. *Accept:* unit tests with fixtures (each
   mode; each flag; the prompt contents and size); e2e with the fake model:
   draft from Perception, edit, offer, the player sees the menu.
-- [ ] **MW.3 Ideas board and import.** DESIGN §11 "Story ideas": a GM-only
+- [x] **MW.3 Ideas board and import.** DESIGN §11 "Story ideas": a GM-only
   Ideas panel in Library & settings (add, edit, tag, pin, mark used,
   search), stored in the campaign; **Import** of the version 1 export file
   or pasted text, with a preview, skipping ideas already imported, and a

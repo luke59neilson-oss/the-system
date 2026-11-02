@@ -20,6 +20,7 @@ Decisions: L9–L12 in `docs/DECISIONS.md`.
 
 | Change | Since (UTC) | Target | Baseline | Guards | Judge at |
 |---|---|---|---|---|---|
+| D343 LOOP §5.1: a built `wip/*` branch gets its review and merge before a new item starts (efficiency check 2026-11-02 00:07, sonnet auditor; queued 2026-11-01 18:07) | 2026-11-02 00:50 | no scorecard row with items/run below 1.0 | items/run 2.5 (previous row 0.8) | Highs 1, round-2 5/10, red/day 6 | 2026-11-02 12:00 check |
 | D332 `npm run sync` (`scripts/sync.mjs`, unit-tested guard: never resets a `main` holding unpushed commits) replaces the manual §1.2 fetch/merge/reset calls (efficiency check 2026-11-01 18:07, sonnet auditor proposal A) | 2026-11-01 18:55 | fewer setup calls: end minute ≥ 48, items/run ≥ 1.0 | end minute 47.2; items/run 0.8 | Highs 1, round-2 6/10, red/day 8 | 2026-11-02 18:00 check |
 | D319 LOOP §1.2 fetches main as a single ref and resets a stale local main (efficiency check 2026-11-01 12:10, sonnet auditor proposal 1, wording only; the `npm run sync` script is still queued) | 2026-11-01 12:52 | fewer setup detours: end minute 45.0 → ≥ 47 | end minute 45.0; items/run 1.2 | Highs 0, round-2 5/10, red/day 5 | 2026-11-02 12:00 check |
 

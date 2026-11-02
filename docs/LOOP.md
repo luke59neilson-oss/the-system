@@ -108,7 +108,9 @@ them whole costs about 30k tokens per run for history you do not need):
 ## 5. Work
 
 1. **Resume first:** if PROGRESS.md names a `wip/<item>` branch, check it out,
-   `git merge origin/main` (merge, never rebase), and finish it.
+   `git merge origin/main` (merge, never rebase), and finish it. A built
+   `wip/*` branch gets its review and merge before a new item starts (D343,
+   in trial).
 2. Otherwise take the first unchecked QF item marked **(High)**, wherever it
    sits; then the first unchecked item in ROADMAP.md.
 3. Tests first where practical, then code. Before every push to main run
