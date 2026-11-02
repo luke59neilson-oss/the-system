@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-02): MW.3 on main. MW.4 begun on \`wip/MW.4\`. Preview ready: Actions → Release → Run workflow (ML).
-**Next item:** \`wip/MW.4\` (\`npm run sync -- wip/MW.4\`, check it out, \`git merge origin/main\`): wire the layout model into the console. MW.A after.
+**Status:** in progress (2026-11-02): MW.3 on main. MW.4 begun on `wip/MW.4`. Preview ready: Actions → Release → Run workflow (ML).
+**Next item:** `wip/MW.4` (`npm run sync -- wip/MW.4`, check it out, `git merge origin/main`): wire the layout model into the console. MW.A after.
 **Blockers:** none
 
 ## Run log
@@ -1724,8 +1724,8 @@ next item, blockers. -->
 - `wip/MW.3` at 5c080a0, base 738a48f: built `ideas/import.ts` (parse, repeat skip), `ideas/choose.ts` (bounded choice), idea events and commands, GM-only state (schema v36), 7 + 3 unit tests green. Known red: `events.test.ts` "replay equals incremental state" fails at this commit, not diagnosed (the whole engine and server test run was cut off by its timeout, so other tests may be red too, such as goldens after the schema bump). Next: fix that, then the Ideas panel in Library & settings, import preview, prompts naming the idea used, approval marks it used, canary, e2e. Unreviewed.
 - Blockers: none.
 
-### Run · 2026-11-02 00:06–00:58 UTC (close-out at minute 44)
-- Close-out at minute 44, lock released around minute 51.
+### Run · 2026-11-02 00:06–00:57 UTC (close-out at minute 44)
+- Close-out at minute 44, lock released around minute 50.
 - Preflight: no `add_repo` tool, repo at /home/claude/the-system; `npm run sync` reset a stale local main. Lock pushed; vitest 5.0.5. CI on main green at the last completed run (738a48f). No new answers. Hour 00: efficiency check (below).
 - Finished and pushed to main: MW.3 (sonnet round 1: 0 H, 4 M, 9 L; round 2: 0 H, 0 M, 5 L; all M fixed; Lows to the Backlog). D341, D342.
 - Tests: `npm run check` exit 0, unit 2171, on cc0f62d. e2e MW.3 and MC.8 green on that commit; MC.2, MD.3 and M4.1 green on 2dd4e9a, before the fixes. Full e2e started at minute 43 and stopped at the hard stop: 56 passed, 0 failed, about 124 not reached, latency not run, so it is NOT a full pass, though this item changed shared server and UI code (LOOP §5.6). Read CI on this push first. Engine coverage not read.
