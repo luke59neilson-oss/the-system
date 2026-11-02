@@ -218,7 +218,13 @@ should weigh in on also go in `docs/QUESTIONS.md` with the default you used.
    Unattended runs may not publish it (the push to `release` is refused, as
    at MS.A and MQ.A), so do not try. Put "Preview ready: Actions → Release →
    Run workflow" in the PROGRESS Status line, naming the milestone. That is
-   Luke's one click (D93); it is not a Blocker.
+   Luke's one click (D93); it is not a Blocker. **The Release workflow's
+   Windows steps (`.github/workflows/release.yml`: install, install over a
+   running app, uninstall) run only there, never in CI** (L30: ML.1 changed
+   start-up, CI stayed green, and Luke's Release failed). An item that
+   changes start-up, opening or closing campaigns, the campaign LOCK, quit or
+   the installer updates those steps in the same item, and its review reads
+   them.
 3. Delete `docs/LOCK.json`, commit `chore: release run lock`, push.
 4. When every box is checked (none provisional) and M11.5 is clean, write
    `docs/DONE.md`: what was built, how to install and run it, known gaps.

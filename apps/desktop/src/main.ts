@@ -17,6 +17,7 @@ import {
   startOnFreePort,
   webRootFor,
   isQuitForUpdate,
+  openAtStartFrom,
   releaseMenuTemplate,
   shouldReloadAfterCrash,
 } from './launch';
@@ -240,6 +241,7 @@ async function start(): Promise<void> {
   starting = true;
   try {
     const gmKey = newGmKey();
+    const openAtStart = openAtStartFrom(process.argv);
     const started = await startOnFreePort(port, (p) =>
       startApp({
         port: p,
@@ -247,6 +249,8 @@ async function start(): Promise<void> {
         webRoot: webRootFor(app.isPackaged, process.resourcesPath, __dirname),
         dataDir: process.env['THE_SYSTEM_DATA_DIR'] ?? dataDirFor(app.getPath('userData')),
         gmKey,
+        // L30: `--open <id>` starts in that campaign instead of the home.
+        ...(openAtStart === undefined ? {} : { openAtStart }),
         machineId: machineIdFor(app.getPath('userData')),
         // M10.1: every quit leaves a copy of the campaign in its backups folder.
         backupOnClose: 'quit',

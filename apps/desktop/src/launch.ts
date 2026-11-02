@@ -212,6 +212,26 @@ export function isQuitForUpdate(argv: readonly string[]): boolean {
   return argv.includes(QUIT_FOR_UPDATE);
 }
 
+/**
+ * L30: `--open <id>` (or `--open=<id>`) opens that campaign at start instead of
+ * the Campaigns home, like the server's CLI flag (D327). The Windows release
+ * smoke uses it so a campaign is open when the installer runs over the app.
+ * Returns undefined when absent or empty.
+ */
+export function openAtStartFrom(argv: readonly string[]): string | undefined {
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i] as string;
+    if (arg.startsWith('--open=')) return arg.slice('--open='.length).trim() || undefined;
+    if (arg === '--open') {
+      const next = argv[i + 1];
+      return next !== undefined && !next.startsWith('--') && next.trim() !== ''
+        ? next.trim()
+        : undefined;
+    }
+  }
+  return undefined;
+}
+
 /** One entry of the release menu (a subset of Electron's MenuItemConstructorOptions). */
 export interface ReleaseMenuItem {
   role?: string;

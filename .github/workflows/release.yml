@@ -124,8 +124,10 @@ jobs:
           $campaign = Join-Path $env:APPDATA 'The System\data\campaigns\main'
           New-Item -ItemType Directory -Force $campaign | Out-Null
           Copy-Item packages/engine/test/golden/basic.jsonl (Join-Path $campaign 'events.jsonl')
-          # The installed app, with no data-dir override, as Luke starts it.
-          Start-Process $exe | Out-Null
+          # The installed app, with no data-dir override. Since ML.1 it starts on
+          # the Campaigns home, so `--open main` opens the campaign (L30): the
+          # point is a campaign open while the installer runs over the app.
+          Start-Process $exe -ArgumentList '--open', 'main' | Out-Null
           $up = $false
           for ($i = 0; $i -lt 60 -and -not $up; $i++) {
             Start-Sleep -Seconds 1

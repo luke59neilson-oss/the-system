@@ -27,6 +27,7 @@ import {
   SPLASH_TITLE,
   QUIT_FOR_UPDATE,
   isQuitForUpdate,
+  openAtStartFrom,
 } from '../src/launch';
 
 describe('desktop launch helpers', () => {
@@ -282,5 +283,19 @@ describe('crash reload (QF.58)', () => {
     expect(shouldReloadAfterCrash(recent, CRASH_WINDOW_MS - 1)).toBe(false);
     expect(shouldReloadAfterCrash(recent, CRASH_WINDOW_MS)).toBe(true);
     expect(recent).toEqual([1_000, 2_000, CRASH_WINDOW_MS]);
+  });
+});
+
+describe('openAtStartFrom (L30)', () => {
+  it('reads --open <id> and --open=<id>', () => {
+    expect(openAtStartFrom(['TheSystem.exe', '--open', 'main'])).toBe('main');
+    expect(openAtStartFrom(['TheSystem.exe', '--open=the-real-one'])).toBe('the-real-one');
+    expect(openAtStartFrom(['electron', 'main.cjs', '--disable-gpu', '--open', 'kim'])).toBe('kim');
+  });
+  it('is undefined when absent, empty or followed by another flag', () => {
+    expect(openAtStartFrom(['TheSystem.exe'])).toBeUndefined();
+    expect(openAtStartFrom(['TheSystem.exe', '--open'])).toBeUndefined();
+    expect(openAtStartFrom(['TheSystem.exe', '--open='])).toBeUndefined();
+    expect(openAtStartFrom(['TheSystem.exe', '--open', '--quit-for-update'])).toBeUndefined();
   });
 });
