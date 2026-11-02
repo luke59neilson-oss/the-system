@@ -116,39 +116,64 @@ jobs:
         run: |
           $setup = (Get-ChildItem apps/desktop/release/*-setup.exe | Select-Object -First 1).FullName
           $dir = 'C:\TheSystemCI'
-          $p = Start-Process $setup -ArgumentList '/S', "/D=$dir" -PassThru
-          if (-not $p.WaitForExit(180000)) { throw 'the first install hung' }
-          $exe = Join-Path $dir 'TheSystem.exe'
-          if (-not (Test-Path $exe)) { throw "not installed at $exe" }
-          # A campaign with events, so quitting has something to back up.
           $campaign = Join-Path $env:APPDATA 'The System\data\campaigns\main'
-          New-Item -ItemType Directory -Force $campaign | Out-Null
-          Copy-Item packages/engine/test/golden/basic.jsonl (Join-Path $campaign 'events.jsonl')
-          # The installed app, with no data-dir override. Since ML.1 it starts on
-          # the Campaigns home, so `--open main` opens the campaign (L30): the
-          # point is a campaign open while the installer runs over the app.
-          Start-Process $exe -ArgumentList '--open', 'main' | Out-Null
-          $up = $false
-          for ($i = 0; $i -lt 60 -and -not $up; $i++) {
-            Start-Sleep -Seconds 1
-            try { $up = (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:30333/health).StatusCode -eq 200 } catch { }
+          # L30: on any failure, show what the install left behind.
+          function Show-Install {
+            Write-Output "--- $dir"
+            Get-ChildItem $dir -ErrorAction SilentlyContinue | ForEach-Object { Write-Output $_.Name }
+            Write-Output '--- uninstall entries'
+            Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall', 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall' -ErrorAction SilentlyContinue |
+              Get-ItemProperty | Where-Object { $_.DisplayName -like 'The System*' } |
+              ForEach-Object { Write-Output "$($_.DisplayName) | $($_.UninstallString) | $($_.InstallLocation)" }
+            Write-Output '--- processes'
+            Get-Process | Where-Object { $_.Name -like '*TheSystem*' -or $_.Name -like 'Un_*' -or $_.Name -like '*nstall*' } |
+              ForEach-Object { Write-Output "$($_.Name) $($_.Id)" }
           }
-          if (-not $up) { throw 'the installed app did not answer /health' }
-          if (-not (Test-Path (Join-Path $campaign 'LOCK'))) { throw 'no campaign LOCK while running' }
-          # Install again over the running app.
-          $p = Start-Process $setup -ArgumentList '/S', "/D=$dir" -PassThru
-          if (-not $p.WaitForExit(180000)) { throw 'the second install hung' }
-          if (Test-Path (Join-Path $campaign 'LOCK')) { throw 'the LOCK was left behind: the app was killed' }
-          $quit = Get-ChildItem (Join-Path $campaign 'backups') -Directory | Where-Object { $_.Name -like '*-quit' }
-          if (-not $quit) { throw 'no quit backup: the app was killed, not asked to quit' }
-          Write-Output "quit backup: $($quit[0].Name)"
-          Get-Process TheSystem -ErrorAction SilentlyContinue | Stop-Process -Force
-          $p = Start-Process (Join-Path $dir 'Uninstall The System.exe') -ArgumentList '/S' -PassThru
-          if (-not $p.WaitForExit(120000)) { throw 'the uninstall hung' }
-          # The uninstaller relaunches itself from a temp copy: wait for the exe to go.
-          for ($i = 0; $i -lt 60 -and (Test-Path $exe); $i++) { Start-Sleep -Seconds 1 }
-          if (Test-Path $exe) { throw 'the uninstall did not remove the app' }
-          if (-not (Test-Path (Join-Path $campaign 'events.jsonl'))) { throw 'uninstalling removed the campaign' }
+          try {
+            $p = Start-Process $setup -ArgumentList '/S', "/D=$dir" -PassThru
+            if (-not $p.WaitForExit(180000)) { throw 'the first install hung' }
+            $p.WaitForExit()
+            if ($p.ExitCode -ne 0) { throw "the first install exited with $($p.ExitCode)" }
+            $exe = Join-Path $dir 'TheSystem.exe'
+            if (-not (Test-Path $exe)) { throw "not installed at $exe" }
+            # A campaign with events, so quitting has something to back up.
+            New-Item -ItemType Directory -Force $campaign | Out-Null
+            Copy-Item packages/engine/test/golden/basic.jsonl (Join-Path $campaign 'events.jsonl')
+            # The installed app, with no data-dir override. Since ML.1 it starts on
+            # the Campaigns home, so `--open main` opens the campaign (L30): the
+            # point is a campaign open while the installer runs over the app.
+            Start-Process $exe -ArgumentList '--open', 'main' | Out-Null
+            $up = $false
+            for ($i = 0; $i -lt 60 -and -not $up; $i++) {
+              Start-Sleep -Seconds 1
+              try { $up = (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:30333/health).StatusCode -eq 200 } catch { }
+            }
+            if (-not $up) { throw 'the installed app did not answer /health' }
+            if (-not (Test-Path (Join-Path $campaign 'LOCK'))) { throw 'no campaign LOCK while running' }
+            # Install again over the running app.
+            $p = Start-Process $setup -ArgumentList '/S', "/D=$dir" -PassThru
+            if (-not $p.WaitForExit(180000)) { throw 'the second install hung' }
+            $p.WaitForExit()
+            Write-Output "second install exit code: $($p.ExitCode)"
+            if ($p.ExitCode -ne 0) { throw "the second install exited with $($p.ExitCode)" }
+            if (Test-Path (Join-Path $campaign 'LOCK')) { throw 'the LOCK was left behind: the app was killed' }
+            $quit = Get-ChildItem (Join-Path $campaign 'backups') -Directory | Where-Object { $_.Name -like '*-quit' }
+            if (-not $quit) { throw 'no quit backup: the app was killed, not asked to quit' }
+            Write-Output "quit backup: $($quit[0].Name)"
+            if (-not (Test-Path $exe)) { throw 'the second install left no TheSystem.exe' }
+            $uninstaller = Join-Path $dir 'Uninstall The System.exe'
+            if (-not (Test-Path $uninstaller)) { throw "the second install left no uninstaller at $uninstaller" }
+            Get-Process TheSystem -ErrorAction SilentlyContinue | Stop-Process -Force
+            $p = Start-Process $uninstaller -ArgumentList '/S' -PassThru
+            if (-not $p.WaitForExit(120000)) { throw 'the uninstall hung' }
+            # The uninstaller relaunches itself from a temp copy: wait for the exe to go.
+            for ($i = 0; $i -lt 60 -and (Test-Path $exe); $i++) { Start-Sleep -Seconds 1 }
+            if (Test-Path $exe) { throw 'the uninstall did not remove the app' }
+            if (-not (Test-Path (Join-Path $campaign 'events.jsonl'))) { throw 'uninstalling removed the campaign' }
+          } catch {
+            Show-Install
+            throw
+          }
       - name: Smoke-test the AppImage itself
         if: matrix.target == 'linux'
         run: |
