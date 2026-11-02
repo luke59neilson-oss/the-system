@@ -127,7 +127,7 @@ export function CoDmPanel({
       const res = await fetch('/api/gm/ai/generate', {
         method: 'POST',
         headers: { 'x-gm-key': gmKey, 'content-type': 'application/json' },
-        body: JSON.stringify({ kind, prompt }),
+        body: JSON.stringify({ kind, prompt, ...(chipIdea ? { idea: chipIdea.id } : {}) }),
         signal: controller.signal,
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -151,7 +151,8 @@ export function CoDmPanel({
       setDraft(text);
       setOriginal(text);
       setDraftKind(kind);
-      const idea = data.idea ?? chipIdea;
+      // MW.3 review: only what the result itself says it used.
+      const idea = data.idea ?? null;
       setDraftIdea(idea);
       onGenerated({ text, name: `co-DM ${label.toLowerCase()}`, generated: true, kind, idea });
       setMessage(readiness(label, data.preview));
@@ -180,8 +181,9 @@ export function CoDmPanel({
         }}
         {...(client
           ? {
-              onIdeaApproved: (idea: UsedIdea) => {
-                void client.command({ type: 'idea.edit', ideaId: idea.id, used: true });
+              onIdeaMark: async (idea: UsedIdea, used: boolean) => {
+                const r = await client.command({ type: 'idea.edit', ideaId: idea.id, used });
+                return r.ok ? null : r.error;
               },
               onKeep: async (lore: KeptLore) => {
                 const r = await client.command({

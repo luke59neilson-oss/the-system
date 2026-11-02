@@ -129,7 +129,7 @@ export function streamingPreview(text: string): { say: string; beats: string[] }
   const beats: string[] = [];
   for (const l of lines) {
     // MW.3: the line that names the idea used is not part of the answer.
-    if (l === '' || /^\**idea:/iu.test(l)) continue;
+    if (l === '' || /^[*(]*(?:i|id|ide|idea|idea(?: used)?\**:.*)$/iu.test(l)) continue;
     const m = /^say:\s*(.*)$/iu.exec(l);
     if (m && say === '') say = m[1] ?? '';
     else if (/^[-•*]\s*/u.test(l)) beats.push(l.replace(/^[-•*]\s*/u, ''));

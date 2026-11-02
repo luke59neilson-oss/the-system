@@ -56,17 +56,23 @@ export function QuickResponses({
   picked,
   onSpend,
   onKeep,
-  onIdeaApproved,
+  onIdeaMark,
 }: {
   gmKey: string;
   picked: PickedLine | null;
   onSpend: (spend: { calls: number; dollars: number }) => void;
   /** MD.3: save a kept answer; resolves to an error message, or null when saved. */
   onKeep?: (lore: KeptLore) => Promise<string | null>;
-  /** MW.3: a kept answer used this idea. */
-  onIdeaApproved?: (idea: UsedIdea) => void;
+  /** MW.3: mark the idea an answer used, or take that back; an error message, or null. */
+  onIdeaMark?: (idea: UsedIdea, used: boolean) => Promise<string | null>;
 }) {
   const [keepDraft, setKeepDraft] = useState<string | null>(null);
+  const [ideaMarked, setIdeaMarked] = useState(false);
+  const markIdea = async (idea: UsedIdea, used: boolean) => {
+    const error = await onIdeaMark?.(idea, used);
+    if (error) setKeepNote(error);
+    else setIdeaMarked(used);
+  };
   const [keepNote, setKeepNote] = useState<string | null>(null);
   const [scene, setScene] = useState<QuickScene | null>(null);
   const [listening, setListening] = useState(false);
@@ -120,6 +126,7 @@ export function QuickResponses({
       setNote(null);
       setKeepDraft(null);
       setKeepNote(null);
+      setIdeaMarked(false);
       setLast({ slot, target: line });
       try {
         const res = await fetch('/api/gm/ai/quick', {
@@ -292,6 +299,12 @@ export function QuickResponses({
           {!answer.streaming && answer.idea && (
             <p className="muted" data-testid="quick-idea">
               Uses your idea: {ideaLabel(answer.idea)}
+              {ideaMarked ? ' (marked used)' : ''}{' '}
+              {onIdeaMark && (
+                <button type="button" onClick={() => void markIdea(answer.idea!, !ideaMarked)}>
+                  {ideaMarked ? 'Undo' : 'Mark idea used'}
+                </button>
+              )}
             </p>
           )}
           {!answer.streaming && last && (
@@ -337,7 +350,7 @@ export function QuickResponses({
                     setKeepDraft(null);
                     setKeepNote('Kept as lore (GM only)');
                     // MW.3: approving an answer marks the idea it used.
-                    if (answer.idea) onIdeaApproved?.(answer.idea);
+                    if (answer.idea && !ideaMarked) void markIdea(answer.idea, true);
                   }
                 });
               }}

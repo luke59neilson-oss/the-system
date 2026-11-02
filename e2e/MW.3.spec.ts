@@ -95,6 +95,7 @@ test('import a sample file; the co-DM uses an idea; approving marks it used', as
   // The sample previews, then imports.
   await fileInput.setInputFiles(asFile('ideas.json', sample));
   await expect(board.getByTestId('ideas-preview')).toContainText('2 new');
+  await board.getByRole('button', { name: 'Import 2' }).scrollIntoViewIfNeeded();
   await gm.screenshot({ path: path.join(shots, 'import-preview-1366x768.png') });
   await board.getByRole('button', { name: 'Import 2' }).click();
   await expect(board.getByRole('status')).toHaveText('Imported 2 ideas');
@@ -131,7 +132,7 @@ test('import a sample file; the co-DM uses an idea; approving marks it used', as
   await board.getByLabel('Search ideas').fill('sky');
   await expect(board.getByTestId('idea-row')).toHaveCount(1);
   await board.getByLabel('Search ideas').fill('');
-  await board.getByTestId('idea-row').last().scrollIntoViewIfNeeded();
+  await board.getByLabel('Search ideas').evaluate((el) => el.scrollIntoView({ block: 'start' }));
   await gm.screenshot({ path: path.join(shots, 'ideas-board-1366x768.png') });
 
   // A generation offered the herbalist idea names it; approving marks it used.
@@ -142,6 +143,7 @@ test('import a sample file; the co-DM uses an idea; approving marks it used', as
   await codm.getByLabel('What the table needs').fill('An herbalist in the Crown camp');
   await codm.getByRole('button', { name: 'Generate', exact: true }).click();
   await expect(imp.getByTestId('import-idea')).toContainText('Uses your idea:');
+  await imp.getByTestId('import-idea').evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await gm.screenshot({ path: path.join(shots, 'generation-names-idea-1366x768.png') });
   await imp.getByRole('button', { name: /^Apply/ }).click();
   const used = imp.getByTestId('import-idea-used');
@@ -170,6 +172,11 @@ test('import a sample file; the co-DM uses an idea; approving marks it used', as
   const answer = quick.getByTestId('quick-answer');
   await expect(answer.getByTestId('quick-idea')).toContainText('Uses your idea:');
   await expect(answer.getByTestId('quick-say')).not.toContainText('IDEA:');
+  // Spoken without keeping: the GM marks it by hand, and can take it back.
+  await answer.getByRole('button', { name: 'Mark idea used' }).click();
+  await expect(answer.getByTestId('quick-idea')).toContainText('(marked used)');
+  await answer.getByRole('button', { name: 'Undo' }).click();
+  await expect(answer.getByRole('button', { name: 'Mark idea used' })).toBeVisible();
   await answer.getByRole('button', { name: 'Keep' }).click();
   await answer.getByRole('button', { name: 'Save lore' }).click();
   await expect(answer.getByRole('status')).toHaveText('Kept as lore (GM only)');

@@ -79,6 +79,15 @@ describe('ideas in co-DM prompts (MW.3)', () => {
     expect(ideasInPlay(state, { words: 'anything at all' })).toEqual([]);
   });
 
+  it('everyday words connect nothing; a chip keeps its own idea on offer', () => {
+    const state = build([{ id: 'a', text: 'Something about that thing with them', kind: 'twist' }]);
+    expect(ideasInPlay(state, { words: 'about that thing with them' })).toEqual([]);
+    expect(ideasInPlay(state, { words: 'nothing here', first: 'a' }).map((i) => i.id)).toEqual([
+      'a',
+    ]);
+    expect(ideasInPlay(state, { words: 'nothing here', first: 'gone' })).toEqual([]);
+  });
+
   it('a pinned idea comes along with no connection; a stray one does not', () => {
     const state = build([
       { id: 'p', text: 'Pinned thought', kind: 'twist' },

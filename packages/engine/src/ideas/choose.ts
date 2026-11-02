@@ -20,6 +20,13 @@ export interface IdeaContext {
   readonly words: readonly string[];
 }
 
+/** Lower case, with anything but letters and digits as single spaces. */
+const plainWords = (text: string): string =>
+  text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+
 /**
  * The most relevant unused ideas: a matching kind, tags or text naming the
  * place or NPCs in play, then pinned ones. An idea with no connection at all
@@ -30,15 +37,16 @@ export function chooseIdeas<T extends ChoosableIdea>(
   context: IdeaContext,
   max: number = IDEAS_IN_PROMPT,
 ): readonly T[] {
-  const words = context.words.map((w) => w.trim().toLowerCase()).filter((w) => w !== '');
+  const words = [...new Set(context.words.map(plainWords).filter((w) => w !== ''))];
   const score = (idea: T): number => {
-    const text = idea.text.toLowerCase();
-    const tags = idea.tags.map((t) => t.toLowerCase());
+    // Whole words only: "inn" does not connect to "beginning".
+    const text = ` ${plainWords(idea.text)} `;
+    const tags = idea.tags.map(plainWords);
     let points = 0;
     if (context.kind !== undefined && idea.kind === context.kind) points += 2;
     for (const word of words) {
       if (tags.includes(word)) points += 3;
-      else if (text.includes(word)) points += 2;
+      else if (text.includes(` ${word} `)) points += 2;
     }
     return points + (idea.pinned ? 1 : 0);
   };
@@ -72,20 +80,22 @@ export function ideaPromptLines(chosen: readonly ChoosableIdea[], answer: string
 export const IDEA_LINE_INSTRUCTION =
   'If you used one, end your reply with a last line of just "IDEA: <its number>".';
 
-const IDEA_LINE = /^[ \t]*\**IDEA:\**[ \t]*#?(\d+)[ \t]*$/imu;
+const IDEA_LINE = /^[ \t]*[*(]*idea(?: used)?\**:\**[ \t]*#?(\d+|none)[.)*]*[ \t]*$/gimu;
 
 /**
  * Takes the "IDEA: n" line out of a reply and finds the idea it names among
- * those offered. A number nobody was offered names nothing.
+ * those offered (the last such line decides). A number nobody was offered, or
+ * "none", names nothing.
  */
 export function readUsedIdea<T>(
   reply: string,
   offered: readonly T[],
 ): { readonly text: string; readonly idea: T | null } {
-  const match = IDEA_LINE.exec(reply);
-  if (!match) return { text: reply, idea: null };
+  const matches = [...reply.matchAll(IDEA_LINE)];
+  const last = matches.at(-1);
+  if (!last) return { text: reply, idea: null };
   return {
     text: reply.replace(IDEA_LINE, '').trimEnd(),
-    idea: offered[Number(match[1]) - 1] ?? null,
+    idea: offered[Number(last[1]) - 1] ?? null,
   };
 }
