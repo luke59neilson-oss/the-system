@@ -1,3 +1,4 @@
+import type { UsedIdea } from './ideasModel';
 import { useCallback, useEffect, useState } from 'react';
 
 /** A prepared draft as the panel lists it (MC.10, D249); GM-only. */
@@ -31,7 +32,7 @@ export function PrepareAhead({
   onReview,
 }: {
   gmKey: string;
-  onReview: (text: string, name: string, kind: string) => void;
+  onReview: (text: string, name: string, kind: string, idea: UsedIdea | null) => void;
 }) {
   const [view, setView] = useState<PreparedView | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -54,6 +55,7 @@ export function PrepareAhead({
         error?: string;
         called?: boolean;
         file?: unknown;
+      idea?: UsedIdea | null;
         place?: string;
       };
       if (!res.ok) {
@@ -106,7 +108,12 @@ export function PrepareAhead({
       body: '{}',
     });
     if (data?.file === undefined) return;
-    onReview(JSON.stringify(data.file, null, 2), `co-DM prepared: ${d.place}`, d.kind);
+    onReview(
+      JSON.stringify(data.file, null, 2),
+      `co-DM prepared: ${d.place}`,
+      d.kind,
+      data.idea ?? null,
+    );
     setNote(
       `${d.place} is in Import content: check it there and approve, then Dismiss it here (it stays listed until then)`,
     );

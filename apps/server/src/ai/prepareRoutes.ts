@@ -13,7 +13,9 @@ import type { CampaignState } from '@the-system/engine';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { AiError, type AiClient } from './client';
-import { buildGenerateRequest, extractJson, GENERATE_TIMEOUT_MS } from './generate';
+import { buildGenerateRequest, extractJson, generateIdeas, GENERATE_TIMEOUT_MS } from './generate';
+import { usedIdea } from './ideas';
+import { readUsedIdea } from '@the-system/engine';
 import { draftsDir, readTranscript } from './practiceRoutes';
 import {
   PREPARE_INTERVAL_DEFAULT_S,
@@ -235,15 +237,18 @@ export function registerPrepareRoutes(
       });
       if (!heading) return { ...view(store.read()), called: true, prepared: null };
       const limitMs = options.timeoutMs ?? GENERATE_TIMEOUT_MS;
+      // MW.3: a prepared draft remembers the idea it used, for when it is approved.
+      const offered = generateIdeas(heading.kind, heading.request, state);
       const answer = await options.client.complete({
-        ...buildGenerateRequest(heading.kind, heading.request, state),
+        ...buildGenerateRequest(heading.kind, heading.request, state, offered),
         timeoutMs: limitMs,
       });
-      const file = extractJson(answer.text);
+      const used = readUsedIdea(answer.text, offered);
+      const file = extractJson(used.text);
       const latest = store.read();
       store.write({
         ...latest,
-        drafts: [...latest.drafts, { ...heading, file, at: now }],
+        drafts: [...latest.drafts, { ...heading, file, at: now, idea: usedIdea(used.idea) }],
         seen: [...new Set([...latest.seen, heading.id])],
       });
       return { ...view(store.read()), called: true, prepared: heading.id };
@@ -270,7 +275,13 @@ export function registerPrepareRoutes(
         drafts: f.drafts.map((d) => (d.id === draft.id ? { ...d, taken: true } : d)),
       };
       store.write(next);
-      return { file: draft.file, kind: draft.kind, place: draft.place, ...view(next) };
+      return {
+        file: draft.file,
+        kind: draft.kind,
+        place: draft.place,
+        idea: draft.idea ?? null,
+        ...view(next),
+      };
     } catch (err) {
       return reply.code(500).send({ error: fail(err) });
     }

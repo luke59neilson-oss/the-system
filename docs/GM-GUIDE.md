@@ -24,7 +24,7 @@ waiting, a banner) opens the tab that handles it.
 | Session | Session (start, end, day), Award XP, Listening, Co-DM (quick responses, picks, generate, lore), Import (approve generated content), Encounter, Quests, Broadcast, Shops, Credits ledger, Trackers, Change log, System feed |
 | Progression | Award XP, Skill offers, Practice log, Marks review, Merges, Professions, Per-level stats |
 | Evolutions | Who is at or near the threshold; the evolution builder (three steps or class only) |
-| Library & settings | Skill text, Skill library, Item library, Loot tables, Title library, Classes, races and professions, Bestiary, Reference (Primal Hunter lists), Rules settings, Co-DM settings, Campaigns and backups |
+| Library & settings | Skill text, Skill library, Item library, Loot tables, Title library, Classes, races and professions, Bestiary, Ideas, Reference (Primal Hunter lists), Rules settings, Co-DM settings, Campaigns and backups |
 
 Award XP is the one window in two places: the same form on both tabs (a
 half-typed award shows on either). Its participant rows are the Session
@@ -108,6 +108,12 @@ send it to a player.
      deltas, **Apply action**, **Nudge**), visible or hidden. A hidden quest
      tells the party (or **Only these characters**) that a hidden quest
      exists, nothing more.
+   - **Ideas**: your story ideas, GM only. Add, edit, tag, pin, mark used and
+     search. **Import ideas** takes your ideas page's export file or pasted
+     text (one idea per paragraph), previews it, and skips what the board
+     already holds. The co-DM may weave in up to three unused ideas that fit
+     and says which it used; applying that result, or keeping that quick
+     response, marks the idea used (Undo beside it, or Mark unused here).
    - **Bestiary and NPCs**: entries with grade, level and Identify text per
      rarity; **Reveal** adds one to players' Identify lists.
    - **Reference** (Library & settings): search the Primal Hunter lists

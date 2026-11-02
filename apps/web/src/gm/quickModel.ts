@@ -1,3 +1,4 @@
+import type { UsedIdea } from './ideasModel';
 // MD.1 (DESIGN §11 "Quick responses"): pure helpers for the quick-response
 // row: which key presses which slot, when a key press belongs to a form
 // field instead, splitting the streamed NDJSON answer, and folding its
@@ -64,6 +65,8 @@ export interface QuickAnswerView {
   readonly beats: readonly string[];
   readonly error: string | null;
   readonly streaming: boolean;
+  /** MW.3: the GM's story idea this answer used. */
+  readonly idea?: UsedIdea | null;
 }
 
 export type QuickEvent =
@@ -75,7 +78,13 @@ export type QuickEvent =
       richer: boolean;
     }
   | { type: 'text'; delta: string }
-  | { type: 'done'; say: string; beats: string[]; spend?: { calls: number; dollars: number } }
+  | {
+      type: 'done';
+      say: string;
+      beats: string[];
+      idea?: UsedIdea | null;
+      spend?: { calls: number; dollars: number };
+    }
   | { type: 'error'; error: string; spend?: { calls: number; dollars: number } };
 
 export function foldQuick(view: QuickAnswerView | null, event: QuickEvent): QuickAnswerView | null {
@@ -96,7 +105,7 @@ export function foldQuick(view: QuickAnswerView | null, event: QuickEvent): Quic
     case 'text':
       return view ? { ...view, text: view.text + event.delta } : view;
     case 'done':
-      return view ? { ...view, say: event.say, beats: event.beats, streaming: false } : view;
+      return view ? { ...view, say: event.say, beats: event.beats, idea: event.idea ?? null, streaming: false } : view;
     case 'error':
       return view ? { ...view, error: event.error, streaming: false } : view;
   }
@@ -111,7 +120,8 @@ export function streamingPreview(text: string): { say: string; beats: string[] }
   let say = '';
   const beats: string[] = [];
   for (const l of lines) {
-    if (l === '') continue;
+    // MW.3: the line that names the idea used is not part of the answer.
+    if (l === '' || /^\**idea:/iu.test(l)) continue;
     const m = /^say:\s*(.*)$/iu.exec(l);
     if (m && say === '') say = m[1] ?? '';
     else if (/^[-•*]\s*/u.test(l)) beats.push(l.replace(/^[-•*]\s*/u, ''));

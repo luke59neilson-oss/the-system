@@ -5,6 +5,7 @@
 // prompt, and parsing the reply. Calls go through the co-DM client, so the
 // spend counter sees them; answers are GM-only and never reach players.
 import { z } from 'zod';
+import { IDEA_LINE_INSTRUCTION, ideaPromptLines, type ChoosableIdea } from '@the-system/engine';
 import type { TranscriptLine } from '../speech/transcript';
 import { referencePromptBlock } from '../reference/reference';
 import { SHARED_SYSTEM_LINES } from './setting';
@@ -128,6 +129,8 @@ export interface QuickContext {
   readonly npc: { readonly name: string; readonly notes: string } | null;
   /** Kept lore for the NPC and place (MD.3), newest first; empty until then. */
   readonly lore: readonly string[];
+  /** MW.3: the GM's story ideas this answer may weave in. */
+  readonly ideas?: readonly ChoosableIdea[];
 }
 
 export const QUICK_SYSTEM = [
@@ -192,6 +195,7 @@ export function quickPrompt(args: {
       ? `NPC in the scene: ${context.npc.name}${context.npc.notes ? ` (${clip(oneLine(context.npc.notes), QUICK_NPC_NOTES_MAX)})` : ''}`
       : 'NPC in the scene: (none)',
     ...(lore.length ? ['Kept lore (do not contradict):', ...lore] : []),
+    ...ideaPromptLines(context.ideas ?? [], IDEA_LINE_INSTRUCTION),
     // MU.6: a few book names as naming and tone examples (never god-tied).
     ...[
       referencePromptBlock(

@@ -1,3 +1,4 @@
+import type { UsedIdea } from './ideasModel';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import type { IncomingContent } from './ContentImport';
 import { LOADING_TEXT } from './loadingScreen';
@@ -70,6 +71,9 @@ export function CoDmPanel({
   const [draft, setDraft] = useState<string | null>(null);
   // QF.50: the kind the draft was generated as (the picker may change after).
   const [draftKind, setDraftKind] = useState<Kind>('shop');
+  // MW.3: the idea the chip in the box used, and the one the draft used.
+  const [chipIdea, setChipIdea] = useState<UsedIdea | null>(null);
+  const [draftIdea, setDraftIdea] = useState<UsedIdea | null>(null);
   const [seedSpend, setSeedSpend] = useState<Spend | null>(null);
   const [ready, setReady] = useState(false);
   const spend = useLiveSpend(gmKey, ready, seedSpend);
@@ -130,6 +134,7 @@ export function CoDmPanel({
         error?: string;
         file?: unknown;
         preview?: PreviewSummary;
+        idea?: UsedIdea | null;
         status?: { spend: { dollars: number; calls: number } };
       };
       if (data.status) {
@@ -146,7 +151,9 @@ export function CoDmPanel({
       setDraft(text);
       setOriginal(text);
       setDraftKind(kind);
-      onGenerated({ text, name: `co-DM ${label.toLowerCase()}`, generated: true, kind });
+      const idea = data.idea ?? chipIdea;
+      setDraftIdea(idea);
+      onGenerated({ text, name: `co-DM ${label.toLowerCase()}`, generated: true, kind, idea });
       setMessage(readiness(label, data.preview));
     } catch {
       if (showing) onLoadingFailed?.();
@@ -173,6 +180,9 @@ export function CoDmPanel({
         }}
         {...(client
           ? {
+              onIdeaApproved: (idea: UsedIdea) => {
+                void client.command({ type: 'idea.edit', ideaId: idea.id, used: true });
+              },
               onKeep: async (lore: KeptLore) => {
                 const r = await client.command({
                   type: 'note.create',
@@ -193,13 +203,14 @@ export function CoDmPanel({
         onUse={(chip) => {
           setKind(chip.kind);
           setPrompt(chip.request);
+          setChipIdea(chip.idea ?? null);
           setMessage(`Ready to generate: ${chip.title}. Press Generate.`);
         }}
       />
       <PrepareAhead
         gmKey={gmKey}
-        onReview={(text, name, prepared) =>
-          onGenerated({ text, name, generated: true, kind: prepared })
+        onReview={(text, name, prepared, idea) =>
+          onGenerated({ text, name, generated: true, kind: prepared, idea })
         }
       />
       <form onSubmit={(e) => void generate(e)}>
@@ -219,7 +230,10 @@ export function CoDmPanel({
             rows={3}
             maxLength={2000}
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+            onChange={(e) => {
+              setPrompt(e.target.value);
+              setChipIdea(null);
+            }}
             placeholder="An herbalist in the Crown camp, cheap but shady"
           />
         </label>
@@ -299,6 +313,7 @@ export function CoDmPanel({
                 name: `co-DM ${label.toLowerCase()} (edited)`,
                 generated: true,
                 kind: draftKind,
+                idea: draftIdea,
               })
             }
           >
@@ -456,6 +471,8 @@ export interface Chip {
   readonly title: string;
   readonly request: string;
   readonly quote: string;
+  /** MW.3: the GM's story idea the chip uses. */
+  readonly idea?: UsedIdea;
 }
 
 const CHIP_LABEL: Record<Chip['type'], string> = {

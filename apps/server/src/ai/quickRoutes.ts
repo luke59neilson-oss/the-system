@@ -9,7 +9,8 @@ import { writeJsonFile } from './jsonFile';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
 import type { FastifyInstance } from 'fastify';
-import type { CampaignState } from '@the-system/engine';
+import { readUsedIdea, type CampaignState } from '@the-system/engine';
+import { ideasInPlay, usedIdea } from './ideas';
 import { z } from 'zod';
 import { AiError, type AiClient, type SpendSnapshot } from './client';
 import { readTranscript } from './practiceRoutes';
@@ -181,6 +182,7 @@ export function registerQuickRoutes(
     const npcId = body.data.npc === undefined ? s.npcId : body.data.npc;
     const npc = s.npcs.find((n) => n.id === npcId) ?? null;
     const region = regionName(s.state);
+    const offered = ideasInPlay(s.state, { words: `${target} ${npc?.name ?? ''}` });
     const context: QuickContext = {
       party: s.state.characterOrder
         .filter((id) => Object.hasOwn(s.state.characters, id))
@@ -189,6 +191,7 @@ export function registerQuickRoutes(
       npc: npc ? { name: npc.name, notes: npc.notes } : null,
       // MD.3: kept lore for this NPC and place, newest first (bounded in the prompt).
       lore: loreFor(Object.values(s.state.notes), { npc: npc?.name ?? null, place: region }),
+      ideas: offered,
     };
 
     const out = new PassThrough();
@@ -225,9 +228,10 @@ export function registerQuickRoutes(
           signal: stop.signal,
           onText: (delta) => send({ type: 'text', delta }),
         });
-        const parsed = parseQuick(answer.text);
+        const read = readUsedIdea(answer.text, offered);
+        const parsed = parseQuick(read.text);
         if (parsed.say === '') throw new AiError('The co-DM answered nothing usable', 'bad-reply');
-        send({ type: 'done', ...parsed, spend: options.spend() });
+        send({ type: 'done', ...parsed, idea: usedIdea(read.idea), spend: options.spend() });
       } catch (err) {
         send({
           type: 'error',

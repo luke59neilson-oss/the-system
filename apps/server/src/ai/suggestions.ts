@@ -8,6 +8,7 @@
 // calls go through the co-DM client, so the spend counter sees them.
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
+import { ideaPromptLines, type ChoosableIdea } from '@the-system/engine';
 import type { AiClient } from './client';
 import { GENERATE_KINDS, type GenerateKind } from './generate';
 import type { TranscriptLine } from '../speech/transcript';
@@ -28,12 +29,16 @@ export interface SuggestionChip {
   readonly request: string;
   /** The transcript line that prompted it, verbatim. */
   readonly quote: string;
+  /** MW.3: the GM's story idea the chip uses, if any. */
+  readonly idea?: { readonly id: string; readonly text: string };
 }
 
 export interface SuggestionContext {
   readonly party: readonly string[];
   /** Region, NPCs, shops, quests the table already has (names only). */
   readonly known: readonly string[];
+  /** MW.3: the GM's story ideas a chip may use. */
+  readonly ideas?: readonly ChoosableIdea[];
 }
 
 /** At most this many chips per call: enough to fill the row of five and offer one more (D258). */
@@ -77,6 +82,10 @@ export function suggestPrompt(
     `Known: ${context.known.join(', ') || '(nothing yet)'}`,
     'Transcript:',
     ...heard,
+    ...ideaPromptLines(
+      context.ideas ?? [],
+      'If a chip uses one, add "idea":<its number> to that chip.',
+    ),
   ].join('\n');
 }
 
@@ -88,6 +97,7 @@ const replySchema = z.object({
       kind: z.enum(GENERATE_KINDS).catch('npc'),
       title: z.string().min(1).max(80),
       request: z.string().min(1).max(500),
+      idea: z.number().int().optional().catch(undefined),
     }),
   ),
 });
@@ -114,6 +124,7 @@ export function parseChips(
   text: string,
   lines: readonly TranscriptLine[],
   dismissed: ReadonlySet<string>,
+  ideas: readonly (ChoosableIdea & { readonly id: string })[] = [],
 ): SuggestionChip[] {
   const parsed = replySchema.parse(jsonIn(text));
   const out: SuggestionChip[] = [];
@@ -125,7 +136,10 @@ export function parseChips(
     const id = chipId(c.type, c.kind, title);
     if (dismissed.has(id) || seen.has(id)) continue;
     seen.add(id);
+    // MW.3: a number nobody was offered names nothing.
+    const idea = c.idea === undefined ? undefined : ideas[c.idea - 1];
     out.push({
+      ...(idea ? { idea: { id: idea.id, text: idea.text } } : {}),
       id,
       type: c.type,
       kind: c.kind,
@@ -152,7 +166,7 @@ export async function suggest(
     messages: [{ role: 'user', content: suggestPrompt(lines, context) }],
     maxTokens: 800,
   });
-  return parseChips(reply.text, lines, dismissed);
+  return parseChips(reply.text, lines, dismissed, context.ideas ?? []);
 }
 
 /**

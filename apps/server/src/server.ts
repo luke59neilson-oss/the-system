@@ -3,6 +3,7 @@ import path from 'node:path';
 import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { readUsedIdea } from '@the-system/engine';
 import {
   CHANGE_LOG_CATEGORIES,
   buildDemoEvents,
@@ -51,8 +52,10 @@ import {
   GENERATE_PROMPT_MAX,
   GENERATE_TIMEOUT_MS,
   buildGenerateRequest,
+  generateIdeas,
   extractJson,
 } from './ai/generate';
+import { usedIdea, type UsedIdea } from './ai/ideas';
 
 export interface CreateServerOptions {
   webRoot: string;
@@ -944,16 +947,21 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
         }, limitMs);
       });
       let file: unknown;
+      // MW.3: the GM's ideas this generation may use, and the one it says it did.
+      const offered = generateIdeas(body.data.kind, body.data.prompt, state);
+      let idea: UsedIdea | null;
       try {
         const answer = await Promise.race([
           coDm.client.complete({
-            ...buildGenerateRequest(body.data.kind, body.data.prompt, state),
+            ...buildGenerateRequest(body.data.kind, body.data.prompt, state, offered),
             timeoutMs: limitMs,
             signal: abort.signal,
           }),
           timedOut,
         ]);
-        file = extractJson(answer.text);
+        const read = readUsedIdea(answer.text, offered);
+        idea = usedIdea(read.idea);
+        file = extractJson(read.text);
       } catch (e) {
         return reply.code(502).send({
           error: e instanceof AiError ? e.message : 'The co-DM could not generate that',
@@ -974,7 +982,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
         now: options.live?.now ?? (() => new Date().toISOString()),
         newId: () => `preview-${++n}`,
       });
-      return { file, preview, status: coDm.status() };
+      return { file, preview, idea, status: coDm.status() };
     });
   }
 

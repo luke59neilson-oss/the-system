@@ -884,7 +884,10 @@ const commandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('note.delete') }),
   z.object({ type: z.literal('idea.add') }),
   z.object({ type: z.literal('idea.edit') }),
-  z.object({ type: z.literal('idea.import'), ideas: z.array(z.unknown()) }),
+  z.object({
+    type: z.literal('idea.import'),
+    ideas: z.array(z.looseObject({ id: z.string() })),
+  }),
   z.object({ type: z.literal('skill.nickname') }),
   z.object({ type: z.literal('skill.cast') }),
   z.object({ type: z.literal('skill.describe') }),
@@ -1629,6 +1632,9 @@ function toEvent(
     case 'idea.import': {
       // A repeat import skips ideas already held (DESIGN §11).
       const fresh = newIdeas(command.ideas, new Set(campaign.state?.ideaOrder ?? []));
+      if (fresh.length === 0) {
+        throw new EventRejectedError('every one of these ideas is already on the board');
+      }
       return {
         type: 'idea.imported',
         payload: {

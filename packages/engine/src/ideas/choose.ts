@@ -50,3 +50,42 @@ export function chooseIdeas<T extends ChoosableIdea>(
     .slice(0, Math.max(0, max))
     .map((row) => row.idea);
 }
+
+/**
+ * The prompt lines offering the chosen ideas, numbered from 1; each is cut to
+ * IDEA_PROMPT_CHARS. Empty when there are none, so the prompt is unchanged.
+ * `answer` says how this kind of reply names the idea it used.
+ */
+export function ideaPromptLines(chosen: readonly ChoosableIdea[], answer: string): string[] {
+  if (chosen.length === 0) return [];
+  return [
+    `The GM's story ideas, as hooks you may weave in if one fits (never force one). ${answer}`,
+    ...chosen.map((idea, i) => {
+      const text = idea.text.replace(/\s+/gu, ' ').trim();
+      const cut = text.length > IDEA_PROMPT_CHARS ? `${text.slice(0, IDEA_PROMPT_CHARS)}…` : text;
+      return `${i + 1}. (${idea.kind}) ${cut}`;
+    }),
+  ];
+}
+
+/** How a plain reply names the idea it used. */
+export const IDEA_LINE_INSTRUCTION =
+  'If you used one, end your reply with a last line of just "IDEA: <its number>".';
+
+const IDEA_LINE = /^[ \t]*\**IDEA:\**[ \t]*#?(\d+)[ \t]*$/imu;
+
+/**
+ * Takes the "IDEA: n" line out of a reply and finds the idea it names among
+ * those offered. A number nobody was offered names nothing.
+ */
+export function readUsedIdea<T>(
+  reply: string,
+  offered: readonly T[],
+): { readonly text: string; readonly idea: T | null } {
+  const match = IDEA_LINE.exec(reply);
+  if (!match) return { text: reply, idea: null };
+  return {
+    text: reply.replace(IDEA_LINE, '').trimEnd(),
+    idea: offered[Number(match[1]) - 1] ?? null,
+  };
+}
