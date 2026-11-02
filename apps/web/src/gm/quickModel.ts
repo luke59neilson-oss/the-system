@@ -105,7 +105,15 @@ export function foldQuick(view: QuickAnswerView | null, event: QuickEvent): Quic
     case 'text':
       return view ? { ...view, text: view.text + event.delta } : view;
     case 'done':
-      return view ? { ...view, say: event.say, beats: event.beats, idea: event.idea ?? null, streaming: false } : view;
+      return view
+        ? {
+            ...view,
+            say: event.say,
+            beats: event.beats,
+            idea: event.idea ?? null,
+            streaming: false,
+          }
+        : view;
     case 'error':
       return view ? { ...view, error: event.error, streaming: false } : view;
   }
