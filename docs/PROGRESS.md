@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-02): MW.4 on main. MW.A open: needs a full suite pass and a `fable` round 2. Preview ready: Actions → Release → Run workflow (ML).
-**Next item:** MW.A: read CI on this push, run the full e2e with latency, `fable` round 2 on the MW.4 fixes in 4bc8c47 onward, then "Preview ready" per LOOP §8.2.
+**Status:** complete (2026-11-02): MW.A checked, `docs/DONE.md` written. Preview ready: Actions → Release → Run workflow (MW).
+**Next item:** none; build complete. M9.4 stays deferred until Luke asks.
 **Blockers:** none
 
 ## Run log
@@ -1740,3 +1740,10 @@ next item, blockers. -->
 - MW.A not checked. `fable` reviewed at bd9910d: 1 H (Evolutions panel a third wide) and 1 M (offer builder's inner layout), both fixed and tested in 4bc8c47; a round 2 is due because of the High.
 - Tests: full e2e on 08fa9c06 (before the fixes): 182 passed, 1 failed (QF.17, real, Reset layout covering wrapped tabs in Table view; fixed, and QF.17, MW.1 and MW.4 green on 4bc8c47). The latency project did not run because of that failure, so this is NOT a full pass and nothing since has had one. `npm run check` last fully passed in a reviewer's run at 08fa9c06 (2179 unit). The final commit had typecheck, lint, format, banned, the `apps/web` and `scripts` unit tests (482) and the MW.4 spec, not the whole unit suite (no engine or server code changed): read CI on this push first. Engine coverage not read; no engine code changed.
 - Blockers: none.
+
+### Run 704fbd0e · 2026-11-02 02:09–02:58 UTC (close-out at minute 48)
+- Close-out at minute 48; end minute about 49.
+- Preflight: no `add_repo` tool, repo at /home/claude/the-system. Local main was stale with unrelated history (origin/main had been force-updated) and held nothing unpushed, so it was reset per LOOP §1.2. Lock pushed; vitest 5.0.5. CI green on 42e16c5; the run for the lock commit not read. No new answers. Hour 02: no sweep, no efficiency check.
+- Finished: MW.A (fable round 2 at 42e16c5: 0 H, 0 M, 7 L; Lows to the Backlog). No code changed this run. D345. `docs/DONE.md` written.
+- Tests on 42e16c5: `npm run check` 2180 unit; full `npm run e2e`: e2e 183 + latency 8, all passed. Engine coverage not read; no engine code changed. Desktop smoke not run.
+- Open `wip/*` branches: none to resume. Next: none. Preview ready: Actions → Release → Run workflow (MW). Blockers: none.

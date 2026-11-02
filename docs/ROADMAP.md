@@ -1643,5 +1643,5 @@ DESIGN §6, §9a, §11. After MU. MW.4 covers the Evolutions tab (ME.3) too.
   and new panels, reset); e2e: drag a panel and move one by keyboard, both
   survive a reload, Reset restores; the keyboard-only spec (M8.3) still
   passes; screenshots at 1366×768.
-- [ ] **MW.A Acceptance and review.** Full suite green; `fable` review;
+- [x] **MW.A Acceptance and review.** Full suite green; `fable` review;
   "Preview ready" (LOOP §8.2).
