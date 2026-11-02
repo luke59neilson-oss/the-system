@@ -55,7 +55,7 @@ export function PrepareAhead({
         error?: string;
         called?: boolean;
         file?: unknown;
-      idea?: UsedIdea | null;
+        idea?: UsedIdea | null;
         place?: string;
       };
       if (!res.ok) {

@@ -123,7 +123,9 @@ test('import a sample file; the co-DM uses an idea; approving marks it used', as
   await typed.getByRole('button', { name: 'Pin' }).click();
   await expect(board.getByTestId('idea-row').first()).toContainText('Pinned: ');
   await typed.getByRole('button', { name: 'Edit' }).click();
-  await board.getByRole('textbox', { name: 'Idea', exact: true }).fill(`${CANARY} Typed and edited`);
+  await board
+    .getByRole('textbox', { name: 'Idea', exact: true })
+    .fill(`${CANARY} Typed and edited`);
   await board.getByRole('button', { name: 'Save idea' }).click();
   await expect(board.getByTestId('idea-row').first()).toContainText('Typed and edited');
   await board.getByLabel('Search ideas').fill('sky');
