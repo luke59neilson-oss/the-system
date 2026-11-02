@@ -142,7 +142,7 @@ h2 {
 .place[data-width='full'] {
   grid-column: 1 / -1;
 }
-@media (max-width: 1040px) {
+@media (max-width: 1100px) {
   .place[data-width='third'] {
     grid-column: span 3;
   }
@@ -232,7 +232,7 @@ h2 {
 .layout-bar button {
   padding: 2px 10px;
 }
-@media (max-width: 720px) {
+@media (max-width: 1100px) {
   .layout-bar {
     position: static;
     justify-content: flex-end;

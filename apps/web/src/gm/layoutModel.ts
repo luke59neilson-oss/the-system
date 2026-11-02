@@ -70,6 +70,24 @@ export function movePanel(
   return { ...layout, order };
 }
 
+/**
+ * Moves a panel past its nearest neighbour the GM can see. A window that draws
+ * nothing right now holds a slot but no cell, so it is never the neighbour; the
+ * move changes nothing at either end of what shows.
+ */
+export function movePanelAmong(
+  defaults: readonly string[],
+  layout: PageLayout,
+  id: string,
+  by: -1 | 1,
+  visible: readonly string[],
+): PageLayout {
+  const seen = orderedPanels(defaults, layout).filter((p) => visible.includes(p));
+  const neighbour = seen[seen.indexOf(id) + by];
+  if (!seen.includes(id) || neighbour === undefined) return layout;
+  return dropPanel(defaults, layout, id, neighbour);
+}
+
 /** Puts a dragged panel in the spot of the panel it was dropped on. */
 export function dropPanel(
   defaults: readonly string[],

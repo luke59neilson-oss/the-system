@@ -19,7 +19,7 @@ import {
   arrangeSlots,
   dropPanel,
   isLayoutChanged,
-  movePanel,
+  movePanelAmong,
   orderedPanels,
   panelWidth,
   parseLayout,
@@ -73,6 +73,19 @@ const PanelsContext = createContext<Panels | null>(null);
 
 const placeId = (child: ReactElement): string => (child.props as { id: string }).id;
 
+const placeNotice = (order: readonly string[], id: string, visible: readonly string[]): string => {
+  const seen = order.filter((p) => visible.includes(p));
+  return `Panel moved to place ${seen.indexOf(id) + 1} of ${seen.length}`;
+};
+
+/** The panels that draw a cell right now, in page order. */
+function visiblePlaces(grid: HTMLElement | null): string[] {
+  if (!grid) return [];
+  return [...grid.querySelectorAll<HTMLElement>(':scope > .place')]
+    .filter((el) => el.getBoundingClientRect().width > 0)
+    .map((el) => el.dataset.window ?? '');
+}
+
 /** The place nearest a point, so a drop in the gap between panels still snaps. */
 function nearestPlace(grid: HTMLElement, x: number, y: number): string | null {
   let best: string | null = null;
@@ -101,6 +114,8 @@ export function PanelGrid({ tab, children }: { tab: ConsoleTab; children: ReactN
   const gridRef = useRef<HTMLDivElement>(null);
   const endDrag = useRef<(() => void) | null>(null);
   useEffect(() => () => endDrag.current?.(), []);
+  // A notice is about the page it was said on.
+  useEffect(() => setNotice(''), [tab]);
 
   const layout = saved[tab] ?? EMPTY_LAYOUT;
   const places = Children.toArray(children).filter(isValidElement);
@@ -124,14 +139,14 @@ export function PanelGrid({ tab, children }: { tab: ConsoleTab; children: ReactN
       dragging: drag?.id ?? null,
       over: drag?.over ?? null,
       move(id, by) {
-        const next = movePanel(shown, current.current, id, by);
+        const visible = visiblePlaces(gridRef.current);
+        const next = movePanelAmong(shown, current.current, id, by, visible);
         if (next === current.current) {
           setNotice(by < 0 ? 'Already the first panel' : 'Already the last panel');
           return;
         }
         change(next);
-        const at = orderedPanels(shown, next).indexOf(id) + 1;
-        setNotice(`Panel moved to place ${at} of ${shown.length}`);
+        setNotice(placeNotice(orderedPanels(shown, next), id, visible));
       },
       setWidth(id, width) {
         change(setPanelWidth(current.current, id, width));
@@ -173,9 +188,7 @@ export function PanelGrid({ tab, children }: { tab: ConsoleTab; children: ReactN
           if (!wasDragging || onto === null || onto === id) return;
           const next = dropPanel(shown, current.current, id, onto);
           change(next);
-          setNotice(
-            `Panel moved to place ${orderedPanels(shown, next).indexOf(id) + 1} of ${shown.length}`,
-          );
+          setNotice(placeNotice(orderedPanels(shown, next), id, visiblePlaces(grid)));
         };
         const onKey = (e: KeyboardEvent) => {
           if (e.key !== 'Escape') return;

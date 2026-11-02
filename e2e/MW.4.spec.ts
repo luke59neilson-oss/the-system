@@ -192,4 +192,11 @@ test('the Evolutions, Progression and Library tabs have panel menus too', async 
   }
   await openTab(gm, 'home');
   await gm.screenshot({ path: path.join(shots, 'default-home-1366x768.png') });
+
+  // A narrower window: Reset layout and its notice clear the wrapped tab bar.
+  await gm.setViewportSize({ width: 800, height: 768 });
+  const tabs = await gm.getByRole('tablist', { name: 'Console tabs' }).boundingBox();
+  const bar = await gm.locator('.layout-bar').boundingBox();
+  if (!tabs || !bar) throw new Error('no tab bar or layout bar');
+  expect(bar.y).toBeGreaterThanOrEqual(tabs.y + tabs.height);
 });

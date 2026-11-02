@@ -5,6 +5,7 @@ import {
   dropPanel,
   isLayoutChanged,
   movePanel,
+  movePanelAmong,
   orderedPanels,
   panelWidth,
   parseLayout,
@@ -85,5 +86,16 @@ describe('the panel layout (MW.4)', () => {
     expect(orderedPanels(PAGE, EMPTY_LAYOUT)).toEqual(PAGE);
     expect(panelWidth(EMPTY_LAYOUT, 'a')).toBe('third');
     expect(panelWidth(EMPTY_LAYOUT, 'offer-builder')).toBe('full');
+  });
+
+  it('a move skips panels that draw nothing, and stops at the ends of what shows', () => {
+    const visible = ['a', 'c', 'd'];
+    const later = movePanelAmong(PAGE, EMPTY_LAYOUT, 'a', 1, visible);
+    expect(orderedPanels(PAGE, later)).toEqual(['b', 'c', 'a', 'd']);
+    const earlier = movePanelAmong(PAGE, EMPTY_LAYOUT, 'c', -1, visible);
+    expect(orderedPanels(PAGE, earlier)).toEqual(['c', 'a', 'b', 'd']);
+    expect(movePanelAmong(PAGE, EMPTY_LAYOUT, 'a', -1, ['b', 'a'])).toBe(EMPTY_LAYOUT);
+    expect(movePanelAmong(PAGE, EMPTY_LAYOUT, 'd', 1, visible)).toBe(EMPTY_LAYOUT);
+    expect(movePanelAmong(PAGE, EMPTY_LAYOUT, 'b', 1, visible)).toBe(EMPTY_LAYOUT);
   });
 });
