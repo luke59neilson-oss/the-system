@@ -110,12 +110,13 @@ export function PanelGrid({ tab, children }: { tab: ConsoleTab; children: ReactN
     Object.fromEntries(TABS.map((t) => [t.id, readLayout(t.id)])),
   );
   const [drag, setDrag] = useState<{ id: string; over: string | null } | null>(null);
-  const [notice, setNotice] = useState('');
+  // A notice is about the page it was said on.
+  const [said, setSaid] = useState({ tab, text: '' });
+  const notice = said.tab === tab ? said.text : '';
+  const setNotice = useCallback((text: string) => setSaid({ tab, text }), [tab]);
   const gridRef = useRef<HTMLDivElement>(null);
   const endDrag = useRef<(() => void) | null>(null);
   useEffect(() => () => endDrag.current?.(), []);
-  // A notice is about the page it was said on.
-  useEffect(() => setNotice(''), [tab]);
 
   const layout = saved[tab] ?? EMPTY_LAYOUT;
   const places = Children.toArray(children).filter(isValidElement);
@@ -203,7 +204,7 @@ export function PanelGrid({ tab, children }: { tab: ConsoleTab; children: ReactN
         window.addEventListener('keydown', onKey, true);
       },
     }),
-    [layout, drag, shown, change],
+    [layout, drag, shown, change, setNotice],
   );
 
   const slots = arrangeSlots(all, shown, layout);
