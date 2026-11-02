@@ -62,6 +62,7 @@ import { CopyCasting } from './CopyCasting';
 import { uploadPortrait } from './portraitUpload';
 import { sessionSummary } from './sessionModel';
 import { ConsoleTabs, Place, useConsoleTab } from './ConsoleTabs';
+import { PanelGrid } from './MovablePanels';
 import { NeedsYou } from './NeedsYou';
 import { tabOf } from './tabsModel';
 
@@ -411,12 +412,7 @@ function GmConsole({
           {/* Kept mounted while viewing as a character so half-filled GM forms survive. */}
           <div className="gm-pane" hidden={view.kind === 'character'}>
             <ConsoleTabs tab={tab} onChange={setTab} />
-            <div
-              className="gm-grid"
-              role="tabpanel"
-              id={`tabpanel-${tab}`}
-              aria-labelledby={`tab-${tab}`}
-            >
+            <PanelGrid tab={tab}>
               <Place id="needs-you" tab={tab}>
                 <NeedsYou
                   state={state}
@@ -567,7 +563,7 @@ function GmConsole({
                   refreshKey={`${state.name}|${state.sessions.length}|${state.currentSession ?? ''}`}
                 />
               </Place>
-            </div>
+            </PanelGrid>
           </div>
           {viewed && (
             <div className="single-pane">

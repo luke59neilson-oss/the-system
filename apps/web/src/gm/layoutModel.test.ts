@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   EMPTY_LAYOUT,
+  arrangeSlots,
   dropPanel,
   isLayoutChanged,
   movePanel,
@@ -68,5 +69,21 @@ describe('the panel layout (MW.4)', () => {
     expect(parseLayout('{"order":["a","a",1,"b"],"widths":{"a":"half","b":"huge","c":2}}')).toEqual(
       { order: ['a', 'b'], widths: { a: 'half' } },
     );
+  });
+
+  it('arranges only the page panels, leaving other tabs where they are', () => {
+    const all = ['x', 'a', 'y', 'b', 'c', 'z'];
+    const shown = ['a', 'b', 'c'];
+    expect(arrangeSlots(all, shown, EMPTY_LAYOUT)).toEqual(all);
+    const moved = movePanel(shown, EMPTY_LAYOUT, 'c', -1);
+    expect(arrangeSlots(all, shown, moved)).toEqual(['x', 'a', 'y', 'c', 'b', 'z']);
+  });
+
+  it('a reset is the empty layout: default order and default widths come back', () => {
+    const changed = setPanelWidth(movePanel(PAGE, EMPTY_LAYOUT, 'b', 1), 'a', 'half');
+    expect(isLayoutChanged(changed)).toBe(true);
+    expect(orderedPanels(PAGE, EMPTY_LAYOUT)).toEqual(PAGE);
+    expect(panelWidth(EMPTY_LAYOUT, 'a')).toBe('third');
+    expect(panelWidth(EMPTY_LAYOUT, 'offer-builder')).toBe('full');
   });
 });

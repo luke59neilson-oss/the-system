@@ -6,9 +6,6 @@
 export const PANEL_WIDTHS = ['third', 'half', 'full'] as const;
 export type PanelWidth = (typeof PANEL_WIDTHS)[number];
 
-/** Grid columns each width spans, of a six-column grid. */
-export const WIDTH_COLUMNS: Readonly<Record<PanelWidth, number>> = { third: 2, half: 3, full: 6 };
-
 export interface PageLayout {
   readonly order: readonly string[];
   readonly widths: Readonly<Record<string, PanelWidth>>;
@@ -98,8 +95,35 @@ export const setPanelWidth = (layout: PageLayout, id: string, width: PanelWidth)
 export const panelWidth = (layout: PageLayout, id: string): PanelWidth =>
   layout.widths[id] ?? DEFAULT_WIDTHS[id] ?? 'third';
 
-/** Panels that start full width (as `.party` and `.feed` always did). */
-const DEFAULT_WIDTHS: Readonly<Record<string, PanelWidth>> = { party: 'full', feed: 'full' };
+/** Panels that start full width, as their own stylesheet rules used to make them. */
+const DEFAULT_WIDTHS: Readonly<Record<string, PanelWidth>> = {
+  party: 'full',
+  feed: 'full',
+  encounter: 'full',
+  trackers: 'full',
+  'offer-builder': 'full',
+  'skill-library': 'full',
+  'item-library': 'full',
+  'loot-tables': 'full',
+  'origin-library': 'full',
+  'rules-settings': 'full',
+};
+
+/**
+ * Every panel of the console in the order to mount it: the page's panels take
+ * the page's slots in layout order and the panels of other tabs keep theirs,
+ * so a tab switch moves as few mounted panels as it can.
+ */
+export function arrangeSlots(
+  all: readonly string[],
+  shown: readonly string[],
+  layout: PageLayout,
+): string[] {
+  const onPage = new Set(shown);
+  const ordered = orderedPanels(shown, layout);
+  let next = 0;
+  return all.map((id) => (onPage.has(id) ? (ordered[next++] ?? id) : id));
+}
 
 export const isLayoutChanged = (layout: PageLayout): boolean =>
   layout.order.length > 0 || Object.keys(layout.widths).length > 0;

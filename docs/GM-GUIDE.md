@@ -26,6 +26,12 @@ waiting, a banner) opens the tab that handles it.
 | Evolutions | Who is at or near the threshold; the evolution builder (three steps or class only) |
 | Library & settings | Skill text, Skill library, Item library, Loot tables, Title library, Classes, races and professions, Bestiary, Ideas, Reference (Primal Hunter lists), Rules settings, Co-DM settings, Campaigns and backups |
 
+Rearranging panels: on Home and each tab, drag a panel by its heading to
+another panel's spot, or use its **⋮** menu from the keyboard: Move earlier,
+Move later, Width (third, half or full). Each page's layout is saved on this
+laptop; **Reset layout**, at the right of the tab bar, restores that page's
+default. A panel added by a later release appears in its default spot.
+
 Award XP is the one window in two places: the same form on both tabs (a
 half-typed award shows on either). Its participant rows are the Session
 tab's party at a glance. Titles are awarded from the Title library;

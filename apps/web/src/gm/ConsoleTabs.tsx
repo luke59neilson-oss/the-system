@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { MovablePlace } from './MovablePanels';
 import { TABS, WINDOWS, parseTab, tabAfterKey, tabOf, type ConsoleTab } from './tabsModel';
 
 // MU.1 (DESIGN §9a): the console's tab bar and the wrapper that shows each
@@ -83,9 +84,9 @@ export function ConsoleTabs({
 export function Place({ id, tab, children }: { id: string; tab: ConsoleTab; children: ReactNode }) {
   const shown = WINDOWS[id]?.includes(tab) ?? false;
   return (
-    <div className="place" data-window={id} hidden={!shown}>
+    <MovablePlace id={id} shown={shown}>
       <Frozen shown={shown}>{children}</Frozen>
-    </div>
+    </MovablePlace>
   );
 }
 

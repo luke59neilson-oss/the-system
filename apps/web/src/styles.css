@@ -113,21 +113,131 @@ h2 {
   padding: 1px 6px;
   box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 45%, transparent);
 }
+/* MW.4 (DESIGN §9a): the snap grid. Six columns, so a panel is a third, a half or full. */
 .gm-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 14px;
 }
-.party,
-.feed {
+/* Each window's place is the grid item; off-tab places and windows that draw nothing take no cell. */
+.place {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.place > :not(.panel-menu) {
+  flex: 1 1 auto;
+}
+.place[hidden],
+.place:not(:has(> :not(.panel-menu))) {
+  display: none;
+}
+.place[data-width='third'] {
+  grid-column: span 2;
+}
+.place[data-width='half'] {
+  grid-column: span 3;
+}
+.place[data-width='full'] {
   grid-column: 1 / -1;
 }
-/* MU.1: each window's place is invisible to the grid; off-tab places hide. */
-.place {
-  display: contents;
+@media (max-width: 1040px) {
+  .place[data-width='third'] {
+    grid-column: span 3;
+  }
 }
-.place[hidden] {
-  display: none;
+@media (max-width: 720px) {
+  .place[data-width] {
+    grid-column: 1 / -1;
+  }
+}
+.place > * > h2 {
+  cursor: grab;
+  user-select: none;
+  padding-right: 34px;
+}
+.gm-grid.dragging,
+.gm-grid.dragging .place > * > h2 {
+  cursor: grabbing;
+  user-select: none;
+}
+.place.drag-source {
+  opacity: 0.55;
+}
+.place.drop-target > :not(.panel-menu) {
+  outline: 2px dashed var(--accent);
+  outline-offset: 2px;
+}
+.panel-menu {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+}
+.panel-menu:has(.panel-menu-list) {
+  z-index: 30;
+}
+.panel-menu-toggle {
+  padding: 0 8px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.panel-menu-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: max-content;
+  padding: 8px;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+}
+.panel-menu-list button {
+  padding: 3px 10px;
+  text-align: left;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.panel-menu-list button[aria-pressed='true'] {
+  color: #0b0f17;
+  background: var(--accent);
+}
+.panel-menu-widths {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+.gm-pane {
+  position: relative;
+}
+.layout-bar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+.layout-bar button {
+  padding: 2px 10px;
+}
+@media (max-width: 720px) {
+  .layout-bar {
+    position: static;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+  }
 }
 .console-tabs [role='tablist'] {
   display: flex;
@@ -538,6 +648,9 @@ a {
 }
 .perspective-table .gm-grid {
   grid-template-columns: minmax(0, 1fr);
+}
+.perspective-table .place[data-width] {
+  grid-column: 1 / -1;
 }
 .table-panes {
   display: flex;
@@ -1884,7 +1997,6 @@ button.danger {
 
 /* GM skill library (M4.1) */
 .skill-library {
-  grid-column: 1 / -1;
 }
 .library-tools {
   display: flex;
@@ -1945,7 +2057,6 @@ button.danger {
 
 /* GM class, race and profession libraries (M4.2) */
 .origin-library {
-  grid-column: 1 / -1;
 }
 .origin-library .library-list {
   max-height: min(520px, 70vh);
@@ -2423,7 +2534,6 @@ ol.change-log li.undone .change-text {
 
 /* M4.9 Rules settings: every config value, grouped by section. */
 .rules-settings {
-  grid-column: 1 / -1;
 }
 .rules-settings .rules-section {
   border-top: 1px solid var(--border, rgba(255, 255, 255, 0.12));
@@ -2480,7 +2590,6 @@ ol.change-log li.undone .change-text {
 
 /* M5.1 offer builder: menu on the left, the practice log beside it */
 .offer-builder {
-  grid-column: 1 / -1;
 }
 .offer-builder:focus {
   outline: none;
@@ -2709,7 +2818,6 @@ ol.change-log li.undone .change-text {
 
 /* GM item library (M6.1) */
 .item-library {
-  grid-column: 1 / -1;
 }
 .item-library h3 {
   margin: 4px 0 8px;
@@ -2753,7 +2861,6 @@ ol.change-log li.undone .change-text {
 
 /* GM loot tables (M6.2) */
 .loot-tables {
-  grid-column: 1 / -1;
 }
 .loot-tables h3 {
   margin: 4px 0 8px;
@@ -2980,7 +3087,6 @@ ol.change-log li.undone .change-text {
 
 /* GM encounter panel (M7.3) */
 .encounter {
-  grid-column: 1 / -1;
 }
 .encounter h3 {
   margin: 4px 0 8px;
@@ -3174,7 +3280,6 @@ ol.change-log li.undone .change-text {
 
 /* GM trackers (M7.4) */
 .trackers {
-  grid-column: 1 / -1;
 }
 .trackers > [role='group'] + [role='group'] {
   margin-top: 14px;
