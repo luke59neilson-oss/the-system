@@ -161,8 +161,9 @@ jobs:
             if (-not $quit) { throw 'no quit backup: the app was killed, not asked to quit' }
             Write-Output "quit backup: $($quit[0].Name)"
             if (-not (Test-Path $exe)) { throw 'the second install left no TheSystem.exe' }
-            $uninstaller = Join-Path $dir 'Uninstall The System.exe'
-            if (-not (Test-Path $uninstaller)) { throw "the second install left no uninstaller at $uninstaller" }
+            # electron-builder names it after the executable: "Uninstall TheSystem.exe".
+            $uninstaller = (Get-ChildItem $dir -Filter 'Uninstall*.exe' | Select-Object -First 1).FullName
+            if (-not $uninstaller) { throw "the second install left no uninstaller in $dir" }
             Get-Process TheSystem -ErrorAction SilentlyContinue | Stop-Process -Force
             $p = Start-Process $uninstaller -ArgumentList '/S' -PassThru
             if (-not $p.WaitForExit(120000)) { throw 'the uninstall hung' }
