@@ -173,6 +173,7 @@ export function ContentImport({
         setGenerated(isGenerated);
         setGenKind(kind);
         setGenIdea(isGenerated ? (incoming.idea ?? null) : null);
+        setMarkedIdea(null);
         setPreview(p);
         setChecks(new Map());
         setChecking(false);

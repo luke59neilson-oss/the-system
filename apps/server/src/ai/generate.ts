@@ -98,7 +98,13 @@ export const generateIdeas = (
   kind: GenerateKind,
   prompt: string,
   state: CampaignState,
-): readonly Idea[] => ideasInPlay(state, { kind: IDEA_KIND_OF[kind], words: prompt });
+  first?: string,
+): readonly Idea[] =>
+  ideasInPlay(state, {
+    kind: IDEA_KIND_OF[kind],
+    words: prompt,
+    ...(first === undefined ? {} : { first }),
+  });
 
 export function buildGenerateRequest(
   kind: GenerateKind,

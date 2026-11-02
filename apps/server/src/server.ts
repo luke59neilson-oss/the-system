@@ -921,6 +921,8 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
     const generateBody = z.strictObject({
       kind: z.enum(GENERATE_KINDS),
       prompt: z.string().max(GENERATE_PROMPT_MAX).default(''),
+      // MW.3: the idea the chip behind this request was built on.
+      idea: z.string().max(100).optional(),
     });
     const limitMs = options.generateTimeoutMs ?? GENERATE_TIMEOUT_MS;
     app.post('/api/gm/ai/generate', { bodyLimit: 16 * 1024 }, async (request, reply) => {
@@ -948,7 +950,7 @@ export async function createServer(options: CreateServerOptions): Promise<Fastif
       });
       let file: unknown;
       // MW.3: the GM's ideas this generation may use, and the one it says it did.
-      const offered = generateIdeas(body.data.kind, body.data.prompt, state);
+      const offered = generateIdeas(body.data.kind, body.data.prompt, state, body.data.idea);
       let idea: UsedIdea | null;
       try {
         const answer = await Promise.race([

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  chooseIdeas,
   DEFAULT_RULES,
   execute,
   emptyCampaign,
@@ -167,5 +168,15 @@ describe('ideas in a prompt (MW.3)', () => {
     expect(readUsedIdea('{"a":1}\nidea: #1', offered).idea?.id).toBe('a');
     expect(readUsedIdea('text\nIDEA: 9', offered)).toEqual({ text: 'text', idea: null });
     expect(readUsedIdea('An IDEA: 1 in a sentence', offered).idea).toBeNull();
+    expect(readUsedIdea('text\n**IDEA: 2.**', offered).idea?.id).toBe('b');
+    expect(readUsedIdea('text\nIDEA: none', offered)).toEqual({ text: 'text', idea: null });
+    expect(readUsedIdea('IDEA: 1\ntext\nIDEA: 2', offered).idea?.id).toBe('b');
+  });
+
+  it('connects whole words only', () => {
+    const inn = { ...idea('a', 'A new beginning'), tags: [] };
+    expect(chooseIdeas([inn], { words: ['Inn'] })).toEqual([]);
+    const named = idea('b', 'The Old Inn burns');
+    expect(chooseIdeas([named], { words: ['old inn'] }).map((i) => i.id)).toEqual(['b']);
   });
 });
