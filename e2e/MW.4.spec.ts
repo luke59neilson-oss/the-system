@@ -202,9 +202,9 @@ test('the Evolutions, Progression and Library tabs have panel menus too', async 
   await openTab(gm, 'progression');
   await gm.getByTestId('panel-menu-offer-builder').getByRole('button').click();
   await gm.getByRole('button', { name: 'Half', exact: true }).click();
-  const columns = await gm
-    .locator('.offer-layout')
-    .evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+  const columns = await gm.evaluate<number>(
+    `getComputedStyle(document.querySelector('.offer-layout')).gridTemplateColumns.split(' ').length`,
+  );
   expect(columns).toBe(1);
   await gm.screenshot({ path: path.join(shots, 'offer-builder-half-1366x768.png') });
   await gm.keyboard.press('Escape');

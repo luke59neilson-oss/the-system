@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-02): MW.3 on main. MW.4 begun on `wip/MW.4`. Preview ready: Actions → Release → Run workflow (ML).
-**Next item:** `wip/MW.4` (`npm run sync -- wip/MW.4`, check it out, `git merge origin/main`): wire the layout model into the console. MW.A after.
+**Status:** in progress (2026-11-02): MW.4 on main. MW.A open: needs a full suite pass and a `fable` round 2. Preview ready: Actions → Release → Run workflow (ML).
+**Next item:** MW.A: read CI on this push, run the full e2e with latency, `fable` round 2 on the MW.4 fixes in 4bc8c47 onward, then "Preview ready" per LOOP §8.2.
 **Blockers:** none
 
 ## Run log
@@ -1731,4 +1731,12 @@ next item, blockers. -->
 - Tests: `npm run check` exit 0, unit 2171, on cc0f62d. e2e MW.3 and MC.8 green on that commit; MC.2, MD.3 and M4.1 green on 2dd4e9a, before the fixes. Full e2e started at minute 43 and stopped at the hard stop: 56 passed, 0 failed, about 124 not reached, latency not run, so it is NOT a full pass, though this item changed shared server and UI code (LOOP §5.6). Read CI on this push first. Engine coverage not read.
 - Efficiency check: scorecard row added (end minute 50.0, items/run 2.5, round-2 5/10, Highs 1, red/day 6). No trial due. Sonnet auditor found nothing new; it re-raised two queued Tier 1 items and said it had not read the last three PROGRESS entries. Applied the work-order wording in LOOP §5.1 (D343, in trial); `ci-triage` stays queued.
 - `wip/MW.4` at 2c60de9, base cc0f62d: `layoutModel.ts` and its 6 unit tests (order, move, drop, width, unknown and new panels, tolerant read), green. Nothing wired yet. Next: Place sorted by layout inside `.gm-grid` (six-column grid; keyed reordering keeps forms mounted), drag by the h2 header, a keyboard panel menu (Move earlier, Move later, Width), per-page save in localStorage, Reset layout, e2e, screenshots; re-run M8.3. Unreviewed.
+- Blockers: none.
+
+### Run · 2026-11-02 01:09–01:58 UTC (close-out at minute 44)
+- Close-out at minute 44, after the hand-off; lock released around minute 49.
+- Preflight: no `add_repo` tool, repo at /home/claude/the-system. `npm run sync` was missing from the stale local main (three days old, no unique commits), so main was reset by hand per LOOP §1.2. Lock pushed; vitest 5.0.5. CI on main green at the last completed run (738a48f; the run for 08e4586 not yet read). No new answers. Hour 01: no sweep, no efficiency check.
+- Finished and pushed to main: MW.4 (sonnet round 1: 0 H, 2 M, 6 L; round 2: 0 H, 0 M, 4 L; all M fixed; Lows to the Backlog). D344.
+- MW.A not checked. `fable` reviewed at bd9910d: 1 H (Evolutions panel a third wide) and 1 M (offer builder's inner layout), both fixed and tested in 4bc8c47; a round 2 is due because of the High.
+- Tests: full e2e on 08fa9c06 (before the fixes): 182 passed, 1 failed (QF.17, real, Reset layout covering wrapped tabs in Table view; fixed, and QF.17, MW.1 and MW.4 green on 4bc8c47). The latency project did not run because of that failure, so this is NOT a full pass and nothing since has had one. `npm run check` last fully passed in a reviewer's run at 08fa9c06 (2179 unit). The final commit had typecheck, lint, format, banned, the `apps/web` and `scripts` unit tests (482) and the MW.4 spec, not the whole unit suite (no engine or server code changed): read CI on this push first. Engine coverage not read; no engine code changed.
 - Blockers: none.

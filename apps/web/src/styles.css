@@ -177,7 +177,9 @@ h2 {
   right: 8px;
   z-index: 5;
 }
-.panel-menu:has(.panel-menu-list) {
+.panel-menu:has(.panel-menu-list),
+.place:has(> .panel-menu > .panel-menu-list) {
+  /* A place is its own stacking context (container-type), so it lifts above its neighbours. */
   z-index: 30;
 }
 .panel-menu-toggle {

@@ -1634,7 +1634,7 @@ DESIGN §6, §9a, §11. After MU. MW.4 covers the Evolutions tab (ME.3) too.
   a wrong or newer format refused with a message; repeat import skips;
   paste splits on blank lines; idea choice by tags and place, bounded);
   canary (ideas never in player frames); e2e importing a sample file.
-- [ ] **MW.4 Movable panels on the GM console.** DESIGN §9a "Movable
+- [x] **MW.4 Movable panels on the GM console.** DESIGN §9a "Movable
   panels": snap grid on home and each tab; drag by header; keyboard moves
   from each panel's menu (Move earlier, Move later, Width: third, half,
   full); saved per page on the device; **Reset layout**; unknown panels in a
