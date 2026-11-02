@@ -1,7 +1,7 @@
 # Progress
 
-**Status:** in progress (2026-11-01): QF.69, QF.71–QF.74 on main. MW.1 and MW.2 built on `wip/MW.2`, neither reviewed. Preview ready: Actions → Release → Run workflow (ML).
-**Next item:** `wip/MW.2` (`npm run sync -- wip/MW.2`, check it out, `git merge origin/main`): fix e2e/MW.2.spec.ts line 107 (the phone dialog opens the older level 50 menu first), then review MW.1 and MW.2. MW.3 after.
+**Status:** in progress (2026-11-01): MW.1 and MW.2 on main. MW.3 begun on `wip/MW.3`. Preview ready: Actions → Release → Run workflow (ML).
+**Next item:** `wip/MW.3` (`npm run sync -- wip/MW.3`, check it out, `git merge origin/main`): fix the events.test.ts replay property, then the Ideas panel, import preview, prompts and canary. MW.4 after.
 **Blockers:** none
 
 ## Run log
@@ -1714,4 +1714,12 @@ next item, blockers. -->
 - Finished and merged to main: QF.69, QF.71, QF.73 (reviewed last run), QF.72 (sonnet round 2: 0 H, 2 M, both fixed), QF.74 (bug confirmed by a failing spec first; sonnet 0 H, 0 M).
 - Tests: `npm run e2e` on the QF commit 25801a7: e2e 177 + latency 8 with no failures (log shows 188 ticks, not reconciled: read the next run's total). `npm run check` exit 0, unit 2134, on 38bb3bf6 (the superset, MW work included). Engine coverage not read this run.
 - `wip/MW.2` at 38bb3bf6, base 25801a7: MW.1 complete with spec and screenshots, unreviewed. MW.2 built: route `/api/gm/ai/skill-drafts`, fake, flags, buttons, unit tests green. Its e2e fails at line 107: `Choose Keener Sight` not visible, likely because the dialog shows the level 50 menu first. Not diagnosed further. Spell cost reaching the library entry has no test yet. Next step: fix the spec, add that test, then one review for each item.
+- Blockers: none.
+
+### Run · 2026-11-01 23:10–23:59 UTC (close-out at minute 48)
+- Close-out at minute 48, after the hand-off at 44.
+- Preflight: no `add_repo` tool, repo at /home/claude/the-system; `npm run sync` reset a stale local main. Lock pushed; vitest 5.0.5. CI on main green at the last completed run (c521111). No new answers. Hour 23: no sweep, no efficiency check.
+- Finished and pushed to main: MW.1 (sonnet: 0 H, 1 M, 6 L; M fixed), MW.2 (sonnet round 1: 0 H, 4 M, 6 L; round 2: 0 H, 1 M, 2 L; all M fixed, one part not reproduced). D340.
+- Tests: `npm run check` exit 0, unit 2140, on the MW.2 commit. e2e for MW.1, MW.2, plus M5.1 and M5.A in the reviewer's run: green. Full e2e on the pushed code was started but cut at the stop: 60 of 180 reached, 0 failure lines in its log, latency not run, so it is NOT a full pass; CI on 738a48f was still running at close-out: read it first. The MW.2 fix after round 2 touched only library matching and rows kept on a failed cost. Engine coverage not read.
+- `wip/MW.3` at 5c080a0, base 738a48f: built `ideas/import.ts` (parse, repeat skip), `ideas/choose.ts` (bounded choice), idea events and commands, GM-only state (schema v36), 7 + 3 unit tests green. Known red: `events.test.ts` "replay equals incremental state" fails at this commit, not diagnosed (the whole engine and server test run was cut off by its timeout, so other tests may be red too, such as goldens after the schema bump). Next: fix that, then the Ideas panel in Library & settings, import preview, prompts naming the idea used, approval marks it used, canary, e2e. Unreviewed.
 - Blockers: none.
